@@ -20,6 +20,7 @@ export function clientFor(connection: ResolvedConnection): HomeAssistantClient {
     baseUrl: connection.baseUrl,
     token: connection.token,
     allowInsecureTls: connection.allowInsecureTls,
+    allowLoopback: connection.allowLoopback,
   });
 }
 

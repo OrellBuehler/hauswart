@@ -1,3 +1,4 @@
+import { setLenientHostPolicy } from "$lib/server/net/host-policy";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { HomeAssistantClient, HomeAssistantError, haWsCommand } from "./index";
 import { startFakeHomeAssistant } from "./fake-server";
@@ -284,6 +285,41 @@ describe("haWsCommand", () => {
       await run(true);
       // nosemgrep: problem-based-packs.insecure-transport.js-node.bypass-tls-verification.bypass-tls-verification -- test-only: asserts the opt-in insecure path
       expect(seen[2]).toEqual({ rejectUnauthorized: false });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("does not open a socket to a metadata address, and to loopback only when allowed", async () => {
+    setLenientHostPolicy(false);
+    const sockets: unknown[] = [];
+    const Real = WebSocket;
+    class Spy extends Real {
+      constructor(url: string | URL, options?: unknown) {
+        super(url, options as never);
+        sockets.push(url);
+      }
+    }
+    vi.stubGlobal("WebSocket", Spy);
+    try {
+      const run = (baseUrl: string, allowLoopback?: boolean) =>
+        haWsCommand(
+          baseUrl,
+          "test-token",
+          { type: "config/area_registry/list" },
+          { allowLoopback },
+        );
+      for (const url of [
+        "http://169.254.169.254",
+        "http://[fe80::1]:8123",
+        "http://metadata.google.internal",
+      ]) {
+        expect(await codeOf(run(url, true))).toBe("blocked_host");
+      }
+      expect(await codeOf(run(fake.baseUrl))).toBe("blocked_host");
+      expect(sockets).toEqual([]);
+      await run(fake.baseUrl, true);
+      expect(sockets).toHaveLength(1);
     } finally {
       vi.unstubAllGlobals();
     }

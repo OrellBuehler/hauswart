@@ -9680,6 +9680,15 @@
                         "type": "integer",
                         "minimum": 1,
                         "maximum": 120
+                      },
+                      "integrationHostAllowlist": {
+                        "description": "Hosts (`host` or `host:port`, normalised) that members may point their own (per-person) integration connections at. Administrators may use any host. Shown to administrators only.",
+                        "maxItems": 50,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "maxLength": 260
+                        }
                       }
                     },
                     "additionalProperties": false
@@ -30891,6 +30900,13 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 120
+          },
+          "integrationHostAllowlist": {
+            "description": "Hosts (`host` or `host:port`, normalised) that members may point their own (per-person) integration connections at. Administrators may use any host. Shown to administrators only.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [

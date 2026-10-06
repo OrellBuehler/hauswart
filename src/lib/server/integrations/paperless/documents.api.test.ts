@@ -1,3 +1,4 @@
+import { setLenientHostPolicy } from "$lib/server/net/host-policy";
 import { describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import {
@@ -13,6 +14,7 @@ import {
   loginTestUser,
 } from "$lib/testing/auth";
 import { useTestDB } from "$lib/testing/db";
+import { allowIntegrationHosts } from "$lib/testing/integrations";
 import { makeAsset } from "$lib/testing/documents";
 import { syncAll } from "./sync";
 import { TEST_CONFIG, seedTaxonomy, useFakePaperless } from "./testing";
@@ -1226,6 +1228,7 @@ describe("document API", () => {
     it("every person connects their own account; nobody sees another's", async () => {
       const [a, b] = [await createTestUser(), await createTestUser()];
       seedTaxonomy(fake);
+      allowIntegrationHosts(test.db, "127.0.0.1");
       const asA = createCaller({ session: loginTestUser(a).token });
       const asB = createCaller({ session: loginTestUser(b).token });
       const saved = await asA("PUT", "/api/v1/integrations/paperless", {
@@ -1273,9 +1276,34 @@ describe("document API", () => {
       });
     });
 
+    it("never calls a loopback address for a member, but does for an administrator", async () => {
+      setLenientHostPolicy(false);
+      const admin = await createTestUser({ role: "admin" });
+      const member = await createTestUser();
+      connect(admin.id);
+      connect(member.id);
+      const asAdmin = createCaller({ session: loginTestUser(admin).token });
+      const asMember = createCaller({ session: loginTestUser(member).token });
+      const url = "/api/v1/integrations/paperless/test";
+      const blocked = await asMember("POST", url);
+      expect(blocked.body).toMatchObject({
+        ok: false,
+        error: { code: "blocked_host" },
+      });
+      expect(fake.requests).toEqual([]);
+      expect(
+        (await asMember("GET", "/api/v1/integrations/paperless/tags")).res
+          .status,
+      ).toBe(502);
+      expect(fake.requests).toEqual([]);
+      expect((await asAdmin("POST", url)).body).toMatchObject({ ok: true });
+      expect(fake.requests.length).toBeGreaterThan(0);
+    });
+
     it("refuses invalid settings with a message about the settings", async () => {
       const a = await createTestUser();
       const asA = createCaller({ session: loginTestUser(a).token });
+      allowIntegrationHosts(test.db, "127.0.0.1");
       const r = await asA("PUT", "/api/v1/integrations/paperless", {
         json: {
           baseUrl: fake.baseUrl,

@@ -9,6 +9,8 @@ export interface ResolvedConnection {
   baseUrl: string;
   token: string;
   allowInsecureTls: boolean;
+  /** Household-wide connections and those of administrators may reach loopback addresses; members' may not. */
+  allowLoopback: boolean;
   config: Record<string, unknown>;
 }
 

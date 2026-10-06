@@ -4,6 +4,7 @@ import {
   type HouseholdSettings,
   type UpdateHouseholdRequest,
 } from "$lib/api/schemas/household";
+import { normalizeHostEntry } from "$lib/hosts";
 import { householdTimeZone } from "$lib/server/config";
 import { HOUSEHOLD_ID, household } from "$lib/server/db";
 import { parseStored } from "$lib/server/json";
@@ -68,9 +69,19 @@ export function updateHousehold(
   patch: UpdateHouseholdRequest,
 ): HouseholdRecord {
   const current = getHousehold(ctx);
+  const allowlist = patch.settings?.integrationHostAllowlist;
   const settings = householdSettingsSchema.parse({
     ...current.settings,
     ...patch.settings,
+    ...(allowlist === undefined
+      ? {}
+      : {
+          integrationHostAllowlist: [
+            ...new Set(
+              allowlist.flatMap((entry) => normalizeHostEntry(entry) ?? []),
+            ),
+          ],
+        }),
   });
   const row = ctx.db
     .update(household)

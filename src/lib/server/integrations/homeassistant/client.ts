@@ -42,6 +42,8 @@ export interface ClientOptions {
   /** Long-lived access token. */
   token: string;
   allowInsecureTls?: boolean;
+  /** Administrators' and household-wide connections only; see `net/host-policy.ts`. */
+  allowLoopback?: boolean;
   timeoutMs?: number;
   maxJsonBytes?: number;
 }
@@ -78,6 +80,7 @@ export class HomeAssistantClient {
   readonly baseUrl: string;
   private readonly token: string;
   private readonly allowInsecureTls: boolean;
+  private readonly allowLoopback: boolean;
   private readonly timeoutMs: number;
   private readonly maxJsonBytes: number;
 
@@ -86,6 +89,7 @@ export class HomeAssistantClient {
     assertToken(options.token, haFail);
     this.token = options.token;
     this.allowInsecureTls = options.allowInsecureTls ?? false;
+    this.allowLoopback = options.allowLoopback ?? false;
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     this.maxJsonBytes = options.maxJsonBytes ?? MAX_JSON_BYTES;
   }
@@ -119,6 +123,7 @@ export class HomeAssistantClient {
               : JSON.stringify(options.json),
           timeoutMs: this.timeoutMs,
           allowInsecureTls: this.allowInsecureTls,
+          allowLoopback: this.allowLoopback,
         },
         haFail,
       ),
@@ -224,7 +229,11 @@ export class HomeAssistantClient {
       this.baseUrl,
       this.token,
       { type },
-      { timeoutMs: this.timeoutMs, allowInsecureTls: this.allowInsecureTls },
+      {
+        timeoutMs: this.timeoutMs,
+        allowInsecureTls: this.allowInsecureTls,
+        allowLoopback: this.allowLoopback,
+      },
     );
   }
 }

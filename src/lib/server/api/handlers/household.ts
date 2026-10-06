@@ -3,10 +3,17 @@ import { getHousehold, updateHousehold } from "$lib/server/household/household";
 import { recomputeHandoverDeadlines } from "$lib/server/defects/defects";
 import { evaluateAll } from "$lib/server/tasks/evaluator";
 import type { Handler } from "../bind";
+import type { AuthedContext } from "../context";
 import { wireHousehold } from "../wire";
 
+/** The host allow-list is administrators' business (the admin scope), like the rest of the integration setup. */
+const showHostAllowlist = (ctx: AuthedContext) =>
+  ctx.principal.scopes.includes("admin");
+
 export const get: Handler<typeof endpoints.householdGet> = ({ ctx }) =>
-  wireHousehold(getHousehold(ctx));
+  wireHousehold(getHousehold(ctx), {
+    showHostAllowlist: showHostAllowlist(ctx),
+  });
 
 export const update: Handler<typeof endpoints.householdUpdate> = async ({
   ctx,
@@ -25,5 +32,7 @@ export const update: Handler<typeof endpoints.householdUpdate> = async ({
   if (household.settings.dueSoonDays !== before.dueSoonDays) {
     await evaluateAll(ctx);
   }
-  return wireHousehold(household);
+  return wireHousehold(household, {
+    showHostAllowlist: showHostAllowlist(ctx),
+  });
 };

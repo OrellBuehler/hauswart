@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  HostPolicyError,
+  assertHostAllowed,
+} from "$lib/server/net/host-policy";
 
 /**
  * Transport helpers shared by the integration clients: fetch with timeout and
@@ -9,6 +13,7 @@ import { z } from "zod";
 
 export const HTTP_ERROR_CODES = [
   "invalid_url",
+  "blocked_host",
   "unauthorized",
   "forbidden",
   "not_found",
@@ -37,6 +42,8 @@ export function httpMessage(service: string, code: HttpErrorCode): string {
   switch (code) {
     case "invalid_url":
       return "Enter a valid http:// or https:// address without credentials.";
+    case "blocked_host":
+      return `The address of ${service} points to a link-local, cloud metadata or (for members) loopback address, which hauswart does not connect to.`;
     case "unauthorized":
       return `${service} rejected the access token.`;
     case "forbidden":
@@ -79,12 +86,12 @@ export function errorCodeOf(err: unknown): string {
  * http/https only, no credentials, no query or fragment, no trailing slash.
  * A path prefix (reverse proxy sub-path) is kept.
  *
- * Private, loopback and LAN addresses are allowed on purpose: the external
- * systems are self-hosted and sit on the same network, and the URL is entered
- * by a signed-in member of the household (an administrator for household-wide
- * connections), never by an anonymous caller. There is therefore no SSRF host
- * filter. Redirects are never followed and the token is
- * only sent to this base URL.
+ * Private LAN addresses are allowed on purpose: the external systems are
+ * self-hosted and sit on the same network. Which hosts a member may point a
+ * connection at is the household's allow-list (`integrationHostAllowlist`,
+ * checked when the connection is saved), and `guardHost` refuses link-local,
+ * metadata and (for members) loopback addresses before every request.
+ * Redirects are never followed and the token is only sent to this base URL.
  */
 export function normalizeBaseUrl(input: string, fail: Fail): string {
   let url: URL;
@@ -163,6 +170,28 @@ export interface RequestInitLite {
   body?: BodyInit;
   timeoutMs: number;
   allowInsecureTls?: boolean;
+  /** Loopback is for administrators' and household-wide connections only; off unless the connection says so. */
+  allowLoopback?: boolean;
+}
+
+/**
+ * Refuses a base URL whose host is, or now resolves to, a link-local or metadata address (or
+ * loopback without `allowLoopback`). Runs before every request: see `net/host-policy.ts` for
+ * what a name lookup here can and cannot guarantee (DNS rebinding).
+ */
+export async function guardHost(
+  url: string,
+  allowLoopback: boolean | undefined,
+  fail: Fail,
+): Promise<void> {
+  try {
+    await assertHostAllowed(url, { allowLoopback: allowLoopback === true });
+  } catch (err) {
+    if (err instanceof HostPolicyError) {
+      throw fail("blocked_host", { cause: err });
+    }
+    throw fail("invalid_url", { cause: err });
+  }
 }
 
 /**
@@ -175,6 +204,7 @@ export async function fetchOnce(
   init: RequestInitLite,
   fail: Fail,
 ): Promise<Response> {
+  await guardHost(url, init.allowLoopback, fail);
   try {
     return await fetch(url, {
       method: init.method,

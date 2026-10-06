@@ -2089,5 +2089,12 @@
   "glinks_info_emergency": "Everything for emergencies is also on the",
   "glinks_info_emergency_link": "emergency page",
   "feeds_howto_toggle": "Instructions for iPhone and Google Calendar",
-  "guest_links_manage": "Manage guest links"
+  "guest_links_manage": "Manage guest links",
+  "household_host_allowlist": "Allowed hosts for integrations",
+  "household_host_allowlist_hint": "Members may only connect their own accounts (Paperless, Kept) to these hosts. Administrators may use any host. While the list is empty, no member can save a connection.",
+  "household_host_allowlist_placeholder": "docs.example.org or host:8000",
+  "household_host_allowlist_invalid": "That is not a host. Enter a host name or address, optionally with a port (no http://, no path).",
+  "household_host_allowlist_remove": "Remove {host}",
+  "household_host_allowlist_empty": "No hosts allowed yet.",
+  "integration_error_blocked_host": "This address is not allowed: link-local and cloud metadata addresses (and, for members, loopback) are never contacted."
 }

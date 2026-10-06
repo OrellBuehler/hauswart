@@ -12,6 +12,7 @@ import {
   saveConnection,
   testConnection,
   toView,
+  vetConnectionTarget,
   type ConnectionView,
 } from "$lib/server/connections/connections";
 import type { Handler } from "../bind";
@@ -53,12 +54,16 @@ export const list: Handler<typeof endpoints.integrationsList> = ({ ctx }) => ({
   nextCursor: null,
 });
 
-export const save: Handler<typeof endpoints.integrationsSave> = ({
+export const save: Handler<typeof endpoints.integrationsSave> = async ({
   ctx,
   params,
   body,
 }) => {
   const owner = writableOwner(ctx, params.kind);
+  await vetConnectionTarget(ctx, params.kind, {
+    baseUrl: body.baseUrl,
+    isAdmin: isAdmin(ctx),
+  });
   const row = saveConnection(ctx, params.kind, owner, {
     baseUrl: body.baseUrl,
     token: body.token,

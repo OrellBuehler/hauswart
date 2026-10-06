@@ -7,8 +7,14 @@ import {
 } from "$lib/api/enums";
 import { ApiError } from "$lib/api/errors";
 import { decryptSecret, encryptSecret } from "$lib/server/crypto";
-import { connections } from "$lib/server/db";
+import { connections, getDB, users, type DB } from "$lib/server/db";
 import { emitEvent } from "$lib/server/events";
+import { getHousehold } from "$lib/server/household/household";
+import { isHostAllowed } from "$lib/hosts";
+import {
+  HostPolicyError,
+  assertHostAllowed,
+} from "$lib/server/net/host-policy";
 import {
   invalidField,
   notFound,
@@ -61,7 +67,10 @@ export function listEnabledConnections(
 }
 
 /** The row with its token decrypted. A token that cannot be decrypted is an `IntegrationError`. */
-export function resolveConnection(row: ConnectionRow): ResolvedConnection {
+export function resolveConnection(
+  row: ConnectionRow,
+  db: DB = getDB(),
+): ResolvedConnection {
   let token: string;
   try {
     token = decryptSecret(row.tokenEnc);
@@ -79,8 +88,20 @@ export function resolveConnection(row: ConnectionRow): ResolvedConnection {
     baseUrl: row.baseUrl,
     token,
     allowInsecureTls: row.allowInsecureTls,
+    allowLoopback: mayReachLoopback(row, db),
     config: row.configJson,
   };
+}
+
+/** Household-wide connections and those owned by an administrator (looked up now, so a demotion applies at once). */
+function mayReachLoopback(row: ConnectionRow, db: DB): boolean {
+  if (row.userId === null) return true;
+  const owner = db
+    .select({ role: users.role })
+    .from(users)
+    .where(eq(users.id, row.userId))
+    .get();
+  return owner?.role === "admin";
 }
 
 /** What the API shows of a connection: never the token. */
@@ -180,6 +201,53 @@ function normalise(
     baseUrl: `${url.origin}${url.pathname.replace(/\/+$/, "")}`,
     config: input.config,
   };
+}
+
+/**
+ * Where a person may point a connection, checked when it is saved (the request-time check in
+ * `integrations/http.ts` repeats the address rules). Members of the household may only use hosts
+ * on the household's allow-list for the kinds each person connects themselves, because the
+ * server fetches that address on their behalf; administrators may use any host (and saving never
+ * adds one to the list). For everybody the host, after name resolution, must not be link-local
+ * or a cloud metadata endpoint, and loopback is for administrators and household connections.
+ */
+export async function vetConnectionTarget(
+  ctx: Db,
+  kind: IntegrationKind,
+  input: { baseUrl: string; isAdmin: boolean },
+): Promise<void> {
+  let url: URL;
+  try {
+    url = new URL(input.baseUrl.trim());
+  } catch {
+    throw invalidField("baseUrl", "Enter a valid http:// or https:// address.");
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw invalidField("baseUrl", "Enter a valid http:// or https:// address.");
+  }
+  const memberOfUserKind =
+    !input.isAdmin && INTEGRATION_LEVELS[kind] === "user";
+  if (
+    memberOfUserKind &&
+    !isHostAllowed(
+      url.href,
+      getHousehold(ctx).settings.integrationHostAllowlist,
+    )
+  ) {
+    throw new ApiError(
+      "forbidden",
+      `The host ${url.host} is not on the household's list of allowed hosts. Ask an administrator to add it (Settings, Household) or to connect it for you.`,
+    );
+  }
+  try {
+    await assertHostAllowed(url, { allowLoopback: input.isAdmin });
+  } catch (err) {
+    if (!(err instanceof HostPolicyError)) throw err;
+    if (err.reason === "loopback") {
+      throw new ApiError("forbidden", err.message);
+    }
+    throw invalidField("baseUrl", err.message);
+  }
 }
 
 /**
@@ -340,7 +408,7 @@ export async function testConnection(
   if (!row) throw notFound("Connection");
   let result: ConnectionTestResult;
   try {
-    result = await adapter.test(resolveConnection(row));
+    result = await adapter.test(resolveConnection(row, ctx.db));
   } catch (err) {
     if (!(err instanceof IntegrationError)) throw err;
     result = { ok: false, error: { code: err.code, message: err.message } };
@@ -365,7 +433,7 @@ export async function runOperation(
   const row = getConnectionRow(ctx, kind, userId);
   if (!row || !row.enabled) throw notFound("Connection");
   try {
-    return await run(resolveConnection(row), query, ctx);
+    return await run(resolveConnection(row, ctx.db), query, ctx);
   } catch (err) {
     if (err instanceof IntegrationError) {
       throw new ApiError("upstream_error", err.message, {

@@ -48,6 +48,7 @@ describe("household", () => {
       dueSoonDays: 10,
       digestTime: "07:30",
       defectDeadlineMonths: 24,
+      integrationHostAllowlist: [],
     });
     expect(
       updateHousehold(ctx, { handoverDate: null }).handoverDate,

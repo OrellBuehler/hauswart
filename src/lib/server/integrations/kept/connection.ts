@@ -14,6 +14,7 @@ export function clientFor(connection: ResolvedConnection): KeptClient {
     baseUrl: connection.baseUrl,
     token: connection.token,
     allowInsecureTls: connection.allowInsecureTls,
+    allowLoopback: connection.allowLoopback,
   });
 }
 

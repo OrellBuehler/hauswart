@@ -9,8 +9,8 @@ tracking, documentation, a device inventory, defects, spare parts, contacts and 
 Integrations (Home Assistant, Paperless-ngx, Kept) are optional adapters, never requirements.
 
 **Status: early development.** The core works (tasks, devices, defects, documentation, spare parts,
-Home Assistant, REST API, MCP server); costs, iCal feeds and guest links are still to come, and
-there is no stable release yet. The interface is in German (default) and English.
+costs, iCal feeds, guest links, Home Assistant, Paperless-ngx, Kept, REST API, MCP server); there
+is no stable release yet. The interface is in German (default) and English.
 
 ## Run with Docker
 
@@ -50,6 +50,25 @@ See [.env.example](.env.example).
 Set `HAUSWART_SETUP_TOKEN` when the instance is reachable before you have created the first
 account: anyone who can open `/setup` first would otherwise become the administrator. The setup
 page then asks for the token; it has no effect once an administrator exists.
+
+## Integrations and network access
+
+Home Assistant is connected once for the household (administrators only); Paperless-ngx and Kept are
+connected by every person with their own account. The server fetches the address a person enters,
+so which hosts a connection may point at is restricted:
+
+- **Allow-list.** Administrators may connect any host. Other members may only save a Paperless or
+  Kept connection whose host is on the household's list, kept under Settings, Household
+  (`integrationHostAllowlist` in `PATCH /api/v1/household`, visible to administrators only). Entries
+  are host names or addresses, optionally with a port (`docs.example.org`, `nas.example.org:8000`),
+  compared exactly and case-insensitively (internationalised names as punycode); an entry without a
+  port allows every port of that host. The list starts empty, so until an administrator adds hosts
+  members cannot connect their own accounts, and saving a connection never adds a host by itself.
+- **Never reachable**, for anybody: link-local addresses (169.254.0.0/16, fe80::/10) and cloud
+  metadata endpoints (100.100.100.200, `metadata.google.internal`). Host names are resolved and every
+  address is checked when a connection is saved and again before every request.
+- **Loopback** (127.0.0.0/8, ::1) is reserved for administrators' connections and the household-wide
+  Home Assistant connection.
 
 ## Development
 

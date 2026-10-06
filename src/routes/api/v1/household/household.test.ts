@@ -58,6 +58,126 @@ describe("household API", () => {
     });
   });
 
+  describe("integration host allow-list", () => {
+    it("starts empty and is saved normalised and without duplicates", async () => {
+      const { call } = await as("admin");
+      expect(
+        (
+          (await call("GET", "/api/v1/household")).body as {
+            settings: { integrationHostAllowlist: string[] };
+          }
+        ).settings.integrationHostAllowlist,
+      ).toEqual([]);
+      const r = await call("PATCH", "/api/v1/household", {
+        json: {
+          settings: {
+            integrationHostAllowlist: [
+              "  Docs.Example.ORG ",
+              "docs.example.org",
+              "BÜCHER.example.org:8443",
+              "[FD00::5]",
+            ],
+          },
+        },
+      });
+      expect(r.res.status).toBe(200);
+      expect(r.body).toMatchObject({
+        settings: {
+          dueSoonDays: 7,
+          integrationHostAllowlist: [
+            "docs.example.org",
+            "xn--bcher-kva.example.org:8443",
+            "[fd00::5]",
+          ],
+        },
+      });
+      // other settings keep it, and it survives a change of another setting
+      const again = await call("PATCH", "/api/v1/household", {
+        json: { settings: { dueSoonDays: 9 } },
+      });
+      expect(again.body).toMatchObject({
+        settings: {
+          dueSoonDays: 9,
+          integrationHostAllowlist: [
+            "docs.example.org",
+            "xn--bcher-kva.example.org:8443",
+            "[fd00::5]",
+          ],
+        },
+      });
+    });
+
+    it("is shown to administrators only", async () => {
+      const admin = await as("admin");
+      const member = await as("member");
+      await admin.call("PATCH", "/api/v1/household", {
+        json: { settings: { integrationHostAllowlist: ["docs.example.org"] } },
+      });
+      const seen = async (c: typeof admin.call) =>
+        (
+          (await c("GET", "/api/v1/household")).body as {
+            settings: Record<string, unknown>;
+          }
+        ).settings;
+      expect((await seen(admin.call)).integrationHostAllowlist).toEqual([
+        "docs.example.org",
+      ]);
+      const forMember = await seen(member.call);
+      expect(forMember).not.toHaveProperty("integrationHostAllowlist");
+      expect(forMember.dueSoonDays).toBe(7);
+    });
+
+    it("a token without the admin scope does not see it either", async () => {
+      const admin = await as("admin");
+      await admin.call("PATCH", "/api/v1/household", {
+        json: { settings: { integrationHostAllowlist: ["docs.example.org"] } },
+      });
+      const token = createTestToken(admin.user, { scopes: ["read"] });
+      const r = await createCaller({ bearer: token.token })(
+        "GET",
+        "/api/v1/household",
+      );
+      expect(
+        (r.body as { settings: Record<string, unknown> }).settings,
+      ).not.toHaveProperty("integrationHostAllowlist");
+    });
+
+    it("members cannot change it and bad entries are refused", async () => {
+      const admin = await as("admin");
+      const member = await as("member");
+      const denied = await member.call("PATCH", "/api/v1/household", {
+        json: { settings: { integrationHostAllowlist: ["docs.example.org"] } },
+      });
+      expect([denied.res.status, errorCode(denied)]).toEqual([
+        403,
+        "forbidden",
+      ]);
+      for (const entry of [
+        "https://docs.example.org",
+        "docs.example.org/x",
+        "*.example.org",
+        "",
+        "docs.example.org:99999",
+      ]) {
+        const bad = await admin.call("PATCH", "/api/v1/household", {
+          json: { settings: { integrationHostAllowlist: [entry] } },
+        });
+        expect(bad.res.status, entry).toBe(400);
+      }
+      const many = await admin.call("PATCH", "/api/v1/household", {
+        json: {
+          settings: {
+            integrationHostAllowlist: Array.from(
+              { length: 51 },
+              (_, i) => `h${i}.example.org`,
+            ),
+          },
+        },
+      });
+      expect(many.res.status).toBe(400);
+    });
+  });
+
   it("re-evaluates tasks when the lead window changes", async () => {
     const { call } = await as("admin");
     const task = (

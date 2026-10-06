@@ -4,6 +4,7 @@ import { m } from "$lib/paraglide/messages";
 
 const MESSAGES: Record<string, () => string> = {
   invalid_url: () => m.integration_error_invalid_url(),
+  blocked_host: () => m.integration_error_blocked_host(),
   unauthorized: () => m.integration_error_unauthorized(),
   forbidden: () => m.integration_error_forbidden(),
   not_found: () => m.integration_error_not_found(),

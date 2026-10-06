@@ -16,6 +16,7 @@ export function clientFor(connection: ResolvedConnection): PaperlessClient {
     baseUrl: connection.baseUrl,
     token: connection.token,
     allowInsecureTls: connection.allowInsecureTls,
+    allowLoopback: connection.allowLoopback,
   });
 }
 

@@ -5,6 +5,7 @@
   import { api } from "$lib/api/browser";
   import { endpoints } from "$lib/api/registry";
   import FormAlert from "$lib/components/app/form-alert.svelte";
+  import HostChipsInput from "$lib/components/app/host-chips-input.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
@@ -26,6 +27,10 @@
   let dueSoonDays = $state(data.household.settings.dueSoonDays);
   /* svelte-ignore state_referenced_locally */
   let digestTime = $state(data.household.settings.digestTime);
+  /* svelte-ignore state_referenced_locally */
+  let hostAllowlist = $state([
+    ...(data.household.settings.integrationHostAllowlist ?? []),
+  ]);
   let pending = $state(false);
   let error = $state<string | undefined>();
 
@@ -33,7 +38,10 @@
     name.trim() !== data.household.name ||
       handoverDate !== (data.household.handoverDate ?? "") ||
       dueSoonDays !== data.household.settings.dueSoonDays ||
-      digestTime !== data.household.settings.digestTime,
+      digestTime !== data.household.settings.digestTime ||
+      (canEdit &&
+        hostAllowlist.join("\n") !==
+          (data.household.settings.integrationHostAllowlist ?? []).join("\n")),
   );
 
   async function submit(event: SubmitEvent) {
@@ -50,13 +58,18 @@
         body: {
           name,
           handoverDate: handoverDate === "" ? null : handoverDate,
-          settings: { dueSoonDays, digestTime },
+          settings: {
+            dueSoonDays,
+            digestTime,
+            integrationHostAllowlist: hostAllowlist,
+          },
         },
       });
       name = saved.name;
       handoverDate = saved.handoverDate ?? "";
       dueSoonDays = saved.settings.dueSoonDays;
       digestTime = saved.settings.digestTime;
+      hostAllowlist = [...(saved.settings.integrationHostAllowlist ?? [])];
       await invalidateAll();
       toast.success(m.household_saved());
     } catch (err) {
@@ -135,6 +148,20 @@
           </p>
         </div>
       </div>
+      {#if canEdit}
+        <div class="flex flex-col gap-2">
+          <Label for="household-host-allowlist">
+            {m.household_host_allowlist()}
+          </Label>
+          <HostChipsInput
+            id="household-host-allowlist"
+            bind:value={hostAllowlist}
+          />
+          <p class="text-muted-foreground text-xs">
+            {m.household_host_allowlist_hint()}
+          </p>
+        </div>
+      {/if}
       <dl
         class="grid grid-cols-[auto_1fr] items-center gap-x-6 gap-y-2 border-t pt-4 text-sm"
       >

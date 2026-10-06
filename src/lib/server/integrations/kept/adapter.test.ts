@@ -1,3 +1,4 @@
+import { setLenientHostPolicy } from "$lib/server/net/host-policy";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { registerIntegration } from "$lib/server/connections/registry";
 import { IntegrationError } from "$lib/server/connections/errors";
@@ -8,6 +9,7 @@ import {
 import { createCaller, errorCode } from "$lib/testing/api";
 import { createTestUser, loginTestUser } from "$lib/testing/auth";
 import { useTestDB } from "$lib/testing/db";
+import { allowIntegrationHosts } from "$lib/testing/integrations";
 import { keptIntegration, validateInput } from "./adapter";
 import { fakeAccount, fakeCategory } from "./fake-server";
 import { useFakeKept } from "./testing";
@@ -241,12 +243,32 @@ describe("Kept adapter settings", () => {
     });
   });
 
+  describe("addresses", () => {
+    it("a member's connection to loopback is not called, an administrator's is", async () => {
+      setLenientHostPolicy(false);
+      const admin = await createTestUser({ role: "admin" });
+      const member = await createTestUser();
+      connect(admin.id);
+      connect(member.id);
+      const url = "/api/v1/integrations/kept/test";
+      const asMember = createCaller({ session: loginTestUser(member).token });
+      const asAdmin = createCaller({ session: loginTestUser(admin).token });
+      expect((await asMember("POST", url)).body).toMatchObject({
+        ok: false,
+        error: { code: "blocked_host" },
+      });
+      expect(fake.requests).toEqual([]);
+      expect((await asAdmin("POST", url)).body).toMatchObject({ ok: true });
+    });
+  });
+
   describe("saving through the API", () => {
     it("validates the settings, keeps them per person and hides the token", async () => {
       const anna = await createTestUser();
       const ben = await createTestUser();
       const callA = createCaller({ session: loginTestUser(anna).token });
       const callB = createCaller({ session: loginTestUser(ben).token });
+      allowIntegrationHosts(test.db, "127.0.0.1");
       const bad = await callA("PUT", "/api/v1/integrations/kept", {
         json: {
           baseUrl: fake.baseUrl,

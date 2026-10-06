@@ -1,10 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   assertToken,
   boundedStream,
   checkStatus,
   classifyFetchError,
   errorCodeOf,
+  fetchOnce,
   normalizeBaseUrl,
   readCapped,
   readJson,
@@ -14,6 +15,10 @@ import {
   type HttpErrorCode,
 } from "./http";
 import { z } from "zod";
+import {
+  setHostResolver,
+  setLenientHostPolicy,
+} from "$lib/server/net/host-policy";
 
 class TestError extends Error {
   constructor(
@@ -207,5 +212,76 @@ describe("small helpers", () => {
     expect(errorCodeOf(new TestError("x"))).toBe("x");
     expect(errorCodeOf(new TypeError("y"))).toBe("TypeError");
     expect(errorCodeOf("z")).toBe("unknown");
+  });
+});
+
+describe("fetchOnce host policy", () => {
+  const init = (over = {}) => ({
+    method: "GET",
+    headers: new Headers(),
+    timeoutMs: 2000,
+    ...over,
+  });
+  let server: ReturnType<typeof Bun.serve>;
+  let hits = 0;
+  beforeEach(() => {
+    hits = 0;
+    server = Bun.serve({
+      port: 0,
+      hostname: "127.0.0.1",
+      fetch: () => {
+        hits++;
+        return new Response("ok");
+      },
+    });
+    setLenientHostPolicy(false);
+  });
+  afterEach(() => {
+    void server.stop(true);
+    setHostResolver(null);
+    setLenientHostPolicy(true);
+    vi.restoreAllMocks();
+  });
+
+  it("does not call a loopback address unless the connection may", async () => {
+    const url = `http://127.0.0.1:${server.port}/`;
+    expect(await codeOf(fetchOnce(url, init(), fail))).toBe("blocked_host");
+    expect(
+      await codeOf(fetchOnce(url, init({ allowLoopback: false }), fail)),
+    ).toBe("blocked_host");
+    expect(hits).toBe(0);
+    const res = await fetchOnce(url, init({ allowLoopback: true }), fail);
+    expect(await res.text()).toBe("ok");
+    expect(hits).toBe(1);
+  });
+
+  it("never calls link-local or metadata addresses, loopback allowed or not", async () => {
+    const spy = vi.spyOn(globalThis, "fetch");
+    for (const url of [
+      "http://169.254.169.254/latest/meta-data/",
+      "http://[fe80::1]/",
+      "http://100.100.100.200/",
+      "http://metadata.google.internal/",
+    ]) {
+      expect(
+        await codeOf(fetchOnce(url, init({ allowLoopback: true }), fail)),
+      ).toBe("blocked_host");
+    }
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("resolves the name before every request and refuses what it now points at", async () => {
+    let answer = "93.184.216.34";
+    setHostResolver(async () => [answer]);
+    const spy = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async () => new Response("ok"));
+    const url = "https://docs.example.org/api";
+    expect((await fetchOnce(url, init(), fail)).status).toBe(200);
+    answer = "169.254.169.254";
+    expect(
+      await codeOf(fetchOnce(url, init({ allowLoopback: true }), fail)),
+    ).toBe("blocked_host");
+    expect(spy).toHaveBeenCalledTimes(1);
   });
 });

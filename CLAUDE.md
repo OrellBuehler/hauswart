@@ -101,6 +101,8 @@ src/lib/server/notifications/    in-app notifications, generateNotifications, ch
 src/lib/server/signals/          readings the adapters store (`signals`, `signal_samples`, `external_dates`), watch list,
                                  ingest (auto-complete, hint reactions, re-evaluation), worker for the time-driven parts
 src/lib/server/connections/      generic connections to outside systems (encrypted token, health), adapter registry
+src/lib/server/net/host-policy.ts  which addresses the server may connect to (link-local, metadata, loopback), DNS check
+src/lib/hosts.ts                 host allow-list entries: normalisation + exact matching (client-safe)
 src/lib/server/documents/        documents of an outside document system: provider seam (`provider.ts`), per-person cache, links,
                                  warranty from documents, suggestions, uploads, search (see "Documents and the document provider")
 src/lib/server/events.ts         typed in-process domain events (completionRecorded/Revoked), emitted inside the writer's transaction
@@ -232,6 +234,24 @@ calendars,devices}` (any member; 404 not connected, 502 `upstream_error` with `d
   adapter registers `registerIntegration({kind, validate?, test, describe, operations})`; it throws
   `IntegrationError(code, message)`. Health (`status`, `lastError` code, `consecutiveFailures`) is
   recorded by the adapter; `dueForAttempt`/`backoffMs` give the 1, 2, 4 ... 15 minute backoff.
+- **Where a connection may point** (`connections.ts` `vetConnectionTarget`, `net/host-policy.ts`, `integrations/http.ts`
+  `guardHost`): the server fetches what a person enters, and Paperless and Kept are per person, so this is an SSRF
+  surface. The household setting `integrationHostAllowlist` (hosts as `host` or `host:port`, normalised by
+  `normalizeHostEntry`: lower case, IDN as punycode; exact match, no wildcards; an entry without a port allows every
+  port; max 50; `PATCH /household`, shown in `GET /household` only with the `admin` scope) applies when a **non-admin
+  saves a user-level connection**: the host must be listed, else 403 `forbidden` with a message that names the host.
+  Administrators may save any host and saving never adds to the list (keep it explicit); an empty list means members
+  cannot connect. For everybody: link-local (169.254.0.0/16, fe80::/10), the metadata endpoints (100.100.100.200,
+  fd00:ec2::254, `metadata.google.internal`) and IPv4-mapped / NAT64 spellings of them are refused after name resolution
+  (every answered address is checked) at save time (400 field error on `baseUrl`) and before **every** request in
+  `fetchOnce` and the Home Assistant WebSocket (`blocked_host`, shown as the connection's `lastError`). Loopback
+  (127.0.0.0/8, ::1, 0.0.0.0) only for administrators and household-wide connections: `ResolvedConnection.allowLoopback`
+  is computed from the owner's current role on every `resolveConnection`, so a demotion applies at once (403 at save,
+  `blocked_host` at request time). A name that does not resolve is left to the request. DNS rebinding between the check
+  and `fetch` is not closed (no pinning of the connect address); that is why the check repeats per request and a
+  connection's responses only ever go to its owner. Tests run with `setLenientHostPolicy(true)` (vitest setup: loopback
+  allowed, names not resolved, metadata still blocked); tests of the policy switch it off and stub `setHostResolver`.
+  Members saving in tests need `allowIntegrationHosts(db, host)` (`$lib/testing/integrations`).
 - **Home Assistant adapter** (`registerHomeAssistant()` in `init()`): scheduler (overlap guard, unref,
   injectable intervals) reads the watched entities every 60 s and the calendars (next 60 days, per
   subscription key, household zone) every 6 h and at once for a new calendar; saving a connection reads

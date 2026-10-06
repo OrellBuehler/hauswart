@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   normalizeBaseUrl as normalizeUrl,
   assertToken,
+  guardHost,
   parseWith,
 } from "../http";
 import { HomeAssistantError, haFail } from "./errors";
@@ -37,6 +38,7 @@ export interface WsOptions {
   /** For the whole exchange: connect, authenticate, command, result. */
   timeoutMs?: number;
   allowInsecureTls?: boolean;
+  allowLoopback?: boolean;
   /** Largest single message accepted. */
   maxMessageBytes?: number;
 }
@@ -75,6 +77,7 @@ export async function haWsCommand<T extends WsRegistryCommand["type"]>(
   }
   const base = normalizeUrl(baseUrl, haFail);
   assertToken(token, haFail);
+  await guardHost(base, options.allowLoopback, haFail);
   const url = `${base.replace(/^http/, "ws")}/api/websocket`;
   const maxBytes = options.maxMessageBytes ?? WS_MAX_MESSAGE_BYTES;
   const COMMAND_ID = 1;

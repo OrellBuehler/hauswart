@@ -59,6 +59,8 @@ export interface ClientOptions {
   baseUrl: string;
   token: string;
   allowInsecureTls?: boolean;
+  /** Administrators' and household-wide connections only; see `net/host-policy.ts`. */
+  allowLoopback?: boolean;
   /** Last negotiated API version; defaults to 9. */
   apiVersion?: number | null;
   timeoutMs?: number;
@@ -265,6 +267,7 @@ export class PaperlessClient {
     { serverVersion: null, maxApiVersion: null };
   private readonly token: string;
   private readonly allowInsecureTls: boolean;
+  private readonly allowLoopback: boolean;
   private readonly timeoutMs: number;
   private readonly downloadTimeoutMs: number;
   private readonly uploadTimeoutMs: number;
@@ -277,6 +280,7 @@ export class PaperlessClient {
     assertToken(options.token, paperlessFail);
     this.token = options.token;
     this.allowInsecureTls = options.allowInsecureTls ?? false;
+    this.allowLoopback = options.allowLoopback ?? false;
     this.apiVersion = options.apiVersion ?? FIRST_VERSION;
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     this.downloadTimeoutMs = options.downloadTimeoutMs ?? DOWNLOAD_TIMEOUT_MS;
@@ -321,6 +325,7 @@ export class PaperlessClient {
         body: init.body,
         timeoutMs: init.timeoutMs,
         allowInsecureTls: this.allowInsecureTls,
+        allowLoopback: this.allowLoopback,
       },
       paperlessFail,
     );

@@ -12,6 +12,7 @@ import {
   loginTestUser,
 } from "$lib/testing/auth";
 import { useTestDB } from "$lib/testing/db";
+import { allowIntegrationHosts } from "$lib/testing/integrations";
 
 interface View {
   kind: string;
@@ -30,7 +31,7 @@ interface View {
 const SECRET = "very-secret-token-value";
 
 describe("integrations API", () => {
-  useTestDB();
+  const test = useTestDB();
   const stops: (() => void)[] = [];
   afterEach(() => stops.splice(0).forEach((s) => s()));
 
@@ -279,6 +280,7 @@ describe("integrations API", () => {
   describe("per-person connections", () => {
     it("every member manages their own and never sees another's", async () => {
       const { asMember, asOther } = await people();
+      allowIntegrationHosts(test.db, "kept.example.org");
       const saved = await asMember("PUT", "/api/v1/integrations/kept", {
         json: body({ baseUrl: "https://kept.example.org" }),
       });

@@ -280,13 +280,17 @@ export function wireNotification(
 
 export function wireHousehold(
   household: HouseholdRecord,
+  options: { showHostAllowlist: boolean },
 ): z.input<typeof householdSchema> {
+  const { integrationHostAllowlist, ...settings } = household.settings;
   return {
     name: household.name,
     timezone: household.timezone,
     currency: household.currency,
     handoverDate: household.handoverDate,
-    settings: household.settings,
+    settings: options.showHostAllowlist
+      ? { ...settings, integrationHostAllowlist }
+      : settings,
     updatedAt: toIso(household.updatedAt),
   };
 }

@@ -56,6 +56,8 @@ export interface KeptClientOptions {
   baseUrl: string;
   token: string;
   allowInsecureTls?: boolean;
+  /** Administrators' and household-wide connections only; see `net/host-policy.ts`. */
+  allowLoopback?: boolean;
   timeoutMs?: number;
   maxJsonBytes?: number;
   /** Retry behaviour of the iterators and the "all pages" lists. */
@@ -243,6 +245,7 @@ export class KeptClient {
   readonly baseUrl: string;
   private readonly token: string;
   private readonly allowInsecureTls: boolean;
+  private readonly allowLoopback: boolean;
   private readonly timeoutMs: number;
   private readonly maxJsonBytes: number;
   private readonly retry: RetryOptions;
@@ -252,6 +255,7 @@ export class KeptClient {
     assertToken(options.token, keptFail);
     this.token = options.token;
     this.allowInsecureTls = options.allowInsecureTls ?? false;
+    this.allowLoopback = options.allowLoopback ?? false;
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     this.maxJsonBytes = options.maxJsonBytes ?? MAX_JSON_BYTES;
     this.retry = options.retry ?? {};
@@ -285,6 +289,7 @@ export class KeptClient {
         body,
         timeoutMs: this.timeoutMs,
         allowInsecureTls: this.allowInsecureTls,
+        allowLoopback: this.allowLoopback,
       },
       fail,
     );
