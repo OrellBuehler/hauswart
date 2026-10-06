@@ -9135,7 +9135,7 @@
     "/api/v1/contacts/{id}": {
       "get": {
         "operationId": "contactsGet",
-        "summary": "Get a contact",
+        "summary": "Get a contact with the assets it is linked to",
         "tags": [
           "contacts"
         ],
@@ -9170,7 +9170,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Contact"
+                  "$ref": "#/components/schemas/ContactDetail"
                 }
               }
             }
@@ -19433,6 +19433,152 @@
           "externalRef",
           "createdAt",
           "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "ContactDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "installer",
+              "property_mgmt",
+              "manufacturer_support",
+              "emergency",
+              "utility",
+              "insurance",
+              "neighbor",
+              "seller",
+              "other"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "company": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "emergency": {
+            "type": "boolean"
+          },
+          "guestVisible": {
+            "type": "boolean"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "externalSource": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "externalRef": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "assets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "linkId": {
+                  "type": "string"
+                },
+                "assetId": {
+                  "type": "string"
+                },
+                "assetName": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "support",
+                    "installer",
+                    "seller",
+                    "service",
+                    "other"
+                  ]
+                }
+              },
+              "required": [
+                "linkId",
+                "assetId",
+                "assetName",
+                "role"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "company",
+          "phone",
+          "email",
+          "url",
+          "address",
+          "notes",
+          "emergency",
+          "guestVisible",
+          "sortOrder",
+          "externalSource",
+          "externalRef",
+          "createdAt",
+          "updatedAt",
+          "assets"
         ],
         "additionalProperties": false
       },

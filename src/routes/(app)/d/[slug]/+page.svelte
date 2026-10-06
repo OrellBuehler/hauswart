@@ -14,6 +14,7 @@
   import AssetKindIcon from "$lib/components/assets/asset-kind-icon.svelte";
   import DueBadge from "$lib/components/assets/due-badge.svelte";
   import EmptyState from "$lib/components/app/empty-state.svelte";
+  import HintCallout from "$lib/components/hints/hint-callout.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import { formatDay } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
@@ -26,6 +27,8 @@
   const found = $derived(data.found);
   const open = $derived(found?.tasks.filter(isActionable) ?? []);
   const others = $derived(found?.tasks.filter((t) => !isActionable(t)) ?? []);
+  const pinned = $derived(found?.hints.filter((h) => h.pinned) ?? []);
+  const unpinned = $derived(found?.hints.filter((h) => !h.pinned) ?? []);
 
   async function done(task: Task) {
     if (busy) return;
@@ -73,6 +76,19 @@
         {/if}
       </div>
     </header>
+
+    {#if pinned.length > 0}
+      <section class="flex flex-col gap-3" aria-labelledby="qr-hints">
+        <h2 id="qr-hints" class="text-sm font-semibold">
+          {m.qr_hints_title()}
+        </h2>
+        <ul class="flex flex-col gap-3">
+          {#each pinned as hint (hint.id)}
+            <HintCallout {hint} prominent />
+          {/each}
+        </ul>
+      </section>
+    {/if}
 
     <section class="flex flex-col gap-3" aria-labelledby="qr-open">
       <h2 id="qr-open" class="text-sm font-semibold">{m.qr_open_title()}</h2>
@@ -152,6 +168,19 @@
                 {m.qr_done()}
               </Button>
             </li>
+          {/each}
+        </ul>
+      </section>
+    {/if}
+
+    {#if unpinned.length > 0}
+      <section class="flex flex-col gap-3" aria-labelledby="qr-more-hints">
+        <h2 id="qr-more-hints" class="text-sm font-semibold">
+          {pinned.length > 0 ? m.qr_more_hints_title() : m.qr_hints_title()}
+        </h2>
+        <ul class="flex flex-col gap-2">
+          {#each unpinned as hint (hint.id)}
+            <HintCallout {hint} />
           {/each}
         </ul>
       </section>

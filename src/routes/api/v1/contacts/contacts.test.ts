@@ -36,7 +36,10 @@ describe("contacts API", () => {
       guestVisible: false,
       externalSource: null,
     });
-    expect((await call("GET", `/api/v1/contacts/${c.id}`)).body).toEqual(c);
+    expect((await call("GET", `/api/v1/contacts/${c.id}`)).body).toEqual({
+      ...c,
+      assets: [],
+    });
     const patched = await call("PATCH", `/api/v1/contacts/${c.id}`, {
       json: { phone: null, notes: "Notfall" },
     });

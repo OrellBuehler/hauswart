@@ -24,6 +24,7 @@
   import CompletionItem from "$lib/components/tasks/completion-item.svelte";
   import DueBadge from "$lib/components/tasks/due-badge.svelte";
   import ProgressBar from "$lib/components/tasks/progress-bar.svelte";
+  import TaskPartsCard from "$lib/components/tasks/task-parts-card.svelte";
   import TaskActionDialog from "$lib/components/tasks/task-action-dialog.svelte";
   import TriggerSummary from "$lib/components/tasks/trigger-summary.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
@@ -382,6 +383,8 @@
           {/if}
         </Card.Content>
       </Card.Root>
+
+      <TaskPartsCard taskId={task.id} parts={data.parts} />
 
       <Card.Root>
         <Card.Header>

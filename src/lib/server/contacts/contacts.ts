@@ -75,6 +75,37 @@ export function getContact(ctx: Db, id: string): ContactRow {
   return contact;
 }
 
+export interface ContactDetailRecord extends ContactRow {
+  assets: {
+    linkId: string;
+    assetId: string;
+    assetName: string;
+    role: ContactRowRole;
+  }[];
+}
+
+/** The contact with its asset links, by asset name then role. */
+export function getContactDetail(ctx: Db, id: string): ContactDetailRecord {
+  const contact = getContact(ctx, id);
+  const links = ctx.db
+    .select({
+      linkId: assetContacts.id,
+      assetId: assetContacts.assetId,
+      assetName: assets.name,
+      role: assetContacts.role,
+    })
+    .from(assetContacts)
+    .innerJoin(assets, eq(assets.id, assetContacts.assetId))
+    .where(eq(assetContacts.contactId, id))
+    .orderBy(
+      asc(sql`lower(${assets.name})`),
+      asc(assetContacts.role),
+      asc(assetContacts.id),
+    )
+    .all();
+  return { ...contact, assets: links };
+}
+
 const EXTERNAL_TAKEN = "A contact with this external reference already exists";
 
 export function createContact(

@@ -62,6 +62,7 @@ describe("openapi document", () => {
       "Comment",
       "Completion",
       "Contact",
+      "ContactDetail",
       "CreatedApiToken",
       "Dashboard",
       "DashboardDefect",

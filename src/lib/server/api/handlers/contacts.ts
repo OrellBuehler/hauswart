@@ -2,7 +2,7 @@ import type { endpoints } from "$lib/api/registry";
 import {
   createContact,
   deleteContact,
-  getContact,
+  getContactDetail,
   linkAssetContact,
   listAssetContacts,
   listContacts,
@@ -26,8 +26,10 @@ export const create: Handler<typeof endpoints.contactsCreate> = ({
   body,
 }) => wireContact(createContact(ctx, body));
 
-export const get: Handler<typeof endpoints.contactsGet> = ({ ctx, params }) =>
-  wireContact(getContact(ctx, params.id));
+export const get: Handler<typeof endpoints.contactsGet> = ({ ctx, params }) => {
+  const detail = getContactDetail(ctx, params.id);
+  return { ...wireContact(detail), assets: detail.assets };
+};
 
 export const update: Handler<typeof endpoints.contactsUpdate> = ({
   ctx,
