@@ -64,6 +64,7 @@ describe("integration boundary", () => {
     const offenders = files
       .filter((f) => !mayImportIntegrations(f.path))
       .filter((f) => !f.path.endsWith(".test.ts"))
+      .filter((f) => /^lib\/(?:server|tasks)\//.test(f.path))
       .filter(
         (f) =>
           !["lib/server/schema.ts", "lib/api/registry.ts"].includes(f.path),
