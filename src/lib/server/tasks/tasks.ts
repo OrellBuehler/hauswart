@@ -19,6 +19,7 @@ import {
   notFound,
   type ServiceContext,
 } from "$lib/server/service";
+import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
 import { clockAt, evaluateTaskById } from "./evaluator";
 import { toStateRecord, type StateRow, type TaskStateRecord } from "./state";
 import type { DueResult } from "$lib/tasks/engine";
@@ -332,14 +333,18 @@ export async function updateTask(
   return getTask(ctx, id);
 }
 
-/** Removes the task with its state, completions, preparations and notifications. Archive to keep the history. */
-export function deleteTask(ctx: Pick<ServiceContext, "db">, id: string): void {
+/** Removes the task with its state, completions, preparations, notifications and attachments. Archive to keep the history. */
+export function deleteTask(
+  ctx: Pick<ServiceContext, "db" | "now">,
+  id: string,
+): void {
   const result = ctx.db
     .delete(tasks)
     .where(eq(tasks.id, id))
     .returning({ id: tasks.id })
     .all();
   if (result.length === 0) throw notFound("Task");
+  removeOwnedAttachments(ctx, "task", id);
 }
 
 export interface PreviewOptions {

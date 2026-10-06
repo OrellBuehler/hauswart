@@ -25,20 +25,20 @@ visit opens the setup page, which creates the administrator account.
 
 ## Configuration
 
-| Variable                 | Default                 | Purpose                                                             |
-| ------------------------ | ----------------------- | ------------------------------------------------------------------- |
-| `HAUSWART_SECRET_KEY`    | none (required in prod) | 32 random bytes, base64. Encrypts stored secrets.                   |
-| `DATABASE_PATH`          | `./data/hauswart.db`    | SQLite database file.                                               |
-| `HAUSWART_FILES_DIR`     | `./data/files`          | Uploaded documents and photos.                                      |
-| `HAUSWART_BACKUP_DIR`    | `./data/backups`        | Database backup target.                                             |
-| `HAUSWART_BACKUP_KEEP`   | `14`                    | Number of backups to keep.                                          |
-| `HAUSWART_TZ`            | `Europe/Zurich`         | Household time zone for calendar dates.                             |
-| `HAUSWART_COOKIE_SECURE` | `true`                  | Set to `false` only when serving over plain HTTP.                   |
-| `HAUSWART_SETUP_TOKEN`   | none                    | If set, first-run setup asks for this value (guards a new install). |
-| `BODY_SIZE_LIMIT`        | `512K` (image: `30M`)   | Largest request body the server accepts; uploads are up to 25 MiB.  |
-| `ORIGIN`                 | none                    | Public URL; required behind a proxy and on plain HTTP (CSRF check). |
-| `ADDRESS_HEADER`         | none                    | Header carrying the client address (for example `X-Forwarded-For`). |
-| `XFF_DEPTH`              | none                    | Number of trusted proxies for `ADDRESS_HEADER`.                     |
+| Variable                 | Default                 | Purpose                                                                                       |
+| ------------------------ | ----------------------- | --------------------------------------------------------------------------------------------- |
+| `HAUSWART_SECRET_KEY`    | none (required in prod) | 32 random bytes, base64. Encrypts stored secrets.                                             |
+| `DATABASE_PATH`          | `./data/hauswart.db`    | SQLite database file.                                                                         |
+| `HAUSWART_FILES_DIR`     | `./data/files`          | Uploaded documents and photos.                                                                |
+| `HAUSWART_BACKUP_DIR`    | `./data/backups`        | Daily database backups plus a mirror of the uploaded files (`files/`). Set empty to turn off. |
+| `HAUSWART_BACKUP_KEEP`   | `14`                    | Number of backups to keep.                                                                    |
+| `HAUSWART_TZ`            | `Europe/Zurich`         | Household time zone for calendar dates.                                                       |
+| `HAUSWART_COOKIE_SECURE` | `true`                  | Set to `false` only when serving over plain HTTP.                                             |
+| `HAUSWART_SETUP_TOKEN`   | none                    | If set, first-run setup asks for this value (guards a new install).                           |
+| `BODY_SIZE_LIMIT`        | `512K` (image: `30M`)   | Largest request body the server accepts; uploads are up to 25 MiB.                            |
+| `ORIGIN`                 | none                    | Public URL; required behind a proxy and on plain HTTP (CSRF check).                           |
+| `ADDRESS_HEADER`         | none                    | Header carrying the client address (for example `X-Forwarded-For`).                           |
+| `XFF_DEPTH`              | none                    | Number of trusted proxies for `ADDRESS_HEADER`.                                               |
 
 See [.env.example](.env.example).
 

@@ -484,33 +484,39 @@ describe("defects API", () => {
         `attachment; filename="defects-${today()}.pdf"`,
       );
       expect(r.res.headers.get("cache-control")).toBe("no-store");
-      expect(r.body).toBeNull();
-      const info = pdfInfo(r.bytes!);
+      const bytes = r.body as Uint8Array;
+      const info = pdfInfo(bytes);
       expect(info.header).toBe("%PDF-");
       expect(info.trailer).toBe(true);
       expect(info.pageCount).toBeGreaterThanOrEqual(1);
-      expect(r.bytes!.length).toBeGreaterThan(5000);
+      expect(bytes.length).toBeGreaterThan(5000);
     });
 
     it("is also a valid document without defects, filtered, in either language", async () => {
       const de = await setup("de");
       const empty = await de.call("GET", "/api/v1/defects/export.pdf");
-      expect(pdfInfo(empty.bytes!).pageCount).toBe(1);
+      expect(pdfInfo(empty.body as Uint8Array).pageCount).toBe(1);
       await de.defect();
       const all = await de.call("GET", "/api/v1/defects/export.pdf");
       const none = await de.call(
         "GET",
         "/api/v1/defects/export.pdf?status=fixed",
       );
-      expect(all.bytes!.length).toBeGreaterThan(none.bytes!.length);
+      expect((all.body as Uint8Array).length).toBeGreaterThan(
+        (none.body as Uint8Array).length,
+      );
       const en = createCaller({
         session: loginTestUser(await createTestUser({ locale: "en" })).token,
       });
       const english = await en("GET", "/api/v1/defects/export.pdf");
-      expect(Buffer.from(english.bytes!).equals(Buffer.from(all.bytes!))).toBe(
-        false,
-      );
-      expect(pdfInfo(english.bytes!).pageCount).toBeGreaterThanOrEqual(1);
+      expect(
+        Buffer.from(english.body as Uint8Array).equals(
+          Buffer.from(all.body as Uint8Array),
+        ),
+      ).toBe(false);
+      expect(
+        pdfInfo(english.body as Uint8Array).pageCount,
+      ).toBeGreaterThanOrEqual(1);
     });
 
     it("validates the filters and works for tokens with the read scope", async () => {

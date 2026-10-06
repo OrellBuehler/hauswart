@@ -26,7 +26,7 @@ export type CallInput<E extends AnyEndpoint> = ParamsInput<E> &
 type CallArgs<E extends AnyEndpoint> =
   object extends CallInput<E> ? [input?: CallInput<E>] : [input: CallInput<E>];
 
-/** Parsed response body of an endpoint (`null` for 204 endpoints; the `Response` itself for PDF endpoints). */
+/** Parsed response body of an endpoint (`null` for 204 endpoints; the `Response` itself for binary endpoints). */
 export type CallResult<E extends AnyEndpoint> = Out<E["response"]>;
 
 /** What the client needs from `fetch`: SvelteKit's `event.fetch`, the global `fetch` or a test double. */
@@ -56,6 +56,7 @@ const STATUS_CODES: Record<number, ErrorCode> = {
   429: "rate_limited",
 };
 
+/** The URL of an endpoint with its path parameters and query filled in, e.g. for `<img src>`. */
 export function endpointUrl(
   endpoint: AnyEndpoint,
   input: {
@@ -89,6 +90,18 @@ function buildUrl(
   }
   const qs = search.toString();
   return `${baseUrl.replace(/\/+$/, "")}${path}${qs ? `?${qs}` : ""}`;
+}
+
+/** A multipart body is passed as a plain object; files and blobs are appended as they are, the rest as text. */
+function toFormData(body: unknown): FormData {
+  if (body instanceof FormData) return body;
+  const form = new FormData();
+  for (const [key, value] of Object.entries(body as Record<string, unknown>)) {
+    if (value === undefined || value === null) continue;
+    if (value instanceof Blob) form.append(key, value);
+    else form.append(key, String(value));
+  }
+  return form;
 }
 
 async function readJson(res: Response): Promise<unknown> {
@@ -146,17 +159,19 @@ export function createApiClient(
       const init: RequestInit = { method: endpoint.method, headers };
       if (endpoint.body && input.body !== undefined) {
         if (endpoint.bodyType === "multipart") {
-          init.body = input.body as FormData;
+          init.body = toFormData(input.body);
         } else {
           headers["content-type"] = "application/json";
           init.body = JSON.stringify(input.body);
         }
       }
 
-      if (endpoint.responseType === "pdf") headers.accept = "application/pdf";
+      if (endpoint.responseType === "binary") {
+        headers.accept = endpoint.contentTypes.join(", ");
+      }
 
       const res = await fetchFn(buildUrl(baseUrl, endpoint, input), init);
-      if (endpoint.responseType === "pdf") {
+      if (endpoint.responseType === "binary") {
         if (!res.ok) throw errorFrom(res, await readJson(res));
         return res as CallResult<E>;
       }

@@ -20,6 +20,9 @@ import {
   isBearerPath,
   isPublicPath,
 } from "$lib/server/auth/routing";
+import { startFileSweeper } from "$lib/server/attachments/sweeper";
+import { registerBackups } from "$lib/server/backup";
+import { startAttachmentRerender } from "$lib/server/docs/pages";
 import { registerEvaluator } from "$lib/server/tasks/scheduler";
 import { countUsers } from "$lib/server/users/users";
 
@@ -31,6 +34,9 @@ export async function init() {
   registerDomainEventHandlers();
   registerEvaluator();
   startCredentialPurge();
+  startAttachmentRerender();
+  startFileSweeper();
+  registerBackups();
 }
 
 const BEARER = /^Bearer\s+(\S+)\s*$/i;

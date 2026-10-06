@@ -112,6 +112,23 @@ describe("registry", () => {
         "PATCH /api/v1/household both",
         "GET /api/v1/users/directory both",
         "POST /api/v1/users/{id}/revoke-tokens session",
+        "GET /api/v1/pages both",
+        "POST /api/v1/pages both",
+        "POST /api/v1/pages/preview both",
+        "GET /api/v1/pages/{slug} both",
+        "PATCH /api/v1/pages/{slug} both",
+        "DELETE /api/v1/pages/{slug} both",
+        "GET /api/v1/pages/{slug}/revisions both",
+        "GET /api/v1/pages/{slug}/revisions/{rev} both",
+        "POST /api/v1/pages/{slug}/revisions/{rev}/restore both",
+        "GET /api/v1/search both",
+        "POST /api/v1/attachments both",
+        "GET /api/v1/attachments both",
+        "GET /api/v1/attachments/{id} both",
+        "PATCH /api/v1/attachments/{id} both",
+        "DELETE /api/v1/attachments/{id} both",
+        "GET /api/v1/attachments/{id}/content both",
+        "GET /api/v1/attachments/{id}/thumb both",
         "GET /api/v1/contacts both",
         "POST /api/v1/contacts both",
         "GET /api/v1/contacts/{id} both",
@@ -207,8 +224,29 @@ describe("defineEndpoint", () => {
     ).toThrow(/cannot have a body/);
   });
 
+  it("binary endpoints must be GET and list their content types", () => {
+    const binary = {
+      ...base,
+      path: "/api/v1/things",
+      responseType: "binary",
+    } as const;
+    expect(() => defineEndpoint(binary)).toThrow(/must list contentTypes/);
+    expect(() =>
+      defineEndpoint({
+        ...binary,
+        method: "POST",
+        contentTypes: ["image/png"],
+      }),
+    ).toThrow(/must be GET/);
+    const e = defineEndpoint({ ...binary, contentTypes: ["image/png"] });
+    expect(e.responseType).toBe("binary");
+    expect(e.contentTypes).toEqual(["image/png"]);
+  });
+
   it("fills in defaults", () => {
     const e = defineEndpoint({ ...base, path: "/api/v1/things" });
+    expect(e.responseType).toBe("json");
+    expect(e.contentTypes).toEqual([]);
     expect(e.status).toBe(200);
     expect(e.bodyType).toBe("json");
     expect(e.errors).toEqual([]);

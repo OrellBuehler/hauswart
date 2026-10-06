@@ -139,6 +139,34 @@ export const NOTIFICATION_TITLE_KEYS = [
 ] as const;
 export type NotificationTitleKey = (typeof NOTIFICATION_TITLE_KEYS)[number];
 
+export const DOC_SECTIONS = [
+  "general",
+  "device",
+  "room",
+  "emergency",
+  "rules",
+  "howto",
+] as const;
+export type DocSection = (typeof DOC_SECTIONS)[number];
+
+/**
+ * What an attachment can hang on. `asset`, `room`, `page` and `task` exist in the core; the other
+ * owners are registered by their domain with `registerAttachmentOwner` (a type nobody registered
+ * is refused at upload).
+ */
+export const ATTACHMENT_OWNER_TYPES = [
+  "asset",
+  "room",
+  "page",
+  "task",
+  "defect",
+  "service_log",
+  "part",
+  "asset_hint",
+  "contact",
+] as const;
+export type AttachmentOwnerType = (typeof ATTACHMENT_OWNER_TYPES)[number];
+
 export const CONTACT_KINDS = [
   "installer",
   "property_mgmt",

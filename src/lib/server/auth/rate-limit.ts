@@ -194,9 +194,17 @@ export const publicRequestLimiter = new RequestRateLimiter(
   60_000,
 );
 
+/** Markdown previews per user (the editor previews while typing, debounced). */
+export const PREVIEWS_PER_MINUTE = 60;
+export const previewRequestLimiter = new RequestRateLimiter(
+  PREVIEWS_PER_MINUTE,
+  60_000,
+);
+
 /** Test hook: forget all counters. */
 export function resetRateLimiters(): void {
   loginRateLimiter.reset();
   tokenRequestLimiter.reset();
   publicRequestLimiter.reset();
+  previewRequestLimiter.reset();
 }

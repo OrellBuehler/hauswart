@@ -44,9 +44,18 @@ export interface HandlerArgs<E extends AnyEndpoint> {
 
 type ResponseInput<E extends AnyEndpoint> = z.input<E["response"]>;
 
+/**
+ * JSON endpoints return the response body (or `reply(status, body)`); binary endpoints return a
+ * finished `Response` (headers, status and body are theirs, `bind` only passes it through).
+ */
+export type HandlerResult<E extends AnyEndpoint> =
+  E["responseType"] extends "binary"
+    ? Response
+    : ResponseInput<E> | Reply<ResponseInput<E>>;
+
 export type Handler<E extends AnyEndpoint> = (
   args: HandlerArgs<E>,
-) => MaybePromise<ResponseInput<E> | Reply<ResponseInput<E>>>;
+) => MaybePromise<HandlerResult<E>>;
 
 export type BoundHandler<E extends AnyEndpoint> = ((
   event: RequestEvent,
@@ -250,23 +259,33 @@ function flatten(error: z.ZodError) {
   return { formErrors, fieldErrors };
 }
 
+/**
+ * A binary endpoint's handler returns a finished `Response`; `bind` passes it through. Outside
+ * production the status and content type are checked against the registry. A handler that sets
+ * no `Cache-Control` gets `no-store`.
+ */
 function respondBinary(endpoint: AnyEndpoint, result: unknown): Response {
   if (!(result instanceof Response))
     throw new ResponseContractError(endpoint.id);
-  if (
-    validatesResponses() &&
-    (!result.ok ||
-      !/^application\/pdf\b/i.test(result.headers.get("content-type") ?? ""))
-  ) {
-    throw new ResponseContractError(endpoint.id);
+  if (validatesResponses()) {
+    const type = (result.headers.get("content-type") ?? "")
+      .split(";")[0]
+      .trim()
+      .toLowerCase();
+    const notModified = result.status === 304;
+    if (!notModified && (!result.ok || !endpoint.contentTypes.includes(type))) {
+      throw new ResponseContractError(endpoint.id);
+    }
   }
+  if (result.headers.has("cache-control")) return result;
   const headers = new Headers(result.headers);
   headers.set("cache-control", "no-store");
   return new Response(result.body, { status: result.status, headers });
 }
 
 function respond(endpoint: AnyEndpoint, result: unknown): Response {
-  if (endpoint.responseType !== "json") return respondBinary(endpoint, result);
+  if (endpoint.responseType === "binary")
+    return respondBinary(endpoint, result);
   const status = result instanceof Reply ? result.status : endpoint.status;
   const body = result instanceof Reply ? result.body : result;
   if (validatesResponses()) {

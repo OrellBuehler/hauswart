@@ -11,6 +11,7 @@ import {
   ASSET_CONTACT_ROLES,
   ASSET_KINDS,
   ASSIGN_MODES,
+  ATTACHMENT_OWNER_TYPES,
   COMMENT_ENTITY_TYPES,
   COMPLETION_KINDS,
   COMPLETION_SOURCES,
@@ -19,6 +20,7 @@ import {
   DEFECT_EVENT_TYPES,
   DEFECT_SEVERITIES,
   DEFECT_STATUSES,
+  DOC_SECTIONS,
   DUE_KINDS,
   DUE_STATUSES,
   HINT_KINDS,
@@ -192,7 +194,7 @@ export const assets = sqliteTable(
     species: text("species"),
     light: text("light"),
     waterNotes: text("water_notes"),
-    /** Attachments arrive with the documents milestone; no foreign key yet. */
+    /** An attachment owned by this asset (checked by the service; attachments have no foreign keys). */
     photoAttachmentId: text("photo_attachment_id"),
     ...timestamps,
   },
@@ -694,5 +696,112 @@ export const assetHints = sqliteTable(
   (t) => [
     index("asset_hints_asset_idx").on(t.assetId, t.sortOrder),
     index("asset_hints_task_id_idx").on(t.taskId),
+  ],
+);
+
+/** Documentation pages: markdown source plus the cached renderings (see `docs/pages.ts`). */
+export const docPages = sqliteTable(
+  "doc_pages",
+  {
+    id: id(),
+    slug: text("slug").notNull().unique(),
+    title: text("title").notNull(),
+    section: text("section", { enum: DOC_SECTIONS })
+      .notNull()
+      .default("general"),
+    assetId: text("asset_id").references(() => assets.id, {
+      onDelete: "set null",
+    }),
+    roomId: text("room_id").references(() => rooms.id, {
+      onDelete: "set null",
+    }),
+    bodyMd: text("body_md").notNull().default(""),
+    /** Cache: HTML for members, secrets included. */
+    renderedHtmlMember: text("rendered_html_member").notNull().default(""),
+    /** Cache: HTML for the guest link, secrets removed; contains the literal `{token}` placeholder. */
+    renderedHtmlGuest: text("rendered_html_guest").notNull().default(""),
+    /** Cache: plain text WITHOUT secret blocks; search and snippets read this. */
+    plainText: text("plain_text").notNull().default(""),
+    /** Cache: table of contents per audience (ids differ when a secret block hides a heading). */
+    headingsJson: text("headings_json", { mode: "json" })
+      .$type<{
+        member: { level: number; text: string; id: string }[];
+        guest: { level: number; text: string; id: string }[];
+      }>()
+      .notNull()
+      .default(sql`'{"member":[],"guest":[]}'`),
+    sortOrder: integer("sort_order").notNull().default(0),
+    guestVisible: integer("guest_visible", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    pinned: integer("pinned", { mode: "boolean" }).notNull().default(false),
+    /** Optimistic concurrency: starts at 1, +1 on every save. */
+    rev: integer("rev").notNull().default(1),
+    updatedBy: text("updated_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    archivedAt: integer("archived_at", { mode: "timestamp_ms" }),
+    ...timestamps,
+  },
+  (t) => [
+    index("doc_pages_asset_id_idx").on(t.assetId),
+    index("doc_pages_room_id_idx").on(t.roomId),
+    index("doc_pages_section_idx").on(t.section),
+  ],
+);
+
+/** The last 50 saved states of a page (pruned on save). Revision `rev` is the state after save `rev`. */
+export const docPageRevisions = sqliteTable(
+  "doc_page_revisions",
+  {
+    id: id(),
+    pageId: text("page_id")
+      .notNull()
+      .references(() => docPages.id, { onDelete: "cascade" }),
+    rev: integer("rev").notNull(),
+    title: text("title").notNull(),
+    bodyMd: text("body_md").notNull(),
+    userId: text("user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("doc_page_revisions_page_rev").on(t.pageId, t.rev)],
+);
+
+/**
+ * Uploaded files. One row = one owner (`ownerType` + `ownerId`); the same stored file (same
+ * `sha256`) can back many rows. There are no foreign keys on the owner: the owner's existence is
+ * checked at upload through the owner registry (`attachments/owners.ts`) and each domain removes
+ * its attachments when it deletes an owner (`removeOwnedAttachments`).
+ */
+export const attachments = sqliteTable(
+  "attachments",
+  {
+    id: id(),
+    sha256: text("sha256").notNull(),
+    /** `ab/<sha256>` relative to the files root. */
+    path: text("path").notNull(),
+    thumbPath: text("thumb_path"),
+    mime: text("mime").notNull(),
+    size: integer("size").notNull(),
+    width: integer("width"),
+    height: integer("height"),
+    /** Sanitized upload name with an extension that matches the detected type. */
+    filename: text("filename").notNull(),
+    caption: text("caption"),
+    guestVisible: integer("guest_visible", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    ownerType: text("owner_type", { enum: ATTACHMENT_OWNER_TYPES }).notNull(),
+    ownerId: text("owner_id").notNull(),
+    uploadedBy: text("uploaded_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    ...timestamps,
+  },
+  (t) => [
+    index("attachments_owner_idx").on(t.ownerType, t.ownerId),
+    index("attachments_sha256_idx").on(t.sha256),
   ],
 );

@@ -163,6 +163,43 @@ describe("createApiClient", () => {
     });
   });
 
+  it("sends a multipart body given as an object as form data, files included", async () => {
+    const { fetch, calls } = fakeFetch(() => jsonResponse({ id: "a1" }, 201));
+    const file = new File(["%PDF-1.4"], "a.pdf", { type: "application/pdf" });
+    await createApiClient(fetch)
+      .call(endpoints.attachmentsUpload, {
+        body: { file, ownerType: "asset", ownerId: "x1", guestVisible: "true" },
+      })
+      .catch((e: unknown) => e);
+    const body = calls[0].init.body as FormData;
+    expect(body).toBeInstanceOf(FormData);
+    expect(body.get("ownerType")).toBe("asset");
+    expect(body.get("guestVisible")).toBe("true");
+    expect((body.get("file") as File).name).toBe("a.pdf");
+    expect(
+      (calls[0].init.headers as Record<string, string>)["content-type"],
+    ).toBeUndefined();
+  });
+
+  it("builds the URL of an endpoint for <img src> and downloads", () => {
+    expect(
+      endpointUrl(endpoints.attachmentsContent, {
+        params: { id: "a/b c" },
+        query: { download: "1" },
+      }),
+    ).toBe("/api/v1/attachments/a%2Fb%20c/content?download=1");
+    expect(
+      endpointUrl(
+        endpoints.attachmentsThumb,
+        { params: { id: "x" } },
+        "https://h.example.org/",
+      ),
+    ).toBe("https://h.example.org/api/v1/attachments/x/thumb");
+    expect(() => endpointUrl(endpoints.attachmentsThumb)).toThrow(
+      /missing path parameter/,
+    );
+  });
+
   it("sends a bearer token and honours an absolute base URL", async () => {
     const { fetch, calls } = fakeFetch(() =>
       jsonResponse({ user, auth: "token", scopes: ["read"] }),

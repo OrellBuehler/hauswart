@@ -1,6 +1,12 @@
 import type { Tool } from "../tool";
 import { assetTools } from "./assets";
+import { assetCareTools } from "./asset-care";
+import { commentTools } from "./comments";
+import { contactTools } from "./contacts";
+import { defectTools } from "./defects";
+import { docTools } from "./docs";
 import { getStats, listNotifications } from "./insights";
+import { partTools } from "./parts";
 import { taskTools } from "./tasks";
 import { listUpcoming } from "./upcoming";
 import { whoami } from "./whoami";
@@ -14,18 +20,12 @@ import { whoami } from "./whoami";
  * the typed client with an endpoint from `endpoints`, and add it below. Tools for
  * endpoints that do not exist yet go here once the endpoint is in the registry:
  *
- * - search           GET /search (documents, attachments, tasks, assets)
- * - pages            get/update documentation pages (scope docs:write for updates)
- * - defects          list/report/update defects
- * - parts and stock  spare parts, stock levels, "order now" list
- * - contacts         tradespeople and service contacts
- * - comments         comments on tasks, assets, defects
- * - hints            hints/tips attached to assets
  * - costs            cost entries and summaries (scope costs:write for writes)
+ * - guest link       the guest link and what it shows
+ * - iCal feed        subscribing to due dates
  *
- * The dashboard also reserves openDefects, expiringWarranties and orderNow;
- * `list_upcoming` should include them once the defects, warranty and parts
- * tools exist.
+ * Not offered on purpose: deleting anything, uploading files (attachments are
+ * listed by name only) and changing contacts or parts beyond stock bookings.
  */
 export const tools: readonly Tool[] = [
   whoami,
@@ -34,4 +34,10 @@ export const tools: readonly Tool[] = [
   ...assetTools,
   getStats,
   listNotifications,
+  ...docTools,
+  ...defectTools,
+  ...partTools,
+  ...contactTools,
+  ...commentTools,
+  ...assetCareTools,
 ];

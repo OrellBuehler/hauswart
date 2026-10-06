@@ -29,6 +29,7 @@ import {
   tasks,
   users,
 } from "$lib/server/db";
+import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
 import { getHousehold } from "$lib/server/household/household";
 import { decodeCursor, paginateArray, pageOf } from "$lib/server/pagination";
 import {
@@ -360,7 +361,7 @@ export function updatePart(
  * Removes the part with its links and movements. Preparations that named it
  * keep their text and lose the link (the column has no foreign key).
  */
-export function deletePart(ctx: Db, id: string): void {
+export function deletePart(ctx: Now, id: string): void {
   getPart(ctx, id);
   ctx.db.transaction((tx) => {
     tx.update(taskPreparations)
@@ -369,6 +370,7 @@ export function deletePart(ctx: Db, id: string): void {
       .run();
     tx.delete(parts).where(eq(parts.id, id)).run();
   });
+  removeOwnedAttachments(ctx, "part", id);
 }
 
 /** Records an order (default: the reorder quantity); qty 0 clears it. */

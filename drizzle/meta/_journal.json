@@ -36,6 +36,27 @@
       "when": 1791304717977,
       "tag": "0004_comment_cleanup_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1791307204249,
+      "tag": "0005_docs_attachments",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1791307321751,
+      "tag": "0006_search_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1791307323393,
+      "tag": "0007_doc_page_comment_cleanup",
+      "breakpoints": true
     }
   ]
 }

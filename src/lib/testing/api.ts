@@ -87,6 +87,13 @@ export function createInProcessFetch(auth: InProcessAuth = {}): FetchLike {
       params: found.params,
       headers,
       body: typeof init.body === "string" ? init.body : undefined,
+      form:
+        init.body instanceof FormData
+          ? (Object.fromEntries(init.body.entries()) as Record<
+              string,
+              string | File
+            >)
+          : undefined,
       cookies: auth.session ? { [SESSION_COOKIE]: auth.session } : {},
     });
     return handle({

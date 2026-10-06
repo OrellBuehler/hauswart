@@ -4,13 +4,12 @@ hauswart is a self-hosted apartment-management app for a single household with a
 recurring maintenance tasks with completion tracking, documentation (markdown, uploads,
 Paperless-ngx links), device inventory, defects, spare parts, contacts, costs, notifications, an
 iCal feed, a guest link and an MCP server. Home Assistant, Paperless-ngx and Kept (finance) are
-optional adapters, never requirements. Status: early development — authentication, the API spine
-and the task core (rooms, assets, tasks, completions, notifications, dashboard) exist, as do contacts,
-spare parts, the service log, care hints, defects (with a PDF export), the warranty overview and
-generic comments; documents, costs, the iCal feed, the guest link and the MCP server are still to come.
-and the task core (rooms, assets, tasks, completions, notifications, dashboard) exist; documents,
-defects, parts, contacts, costs, the iCal feed and the guest link are still to come; the MCP server
-covers the task core (see `mcp/README.md`).
+optional adapters, never requirements. Status: early development — authentication, the API spine,
+the task core (rooms, assets, tasks, completions, notifications, dashboard), documentation (pages,
+attachments, search, file backup), contacts, spare parts, the service log, care hints, defects (with
+a PDF export), the warranty overview and generic comments exist; costs, the iCal feed and the guest
+link are still to come; the MCP server covers the task core, documentation, defects, parts, contacts,
+comments, hints, service log and warranties (see `mcp/README.md`).
 
 There is one household, not many: all domain data is shared by every user. Only sessions, API
 tokens, integration connections and preferences belong to a single user.
@@ -78,6 +77,12 @@ src/lib/server/auth/             sessions, passwords, login + rate limits, API t
 src/lib/server/users/            user service (create, first admin, update, profile)
 src/lib/server/<domain>/         services: plain functions, no HTTP types
 src/lib/server/docs/markdown*.ts markdown -> sanitized html; async variants run marked in a worker (see below)
+src/lib/server/docs/pages.ts     documentation pages: CRUD, rev concurrency, revisions, backlinks, cached renderings
+src/lib/server/docs/render.ts    page rendering for members/guests, link resolution, `{token}` placeholder
+src/lib/server/files/            content-addressed file store, image pipeline, sniffing, serving headers (see below)
+src/lib/server/attachments/      attachment rows, owner registry, orphan sweeper (see "Documentation" below)
+src/lib/server/search/           GET /search over the FTS5 index (`search_fts`, kept by triggers)
+src/lib/server/backup/           daily VACUUM INTO backup + incremental mirror of the files directory
 src/lib/dates.ts                 YYYY-MM-DD date math + time-zone helpers (client-safe)
 src/lib/tasks/engine/            pure due-date engine (client-safe): evaluateTask, estimates, rotation, upcoming
 src/lib/server/service.ts        ServiceContext {db, now}, notFound/conflict/invalidField, isUniqueViolation
@@ -89,7 +94,7 @@ src/lib/server/tasks/            tasks CRUD, previewTrigger, evaluator (task_sta
                                  completions (complete/skip/undo/snooze), preparations, dashboard, stats, scheduler
 src/lib/server/notifications/    in-app notifications, generateNotifications, channel registry for outward delivery
 src/lib/server/events.ts         typed in-process domain events (completionRecorded/Revoked), emitted inside the writer's transaction
-src/lib/server/domain-events.ts  registerDomainEventHandlers(): wires reactions (parts stock) at startup and in useTestDB()
+src/lib/server/domain-events.ts  registerDomainEventHandlers(): wires reactions (parts stock) and the domain attachment owners at startup and in useTestDB()
 src/lib/server/contacts/         contacts CRUD + search, links to assets (role per link)
 src/lib/server/parts/            spare parts: CRUD, stock movements, "ordered" state, links to assets/tasks, order-now, completion events
 src/lib/server/service-log/      per-asset work log (also written with a task completion by the complete handler)
@@ -147,6 +152,67 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   rooms and assets by slug, tasks by `externalSource: "seed"` + `externalRef`, preparations by title.
   Existing entries are left alone unless `--update`. Changing the household needs the admin scope.
 
+### Documentation, attachments, search and backup
+
+- **Pages** (`doc_pages`, `doc_page_revisions`; `docs/pages.ts`): `bodyMd` is the source; the
+  renderings are caches written on save through the worker-backed async markdown functions
+  (`renderedHtmlMember` with secret blocks, `renderedHtmlGuest` without, `plainText` WITHOUT secrets,
+  `headingsJson` = `{member, guest}`). `MarkdownError` becomes 400 `invalid_request` with
+  `details.code` `too_large` / `too_complex` (`unavailable` is 503), `FileError` 400/413/415 with
+  `details.code` (see `api/errors.ts`). `PATCH` needs `rev` (409 `conflict`, `details.currentRev`; the
+  update itself is guarded by `rev`); every successful save bumps `rev` and writes a revision (50
+  kept). Restoring saves the old title/body as a new revision. Backlinks are computed on read from
+  `[[slug]]` references in other pages. `preview` is a reserved slug (static route). Pages are
+  written with the `docs:write` scope; `read` sees everything including secret blocks (members and
+  tokens alike; only the guest rendering strips them).
+- **Link resolution at render time**: `attachment:<id>` resolves only to attachments that exist
+  (member: `/api/v1/attachments/<id>/content`; guest: only guest-visible ones, as
+  `/g/{token}/files/<id>`), `[[slug]]` to `/docs/<slug>` (guest: `/g/{token}/docs/<slug>`; slug as
+  `slugify` writes it). The guest HTML keeps the literal `{token}`; the future guest route must call
+  `fillGuestToken(html, token)` (`docs/render.ts`) when it serves a page. Deleting an attachment or
+  flipping `guestVisible` re-renders the pages that embed it (`onAttachmentsChanged` listener,
+  started in `init()` by `startAttachmentRerender`; only the two HTML caches change, guarded by `rev`).
+- **Attachments** (`attachments`): one row per upload, generic owner `ownerType` + `ownerId` without
+  foreign keys (`asset|room|page|task|defect|service_log|part|asset_hint|contact`), files stored
+  once by sha256 in `HAUSWART_FILES_DIR` (`files/store.ts`: images re-encoded, metadata stripped,
+  thumbnail; PDFs as uploaded; HEIC/SVG/HTML/GIF refused). Owner existence is checked through the
+  registry in `attachments/owners.ts`: asset, room, page and task are built in; defect, service_log,
+  part, asset_hint and contact are registered by `registerDomainAttachmentOwners()`
+  (`attachments/domain-owners.ts`, called from `registerDomainEventHandlers()`, so from `init()` and
+  `useTestDB()`). A new owner type registers with `registerAttachmentOwner(type, existsFn)` **from
+  `init()`** (never from a module that is only loaded with its routes) and calls
+  `removeOwnedAttachments(ctx, type, id)` from its delete service (done for all nine; deleting an
+  asset also removes the attachments of its service log entries and hints, whose rows go by cascade
+  without a foreign key to follow). A type nobody registered is a 400 field error on `ownerType`. Uploading, patching or deleting an attachment of a page needs `docs:write`,
+  others `write`. `deleteIfUnreferenced` keeps files younger than a minute, so a daily orphan sweep
+  (`startFileSweeper`) removes what deletions left behind. `assets.photoAttachmentId` must be an
+  image attachment owned by that asset (set it with an update; it cannot be set on create); the asset
+  also carries `photoUrl`, the thumbnail URL for `<img src>`.
+- **Binary endpoints** (file content, PDF exports): `responseType: "binary"` + `contentTypes` in the
+  registry, `response: binaryResponseSchema` as placeholder. The handler returns a finished
+  `Response` (`bind` authenticates, parses and passes it through, outside production it checks the
+  status and that the content type is one of `contentTypes`, and adds `Cache-Control: no-store` when
+  the handler set none). OpenAPI documents `string/binary` per content type. `createApiClient().call`
+  returns the raw `Response` (for downloads with a token); use `endpointUrl(endpoint, {params, query})`
+  for `<img src>` and plain download links. Stored files are served with `files/serve.ts` (nosniff,
+  CSP, ETag = sha256, `private, immutable`); the PDF export is `application/pdf`, `no-store`. pdfmake
+  is external to the bundle (`vite.config.ts`) and read from `node_modules` at runtime.
+- **Multipart bodies** are passed to `api.call` as a plain object (files as `File`, the rest
+  strings); the client builds the `FormData`. In route tests use `callRoute(..., { form })`.
+- **Search** (`search_fts`, FTS5, created in custom migration `0006_search_index`): triggers on pages,
+  assets, rooms, tasks, defects (title, description, location), contacts (name, company, notes; never
+  phone, e-mail or address), parts (name, part number, supplier, notes) and asset hints (title, body)
+  keep it current (archived assets, tasks, pages and parts are dropped). No secret text enters the
+  index: pages index `plain_text`; every other free text is cut off at the first `:::` when it
+  mentions "secret" anywhere. Hit `url`s are the UI routes (`/docs/<slug>`, `/assets/<id>` also for
+  plants and hints, `/rooms/<id>`, `/tasks/<id>`, `/defects/<id>`, `/parts/<id>`, `/contacts/<id>`).
+  New searchable entities need their own triggers in a new migration and an entry in `URLS`
+  (`search/search.ts`). Queries become quoted prefix terms (`ftsExpression`), so no FTS syntax reaches SQLite.
+- **Backup** (`backup/`): on by default (`HAUSWART_BACKUP_DIR` default `./data/backups`, set it empty
+  to turn off; `HAUSWART_BACKUP_KEEP` default 14). Hourly check: a `VACUUM INTO` copy
+  (`hauswart-backup-<UTC>.db`) when the newest is a day old, then `mirrorFiles` copies the stored
+  files missing in `<dir>/files` (never overwrites, never deletes).
+
 ### Parts, defects, comments and other M3 domains
 
 - **Events keep domains apart.** `completeTask`/`undoCompletion` emit `completionRecorded` /
@@ -166,16 +232,12 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   A deadline keeps one `one_off` reminder task (`externalSource: "defect"`, category `defect`, system
   text in the base language) that is archived when the defect is fixed/rejected or has no deadline.
 - **Comments** (`comments` table, `entityType` + `entityId`): a kind of entity is commentable once
-  it is in `comments/registry.ts` (`exists`, `title`, `url`, optional `audience`); `doc_page` waits
-  for the docs milestone (`registerCommentable`). Deleting an entity removes its comments through
-  `AFTER DELETE` triggers (migration `0004`): add one per new commentable table. Delete is soft
+  it is in `comments/registry.ts` (`exists`, `title`, `url`, optional `audience`; the urls are the UI
+  routes, `/docs/<slug>` for pages). Deleting an entity removes its comments through
+  `AFTER DELETE` triggers (migrations `0004` and `0007` for pages): add one per new commentable table. Delete is soft
   (empty body, `deleted: true`), edit is author-only (403 otherwise), delete is author or admin. A new
-  comment notifies the other involved members (`notification_comment`). Tasks, assets and defects
-  carry `commentCount`.
-- **PDF endpoints** declare `responseType: "pdf"` in the registry; the handler returns a `Response`
-  (checked for `application/pdf` outside production), OpenAPI documents `application/pdf`, the typed
-  client returns the `Response` and `endpointUrl()` builds a plain download link. pdfmake is
-  external to the bundle (`vite.config.ts`) and read from `node_modules` at runtime.
+  comment notifies the other involved members (`notification_comment`). Tasks, assets, defects, hints,
+  service log entries and pages carry `commentCount`.
 - **Hint reactions** (`signalReactionSchema`, type `signal_change`) are stored with the hint and
   executed by an adapter later; the core only validates and lists them (`GET /hints?reactive=true`).
 
@@ -300,6 +362,8 @@ json, origin, … })` from `$lib/testing/route`; users and tokens come from `cre
   engine.
 - Bug fixes start with a failing test.
 - Fixtures are synthetic and live in `src/lib/testing/fixtures/`.
+- File tests call `useTestFilesDir()` (`$lib/testing/files`: temp `HAUSWART_FILES_DIR`, sample pdf/svg/
+  html/heic bytes); `callRoute` returns file bodies as `Uint8Array`.
 
 ## Subagents (`.claude/agents/`)
 

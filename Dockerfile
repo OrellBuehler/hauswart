@@ -29,7 +29,7 @@ LABEL org.opencontainers.image.title="hauswart" \
 WORKDIR /app
 RUN apk upgrade --no-cache && \
     addgroup -S -g 1001 hauswart && adduser -S -u 1001 -G hauswart hauswart && \
-    mkdir -p /data/files && chown -R hauswart:hauswart /data
+    mkdir -p /data/files /data/backups && chown -R hauswart:hauswart /data
 COPY --from=prod-deps --chown=hauswart:hauswart /app/node_modules ./node_modules
 COPY --from=builder --chown=hauswart:hauswart /app/build ./build
 COPY --from=builder --chown=hauswart:hauswart /app/drizzle ./drizzle
@@ -40,6 +40,7 @@ ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     DATABASE_PATH=/data/hauswart.db \
     HAUSWART_FILES_DIR=/data/files \
+    HAUSWART_BACKUP_DIR=/data/backups \
     BODY_SIZE_LIMIT=30M \
     APP_VERSION=${APP_VERSION}
 VOLUME ["/data"]

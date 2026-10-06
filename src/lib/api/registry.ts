@@ -6,7 +6,7 @@ import {
   emptySchema,
   idParamsSchema,
   paginationQuerySchema as paginationQueryOnlySchema,
-  pdfResponseSchema,
+  binaryResponseSchema,
 } from "./schemas/common";
 import {
   loginRequestSchema,
@@ -86,6 +86,30 @@ import {
   householdSchema,
   updateHouseholdRequestSchema,
 } from "./schemas/household";
+import {
+  createPageRequestSchema,
+  docPageSchema,
+  listPagesQuerySchema,
+  listPagesResponseSchema,
+  listRevisionsResponseSchema,
+  pageParamsSchema,
+  pageRevisionParamsSchema,
+  pageRevisionSchema,
+  previewPageRequestSchema,
+  previewPageResponseSchema,
+  updatePageRequestSchema,
+} from "./schemas/docs";
+import {
+  ATTACHMENT_CONTENT_TYPES,
+  MAX_UPLOAD_REQUEST_BYTES,
+  attachmentContentQuerySchema,
+  attachmentSchema,
+  listAttachmentsQuerySchema,
+  listAttachmentsResponseSchema,
+  updateAttachmentRequestSchema,
+  uploadAttachmentRequestSchema,
+} from "./schemas/attachments";
+import { searchQuerySchema, searchResponseSchema } from "./schemas/search";
 
 import {
   assetContactParamsSchema,
@@ -172,6 +196,15 @@ export type ParamsSchema = z.ZodObject;
 export type SuccessStatus = 200 | 201 | 204;
 
 export const DEFAULT_MAX_BODY_BYTES = 256 * 1024;
+/** Request body limit of the markdown endpoints (the source is capped at 200 KB; JSON escaping adds some). */
+export const MAX_MARKDOWN_REQUEST_BYTES = 512 * 1024;
+
+/**
+ * `json` endpoints answer with the `response` schema. `binary` endpoints stream a file: the
+ * handler returns a `Response`, `response` is only a placeholder and `contentTypes` lists what
+ * the endpoint can send (OpenAPI documents the body as `string`/`binary` under each type).
+ */
+export type ResponseType = "json" | "binary";
 
 export interface EndpointDef<
   A extends AuthMode,
@@ -179,6 +212,7 @@ export interface EndpointDef<
   Q extends ParamsSchema | undefined,
   B extends z.ZodType | undefined,
   R extends z.ZodType,
+  T extends ResponseType = "json",
 > {
   /** Stable camelCase identifier; also the OpenAPI operationId and the key in `endpoints`. */
   id: string;
@@ -197,12 +231,9 @@ export interface EndpointDef<
   /** `multipart` bodies are parsed as form data; everything else is JSON. */
   bodyType?: "json" | "multipart";
   response: R;
-  /**
-   * `json` (default) or `pdf`: a `pdf` endpoint's handler returns a `Response`
-   * with the document, documented as `application/pdf`; `response` is then
-   * `pdfResponseSchema`.
-   */
-  responseType?: "json" | "pdf";
+  responseType?: T;
+  /** Binary endpoints: the content types the response can have. */
+  contentTypes?: readonly string[];
   /** Success status; `204` endpoints use `emptySchema` and return no body. Default 200. */
   status?: SuccessStatus;
   /** Extra error codes the handler can raise (beyond those every endpoint can). */
@@ -218,6 +249,7 @@ export interface Endpoint<
   Q extends ParamsSchema | undefined = ParamsSchema | undefined,
   B extends z.ZodType | undefined = z.ZodType | undefined,
   R extends z.ZodType = z.ZodType,
+  T extends ResponseType = ResponseType,
 > {
   readonly id: string;
   readonly method: HttpMethod;
@@ -232,7 +264,8 @@ export interface Endpoint<
   readonly body: B;
   readonly bodyType: "json" | "multipart";
   readonly response: R;
-  readonly responseType: "json" | "pdf";
+  readonly responseType: T;
+  readonly contentTypes: readonly string[];
   readonly status: SuccessStatus;
   readonly errors: readonly ErrorCode[];
   readonly setsSession: boolean;
@@ -251,7 +284,8 @@ export function defineEndpoint<
   Q extends ParamsSchema | undefined = undefined,
   B extends z.ZodType | undefined = undefined,
   R extends z.ZodType = z.ZodType,
->(def: EndpointDef<A, P, Q, B, R>): Endpoint<A, P, Q, B, R> {
+  const T extends ResponseType = "json",
+>(def: EndpointDef<A, P, Q, B, R, T>): Endpoint<A, P, Q, B, R, T> {
   if (!def.path.startsWith(`${API_PREFIX}/`)) {
     throw new Error(`${def.id}: path must start with ${API_PREFIX}/`);
   }
@@ -266,6 +300,14 @@ export function defineEndpoint<
     throw new Error(`${def.id}: ${def.method} endpoints cannot have a body`);
   }
   const status = def.status ?? 200;
+  if (def.responseType === "binary") {
+    if (def.method !== "GET") {
+      throw new Error(`${def.id}: binary endpoints must be GET`);
+    }
+    if (!def.contentTypes || def.contentTypes.length === 0) {
+      throw new Error(`${def.id}: binary endpoints must list contentTypes`);
+    }
+  }
   return {
     id: def.id,
     method: def.method,
@@ -280,7 +322,8 @@ export function defineEndpoint<
     body: def.body as B,
     bodyType: def.bodyType ?? "json",
     response: def.response,
-    responseType: def.responseType ?? "json",
+    responseType: (def.responseType ?? "json") as T,
+    contentTypes: def.contentTypes ?? [],
     status,
     errors: def.errors ?? [],
     setsSession: def.setsSession ?? false,
@@ -1503,8 +1546,9 @@ export const endpoints = {
     auth: "both",
     scopes: ["read"],
     query: exportDefectsQuerySchema,
-    response: pdfResponseSchema,
-    responseType: "pdf",
+    response: binaryResponseSchema,
+    responseType: "binary",
+    contentTypes: ["application/pdf"],
   }),
 
   defectsGet: defineEndpoint({
@@ -1761,6 +1805,267 @@ export const endpoints = {
     params: idParamsSchema,
     response: emptySchema,
     status: 204,
+    errors: ["not_found"],
+  }),
+  pagesList: defineEndpoint({
+    id: "pagesList",
+    method: "GET",
+    path: "/api/v1/pages",
+    summary: "List documentation pages",
+    description:
+      "Pinned first, then by sortOrder and title; with q, best match first. q is a full-text search over title and text (secret blocks excluded); archived pages are never found by it. Archived pages are left out unless includeArchived=true.",
+    tags: ["docs"],
+    auth: "both",
+    scopes: ["read"],
+    query: listPagesQuerySchema,
+    response: listPagesResponseSchema,
+  }),
+
+  pagesCreate: defineEndpoint({
+    id: "pagesCreate",
+    method: "POST",
+    path: "/api/v1/pages",
+    summary: "Create a documentation page",
+    description:
+      "The markdown is rendered before the response (member and guest HTML, plain text, headings). 400 `invalid_request` with `details.code` `too_large` (over 200 KB) or `too_complex` (rendering exceeded its time limit) when it cannot be rendered. Writes revision 1. `attachment:<id>` links and images resolve to attachments, `[[slug]]` and `[[slug|label]]` to `/docs/<slug>`.",
+    tags: ["docs"],
+    auth: "both",
+    scopes: ["docs:write"],
+    body: createPageRequestSchema,
+    maxBodyBytes: MAX_MARKDOWN_REQUEST_BYTES,
+    response: docPageSchema,
+    status: 201,
+    errors: ["conflict"],
+  }),
+
+  pagesPreview: defineEndpoint({
+    id: "pagesPreview",
+    method: "POST",
+    path: "/api/v1/pages/preview",
+    summary: "Render markdown for the editor preview",
+    description:
+      "Renders as a member sees the page (secret blocks shown). Nothing is stored. Same size and complexity limits as saving; rate limited per user (429 `rate_limited`).",
+    tags: ["docs"],
+    auth: "both",
+    scopes: ["docs:write"],
+    body: previewPageRequestSchema,
+    maxBodyBytes: MAX_MARKDOWN_REQUEST_BYTES,
+    response: previewPageResponseSchema,
+    errors: ["rate_limited"],
+  }),
+
+  pagesGet: defineEndpoint({
+    id: "pagesGet",
+    method: "GET",
+    path: "/api/v1/pages/{slug}",
+    summary: "Get a documentation page",
+    description:
+      "Markdown source, rendered HTML for members (secret blocks included), headings, revision number and backlinks.",
+    tags: ["docs"],
+    auth: "both",
+    scopes: ["read"],
+    params: pageParamsSchema,
+    response: docPageSchema,
+    errors: ["not_found"],
+  }),
+
+  pagesUpdate: defineEndpoint({
+    id: "pagesUpdate",
+    method: "PATCH",
+    path: "/api/v1/pages/{slug}",
+    summary: "Edit, move, pin or archive a page",
+    description:
+      "`rev` is the revision the client edited; when the page has moved on the answer is 409 `conflict` with `details.currentRev`. Every successful save writes a revision (the last 50 are kept). Changing the slug does not rewrite `[[links]]` in other pages.",
+    tags: ["docs"],
+    auth: "both",
+    scopes: ["docs:write"],
+    params: pageParamsSchema,
+    body: updatePageRequestSchema,
+    maxBodyBytes: MAX_MARKDOWN_REQUEST_BYTES,
+    response: docPageSchema,
+    errors: ["not_found", "conflict"],
+  }),
+
+  pagesDelete: defineEndpoint({
+    id: "pagesDelete",
+    method: "DELETE",
+    path: "/api/v1/pages/{slug}",
+    summary: "Delete a page",
+    description:
+      "Removes the page with its revisions and attachments. Archive instead to keep it.",
+    tags: ["docs"],
+    auth: "both",
+    scopes: ["docs:write"],
+    params: pageParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
+  pageRevisionsList: defineEndpoint({
+    id: "pageRevisionsList",
+    method: "GET",
+    path: "/api/v1/pages/{slug}/revisions",
+    summary: "Revision history of a page, newest first",
+    description: "The last 50 saved states (no markdown; fetch one for that).",
+    tags: ["docs"],
+    auth: "both",
+    scopes: ["read"],
+    params: pageParamsSchema,
+    response: listRevisionsResponseSchema,
+    errors: ["not_found"],
+  }),
+
+  pageRevisionsGet: defineEndpoint({
+    id: "pageRevisionsGet",
+    method: "GET",
+    path: "/api/v1/pages/{slug}/revisions/{rev}",
+    summary: "One saved state of a page, with its markdown",
+    tags: ["docs"],
+    auth: "both",
+    scopes: ["read"],
+    params: pageRevisionParamsSchema,
+    response: pageRevisionSchema,
+    errors: ["not_found"],
+  }),
+
+  pageRevisionsRestore: defineEndpoint({
+    id: "pageRevisionsRestore",
+    method: "POST",
+    path: "/api/v1/pages/{slug}/revisions/{rev}/restore",
+    summary: "Make an earlier revision the current one",
+    description:
+      "Saves the title and markdown of that revision as a new revision (history is never rewritten, so nothing is lost). Returns the page.",
+    tags: ["docs"],
+    auth: "both",
+    scopes: ["docs:write"],
+    params: pageRevisionParamsSchema,
+    response: docPageSchema,
+    errors: ["not_found"],
+  }),
+
+  search: defineEndpoint({
+    id: "search",
+    method: "GET",
+    path: "/api/v1/search",
+    summary:
+      "Search pages, assets, rooms, tasks, defects, contacts, parts and care hints",
+    description:
+      "Full-text search, best match first; every word is matched as a prefix. Archived pages, assets, tasks and parts are not searched. Searched fields: titles and names, plus page text, device data and notes, descriptions, a defect's location, a contact's company and notes (never phone, e-mail or address), a part's number, supplier and notes, a hint's text. Pages are searched without their secret blocks, and every other free text is cut off at the first `:::` block when it mentions a secret, so a snippet never contains secret text. Snippets are plain text. `url` is the app path of the hit.",
+    tags: ["search"],
+    auth: "both",
+    scopes: ["read"],
+    query: searchQuerySchema,
+    response: searchResponseSchema,
+  }),
+
+  attachmentsUpload: defineEndpoint({
+    id: "attachmentsUpload",
+    method: "POST",
+    path: "/api/v1/attachments",
+    summary: "Upload a file to an owner",
+    description:
+      "multipart/form-data with `file`, `ownerType`, `ownerId`, optional `caption` and `guestVisible`. JPEG, PNG and WebP images are re-encoded (metadata removed, orientation applied, longest side capped) and get a thumbnail; PDFs are stored as uploaded. At most 25 MiB. Errors are 400/413/415 `invalid_request` with `details.code`: `empty`, `too_large` (413), `unsupported_type` (415), `unsupported_heic` (415), `corrupt_image`, `image_too_large` (413); an unknown or unsupported owner is a field error on `ownerId` or `ownerType`. Attaching to a page needs the `docs:write` scope.",
+    tags: ["attachments"],
+    auth: "both",
+    scopes: ["write"],
+    body: uploadAttachmentRequestSchema,
+    bodyType: "multipart",
+    maxBodyBytes: MAX_UPLOAD_REQUEST_BYTES,
+    response: attachmentSchema,
+    status: 201,
+  }),
+
+  attachmentsList: defineEndpoint({
+    id: "attachmentsList",
+    method: "GET",
+    path: "/api/v1/attachments",
+    summary: "List the attachments of an owner",
+    description: "Oldest first.",
+    tags: ["attachments"],
+    auth: "both",
+    scopes: ["read"],
+    query: listAttachmentsQuerySchema,
+    response: listAttachmentsResponseSchema,
+  }),
+
+  attachmentsGet: defineEndpoint({
+    id: "attachmentsGet",
+    method: "GET",
+    path: "/api/v1/attachments/{id}",
+    summary: "Attachment metadata",
+    tags: ["attachments"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: attachmentSchema,
+    errors: ["not_found"],
+  }),
+
+  attachmentsUpdate: defineEndpoint({
+    id: "attachmentsUpdate",
+    method: "PATCH",
+    path: "/api/v1/attachments/{id}",
+    summary: "Change the caption or the guest visibility",
+    description:
+      "Pages that embed the attachment are rendered again. Needs `docs:write` when the owner is a page.",
+    tags: ["attachments"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: updateAttachmentRequestSchema,
+    response: attachmentSchema,
+    errors: ["not_found"],
+  }),
+
+  attachmentsDelete: defineEndpoint({
+    id: "attachmentsDelete",
+    method: "DELETE",
+    path: "/api/v1/attachments/{id}",
+    summary: "Delete an attachment",
+    description:
+      "Removes the row and, when nothing else uses the stored file, the file (a file stored less than a minute ago is kept until the next cleanup). An asset photo pointing at it is cleared. Pages that embed it are rendered again. Needs `docs:write` when the owner is a page.",
+    tags: ["attachments"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
+  attachmentsContent: defineEndpoint({
+    id: "attachmentsContent",
+    method: "GET",
+    path: "/api/v1/attachments/{id}/content",
+    summary: "The file itself",
+    description:
+      "Streams the stored bytes with their detected content type: images and PDFs inline, `?download=1` as a download. Sent with `nosniff`, a restrictive CSP, an ETag (`If-None-Match` answers 304) and `Cache-Control: private, max-age=31536000, immutable`. Works for `<img src>` with the session cookie.",
+    tags: ["attachments"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    query: attachmentContentQuerySchema,
+    response: binaryResponseSchema,
+    responseType: "binary",
+    contentTypes: [...ATTACHMENT_CONTENT_TYPES, "application/octet-stream"],
+    errors: ["not_found"],
+  }),
+
+  attachmentsThumb: defineEndpoint({
+    id: "attachmentsThumb",
+    method: "GET",
+    path: "/api/v1/attachments/{id}/thumb",
+    summary: "Thumbnail of an image attachment",
+    description:
+      "480 px WebP; 404 for attachments without a thumbnail (PDFs). Same headers as the content endpoint.",
+    tags: ["attachments"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: binaryResponseSchema,
+    responseType: "binary",
+    contentTypes: ["image/webp"],
     errors: ["not_found"],
   }),
 };

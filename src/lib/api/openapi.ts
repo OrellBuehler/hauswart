@@ -128,15 +128,22 @@ function operation(endpoint: AnyEndpoint, components: Components): Json {
   }
 
   const responses: Record<string, Json> = {};
-  if (endpoint.status === 204) {
-    responses["204"] = { description: "No content" };
-  } else if (endpoint.responseType === "pdf") {
+  if (endpoint.responseType === "binary") {
     responses[String(endpoint.status)] = {
-      description: "Success",
-      content: {
-        "application/pdf": { schema: { type: "string", format: "binary" } },
+      description: "The file",
+      headers: {
+        "Content-Disposition": { schema: { type: "string" } },
+        "Cache-Control": { schema: { type: "string" } },
       },
+      content: Object.fromEntries(
+        endpoint.contentTypes.map((type) => [
+          type,
+          { schema: { type: "string", format: "binary" } },
+        ]),
+      ),
     };
+  } else if (endpoint.status === 204) {
+    responses["204"] = { description: "No content" };
   } else {
     responses[String(endpoint.status)] = {
       description: "Success",

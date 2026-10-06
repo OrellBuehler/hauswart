@@ -7,10 +7,7 @@ import {
   type TestEventOptions,
 } from "./event";
 
-export interface CallOptions extends Omit<
-  TestEventOptions,
-  "body" | "locals" | "form"
-> {
+export interface CallOptions extends Omit<TestEventOptions, "body" | "locals"> {
   /** Session token (from `loginTestUser`), sent as the session cookie. */
   session?: string;
   /** API token plaintext, sent as `Authorization: Bearer`. */
@@ -25,9 +22,8 @@ export interface CallOptions extends Omit<
 
 export interface RouteResult {
   res: Response;
+  /** Parsed JSON, text for other text types, bytes (`Uint8Array`) for files; null when empty. */
   body: unknown;
-  /** The raw body of a PDF response (`body` is null then). */
-  bytes?: Uint8Array;
   cookies: FakeCookies;
   event: ReturnType<typeof createTestEvent>;
 }
@@ -53,7 +49,9 @@ export async function callRoute(
   const url = rest.url ?? "http://localhost/";
   const method =
     rest.method ??
-    (json !== undefined || rawBody !== undefined ? "POST" : "GET");
+    (json !== undefined || rawBody !== undefined || rest.form !== undefined
+      ? "POST"
+      : "GET");
   const merged: Record<string, string> = { ...headers };
   const has = (name: string) =>
     Object.keys(merged).some((k) => k.toLowerCase() === name);
@@ -81,23 +79,20 @@ export async function callRoute(
     event: event as never,
     resolve: ((e: RequestEvent) => handler(e)) as never,
   });
-  if (/^application\/pdf\b/i.test(res.headers.get("content-type") ?? "")) {
-    return {
-      res,
-      body: null,
-      bytes: new Uint8Array(await res.arrayBuffer()),
-      cookies: event.cookies,
-      event,
-    };
-  }
-  const text = await res.text();
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  const type = res.headers.get("content-type") ?? "";
   let body: unknown = null;
-  if (text) {
-    try {
-      body = JSON.parse(text);
-    } catch (err) {
-      if (!(err instanceof SyntaxError)) throw err;
-      body = text;
+  if (bytes.length > 0) {
+    if (/^(image|application\/(pdf|octet-stream))/i.test(type)) {
+      body = bytes;
+    } else {
+      const text = new TextDecoder().decode(bytes);
+      try {
+        body = JSON.parse(text);
+      } catch (err) {
+        if (!(err instanceof SyntaxError)) throw err;
+        body = text;
+      }
     }
   }
   return { res, body, cookies: event.cookies, event };
