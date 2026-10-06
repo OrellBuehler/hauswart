@@ -110,7 +110,6 @@ export const navGroups: NavGroup[] = [
       {
         href: "/emergency",
         label: () => m.nav_emergency(),
-        comingSoon: () => m.coming_soon_emergency(),
         icon: BellRingIcon,
       },
     ],

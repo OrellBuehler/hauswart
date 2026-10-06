@@ -18,7 +18,8 @@ import type { ServiceContext } from "$lib/server/service";
 
 type Db = Pick<ServiceContext, "db">;
 
-export type SearchKind = (typeof SEARCH_HIT_TYPES)[number];
+/** The kinds of the full-text index; documents are searched separately, per caller (`documents/search.ts`). */
+export type SearchKind = Exclude<(typeof SEARCH_HIT_TYPES)[number], "document">;
 export type SearchHit = z.input<typeof searchHitSchema>;
 
 const MAX_WORDS = 8;

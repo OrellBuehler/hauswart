@@ -268,6 +268,24 @@ export const customFieldSchema = z
     ),
   }));
 
+export interface PaperlessStoragePath {
+  id: number;
+  name: string;
+  path: string | null;
+}
+
+export const storagePathSchema = z
+  .object({
+    id,
+    name: z.string(),
+    path: z.string().nullish(),
+  })
+  .transform((s): PaperlessStoragePath => ({
+    id: s.id,
+    name: s.name,
+    path: s.path ?? null,
+  }));
+
 export interface PaperlessGroup {
   id: number;
   name: string;

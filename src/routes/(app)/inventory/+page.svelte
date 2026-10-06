@@ -1,10 +1,12 @@
 <script lang="ts">
+  import { invalidateAll } from "$app/navigation";
   import { resolve } from "$app/paths";
   import BoxesIcon from "@lucide/svelte/icons/boxes";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import QrCodeIcon from "@lucide/svelte/icons/qr-code";
   import SearchIcon from "@lucide/svelte/icons/search";
   import SearchXIcon from "@lucide/svelte/icons/search-x";
+  import SparklesIcon from "@lucide/svelte/icons/sparkles";
   import { INVENTORY_KINDS, kindLabels } from "$lib/assets/kinds";
   import {
     emptyFilter,
@@ -20,6 +22,7 @@
   import OptionSelect from "$lib/components/assets/option-select.svelte";
   import RoomPicker from "$lib/components/assets/room-picker.svelte";
   import WarrantyBadge from "$lib/components/assets/warranty-badge.svelte";
+  import DeviceSuggestionsSheet from "$lib/components/connections/device-suggestions-sheet.svelte";
   import CommentCount from "$lib/components/comments/comment-count.svelte";
   import EmptyState from "$lib/components/app/empty-state.svelte";
   import PageHeader from "$lib/components/app/page-header.svelte";
@@ -36,6 +39,7 @@
   let { data }: PageProps = $props();
 
   let filter = $state<AssetFilter>({ ...emptyFilter });
+  let suggestionsOpen = $state(false);
 
   const warrantyLabels = {
     valid: () => m.warranty_filter_valid(),
@@ -77,6 +81,11 @@
 <div class="flex flex-col gap-6">
   <PageHeader title={m.nav_inventory()} description={m.inventory_description()}>
     {#snippet actions()}
+      {#if data.suggestionsAvailable}
+        <Button variant="outline" onclick={() => (suggestionsOpen = true)}>
+          <SparklesIcon />{m.inventory_suggestions()}
+        </Button>
+      {/if}
       <Button href={resolve("/inventory/qr")} variant="outline">
         <QrCodeIcon />{m.inventory_qr_sheet()}
       </Button>
@@ -96,6 +105,11 @@
         <Button href={newAssetHref("device")}>
           <PlusIcon />{m.inventory_create()}
         </Button>
+        {#if data.suggestionsAvailable}
+          <Button variant="outline" onclick={() => (suggestionsOpen = true)}>
+            <SparklesIcon />{m.inventory_suggestions()}
+          </Button>
+        {/if}
       {/snippet}
     </EmptyState>
   {:else}
@@ -238,3 +252,11 @@
     {/if}
   {/if}
 </div>
+
+{#if data.suggestionsAvailable}
+  <DeviceSuggestionsSheet
+    bind:open={suggestionsOpen}
+    rooms={data.rooms}
+    onadded={invalidateAll}
+  />
+{/if}

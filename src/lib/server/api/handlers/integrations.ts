@@ -130,3 +130,39 @@ export const devices: Handler<typeof endpoints.integrationsDevices> = async ({
   ctx,
   params,
 }) => (await devicesOf(ctx, params.kind)) as never;
+
+const tagsOf = operation("tags");
+const correspondentsOf = operation("correspondents");
+const customFieldsOf = operation("custom-fields");
+const groupsOf = operation("groups");
+const storagePathsOf = operation("storage-paths");
+
+const pickerQuery = (query: { q?: string }): Record<string, string> =>
+  query.q ? { q: query.q } : {};
+
+export const tags: Handler<typeof endpoints.integrationsTags> = async ({
+  ctx,
+  params,
+  query,
+}) => (await tagsOf(ctx, params.kind, pickerQuery(query))) as never;
+
+export const correspondents: Handler<
+  typeof endpoints.integrationsCorrespondents
+> = async ({ ctx, params, query }) =>
+  (await correspondentsOf(ctx, params.kind, pickerQuery(query))) as never;
+
+export const customFields: Handler<
+  typeof endpoints.integrationsCustomFields
+> = async ({ ctx, params, query }) =>
+  (await customFieldsOf(ctx, params.kind, pickerQuery(query))) as never;
+
+export const groups: Handler<typeof endpoints.integrationsGroups> = async ({
+  ctx,
+  params,
+  query,
+}) => (await groupsOf(ctx, params.kind, pickerQuery(query))) as never;
+
+export const storagePaths: Handler<
+  typeof endpoints.integrationsStoragePaths
+> = async ({ ctx, params, query }) =>
+  (await storagePathsOf(ctx, params.kind, pickerQuery(query))) as never;

@@ -2,6 +2,7 @@ import type { Component } from "svelte";
 import ContactIcon from "@lucide/svelte/icons/contact";
 import CpuIcon from "@lucide/svelte/icons/cpu";
 import DoorOpenIcon from "@lucide/svelte/icons/door-open";
+import FileSearchIcon from "@lucide/svelte/icons/file-search";
 import FileTextIcon from "@lucide/svelte/icons/file-text";
 import LightbulbIcon from "@lucide/svelte/icons/lightbulb";
 import ListChecksIcon from "@lucide/svelte/icons/list-checks";
@@ -29,6 +30,7 @@ export const hitLabels: Record<SearchHitType, () => string> = {
   contact: () => m.search_type_contact(),
   part: () => m.search_type_part(),
   asset_hint: () => m.search_type_hint(),
+  document: () => m.search_type_document(),
 };
 
 export const hitIcons: Record<SearchHitType, Component> = {
@@ -40,6 +42,7 @@ export const hitIcons: Record<SearchHitType, Component> = {
   contact: ContactIcon,
   part: PuzzleIcon,
   asset_hint: LightbulbIcon,
+  document: FileSearchIcon,
 };
 
 /** The groups of a hit list in display order, empty ones left out. */

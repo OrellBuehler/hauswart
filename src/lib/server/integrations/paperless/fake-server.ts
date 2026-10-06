@@ -68,6 +68,20 @@ export interface FakeCustomField {
   } | null;
 }
 
+export interface FakeStoragePath {
+  id: number;
+  name: string;
+  path?: string;
+}
+
+/** Another account of the fake server (see `addUser`): its own token, id and groups. */
+export interface FakeUser {
+  id: number;
+  username: string;
+  is_superuser?: boolean;
+  groups?: number[];
+}
+
 export interface RecordedRequest {
   method: string;
   path: string;
@@ -88,6 +102,8 @@ export interface FakeUpload {
   documentType: string | null;
   storagePath: string | null;
   customFields: string[];
+  /** The id of the account that uploaded it. */
+  uploaderId: number;
 }
 
 export type TaskStep =
@@ -127,7 +143,18 @@ export class FakePaperless {
   tags: FakeTag[] = [];
   correspondents: FakeCorrespondent[] = [];
   customFields: FakeCustomField[] = [];
+  storagePaths: FakeStoragePath[] = [];
   groups: Array<{ id: number; name: string }> = [];
+  /** Fields every document created by an upload gets (a stand-in for Paperless workflows). */
+  docDefaults: Partial<FakeDoc> = {};
+  /** Further accounts by token; the default account is `token` / `user`. */
+  accounts = new Map<string, FakeUser>();
+  /**
+   * Off: every document is visible to every token and uploads have no owner. On: a document is
+   * visible to its owner, to superusers, to users and groups of its `view` permission, and to
+   * everybody while it has no owner; uploads are owned by the uploading account.
+   */
+  strictPermissions = false;
   users: Array<{ id: number; username: string }> = [];
   pageSize: number | null = null;
   wrongHostNext = false;
@@ -142,6 +169,9 @@ export class FakePaperless {
   /** `normal`: one buffer with Content-Length; `chunked`: no length; `stall`: first chunk, then silence. */
   downloadMode: "normal" | "chunked" | "stall" = "normal";
   requests: RecordedRequest[] = [];
+  /** The most requests that were being answered at the same time. */
+  maxConcurrent = 0;
+  private inFlight = 0;
   uploads: FakeUpload[] = [];
   server!: ReturnType<typeof Bun.serve>;
   private injections: Injection[] = [];
@@ -174,6 +204,10 @@ export class FakePaperless {
     this.correspondents = [];
     this.customFields = [];
     this.groups = [];
+    this.storagePaths = [];
+    this.docDefaults = {};
+    this.accounts.clear();
+    this.strictPermissions = false;
     this.users = [];
     this.pageSize = null;
     this.wrongHostNext = false;
@@ -186,6 +220,7 @@ export class FakePaperless {
     this.duplicateOf = 7;
     this.downloadMode = "normal";
     this.requests = [];
+    this.maxConcurrent = 0;
     this.uploads = [];
     this.injections = [];
     this.tasks.clear();
@@ -240,6 +275,30 @@ export class FakePaperless {
     };
     this.docs.set(full.id, full);
     return full;
+  }
+
+  /** Adds an account that authenticates with `token`. */
+  addAccount(token: string, user: FakeUser): void {
+    this.accounts.set(token, user);
+  }
+
+  private accountFor(header: string | null): FakeUser | null {
+    const token = /^Token (.+)$/.exec(header ?? "")?.[1];
+    if (token === undefined) return null;
+    if (token === this.token) return this.user;
+    return this.accounts.get(token) ?? null;
+  }
+
+  private canView(doc: FakeDoc, account: FakeUser): boolean {
+    if (!this.strictPermissions) return true;
+    if (doc.owner === null || doc.owner === account.id) return true;
+    if (account.is_superuser) return true;
+    return (
+      doc.permissions.view.users.includes(account.id) ||
+      doc.permissions.view.groups.some((g) =>
+        (account.groups ?? []).includes(g),
+      )
+    );
   }
 
   requestsTo(pathPart: string, method?: string): RecordedRequest[] {
@@ -364,9 +423,9 @@ export class FakePaperless {
     }
   }
 
-  private listDocuments(url: URL) {
+  private listDocuments(url: URL, account: FakeUser) {
     const q = url.searchParams;
-    let list = [...this.docs.values()];
+    let list = [...this.docs.values()].filter((d) => this.canView(d, account));
     const ints = (v: string) => v.split(",").map(Number);
     const all = q.get("tags__id__all");
     if (all)
@@ -460,6 +519,16 @@ export class FakePaperless {
   }
 
   private async handle(req: Request): Promise<Response> {
+    this.inFlight++;
+    this.maxConcurrent = Math.max(this.maxConcurrent, this.inFlight);
+    try {
+      return await this.respondTo(req);
+    } finally {
+      this.inFlight--;
+    }
+  }
+
+  private async respondTo(req: Request): Promise<Response> {
     const url = new URL(req.url);
     let json: unknown;
     if (
@@ -488,7 +557,8 @@ export class FakePaperless {
         headers: { location: `${url.pathname}/${url.search}` },
       });
     }
-    if (req.headers.get("authorization") !== `Token ${this.token}`) {
+    const account = this.accountFor(req.headers.get("authorization"));
+    if (!account) {
       return this.json({ detail: "Invalid token." }, { status: 401 });
     }
     const version = Number(
@@ -520,10 +590,10 @@ export class FakePaperless {
     const notFound = () => respond({ detail: "Not found." }, { status: 404 });
 
     if (root === "ui_settings") {
-      return respond({ user: this.user, settings: {}, permissions: [] });
+      return respond({ user: account, settings: {}, permissions: [] });
     }
     if (root === "documents" && !second && req.method === "GET") {
-      return respond(this.listDocuments(url));
+      return respond(this.listDocuments(url, account));
     }
     if (
       root === "documents" &&
@@ -550,6 +620,7 @@ export class FakePaperless {
         documentType: (form.get("document_type") as string | null) ?? null,
         storagePath: (form.get("storage_path") as string | null) ?? null,
         customFields: strings("custom_fields"),
+        uploaderId: account.id,
       };
       this.uploads.push(upload);
       this.tasks.set(taskId, {
@@ -563,7 +634,7 @@ export class FakePaperless {
     }
     if (root === "documents" && second && /^\d+$/.test(second)) {
       const doc = this.docs.get(Number(second));
-      if (!doc) return notFound();
+      if (!doc || !this.canView(doc, account)) return notFound();
       if (!third && req.method === "GET") {
         return respond(
           this.docJson(
@@ -579,8 +650,8 @@ export class FakePaperless {
         if (
           touchesPermissions &&
           doc.owner !== null &&
-          doc.owner !== this.user.id &&
-          !this.user.is_superuser
+          doc.owner !== account.id &&
+          !account.is_superuser
         ) {
           return respond({ detail: "forbidden" }, { status: 403 });
         }
@@ -616,7 +687,7 @@ export class FakePaperless {
             id: this.nextNoteId++,
             note,
             created: "2026-09-02T08:00:00+00:00",
-            user: this.user.id,
+            user: account.id,
           });
         }
         return respond(doc.notes);
@@ -677,6 +748,9 @@ export class FakePaperless {
       }
       return respond(this.page(url, list));
     }
+    if (root === "storage_paths") {
+      return respond(this.page(url, this.storagePaths));
+    }
     if (root === "custom_fields")
       return respond(this.page(url, this.customFields));
     if (root === "groups") return respond(this.page(url, this.groups));
@@ -694,6 +768,16 @@ export class FakePaperless {
           id: task.documentId,
           title: task.upload.title ?? task.upload.fileName,
           tags: task.upload.tags.map(Number),
+          correspondent:
+            task.upload.correspondent === null
+              ? null
+              : Number(task.upload.correspondent),
+          storage_path:
+            task.upload.storagePath === null
+              ? null
+              : Number(task.upload.storagePath),
+          ...(this.strictPermissions ? { owner: task.upload.uploaderId } : {}),
+          ...this.docDefaults,
         });
       }
       return respond(this.taskList([this.taskBody(step, task)]));

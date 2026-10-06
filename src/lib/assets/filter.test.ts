@@ -20,6 +20,7 @@ function asset(over: Partial<Asset> & { name: string }): Asset {
     installedDate: null,
     warrantyUntil: null,
     warrantyExtendedUntil: null,
+    warrantySource: "manual",
     showOnEmergency: false,
     notes: null,
     species: null,

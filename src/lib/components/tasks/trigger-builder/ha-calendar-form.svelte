@@ -1,4 +1,5 @@
 <script lang="ts">
+  import EntityPicker from "$lib/components/connections/entity-picker.svelte";
   import { Input } from "$lib/components/ui/input/index.js";
   import { m } from "$lib/paraglide/messages";
   import Field from "../field.svelte";
@@ -23,20 +24,17 @@
   <Field
     id="trigger-entity"
     label={m.trigger_form_calendar_entity()}
-    hint={m.trigger_form_entity_hint()}
+    hint={m.trigger_form_calendar_entity_hint()}
     error={errors.entityId}
   >
     {#snippet children({ describedby, invalid })}
-      <Input
+      <EntityPicker
         id="trigger-entity"
-        class="h-10 font-mono"
-        autocomplete="off"
-        autocapitalize="none"
-        spellcheck={false}
-        placeholder="calendar.waste"
+        source="calendars"
         bind:value={trigger.entityId}
-        aria-invalid={invalid || undefined}
-        aria-describedby={describedby}
+        placeholder="calendar.example_waste"
+        {invalid}
+        {describedby}
       />
     {/snippet}
   </Field>

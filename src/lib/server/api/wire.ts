@@ -153,6 +153,7 @@ export function wireAsset(asset: AssetRecord): z.input<typeof assetSchema> {
     installedDate: asset.installedDate,
     warrantyUntil: asset.warrantyUntil,
     warrantyExtendedUntil: asset.warrantyExtendedUntil,
+    warrantySource: asset.warrantySource,
     showOnEmergency: asset.showOnEmergency,
     notes: asset.notes,
     species: asset.species,

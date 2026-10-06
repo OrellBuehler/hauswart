@@ -1,11 +1,16 @@
 # hauswart
 
+[![hauswart dashboard](docs/assets/shots/dashboard-light.webp)](https://orellbuehler.github.io/hauswart/)
+
+**Website: <https://orellbuehler.github.io/hauswart/>** (screenshots show synthetic demo data)
+
 Self-hosted apartment management for a household: recurring maintenance tasks with completion
 tracking, documentation, a device inventory, defects, spare parts, contacts and costs.
 Integrations (Home Assistant, Paperless-ngx, Kept) are optional adapters, never requirements.
 
-**Status: early development.** Nothing is usable yet; the repository currently contains the
-application scaffold only. The interface is in German (default) and English.
+**Status: early development.** The core works (tasks, devices, defects, documentation, spare parts,
+Home Assistant, REST API, MCP server); costs, iCal feeds and guest links are still to come, and
+there is no stable release yet. The interface is in German (default) and English.
 
 ## Run with Docker
 

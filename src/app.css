@@ -243,6 +243,48 @@
 }
 
 @media print {
+  /* Paper is white: a dark-mode user prints with the light palette. */
+  :root.dark {
+    --background: 220 20% 98.5%;
+    --foreground: 224 25% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 25% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 25% 10%;
+    --primary: 224 25% 11%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 220 16% 94.5%;
+    --secondary-foreground: 224 25% 11%;
+    --muted: 220 16% 94.5%;
+    --muted-foreground: 222 9% 40%;
+    --accent: 220 16% 94.5%;
+    --accent-foreground: 224 25% 11%;
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 14% 90%;
+    --input: 220 13% 86%;
+    --ring: 170 78% 30%;
+    --brand: 170 78% 28%;
+    --brand-foreground: 0 0% 100%;
+    --success: 160 84% 26%;
+    --warning: 32 92% 34%;
+    --shadow: 224 40% 12%;
+    --chart-1: 170 70% 36%;
+    --chart-2: 221 78% 56%;
+    --chart-3: 32 90% 50%;
+    --chart-4: 270 60% 58%;
+    --chart-5: 340 72% 54%;
+    --sidebar-background: 220 20% 97%;
+    --sidebar-foreground: 224 14% 28%;
+    --sidebar-primary: 170 78% 28%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 170 40% 92%;
+    --sidebar-accent-foreground: 170 80% 18%;
+    --sidebar-border: 220 14% 90%;
+    --sidebar-ring: 170 78% 30%;
+    color-scheme: light;
+  }
+
   html,
   body {
     background: #fff !important;
