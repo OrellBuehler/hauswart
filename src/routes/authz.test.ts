@@ -44,6 +44,12 @@ const legacy: Record<string, LegacyEntry> = {
   "/src/routes/api/health/+server.ts": { access: "public" },
   "/src/routes/login/+page.server.ts": { access: "public" },
   "/src/routes/setup/+page.ts": { access: "public" },
+  // Token credentials: the address is the secret (see calendar/ and share/ tests).
+  "/src/routes/api/public/cal/[token].ics/+server.ts": { access: "public" },
+  "/src/routes/g/[token]/+layout.server.ts": { access: "public" },
+  "/src/routes/g/[token]/+page.server.ts": { access: "public" },
+  "/src/routes/g/[token]/docs/[slug]/+page.server.ts": { access: "public" },
+  "/src/routes/g/[token]/files/[id]/+server.ts": { access: "public" },
 };
 
 const loaders = {

@@ -21,6 +21,7 @@ import {
   isPublicPath,
 } from "$lib/server/auth/routing";
 import { startFileSweeper } from "$lib/server/attachments/sweeper";
+import { withGuestHeaders } from "$lib/server/share/guest-http";
 import { registerBackups } from "$lib/server/backup";
 import { startAttachmentRerender } from "$lib/server/docs/pages";
 import { registerHomeAssistant } from "$lib/server/integrations/homeassistant";
@@ -203,7 +204,10 @@ export const handle: Handle = async ({ event, resolve }) => {
     );
     response = internalErrorResponse();
   }
-  return withSecurityHeaders(response);
+  const secured = withSecurityHeaders(response);
+  return event.url.pathname.startsWith("/g/")
+    ? withGuestHeaders(secured)
+    : secured;
 };
 
 /** Unexpected page errors: log the error name only (no message or stack) and show nothing else. */

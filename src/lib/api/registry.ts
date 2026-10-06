@@ -202,6 +202,20 @@ import {
   updateCommentRequestSchema,
 } from "./schemas/comments";
 
+import {
+  calendarFeedSchema,
+  createCalendarFeedRequestSchema,
+  createGuestLinkRequestSchema,
+  createdGuestLinkSchema,
+  emergencySchema,
+  exportEmergencyQuerySchema,
+  guestLinkSchema,
+  listCalendarFeedsResponseSchema,
+  listGuestLinksResponseSchema,
+  updateCalendarFeedRequestSchema,
+  updateGuestLinkRequestSchema,
+} from "./schemas/share";
+
 export const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 export type HttpMethod = (typeof HTTP_METHODS)[number];
 
@@ -2245,6 +2259,183 @@ export const endpoints = {
     body: actionRequestSchema,
     response: actionResponseSchema,
     errors: ["forbidden", "not_found", "gone"],
+  }),
+
+  calendarFeedsList: defineEndpoint({
+    id: "calendarFeedsList",
+    method: "GET",
+    path: "/api/v1/calendar-feeds",
+    summary: "List the calling user's calendar feeds",
+    description:
+      "Each feed has a secret subscription address (`url`, `https://…/api/public/cal/<token>.ics`) for any calendar app; only its owner sees it. Other users' feeds are not visible.",
+    tags: ["calendar"],
+    auth: "session",
+    scopes: [],
+    response: listCalendarFeedsResponseSchema,
+  }),
+
+  calendarFeedsCreate: defineEndpoint({
+    id: "calendarFeedsCreate",
+    method: "POST",
+    path: "/api/v1/calendar-feeds",
+    summary: "Create a calendar feed",
+    description:
+      "`scope` `mine` = tasks assigned to the caller or to nobody, `all` = every active task. Estimated dates are only included with `includeEstimated`. `alarmTime` (`HH:MM`, household time zone) adds an alarm `alarmDaysBefore` days ahead of each event (1 = the evening before). At most 10 feeds per user.",
+    tags: ["calendar"],
+    auth: "session",
+    scopes: [],
+    body: createCalendarFeedRequestSchema,
+    response: calendarFeedSchema,
+    status: 201,
+    errors: ["conflict"],
+  }),
+
+  calendarFeedsUpdate: defineEndpoint({
+    id: "calendarFeedsUpdate",
+    method: "PATCH",
+    path: "/api/v1/calendar-feeds/{id}",
+    summary: "Change a calendar feed",
+    tags: ["calendar"],
+    auth: "session",
+    scopes: [],
+    params: idParamsSchema,
+    body: updateCalendarFeedRequestSchema,
+    response: calendarFeedSchema,
+    errors: ["not_found"],
+  }),
+
+  calendarFeedsDelete: defineEndpoint({
+    id: "calendarFeedsDelete",
+    method: "DELETE",
+    path: "/api/v1/calendar-feeds/{id}",
+    summary: "Delete a calendar feed",
+    description: "The subscription address stops working at once (404).",
+    tags: ["calendar"],
+    auth: "session",
+    scopes: [],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
+  calendarFeedsRotate: defineEndpoint({
+    id: "calendarFeedsRotate",
+    method: "POST",
+    path: "/api/v1/calendar-feeds/{id}/rotate",
+    summary: "Give a calendar feed a new address",
+    description:
+      "The old address stops working at once; subscribers must use the new `url`.",
+    tags: ["calendar"],
+    auth: "session",
+    scopes: [],
+    params: idParamsSchema,
+    response: calendarFeedSchema,
+    errors: ["not_found"],
+  }),
+
+  emergencyGet: defineEndpoint({
+    id: "emergencyGet",
+    method: "GET",
+    path: "/api/v1/emergency",
+    summary: "Everything for the emergency page",
+    description:
+      "Pages of the sections `emergency` and `rules` (member HTML, secret blocks included), contacts marked as emergency contacts and devices marked `showOnEmergency` with their pinned hints.",
+    tags: ["emergency"],
+    auth: "both",
+    scopes: ["read"],
+    response: emergencySchema,
+  }),
+
+  emergencyExport: defineEndpoint({
+    id: "emergencyExport",
+    method: "GET",
+    path: "/api/v1/emergency/export.pdf",
+    summary: "Printable emergency and cover sheet as a PDF",
+    description:
+      "An A4 document with the emergency contacts, the important places and devices (with pinned hints) and the text of the emergency and rules pages. Secret blocks are left out unless `includeSecrets=1`; the sheet then carries a prominent confidentiality notice. Language follows the caller's account.",
+    tags: ["emergency"],
+    auth: "both",
+    scopes: ["read"],
+    query: exportEmergencyQuerySchema,
+    response: binaryResponseSchema,
+    responseType: "binary",
+    contentTypes: ["application/pdf"],
+  }),
+
+  guestLinksList: defineEndpoint({
+    id: "guestLinksList",
+    method: "GET",
+    path: "/api/v1/guest-links",
+    summary: "List the household's guest links",
+    description:
+      "All members see and manage all guest links. The address is shown on creation only; a lost one is replaced with a rotation.",
+    tags: ["guest-links"],
+    auth: "session",
+    scopes: [],
+    response: listGuestLinksResponseSchema,
+  }),
+
+  guestLinksCreate: defineEndpoint({
+    id: "guestLinksCreate",
+    method: "POST",
+    path: "/api/v1/guest-links",
+    summary: "Create a guest link",
+    description:
+      "`expiresAt` is required and at most 90 days away. `pin` (4 to 8 digits) adds a PIN gate. A guest sees only content flagged guest-visible that the link's `sections` (and `pageIds`) cover; secret blocks only with `includeSecrets`. The response carries the address (`url`, `/g/<token>`) once.",
+    tags: ["guest-links"],
+    auth: "session",
+    scopes: [],
+    body: createGuestLinkRequestSchema,
+    response: createdGuestLinkSchema,
+    status: 201,
+  }),
+
+  guestLinksUpdate: defineEndpoint({
+    id: "guestLinksUpdate",
+    method: "PATCH",
+    path: "/api/v1/guest-links/{id}",
+    summary: "Change a guest link",
+    description:
+      "`pin` sets a new PIN (which also reopens a link closed by wrong guesses) or removes it with null. A revoked link cannot be changed (409).",
+    tags: ["guest-links"],
+    auth: "session",
+    scopes: [],
+    params: idParamsSchema,
+    body: updateGuestLinkRequestSchema,
+    response: guestLinkSchema,
+    errors: ["not_found", "conflict"],
+  }),
+
+  guestLinksRevoke: defineEndpoint({
+    id: "guestLinksRevoke",
+    method: "DELETE",
+    path: "/api/v1/guest-links/{id}",
+    summary: "Revoke a guest link",
+    description:
+      "The address stops working at once; the link stays in the list as revoked.",
+    tags: ["guest-links"],
+    auth: "session",
+    scopes: [],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
+  guestLinksRotate: defineEndpoint({
+    id: "guestLinksRotate",
+    method: "POST",
+    path: "/api/v1/guest-links/{id}/rotate",
+    summary: "Give a guest link a new address",
+    description:
+      "The old address stops working at once. The response carries the new address (`url`) once.",
+    tags: ["guest-links"],
+    auth: "session",
+    scopes: [],
+    params: idParamsSchema,
+    response: createdGuestLinkSchema,
+    errors: ["not_found", "conflict"],
   }),
 };
 

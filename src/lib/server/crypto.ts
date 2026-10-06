@@ -1,4 +1,10 @@
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHmac,
+  randomBytes,
+  timingSafeEqual,
+} from "node:crypto";
 
 const VERSION = "v1";
 const IV_BYTES = 12;
@@ -85,6 +91,29 @@ export function decryptSecret(payload: string): string {
       { cause },
     );
   }
+}
+
+function mac(purpose: string, message: string): Buffer {
+  const key = createHmac("sha256", getKey())
+    .update(`purpose:${purpose}`)
+    .digest();
+  return createHmac("sha256", key).update(message).digest();
+}
+
+/** HMAC-SHA256 (base64url) of `message`, keyed per `purpose` from `HAUSWART_SECRET_KEY`. */
+export function signValue(purpose: string, message: string): string {
+  return mac(purpose, message).toString("base64url");
+}
+
+/** Constant-time check of a `signValue` signature. */
+export function verifySignature(
+  purpose: string,
+  message: string,
+  signature: string,
+): boolean {
+  const given = Buffer.from(signature, "base64url");
+  const expected = mac(purpose, message);
+  return given.length === expected.length && timingSafeEqual(given, expected);
 }
 
 /** Test hook: re-arm the one-time dev-key warning. */
