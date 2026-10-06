@@ -10,3 +10,4 @@ src/lib/components/ui
 src/lib/paraglide
 project.inlang
 docs/openapi.json
+dist

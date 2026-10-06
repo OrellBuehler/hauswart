@@ -6,7 +6,8 @@ Paperless-ngx links), device inventory, defects, spare parts, contacts, costs, n
 iCal feed, a guest link and an MCP server. Home Assistant, Paperless-ngx and Kept (finance) are
 optional adapters, never requirements. Status: early development — authentication, the API spine
 and the task core (rooms, assets, tasks, completions, notifications, dashboard) exist; documents,
-defects, parts, contacts, costs, the iCal feed, the guest link and the MCP server are still to come.
+defects, parts, contacts, costs, the iCal feed and the guest link are still to come; the MCP server
+covers the task core (see `mcp/README.md`).
 
 There is one household, not many: all domain data is shared by every user. Only sessions, API
 tokens, integration connections and preferences belong to a single user.
@@ -38,6 +39,8 @@ bun run openapi          # regenerate docs/openapi.json from the registry (a tes
 bun run i18n             # recompile Paraglide messages (also runs on install and in check)
 bun run leak-guard --all # scan the whole tree for private terms
 bun scripts/seed.ts --file seed/example.de.json --token hw_… [--url http://localhost:3000] [--update]
+bun run mcp              # MCP server from source (HAUSWART_URL, HAUSWART_TOKEN)
+bun run mcp:build        # compile it to dist/hauswart-mcp (gitignored)
 bun run security         # semgrep, bun audit, trivy
 ```
 
@@ -83,6 +86,9 @@ src/lib/server/tasks/            tasks CRUD, previewTrigger, evaluator (task_sta
                                  completions (complete/skip/undo/snooze), preparations, dashboard, stats, scheduler
 src/lib/server/notifications/    in-app notifications, generateNotifications, channel registry for outward delivery
 src/lib/server/seed/import.ts    seed importer (through the REST API); CLI in scripts/seed.ts, data in seed/
+mcp/src/                         stdio MCP server (client-safe imports only): index.ts entry, server.ts (whoami handshake,
+                                 scope-based registration), tool.ts (defineTool), context.ts (client + name resolvers),
+                                 tools/ (registry in tools/index.ts, one file per domain); mcp/README.md is the setup guide
 src/lib/server/integrations/     optional adapters (homeassistant/, paperless/, kept/) — the core never imports these
 src/lib/server/db.ts             SQLite connection (WAL, foreign keys); migrations run on startup
 src/lib/server/schema.ts         Drizzle schema — one file, every table has created_at/updated_at
@@ -127,6 +133,32 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   by `scripts/seed.ts` through the REST API and matched by `key`, so repeating it changes nothing:
   rooms and assets by slug, tasks by `externalSource: "seed"` + `externalRef`, preparations by title.
   Existing entries are left alone unless `--update`. Changing the household needs the admin scope.
+
+### MCP server
+
+`mcp/` is a stdio server for Claude (Claude Code, Desktop) built on `@modelcontextprotocol/sdk` with
+Zod 4 input shapes. It is a REST client like the others: `createApiClient(fetch, HAUSWART_URL,
+{token})` from `src/lib/api`, so endpoint and schema changes break its build. It imports only
+client-safe modules (`src/lib/api/**`, `src/lib/tasks/engine/types`, `src/lib/dates`; a test bundles
+the entry and fails on any `src/lib/server`, `src/routes` or `src/lib/testing` input). `$lib` aliases
+inside those modules resolve through the root tsconfig (Bun and vite both honour it); the root
+tsconfig also includes `mcp/**` so `bun run check` type-checks it.
+
+- **Tools** are curated and task-oriented (`defineTool({name, title, description, mode, input,
+handler})` returning `{summary, data}`; output is a summary line plus compact JSON with empty
+  fields dropped). `mode` (`read|create|update|undo`) fixes the MCP annotations and the default
+  scope. At start-up the server calls `authMe` + `householdGet` and registers only tools whose
+  scopes the token holds, so a read-only token sees no write tools.
+- **New tool**: add the endpoint to the registry first, then a ~15-line `defineTool` in
+  `mcp/src/tools/` and an entry in `tools/index.ts` (which lists the planned extension points).
+  Triggers go through `parseTrigger` (engine schema, per-type docs in `trigger-docs.ts`, a `Record`
+  over `TriggerType` so a new trigger type must be documented).
+- **Errors** become MCP tool errors `Error [code]: message` (API code, or `unreachable`);
+  `complete_task`/`skip_task` send a fresh idempotency key; completions are attributed `mcp` by the
+  token kind.
+- **Tests** (`mcp/src/*.test.ts`, vitest) connect the real server to an in-process hauswart
+  (`createInProcessFetch`) via the SDK's in-memory transport: `useMcp().connect({scopes})` returns
+  `call`/`ok` helpers.
 
 ### Authentication and the API spine
 
