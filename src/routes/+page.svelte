@@ -1,8 +1,21 @@
 <script lang="ts">
+  import { toast } from "svelte-sonner";
+  import { endpoints } from "$lib/api/registry";
+  import { api } from "$lib/api/browser";
+  import { apiErrorMessage } from "$lib/error-message";
   import { m } from "$lib/paraglide/messages";
   import { getLocale, locales, setLocale } from "$lib/paraglide/runtime";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
+
+  async function logout() {
+    try {
+      await api.call(endpoints.authLogout);
+      window.location.assign("/login");
+    } catch (err) {
+      toast.error(apiErrorMessage(err));
+    }
+  }
 </script>
 
 <svelte:head>
@@ -30,4 +43,5 @@
       </Button>
     {/each}
   </div>
+  <Button variant="ghost" size="sm" onclick={logout}>{m.auth_logout()}</Button>
 </main>

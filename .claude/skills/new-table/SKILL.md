@@ -17,6 +17,8 @@ description: Add or change a database table in hauswart — Drizzle schema, gene
 4. Test with `useTestDB()` from `$lib/testing/db`: it opens an in-memory database with every
    migration applied. Cover defaults, uniqueness, and cascades. Put the test next to the service
    that owns the table.
-5. Data that belongs to a household stays scoped to it; add the scoping column and an index, and
-   test that another household's rows are invisible through the service.
+5. hauswart is a single household: domain tables are shared by all users and need no scoping
+   column. Data that belongs to one user (tokens, sessions, connections, preferences) gets a
+   `user_id` foreign key (`onDelete: "cascade"`) and an index; the service filters by it and a
+   test shows that user A cannot see or change user B's rows.
 6. Run the `verify` skill.

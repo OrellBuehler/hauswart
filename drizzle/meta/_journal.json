@@ -8,6 +8,13 @@
       "when": 1791297042910,
       "tag": "0000_quick_frank_castle",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1791298480328,
+      "tag": "0001_normal_lester",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,11 @@
 import { sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { TOKEN_KINDS, USER_LOCALES, USER_ROLES } from "$lib/api/enums";
+import type { Scope } from "$lib/api/scopes";
 import type { Minor } from "$lib/money";
+
+export { TOKEN_KINDS, USER_LOCALES, USER_ROLES };
+export type { TokenKind, UserLocale, UserRole } from "$lib/api/enums";
 
 export const timestamps = {
   createdAt: integer("created_at", { mode: "timestamp_ms" })
@@ -18,12 +23,6 @@ export const id = () =>
     .$defaultFn(() => crypto.randomUUID());
 
 export const minor = (name: string) => integer(name).$type<Minor>();
-
-export const USER_ROLES = ["admin", "member"] as const;
-export type UserRole = (typeof USER_ROLES)[number];
-
-export const USER_LOCALES = ["de", "en"] as const;
-export type UserLocale = (typeof USER_LOCALES)[number];
 
 export const users = sqliteTable("users", {
   id: id(),
@@ -53,13 +52,12 @@ export const sessions = sqliteTable(
 );
 
 export const AUTH_EVENT_TYPES = [
-  "totp_enabled",
-  "totp_disabled",
-  "recovery_codes_regenerated",
-  "recovery_code_used",
-  "passkey_added",
-  "passkey_removed",
-  "two_factor_reset",
+  "setup_completed",
+  "user_created",
+  "role_changed",
+  "password_reset",
+  "token_created",
+  "token_revoked",
 ] as const;
 export type AuthEventType = (typeof AUTH_EVENT_TYPES)[number];
 
@@ -74,4 +72,30 @@ export const authEvents = sqliteTable(
     ...timestamps,
   },
   (t) => [index("auth_events_user_id_idx").on(t.userId)],
+);
+
+/**
+ * Bearer credentials for the mobile app, Home Assistant, MCP and other
+ * integrations. Only the sha256 of the token is stored; the plaintext is shown
+ * once at creation.
+ */
+export const apiTokens = sqliteTable(
+  "api_tokens",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: TOKEN_KINDS }).notNull(),
+    name: text("name").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    /** First characters of the token, for recognising it in lists. */
+    prefix: text("prefix").notNull(),
+    scopes: text("scopes", { mode: "json" }).$type<Scope[]>().notNull(),
+    lastUsedAt: integer("last_used_at", { mode: "timestamp_ms" }),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }),
+    revokedAt: integer("revoked_at", { mode: "timestamp_ms" }),
+    ...timestamps,
+  },
+  (t) => [index("api_tokens_user_id_idx").on(t.userId)],
 );

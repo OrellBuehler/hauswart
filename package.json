@@ -25,6 +25,7 @@
     "db:studio": "drizzle-kit studio",
     "security": "./scripts/security/scan-all.sh",
     "security:install": "./scripts/security/install-tools.sh",
+    "openapi": "bun scripts/gen-openapi.ts",
     "leak-guard": "bun scripts/leak-guard.ts"
   },
   "devDependencies": {

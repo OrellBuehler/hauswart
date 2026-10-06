@@ -18,7 +18,10 @@ curl http://localhost:3000/api/health   # {"status":"ok"}
 ```
 
 Keep the secret key: it encrypts stored credentials, and losing it makes them unreadable.
-Behind a reverse proxy set `ORIGIN` to the public URL (for example `https://hauswart.example.org`).
+Set `ORIGIN` to the public URL (for example `https://hauswart.example.org`), always behind a
+reverse proxy and also on plain HTTP (`http://localhost:3000`, together with
+`HAUSWART_COOKIE_SECURE=false`): signing in checks the `Origin` header against it. The first
+visit opens the setup page, which creates the administrator account.
 
 ## Configuration
 
@@ -31,7 +34,7 @@ Behind a reverse proxy set `ORIGIN` to the public URL (for example `https://haus
 | `HAUSWART_BACKUP_KEEP`   | `14`                    | Number of backups to keep.                                          |
 | `HAUSWART_TZ`            | `Europe/Zurich`         | Household time zone for calendar dates.                             |
 | `HAUSWART_COOKIE_SECURE` | `true`                  | Set to `false` only when serving over plain HTTP.                   |
-| `ORIGIN`                 | none                    | Public URL; must match behind a reverse proxy.                      |
+| `ORIGIN`                 | none                    | Public URL; required behind a proxy and on plain HTTP (CSRF check). |
 | `ADDRESS_HEADER`         | none                    | Header carrying the client address (for example `X-Forwarded-For`). |
 | `XFF_DEPTH`              | none                    | Number of trusted proxies for `ADDRESS_HEADER`.                     |
 
@@ -47,6 +50,7 @@ bun dev                  # dev server
 bun run verify           # format:check + lint + check + test
 bun run build && bun run start
 bun run db:generate      # after editing src/lib/server/schema.ts
+bun run openapi          # regenerate docs/openapi.json (the versioned /api/v1 contract)
 bun run leak-guard --all # scan the tree for configured private terms
 ```
 
