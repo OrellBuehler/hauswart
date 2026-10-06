@@ -10,9 +10,13 @@ change breaks the build here too.
 
 1. In hauswart open **Settings → API tokens**, create a token of kind **MCP server** and choose
    the scopes:
-   - `read`: Claude can look things up (upcoming tasks, tasks, assets, statistics, notifications).
+   - `read`: Claude can look things up (upcoming tasks, tasks, assets, documentation pages,
+     defects, spare parts, contacts, comments, warranties, statistics, notifications) and search
+     across all of it.
    - `write` (in addition): Claude can also create and change tasks and assets, mark tasks done,
-     skip, snooze and undo. Without it the write tools are not even offered.
+     skip, snooze and undo, report defects and change their status, book spare-part stock, comment
+     and log service work. Without it the write tools are not even offered.
+   - `docs:write` (in addition): Claude can create and edit documentation pages.
 
    The token is shown once. Completions made through it are recorded as coming from `mcp`, under
    the token owner's name.
@@ -74,7 +78,7 @@ Restart Claude Desktop afterwards.
 
 ```bash
 HAUSWART_URL=https://hauswart.example.org HAUSWART_TOKEN=hw_xxxxxxxx bun run mcp
-# stderr: hauswart-mcp: connected to https://hauswart.example.org, 18 tools
+# stderr: hauswart-mcp: connected to https://hauswart.example.org, 34 tools
 ```
 
 The server asks hauswart who the token belongs to when it starts and exits with a message if the
@@ -88,37 +92,55 @@ Results are a one-line summary followed by compact JSON (empty fields left out).
 `Error [code]: message` with the API's error code (`not_found`, `invalid_request`, `forbidden`,
 `unauthenticated`, …), or `unreachable` when hauswart cannot be reached.
 
-| Tool                 | Scope | What it does                                                                                     |
-| -------------------- | ----- | ------------------------------------------------------------------------------------------------ |
-| `whoami`             | read  | Token user, scopes, household, today's date                                                      |
-| `list_upcoming`      | read  | Overdue / today / this week / later / sensor-based tasks and due preparations; `mine`, `horizon` |
-| `list_tasks`         | read  | Filter by status, category, room, asset, assignee, text; paged                                   |
-| `get_task`           | read  | One task: trigger, state, preparations, recent completions                                       |
-| `preview_trigger`    | read  | Check a trigger and see its first due date without creating anything                             |
-| `list_rooms`         | read  | Rooms with ids                                                                                   |
-| `list_assets`        | read  | Devices, plants, fixtures; filter by kind, room, text; paged                                     |
-| `get_asset`          | read  | One asset in full, with its tasks                                                                |
-| `get_stats`          | read  | Done / skipped / on time per person and category                                                 |
-| `list_notifications` | read  | The token user's notifications as readable text                                                  |
-| `create_task`        | write | New task; the trigger is validated with the engine's schema and documented in the tool           |
-| `update_task`        | write | Change fields, replace the trigger, archive or restore                                           |
-| `complete_task`      | write | Mark done (optionally backdated, with a note); returns the next due date                         |
-| `skip_task`          | write | Skip the current occurrence                                                                      |
-| `snooze_task`        | write | Hide a task until a date, or end a snooze                                                        |
-| `undo_completion`    | write | Revoke a completion or skip (within 7 days)                                                      |
-| `create_asset`       | write | New device, plant or fixture                                                                     |
-| `update_asset`       | write | Change fields, archive or restore                                                                |
+| Tool                 | Scope      | What it does                                                                                                                                     |
+| -------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `whoami`             | read       | Token user, scopes, household, today's date                                                                                                      |
+| `list_upcoming`      | read       | Overdue / today / this week / later / sensor-based tasks, due preparations, open defects, expiring warranties, parts to order; `mine`, `horizon` |
+| `list_tasks`         | read       | Filter by status, category, room, asset, assignee, text; paged                                                                                   |
+| `get_task`           | read       | One task: trigger, state, preparations, recent completions                                                                                       |
+| `preview_trigger`    | read       | Check a trigger and see its first due date without creating anything                                                                             |
+| `list_rooms`         | read       | Rooms with ids                                                                                                                                   |
+| `list_assets`        | read       | Devices, plants, fixtures; filter by kind, room, text; paged                                                                                     |
+| `get_asset`          | read       | One asset in full, with its tasks                                                                                                                |
+| `get_stats`          | read       | Done / skipped / on time per person and category                                                                                                 |
+| `list_notifications` | read       | The token user's notifications as readable text                                                                                                  |
+| `create_task`        | write      | New task; the trigger is validated with the engine's schema and documented in the tool                                                           |
+| `update_task`        | write      | Change fields, replace the trigger, archive or restore                                                                                           |
+| `complete_task`      | write      | Mark done (optionally backdated, with a note); returns the next due date                                                                         |
+| `skip_task`          | write      | Skip the current occurrence                                                                                                                      |
+| `snooze_task`        | write      | Hide a task until a date, or end a snooze                                                                                                        |
+| `undo_completion`    | write      | Revoke a completion or skip (within 7 days)                                                                                                      |
+| `create_asset`       | write      | New device, plant or fixture                                                                                                                     |
+| `update_asset`       | write      | Change fields, archive or restore                                                                                                                |
+| `search`             | read       | Full-text search over pages, assets, rooms, tasks, defects, contacts, parts and hints                                                            |
+| `list_pages`         | read       | Documentation pages: filter by section, asset, room, text; paged                                                                                 |
+| `get_page`           | read       | One page: markdown (secret blocks included), `rev`, backlinks, attached file names                                                               |
+| `list_defects`       | read       | Defects: active (default), all or one status; filter by severity, room, asset, text; paged                                                       |
+| `get_defect`         | read       | One defect with its timeline (status changes, correspondence, comments) and attachment names                                                     |
+| `list_parts`         | read       | Spare parts with stock and orders; filter by text, asset, low stock; `orderNow` = shopping list                                                  |
+| `list_contacts`      | read       | Contacts; filter by kind, emergency, text                                                                                                        |
+| `get_contact`        | read       | One contact in full, by id or name                                                                                                               |
+| `list_comments`      | read       | The comment thread of a task, defect, asset, room, part, contact, log entry, hint or page                                                        |
+| `list_hints`         | read       | Care hints (tips, rules, warnings) of assets                                                                                                     |
+| `list_warranties`    | read       | Warranty status per asset, soonest to expire first                                                                                               |
+| `create_defect`      | write      | Report a defect (room, asset and responsible contact by name)                                                                                    |
+| `set_defect_status`  | write      | Move a defect to reported, in progress, fixed, rejected or back to open, with a note                                                             |
+| `adjust_stock`       | write      | Book a stock movement for a part: used, bought or a correction                                                                                   |
+| `add_comment`        | write      | Comment on a task, defect, asset, room, part, contact, log entry, hint or page                                                                   |
+| `add_service_log`    | write      | Log maintenance, repair or other work on an asset, with contact and cost                                                                         |
+| `create_page`        | docs:write | New documentation page (needs `docs:write`)                                                                                                      |
+| `update_page`        | docs:write | Edit a page; needs the `rev` from `get_page`, a concurrent edit is reported, not overwritten                                                     |
 
 Rooms, assets and people can be given by name (`asset: "Dishwasher"`, `assignee: "Ben"`, `me`)
-instead of an id; an ambiguous name is reported with the candidates. Tools are annotated with the
+instead of an id, and so can contacts and parts; an ambiguous name is reported with the candidates. Tools are annotated with the
 MCP `readOnlyHint`, `destructiveHint` and `idempotentHint`: only `undo_completion` is marked
-destructive, and only the `update_*`, `snooze_task` and read tools are idempotent. Nothing here
-deletes data.
+destructive, and only the `update_*`, `set_defect_status`, `snooze_task` and read tools are idempotent.
+Nothing here deletes data; files can be listed by name but not uploaded or downloaded.
 
 ## Adding a tool
 
 Tools live in `src/tools/`; `src/tools/index.ts` is the registry and lists the planned
-extension points (search, pages, defects, parts and stock, contacts, comments, hints, costs).
+extension points (costs, guest link, iCal feed).
 Once the endpoint exists in `src/lib/api/registry.ts`, a tool is a few lines:
 
 ```ts
@@ -127,7 +149,7 @@ export const listDefects = defineTool({
   title: "List defects",
   description: "Open defects, newest first. Use before reporting a new one.",
   mode: "read", // read | create | update | undo: fixes the annotations and the needed scope
-  input: { status: z.enum(["open", "done"]).optional() },
+  input: { status: z.enum(["active", "all"]).default("active") },
   async handler({ status }, ctx) {
     const page = await ctx.api.call(endpoints.defectsList, {
       query: { status },

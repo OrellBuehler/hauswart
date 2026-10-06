@@ -8,7 +8,8 @@ optional adapters, never requirements. Status: early development — authenticat
 the task core (rooms, assets, tasks, completions, notifications, dashboard), documentation (pages,
 attachments, search, file backup), contacts, spare parts, the service log, care hints, defects (with
 a PDF export), the warranty overview and generic comments exist; costs, the iCal feed and the guest
-link are still to come; the MCP server covers the task core (see `mcp/README.md`).
+link are still to come; the MCP server covers the task core, documentation, defects, parts, contacts,
+comments, hints, service log and warranties (see `mcp/README.md`).
 
 There is one household, not many: all domain data is shared by every user. Only sessions, API
 tokens, integration connections and preferences belong to a single user.

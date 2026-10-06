@@ -17,7 +17,7 @@ export interface ConnectOptions {
   tools?: readonly Tool[];
 }
 
-const INSTRUCTIONS = `hauswart manages one household's apartment: recurring maintenance tasks (cleaning, filters, plants, payments), devices and plants (assets), rooms and notifications. Dates are YYYY-MM-DD in the household's time zone (whoami shows today). Ids come from the list tools; rooms, assets and people can also be given by name. Start with list_upcoming to see what is due. Fields that are empty are left out of results.`;
+const INSTRUCTIONS = `hauswart manages one household's apartment: recurring maintenance tasks (cleaning, filters, plants, payments), devices and plants (assets), rooms, documentation pages (manuals, how-tos, emergency information), defects, spare parts with stock, contacts, comments and notifications. search finds across all of them. Dates are YYYY-MM-DD in the household's time zone (whoami shows today). Ids come from the list tools; rooms, assets and people can also be given by name. Start with list_upcoming to see what is due. Fields that are empty are left out of results.`;
 
 async function handshake(options: ConnectOptions) {
   const api = createApiClient(options.fetch ?? fetch, options.url, {

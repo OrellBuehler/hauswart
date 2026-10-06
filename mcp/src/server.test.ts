@@ -17,6 +17,17 @@ const READ_TOOLS = [
   "get_asset",
   "get_stats",
   "list_notifications",
+  "search",
+  "list_pages",
+  "get_page",
+  "list_defects",
+  "get_defect",
+  "list_parts",
+  "list_contacts",
+  "get_contact",
+  "list_comments",
+  "list_hints",
+  "list_warranties",
 ];
 const WRITE_TOOLS = [
   "create_task",
@@ -27,7 +38,13 @@ const WRITE_TOOLS = [
   "undo_completion",
   "create_asset",
   "update_asset",
+  "create_defect",
+  "set_defect_status",
+  "adjust_stock",
+  "add_comment",
+  "add_service_log",
 ];
+const DOCS_WRITE_TOOLS = ["create_page", "update_page"];
 
 describe("tool registration", () => {
   const mcp = useMcp();
@@ -39,7 +56,17 @@ describe("tool registration", () => {
       [...READ_TOOLS, ...WRITE_TOOLS].sort(),
     );
     expect(allTools.map((t) => t.name).sort()).toEqual(
-      tools.map((t) => t.name).sort(),
+      [...READ_TOOLS, ...WRITE_TOOLS, ...DOCS_WRITE_TOOLS].sort(),
+    );
+  });
+
+  it("offers the page writers to a token with docs:write", async () => {
+    const { client } = await mcp.connect({
+      scopes: ["read", "write", "docs:write"],
+    });
+    const { tools } = await client.listTools();
+    expect(tools.map((t) => t.name).sort()).toEqual(
+      [...READ_TOOLS, ...WRITE_TOOLS, ...DOCS_WRITE_TOOLS].sort(),
     );
   });
 
@@ -53,7 +80,9 @@ describe("tool registration", () => {
   });
 
   it("annotates every tool and describes it", async () => {
-    const { client } = await mcp.connect();
+    const { client } = await mcp.connect({
+      scopes: ["read", "write", "docs:write"],
+    });
     const { tools } = await client.listTools();
     for (const tool of tools) {
       expect(tool.name).toMatch(/^[a-z]+(_[a-z]+)*$/);
