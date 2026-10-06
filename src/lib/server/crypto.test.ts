@@ -5,6 +5,8 @@ import {
   decryptSecret,
   encryptSecret,
   resetCryptoWarningForTests,
+  signValue,
+  verifySignature,
 } from "./crypto";
 
 const keyA = Buffer.alloc(32, 1).toString("base64");
@@ -67,6 +69,21 @@ describe("crypto", () => {
     expect(() => decryptSecret("garbage")).toThrow(/malformed/);
     expect(() => decryptSecret("v2.aaaa.bbbb")).toThrow(/malformed/);
     expect(() => decryptSecret("v1.aa.bb")).toThrow(/malformed/);
+  });
+
+  it("signs values per purpose and verifies them in constant time", () => {
+    vi.stubEnv("HAUSWART_SECRET_KEY", keyA);
+    const sig = signValue("purpose", "message");
+    expect(sig).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(signValue("purpose", "message")).toBe(sig);
+    expect(verifySignature("purpose", "message", sig)).toBe(true);
+    expect(verifySignature("other", "message", sig)).toBe(false);
+    expect(verifySignature("purpose", "messagE", sig)).toBe(false);
+    expect(verifySignature("purpose", "message", sig.slice(1))).toBe(false);
+    expect(verifySignature("purpose", "message", "")).toBe(false);
+    expect(verifySignature("purpose", "message", `${sig}A`)).toBe(false);
+    vi.stubEnv("HAUSWART_SECRET_KEY", keyB);
+    expect(verifySignature("purpose", "message", sig)).toBe(false);
   });
 
   it("rejects an invalid key", () => {

@@ -243,3 +243,23 @@ export type CommentEntityType = (typeof COMMENT_ENTITY_TYPES)[number];
 
 export const HINT_KINDS = ["tip", "rule", "warning"] as const;
 export type HintKind = (typeof HINT_KINDS)[number];
+
+export const FEED_SCOPES = ["mine", "all"] as const;
+export type FeedScope = (typeof FEED_SCOPES)[number];
+
+export const GUEST_SECTIONS = [
+  "emergency",
+  "rules",
+  "contacts",
+  "devices",
+  "howto",
+] as const;
+export type GuestSection = (typeof GUEST_SECTIONS)[number];
+
+export const GUEST_LINK_STATUSES = [
+  "active",
+  "scheduled",
+  "expired",
+  "revoked",
+] as const;
+export type GuestLinkStatus = (typeof GUEST_LINK_STATUSES)[number];

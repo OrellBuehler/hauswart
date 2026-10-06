@@ -166,6 +166,17 @@ export class RequestRateLimiter {
     return { allowed: true };
   }
 
+  /** Whether `key` is over its limit, without counting a hit. */
+  peek(key: string): Hit {
+    const now = this.clock();
+    const cutoff = now - this.windowMs;
+    const list = (this.hits.get(key) ?? []).filter((t) => t > cutoff);
+    if (list.length >= this.max) {
+      return { allowed: false, retryAfterMs: list[0] + this.windowMs - now };
+    }
+    return { allowed: true };
+  }
+
   reset(): void {
     this.hits.clear();
   }
@@ -201,8 +212,42 @@ export const previewRequestLimiter = new RequestRateLimiter(
   60_000,
 );
 
+/** Requests per client address on the public calendar feeds and guest pages. */
+export const SHARE_REQUESTS_PER_MINUTE = 240;
+export const shareRequestLimiter = new RequestRateLimiter(
+  SHARE_REQUESTS_PER_MINUTE,
+  60_000,
+);
+
+/** Requests per feed token or guest link (all addresses together). */
+export const SHARE_TOKEN_REQUESTS_PER_MINUTE = 120;
+export const shareTokenLimiter = new RequestRateLimiter(
+  SHARE_TOKEN_REQUESTS_PER_MINUTE,
+  60_000,
+);
+
+/** Unknown, expired or revoked tokens presented per client address: guessing is cheap to spot. */
+export const SHARE_MISSES_PER_WINDOW = 20;
+export const shareMissLimiter = new RequestRateLimiter(
+  SHARE_MISSES_PER_WINDOW,
+  WINDOW_MS,
+);
+
+/** Wrong guest PINs: per link and address, per link, per address. */
+export const guestPinRateLimiter = new LoginRateLimiter(
+  Date.now,
+  WINDOW_MS,
+  5,
+  20,
+  10,
+);
+
 /** Test hook: forget all counters. */
 export function resetRateLimiters(): void {
+  shareRequestLimiter.reset();
+  shareTokenLimiter.reset();
+  shareMissLimiter.reset();
+  guestPinRateLimiter.reset();
   loginRateLimiter.reset();
   tokenRequestLimiter.reset();
   publicRequestLimiter.reset();
