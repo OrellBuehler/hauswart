@@ -881,5 +881,17 @@
   "defect_pdf_status_rejected": "Rejected",
   "defect_pdf_severity_low": "low",
   "defect_pdf_severity_medium": "medium",
-  "defect_pdf_severity_high": "high"
+  "defect_pdf_severity_high": "high",
+  "error_gone": "This is no longer available.",
+  "error_upstream": "The connected system did not respond as expected.",
+  "notification_hint": "{asset}: {title}",
+  "push_title_prep": "Prepare",
+  "push_title_due_soon": "Due soon",
+  "push_title_due": "Due",
+  "push_title_overdue": "Overdue",
+  "push_title_digest": "Today",
+  "push_title_hint": "Hint",
+  "push_title_comment": "Comment",
+  "push_title_info": "Info",
+  "push_action_done": "Done"
 }

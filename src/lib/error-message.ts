@@ -33,6 +33,10 @@ export function apiErrorMessage(
       return m.error_not_found();
     case "conflict":
       return m.error_conflict();
+    case "gone":
+      return m.error_gone();
+    case "upstream_error":
+      return m.error_upstream();
     case "internal":
       return m.error_generic();
   }

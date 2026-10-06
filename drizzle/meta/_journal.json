@@ -57,6 +57,13 @@
       "when": 1791307323393,
       "tag": "0007_doc_page_comment_cleanup",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1791309353305,
+      "tag": "0008_nostalgic_zombie",
+      "breakpoints": true
     }
   ]
 }

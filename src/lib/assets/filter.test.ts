@@ -27,6 +27,8 @@ function asset(over: Partial<Asset> & { name: string }): Asset {
     waterNotes: null,
     photoAttachmentId: null,
     photoUrl: null,
+    externalSource: null,
+    externalRef: null,
     commentCount: 0,
     archivedAt: null,
     createdAt: "2026-01-01T00:00:00.000Z",

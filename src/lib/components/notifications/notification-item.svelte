@@ -2,6 +2,7 @@
   import AlarmClockIcon from "@lucide/svelte/icons/alarm-clock";
   import BellRingIcon from "@lucide/svelte/icons/bell-ring";
   import InfoIcon from "@lucide/svelte/icons/info";
+  import LightbulbIcon from "@lucide/svelte/icons/lightbulb";
   import MessageSquareIcon from "@lucide/svelte/icons/message-square";
   import ListChecksIcon from "@lucide/svelte/icons/list-checks";
   import PackageIcon from "@lucide/svelte/icons/package";
@@ -37,6 +38,7 @@
     digest: ListChecksIcon,
     info: InfoIcon,
     comment: MessageSquareIcon,
+    hint: LightbulbIcon,
   };
   const tones: Record<NotificationKind, string> = {
     prep: "text-chart-2",
@@ -46,6 +48,7 @@
     digest: "text-muted-foreground",
     info: "text-muted-foreground",
     comment: "text-chart-2",
+    hint: "text-warning",
   };
 
   const Icon = $derived(icons[notification.kind]);

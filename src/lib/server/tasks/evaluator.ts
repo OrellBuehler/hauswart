@@ -1,10 +1,13 @@
 import { and, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import {
+  SIGNAL_STALE_MS,
+  evalPredicate,
   evaluateTask,
   nextAssignee,
   triggerSchema,
   type Completion,
   type DueResult,
+  type EngineState,
   type Trigger,
 } from "$lib/tasks/engine";
 import { dateInZone, householdTimeZone } from "$lib/server/config";
@@ -76,21 +79,68 @@ interface Batch {
   effort: () => Record<string, number>;
 }
 
-function verdict(task: TaskRow, trigger: Trigger, batch: Batch): DueResult {
+/**
+ * What the engine needs to remember between runs, as observed so far: the
+ * counter value the first time it was seen (the baseline until a completion
+ * snapshots one), and since when a state condition holds. A condition that
+ * no longer holds forgets its start; an unavailable reading changes nothing.
+ */
+function observeState(
+  task: TaskRow,
+  trigger: Trigger,
+  batch: Batch,
+): { counterBaseline: number | null; activeSince: number | null } {
   const prev = batch.previous.get(task.id);
+  let counterBaseline = prev?.counterBaseline ?? null;
+  let activeSince = prev?.activeSince ?? null;
+  if (trigger.type === "counter_delta") {
+    const signal = batch.signals.signals[trigger.entityId];
+    if (
+      counterBaseline === null &&
+      signal &&
+      typeof signal.numeric === "number" &&
+      Number.isFinite(signal.numeric) &&
+      batch.clock.now - signal.seenAt <= SIGNAL_STALE_MS
+    ) {
+      counterBaseline = signal.numeric;
+    }
+  } else if (trigger.type === "state_condition") {
+    const signal = batch.signals.signals[trigger.entityId];
+    if (signal && batch.clock.now - signal.seenAt <= SIGNAL_STALE_MS) {
+      const holds = evalPredicate(signal, trigger.op, trigger.value);
+      if (holds === true) {
+        activeSince ??= Math.min(signal.changedAt, batch.clock.now);
+      } else if (holds === false) {
+        activeSince = null;
+      }
+    }
+  }
+  return { counterBaseline, activeSince };
+}
+
+function verdict(
+  task: TaskRow,
+  trigger: Trigger,
+  batch: Batch,
+  observed: ReturnType<typeof observeState>,
+): DueResult {
+  const prev = batch.previous.get(task.id);
+  const state: EngineState = {
+    ...(observed.counterBaseline === null
+      ? {}
+      : { counterBaseline: observed.counterBaseline }),
+    ...(observed.activeSince === null
+      ? {}
+      : { activeSince: observed.activeSince }),
+    ...(prev?.dueSince == null ? {} : { dueSince: prev.dueSince }),
+  };
   return evaluateTask({
     trigger,
     completions: batch.completions.get(task.id) ?? [],
     signals: batch.signals.signals,
     samples: batch.signals.samples,
     externalDates: batch.signals.externalDates,
-    state: {
-      ...(prev?.counterBaseline == null
-        ? {}
-        : { counterBaseline: prev.counterBaseline }),
-      ...(prev?.activeSince == null ? {} : { activeSince: prev.activeSince }),
-      ...(prev?.dueSince == null ? {} : { dueSince: prev.dueSince }),
-    },
+    state,
     today: batch.clock.today,
     now: batch.clock.now,
     tz: batch.clock.tz,
@@ -121,7 +171,8 @@ function writeState(
   trigger: Trigger,
   batch: Batch,
 ): StateRow {
-  const result = verdict(task, trigger, batch);
+  const observed = observeState(task, trigger, batch);
+  const result = verdict(task, trigger, batch, observed);
   const prev = batch.previous.get(task.id);
   const now = batch.clock.now;
   const values = {
@@ -136,8 +187,8 @@ function writeState(
     missedCount: result.missedCount ?? 0,
     reasonsJson: result.reasons,
     currentAssigneeUserId: assigneeFor(task, batch),
-    counterBaseline: prev?.counterBaseline ?? null,
-    activeSince: prev?.activeSince ?? null,
+    counterBaseline: observed.counterBaseline,
+    activeSince: observed.activeSince,
     // A condition that is met keeps the instant it first was; anything else resets it.
     dueSince:
       result.dueKind === "condition" && result.dueDate !== null
@@ -197,6 +248,7 @@ async function buildBatch(
     }
   }
   const signals = await loadSignals(
+    ctx.db,
     triggerSignalNeeds([...triggers.values()]),
     ctx.now,
   );
@@ -289,5 +341,29 @@ export async function evaluateAll(
     .from(tasks)
     .where(isNull(tasks.archivedAt))
     .all();
+  return evaluateRows(ctx, rows, { throwOnError: false });
+}
+
+/** Re-evaluates the given tasks (archived ones are skipped); a broken task is logged and skipped. */
+export async function evaluateTasks(
+  ctx: ServiceContext,
+  taskIds: readonly string[],
+): Promise<EvaluationSummary> {
+  const rows: TaskRow[] = [];
+  for (let i = 0; i < taskIds.length; i += 500) {
+    rows.push(
+      ...ctx.db
+        .select()
+        .from(tasks)
+        .where(
+          and(
+            inArray(tasks.id, taskIds.slice(i, i + 500)),
+            isNull(tasks.archivedAt),
+          ),
+        )
+        .all(),
+    );
+  }
+  if (rows.length === 0) return { evaluated: 0, failed: 0 };
   return evaluateRows(ctx, rows, { throwOnError: false });
 }

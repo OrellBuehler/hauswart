@@ -698,8 +698,9 @@ describe("comments", () => {
       const seen: [DeliverableNotification, string[]][] = [];
       const off = registerNotificationChannel({
         name: "test",
-        deliver: (n, recipients) => {
-          seen.push([n, recipients.map((r) => r.id)]);
+        deliver: (n, recipient) => {
+          seen.push([n, [recipient.id]]);
+          return [];
         },
       });
       const asset = createAsset(ctx(), {

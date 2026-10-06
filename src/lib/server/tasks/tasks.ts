@@ -20,6 +20,7 @@ import {
   type ServiceContext,
 } from "$lib/server/service";
 import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
+import { signalNeedsChanged } from "$lib/server/signals/watch";
 import { clockAt, evaluateTaskById } from "./evaluator";
 import { toStateRecord, type StateRow, type TaskStateRecord } from "./state";
 import type { DueResult } from "$lib/tasks/engine";
@@ -283,8 +284,18 @@ export async function createTask(
     }
     throw err;
   }
+  signalNeedsChanged(ctx);
   await evaluateTaskById(ctx, id);
   return getTask(ctx, id);
+}
+
+/** What a trigger's remembered observations (counter baseline, since when a condition holds) are about. */
+function observationKey(trigger: Trigger): string {
+  if (trigger.type === "counter_delta") return `c:${trigger.entityId}`;
+  if (trigger.type === "state_condition") {
+    return `s:${trigger.entityId}:${trigger.op}:${trigger.value}`;
+  }
+  return "";
 }
 
 export async function updateTask(
@@ -314,6 +325,17 @@ export async function updateTask(
       })
     : {};
   const { archived, ...fields } = patch;
+  if (
+    patch.trigger !== undefined &&
+    observationKey(patch.trigger) !== observationKey(current.trigger)
+  ) {
+    // The baseline of another counter or the start of another condition would be wrong here.
+    ctx.db
+      .update(taskState)
+      .set({ counterBaseline: null, activeSince: null, dueSince: null })
+      .where(eq(taskState.taskId, id))
+      .run();
+  }
   ctx.db
     .update(tasks)
     .set({
@@ -329,6 +351,7 @@ export async function updateTask(
     })
     .where(eq(tasks.id, id))
     .run();
+  signalNeedsChanged(ctx);
   await evaluateTaskById(ctx, id);
   return getTask(ctx, id);
 }

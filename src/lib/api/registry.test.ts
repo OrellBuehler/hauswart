@@ -179,6 +179,17 @@ describe("registry", () => {
         "GET /api/v1/hints/{id} both",
         "PATCH /api/v1/hints/{id} both",
         "DELETE /api/v1/hints/{id} both",
+        "GET /api/v1/me/notification-settings both",
+        "PUT /api/v1/me/notification-settings both",
+        "GET /api/v1/integrations both",
+        "PUT /api/v1/integrations/{kind} both",
+        "DELETE /api/v1/integrations/{kind} both",
+        "POST /api/v1/integrations/{kind}/test both",
+        "GET /api/v1/integrations/{kind}/entities both",
+        "GET /api/v1/integrations/{kind}/notify-services both",
+        "GET /api/v1/integrations/{kind}/calendars both",
+        "GET /api/v1/integrations/{kind}/devices both",
+        "POST /api/v1/ha/action bearer",
       ].sort(),
     );
   });

@@ -407,7 +407,11 @@ describe("evaluator", () => {
     it("a counter that crossed its threshold is due, from the baseline of the last completion", async () => {
       setSignalProvider(provider(160));
       const task = await makeTask(ctx(), { trigger: counter });
-      expect(task.state?.reasons).toEqual(["baseline_missing"]);
+      // The first reading becomes the baseline until a completion snapshots one.
+      expect(task.state).toMatchObject({
+        status: "ok",
+        progress: { current: 0, target: 50 },
+      });
       const { task: after } = await completeTask(ctx(), task.id, {
         kind: "done",
         source: "manual",

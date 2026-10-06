@@ -50,12 +50,19 @@ export const TRIGGER_DOCS: Record<TriggerType, TriggerDoc> = {
     example: { type: "warranty", until: "2027-11-20", leadDays: 60 },
   },
   counter_delta: {
-    what: "Due when a counter entity grew by `threshold` since the last completion (needs the Home Assistant adapter).",
+    what: 'Due when a counter entity grew by `threshold` since the last completion (needs the Home Assistant adapter). Optional autoComplete: [{type: "counter_reset", entityId, minDrop} | {type: "state_change", entityId, to, from?}] completes the task by itself when the counter drops or a state changes (any recurring trigger takes it).',
     example: {
       type: "counter_delta",
       entityId: "sensor.example_runtime",
       threshold: 500,
       unit: "h",
+      autoComplete: [
+        {
+          type: "counter_reset",
+          entityId: "sensor.example_runtime",
+          minDrop: 100,
+        },
+      ],
     },
   },
   state_condition: {
