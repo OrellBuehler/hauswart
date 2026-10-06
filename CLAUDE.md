@@ -8,9 +8,10 @@ optional adapters, never requirements. Status: early development — authenticat
 the task core (rooms, assets, tasks, completions, notifications, dashboard), documentation (pages,
 attachments, search, file backup), contacts, spare parts, the service log, care hints, defects (with
 a PDF export), the warranty overview, generic comments, iCal feeds, the emergency page data and guest
-links exist; costs are still to come; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
+links, costs (with the settlement between the people and a CSV export) and the per-person finance
+connection (Kept) exist; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
 push notifications with a "done" button; see "Signals, integrations and delivery"); the MCP server covers the task core, documentation, defects, parts, contacts,
-comments, hints, service log and warranties (see `mcp/README.md`).
+comments, hints, service log, warranties and costs (see `mcp/README.md`).
 
 There is one household, not many: all domain data is shared by every user. Only sessions, API
 tokens, integration connections and preferences belong to a single user.
@@ -103,6 +104,10 @@ src/lib/server/domain-events.ts  registerDomainEventHandlers(): wires reactions 
 src/lib/server/contacts/         contacts CRUD + search, links to assets (role per link)
 src/lib/server/parts/            spare parts: CRUD, stock movements, "ordered" state, links to assets/tasks, order-now, completion events
 src/lib/server/service-log/      per-asset work log (also written with a task completion by the complete handler)
+src/lib/server/costs/            cost entries: split.ts (frozen shares), costs.ts (CRUD, list), summary.ts (year totals, settlement),
+                                 csv.ts, totals.ts (cost sums on defects and service log entries)
+src/lib/server/finance/          generic finance-provider seam: providers.ts (registry), suggestions.ts (the private inbox, accept,
+                                 dismiss), bill-tasks.ts (tasks that follow bills)
 src/lib/server/hints/            per-asset care hints (tip/rule/warning), pinned, ordered, optional signal reaction (stored only)
 src/lib/server/defects/          defects (Mängel): status machine, events, handover deadline, reminder task, timeline, PDF export
 src/lib/server/warranties/       warranty overview + status (valid / expiring ≤ 90 days / expired); feeds the dashboard
@@ -120,7 +125,9 @@ mcp/src/                         stdio MCP server (client-safe imports only): in
                                  tools/ (registry in tools/index.ts, one file per domain); mcp/README.md is the setup guide
 src/lib/server/integrations/     optional adapters (homeassistant/, paperless/, kept/) — the core never imports these;
                                  homeassistant/ has client, ws, helpers, fake-server plus adapter (settings, pickers), channel
-                                 (`ha_notify`), sync (polling, calendars) and scheduler, wired by `registerHomeAssistant()`
+                                 (`ha_notify`), sync (polling, calendars) and scheduler, wired by `registerHomeAssistant()`;
+                                 kept/ has client, mappers, fake-server plus config, adapter (settings, pickers), sync and
+                                 scheduler, wired by `registerKept()` (see "Costs and finance providers")
 src/lib/server/db.ts             SQLite connection (WAL, foreign keys); migrations run on startup
 src/lib/server/schema.ts         Drizzle schema — one file, every table has created_at/updated_at
 src/lib/server/crypto.ts         AES-256-GCM for stored secrets (HAUSWART_SECRET_KEY)
@@ -230,6 +237,95 @@ calendars,devices}` (any member; 404 not connected, 502 `upstream_error` with `d
   picker lists registry devices matching no asset (reference, name, or model with overlapping name).
   Entity names in code and tests stay synthetic (`sensor.example_*`).
 
+### Costs and finance providers
+
+- **Cost entries** (`cost_entries`, domain data shared by the household): `date`, `title`,
+  `amountMinor` (positive = expense, negative = refund, never 0) + `currency`, `category`
+  (`repair|utilities|renewal_fund|purchase|mortgage_interest|mortgage_principal|insurance|renovation|maintenance|taxes_fees|other`),
+  optional asset, room, defect and service log entry (a service log entry or defect fills in
+  asset/room when none is given; deleting the target only unlinks), `payee`, `notes`,
+  `paidByUserId`, `splitMode`, `countsAsExpense`, `deductible` (`unknown|maintenance|investment|no`: the
+  Swiss tax distinction between value-preserving and value-increasing work), `source`
+  (`manual|finance_transaction|finance_bill`). `countsAsExpense` defaults to false for
+  `mortgage_principal` (equity, not a cost) and follows a category change unless the person overrode it.
+  Entries can be commented on and carry receipts (attachments, owner `cost`).
+- **Split math** (`money.ts` `allocate`, `costs/split.ts`): shares are frozen per entry in
+  `cost_entry_shares` (basis points, sum exactly 10000), so a later ownership change never rewrites
+  history. `ownership` weighs people by `users.ownership_bps` (normalised, 0% pays nothing, all zero
+  falls back to equal), `equal` weighs everybody the same, `custom` takes explicit shares (sum 10000),
+  `none` is not shared. A person's part of an amount is the largest-remainder split of its absolute
+  value (parts add up to the amount exactly; a refund splits exactly like the expense it reverses);
+  ties go to the earlier user id. PATCH with `splitMode` ownership/equal splits again by today's shares;
+  changing only the amount keeps the frozen shares.
+- **Currency**: entries may be in any currency, but every total, the settlement and the dashboard
+  count the household currency only; `otherCurrencyCount` says how many entries were left out (the CSV
+  has them all).
+- **Summary** (`GET /costs/summary?year=`): `expenseTotalMinor` and the per category / month (always 12) /
+  asset (top 10) / tax class breakdowns count entries with `countsAsExpense`; `equityTotalMinor` is the rest.
+  **Settlement** covers every split entry with a payer, equity included (it is about who paid cash):
+  `balanceMinor` = paid - share (positive = the others owe this person), `settlement` = greedy payments
+  from the largest debtor to the largest creditor ("A owes B CHF x"). Split entries without a payer are
+  counted in `unassignedPayerCount`, never guessed. The dashboard carries `costsYearToDate`.
+- **CSV** (`GET /costs/export.csv?year=`, binary `text/csv`): UTF-8 with BOM, `;` separated, CRLF,
+  fixed English column names (`costs/csv.ts` `CSV_COLUMNS`), amounts as plain decimals with a point, no
+  thousands separator and the currency's own precision (`-12.50`, `1500` for JPY) so they parse the same
+  everywhere; text cells that start with `= + - @` tab or CR get an apostrophe (formula injection).
+- **Defects and service log entries** carry `costs: {totalMinor, count}` (correlated subqueries in the
+  list select, household currency, refunds netted); their legacy `costEntryId` column is unused.
+- **The inbox** (`finance_suggestions`): what a finance provider offers one person - `cost`, `asset` or
+  `bill_task` - with the status `pending|accepted|dismissed` and a payload shaped like the API's. It is
+  **private to its owner**: the list, accept and dismiss only ever select `user_id = caller`, another
+  person's id is a 404 exactly like a missing one, and the finance address of an entry
+  (`providerUrl`) is shown only to the person who booked it. `(connection, kind, ref)` is unique: a
+  seen item keeps its status (a dismissed one stays dismissed, an accepted one never changes, only a
+  pending one takes a fresher payload). Accepting books the cost (paid by the owner, split by ownership
+  unless the body overrides category, title, asset/room/defect/service log, payer, split, expense flag,
+  deductible), creates the asset (with `externalSource: finance_transaction`; the cost of the same
+  transaction gets the asset, in either order) or the bill task, in one transaction. A cost booked from a
+  provider item remembers it (`providerConnectionId` + `providerRef`, unique) so it is never booked twice,
+  even after the entry is deleted.
+- **Provider seam**: an adapter calls `registerFinanceProvider({kind, sync})`; `POST /finance/sync` runs
+  the caller's own connection now (404 without one, a provider failure is a normal `ok: false` answer).
+  `GET /integrations/{kind}/categories|accounts` are pickers for the caller's own connection.
+- **Back-links** are the provider's business but the bookkeeping is generic: a provider entry has
+  `providerLinkId` and `linkSyncedAt` (null = to write; set again to null when title or asset change); a
+  deleted entry with a written link queues a `cost_link_removals` row in the same transaction; the core
+  emits `financeLinksPending`. Failures stay queued and are retried by the next sync.
+- **Bill tasks** (`finance/bill-tasks.ts`): a task with `externalSource: finance_bill`, `externalRef:
+<connectionId>:<billId>` (the connection in the reference keeps two people's bills apart), category
+  `payment`, assigned to the connection's owner (fixed, notify the assignee), trigger `kept_bill`
+  (`status` open/overdue/paid/cancelled). A paid bill completes it with a system completion
+  (`source` = the provider's name, no user), a bill that becomes payable again revokes that, a cancelled bill
+  settles it without a completion, archived tasks are never touched again, bills without a due date are
+  skipped. The task is **visible to the whole household** with creditor, invoice number, amount and due
+  date: that is what the person consents to by switching `billTasks` on. Housekeeping archives tasks
+  settled for 90 days and those of a deleted connection.
+
+#### Kept adapter (`integrations/kept/`)
+
+- **Connection** per person (`kept`, `INTEGRATION_LEVELS` user): `PUT /integrations/kept` with `config`
+  `{categoryMap: {keptCategoryId: costCategory}, purchaseCategoryIds, autoAcceptCategoryIds (subset of the
+map), billTasks, billCreditorFilter (case-insensitive exact creditor names; applies to bill tasks and to paid-bill cost offers), billCostCategory, assignBillTasksTo:
+"owner", syncFrom}`; unknown keys are dropped. Everything is opt-in: no category, nothing read. `test` calls
+  `me()` and reports `info.missingScopes` (of `transactions:read, bills:read, links:write, categories:read`).
+- **Sync** (`syncConnection`, scheduler every 30 min, backoff 1, 2, 4 ... 15 min via the connection's
+  health, immediately when a connection is saved, overlap guard per connection and in the scheduler; each
+  part runs on its own and the first failure becomes the connection's `lastError` code):
+  - transactions of every mapped or purchase category since the cursor (`finance_sync_state`, per scope:
+    a different category set or `syncFrom` starts over; first run from `syncFrom` or 1 January) become `cost`
+    suggestions via `transactionToCostSeed`, or cost entries at once for automatic categories; outgoing payments
+    from purchase categories also `asset` suggestions. A failed item keeps the cursor where it was.
+  - with `billTasks`: open and overdue bills (creditor filter) become bill tasks; tasks of bills that left the
+    list are read individually (paid/cancelled/open again, 404 = archived).
+  - with `billCostCategory`: paid invoices become `finance_bill` cost suggestions - **unless a transaction
+    covers the bill**: a pending bill offer is withdrawn when its transaction arrives, a decided one (accepted or
+    dismissed) makes the transaction arrive as dismissed, so a payment is booked once.
+  - back-links: a booked entry gets `upsertLink` on its transaction or bill (`source: hauswart`, label title
+    (+ asset), url `ORIGIN/costs/<id>`; skipped without `ORIGIN`), a deleted one gets `deleteLink`; a failing
+    call is logged by code and retried next sync, an item Kept does not know (404, 409, 400) is given up on. A
+    links-only round also runs shortly after a cost from Kept is booked, edited or deleted.
+- Logs carry codes only (`kept.transaction_failed {code}`), never titles, amounts, creditors or tokens.
+
 ### Documentation, attachments, search and backup
 
 - **Pages** (`doc_pages`, `doc_page_revisions`; `docs/pages.ts`): `bodyMd` is the source; the
@@ -251,7 +347,7 @@ calendars,devices}` (any member; 404 not connected, 502 `upstream_error` with `d
   flipping `guestVisible` re-renders the pages that embed it (`onAttachmentsChanged` listener,
   started in `init()` by `startAttachmentRerender`; only the two HTML caches change, guarded by `rev`).
 - **Attachments** (`attachments`): one row per upload, generic owner `ownerType` + `ownerId` without
-  foreign keys (`asset|room|page|task|defect|service_log|part|asset_hint|contact`), files stored
+  foreign keys (`asset|room|page|task|defect|service_log|part|asset_hint|contact|cost`), files stored
   once by sha256 in `HAUSWART_FILES_DIR` (`files/store.ts`: images re-encoded, metadata stripped,
   thumbnail; PDFs as uploaded; HEIC/SVG/HTML/GIF refused). Owner existence is checked through the
   registry in `attachments/owners.ts`: asset, room, page and task are built in; defect, service_log,
@@ -259,7 +355,7 @@ calendars,devices}` (any member; 404 not connected, 502 `upstream_error` with `d
   (`attachments/domain-owners.ts`, called from `registerDomainEventHandlers()`, so from `init()` and
   `useTestDB()`). A new owner type registers with `registerAttachmentOwner(type, existsFn)` **from
   `init()`** (never from a module that is only loaded with its routes) and calls
-  `removeOwnedAttachments(ctx, type, id)` from its delete service (done for all nine; deleting an
+  `removeOwnedAttachments(ctx, type, id)` from its delete service (done for all ten; deleting an
   asset also removes the attachments of its service log entries and hints, whose rows go by cascade
   without a foreign key to follow). A type nobody registered is a 400 field error on `ownerType`. Uploading, patching or deleting an attachment of a page needs `docs:write`,
   others `write`. `deleteIfUnreferenced` keeps files younger than a minute, so a daily orphan sweep
@@ -315,7 +411,8 @@ calendars,devices}` (any member; 404 not connected, 502 `upstream_error` with `d
   `AFTER DELETE` triggers (migrations `0004` and `0007` for pages): add one per new commentable table. Delete is soft
   (empty body, `deleted: true`), edit is author-only (403 otherwise), delete is author or admin. A new
   comment notifies the other involved members (`notification_comment`). Tasks, assets, defects, hints,
-  service log entries and pages carry `commentCount`.
+  service log entries, pages and cost entries carry `commentCount`; cost entries are commentable too
+  (trigger in migration `0011`).
 - **Hint reactions** (`signalReactionSchema`, type `signal_change`) are stored with the hint
   (`GET /hints?reactive=true`) and executed by `signals/reactions.ts`, see below.
 
@@ -464,16 +561,16 @@ application/json` (`multipart/form-data` for multipart endpoints), else 403 `csr
 - **Dates are `YYYY-MM-DD` strings in the household time zone** (`HAUSWART_TZ`); instants are
   `timestamp_ms` integers in the database and UTC ISO strings on the wire (`toIso`). Never derive a
   calendar date from `toISOString()` or the server zone; handlers get `ctx.today`.
-- **Money is integer minor units** (`Minor`) plus an ISO 4217 code. Never floats. Cost splits use
-  `shareOf` with `ownership_bps`.
+- **Money is integer minor units** (`Minor`) plus an ISO 4217 code. Never floats. Cost splits are
+  largest-remainder (`allocate`, parts add up exactly) over frozen shares taken from `ownership_bps`.
 - **One household, several users.** Domain data is shared by all users and needs no per-user
-  scoping. Per-user resources (sessions, API tokens, integration connections, preferences) are
+  scoping. Per-user resources (sessions, API tokens, integration connections, preferences, finance suggestions) are
   filtered by the caller's id in the service and invisible to other users (404, never 403). Every
   endpoint is covered by the authz matrix (`src/routes/authz.test.ts`, generated from the registry):
   anonymous, wrong credential kind, missing scope, member vs administrator, cross-origin cookie
   request. No endpoint returns data the caller may not see.
 - **Integrations are adapters.** Nothing outside `integrations/<name>/` knows Home Assistant,
-  Paperless or Kept; entities reference external ids opaquely and work without them. Adapters are
+  Paperless or Kept (the core says "finance provider"; the boundary test also fails on the name Kept); entities reference external ids opaquely and work without them. Adapters are
   tested against fake servers. `src/lib/server/integrations/boundary.test.ts` fails when anything
   but `integrations/**`, `hooks.server.ts` or an allow-listed route imports from `integrations/`.
 - **No swallowed errors.** No empty `catch`, no `catch { return null }` without logging and a

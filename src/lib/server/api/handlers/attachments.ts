@@ -15,9 +15,13 @@ import type { AuthedContext } from "../context";
 import type { Handler } from "../bind";
 import { wireAttachment } from "../wire";
 
-/** Files on a documentation page are documentation: they need the same scope as editing it. */
+/**
+ * Files on a documentation page are documentation: they need the same scope as editing it. Receipts
+ * on a cost entry are financial records: they need the costs scope.
+ */
 function requireOwnerScope(ctx: AuthedContext, ownerType: AttachmentOwnerType) {
   if (ownerType === "page") requireScopes(ctx.principal, ["docs:write"]);
+  if (ownerType === "cost") requireScopes(ctx.principal, ["costs:write"]);
 }
 
 export const upload: Handler<typeof endpoints.attachmentsUpload> = async ({

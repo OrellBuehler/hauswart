@@ -1648,5 +1648,6 @@
   "push_title_hint": "Hint",
   "push_title_comment": "Comment",
   "push_title_info": "Info",
-  "push_action_done": "Done"
+  "push_action_done": "Done",
+  "finance_bill_task_description": "Amount: {amount}. Due on {due}. The status is taken from the finance app."
 }

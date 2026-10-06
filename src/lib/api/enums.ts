@@ -166,6 +166,7 @@ export const ATTACHMENT_OWNER_TYPES = [
   "part",
   "asset_hint",
   "contact",
+  "cost",
 ] as const;
 export type AttachmentOwnerType = (typeof ATTACHMENT_OWNER_TYPES)[number];
 
@@ -240,6 +241,7 @@ export const COMMENT_ENTITY_TYPES = [
   "service_log",
   "asset_hint",
   "doc_page",
+  "cost",
 ] as const;
 export type CommentEntityType = (typeof COMMENT_ENTITY_TYPES)[number];
 
@@ -313,3 +315,69 @@ export const DELIVERY_STATUSES = [
   "skipped",
 ] as const;
 export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number];
+
+export const COST_CATEGORIES = [
+  "repair",
+  "utilities",
+  "renewal_fund",
+  "purchase",
+  "mortgage_interest",
+  "mortgage_principal",
+  "insurance",
+  "renovation",
+  "maintenance",
+  "taxes_fees",
+  "other",
+] as const;
+export type CostCategory = (typeof COST_CATEGORIES)[number];
+
+/** Whether a category counts as an expense by default; a mortgage repayment is equity, not a cost. */
+export const COST_CATEGORY_COUNTS_AS_EXPENSE: Record<CostCategory, boolean> = {
+  repair: true,
+  utilities: true,
+  renewal_fund: true,
+  purchase: true,
+  mortgage_interest: true,
+  mortgage_principal: false,
+  insurance: true,
+  renovation: true,
+  maintenance: true,
+  taxes_fees: true,
+  other: true,
+};
+
+/** How a cost is divided between the household's people: by ownership share, equally, by explicit shares, or not at all. */
+export const COST_SPLIT_MODES = [
+  "ownership",
+  "equal",
+  "custom",
+  "none",
+] as const;
+export type CostSplitMode = (typeof COST_SPLIT_MODES)[number];
+
+/** Swiss tax distinction: value-preserving (maintenance) costs are deductible, value-increasing (investment) ones are not. */
+export const COST_DEDUCTIBLE = [
+  "unknown",
+  "maintenance",
+  "investment",
+  "no",
+] as const;
+export type CostDeductible = (typeof COST_DEDUCTIBLE)[number];
+
+export const COST_SOURCES = [
+  "manual",
+  "finance_transaction",
+  "finance_bill",
+] as const;
+export type CostSource = (typeof COST_SOURCES)[number];
+
+export const FINANCE_SUGGESTION_KINDS = ["cost", "bill_task", "asset"] as const;
+export type FinanceSuggestionKind = (typeof FINANCE_SUGGESTION_KINDS)[number];
+
+export const FINANCE_SUGGESTION_STATUSES = [
+  "pending",
+  "accepted",
+  "dismissed",
+] as const;
+export type FinanceSuggestionStatus =
+  (typeof FINANCE_SUGGESTION_STATUSES)[number];

@@ -28,6 +28,8 @@ const READ_TOOLS = [
   "list_comments",
   "list_hints",
   "list_warranties",
+  "list_costs",
+  "cost_summary",
 ];
 const WRITE_TOOLS = [
   "create_task",
@@ -45,6 +47,7 @@ const WRITE_TOOLS = [
   "add_service_log",
 ];
 const DOCS_WRITE_TOOLS = ["create_page", "update_page"];
+const COSTS_WRITE_TOOLS = ["create_cost"];
 
 describe("tool registration", () => {
   const mcp = useMcp();
@@ -56,7 +59,12 @@ describe("tool registration", () => {
       [...READ_TOOLS, ...WRITE_TOOLS].sort(),
     );
     expect(allTools.map((t) => t.name).sort()).toEqual(
-      [...READ_TOOLS, ...WRITE_TOOLS, ...DOCS_WRITE_TOOLS].sort(),
+      [
+        ...READ_TOOLS,
+        ...WRITE_TOOLS,
+        ...DOCS_WRITE_TOOLS,
+        ...COSTS_WRITE_TOOLS,
+      ].sort(),
     );
   });
 
@@ -67,6 +75,16 @@ describe("tool registration", () => {
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual(
       [...READ_TOOLS, ...WRITE_TOOLS, ...DOCS_WRITE_TOOLS].sort(),
+    );
+  });
+
+  it("offers cost booking only to a token with costs:write", async () => {
+    const { client } = await mcp.connect({
+      scopes: ["read", "write", "costs:write"],
+    });
+    const { tools } = await client.listTools();
+    expect(tools.map((t) => t.name).sort()).toEqual(
+      [...READ_TOOLS, ...WRITE_TOOLS, ...COSTS_WRITE_TOOLS].sort(),
     );
   });
 
@@ -81,7 +99,7 @@ describe("tool registration", () => {
 
   it("annotates every tool and describes it", async () => {
     const { client } = await mcp.connect({
-      scopes: ["read", "write", "docs:write"],
+      scopes: ["read", "write", "docs:write", "costs:write"],
     });
     const { tools } = await client.listTools();
     for (const tool of tools) {

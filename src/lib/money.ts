@@ -128,3 +128,43 @@ export function toDecimalString(value: Minor, decimals = 2): string {
   const fraction = digits.slice(digits.length - decimals);
   return `${value < 0 ? "-" : ""}${whole}${decimals > 0 ? `.${fraction}` : ""}`;
 }
+
+/**
+ * Divides `amount` in proportion to `weights` so that the parts add up to the
+ * amount exactly (largest remainder). Works on the absolute value and puts the
+ * sign back, so a refund splits exactly like the expense it reverses. The
+ * remainder minor units go to the largest fractional parts; ties go to the
+ * earlier weight, so callers pass the weights in a stable order. A weight of
+ * 0 never receives anything. Weights need not sum to 10000.
+ */
+export function allocate(amount: Minor, weights: readonly number[]): Minor[] {
+  if (weights.length === 0) {
+    throw new RangeError("Cannot divide an amount between nobody");
+  }
+  for (const w of weights) {
+    if (!Number.isSafeInteger(w) || w < 0) {
+      throw new RangeError(`Weights must be non-negative integers, got ${w}`);
+    }
+  }
+  const sum = weights.reduce((a, b) => a + b, 0);
+  if (sum === 0) throw new RangeError("Weights must not all be zero");
+  const abs = BigInt(Math.abs(amount));
+  const total = BigInt(sum);
+  const parts = weights.map((w, index) => {
+    const product = abs * BigInt(w);
+    return { index, w, base: product / total, rem: product % total };
+  });
+  let left = abs - parts.reduce((acc, part) => acc + part.base, 0n);
+  const order = parts
+    .filter((p) => p.w > 0)
+    .sort((a, b) =>
+      a.rem === b.rem ? a.index - b.index : a.rem < b.rem ? 1 : -1,
+    );
+  const out = parts.map((p) => p.base);
+  for (const p of order) {
+    if (left === 0n) break;
+    out[p.index] += 1n;
+    left -= 1n;
+  }
+  return out.map((v) => minor(amount < 0 && v !== 0n ? -Number(v) : Number(v)));
+}

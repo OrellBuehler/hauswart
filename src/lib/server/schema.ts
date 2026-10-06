@@ -17,6 +17,10 @@ import {
   COMPLETION_KINDS,
   COMPLETION_SOURCES,
   CONTACT_KINDS,
+  COST_CATEGORIES,
+  COST_DEDUCTIBLE,
+  COST_SOURCES,
+  COST_SPLIT_MODES,
   DEFECT_DEADLINE_SOURCES,
   DEFECT_EVENT_TYPES,
   DEFECT_SEVERITIES,
@@ -26,6 +30,8 @@ import {
   DUE_KINDS,
   DUE_STATUSES,
   FEED_SCOPES,
+  FINANCE_SUGGESTION_KINDS,
+  FINANCE_SUGGESTION_STATUSES,
   GUEST_SECTIONS,
   HINT_KINDS,
   INTEGRATION_KINDS,
@@ -1069,4 +1075,169 @@ export const guestLinks = sqliteTable(
     ...timestamps,
   },
   (t) => [index("guest_links_expires_at_idx").on(t.expiresAt)],
+);
+
+/**
+ * One money movement of the apartment: an expense (positive) or a refund
+ * (negative), in minor units. Domain data shared by the whole household. An entry that came
+ * from a finance provider keeps an opaque reference to it (`providerRef`) so
+ * a transaction can never be booked twice.
+ */
+export const costEntries = sqliteTable(
+  "cost_entries",
+  {
+    id: id(),
+    date: text("date").notNull(),
+    title: text("title").notNull(),
+    amountMinor: integer("amount_minor").notNull().$type<Minor>(),
+    currency: text("currency").notNull(),
+    category: text("category", { enum: COST_CATEGORIES }).notNull(),
+    assetId: text("asset_id").references(() => assets.id, {
+      onDelete: "set null",
+    }),
+    roomId: text("room_id").references(() => rooms.id, {
+      onDelete: "set null",
+    }),
+    defectId: text("defect_id").references(() => defects.id, {
+      onDelete: "set null",
+    }),
+    serviceLogId: text("service_log_id").references(() => serviceLog.id, {
+      onDelete: "set null",
+    }),
+    payee: text("payee"),
+    notes: text("notes"),
+    paidByUserId: text("paid_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    splitMode: text("split_mode", { enum: COST_SPLIT_MODES })
+      .notNull()
+      .default("ownership"),
+    /** False for what builds equity (a mortgage repayment): kept out of the expense totals. */
+    countsAsExpense: integer("counts_as_expense", { mode: "boolean" })
+      .notNull()
+      .default(true),
+    deductible: text("deductible", { enum: COST_DEDUCTIBLE })
+      .notNull()
+      .default("unknown"),
+    source: text("source", { enum: COST_SOURCES }).notNull().default("manual"),
+    /** The connection the entry was booked from; cleared when it is removed. */
+    providerConnectionId: text("provider_connection_id").references(
+      () => connections.id,
+      { onDelete: "set null" },
+    ),
+    providerRef: text("provider_ref"),
+    providerUrl: text("provider_url"),
+    /** The back-link written to the provider; null until it was written. */
+    providerLinkId: text("provider_link_id"),
+    /** Set when the back-link is up to date with the entry; null (or older than the entry) means to be written. */
+    linkSyncedAt: integer("link_synced_at", { mode: "timestamp_ms" }),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    ...timestamps,
+  },
+  (t) => [
+    index("cost_entries_date_idx").on(sql`${t.date} desc`),
+    index("cost_entries_category_idx").on(t.category),
+    index("cost_entries_asset_id_idx").on(t.assetId),
+    index("cost_entries_room_id_idx").on(t.roomId),
+    index("cost_entries_defect_id_idx").on(t.defectId),
+    index("cost_entries_service_log_id_idx").on(t.serviceLogId),
+    index("cost_entries_paid_by_idx").on(t.paidByUserId),
+    uniqueIndex("cost_entries_provider_idx")
+      .on(t.providerConnectionId, t.providerRef)
+      .where(
+        sql`${t.providerConnectionId} is not null and ${t.providerRef} is not null`,
+      ),
+  ],
+);
+
+/** Each person's share of an entry in basis points (sum 10000), frozen when the entry is split, so later ownership changes never rewrite history. */
+export const costEntryShares = sqliteTable(
+  "cost_entry_shares",
+  {
+    entryId: text("entry_id")
+      .notNull()
+      .references(() => costEntries.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    shareBps: integer("share_bps").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.entryId, t.userId] }),
+    index("cost_entry_shares_user_id_idx").on(t.userId),
+  ],
+);
+
+/**
+ * What a finance provider offers one person: a cost entry, an asset or a bill
+ * task, waiting for their decision. Private to `userId`: no other member ever
+ * sees a row, whatever it contains. A dismissed row stays so the same item is
+ * never offered again.
+ */
+export const financeSuggestions = sqliteTable(
+  "finance_suggestions",
+  {
+    id: id(),
+    connectionId: text("connection_id")
+      .notNull()
+      .references(() => connections.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: FINANCE_SUGGESTION_KINDS }).notNull(),
+    providerRef: text("provider_ref").notNull(),
+    payloadJson: text("payload_json", { mode: "json" })
+      .$type<Record<string, unknown>>()
+      .notNull(),
+    /** Opaque provider ids of the bills this item settles; used to book a payment only once. */
+    billRefsJson: text("bill_refs_json", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    status: text("status", { enum: FINANCE_SUGGESTION_STATUSES })
+      .notNull()
+      .default("pending"),
+    acceptedEntityId: text("accepted_entity_id"),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("finance_suggestions_ref_idx").on(
+      t.connectionId,
+      t.kind,
+      t.providerRef,
+    ),
+    index("finance_suggestions_user_idx").on(t.userId, t.status, t.kind),
+  ],
+);
+
+/** Where a provider sync stopped, per connection. */
+export const financeSyncState = sqliteTable("finance_sync_state", {
+  connectionId: text("connection_id")
+    .primaryKey()
+    .references(() => connections.id, { onDelete: "cascade" }),
+  /** Newest `updatedAt` of a transaction already seen (ISO 8601). */
+  transactionsSince: text("transactions_since"),
+  /** Newest `updatedAt` of a paid bill already seen (ISO 8601). */
+  billsSince: text("bills_since"),
+  /** What each cursor was taken for (categories, start date): another scope starts over, duplicates are caught by the unique references. */
+  transactionsScope: text("transactions_scope"),
+  billsScope: text("bills_scope"),
+  lastRunAt: integer("last_run_at", { mode: "timestamp_ms" }),
+  ...timestamps,
+});
+
+/** A back-link to remove from the provider after its cost entry was deleted; retried until it works. */
+export const costLinkRemovals = sqliteTable(
+  "cost_link_removals",
+  {
+    id: id(),
+    connectionId: text("connection_id")
+      .notNull()
+      .references(() => connections.id, { onDelete: "cascade" }),
+    linkId: text("link_id").notNull(),
+    ...timestamps,
+  },
+  (t) => [index("cost_link_removals_connection_idx").on(t.connectionId)],
 );

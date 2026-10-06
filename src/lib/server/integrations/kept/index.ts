@@ -1,3 +1,37 @@
+import { registerIntegration } from "$lib/server/connections/registry";
+import { registerFinanceProvider } from "$lib/server/finance/providers";
+import { keptIntegration } from "./adapter";
+import { KIND } from "./connection";
+import { startKeptScheduler, type SchedulerOptions } from "./scheduler";
+import { syncConnection } from "./sync";
+
+/**
+ * Wires the Kept adapter into the app at startup: the per-person connection
+ * settings (`/integrations/kept`, category and account pickers), the finance
+ * provider behind `POST /finance/sync` and the scheduler that syncs every
+ * connection. Everything is inert until a person saves a connection. Returns a
+ * function that undoes it.
+ */
+export function registerKept(
+  options: { scheduler?: SchedulerOptions } = {},
+): () => void {
+  const offIntegration = registerIntegration(keptIntegration);
+  const offProvider = registerFinanceProvider({
+    kind: KIND,
+    sync: (ctx, row) => syncConnection(ctx, row),
+  });
+  const stopScheduler = startKeptScheduler(options.scheduler);
+  return () => {
+    stopScheduler();
+    offProvider();
+    offIntegration();
+  };
+}
+
+export { keptIntegration } from "./adapter";
+export { startKeptScheduler, type SchedulerOptions } from "./scheduler";
+export { syncConnection } from "./sync";
+export { keptConfigSchema, type KeptConfig } from "./config";
 export {
   DEFAULT_PAGE_SIZE,
   DEFAULT_TIMEOUT_MS,

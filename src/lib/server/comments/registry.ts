@@ -4,6 +4,7 @@ import {
   assetHints,
   assets,
   contacts,
+  costEntries,
   defects,
   docPages,
   parts,
@@ -53,6 +54,7 @@ function simple(
     | typeof contacts
     | typeof serviceLog
     | typeof defects
+    | typeof costEntries
     | typeof docPages,
   titleOf: (row: Record<string, unknown>) => string,
   url: (db: DB, id: string) => string,
@@ -173,5 +175,13 @@ registerCommentable(
           .where(eq(docPages.id, id))
           .get()?.slug ?? ""
       }`,
+  ),
+);
+registerCommentable(
+  "cost",
+  simple(
+    costEntries,
+    (r) => r.title as string,
+    (_db, id) => `/costs/${id}`,
   ),
 );

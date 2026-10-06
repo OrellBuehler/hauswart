@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  allocate,
   formatShare,
   minor,
   parseShareBasis,
@@ -114,5 +115,82 @@ describe("share percentages", () => {
     expect(parseShareBasis("total", "share")).toBe("total");
     expect(parseShareBasis("bogus", "share")).toBe("share");
     expect(parseShareBasis(null, "total")).toBe("total");
+  });
+});
+
+describe("allocate", () => {
+  const sum = (parts: number[]) => parts.reduce((a, b) => a + b, 0);
+
+  it.each([
+    [10000, [5000, 5000], [5000, 5000]],
+    [1001, [5000, 5000], [501, 500]],
+    [-1001, [5000, 5000], [-501, -500]],
+    [1000, [1, 1, 1], [334, 333, 333]],
+    [100, [3333, 3333, 3334], [33, 33, 34]],
+    [1, [5000, 5000], [1, 0]],
+    [0, [5000, 5000], [0, 0]],
+    [12345, [10000], [12345]],
+    [7, [7000, 3000], [5, 2]],
+  ])("splits %i by %j into %j", (amount, weights, expected) => {
+    expect(allocate(minor(amount), weights)).toEqual(expected);
+  });
+
+  it("gives the remainder to the largest fractional part, ties to the earlier weight", () => {
+    // 10 / 3 = 3.33 each: one extra unit, to the first
+    expect(allocate(minor(10), [1, 1, 1])).toEqual([4, 3, 3]);
+    // 5 * 0.2 = 1.0, 5 * 0.8 = 4.0: exact
+    expect(allocate(minor(5), [2000, 8000])).toEqual([1, 4]);
+    // 3 * 0.45 = 1.35, 3 * 0.55 = 1.65: the larger fraction (.65) takes the unit
+    expect(allocate(minor(3), [4500, 5500])).toEqual([1, 2]);
+  });
+
+  it("never gives anything to a zero weight", () => {
+    expect(allocate(minor(5), [0, 1, 1])).toEqual([0, 3, 2]);
+    expect(allocate(minor(1), [0, 1, 0])).toEqual([0, 1, 0]);
+  });
+
+  it("treats a refund like the expense it reverses", () => {
+    for (const amount of [1, 2, 3, 99, 1001, 123457]) {
+      const plus = allocate(minor(amount), [3333, 3333, 3334]);
+      const minus = allocate(minor(-amount), [3333, 3333, 3334]);
+      expect(minus.map((v) => -v + 0)).toEqual(plus);
+    }
+  });
+
+  it("never returns negative zero", () => {
+    expect(Object.is(allocate(minor(-1), [5000, 5000])[1], -0)).toBe(false);
+  });
+
+  it("adds up to the amount exactly, whatever the weights (randomised)", () => {
+    let seed = 42;
+    const rand = (n: number) => {
+      seed = (seed * 1103515245 + 12345) % 2147483648;
+      return seed % n;
+    };
+    for (let i = 0; i < 2000; i++) {
+      const amount = (rand(2) === 0 ? 1 : -1) * rand(5_000_000);
+      const weights = Array.from({ length: 1 + rand(6) }, () => rand(10_000));
+      if (sum(weights) === 0) continue;
+      const parts = allocate(minor(amount), weights);
+      expect(sum(parts)).toBe(amount);
+      parts.forEach((part, k) => {
+        // within one minor unit of the exact proportion
+        const exact = (amount * weights[k]) / sum(weights);
+        expect(Math.abs(part - exact)).toBeLessThan(1);
+      });
+    }
+  });
+
+  it("is exact for amounts near the safe integer range", () => {
+    const amount = 90_071_992_547_409;
+    const parts = allocate(minor(amount), [3333, 3333, 3334]);
+    expect(sum(parts)).toBe(amount);
+  });
+
+  it("refuses nonsense", () => {
+    expect(() => allocate(minor(5), [])).toThrow(RangeError);
+    expect(() => allocate(minor(5), [0, 0])).toThrow(RangeError);
+    expect(() => allocate(minor(5), [-1, 2])).toThrow(RangeError);
+    expect(() => allocate(minor(5), [0.5, 1])).toThrow(RangeError);
   });
 });

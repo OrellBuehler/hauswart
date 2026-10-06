@@ -1648,5 +1648,6 @@
   "push_title_hint": "Hinweis",
   "push_title_comment": "Kommentar",
   "push_title_info": "Hinweis",
-  "push_action_done": "Erledigt"
+  "push_action_done": "Erledigt",
+  "finance_bill_task_description": "Betrag: {amount}. Fällig am {due}. Der Stand wird aus der Finanz-App übernommen."
 }

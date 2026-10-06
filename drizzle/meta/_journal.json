@@ -71,6 +71,20 @@
       "when": 1791312377133,
       "tag": "0009_share_links",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1791314038599,
+      "tag": "0010_costs",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1791314040345,
+      "tag": "0011_cost_comment_cleanup",
+      "breakpoints": true
     }
   ]
 }

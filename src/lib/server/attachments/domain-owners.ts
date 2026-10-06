@@ -4,6 +4,7 @@ import type { AttachmentOwnerType } from "$lib/api/enums";
 import {
   assetHints,
   contacts,
+  costEntries,
   defects,
   parts,
   serviceLog,
@@ -25,6 +26,7 @@ const DOMAIN_OWNERS: [AttachmentOwnerType, OwnerExists][] = [
   ["part", existsIn(parts)],
   ["asset_hint", existsIn(assetHints)],
   ["contact", existsIn(contacts)],
+  ["cost", existsIn(costEntries)],
 ];
 
 /** Makes the owner types of the domains on top of the core valid for uploads. Safe to call more than once. */
