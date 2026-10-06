@@ -708,6 +708,17 @@ Workflow: backend first (with tests and the API contract), then frontend against
 integration work in parallel where it is independent, then `reviewer`. Skills in
 `.claude/skills/`: `new-endpoint`, `new-table`, `new-trigger`, `verify`.
 
+## Releasing
+
+Version numbers follow `package.json` (`APP_VERSION` and the MCP server read it; the image takes it from
+the build argument). To release: bump `version` in `package.json`, add a `## <version>` section to
+`CHANGELOG.md`, merge, then publish a GitHub release for the tag `v<version>`. `docker.yml` refuses a tag
+that differs from `package.json`, runs the checks, builds the image, runs `scripts/docker-smoke.sh` against
+it (setup, Markdown worker, image upload, PDFs, iCal, guest page) and pushes `ghcr.io/<owner>/<repo>` with
+`<version>`, `<major>.<minor>` and `latest`; `release-assets.yml` attaches the compiled MCP binaries. Run
+the same smoke test locally: start the image with `ORIGIN` and `HAUSWART_COOKIE_SECURE=false` and an empty
+volume, then `scripts/docker-smoke.sh <url> <version>`.
+
 ## Git
 
 Conventional commits, lowercase (`feat: add task engine`, `fix: …`, `refactor:`, `chore:`,

@@ -1696,7 +1696,9 @@
           <div class="badges">
             <span class="chip warm"
               ><span class="dot"></span
-              ><span data-i18n="hero.badge">Frühe Entwicklung</span></span
+              ><span data-i18n="hero.badge"
+                >Version 0.1.0 · Frühe Entwicklung</span
+              ></span
             >
             <span class="chip" data-i18n="hero.badge2"
               >Source-available · PolyForm Noncommercial</span
@@ -2145,12 +2147,9 @@
                   >
                 </li>
                 <li>
-                  <svg class="i" aria-hidden="true"><use href="#i-clock" /></svg
-                  ><span
-                    ><span data-i18n="f5.b3"
-                      >Notfallblatt und Gästelinks mit PIN und Ablaufdatum</span
-                    >
-                    <span class="tag" data-i18n="f5.soon">In Arbeit</span></span
+                  <svg class="i" aria-hidden="true"><use href="#i-check" /></svg
+                  ><span data-i18n="f5.b3"
+                    >Notfallblatt und Gästelinks mit PIN und Ablaufdatum</span
                   >
                 </li>
               </ul>
@@ -2296,9 +2295,10 @@
               </div>
               <h3 data-i18n="b.5.t">Kalender-Feeds (iCal)</h3>
               <p data-i18n="b.5.d">
-                Fällige Aufgaben im eigenen Kalender abonnieren.
+                Fällige Aufgaben, Vorbereitungen, Mängelfristen und Garantien im
+                eigenen Kalender abonnieren.
               </p>
-              <span class="tag" data-i18n="b.5.s">In Arbeit</span>
+              <span class="tag ok" data-i18n="b.5.s">Verfügbar</span>
             </div>
             <div class="card reveal">
               <div class="ico warm">
@@ -2306,10 +2306,10 @@
               </div>
               <h3 data-i18n="b.6.t">Kosten und Verteilung</h3>
               <p data-i18n="b.6.d">
-                Ausgaben pro Gerät erfassen und nach Eigentumsanteilen
-                aufteilen.
+                Ausgaben pro Gerät erfassen, nach Eigentumsanteilen aufteilen
+                und abrechnen. Heute über API und MCP, die Oberfläche folgt.
               </p>
-              <span class="tag" data-i18n="b.6.s">In Arbeit</span>
+              <span class="tag" data-i18n="b.6.s">Nur per API</span>
             </div>
             <div class="card reveal">
               <div class="ico">
@@ -2430,10 +2430,11 @@
               </div>
               <h3 data-i18n="int.pl.t">Paperless-ngx</h3>
               <p data-i18n="int.pl.d">
-                Belege, Handbücher und Garantiescheine direkt an Geräte und
-                Mängel hängen.
+                Belege, Handbücher und Garantiescheine an Geräte und Mängel
+                hängen, pro Person verbunden. Heute über die API, die Oberfläche
+                folgt.
               </p>
-              <span class="tag" data-i18n="int.pl.s">In Arbeit</span>
+              <span class="tag" data-i18n="int.pl.s">Nur per API</span>
             </li>
             <li class="card reveal">
               <div class="ico warm">
@@ -2441,10 +2442,11 @@
               </div>
               <h3 data-i18n="int.kp.t">Kept</h3>
               <p data-i18n="int.kp.d">
-                Kosten und Garantien mit der selbst gehosteten Finanz-App
-                abgleichen.
+                Offene Rechnungen als Aufgaben und Zahlungen als
+                Kostenvorschläge aus der selbst gehosteten Finanz-App, pro
+                Person verbunden. Heute über die API, die Oberfläche folgt.
               </p>
-              <span class="tag" data-i18n="int.kp.s">In Arbeit</span>
+              <span class="tag" data-i18n="int.kp.s">Nur per API</span>
             </li>
           </ul>
         </div>
@@ -2541,9 +2543,10 @@
               Frühe Entwicklung, mit solidem Fundament
             </h2>
             <p data-i18n="st.lead">
-              hauswart hat noch kein stabiles Release. Der Kern steht und ist
-              durchgetestet, aber Schnittstellen und Datenmodell können sich
-              noch ändern. Sichere deine Daten und probiere es zuerst aus.
+              Version 0.1.0 ist das erste frühe Release, kein stabiles. Der Kern
+              steht und ist durchgetestet, aber Schnittstellen und Datenmodell
+              können sich noch ändern. Sichere deine Daten und probiere es
+              zuerst aus.
             </p>
           </div>
           <div class="status-grid">
@@ -2595,6 +2598,12 @@
                     >REST-API, OpenAPI-Beschreibung und MCP-Server</span
                   >
                 </li>
+                <li>
+                  <svg class="i" aria-hidden="true"><use href="#i-check" /></svg
+                  ><span data-i18n="st.now.7"
+                    >iCal-Feeds, Notfallblatt und Gästelinks mit PIN</span
+                  >
+                </li>
               </ul>
             </div>
             <div class="card next reveal">
@@ -2609,34 +2618,21 @@
               <ul>
                 <li>
                   <svg class="i" aria-hidden="true"><use href="#i-clock" /></svg
-                  ><span data-i18n="st.next.1">Kosten und Aufteilung</span>
-                </li>
-                <li>
-                  <svg class="i" aria-hidden="true"><use href="#i-clock" /></svg
-                  ><span data-i18n="st.next.2">iCal-Feeds</span>
-                </li>
-                <li>
-                  <svg class="i" aria-hidden="true"><use href="#i-clock" /></svg
-                  ><span data-i18n="st.next.3"
-                    >Notfallblatt und Gästelinks mit PIN</span
+                  ><span data-i18n="st.next.1"
+                    >Weboberfläche für Kosten sowie für die Einrichtung von
+                    Paperless-ngx und Kept (per API schon nutzbar)</span
                   >
                 </li>
                 <li>
                   <svg class="i" aria-hidden="true"><use href="#i-clock" /></svg
-                  ><span data-i18n="st.next.4"
-                    >Paperless-ngx- und Kept-Anbindung (teilweise)</span
-                  >
-                </li>
-                <li>
-                  <svg class="i" aria-hidden="true"><use href="#i-clock" /></svg
-                  ><span data-i18n="st.next.5"
+                  ><span data-i18n="st.next.2"
                     >Zwei-Faktor-Anmeldung, Passkeys und
                     Passwort-Selbstverwaltung</span
                   >
                 </li>
                 <li>
                   <svg class="i" aria-hidden="true"><use href="#i-clock" /></svg
-                  ><span data-i18n="st.next.6"
+                  ><span data-i18n="st.next.3"
                     >Native Mobile-App (die API steht bereit)</span
                   >
                 </li>
@@ -2652,17 +2648,18 @@
             <span class="eyebrow" data-i18n="in.eyebrow">Selbst hosten</span>
             <h2 data-i18n="in.title">In fünf Minuten läuft es</h2>
             <p data-i18n="in.lead">
-              hauswart ist ein einziger Docker-Container mit SQLite. Das Image
-              baust du aus dem Repository.
+              hauswart ist ein einziger Docker-Container mit SQLite. Das fertige
+              Image liegt in der GitHub Container Registry.
             </p>
           </div>
           <div class="split">
             <ol class="steps reveal">
               <li>
-                <h3 data-i18n="in.s1">Bauen und starten</h3>
+                <h3 data-i18n="in.s1">Starten</h3>
                 <p data-i18n="in.s1d">
-                  Klone das Repository, baue das Image und starte den Container.
-                  Ein Volume hält Datenbank und Dateien.
+                  Starte den Container mit dem Image. Ein Volume hält Datenbank
+                  und Dateien, der geheime Schlüssel verschlüsselt gespeicherte
+                  Zugangsdaten.
                 </p>
               </li>
               <li>
@@ -2692,24 +2689,22 @@
                     >
                   </button>
                 </div>
-                <pre
-                  id="run"
-                ><code>git clone https://github.com/OrellBuehler/hauswart.git
-cd hauswart
-docker build -t hauswart .
-docker run -d --name hauswart -p 3000:3000 \
+                <pre id="run"><code>docker run -d --name hauswart -p 3000:3000 \
   -v hauswart-data:/data \
   -e HAUSWART_SECRET_KEY="$(openssl rand -base64 32)" \
   -e ORIGIN=http://localhost:3000 \
   -e HAUSWART_COOKIE_SECURE=false \
-  hauswart</code></pre>
+  ghcr.io/orellbuehler/hauswart:0.1.0</code></pre>
               </div>
               <p class="install-note" data-i18n="in.note">
                 Hinter einem Reverse-Proxy setzt du <code>ORIGIN</code> auf die
                 öffentliche Adresse, zum Beispiel
                 <code>https://hauswart.example.org</code>. Den geheimen
-                Schlüssel musst du aufbewahren: Er verschlüsselt gespeicherte
-                Zugangsdaten.
+                Schlüssel musst du aufbewahren. Eine Compose-Datei sowie
+                Hinweise zu Proxy, Updates und Backups stehen im
+                <a href="https://github.com/OrellBuehler/hauswart#readme"
+                  >README</a
+                >.
               </p>
             </div>
           </div>
@@ -2733,10 +2728,10 @@ docker run -d --name hauswart -p 3000:3000 \
             <details>
               <summary data-i18n="faq.1.q">Ist hauswart schon fertig?</summary>
               <p data-i18n="faq.1.a">
-                Nein. Es ist in früher Entwicklung und hat noch kein stabiles
-                Release. Die Kernfunktionen laufen, anderes fehlt noch, siehe
-                «Ehrlicher Stand». Rechne damit, dass sich Schnittstellen und
-                Datenmodell noch ändern.
+                Nein. Version 0.1.0 ist ein früher Stand ohne stabiles Release.
+                Die Kernfunktionen laufen, anderes fehlt noch, siehe «Ehrlicher
+                Stand». Rechne damit, dass sich Schnittstellen und Datenmodell
+                noch ändern.
               </p>
             </details>
             <details>
@@ -2879,12 +2874,13 @@ docker run -d --name hauswart -p 3000:3000 \
           "A consistent database copy every day plus a mirror of uploaded files. Images are stored without metadata.",
         "b.4.s": "Available",
         "b.4.t": "Backup and files",
-        "b.5.d": "Subscribe to due tasks in your own calendar.",
-        "b.5.s": "In progress",
+        "b.5.d":
+          "Subscribe to due tasks, preparations, defect deadlines and warranties in your own calendar.",
+        "b.5.s": "Available",
         "b.5.t": "Calendar feeds (iCal)",
         "b.6.d":
-          "Record expenses per device and split them by ownership share.",
-        "b.6.s": "In progress",
+          "Record expenses per device, split them by ownership share and settle up. Through the API and MCP today, the interface follows.",
+        "b.6.s": "API only",
         "b.6.t": "Costs and splitting",
         "b.7.d":
           "Ctrl + K searches pages, devices, tasks, defects, contacts and parts. Secret blocks never reach the search index.",
@@ -2951,7 +2947,6 @@ docker run -d --name hauswart -p 3000:3000 \
         "f5.eyebrow": "Documentation",
         "f5.shot.alt":
           "Documentation page “Handover for the stand-in” with a warning box and a confidential block",
-        "f5.soon": "In progress",
         "f5.text":
           "Write guides and rules in Markdown, with photos, PDFs and callout boxes. Anything confidential, like the Wi-Fi password, goes into a secret block that guests never see. Pages link to each other and search finds everything.",
         "f5.title": "A folder someone else can take over from",
@@ -2962,7 +2957,7 @@ docker run -d --name hauswart -p 3000:3000 \
           "Link parts to devices and tasks. hauswart compares stock, demand and lead time and shows what you need to order by when. Completing a task books the used part out of stock automatically.",
         "f6.title": "“Order now” does the maths",
         "faq.1.a":
-          "No. It is in early development and has no stable release yet. The core features work, other things are still missing, see “Honest status”. Expect interfaces and data model to change.",
+          "No. Version 0.1.0 is an early release, not a stable one. The core features work, other things are still missing, see “Honest status”. Expect interfaces and data model to change.",
         "faq.1.q": "Is hauswart finished?",
         "faq.2.a":
           "No. Home Assistant, Paperless-ngx and Kept are optional connections. Without Home Assistant, tasks with fixed rhythms, documentation, devices and defects work as usual. Only counter- and state-based triggers need readings.",
@@ -2994,7 +2989,7 @@ docker run -d --name hauswart -p 3000:3000 \
         "foot.nav": "Footer",
         "foot.source": "Source",
         "foot.status": "Early development",
-        "hero.badge": "Early development",
+        "hero.badge": "Version 0.1.0 · Early development",
         "hero.badge2": "Source-available · PolyForm Noncommercial",
         "hero.cta1": "Self-host it",
         "hero.cta2": "View on GitHub",
@@ -3012,12 +3007,12 @@ docker run -d --name hauswart -p 3000:3000 \
         "in.copy": "Copy",
         "in.eyebrow": "Self-host",
         "in.lead":
-          "hauswart is a single Docker container with SQLite. You build the image from the repository.",
+          "hauswart is a single Docker container with SQLite. The ready-made image is on the GitHub Container Registry.",
         "in.note":
-          "Behind a reverse proxy, set <code>ORIGIN</code> to the public address, for example <code>https://hauswart.example.org</code>. Keep the secret key: it encrypts stored credentials.",
-        "in.s1": "Build and run",
+          'Behind a reverse proxy, set <code>ORIGIN</code> to the public address, for example <code>https://hauswart.example.org</code>. Keep the secret key. A Compose file and notes on proxy, updates and backups are in the <a href="https://github.com/OrellBuehler/hauswart#readme">README</a>.',
+        "in.s1": "Run it",
         "in.s1d":
-          "Clone the repository, build the image and start the container. A volume holds database and files.",
+          "Start the container from the image. A volume holds database and files, and the secret key encrypts stored credentials.",
         "in.s2": "Open setup",
         "in.s2d":
           "Open the address in your browser. On the first visit you create the administrator account.",
@@ -3032,14 +3027,14 @@ docker run -d --name hauswart -p 3000:3000 \
         "int.ha.s": "Available",
         "int.ha.t": "Home Assistant",
         "int.kp.d":
-          "Reconcile costs and warranties with the self-hosted finance app.",
-        "int.kp.s": "In progress",
+          "Open bills as tasks and payments as cost suggestions from the self-hosted finance app, connected per person. Through the API today, the interface follows.",
+        "int.kp.s": "API only",
         "int.kp.t": "Kept",
         "int.lead":
           "Everything is optional: hauswart runs without a single connection. Where you set one up, tasks get smarter.",
         "int.pl.d":
-          "Attach receipts, manuals and warranty slips directly to devices and defects.",
-        "int.pl.s": "In progress",
+          "Attach receipts, manuals and warranty slips to devices and defects, connected per person. Through the API today, the interface follows.",
+        "int.pl.s": "API only",
         "int.pl.t": "Paperless-ngx",
         "int.title": "Plays well with the rest of your home",
         "mcp.cmd": "Register it, for example in Claude Code:",
@@ -3105,15 +3100,13 @@ docker run -d --name hauswart -p 3000:3000 \
         "rh.title": "Examples from daily life",
         "st.eyebrow": "Honest status",
         "st.lead":
-          "hauswart has no stable release yet. The core is in place and well tested, but interfaces and data model may still change. Back up your data and try it out first.",
+          "Version 0.1.0 is the first early release, not a stable one. The core is in place and well tested, but interfaces and data model may still change. Back up your data and try it out first.",
         "st.next": "Not yet or in progress",
-        "st.next.1": "Costs and splitting",
-        "st.next.2": "iCal feeds",
-        "st.next.3": "Emergency sheet and guest links with PIN",
-        "st.next.4": "Paperless-ngx and Kept connections (partly)",
-        "st.next.5":
+        "st.next.1":
+          "Web interface for costs and for setting up Paperless-ngx and Kept (already usable through the API)",
+        "st.next.2":
           "Two-factor sign-in, passkeys and self-service password change",
-        "st.next.6": "Native mobile app (the API is ready)",
+        "st.next.3": "Native mobile app (the API is ready)",
         "st.now": "Works today",
         "st.now.1":
           "Tasks with rhythm editor, completions, dashboard and notifications",
@@ -3125,6 +3118,7 @@ docker run -d --name hauswart -p 3000:3000 \
         "st.now.5":
           "Home Assistant: readings, automation, push with a “Done” button",
         "st.now.6": "REST API, OpenAPI description and MCP server",
+        "st.now.7": "iCal feeds, emergency sheet and guest links with PIN",
         "st.title": "Early development, with a solid foundation",
       };
       const root = document.documentElement;

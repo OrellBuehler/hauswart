@@ -54,6 +54,12 @@ claude mcp add hauswart \
 
 Add `--scope user` to make it available in every project.
 
+Every GitHub release has the compiled server attached, so you do not need to build it:
+`hauswart-mcp-linux-x64`, `-linux-arm64`, `-darwin-x64`, `-darwin-arm64` and `-windows-x64.exe`, plus a
+`SHA256SUMS` file. Download the one for your machine, check it with `sha256sum -c SHA256SUMS --ignore-missing`,
+make it executable (`chmod +x`) and, on macOS, remove the download quarantine with
+`xattr -d com.apple.quarantine hauswart-mcp-darwin-arm64`.
+
 ### Claude Desktop
 
 In `claude_desktop_config.json` (Settings → Developer → Edit Config):
