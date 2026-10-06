@@ -1,6 +1,8 @@
 <script lang="ts">
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import FormAlert from "$lib/components/app/form-alert.svelte";
+  import SwitchField from "$lib/components/app/switch-field.svelte";
+  import ServiceLogFields from "$lib/components/assets/service-log-fields.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
@@ -13,9 +15,17 @@
     zonedTimeToInstant,
   } from "$lib/dates";
   import { apiErrorMessage } from "$lib/error-message";
+  import { householdCurrency } from "$lib/api/household-currency";
   import { formatDateShort } from "$lib/format";
+  import { readMoney } from "$lib/format-money";
   import { m } from "$lib/paraglide/messages";
-  import { completeTask, skipTask, snoozeTask } from "$lib/tasks/actions";
+  import type { ServiceLogKind } from "$lib/api/enums";
+  import {
+    completeTask,
+    skipTask,
+    snoozeTask,
+    type CompleteOptions,
+  } from "$lib/tasks/actions";
 
   let {
     open = $bindable(false),
@@ -26,7 +36,12 @@
   }: {
     open?: boolean;
     mode: "complete" | "skip" | "snooze";
-    task: { id: string; title: string; snoozedUntil?: string | null };
+    task: {
+      id: string;
+      title: string;
+      snoozedUntil?: string | null;
+      assetId?: string | null;
+    };
     today: string;
     /** The household's zone; needed to backdate a completion. */
     timeZone?: string | undefined;
@@ -36,6 +51,14 @@
   let date = $state("");
   let pending = $state(false);
   let error = $state<string | undefined>();
+  let logWork = $state(false);
+  let logKind = $state<string>("maintenance");
+  let logTitle = $state("");
+  let logDescription = $state("");
+  let logContactId = $state<string | null>(null);
+  let logCost = $state("");
+  let logErrors = $state<Record<string, string>>({});
+  let currency = $state("CHF");
 
   const tomorrow = $derived(addDays(today, 1));
   const presets = $derived([
@@ -50,6 +73,21 @@
     note = "";
     date = mode === "snooze" ? addDays(today, 3) : today;
     error = undefined;
+    logWork = false;
+    logKind = "maintenance";
+    logTitle = task.title;
+    logDescription = "";
+    logContactId = null;
+    logCost = "";
+    logErrors = {};
+  });
+
+  $effect(() => {
+    if (!open || !logWork) return;
+    householdCurrency().then(
+      (value) => (currency = value),
+      (err) => (error = apiErrorMessage(err)),
+    );
   });
 
   const title = $derived(
@@ -85,6 +123,24 @@
       error = m.task_complete_future();
       return;
     }
+    let serviceLog: CompleteOptions["serviceLog"];
+    if (mode === "complete" && logWork && task.assetId) {
+      logErrors = {};
+      const cost = readMoney(logCost, currency);
+      if (!logTitle.trim()) logErrors.title = m.field_required();
+      if (cost === undefined) logErrors.costMinor = m.field_number();
+      if (Object.keys(logErrors).length > 0) {
+        error = m.form_check_fields();
+        return;
+      }
+      serviceLog = {
+        kind: logKind as ServiceLogKind,
+        title: logTitle.trim(),
+        ...(logDescription.trim() ? { descriptionMd: logDescription } : {}),
+        ...(logContactId ? { contactId: logContactId } : {}),
+        ...(cost ? { costMinor: cost } : {}),
+      };
+    }
     pending = true;
     error = undefined;
     try {
@@ -92,6 +148,7 @@
         const backdated = date && date < today && timeZone;
         await completeTask(task, {
           note: note.trim() || null,
+          ...(serviceLog ? { serviceLog } : {}),
           ...(backdated
             ? {
                 completedAt: new Date(
@@ -191,6 +248,28 @@
             bind:value={note}
           />
         </div>
+        {#if mode === "complete" && task.assetId}
+          <div class="flex flex-col gap-4 rounded-lg border p-3">
+            <SwitchField
+              id="action-log"
+              bind:checked={logWork}
+              label={m.task_service_log_toggle()}
+              hint={m.task_service_log_hint()}
+            />
+            {#if logWork}
+              <ServiceLogFields
+                idPrefix="action-log"
+                bind:kind={logKind}
+                bind:title={logTitle}
+                bind:description={logDescription}
+                bind:contactId={logContactId}
+                bind:cost={logCost}
+                {currency}
+                errors={logErrors}
+              />
+            {/if}
+          </div>
+        {/if}
       {/if}
       <FormAlert message={error} />
       <Dialog.Footer class="gap-2">

@@ -5,6 +5,7 @@
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import AppNav from "$lib/components/app/app-nav.svelte";
   import Logo from "$lib/components/app/logo.svelte";
+  import SearchTrigger from "$lib/components/search/search-trigger.svelte";
   import NotificationBell from "$lib/components/notifications/notification-bell.svelte";
   import {
     adminNavItems,
@@ -20,6 +21,13 @@
 
   const pathname = $derived(page.url.pathname);
   const section = $derived(findNavItem(pathname));
+  const headerTitle = $derived(
+    section
+      ? section.label()
+      : pathname === "/search"
+        ? m.search_page_title()
+        : m.app_name(),
+  );
   const bottomItems = $derived(
     data.user.role === "admin"
       ? [settingsNavItem, ...adminNavItems]
@@ -65,9 +73,10 @@
         class="me-1 data-[orientation=vertical]:h-4"
       />
       <span class="truncate text-sm font-medium">
-        {section ? section.label() : m.app_name()}
+        {headerTitle}
       </span>
       <div class="ms-auto flex items-center gap-1">
+        <SearchTrigger />
         <NotificationBell />
         <UserMenu user={data.user} />
       </div>

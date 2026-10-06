@@ -83,7 +83,6 @@ export const navGroups: NavGroup[] = [
       {
         href: "/docs",
         label: () => m.nav_docs(),
-        comingSoon: () => m.coming_soon_docs(),
         icon: BookOpenIcon,
       },
     ],
@@ -94,7 +93,6 @@ export const navGroups: NavGroup[] = [
       {
         href: "/defects",
         label: () => m.nav_defects(),
-        comingSoon: () => m.coming_soon_defects(),
         icon: WrenchIcon,
       },
       {
@@ -129,7 +127,6 @@ export const navGroups: NavGroup[] = [
       {
         href: "/warranties",
         label: () => m.nav_warranties(),
-        comingSoon: () => m.coming_soon_warranties(),
         icon: ShieldCheckIcon,
       },
     ],

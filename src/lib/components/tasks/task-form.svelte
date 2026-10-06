@@ -75,12 +75,17 @@
     assets: Asset[];
     today: string;
     dueSoonDefault: number;
-    defaults?: { assetId?: string | undefined; roomId?: string | undefined };
+    defaults?: {
+      assetId?: string | undefined;
+      roomId?: string | undefined;
+      title?: string | undefined;
+      description?: string | undefined;
+    };
   } = $props();
 
   const init = untrack(() => ({
-    title: task?.title ?? "",
-    description: task?.descriptionMd ?? "",
+    title: task?.title ?? defaults.title ?? "",
+    description: task?.descriptionMd ?? defaults.description ?? "",
     category: (task?.category ?? "maintenance") as TaskCategory,
     priority: (task?.priority ?? "normal") as TaskPriority,
     effort: task?.effortMinutes ?? undefined,

@@ -2,6 +2,7 @@ import { invalidateAll } from "$app/navigation";
 import { toast } from "svelte-sonner";
 import { api } from "$lib/api/browser";
 import { endpoints } from "$lib/api/registry";
+import type { CompletionServiceLogRequest } from "$lib/api/schemas/service-log";
 import { formatDate } from "$lib/format";
 import { m } from "$lib/paraglide/messages";
 import { apiErrorMessage } from "$lib/error-message";
@@ -27,6 +28,8 @@ export async function undoCompletion(completionId: string): Promise<void> {
 
 export type CompleteOptions = {
   note?: string | null;
+  /** Also log the work in the asset's service log. */
+  serviceLog?: CompletionServiceLogRequest;
   /** ISO instant for a backdated completion; omit for "now". */
   completedAt?: string;
 };
@@ -41,15 +44,21 @@ export async function completeTask(
       idempotencyKey: newIdempotencyKey(),
       ...(options.note ? { note: options.note } : {}),
       ...(options.completedAt ? { completedAt: options.completedAt } : {}),
+      ...(options.serviceLog ? { serviceLog: options.serviceLog } : {}),
     },
   });
-  toast.success(m.toast_completed({ title: task.title }), {
-    duration: TOAST_MS,
-    action: {
-      label: m.toast_undo(),
-      onClick: () => void undoCompletion(completion.id),
+  toast.success(
+    options.serviceLog
+      ? m.toast_completed_logged({ title: task.title })
+      : m.toast_completed({ title: task.title }),
+    {
+      duration: TOAST_MS,
+      action: {
+        label: m.toast_undo(),
+        onClick: () => void undoCompletion(completion.id),
+      },
     },
-  });
+  );
   await invalidateAll();
 }
 

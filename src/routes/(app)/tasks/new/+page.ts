@@ -14,8 +14,14 @@ export const load: PageLoad = async ({ fetch, url }) => {
     people,
     ...places,
     defaults: {
-      assetId: url.searchParams.get("asset") ?? undefined,
+      assetId:
+        url.searchParams.get("assetId") ??
+        url.searchParams.get("asset") ??
+        undefined,
       roomId: url.searchParams.get("room") ?? undefined,
+      title: url.searchParams.get("title")?.slice(0, 200) || undefined,
+      description:
+        url.searchParams.get("description")?.slice(0, 10_000) || undefined,
     },
   };
 };

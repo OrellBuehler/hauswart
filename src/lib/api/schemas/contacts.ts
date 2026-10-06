@@ -37,6 +37,21 @@ export const contactSchema = z
   .meta({ id: "Contact" });
 export type Contact = z.infer<typeof contactSchema>;
 
+/** A contact with the assets it is linked to, one entry per link (a role each). */
+export const contactDetailSchema = contactSchema
+  .extend({
+    assets: z.array(
+      z.object({
+        linkId: z.string(),
+        assetId: z.string(),
+        assetName: z.string(),
+        role: assetContactRoleSchema,
+      }),
+    ),
+  })
+  .meta({ id: "ContactDetail" });
+export type ContactDetail = z.infer<typeof contactDetailSchema>;
+
 export const listContactsQuerySchema = paginationQuerySchema.extend({
   kind: contactKindSchema.optional(),
   emergency: queryBooleanSchema.optional(),

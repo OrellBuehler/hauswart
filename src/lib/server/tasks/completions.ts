@@ -1,6 +1,7 @@
 import { and, desc, eq, isNull, lt, or, sql, type SQL } from "drizzle-orm";
 import type { CompletionKind, CompletionSource } from "$lib/api/enums";
 import { UNDO_WINDOW_DAYS } from "$lib/api/schemas/tasks";
+import { SIGNAL_STALE_MS } from "$lib/tasks/engine";
 import { taskCompletions, tasks, users, type DB } from "$lib/server/db";
 import { emitEvent, type CompletionFacts } from "$lib/server/events";
 import { decodeCursor, pageOf } from "$lib/server/pagination";
@@ -13,6 +14,7 @@ import {
 } from "$lib/server/service";
 import { z } from "zod";
 import { clockAt, evaluateTaskById } from "./evaluator";
+import { loadSignals } from "./signals";
 import { getTask, type TaskRecord } from "./tasks";
 
 export type CompletionRow = typeof taskCompletions.$inferSelect;
@@ -165,6 +167,35 @@ const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
 const NO_OCCURRENCE = "none";
 
 /**
+ * A counter task measures from the value at its last completion, so a
+ * completion without an explicit reading takes the counter's current one.
+ */
+async function counterSnapshot(
+  ctx: ServiceContext,
+  task: TaskRecord,
+): Promise<number | undefined> {
+  if (task.trigger.type !== "counter_delta" || task.archivedAt) {
+    return undefined;
+  }
+  const { entityId } = task.trigger;
+  const { signals } = await loadSignals(
+    ctx.db,
+    { entityIds: [entityId], calendars: [] },
+    ctx.now,
+  );
+  const signal = signals[entityId];
+  if (
+    !signal ||
+    typeof signal.numeric !== "number" ||
+    !Number.isFinite(signal.numeric) ||
+    ctx.now - signal.seenAt > SIGNAL_STALE_MS
+  ) {
+    return undefined;
+  }
+  return signal.numeric;
+}
+
+/**
  * Records that a task was done (or deliberately skipped) and re-evaluates it
  * before returning, so the caller sees the next due date at once. With an
  * `idempotencyKey` a retried request returns the first completion unchanged.
@@ -186,6 +217,7 @@ export async function completeTask(
   if (completedAt > ctx.now + FUTURE_TOLERANCE_MS) {
     throw invalidField("completedAt", "Must not be in the future");
   }
+  const counterValue = input.counterValue ?? (await counterSnapshot(ctx, task));
 
   const state = task.state;
   const occurrenceKey =
@@ -209,7 +241,7 @@ export async function completeTask(
           userId: input.userId,
           source: input.source,
           kind: input.kind,
-          counterValue: input.counterValue ?? null,
+          counterValue: counterValue ?? null,
           occurrenceKey,
           dueDateAtCompletion,
           note: input.note ?? null,

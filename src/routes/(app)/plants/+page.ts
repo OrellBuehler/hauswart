@@ -6,7 +6,7 @@ import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ fetch, url }) => {
   const api = createApiClient(fetch);
-  const [plants, tasks] = await orFail(
+  const [plants, tasks, hints] = await orFail(
     Promise.all([
       fetchAll((cursor) =>
         api.call(endpoints.assetsList, {
@@ -18,8 +18,11 @@ export const load: PageLoad = async ({ fetch, url }) => {
           query: { cursor, limit: 200, category: "plant" },
         }),
       ),
+      fetchAll((cursor) =>
+        api.call(endpoints.hintsList, { query: { cursor, limit: 200 } }),
+      ),
     ]),
     url.pathname,
   );
-  return { plants, tasks };
+  return { plants, tasks, hints };
 };

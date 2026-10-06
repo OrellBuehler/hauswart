@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   index,
   integer,
+  primaryKey,
   real,
   sqliteTable,
   text,
@@ -20,13 +21,17 @@ import {
   DEFECT_EVENT_TYPES,
   DEFECT_SEVERITIES,
   DEFECT_STATUSES,
+  DELIVERY_STATUSES,
   DOC_SECTIONS,
   DUE_KINDS,
   DUE_STATUSES,
   FEED_SCOPES,
   GUEST_SECTIONS,
   HINT_KINDS,
+  INTEGRATION_KINDS,
+  INTEGRATION_STATUSES,
   NOTIFICATION_KINDS,
+  NOTIFICATION_TARGET_CHANNELS,
   NOTIFICATION_TITLE_KEYS,
   NOTIFY_MODES,
   PART_MOVEMENT_REASONS,
@@ -198,11 +203,15 @@ export const assets = sqliteTable(
     waterNotes: text("water_notes"),
     /** An attachment owned by this asset (checked by the service; attachments have no foreign keys). */
     photoAttachmentId: text("photo_attachment_id"),
+    /** The record this asset mirrors in another system; opaque to the core. */
+    externalSource: text("external_source"),
+    externalRef: text("external_ref"),
     ...timestamps,
   },
   (t) => [
     index("assets_room_id_idx").on(t.roomId),
     index("assets_kind_idx").on(t.kind),
+    uniqueIndex("assets_external_idx").on(t.externalSource, t.externalRef),
   ],
 );
 
@@ -807,6 +816,183 @@ export const attachments = sqliteTable(
     index("attachments_sha256_idx").on(t.sha256),
   ],
 );
+
+/**
+ * A link to an external system. `userId` null = the household's connection
+ * (one per kind); otherwise the person's own. The token is AES-GCM encrypted
+ * and never leaves the server.
+ */
+export const connections = sqliteTable(
+  "connections",
+  {
+    id: id(),
+    kind: text("kind", { enum: INTEGRATION_KINDS }).notNull(),
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+    baseUrl: text("base_url").notNull(),
+    tokenEnc: text("token_enc").notNull(),
+    allowInsecureTls: integer("allow_insecure_tls", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+    /** Kind-specific settings, validated by the adapter. */
+    configJson: text("config_json", { mode: "json" })
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default(sql`'{}'`),
+    status: text("status", { enum: INTEGRATION_STATUSES })
+      .notNull()
+      .default("unknown"),
+    /** Short machine-readable code of the last failure, never a message. */
+    lastError: text("last_error"),
+    lastOkAt: integer("last_ok_at", { mode: "timestamp_ms" }),
+    lastCheckedAt: integer("last_checked_at", { mode: "timestamp_ms" }),
+    consecutiveFailures: integer("consecutive_failures").notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("connections_kind_user_idx").on(t.kind, t.userId),
+    // NULLs are distinct in a unique index, so the household's own row needs its own.
+    uniqueIndex("connections_household_kind_idx")
+      .on(t.kind)
+      .where(sql`${t.userId} is null`),
+  ],
+);
+
+/** The latest reading of an external value, keyed by its opaque id (for example an entity id). */
+export const signals = sqliteTable("signals", {
+  key: text("key").primaryKey(),
+  numeric: real("numeric"),
+  text: text("text"),
+  unit: text("unit"),
+  /** When the value last changed at the source. */
+  changedAt: integer("changed_at", { mode: "timestamp_ms" }).notNull(),
+  /** When this application last read it. */
+  seenAt: integer("seen_at", { mode: "timestamp_ms" }).notNull(),
+  source: text("source").notNull(),
+});
+
+/** Numeric history of a signal: written when it changes and at least every six hours; pruned after a year. */
+export const signalSamples = sqliteTable(
+  "signal_samples",
+  {
+    key: text("key").notNull(),
+    at: integer("at", { mode: "timestamp_ms" }).notNull(),
+    value: real("value").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.key, t.at] })],
+);
+
+/** Dates of calendar events an external calendar announced, per subscription key. */
+export const externalDates = sqliteTable(
+  "external_dates",
+  {
+    key: text("key").notNull(),
+    date: text("date").notNull(),
+    title: text("title").notNull().default(""),
+  },
+  (t) => [primaryKey({ columns: [t.key, t.date, t.title] })],
+);
+
+export const REACTION_STATUSES = ["pending", "sent", "cancelled"] as const;
+
+/** Hint reactions waiting for their delay to pass; persisted so a restart loses none. */
+export const pendingReactions = sqliteTable(
+  "pending_reactions",
+  {
+    id: id(),
+    hintId: text("hint_id")
+      .notNull()
+      .references(() => assetHints.id, { onDelete: "cascade" }),
+    entityId: text("entity_id").notNull(),
+    /** `<entityId>:<changedAt>`: one reaction per hint and transition. */
+    transitionKey: text("transition_key").notNull(),
+    fireAt: integer("fire_at", { mode: "timestamp_ms" }).notNull(),
+    status: text("status", { enum: REACTION_STATUSES })
+      .notNull()
+      .default("pending"),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("pending_reactions_transition_idx").on(
+      t.hintId,
+      t.transitionKey,
+    ),
+    index("pending_reactions_due_idx").on(t.status, t.fireAt),
+  ],
+);
+
+/** One attempt to reach one recipient through one channel; carries the one-time action token (hash only). */
+export const notificationDeliveries = sqliteTable(
+  "notification_deliveries",
+  {
+    id: id(),
+    notificationId: text("notification_id")
+      .notNull()
+      .references(() => notifications.id, { onDelete: "cascade" }),
+    /** The person this delivery is for. */
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    channel: text("channel").notNull(),
+    /** What the channel addressed (a notify service name); empty while deferred. */
+    target: text("target").notNull().default(""),
+    status: text("status", { enum: DELIVERY_STATUSES }).notNull(),
+    errorCode: text("error_code"),
+    attempts: integer("attempts").notNull().default(1),
+    /** The task occurrence the notification was about; an action only settles that one. */
+    occurrenceKey: text("occurrence_key"),
+    /** Last attempt. */
+    sentAt: integer("sent_at", { mode: "timestamp_ms" }).notNull(),
+    actionTokenHash: text("action_token_hash"),
+    actionExpiresAt: integer("action_expires_at", { mode: "timestamp_ms" }),
+    actionUsedAt: integer("action_used_at", { mode: "timestamp_ms" }),
+    /** The completion the token produced, so a repeated tap can answer with it. */
+    actionCompletionId: text("action_completion_id"),
+    ...timestamps,
+  },
+  (t) => [
+    index("notification_deliveries_notification_idx").on(t.notificationId),
+    index("notification_deliveries_token_idx").on(t.actionTokenHash),
+    index("notification_deliveries_status_idx").on(t.status, t.sentAt),
+  ],
+);
+
+/** Where a person wants outward notifications to go (one row per phone or speaker). */
+export const notificationTargets = sqliteTable(
+  "notification_targets",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    channel: text("channel", { enum: NOTIFICATION_TARGET_CHANNELS }).notNull(),
+    /** For `ha_notify`: the notify service name, e.g. `mobile_app_example_phone`. */
+    target: text("target").notNull(),
+    enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("notification_targets_unique").on(
+      t.userId,
+      t.channel,
+      t.target,
+    ),
+  ],
+);
+
+export const notificationPrefs = sqliteTable("notification_prefs", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  pushEnabled: integer("push_enabled", { mode: "boolean" })
+    .notNull()
+    .default(true),
+  /** `HH:MM` in the household time zone; both null = no quiet hours. */
+  quietStart: text("quiet_start"),
+  quietEnd: text("quiet_end"),
+  pushStages: text("push_stages", { mode: "json" }).$type<string[]>().notNull(),
+  ...timestamps,
+});
 
 /**
  * Calendar subscription addresses (`/api/public/cal/<token>.ics`). The token's sha256 finds the

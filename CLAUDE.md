@@ -8,7 +8,8 @@ optional adapters, never requirements. Status: early development — authenticat
 the task core (rooms, assets, tasks, completions, notifications, dashboard), documentation (pages,
 attachments, search, file backup), contacts, spare parts, the service log, care hints, defects (with
 a PDF export), the warranty overview, generic comments, iCal feeds, the emergency page data and guest
-links exist; costs are still to come; the MCP server covers the task core, documentation, defects, parts, contacts,
+links exist; costs are still to come; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
+push notifications with a "done" button; see "Signals, integrations and delivery"); the MCP server covers the task core, documentation, defects, parts, contacts,
 comments, hints, service log and warranties (see `mcp/README.md`).
 
 There is one household, not many: all domain data is shared by every user. Only sessions, API
@@ -92,7 +93,11 @@ src/lib/server/rooms/            rooms CRUD, slugs
 src/lib/server/assets/           assets (devices, plants, fixtures), slugs, QR slugs, archive
 src/lib/server/tasks/            tasks CRUD, previewTrigger, evaluator (task_state cache), signals (provider seam),
                                  completions (complete/skip/undo/snooze), preparations, dashboard, stats, scheduler
-src/lib/server/notifications/    in-app notifications, generateNotifications, channel registry for outward delivery
+src/lib/server/notifications/    in-app notifications, generateNotifications, channel registry, deliveries (preferences, quiet hours,
+                                 one-time action tokens, retries), the "done" action, per-person targets and preferences
+src/lib/server/signals/          readings the adapters store (`signals`, `signal_samples`, `external_dates`), watch list,
+                                 ingest (auto-complete, hint reactions, re-evaluation), worker for the time-driven parts
+src/lib/server/connections/      generic connections to outside systems (encrypted token, health), adapter registry
 src/lib/server/events.ts         typed in-process domain events (completionRecorded/Revoked), emitted inside the writer's transaction
 src/lib/server/domain-events.ts  registerDomainEventHandlers(): wires reactions (parts stock) and the domain attachment owners at startup and in useTestDB()
 src/lib/server/contacts/         contacts CRUD + search, links to assets (role per link)
@@ -113,7 +118,9 @@ src/lib/server/seed/import.ts    seed importer (through the REST API); CLI in sc
 mcp/src/                         stdio MCP server (client-safe imports only): index.ts entry, server.ts (whoami handshake,
                                  scope-based registration), tool.ts (defineTool), context.ts (client + name resolvers),
                                  tools/ (registry in tools/index.ts, one file per domain); mcp/README.md is the setup guide
-src/lib/server/integrations/     optional adapters (homeassistant/, paperless/, kept/) — the core never imports these
+src/lib/server/integrations/     optional adapters (homeassistant/, paperless/, kept/) — the core never imports these;
+                                 homeassistant/ has client, ws, helpers, fake-server plus adapter (settings, pickers), channel
+                                 (`ha_notify`), sync (polling, calendars) and scheduler, wired by `registerHomeAssistant()`
 src/lib/server/db.ts             SQLite connection (WAL, foreign keys); migrations run on startup
 src/lib/server/schema.ts         Drizzle schema — one file, every table has created_at/updated_at
 src/lib/server/crypto.ts         AES-256-GCM for stored secrets (HAUSWART_SECRET_KEY)
@@ -136,9 +143,12 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   created, edited, completed, skipped, undone or snoozed (synchronously, before the response) and
   every five minutes by the scheduler (`registerEvaluator()` in the startup hook; it also runs
   `generateNotifications`). Lists, the dashboard and notifications read the cache.
-- **Live readings come through a seam.** `setSignalProvider()` (`tasks/signals.ts`) is how an
-  adapter supplies entity states, history and calendar dates; without one, signal-based triggers
-  report `unknown`. A failing provider is logged by name and treated as "no signals".
+- **Live readings come from the database.** The evaluator reads `signals`, `signal_samples` and
+  `external_dates` (`tasks/signals.ts`, `loadSignalsFromDb`); `setSignalProvider()` replaces that
+  (tests). Without readings, signal-based triggers report `unknown`. A failing provider is logged by
+  name and treated as "no signals". The evaluator also keeps `task_state.counterBaseline` (the first
+  fresh reading of a counter task, until a completion snapshots one) and `activeSince` (since when a
+  state condition holds; forgotten when it stops holding).
 - **A completion settles the occurrence the task shows** (`occurrenceKey` defaults to the cached
   one; `dueDateAtCompletion` is stored with it). Sources: a session is `manual` (or `qr` /
   `notification` when it says so); a token is attributed by its kind (`mcp`, `ha`, otherwise
@@ -157,6 +167,68 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   by `scripts/seed.ts` through the REST API and matched by `key`, so repeating it changes nothing:
   rooms and assets by slug, tasks by `externalSource: "seed"` + `externalRef`, preparations by title.
   Existing entries are left alone unless `--update`. Changing the household needs the admin scope.
+
+### Signals, integrations and delivery
+
+- **Adapters only fetch; the core decides.** An adapter turns what it read into `SignalReading`s and
+  calls `ingestSignals(ctx, readings, source)` (`signals/ingest.ts`): `upsertSignals` stores them (a
+  reading without a value is skipped, so the last known value stays and the evaluator marks it stale
+  after 24 h; numeric samples are written on change and every 6 h, pruned after a year), then
+  auto-complete rules, hint reactions, re-evaluation of the tasks that read a changed signal, due
+  reactions and `generateNotifications` run. Calendar dates go through `replaceExternalDates` and
+  `afterCalendarSync`. The first sight of a signal is never a "change".
+- **Watch list**: `watchedEntities(ctx)` (`signals/watch.ts`) = entity ids of active tasks' counter /
+  state / calendar triggers (+ `estimateFrom`), auto-complete rules, preparation `leadValue`s and hint
+  reactions, plus the calendar subscriptions (`haCalendarKey`). Saving a task, preparation or hint
+  reaction emits `signalNeedsChanged` (`events.ts`) so an adapter reads soon, not at the next tick.
+- **Auto-complete** (`autoComplete` on every recurring trigger, plus `autoCompleteOnReset` on counters):
+  `{type: "counter_reset", entityId, minDrop}` (drop detected with the engine's `detectCounterReset`)
+  or `{type: "state_change", entityId, to, from?}`. The task is completed by the system (source `ha`,
+  no user, counter snapshot = new value) with `idempotencyKey` `auto:<taskId>:<entityId>:<changedAt>`,
+  so replaying a change completes nothing twice. A completion of a counter task without an explicit
+  `counterValue` snapshots the counter (`completeTask`), so the next period starts there.
+- **Hint reactions**: a matching transition (`toState`, optional `fromState`) inserts a
+  `pending_reactions` row (unique per hint and transition) due after `delayMinutes`; it is cancelled
+  when the signal leaves `toState` first. `processDueReactions` (run by the core worker every 30 s and
+  after each ingest) creates a `hint` notification (`notification_hint`: asset, title) per recipient
+  (`all`, `assignee` of the linked task, or a list) and hands it to the channels. Restart-safe: rows only.
+- **Worker** (`registerSignalWorker()`, started in `init()`): due reactions, `retryDeliveries`, and
+  housekeeping (samples, unused calendar dates, delivery records older than 90 days).
+- **Delivery** (`notifications/deliveries.ts`): `NotificationChannel.deliver(notification, recipient,
+{actions, targets?})` returns one outcome per target (`sent|failed|skipped`). Before calling a channel
+  the core applies the person's `notification_prefs` (push on/off, `pushStages`, quiet hours in the
+  household zone; held-back deliveries are `deferred` rows and sent by `retryDeliveries` afterwards) and
+  mints a one-time token (24 random bytes, base64url, sha256 stored, valid 7 days) for the task stages
+  prep / due_soon / due / overdue, passed as `actions: [{id: token, kind: "complete"}]`. Every outcome
+  is a `notification_deliveries` row (status, error code, attempts, token hash, occurrence key).
+  Failed targets are retried twice (2, 4 min); stale ones (read, settled occurrence, older than a day)
+  are dropped. In-app notifications never depend on any of this.
+- **The "done" tap**: `POST /api/v1/ha/action {"action": "HW_DONE_<token>"}`, bearer token of kind `ha`
+  with scope `ha:action` (another kind is 403). The token resolves to the notification's task
+  occurrence and person; the completion is attributed to that person (source `notification`), not to
+  the calling token. Unknown or malformed action 404; expired token, deleted/archived task, an occurrence
+  settled otherwise, or an undone completion 410 `gone`. A repeated tap answers 200 with the first
+  completion (`replayed: true`) - chosen over 410 so a retried request after a lost response is safe.
+- **Per-person targets**: `GET/PUT /api/v1/me/notification-settings` (own only; replace-all of
+  preferences and up to 10 targets; `ha_notify` target = notify service name `^[a-z0-9_]+$`).
+- **Connections** (`connections` table, `connections/connections.ts`): one household row per kind
+  (`userId` null; partial unique index) or one per person (`INTEGRATION_LEVELS` in `enums.ts`).
+  `GET /integrations` (never the token; the address of a household connection only for administrators),
+  `PUT|DELETE /integrations/{kind}` and `POST .../test` (household kinds need an administrator; a
+  changed address needs the token again), pickers `GET /integrations/{kind}/{entities,notify-services,
+calendars,devices}` (any member; 404 not connected, 502 `upstream_error` with `details.code`). An
+  adapter registers `registerIntegration({kind, validate?, test, describe, operations})`; it throws
+  `IntegrationError(code, message)`. Health (`status`, `lastError` code, `consecutiveFailures`) is
+  recorded by the adapter; `dueForAttempt`/`backoffMs` give the 1, 2, 4 ... 15 minute backoff.
+- **Home Assistant adapter** (`registerHomeAssistant()` in `init()`): scheduler (overlap guard, unref,
+  injectable intervals) reads the watched entities every 60 s and the calendars (next 60 days, per
+  subscription key, household zone) every 6 h and at once for a new calendar; saving a connection reads
+  immediately. `ha_notify` channel: `notify/<target>` with title and text rendered in the recipient's
+  language, a link built from `config.appUrl` (else `ORIGIN`, else the bare path), tag `hw-task-<id>`,
+  button "Erledigt"/"Done" = `HW_DONE_<token>`. Entity ids that are not valid are never requested; an
+  entity HA does not know is only counted. Assets can carry `externalSource`/`externalRef`; the devices
+  picker lists registry devices matching no asset (reference, name, or model with overlapping name).
+  Entity names in code and tests stay synthetic (`sensor.example_*`).
 
 ### Documentation, attachments, search and backup
 
@@ -244,8 +316,8 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   (empty body, `deleted: true`), edit is author-only (403 otherwise), delete is author or admin. A new
   comment notifies the other involved members (`notification_comment`). Tasks, assets, defects, hints,
   service log entries and pages carry `commentCount`.
-- **Hint reactions** (`signalReactionSchema`, type `signal_change`) are stored with the hint and
-  executed by an adapter later; the core only validates and lists them (`GET /hints?reactive=true`).
+- **Hint reactions** (`signalReactionSchema`, type `signal_change`) are stored with the hint
+  (`GET /hints?reactive=true`) and executed by `signals/reactions.ts`, see below.
 
 ### iCal feeds, emergency page and guest links
 

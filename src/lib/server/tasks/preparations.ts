@@ -14,6 +14,7 @@ import {
   type ServiceContext,
 } from "$lib/server/service";
 import { clockAt, evaluateTaskById } from "./evaluator";
+import { signalNeedsChanged } from "$lib/server/signals/watch";
 import { loadSignals } from "./signals";
 import { stateToDue, type TaskStateRecord } from "./state";
 import { getTask } from "./tasks";
@@ -86,6 +87,7 @@ export async function preparationsForTasks(
   );
   const records = rows.map((row) => ({ row, leadValue: leadValueOf(row) }));
   const signals = await loadSignals(
+    ctx.db,
     {
       entityIds: [
         ...new Set(
@@ -209,6 +211,7 @@ export async function createPreparation(
     })
     .returning({ id: taskPreparations.id })
     .get();
+  if (input.leadValue) signalNeedsChanged(ctx);
   return recordOf(ctx, taskId, row.id);
 }
 
@@ -225,6 +228,7 @@ export async function updatePreparation(
     .set(patch)
     .where(eq(taskPreparations.id, prepId))
     .run();
+  if (patch.leadValue) signalNeedsChanged(ctx);
   return recordOf(ctx, taskId, prepId);
 }
 

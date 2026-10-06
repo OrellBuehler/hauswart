@@ -19,11 +19,13 @@
   import { endpoints } from "$lib/api/registry";
   import type { Completion } from "$lib/api/schemas/tasks";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
+  import Comments from "$lib/components/comments/comments.svelte";
   import AssigneeAvatar from "$lib/components/tasks/assignee-avatar.svelte";
   import CompleteButton from "$lib/components/tasks/complete-button.svelte";
   import CompletionItem from "$lib/components/tasks/completion-item.svelte";
   import DueBadge from "$lib/components/tasks/due-badge.svelte";
   import ProgressBar from "$lib/components/tasks/progress-bar.svelte";
+  import TaskPartsCard from "$lib/components/tasks/task-parts-card.svelte";
   import TaskActionDialog from "$lib/components/tasks/task-action-dialog.svelte";
   import TriggerSummary from "$lib/components/tasks/trigger-summary.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
@@ -383,6 +385,8 @@
         </Card.Content>
       </Card.Root>
 
+      <TaskPartsCard taskId={task.id} parts={data.parts} />
+
       <Card.Root>
         <Card.Header>
           <Card.Title class="flex items-center gap-2 text-base">
@@ -431,6 +435,8 @@
           {/if}
         </Card.Content>
       </Card.Root>
+
+      <Comments entityType="task" entityId={task.id} timeZone={data.timeZone} />
     </div>
 
     <div class="flex flex-col gap-6">

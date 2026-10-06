@@ -25,6 +25,7 @@ export type TaskRowData = {
   } | null;
   archived: boolean;
   snoozedUntil: string | null;
+  commentCount?: number;
 };
 
 export function rowFromDashboard(task: DashboardTask): TaskRowData {
@@ -75,6 +76,7 @@ export function rowFromTask(
     progress: state?.progress ?? null,
     archived: task.archivedAt !== null,
     snoozedUntil: task.snoozedUntil,
+    commentCount: task.commentCount,
   };
 }
 

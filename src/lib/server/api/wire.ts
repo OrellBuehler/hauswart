@@ -162,6 +162,8 @@ export function wireAsset(asset: AssetRecord): z.input<typeof assetSchema> {
     photoUrl: asset.photoAttachmentId
       ? `/api/v1/attachments/${asset.photoAttachmentId}/thumb`
       : null,
+    externalSource: asset.externalSource,
+    externalRef: asset.externalRef,
     archivedAt: iso(asset.archivedAt),
     commentCount: asset.commentCount,
     createdAt: toIso(asset.createdAt),

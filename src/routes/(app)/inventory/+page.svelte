@@ -15,10 +15,12 @@
   import { newAssetHref } from "$lib/assets/links";
   import { WARRANTY_STATUSES, warrantyStatus } from "$lib/assets/warranty";
   import AssetKindIcon from "$lib/components/assets/asset-kind-icon.svelte";
+  import AssetPhoto from "$lib/components/assets/asset-photo.svelte";
   import AssetRow from "$lib/components/assets/asset-row.svelte";
   import OptionSelect from "$lib/components/assets/option-select.svelte";
   import RoomPicker from "$lib/components/assets/room-picker.svelte";
   import WarrantyBadge from "$lib/components/assets/warranty-badge.svelte";
+  import CommentCount from "$lib/components/comments/comment-count.svelte";
   import EmptyState from "$lib/components/app/empty-state.svelte";
   import PageHeader from "$lib/components/app/page-header.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
@@ -197,11 +199,20 @@
                     href={resolve(`/assets/${asset.id}`)}
                     class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 flex items-center gap-2.5 rounded-sm outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
                   >
-                    <AssetKindIcon
-                      kind={asset.kind}
-                      class="text-muted-foreground"
-                    />
+                    {#if asset.photoUrl}
+                      <AssetPhoto
+                        kind={asset.kind}
+                        photoUrl={asset.photoUrl}
+                        class="size-8 rounded-md"
+                      />
+                    {:else}
+                      <AssetKindIcon
+                        kind={asset.kind}
+                        class="text-muted-foreground"
+                      />
+                    {/if}
                     <span class="truncate">{asset.name}</span>
+                    <CommentCount count={asset.commentCount} class="shrink-0" />
                     {#if asset.archivedAt}
                       <Badge variant="secondary">{m.asset_archived()}</Badge>
                     {/if}

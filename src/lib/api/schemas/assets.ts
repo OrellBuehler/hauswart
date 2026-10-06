@@ -44,6 +44,9 @@ export const assetSchema = z
     photoAttachmentId: z.string().nullable(),
     /** The thumbnail (480 px WebP) of the photo, usable as `<img src>`; null without a photo. */
     photoUrl: z.string().nullable(),
+    /** Opaque link to the same thing in another system (set by adapters); the pair is unique. */
+    externalSource: z.string().nullable(),
+    externalRef: z.string().nullable(),
     archivedAt: isoTimestampSchema.nullable(),
     commentCount: z.number().int(),
     createdAt: isoTimestampSchema,
@@ -81,6 +84,8 @@ const assetFields = {
   light: nullableText(120),
   waterNotes: nullableText(2000),
   photoAttachmentId: idSchema.nullable(),
+  externalSource: z.string().trim().min(1).max(64).nullable(),
+  externalRef: z.string().trim().min(1).max(255).nullable(),
 };
 
 /** `kind` defaults to `device`; `slug` is derived from the name when omitted. */
@@ -103,6 +108,8 @@ export const createAssetRequestSchema = z.strictObject({
   light: assetFields.light.optional(),
   waterNotes: assetFields.waterNotes.optional(),
   photoAttachmentId: assetFields.photoAttachmentId.optional(),
+  externalSource: assetFields.externalSource.optional(),
+  externalRef: assetFields.externalRef.optional(),
 });
 export type CreateAssetRequest = z.output<typeof createAssetRequestSchema>;
 
@@ -126,6 +133,8 @@ export const updateAssetRequestSchema = atLeastOne(
     light: assetFields.light.optional(),
     waterNotes: assetFields.waterNotes.optional(),
     photoAttachmentId: assetFields.photoAttachmentId.optional(),
+    externalSource: assetFields.externalSource.optional(),
+    externalRef: assetFields.externalRef.optional(),
     archived: z.boolean().optional(),
   }),
 );

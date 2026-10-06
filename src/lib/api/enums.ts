@@ -124,6 +124,7 @@ export const NOTIFICATION_KINDS = [
   "digest",
   "info",
   "comment",
+  "hint",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -136,6 +137,7 @@ export const NOTIFICATION_TITLE_KEYS = [
   "notification_digest",
   "notification_info",
   "notification_comment",
+  "notification_hint",
 ] as const;
 export type NotificationTitleKey = (typeof NOTIFICATION_TITLE_KEYS)[number];
 
@@ -263,3 +265,51 @@ export const GUEST_LINK_STATUSES = [
   "revoked",
 ] as const;
 export type GuestLinkStatus = (typeof GUEST_LINK_STATUSES)[number];
+
+/** Outward systems a household can connect; the adapters live in `server/integrations/`. */
+export const INTEGRATION_KINDS = [
+  "homeassistant",
+  "paperless",
+  "kept",
+] as const;
+export type IntegrationKind = (typeof INTEGRATION_KINDS)[number];
+
+/** `household`: one connection for everybody, changed by administrators. `user`: each person connects their own. */
+export const INTEGRATION_LEVELS: Record<IntegrationKind, "household" | "user"> =
+  { homeassistant: "household", paperless: "household", kept: "user" };
+
+export const INTEGRATION_STATUSES = ["ok", "error", "unknown"] as const;
+export type IntegrationStatus = (typeof INTEGRATION_STATUSES)[number];
+
+/** Outward delivery paths a person can address (one target per phone, speaker, ...). */
+export const NOTIFICATION_TARGET_CHANNELS = ["ha_notify"] as const;
+export type NotificationTargetChannel =
+  (typeof NOTIFICATION_TARGET_CHANNELS)[number];
+
+/** Notification kinds a person can choose to receive outside the app. */
+export const PUSH_STAGES = [
+  "prep",
+  "due_soon",
+  "due",
+  "overdue",
+  "digest",
+  "hint",
+  "comment",
+] as const;
+export type PushStage = (typeof PUSH_STAGES)[number];
+export const DEFAULT_PUSH_STAGES: readonly PushStage[] = [
+  "prep",
+  "due_soon",
+  "due",
+  "overdue",
+  "hint",
+  "comment",
+];
+
+export const DELIVERY_STATUSES = [
+  "sent",
+  "failed",
+  "deferred",
+  "skipped",
+] as const;
+export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number];

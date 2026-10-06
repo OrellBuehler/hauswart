@@ -140,6 +140,7 @@ const NOTIFICATION_TEXT: Record<
     `Today: ${p.overdue} overdue, ${p.due} due, ${p.soon} due soon`,
   notification_info: (p) => String(p.message),
   notification_comment: (p) => `${p.author} commented on "${p.title}"`,
+  notification_hint: (p) => `${p.asset}: ${p.title}`,
 };
 
 export function renderNotification(n: Notification): string {
