@@ -238,6 +238,10 @@
       bind:checked={guestVisible}
       label={m.hint_guest_visible()}
       hint={m.hint_guest_visible_hint()}
+      link={{
+        href: "/settings/guest-links",
+        label: m.guest_links_manage(),
+      }}
     />
   </div>
   <details class="group rounded-lg border px-3 py-2" bind:open={reactionOpen}>

@@ -728,6 +728,10 @@
             bind:checked={guestVisible}
             label={m.docs_field_guest()}
             hint={m.docs_field_guest_hint()}
+            link={{
+              href: "/settings/guest-links",
+              label: m.guest_links_manage(),
+            }}
           />
         </div>
       </div>

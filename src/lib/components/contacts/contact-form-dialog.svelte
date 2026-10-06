@@ -264,6 +264,10 @@
       bind:checked={guestVisible}
       label={m.contact_guest_visible()}
       hint={m.contact_guest_visible_hint()}
+      link={{
+        href: "/settings/guest-links",
+        label: m.guest_links_manage(),
+      }}
     />
   </div>
 </FormDialog>

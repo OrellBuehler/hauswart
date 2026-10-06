@@ -2,8 +2,10 @@
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
   import BellIcon from "@lucide/svelte/icons/bell";
+  import CalendarDaysIcon from "@lucide/svelte/icons/calendar-days";
   import HouseIcon from "@lucide/svelte/icons/house";
   import KeyRoundIcon from "@lucide/svelte/icons/key-round";
+  import LinkIcon from "@lucide/svelte/icons/link-2";
   import PlugIcon from "@lucide/svelte/icons/plug";
   import SmartphoneIcon from "@lucide/svelte/icons/smartphone";
   import UserRoundIcon from "@lucide/svelte/icons/user-round";
@@ -33,6 +35,16 @@
       href: "/settings/integrations",
       label: () => m.settings_tab_integrations(),
       icon: PlugIcon,
+    },
+    {
+      href: "/settings/calendar",
+      label: () => m.settings_tab_calendar(),
+      icon: CalendarDaysIcon,
+    },
+    {
+      href: "/settings/guest-links",
+      label: () => m.settings_tab_guest_links(),
+      icon: LinkIcon,
     },
     {
       href: "/settings/tokens",
