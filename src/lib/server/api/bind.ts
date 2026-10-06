@@ -44,9 +44,18 @@ export interface HandlerArgs<E extends AnyEndpoint> {
 
 type ResponseInput<E extends AnyEndpoint> = z.input<E["response"]>;
 
+/**
+ * JSON endpoints return the response body (or `reply(status, body)`); binary endpoints return a
+ * finished `Response` (headers, status and body are theirs, `bind` only passes it through).
+ */
+export type HandlerResult<E extends AnyEndpoint> =
+  E["responseType"] extends "binary"
+    ? Response
+    : ResponseInput<E> | Reply<ResponseInput<E>>;
+
 export type Handler<E extends AnyEndpoint> = (
   args: HandlerArgs<E>,
-) => MaybePromise<ResponseInput<E> | Reply<ResponseInput<E>>>;
+) => MaybePromise<HandlerResult<E>>;
 
 export type BoundHandler<E extends AnyEndpoint> = ((
   event: RequestEvent,
@@ -251,6 +260,11 @@ function flatten(error: z.ZodError) {
 }
 
 function respond(endpoint: AnyEndpoint, result: unknown): Response {
+  if (endpoint.responseType === "binary") {
+    if (!(result instanceof Response))
+      throw new ResponseContractError(endpoint.id);
+    return result;
+  }
   const status = result instanceof Reply ? result.status : endpoint.status;
   const body = result instanceof Reply ? result.body : result;
   if (validatesResponses()) {

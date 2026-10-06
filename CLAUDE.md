@@ -4,9 +4,10 @@ hauswart is a self-hosted apartment-management app for a single household with a
 recurring maintenance tasks with completion tracking, documentation (markdown, uploads,
 Paperless-ngx links), device inventory, defects, spare parts, contacts, costs, notifications, an
 iCal feed, a guest link and an MCP server. Home Assistant, Paperless-ngx and Kept (finance) are
-optional adapters, never requirements. Status: early development — authentication, the API spine
-and the task core (rooms, assets, tasks, completions, notifications, dashboard) exist; documents,
-defects, parts, contacts, costs, the iCal feed, the guest link and the MCP server are still to come.
+optional adapters, never requirements. Status: early development — authentication, the API spine,
+the task core (rooms, assets, tasks, completions, notifications, dashboard) and documentation
+(pages, attachments, search, file backup) exist; defects, parts, contacts, costs, the iCal feed, the
+guest link and the MCP server are still to come.
 
 There is one household, not many: all domain data is shared by every user. Only sessions, API
 tokens, integration connections and preferences belong to a single user.
@@ -72,6 +73,12 @@ src/lib/server/auth/             sessions, passwords, login + rate limits, API t
 src/lib/server/users/            user service (create, first admin, update, profile)
 src/lib/server/<domain>/         services: plain functions, no HTTP types
 src/lib/server/docs/markdown*.ts markdown -> sanitized html; async variants run marked in a worker (see below)
+src/lib/server/docs/pages.ts     documentation pages: CRUD, rev concurrency, revisions, backlinks, cached renderings
+src/lib/server/docs/render.ts    page rendering for members/guests, link resolution, `{token}` placeholder
+src/lib/server/files/            content-addressed file store, image pipeline, sniffing, serving headers (see below)
+src/lib/server/attachments/      attachment rows, owner registry, orphan sweeper (see "Documentation" below)
+src/lib/server/search/           GET /search over the FTS5 index (`search_fts`, kept by triggers)
+src/lib/server/backup/           daily VACUUM INTO backup + incremental mirror of the files directory
 src/lib/dates.ts                 YYYY-MM-DD date math + time-zone helpers (client-safe)
 src/lib/tasks/engine/            pure due-date engine (client-safe): evaluateTask, estimates, rotation, upcoming
 src/lib/server/service.ts        ServiceContext {db, now}, notFound/conflict/invalidField, isUniqueViolation
@@ -127,6 +134,55 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   by `scripts/seed.ts` through the REST API and matched by `key`, so repeating it changes nothing:
   rooms and assets by slug, tasks by `externalSource: "seed"` + `externalRef`, preparations by title.
   Existing entries are left alone unless `--update`. Changing the household needs the admin scope.
+
+### Documentation, attachments, search and backup
+
+- **Pages** (`doc_pages`, `doc_page_revisions`; `docs/pages.ts`): `bodyMd` is the source; the
+  renderings are caches written on save through the worker-backed async markdown functions
+  (`renderedHtmlMember` with secret blocks, `renderedHtmlGuest` without, `plainText` WITHOUT secrets,
+  `headingsJson` = `{member, guest}`). `MarkdownError` becomes 400 `invalid_request` with
+  `details.code` `too_large` / `too_complex` (`unavailable` is 503), `FileError` 400/413/415 with
+  `details.code` (see `api/errors.ts`). `PATCH` needs `rev` (409 `conflict`, `details.currentRev`; the
+  update itself is guarded by `rev`); every successful save bumps `rev` and writes a revision (50
+  kept). Restoring saves the old title/body as a new revision. Backlinks are computed on read from
+  `[[slug]]` references in other pages. `preview` is a reserved slug (static route). Pages are
+  written with the `docs:write` scope; `read` sees everything including secret blocks (members and
+  tokens alike; only the guest rendering strips them).
+- **Link resolution at render time**: `attachment:<id>` resolves only to attachments that exist
+  (member: `/api/v1/attachments/<id>/content`; guest: only guest-visible ones, as
+  `/g/{token}/files/<id>`), `[[slug]]` to `/docs/<slug>` (guest: `/g/{token}/docs/<slug>`; slug as
+  `slugify` writes it). The guest HTML keeps the literal `{token}`; the future guest route must call
+  `fillGuestToken(html, token)` (`docs/render.ts`) when it serves a page. Deleting an attachment or
+  flipping `guestVisible` re-renders the pages that embed it (`onAttachmentsChanged` listener,
+  started in `init()` by `startAttachmentRerender`; only the two HTML caches change, guarded by `rev`).
+- **Attachments** (`attachments`): one row per upload, generic owner `ownerType` + `ownerId` without
+  foreign keys (`asset|room|page|task|defect|service_log|part|asset_hint|contact`), files stored
+  once by sha256 in `HAUSWART_FILES_DIR` (`files/store.ts`: images re-encoded, metadata stripped,
+  thumbnail; PDFs as uploaded; HEIC/SVG/HTML/GIF refused). Owner existence is checked through the
+  registry in `attachments/owners.ts`: asset, room, page and task are built in; a domain registers
+  its type with `registerAttachmentOwner(type, existsFn)` **from `init()`** (never from a module
+  that is only loaded with its routes) and calls `removeOwnedAttachments(ctx, type, id)` from its
+  delete service (done for asset, room, task, page). A type nobody registered is a 400 field error
+  on `ownerType`. Uploading, patching or deleting an attachment of a page needs `docs:write`,
+  others `write`. `deleteIfUnreferenced` keeps files younger than a minute, so a daily orphan sweep
+  (`startFileSweeper`) removes what deletions left behind. `assets.photoAttachmentId` must be an
+  image attachment owned by that asset (set it with an update; it cannot be set on create).
+- **Binary endpoints**: `responseType: "binary"` + `contentTypes` in the registry; the handler
+  returns a finished `Response` (`bind` only authenticates, parses and passes it through; OpenAPI
+  documents `string/binary` per content type). `createApiClient().call` refuses them at the type
+  level, use `endpointUrl(endpoint, {params, query})` for `<img src>`. Content is served with
+  `files/serve.ts` (nosniff, CSP, ETag = sha256, `private, immutable`).
+- **Multipart bodies** are passed to `api.call` as a plain object (files as `File`, the rest
+  strings); the client builds the `FormData`. In route tests use `callRoute(..., { form })`.
+- **Search** (`search_fts`, FTS5, created in a custom migration): triggers on pages, assets, rooms
+  and tasks keep it current (archived entries are dropped). No secret text enters the index: pages
+  index `plain_text`; the markdown free text of assets, rooms and tasks is cut off at the first `:::`
+  when it mentions "secret" anywhere. New searchable entities need their own triggers in a new
+  migration. Queries become quoted prefix terms (`ftsExpression`), so no FTS syntax reaches SQLite.
+- **Backup** (`backup/`): on by default (`HAUSWART_BACKUP_DIR` default `./data/backups`, set it empty
+  to turn off; `HAUSWART_BACKUP_KEEP` default 14). Hourly check: a `VACUUM INTO` copy
+  (`hauswart-backup-<UTC>.db`) when the newest is a day old, then `mirrorFiles` copies the stored
+  files missing in `<dir>/files` (never overwrites, never deletes).
 
 ### Authentication and the API spine
 
@@ -223,6 +279,8 @@ json, origin, … })` from `$lib/testing/route`; users and tokens come from `cre
   engine.
 - Bug fixes start with a failing test.
 - Fixtures are synthetic and live in `src/lib/testing/fixtures/`.
+- File tests call `useTestFilesDir()` (`$lib/testing/files`: temp `HAUSWART_FILES_DIR`, sample pdf/svg/
+  html/heic bytes); `callRoute` returns file bodies as `Uint8Array`.
 
 ## Subagents (`.claude/agents/`)
 

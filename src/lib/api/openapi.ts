@@ -128,7 +128,23 @@ function operation(endpoint: AnyEndpoint, components: Components): Json {
   }
 
   const responses: Record<string, Json> = {};
-  if (endpoint.status === 204) {
+  if (endpoint.responseType === "binary") {
+    responses[String(endpoint.status)] = {
+      description: "The file",
+      headers: {
+        ETag: { schema: { type: "string" } },
+        "Content-Disposition": { schema: { type: "string" } },
+        "Cache-Control": { schema: { type: "string" } },
+      },
+      content: Object.fromEntries(
+        endpoint.contentTypes.map((type) => [
+          type,
+          { schema: { type: "string", format: "binary" } },
+        ]),
+      ),
+    };
+    responses["304"] = { description: "Not modified (If-None-Match matched)" };
+  } else if (endpoint.status === 204) {
     responses["204"] = { description: "No content" };
   } else {
     responses[String(endpoint.status)] = {

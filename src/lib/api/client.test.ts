@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod";
-import { createApiClient, type FetchLike } from "./client";
+import { createApiClient, endpointUrl, type FetchLike } from "./client";
 import { ApiError } from "./errors";
 import { defineEndpoint, endpoints } from "./registry";
 import { paginationQuerySchema } from "./schemas/common";
@@ -161,6 +161,51 @@ describe("createApiClient", () => {
       code: "internal",
       status: 200,
     });
+  });
+
+  it("sends a multipart body given as an object as form data, files included", async () => {
+    const { fetch, calls } = fakeFetch(() => jsonResponse({ id: "a1" }, 201));
+    const file = new File(["%PDF-1.4"], "a.pdf", { type: "application/pdf" });
+    await createApiClient(fetch)
+      .call(endpoints.attachmentsUpload, {
+        body: { file, ownerType: "asset", ownerId: "x1", guestVisible: "true" },
+      })
+      .catch((e: unknown) => e);
+    const body = calls[0].init.body as FormData;
+    expect(body).toBeInstanceOf(FormData);
+    expect(body.get("ownerType")).toBe("asset");
+    expect(body.get("guestVisible")).toBe("true");
+    expect((body.get("file") as File).name).toBe("a.pdf");
+    expect(
+      (calls[0].init.headers as Record<string, string>)["content-type"],
+    ).toBeUndefined();
+  });
+
+  it("builds the URL of an endpoint for <img src> and downloads", () => {
+    expect(
+      endpointUrl(endpoints.attachmentsContent, {
+        params: { id: "a/b c" },
+        query: { download: "1" },
+      }),
+    ).toBe("/api/v1/attachments/a%2Fb%20c/content?download=1");
+    expect(
+      endpointUrl(
+        endpoints.attachmentsThumb,
+        { params: { id: "x" } },
+        "https://h.example.org/",
+      ),
+    ).toBe("https://h.example.org/api/v1/attachments/x/thumb");
+    expect(() => endpointUrl(endpoints.attachmentsThumb)).toThrow(
+      /missing path parameter/,
+    );
+  });
+
+  it("does not offer binary endpoints to call()", () => {
+    const api = createApiClient(fakeFetch(() => jsonResponse({})).fetch);
+    const content = endpoints.attachmentsContent;
+    // @ts-expect-error file content is fetched by URL, not parsed as JSON
+    const attempt = () => api.call(content, { params: { id: "x" } });
+    expect(attempt).toBeTypeOf("function");
   });
 
   it("sends a bearer token and honours an absolute base URL", async () => {

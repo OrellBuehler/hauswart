@@ -17,6 +17,21 @@ import type {
 import type { dashboardSchema } from "$lib/api/schemas/dashboard";
 import type { notificationSchema } from "$lib/api/schemas/notifications";
 import type { householdSchema } from "$lib/api/schemas/household";
+import type {
+  docPageSchema,
+  docPageSummarySchema,
+  pageRevisionSchema,
+  pageRevisionSummarySchema,
+} from "$lib/api/schemas/docs";
+import type { attachmentSchema } from "$lib/api/schemas/attachments";
+import type { AttachmentRecord } from "$lib/server/attachments/attachments";
+import {
+  excerptOf,
+  type PageDetail,
+  type PageRecord,
+  type RevisionRecord,
+  type RevisionSummary,
+} from "$lib/server/docs/pages";
 import type { RoomRecord } from "$lib/server/rooms/rooms";
 import type { AssetRecord } from "$lib/server/assets/assets";
 import type { TaskRecord } from "$lib/server/tasks/tasks";
@@ -238,5 +253,80 @@ export function wireDashboard(
     openDefects: d.openDefects,
     expiringWarranties: d.expiringWarranties,
     orderNow: d.orderNow,
+  };
+}
+
+export function wirePageSummary(
+  page: PageRecord,
+): z.input<typeof docPageSummarySchema> {
+  return {
+    id: page.id,
+    slug: page.slug,
+    title: page.title,
+    section: page.section,
+    assetId: page.assetId,
+    roomId: page.roomId,
+    sortOrder: page.sortOrder,
+    guestVisible: page.guestVisible,
+    pinned: page.pinned,
+    rev: page.rev,
+    excerpt: excerptOf(page),
+    updatedBy: page.updatedBy,
+    updatedByName: page.updatedByName,
+    archivedAt: iso(page.archivedAt),
+    createdAt: toIso(page.createdAt),
+    updatedAt: toIso(page.updatedAt),
+  };
+}
+
+/** The member view: markdown source and the HTML that includes secret blocks. */
+export function wirePage(page: PageDetail): z.input<typeof docPageSchema> {
+  return {
+    ...wirePageSummary(page),
+    bodyMd: page.bodyMd,
+    renderedHtml: page.renderedHtmlMember,
+    headings: page.headingsJson.member,
+    backlinks: page.backlinks,
+  };
+}
+
+export function wireRevisionSummary(
+  revision: RevisionSummary,
+): z.input<typeof pageRevisionSummarySchema> {
+  return {
+    rev: revision.rev,
+    title: revision.title,
+    size: revision.size,
+    userId: revision.userId,
+    userName: revision.userName,
+    createdAt: toIso(revision.createdAt),
+  };
+}
+
+export function wireRevision(
+  revision: RevisionRecord,
+): z.input<typeof pageRevisionSchema> {
+  return { ...wireRevisionSummary(revision), bodyMd: revision.bodyMd };
+}
+
+export function wireAttachment(
+  row: AttachmentRecord,
+): z.input<typeof attachmentSchema> {
+  return {
+    id: row.id,
+    ownerType: row.ownerType,
+    ownerId: row.ownerId,
+    filename: row.filename,
+    mime: row.mime,
+    size: row.size,
+    width: row.width,
+    height: row.height,
+    caption: row.caption,
+    guestVisible: row.guestVisible,
+    url: `/api/v1/attachments/${row.id}/content`,
+    thumbUrl: row.thumbPath ? `/api/v1/attachments/${row.id}/thumb` : null,
+    uploadedBy: row.uploadedBy,
+    createdAt: toIso(row.createdAt),
+    updatedAt: toIso(row.updatedAt),
   };
 }

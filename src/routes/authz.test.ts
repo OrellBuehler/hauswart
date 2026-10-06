@@ -165,7 +165,11 @@ describe("/api/v1 authorization matrix", () => {
       session: who.session,
       bearer: who.bearer,
       origin: who.origin,
-      ...(e.body ? { json: {} } : {}),
+      ...(e.body && e.bodyType === "multipart"
+        ? { form: { ownerType: "asset", ownerId: "sample-id" } }
+        : e.body
+          ? { json: {} }
+          : {}),
     });
   }
 

@@ -16,6 +16,8 @@ import {
 } from "$lib/server/auth/rate-limit";
 import { useTestDB } from "$lib/testing/db";
 import { createTestEvent, type TestEventOptions } from "$lib/testing/event";
+import { FileError } from "$lib/server/files/errors";
+import { MarkdownError } from "$lib/server/docs/markdown-core";
 import { bind, reply } from "./bind";
 
 const member: SessionUser = {
@@ -807,6 +809,84 @@ describe("bind", () => {
     });
   });
 
+  describe("binary responses", () => {
+    const file = defineEndpoint({
+      ...base,
+      id: "file",
+      auth: "both",
+      scopes: ["read"],
+      path: "/api/v1/things/{id}",
+      params: z.object({ id: z.string() }),
+      response: z.null(),
+      responseType: "binary",
+      contentTypes: ["image/png"],
+    });
+
+    it("passes the handler's Response through untouched, with auth and param parsing", async () => {
+      const bound = bind(
+        file,
+        ({ params }) =>
+          new Response(`bytes of ${params.id}`, {
+            status: 200,
+            headers: { "content-type": "image/png", etag: '"x"' },
+          }),
+      );
+      const r = await bound(
+        createTestEvent({
+          url: "http://localhost/api/v1/things/42",
+          params: { id: "42" },
+          locals: { user: member, session, token: null },
+        }) as never,
+      );
+      expect(r.status).toBe(200);
+      expect(r.headers.get("content-type")).toBe("image/png");
+      expect(r.headers.get("etag")).toBe('"x"');
+      expect(r.headers.get("cache-control")).toBeNull();
+      expect(await r.text()).toBe("bytes of 42");
+    });
+
+    it("keeps the guards: anonymous callers and missing scopes never reach the handler", async () => {
+      let reached = 0;
+      const bound = bind(file, () => {
+        reached += 1;
+        return new Response("x");
+      });
+      const anon = await call(bound, {}, { params: { id: "1" } });
+      expect(anon.res.status).toBe(401);
+      const noScope = await call(
+        bound,
+        { user: member, token: token([]) },
+        { params: { id: "1" } },
+      );
+      expect(noScope.res.status).toBe(403);
+      expect(reached).toBe(0);
+    });
+
+    it("maps errors thrown by the handler to the JSON envelope", async () => {
+      const bound = bind(file, () => {
+        throw new ApiError("not_found", "File not found");
+      });
+      const r = await call(
+        bound,
+        { user: member, session: true },
+        { params: { id: "1" } },
+      );
+      expect([r.res.status, codeOf(r)]).toEqual([404, "not_found"]);
+      expect(r.res.headers.get("cache-control")).toBe("no-store");
+    });
+
+    it("fails with 500 when a binary handler returns something that is not a Response", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const bound = bind(file, (() => ({ ok: true })) as never);
+      const r = await call(
+        bound,
+        { user: member, session: true },
+        { params: { id: "1" } },
+      );
+      expect([r.res.status, codeOf(r)]).toEqual([500, "internal"]);
+    });
+  });
+
   describe("error mapping", () => {
     const run = (thrower: () => never) =>
       call(
@@ -851,6 +931,59 @@ describe("bind", () => {
       ]);
       expect(limited.res.headers.get("retry-after")).toBe("90");
       expect(limited.body.error.details).toEqual({ retryAfterSeconds: 90 });
+    });
+
+    it("maps file and markdown errors to 4xx with a stable details.code", async () => {
+      const cases: [Error, number, string, string][] = [
+        [new FileError("empty"), 400, "invalid_request", "empty"],
+        [new FileError("too_large"), 413, "invalid_request", "too_large"],
+        [
+          new FileError("unsupported_type"),
+          415,
+          "invalid_request",
+          "unsupported_type",
+        ],
+        [
+          new FileError("unsupported_heic"),
+          415,
+          "invalid_request",
+          "unsupported_heic",
+        ],
+        [
+          new FileError("corrupt_image"),
+          400,
+          "invalid_request",
+          "corrupt_image",
+        ],
+        [
+          new FileError("image_too_large"),
+          413,
+          "invalid_request",
+          "image_too_large",
+        ],
+        [new MarkdownError("too_large"), 400, "invalid_request", "too_large"],
+        [
+          new MarkdownError("too_complex"),
+          400,
+          "invalid_request",
+          "too_complex",
+        ],
+        [new MarkdownError("unavailable"), 503, "internal", "unavailable"],
+      ];
+      for (const [error, status, code, detail] of cases) {
+        const r = await run(() => {
+          throw error;
+        });
+        expect([r.res.status, codeOf(r), r.body.error.details]).toEqual([
+          status,
+          code,
+          { code: detail },
+        ]);
+      }
+      const missing = await run(() => {
+        throw new FileError("invalid_path");
+      });
+      expect([missing.res.status, codeOf(missing)]).toEqual([404, "not_found"]);
     });
 
     it("maps SvelteKit http errors and rethrows redirects", async () => {

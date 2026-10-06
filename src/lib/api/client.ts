@@ -41,8 +41,11 @@ export interface ApiClientOptions {
   headers?: Record<string, string>;
 }
 
+/** Endpoints that answer with JSON; binary endpoints (file content) are fetched by URL, see `endpointUrl`. */
+export type JsonEndpoint = AnyEndpoint & { readonly responseType: "json" };
+
 export interface ApiClient {
-  call<E extends AnyEndpoint>(
+  call<E extends JsonEndpoint>(
     endpoint: E,
     ...args: CallArgs<E>
   ): Promise<CallResult<E>>;
@@ -55,6 +58,18 @@ const STATUS_CODES: Record<number, ErrorCode> = {
   409: "conflict",
   429: "rate_limited",
 };
+
+/** The URL of an endpoint with its path parameters and query filled in, e.g. for `<img src>`. */
+export function endpointUrl(
+  endpoint: AnyEndpoint,
+  input: {
+    params?: Record<string, unknown>;
+    query?: Record<string, unknown>;
+  } = {},
+  baseUrl = "",
+): string {
+  return buildUrl(baseUrl, endpoint, input);
+}
 
 function buildUrl(
   baseUrl: string,
@@ -78,6 +93,18 @@ function buildUrl(
   }
   const qs = search.toString();
   return `${baseUrl.replace(/\/+$/, "")}${path}${qs ? `?${qs}` : ""}`;
+}
+
+/** A multipart body is passed as a plain object; files and blobs are appended as they are, the rest as text. */
+function toFormData(body: unknown): FormData {
+  if (body instanceof FormData) return body;
+  const form = new FormData();
+  for (const [key, value] of Object.entries(body as Record<string, unknown>)) {
+    if (value === undefined || value === null) continue;
+    if (value instanceof Blob) form.append(key, value);
+    else form.append(key, String(value));
+  }
+  return form;
 }
 
 async function readJson(res: Response): Promise<unknown> {
@@ -115,7 +142,7 @@ export function createApiClient(
   options: ApiClientOptions = {},
 ): ApiClient {
   return {
-    async call<E extends AnyEndpoint>(
+    async call<E extends JsonEndpoint>(
       endpoint: E,
       ...args: CallArgs<E>
     ): Promise<CallResult<E>> {
@@ -135,7 +162,7 @@ export function createApiClient(
       const init: RequestInit = { method: endpoint.method, headers };
       if (endpoint.body && input.body !== undefined) {
         if (endpoint.bodyType === "multipart") {
-          init.body = input.body as FormData;
+          init.body = toFormData(input.body);
         } else {
           headers["content-type"] = "application/json";
           init.body = JSON.stringify(input.body);

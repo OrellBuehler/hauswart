@@ -22,6 +22,20 @@
       "when": 1791300455094,
       "tag": "0002_oval_phil_sheldon",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1791304597884,
+      "tag": "0003_thin_overlord",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1791304602903,
+      "tag": "0004_search_index",
+      "breakpoints": true
     }
   ]
 }

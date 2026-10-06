@@ -15,6 +15,10 @@ import {
   type ServiceContext,
 } from "$lib/server/service";
 import { slugify, uniqueSlug } from "$lib/server/slug";
+import {
+  assertAssetPhoto,
+  removeOwnedAttachments,
+} from "$lib/server/attachments/attachments";
 
 type Db = Pick<ServiceContext, "db">;
 type Now = Pick<ServiceContext, "db" | "now">;
@@ -122,6 +126,12 @@ const slugTaken = (ctx: Db, slug: string) =>
 
 export function createAsset(ctx: Db, input: CreateAssetRequest): AssetRecord {
   assertRoom(ctx, input.roomId);
+  if (input.photoAttachmentId) {
+    throw invalidField(
+      "photoAttachmentId",
+      "Upload the photo to the asset first, then set it with an update",
+    );
+  }
   const slug =
     input.slug ??
     uniqueSlug(slugify(input.name), (candidate) => slugTaken(ctx, candidate));
@@ -151,7 +161,7 @@ export function createAsset(ctx: Db, input: CreateAssetRequest): AssetRecord {
           species: input.species ?? null,
           light: input.light ?? null,
           waterNotes: input.waterNotes ?? null,
-          photoAttachmentId: input.photoAttachmentId ?? null,
+          photoAttachmentId: null,
         })
         .returning({ id: assets.id })
         .get();
@@ -174,6 +184,9 @@ export function updateAsset(
 ): AssetRecord {
   const current = getAsset(ctx, id);
   if (patch.roomId !== undefined) assertRoom(ctx, patch.roomId);
+  if (patch.photoAttachmentId) {
+    assertAssetPhoto(ctx, id, patch.photoAttachmentId);
+  }
   if (patch.slug && patch.slug !== current.slug && slugTaken(ctx, patch.slug)) {
     throw conflict("An asset with this slug already exists");
   }
@@ -202,12 +215,13 @@ export function updateAsset(
   return getAsset(ctx, id);
 }
 
-/** Tasks that referenced the asset stay and lose the link. */
-export function deleteAsset(ctx: Db, id: string): void {
+/** Tasks that referenced the asset stay and lose the link; its attachments go with it. */
+export function deleteAsset(ctx: Now, id: string): void {
   const result = ctx.db
     .delete(assets)
     .where(eq(assets.id, id))
     .returning({ id: assets.id })
     .all();
   if (result.length === 0) throw notFound("Asset");
+  removeOwnedAttachments(ctx, "asset", id);
 }

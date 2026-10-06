@@ -12,10 +12,12 @@ import {
   type ServiceContext,
 } from "$lib/server/service";
 import { slugify, uniqueSlug } from "$lib/server/slug";
+import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
 
 export type RoomRecord = typeof rooms.$inferSelect;
 
 type Db = Pick<ServiceContext, "db">;
+type Now = Pick<ServiceContext, "db" | "now">;
 
 export function listRooms(ctx: Db, page: { cursor?: string; limit: number }) {
   const all = ctx.db
@@ -110,8 +112,9 @@ export function updateRoom(
   }
 }
 
-/** Assets and tasks in the room stay; they just lose their room. */
-export function deleteRoom(ctx: Db, id: string): void {
+/** Assets and tasks in the room stay; they just lose their room. Its attachments go with it. */
+export function deleteRoom(ctx: Now, id: string): void {
   const result = ctx.db.delete(rooms).where(eq(rooms.id, id)).returning().all();
   if (result.length === 0) throw notFound("Room");
+  removeOwnedAttachments(ctx, "room", id);
 }

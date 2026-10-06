@@ -57,6 +57,7 @@ describe("openapi document", () => {
       "AdminUser",
       "ApiToken",
       "Asset",
+      "Attachment",
       "Completion",
       "CreatedApiToken",
       "Dashboard",
@@ -64,15 +65,22 @@ describe("openapi document", () => {
       "DashboardReservedItem",
       "DashboardTask",
       "DirectoryUser",
+      "DocPage",
+      "DocPageSummary",
       "DueResult",
       "ErrorEnvelope",
       "GroupStats",
+      "Heading",
       "Household",
       "HouseholdSettings",
       "Notification",
       "NotificationParams",
+      "PageBacklink",
+      "PageRevision",
+      "PageRevisionSummary",
       "Preparation",
       "Room",
+      "SearchHit",
       "Stats",
       "Task",
       "TaskDetail",
@@ -93,6 +101,47 @@ describe("openapi document", () => {
       properties: { user: { $ref: "#/components/schemas/User" } },
     });
     expect(JSON.stringify(doc)).not.toContain("#/$defs/");
+  });
+
+  it("documents binary endpoints as files with their content types", () => {
+    const content = doc.paths["/api/v1/attachments/{id}/content"].get as {
+      responses: Record<string, { content?: Record<string, unknown> }>;
+    };
+    expect(Object.keys(content.responses["200"].content ?? {}).sort()).toEqual([
+      "application/octet-stream",
+      "application/pdf",
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+    ]);
+    expect(content.responses["200"].content!["image/png"]).toEqual({
+      schema: { type: "string", format: "binary" },
+    });
+    expect(content.responses["304"]).toBeDefined();
+    expect(content.responses["404"]).toBeDefined();
+    const thumb = doc.paths["/api/v1/attachments/{id}/thumb"].get as {
+      responses: Record<string, { content?: Record<string, unknown> }>;
+    };
+    expect(Object.keys(thumb.responses["200"].content ?? {})).toEqual([
+      "image/webp",
+    ]);
+  });
+
+  it("documents multipart uploads with a binary file field and the upload errors", () => {
+    const upload = doc.paths["/api/v1/attachments"].post as {
+      requestBody: {
+        content: Record<
+          string,
+          { schema: { properties: Record<string, { format?: string }> } }
+        >;
+      };
+      responses: Record<string, unknown>;
+    };
+    const schema = upload.requestBody.content["multipart/form-data"].schema;
+    expect(schema.properties.file.format).toBe("binary");
+    expect(Object.keys(upload.responses)).toEqual(
+      expect.arrayContaining(["201", "400", "403", "413", "415"]),
+    );
   });
 
   it("documents params, query and request bodies", () => {
