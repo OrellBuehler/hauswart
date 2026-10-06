@@ -1,8 +1,10 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
+  import CalendarDaysIcon from "@lucide/svelte/icons/calendar-days";
   import HouseIcon from "@lucide/svelte/icons/house";
   import KeyRoundIcon from "@lucide/svelte/icons/key-round";
+  import LinkIcon from "@lucide/svelte/icons/link-2";
   import SmartphoneIcon from "@lucide/svelte/icons/smartphone";
   import UserRoundIcon from "@lucide/svelte/icons/user-round";
   import PageHeader from "$lib/components/app/page-header.svelte";
@@ -21,6 +23,16 @@
       href: "/settings/household",
       label: () => m.settings_tab_household(),
       icon: HouseIcon,
+    },
+    {
+      href: "/settings/calendar",
+      label: () => m.settings_tab_calendar(),
+      icon: CalendarDaysIcon,
+    },
+    {
+      href: "/settings/guest-links",
+      label: () => m.settings_tab_guest_links(),
+      icon: LinkIcon,
     },
     {
       href: "/settings/tokens",

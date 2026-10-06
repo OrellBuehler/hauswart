@@ -1,5 +1,8 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
+  import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
+  import MailIcon from "@lucide/svelte/icons/mail";
+  import PhoneIcon from "@lucide/svelte/icons/phone";
   import type { HintKind } from "$lib/api/enums";
   import GuestHtml from "$lib/components/guest/guest-html.svelte";
   import GuestShell from "$lib/components/guest/guest-shell.svelte";
@@ -57,32 +60,50 @@
     phone: string | null;
     email: string | null;
   }[],
+  urgent: boolean,
 )}
   {#if list.length > 0}
-    <section class="flex break-inside-avoid flex-col gap-2">
+    <section class="flex flex-col gap-3">
       <h2 class="text-xl font-semibold">{title}</h2>
-      <ul class="flex flex-col gap-2">
+      <ul class="grid gap-3 sm:grid-cols-2">
         {#each list as c (c.id)}
-          <li class="rounded-lg border p-3">
-            <p class="font-medium">{c.name}</p>
-            {#if c.company}
-              <p class="text-muted-foreground text-sm">{c.company}</p>
+          <li
+            class="bg-card flex break-inside-avoid flex-col gap-3 rounded-xl border p-4 print:rounded-lg print:p-3"
+          >
+            <div class="min-w-0">
+              <p class="font-semibold break-words">{c.name}</p>
+              {#if c.company && c.company !== c.name}
+                <p class="text-muted-foreground text-sm break-words">
+                  {c.company}
+                </p>
+              {/if}
+            </div>
+            {#if c.phone}
+              <a
+                class={urgent
+                  ? "bg-destructive flex min-h-14 items-center justify-center gap-3 rounded-lg px-4 text-xl font-semibold text-white tabular-nums print:min-h-0 print:justify-start print:bg-transparent print:px-0 print:text-lg print:text-black"
+                  : "flex min-h-12 items-center justify-center gap-2.5 rounded-lg border px-4 text-lg font-medium tabular-nums print:min-h-0 print:justify-start print:border-0 print:px-0"}
+                href={`tel:${dialable(c.phone)}`}
+              >
+                <PhoneIcon
+                  class="size-5 shrink-0 print:hidden"
+                  aria-hidden="true"
+                />
+                {c.phone}
+              </a>
             {/if}
-            <p class="mt-1 flex flex-wrap gap-x-4 text-sm">
-              {#if c.phone}
-                <a
-                  class="text-brand underline"
-                  href={`tel:${dialable(c.phone)}`}
-                >
-                  {c.phone}
-                </a>
-              {/if}
-              {#if c.email}
-                <a class="text-brand underline" href={`mailto:${c.email}`}>
-                  {c.email}
-                </a>
-              {/if}
-            </p>
+            {#if c.email}
+              <a
+                class="text-brand flex min-h-11 items-center gap-2 text-sm font-medium break-all underline underline-offset-4"
+                href={`mailto:${c.email}`}
+              >
+                <MailIcon
+                  class="size-4 shrink-0 print:hidden"
+                  aria-hidden="true"
+                />
+                {c.email}
+              </a>
+            {/if}
           </li>
         {/each}
       </ul>
@@ -103,22 +124,27 @@
     {@render contactList(
       m.guest_section_emergency_contacts({}, { locale }),
       data.home.emergencyContacts,
+      true,
     )}
 
     {#each groups as group (group.title)}
-      <section class="flex break-inside-avoid flex-col gap-2">
+      <section class="flex flex-col gap-3">
         <h2 class="text-xl font-semibold">{group.title}</h2>
-        <ul class="flex flex-col gap-1">
+        <ul class="flex flex-col gap-2">
           {#each group.pages as p (p.slug)}
             <li>
               <a
-                class="text-brand underline"
+                class="bg-card hover:bg-accent focus-visible:ring-ring/50 flex min-h-12 items-center justify-between gap-3 rounded-lg border px-4 py-2 font-medium break-words outline-none focus-visible:ring-[3px]"
                 href={resolve("/g/[token]/docs/[slug]", {
                   token: data.token,
                   slug: p.slug,
                 })}
               >
                 {p.title}
+                <ChevronRightIcon
+                  class="text-muted-foreground size-5 shrink-0 print:hidden"
+                  aria-hidden="true"
+                />
               </a>
             </li>
           {/each}
@@ -132,8 +158,10 @@
           {m.guest_section_devices({}, { locale })}
         </h2>
         {#each data.home.devices as device (device.id)}
-          <article class="break-inside-avoid rounded-lg border p-3">
-            <h3 class="font-medium">{device.name}</h3>
+          <article
+            class="bg-card break-inside-avoid rounded-xl border p-4 print:rounded-lg print:p-3"
+          >
+            <h3 class="font-semibold">{device.name}</h3>
             {#if device.roomName}
               <p class="text-muted-foreground text-sm">
                 {m.guest_room({ room: device.roomName }, { locale })}
@@ -144,13 +172,13 @@
                 <p class="text-sm font-medium">
                   {hintLabel(hint.kind)}: {hint.title}
                 </p>
-                <GuestHtml html={hint.html} class="text-sm" />
+                <GuestHtml html={hint.html} {locale} class="text-sm" />
                 {#if hint.files.length > 0}
-                  <ul class="mt-1 flex flex-wrap gap-x-4 text-sm">
+                  <ul class="mt-2 flex flex-wrap gap-x-4 text-sm">
                     {#each hint.files as file (file.id)}
                       <li>
                         <a
-                          class="text-brand underline"
+                          class="text-brand inline-flex min-h-11 items-center font-medium underline underline-offset-4"
                           href={resolve("/g/[token]/files/[id]", {
                             token: data.token,
                             id: file.id,
@@ -172,6 +200,7 @@
     {@render contactList(
       m.guest_section_contacts({}, { locale }),
       data.home.contacts,
+      false,
     )}
 
     {#if empty}

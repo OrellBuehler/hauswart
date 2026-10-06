@@ -134,6 +134,7 @@ export type GuestLink = z.infer<typeof guestLinkSchema>;
 export const createdGuestLinkSchema = guestLinkSchema
   .extend({ url: z.string() })
   .meta({ id: "CreatedGuestLink" });
+export type CreatedGuestLink = z.infer<typeof createdGuestLinkSchema>;
 
 export const listGuestLinksResponseSchema = paginated(guestLinkSchema);
 
