@@ -11,7 +11,7 @@
   import { kindLabels } from "$lib/assets/kinds";
   import { newTaskHref } from "$lib/assets/links";
   import { isActionable } from "$lib/assets/tasks";
-  import AssetKindIcon from "$lib/components/assets/asset-kind-icon.svelte";
+  import AssetPhoto from "$lib/components/assets/asset-photo.svelte";
   import DueBadge from "$lib/components/assets/due-badge.svelte";
   import EmptyState from "$lib/components/app/empty-state.svelte";
   import HintCallout from "$lib/components/hints/hint-callout.svelte";
@@ -62,7 +62,11 @@
 {:else}
   <div class="mx-auto flex max-w-md flex-col gap-6">
     <header class="flex items-center gap-3">
-      <AssetKindIcon kind={found.asset.kind} tile class="size-14 rounded-xl" />
+      <AssetPhoto
+        kind={found.asset.kind}
+        photoUrl={found.asset.photoUrl}
+        class="size-14 rounded-xl"
+      />
       <div class="min-w-0">
         <p class="text-muted-foreground flex items-center gap-1.5 text-xs">
           <QrCodeIcon class="size-3.5" aria-hidden="true" />

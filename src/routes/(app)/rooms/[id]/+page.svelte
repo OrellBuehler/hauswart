@@ -18,11 +18,13 @@
   import AssetRow from "$lib/components/assets/asset-row.svelte";
   import RoomFormDialog from "$lib/components/assets/room-form-dialog.svelte";
   import TaskRows from "$lib/components/assets/task-rows.svelte";
+  import LinkedDocsCard from "$lib/components/docs/linked-docs-card.svelte";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
   import EmptyState from "$lib/components/app/empty-state.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
+  import { docsFilterHref, newDocHref } from "$lib/docs/links";
   import { m } from "$lib/paraglide/messages";
   import type { PageProps } from "./$types";
 
@@ -179,6 +181,18 @@
       {/if}
     </Card.Content>
   </Card.Root>
+
+  <LinkedDocsCard
+    title={m.room_docs_title()}
+    pages={data.pages}
+    createHref={newDocHref({ roomId: data.room.id, section: "room" })}
+    moreHref={docsFilterHref({ roomId: data.room.id })}
+    emptyTitle={m.room_docs_empty_title()}
+    emptyBody={m.room_docs_empty_body()}
+    createLabel={m.docs_create_page()}
+    moreLabel={m.docs_show_all({ count: data.pages.length })}
+    canWrite={data.scopes.includes("docs:write")}
+  />
 </div>
 
 <RoomFormDialog bind:open={editOpen} room={data.room} onsaved={invalidateAll} />

@@ -10,6 +10,7 @@
   import { api } from "$lib/api/browser";
   import { endpoints } from "$lib/api/registry";
   import type { ServiceLogEntry } from "$lib/api/schemas/service-log";
+  import Attachments from "$lib/components/attachments/attachments.svelte";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
   import EmptyState from "$lib/components/app/empty-state.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
@@ -164,6 +165,13 @@
                   {/if}
                 </p>
               {/if}
+              <Attachments
+                ownerType="service_log"
+                ownerId={entry.id}
+                variant="compact"
+                title={m.service_files_title()}
+                class="mt-2"
+              />
             </div>
             <DropdownMenu.Root>
               <DropdownMenu.Trigger>

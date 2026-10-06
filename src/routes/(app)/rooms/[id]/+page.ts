@@ -8,7 +8,7 @@ import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ fetch, params, url }) => {
   const api = createApiClient(fetch);
-  const [room, assets, allAssets, tasks, { today }] = await orFail(
+  const [room, assets, allAssets, tasks, { today }, pages] = await orFail(
     Promise.all([
       api.call(endpoints.roomsGet, { params: { id: params.id } }),
       fetchAll((cursor) =>
@@ -23,6 +23,11 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
         api.call(endpoints.tasksList, { query: { cursor, limit: 200 } }),
       ),
       loadHousehold(api),
+      fetchAll((cursor) =>
+        api.call(endpoints.pagesList, {
+          query: { cursor, limit: 200, roomId: params.id },
+        }),
+      ),
     ]),
     url.pathname,
   );
@@ -31,6 +36,7 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
     room,
     assets,
     today,
+    pages,
     tasks: tasks.filter((task) => taskRoomId(task, assetRooms) === room.id),
   };
 };

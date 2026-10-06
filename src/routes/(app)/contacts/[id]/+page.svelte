@@ -11,6 +11,7 @@
   import { toast } from "svelte-sonner";
   import { api } from "$lib/api/browser";
   import { endpoints } from "$lib/api/registry";
+  import Attachments from "$lib/components/attachments/attachments.svelte";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
   import EmptyState from "$lib/components/app/empty-state.svelte";
   import ContactActions from "$lib/components/contacts/contact-actions.svelte";
@@ -251,6 +252,12 @@
         {/if}
       </Card.Content>
     </Card.Root>
+
+    <Attachments
+      ownerType="contact"
+      ownerId={contact.id}
+      title={m.contact_files_title()}
+    />
   </div>
 </div>
 

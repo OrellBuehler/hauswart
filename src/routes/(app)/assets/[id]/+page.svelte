@@ -6,7 +6,6 @@
   import ArchiveRestoreIcon from "@lucide/svelte/icons/archive-restore";
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
   import EllipsisVerticalIcon from "@lucide/svelte/icons/ellipsis-vertical";
-  import FileTextIcon from "@lucide/svelte/icons/file-text";
   import ListChecksIcon from "@lucide/svelte/icons/list-checks";
   import PencilIcon from "@lucide/svelte/icons/pencil";
   import PlusIcon from "@lucide/svelte/icons/plus";
@@ -14,10 +13,11 @@
   import { toast } from "svelte-sonner";
   import { api } from "$lib/api/browser";
   import { endpoints } from "$lib/api/registry";
+  import type { Attachment } from "$lib/api/schemas/attachments";
   import { kindLabels } from "$lib/assets/kinds";
   import { newTaskHref } from "$lib/assets/links";
   import { warrantyStatus } from "$lib/assets/warranty";
-  import AssetKindIcon from "$lib/components/assets/asset-kind-icon.svelte";
+  import AssetPhoto from "$lib/components/assets/asset-photo.svelte";
   import AssetContactsCard from "$lib/components/assets/asset-contacts-card.svelte";
   import AssetHintsCard from "$lib/components/assets/asset-hints-card.svelte";
   import AssetPartsCard from "$lib/components/assets/asset-parts-card.svelte";
@@ -27,12 +27,15 @@
   import WarrantyBadge from "$lib/components/assets/warranty-badge.svelte";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
   import EmptyState from "$lib/components/app/empty-state.svelte";
+  import Attachments from "$lib/components/attachments/attachments.svelte";
+  import LinkedDocsCard from "$lib/components/docs/linked-docs-card.svelte";
   import Comments from "$lib/components/comments/comments.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
   import { apiErrorMessage } from "$lib/error-message";
+  import { docsFilterHref, newDocHref } from "$lib/docs/links";
   import { formatDay } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
   import type { PageProps } from "./$types";
@@ -43,6 +46,7 @@
   let archiving = $state(false);
 
   const asset = $derived(data.asset);
+  const canWriteDocs = $derived(data.scopes.includes("docs:write"));
   const isPlant = $derived(asset.kind === "plant");
   const warranty = $derived(warrantyStatus(asset, data.today));
   const backHref = $derived(
@@ -93,6 +97,14 @@
     }
   }
 
+  async function setPhoto(attachment: Attachment | null) {
+    await api.call(endpoints.assetsUpdate, {
+      params: { id: asset.id },
+      body: { photoAttachmentId: attachment?.id ?? null },
+    });
+    await invalidateAll();
+  }
+
   async function remove() {
     const { id, name } = asset;
     await api.call(endpoints.assetsDelete, { params: { id } });
@@ -117,7 +129,11 @@
     </Button>
     <header class="flex items-start justify-between gap-3">
       <div class="flex min-w-0 items-center gap-3">
-        <AssetKindIcon kind={asset.kind} tile class="size-12 rounded-xl" />
+        <AssetPhoto
+          kind={asset.kind}
+          photoUrl={asset.photoUrl}
+          class="size-12 rounded-xl sm:size-14"
+        />
         <div class="min-w-0">
           <h1
             class="text-2xl font-semibold tracking-tight text-balance md:text-3xl"
@@ -266,19 +282,26 @@
         </Card.Content>
       </Card.Root>
 
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>{m.asset_docs_title()}</Card.Title>
-        </Card.Header>
-        <Card.Content>
-          <EmptyState
-            icon={FileTextIcon}
-            title={m.coming_soon_badge()}
-            description={m.asset_docs_soon()}
-            class="py-8"
-          />
-        </Card.Content>
-      </Card.Root>
+      <LinkedDocsCard
+        title={m.asset_docs_title()}
+        pages={data.pages}
+        createHref={newDocHref({ assetId: asset.id, section: "device" })}
+        moreHref={docsFilterHref({ assetId: asset.id })}
+        emptyTitle={m.asset_docs_empty_title()}
+        emptyBody={m.asset_docs_empty_body()}
+        createLabel={m.docs_create_page()}
+        moreLabel={m.docs_show_all({ count: data.pages.length })}
+        canWrite={canWriteDocs}
+      />
+
+      <Attachments
+        ownerType="asset"
+        ownerId={asset.id}
+        title={m.asset_files_title()}
+        primaryId={asset.photoAttachmentId}
+        onprimary={setPhoto}
+        onchange={() => invalidateAll()}
+      />
 
       <AssetHintsCard assetId={asset.id} hints={data.hints} />
       <AssetContactsCard assetId={asset.id} links={data.contacts} />

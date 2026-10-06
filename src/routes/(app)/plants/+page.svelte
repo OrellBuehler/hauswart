@@ -10,6 +10,7 @@
   import { completeWithUndo } from "$lib/assets/complete";
   import { newAssetHref, newTaskHref } from "$lib/assets/links";
   import { sortTasks } from "$lib/assets/tasks";
+  import AssetPhoto from "$lib/components/assets/asset-photo.svelte";
   import DueBadge from "$lib/components/assets/due-badge.svelte";
   import EmptyState from "$lib/components/app/empty-state.svelte";
   import PageHeader from "$lib/components/app/page-header.svelte";
@@ -97,12 +98,20 @@
           class="bg-card shadow-card relative flex flex-col gap-4 rounded-xl border p-4"
         >
           <div class="flex items-start gap-3">
-            <span
-              class="bg-success/10 text-success flex size-14 shrink-0 items-center justify-center rounded-xl"
-              aria-hidden="true"
-            >
-              <LeafIcon class="size-7" />
-            </span>
+            {#if plant.photoUrl}
+              <AssetPhoto
+                kind="plant"
+                photoUrl={plant.photoUrl}
+                class="size-14 rounded-xl"
+              />
+            {:else}
+              <span
+                class="bg-success/10 text-success flex size-14 shrink-0 items-center justify-center rounded-xl"
+                aria-hidden="true"
+              >
+                <LeafIcon class="size-7" />
+              </span>
+            {/if}
             <div class="min-w-0">
               <a
                 href={resolve(`/assets/${plant.id}`)}
