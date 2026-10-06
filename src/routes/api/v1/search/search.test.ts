@@ -24,13 +24,25 @@ describe("search API", () => {
     return { user, call: createCaller({ session: loginTestUser(user).token }) };
   }
 
-  it("finds across pages, assets, rooms and tasks", async () => {
+  it("finds across every searchable kind and links to the UI routes", async () => {
     const { call } = await member();
     await call("POST", "/api/v1/pages", {
       json: { title: "Heizung", bodyMd: "Ventil im Keller" },
     });
-    await call("POST", "/api/v1/assets", {
-      json: { name: "Heizkessel", manufacturer: "Acme" },
+    const asset = (
+      await call("POST", "/api/v1/assets", {
+        json: { name: "Heizkessel", manufacturer: "Acme" },
+      })
+    ).body as { id: string };
+    await call("POST", "/api/v1/defects", {
+      json: { title: "Heizkörper tropft" },
+    });
+    await call("POST", "/api/v1/contacts", {
+      json: { name: "Heizungsbauer Muster" },
+    });
+    await call("POST", "/api/v1/parts", { json: { name: "Heizungsventil" } });
+    await call("POST", `/api/v1/assets/${asset.id}/hints`, {
+      json: { title: "Heizung entlüften" },
     });
     await call("POST", "/api/v1/rooms", { json: { name: "Heizraum" } });
     await call("POST", "/api/v1/tasks", {
@@ -59,15 +71,35 @@ describe("search API", () => {
     };
     expect(items.map((i) => i.type).sort()).toEqual([
       "asset",
+      "asset_hint",
+      "contact",
+      "defect",
       "page",
+      "part",
       "room",
       "task",
     ]);
     for (const hit of items) {
       expect(hit.id).toBeTruthy();
-      expect(hit.url).toMatch(/^\/(docs|inventory|rooms|tasks)\//);
+      expect(hit.url).toMatch(
+        /^\/(docs|assets|rooms|tasks|defects|parts|contacts)\//,
+      );
       expect(typeof hit.snippet).toBe("string");
     }
+    for (const [type, prefix] of [
+      ["asset", "/assets"],
+      ["room", "/rooms"],
+      ["task", "/tasks"],
+      ["defect", "/defects"],
+      ["part", "/parts"],
+      ["contact", "/contacts"],
+    ] as const) {
+      const hit = items.find((i) => i.type === type)!;
+      expect(hit.url, type).toBe(`${prefix}/${hit.id}`);
+    }
+    expect(items.find((i) => i.type === "asset_hint")!.url).toBe(
+      `/assets/${asset.id}`,
+    );
     expect(items.find((i) => i.type === "page")!.url).toBe("/docs/heizung");
     expect(r.res.headers.get("cache-control")).toBe("no-store");
 

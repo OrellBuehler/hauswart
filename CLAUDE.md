@@ -93,7 +93,7 @@ src/lib/server/tasks/            tasks CRUD, previewTrigger, evaluator (task_sta
                                  completions (complete/skip/undo/snooze), preparations, dashboard, stats, scheduler
 src/lib/server/notifications/    in-app notifications, generateNotifications, channel registry for outward delivery
 src/lib/server/events.ts         typed in-process domain events (completionRecorded/Revoked), emitted inside the writer's transaction
-src/lib/server/domain-events.ts  registerDomainEventHandlers(): wires reactions (parts stock) at startup and in useTestDB()
+src/lib/server/domain-events.ts  registerDomainEventHandlers(): wires reactions (parts stock) and the domain attachment owners at startup and in useTestDB()
 src/lib/server/contacts/         contacts CRUD + search, links to assets (role per link)
 src/lib/server/parts/            spare parts: CRUD, stock movements, "ordered" state, links to assets/tasks, order-now, completion events
 src/lib/server/service-log/      per-asset work log (also written with a task completion by the complete handler)
@@ -175,14 +175,18 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   foreign keys (`asset|room|page|task|defect|service_log|part|asset_hint|contact`), files stored
   once by sha256 in `HAUSWART_FILES_DIR` (`files/store.ts`: images re-encoded, metadata stripped,
   thumbnail; PDFs as uploaded; HEIC/SVG/HTML/GIF refused). Owner existence is checked through the
-  registry in `attachments/owners.ts`: asset, room, page and task are built in; a domain registers
-  its type with `registerAttachmentOwner(type, existsFn)` **from `init()`** (never from a module
-  that is only loaded with its routes) and calls `removeOwnedAttachments(ctx, type, id)` from its
-  delete service (done for asset, room, task, page). A type nobody registered is a 400 field error
-  on `ownerType`. Uploading, patching or deleting an attachment of a page needs `docs:write`,
+  registry in `attachments/owners.ts`: asset, room, page and task are built in; defect, service_log,
+  part, asset_hint and contact are registered by `registerDomainAttachmentOwners()`
+  (`attachments/domain-owners.ts`, called from `registerDomainEventHandlers()`, so from `init()` and
+  `useTestDB()`). A new owner type registers with `registerAttachmentOwner(type, existsFn)` **from
+  `init()`** (never from a module that is only loaded with its routes) and calls
+  `removeOwnedAttachments(ctx, type, id)` from its delete service (done for all nine; deleting an
+  asset also removes the attachments of its service log entries and hints, whose rows go by cascade
+  without a foreign key to follow). A type nobody registered is a 400 field error on `ownerType`. Uploading, patching or deleting an attachment of a page needs `docs:write`,
   others `write`. `deleteIfUnreferenced` keeps files younger than a minute, so a daily orphan sweep
   (`startFileSweeper`) removes what deletions left behind. `assets.photoAttachmentId` must be an
-  image attachment owned by that asset (set it with an update; it cannot be set on create).
+  image attachment owned by that asset (set it with an update; it cannot be set on create); the asset
+  also carries `photoUrl`, the thumbnail URL for `<img src>`.
 - **Binary endpoints** (file content, PDF exports): `responseType: "binary"` + `contentTypes` in the
   registry, `response: binaryResponseSchema` as placeholder. The handler returns a finished
   `Response` (`bind` authenticates, parses and passes it through, outside production it checks the
@@ -194,11 +198,15 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   is external to the bundle (`vite.config.ts`) and read from `node_modules` at runtime.
 - **Multipart bodies** are passed to `api.call` as a plain object (files as `File`, the rest
   strings); the client builds the `FormData`. In route tests use `callRoute(..., { form })`.
-- **Search** (`search_fts`, FTS5, created in a custom migration): triggers on pages, assets, rooms
-  and tasks keep it current (archived entries are dropped). No secret text enters the index: pages
-  index `plain_text`; the markdown free text of assets, rooms and tasks is cut off at the first `:::`
-  when it mentions "secret" anywhere. New searchable entities need their own triggers in a new
-  migration. Queries become quoted prefix terms (`ftsExpression`), so no FTS syntax reaches SQLite.
+- **Search** (`search_fts`, FTS5, created in custom migration `0006_search_index`): triggers on pages,
+  assets, rooms, tasks, defects (title, description, location), contacts (name, company, notes; never
+  phone, e-mail or address), parts (name, part number, supplier, notes) and asset hints (title, body)
+  keep it current (archived assets, tasks, pages and parts are dropped). No secret text enters the
+  index: pages index `plain_text`; every other free text is cut off at the first `:::` when it
+  mentions "secret" anywhere. Hit `url`s are the UI routes (`/docs/<slug>`, `/assets/<id>` also for
+  plants and hints, `/rooms/<id>`, `/tasks/<id>`, `/defects/<id>`, `/parts/<id>`, `/contacts/<id>`).
+  New searchable entities need their own triggers in a new migration and an entry in `URLS`
+  (`search/search.ts`). Queries become quoted prefix terms (`ftsExpression`), so no FTS syntax reaches SQLite.
 - **Backup** (`backup/`): on by default (`HAUSWART_BACKUP_DIR` default `./data/backups`, set it empty
   to turn off; `HAUSWART_BACKUP_KEEP` default 14). Hourly check: a `VACUUM INTO` copy
   (`hauswart-backup-<UTC>.db`) when the newest is a day old, then `mirrorFiles` copies the stored
@@ -223,12 +231,12 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   A deadline keeps one `one_off` reminder task (`externalSource: "defect"`, category `defect`, system
   text in the base language) that is archived when the defect is fixed/rejected or has no deadline.
 - **Comments** (`comments` table, `entityType` + `entityId`): a kind of entity is commentable once
-  it is in `comments/registry.ts` (`exists`, `title`, `url`, optional `audience`); `doc_page` waits
-  for the docs milestone (`registerCommentable`). Deleting an entity removes its comments through
-  `AFTER DELETE` triggers (migration `0004`): add one per new commentable table. Delete is soft
+  it is in `comments/registry.ts` (`exists`, `title`, `url`, optional `audience`; the urls are the UI
+  routes, `/docs/<slug>` for pages). Deleting an entity removes its comments through
+  `AFTER DELETE` triggers (migrations `0004` and `0007` for pages): add one per new commentable table. Delete is soft
   (empty body, `deleted: true`), edit is author-only (403 otherwise), delete is author or admin. A new
-  comment notifies the other involved members (`notification_comment`). Tasks, assets and defects
-  carry `commentCount`.
+  comment notifies the other involved members (`notification_comment`). Tasks, assets, defects, hints,
+  service log entries and pages carry `commentCount`.
 - **Hint reactions** (`signalReactionSchema`, type `signal_change`) are stored with the hint and
   executed by an adapter later; the core only validates and lists them (`GET /hints?reactive=true`).
 

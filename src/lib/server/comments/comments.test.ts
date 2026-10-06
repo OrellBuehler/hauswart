@@ -1,10 +1,18 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import { createAsset, deleteAsset } from "$lib/server/assets/assets";
 import { createContact, deleteContact } from "$lib/server/contacts/contacts";
 import { createContactRequestSchema } from "$lib/api/schemas/contacts";
 import { createDefect, deleteDefect } from "$lib/server/defects/defects";
 import { createHint, deleteHint } from "$lib/server/hints/hints";
+import { createPageRequestSchema } from "$lib/api/schemas/docs";
+import { shutdownMarkdownWorkers } from "$lib/server/docs/markdown-runner";
+import {
+  createPage,
+  deletePage,
+  getPage,
+  listPages,
+} from "$lib/server/docs/pages";
 import { notifications } from "$lib/server/db";
 import {
   registerNotificationChannel,
@@ -31,6 +39,8 @@ import { createDefectRequestSchema } from "$lib/api/schemas/defects";
 import { createHintRequestSchema } from "$lib/api/schemas/hints";
 import { createPartRequestSchema } from "$lib/api/schemas/parts";
 import { createServiceLogRequestSchema } from "$lib/api/schemas/service-log";
+
+afterEach(() => shutdownMarkdownWorkers());
 
 describe("comments", () => {
   const test = useTestDB();
@@ -139,18 +149,25 @@ describe("comments", () => {
         page,
       ),
     ).toThrow(/not found/i);
-    expect(commentableOf("doc_page")).toBeUndefined();
-    await expect(
-      createComment(ctx(), viewerOf(anna), {
-        entityType: "doc_page",
-        entityId: "x",
-        bodyMd: "x",
-      }),
-    ).rejects.toThrow(/not found/i);
+    const original = commentableOf("doc_page")!;
+    registerCommentable("doc_page", original)();
+    try {
+      expect(commentableOf("doc_page")).toBeUndefined();
+      await expect(
+        createComment(ctx(), viewerOf(anna), {
+          entityType: "doc_page",
+          entityId: "x",
+          bodyMd: "x",
+        }),
+      ).rejects.toThrow(/not found/i);
+    } finally {
+      registerCommentable("doc_page", original);
+    }
   });
 
-  it("lets a later milestone register its own entity type", async () => {
+  it("lets a domain register its own entity type", async () => {
     const { anna } = await everyone();
+    const original = commentableOf("doc_page")!;
     const off = registerCommentable("doc_page", {
       exists: (_db, id) => id === "page-1",
       title: () => "Handbuch",
@@ -170,6 +187,7 @@ describe("comments", () => {
       }),
     ).rejects.toThrow(/not found/i);
     off();
+    registerCommentable("doc_page", original);
   });
 
   describe("editing", () => {
@@ -424,6 +442,18 @@ describe("comments", () => {
       expect(countCommentsOf(ctx(), "contact", contact.id)).toBe(0);
     });
 
+    it("doc page", async () => {
+      const user = await createTestUser();
+      const doc = await createPage(
+        ctx(),
+        createPageRequestSchema.parse({ title: "Handbuch" }),
+        user.id,
+      );
+      await comment("doc_page", doc.id);
+      deletePage(ctx(), doc.slug);
+      expect(countCommentsOf(ctx(), "doc_page", doc.id)).toBe(0);
+    });
+
     it("leaves other entities' comments alone", async () => {
       const a = await makeTask(ctx());
       const b = await makeTask(ctx(), { title: "Anderes" });
@@ -435,6 +465,25 @@ describe("comments", () => {
   });
 
   describe("comment counts", () => {
+    it("count the comments of a documentation page", async () => {
+      const { anna } = await everyone();
+      const doc = await createPage(
+        ctx(),
+        createPageRequestSchema.parse({ title: "Handbuch" }),
+        anna.id,
+      );
+      expect(doc.commentCount).toBe(0);
+      await createComment(ctx(), viewerOf(anna), {
+        entityType: "doc_page",
+        entityId: doc.id,
+        bodyMd: "Hallo",
+      });
+      expect(getPage(ctx(), doc.slug).commentCount).toBe(1);
+      expect(
+        listPages(ctx(), {}, { limit: 50 }).items.map((p) => p.commentCount),
+      ).toEqual([1]);
+    });
+
     it("count only comments that are not deleted, on tasks, assets and defects", async () => {
       const { anna } = await everyone();
       const task = await makeTask(ctx());
@@ -507,10 +556,28 @@ describe("comments", () => {
         kind: "comment",
         titleKey: "notification_comment",
         paramsJson: { author: "Anna", title: "Boiler" },
-        url: `/inventory/${asset.id}`,
+        url: `/assets/${asset.id}`,
         taskId: null,
         readAt: null,
         dedupeKey: expect.stringContaining(`comment:${c.id}:`),
+      });
+    });
+
+    it("send a comment on a documentation page to its docs route", async () => {
+      const { anna, ben } = await everyone();
+      const doc = await createPage(
+        ctx(),
+        createPageRequestSchema.parse({ title: "Heizung entlüften" }),
+        anna.id,
+      );
+      await createComment(ctx(), viewerOf(anna), {
+        entityType: "doc_page",
+        entityId: doc.id,
+        bodyMd: "Danke",
+      });
+      expect(rows().find((r) => r.userId === ben.id)).toMatchObject({
+        url: `/docs/${doc.slug}`,
+        paramsJson: { author: "Anna", title: "Heizung entlüften" },
       });
     });
 

@@ -5,6 +5,7 @@ import type {
   LinkAssetContactRequest,
   UpdateContactRequest,
 } from "$lib/api/schemas/contacts";
+import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
 import { assetContacts, assets, contacts } from "$lib/server/db";
 import { paginateArray } from "$lib/server/pagination";
 import {
@@ -16,6 +17,7 @@ import {
 } from "$lib/server/service";
 
 type Db = Pick<ServiceContext, "db">;
+type Now = Pick<ServiceContext, "db" | "now">;
 
 export type ContactRow = typeof contacts.$inferSelect;
 
@@ -139,13 +141,14 @@ export function updateContact(
 }
 
 /** Links go with the contact; service log entries and defects keep their text and lose the link. */
-export function deleteContact(ctx: Db, id: string): void {
+export function deleteContact(ctx: Now, id: string): void {
   const removed = ctx.db
     .delete(contacts)
     .where(eq(contacts.id, id))
     .returning({ id: contacts.id })
     .all();
   if (removed.length === 0) throw notFound("Contact");
+  removeOwnedAttachments(ctx, "contact", id);
 }
 
 export interface AssetContactRecord {

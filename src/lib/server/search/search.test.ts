@@ -9,6 +9,22 @@ import {
 } from "$lib/server/assets/assets";
 import { assets, rooms, tasks } from "$lib/server/db";
 import { shutdownMarkdownWorkers } from "$lib/server/docs/markdown-runner";
+import { createContactRequestSchema } from "$lib/api/schemas/contacts";
+import { createDefectRequestSchema } from "$lib/api/schemas/defects";
+import { createHintRequestSchema } from "$lib/api/schemas/hints";
+import { createPartRequestSchema } from "$lib/api/schemas/parts";
+import {
+  createContact,
+  deleteContact,
+  updateContact,
+} from "$lib/server/contacts/contacts";
+import {
+  createDefect,
+  deleteDefect,
+  updateDefect,
+} from "$lib/server/defects/defects";
+import { createHint, deleteHint, updateHint } from "$lib/server/hints/hints";
+import { createPart, deletePart, updatePart } from "$lib/server/parts/parts";
 import { createPage, deletePage, updatePage } from "$lib/server/docs/pages";
 import { createRoom, deleteRoom, updateRoom } from "$lib/server/rooms/rooms";
 import { createTestUser } from "$lib/testing/auth";
@@ -99,12 +115,160 @@ describe("search", () => {
       title: "Heizung entlüften",
       url: `/docs/${p.slug}`,
     });
-    expect(byType[a.id]!.url).toBe(`/inventory/${a.id}`);
-    expect(byType[plant.id]!.url).toBe(`/plants/${plant.id}`);
+    expect(byType[a.id]!.url).toBe(`/assets/${a.id}`);
+    expect(byType[plant.id]!.url).toBe(`/assets/${plant.id}`);
     expect(byType[r.id]!.url).toBe(`/rooms/${r.id}`);
     expect(byType[t.id]!.url).toBe(`/tasks/${t.id}`);
     expect(byType[p.id]!.snippet).toContain("Ventil im Keller");
     expect(byType[p.id]!.snippet).not.toContain("**");
+  });
+
+  describe("defects, contacts, parts and care hints", () => {
+    const defect = (input: Record<string, unknown>) =>
+      createDefect(
+        ctx(),
+        createDefectRequestSchema.parse({ title: "Riss", ...input }),
+        null,
+      );
+    const contact = (input: Record<string, unknown>) =>
+      createContact(
+        ctx(),
+        createContactRequestSchema.parse({ name: "Muster AG", ...input }),
+      );
+    const part = (input: Record<string, unknown>) =>
+      createPart(
+        ctx(),
+        createPartRequestSchema.parse({ name: "Dichtung", ...input }),
+        null,
+      );
+    const hint = (assetId: string, input: Record<string, unknown>) =>
+      createHint(
+        ctx(),
+        assetId,
+        createHintRequestSchema.parse({ title: "Tipp", ...input }),
+      );
+
+    it("finds them with the route of their detail page", async () => {
+      const a = asset({ name: "Geschirrspüler" });
+      const d = await defect({
+        title: "Sprung im Parkett",
+        descriptionMd: "Beim **Fenster** links",
+        locationDetail: "Wohnzimmer, Ostseite",
+      });
+      const c = contact({
+        name: "Kaminfeger Meier",
+        company: "Russ und Funke GmbH",
+        notes: "Kommt im Herbst",
+      });
+      const p = part({
+        name: "Dichtungsring",
+        partNumber: "DR-4711-X",
+        supplier: "Ersatzteilhandel Nord",
+        notes: "Passt auch beim Vorgängermodell",
+      });
+      const h = hint(a.id, {
+        title: "Salz nachfüllen",
+        bodyMd: "Regeneriersalz alle zwei Monate",
+      });
+      const urlOf = (q: string, type: string) => {
+        const hits = find(q).filter((hit) => hit.type === type);
+        expect(hits, `${type} for ${q}`).toHaveLength(1);
+        return hits[0]!.url;
+      };
+      for (const q of ["parkett", "fenster", "ostseite"]) {
+        expect(urlOf(q, "defect")).toBe(`/defects/${d.id}`);
+      }
+      for (const q of ["kaminfeger", "russ", "herbst"]) {
+        expect(urlOf(q, "contact")).toBe(`/contacts/${c.id}`);
+      }
+      for (const q of [
+        "dichtungsring",
+        "DR-4711",
+        "ersatzteilhandel",
+        "vorgänger",
+      ]) {
+        expect(urlOf(q, "part")).toBe(`/parts/${p.id}`);
+      }
+      for (const q of ["salz", "regeneriersalz"]) {
+        expect(urlOf(q, "asset_hint")).toBe(`/assets/${a.id}`);
+      }
+      expect(find("salz").find((hit) => hit.type === "asset_hint")!.id).toBe(
+        h.id,
+      );
+      expect(find("parkett", { type: "defect" })).toHaveLength(1);
+      expect(find("parkett", { type: "contact" })).toEqual([]);
+    });
+
+    it("never indexes a contact's phone, e-mail or address", () => {
+      contact({
+        name: "Elektro Blitz",
+        phone: "044 123 45 67",
+        email: "service@blitz-example.org",
+        address: "Seestrasse 12, 8000 Beispielstadt",
+        url: "https://blitz-example.org",
+      });
+      for (const q of ["044", "123", "blitz-example", "seestrasse", "8000"]) {
+        expect(find(q, { type: "contact" }), q).toEqual([]);
+      }
+      expect(find("elektro", { type: "contact" })).toHaveLength(1);
+    });
+
+    it("cuts markdown and notes at the first block when they mention a secret", async () => {
+      const a = asset({ name: "Tresor" });
+      await defect({
+        title: "Schloss klemmt",
+        descriptionMd: `Sichtbar\n\n:::secret\nCode ${SECRET}\n:::`,
+      });
+      contact({
+        name: "Schlüsseldienst",
+        notes: `Erreichbar\n:::secret\n${SECRET}\n:::`,
+      });
+      part({ name: "Zylinder", notes: `Typ A\n::: secret\n${SECRET}` });
+      hint(a.id, {
+        title: "Öffnen",
+        bodyMd: `Kurz\n:::secret\n${SECRET}\n:::`,
+      });
+      expect(find(SECRET)).toEqual([]);
+      for (const q of ["sichtbar", "erreichbar", "typ", "kurz"]) {
+        expect(find(q), q).toHaveLength(1);
+      }
+      expect(find("code")).toEqual([]);
+    });
+
+    it("follows edits, archiving and deletion", async () => {
+      const a = asset({ name: "Boiler" });
+      const d = await defect({ title: "Alt gefunden" });
+      const c = contact({ name: "Alt Kontakt" });
+      const p = part({ name: "Alt Teil" });
+      const h = hint(a.id, { title: "Alt Tipp" });
+      expect(find("alt")).toHaveLength(4);
+
+      await updateDefect(ctx(), d.id, { title: "Neu gefunden" });
+      updateContact(ctx(), c.id, { name: "Neu Kontakt" });
+      updatePart(ctx(), p.id, { name: "Neu Teil" });
+      updateHint(ctx(), h.id, { title: "Neu Tipp" });
+      expect(find("alt")).toEqual([]);
+      expect(find("neu")).toHaveLength(4);
+
+      updatePart(ctx(), p.id, { archived: true });
+      expect(find("neu").map((hit) => hit.type)).not.toContain("part");
+      updatePart(ctx(), p.id, { archived: false });
+      expect(find("neu").map((hit) => hit.type)).toContain("part");
+
+      deleteDefect(ctx(), d.id);
+      deleteContact(ctx(), c.id);
+      deletePart(ctx(), p.id);
+      deleteHint(ctx(), h.id);
+      expect(find("neu")).toEqual([]);
+    });
+
+    it("drops hints with their asset", () => {
+      const a = asset({ name: "Kaffeemaschine" });
+      hint(a.id, { title: "Entkalken", bodyMd: "Alle drei Monate" });
+      expect(find("entkalken")).toHaveLength(1);
+      deleteAsset(ctx(), a.id);
+      expect(find("entkalken")).toEqual([]);
+    });
   });
 
   it("searches the documented asset fields", async () => {

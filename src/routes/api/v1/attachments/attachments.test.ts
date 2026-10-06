@@ -319,7 +319,17 @@ describe("attachments API", () => {
 
     it("needs an owner that exists and a supported owner type", async () => {
       const { call } = await setup();
-      for (const ownerType of ["asset", "room", "page", "task"]) {
+      for (const ownerType of [
+        "asset",
+        "room",
+        "page",
+        "task",
+        "defect",
+        "service_log",
+        "part",
+        "asset_hint",
+        "contact",
+      ]) {
         const r = await upload(call, { ownerType, ownerId: "missing" });
         expect(r.res.status, ownerType).toBe(400);
         expect(r.body).toMatchObject({
@@ -330,15 +340,8 @@ describe("attachments API", () => {
           },
         });
       }
-      const r = await upload(call, { ownerType: "defect", ownerId: "d1" });
+      const r = await upload(call, { ownerType: "bogus", ownerId: "d1" });
       expect(r.res.status).toBe(400);
-      expect(r.body).toMatchObject({
-        error: {
-          details: {
-            body: { fieldErrors: { ownerType: [expect.any(String)] } },
-          },
-        },
-      });
     });
 
     it("attaches to rooms, tasks and pages too", async () => {
@@ -573,7 +576,16 @@ describe("attachments API", () => {
         json: { photoAttachmentId: created.id },
       });
       expect(set.res.status).toBe(200);
-      expect(set.body).toMatchObject({ photoAttachmentId: created.id });
+      expect(set.body).toMatchObject({
+        photoAttachmentId: created.id,
+        photoUrl: `/api/v1/attachments/${created.id}/thumb`,
+      });
+      const thumb = await call(
+        "GET",
+        (set.body as { photoUrl: string }).photoUrl,
+      );
+      expect(thumb.res.status).toBe(200);
+      expect(thumb.res.headers.get("content-type")).toBe("image/webp");
 
       const [shard] = await readdir(files.dir);
       const stored = (await readdir(join(files.dir, shard!))).map((n) =>
@@ -588,7 +600,10 @@ describe("attachments API", () => {
       expect(errorCode(await call("GET", created.url))).toBe("not_found");
       for (const path of stored) expect(await present(path)).toBe(false);
       const after = await call("GET", `/api/v1/assets/${asset.id}`);
-      expect(after.body).toMatchObject({ photoAttachmentId: null });
+      expect(after.body).toMatchObject({
+        photoAttachmentId: null,
+        photoUrl: null,
+      });
     });
 
     it("an asset photo must be an image of that asset", async () => {

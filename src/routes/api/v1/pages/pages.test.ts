@@ -46,6 +46,7 @@ interface PageBody {
   guestVisible: boolean;
   archivedAt: string | null;
   updatedByName: string | null;
+  commentCount: number;
 }
 
 afterEach(() => shutdownMarkdownWorkers());
@@ -504,6 +505,34 @@ describe("pages API", () => {
       await call("DELETE", "/api/v1/pages/seite");
       expect(
         errorCode(await call("GET", `/api/v1/attachments/${att.id}`)),
+      ).toBe("not_found");
+    });
+  });
+
+  describe("comments", () => {
+    it("pages carry a comment count; deleting the page deletes its comments", async () => {
+      const { call } = await member();
+      const page = await create(call, { title: "Seite" });
+      expect(page).toMatchObject({ commentCount: 0 });
+      const posted = await call("POST", "/api/v1/comments", {
+        json: { entityType: "doc_page", entityId: page.id, bodyMd: "Danke" },
+      });
+      expect(posted.res.status, JSON.stringify(posted.body)).toBe(201);
+      const read = await call("GET", "/api/v1/pages/seite");
+      expect(read.body).toMatchObject({ commentCount: 1 });
+      const list = await call("GET", "/api/v1/pages");
+      expect(
+        (list.body as { items: { commentCount: number }[] }).items[0]
+          .commentCount,
+      ).toBe(1);
+      await call("DELETE", "/api/v1/pages/seite");
+      expect(
+        errorCode(
+          await call(
+            "GET",
+            `/api/v1/comments?entityType=doc_page&entityId=${page.id}`,
+          ),
+        ),
       ).toBe("not_found");
     });
   });

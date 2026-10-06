@@ -16,6 +16,7 @@ import {
   type SignalReaction,
   type UpdateHintRequest,
 } from "$lib/api/schemas/hints";
+import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
 import { assetHints, assets, tasks, users, type DB } from "$lib/server/db";
 import { commentCountSql } from "$lib/server/comments/counts";
 import { parseStored } from "$lib/server/json";
@@ -27,6 +28,7 @@ import {
 } from "$lib/server/service";
 
 type Db = Pick<ServiceContext, "db">;
+type Now = Pick<ServiceContext, "db" | "now">;
 
 type HintRow = typeof assetHints.$inferSelect;
 export interface HintRecord extends Omit<HintRow, "reaction"> {
@@ -200,11 +202,12 @@ export function updateHint(
   return getHint(ctx, id);
 }
 
-export function deleteHint(ctx: Db, id: string): void {
+export function deleteHint(ctx: Now, id: string): void {
   const removed = ctx.db
     .delete(assetHints)
     .where(eq(assetHints.id, id))
     .returning({ id: assetHints.id })
     .all();
   if (removed.length === 0) throw notFound("Hint");
+  removeOwnedAttachments(ctx, "asset_hint", id);
 }

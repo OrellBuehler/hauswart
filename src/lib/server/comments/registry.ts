@@ -5,6 +5,7 @@ import {
   assets,
   contacts,
   defects,
+  docPages,
   parts,
   rooms,
   serviceLog,
@@ -51,7 +52,8 @@ function simple(
     | typeof parts
     | typeof contacts
     | typeof serviceLog
-    | typeof defects,
+    | typeof defects
+    | typeof docPages,
   titleOf: (row: Record<string, unknown>) => string,
   url: (db: DB, id: string) => string,
 ): Commentable {
@@ -101,7 +103,7 @@ registerCommentable(
   simple(
     assets,
     (r) => r.name as string,
-    (_db, id) => `/inventory/${id}`,
+    (_db, id) => `/assets/${id}`,
   ),
 );
 registerCommentable(
@@ -110,7 +112,7 @@ registerCommentable(
     assetHints,
     (r) => r.title as string,
     (db, id) =>
-      `/inventory/${
+      `/assets/${
         db
           .select({ assetId: assetHints.assetId })
           .from(assetHints)
@@ -149,12 +151,27 @@ registerCommentable(
     serviceLog,
     (r) => r.title as string,
     (db, id) =>
-      `/inventory/${
+      `/assets/${
         db
           .select({ assetId: serviceLog.assetId })
           .from(serviceLog)
           .where(eq(serviceLog.id, id))
           .get()?.assetId ?? ""
+      }`,
+  ),
+);
+registerCommentable(
+  "doc_page",
+  simple(
+    docPages,
+    (r) => r.title as string,
+    (db, id) =>
+      `/docs/${
+        db
+          .select({ slug: docPages.slug })
+          .from(docPages)
+          .where(eq(docPages.id, id))
+          .get()?.slug ?? ""
       }`,
   ),
 );

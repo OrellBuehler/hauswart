@@ -42,6 +42,8 @@ export const assetSchema = z
     light: z.string().nullable(),
     waterNotes: z.string().nullable(),
     photoAttachmentId: z.string().nullable(),
+    /** The thumbnail (480 px WebP) of the photo, usable as `<img src>`; null without a photo. */
+    photoUrl: z.string().nullable(),
     archivedAt: isoTimestampSchema.nullable(),
     commentCount: z.number().int(),
     createdAt: isoTimestampSchema,

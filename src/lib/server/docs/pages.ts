@@ -30,6 +30,7 @@ import {
   removeOwnedAttachments,
   trackBackground,
 } from "$lib/server/attachments/attachments";
+import { commentCountSql } from "$lib/server/comments/counts";
 import { paginateArray } from "$lib/server/pagination";
 import { searchRefs } from "$lib/server/search/search";
 import {
@@ -57,6 +58,7 @@ const EXCERPT_LENGTH = 160;
 export type PageRow = typeof docPages.$inferSelect;
 export interface PageRecord extends PageRow {
   updatedByName: string | null;
+  commentCount: number;
 }
 export interface Backlink {
   id: string;
@@ -73,14 +75,23 @@ const userName = sql<
 
 const selectPages = (db: Db["db"]) =>
   db
-    .select({ page: docPages, updatedByName: userName })
+    .select({
+      page: docPages,
+      updatedByName: userName,
+      commentCount: commentCountSql("doc_page", docPages.id),
+    })
     .from(docPages)
     .leftJoin(users, eq(docPages.updatedBy, users.id));
 
 const toRecord = (row: {
   page: PageRow;
   updatedByName: string | null;
-}): PageRecord => ({ ...row.page, updatedByName: row.updatedByName });
+  commentCount: number;
+}): PageRecord => ({
+  ...row.page,
+  updatedByName: row.updatedByName,
+  commentCount: Number(row.commentCount),
+});
 
 export const excerptOf = (page: Pick<PageRow, "plainText">): string =>
   page.plainText.slice(0, EXCERPT_LENGTH);
@@ -356,7 +367,7 @@ export async function updatePage(
   return getPageDetail(ctx, saved.slug);
 }
 
-/** Removes the page with its revisions and attachments. */
+/** Removes the page with its revisions, comments and attachments. */
 export function deletePage(ctx: Now, slug: string): void {
   const page = getPage(ctx, slug);
   ctx.db.delete(docPages).where(eq(docPages.id, page.id)).run();

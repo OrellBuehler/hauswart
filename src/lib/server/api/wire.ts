@@ -159,6 +159,9 @@ export function wireAsset(asset: AssetRecord): z.input<typeof assetSchema> {
     light: asset.light,
     waterNotes: asset.waterNotes,
     photoAttachmentId: asset.photoAttachmentId,
+    photoUrl: asset.photoAttachmentId
+      ? `/api/v1/attachments/${asset.photoAttachmentId}/thumb`
+      : null,
     archivedAt: iso(asset.archivedAt),
     commentCount: asset.commentCount,
     createdAt: toIso(asset.createdAt),
@@ -624,6 +627,7 @@ export function wirePageSummary(
     pinned: page.pinned,
     rev: page.rev,
     excerpt: excerptOf(page),
+    commentCount: page.commentCount,
     updatedBy: page.updatedBy,
     updatedByName: page.updatedByName,
     archivedAt: iso(page.archivedAt),

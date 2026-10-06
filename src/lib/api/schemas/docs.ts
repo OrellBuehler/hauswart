@@ -44,6 +44,7 @@ export const docPageSummarySchema = z
     rev: z.number().int(),
     /** First 160 characters of the page text, secrets excluded. */
     excerpt: z.string(),
+    commentCount: z.number().int(),
     updatedBy: z.string().nullable(),
     updatedByName: z.string().nullable(),
     archivedAt: isoTimestampSchema.nullable(),

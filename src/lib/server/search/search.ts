@@ -4,7 +4,16 @@ import type {
   SEARCH_HIT_TYPES,
   searchHitSchema,
 } from "$lib/api/schemas/search";
-import { assets, docPages, rooms, tasks } from "$lib/server/db";
+import {
+  assetHints,
+  assets,
+  contacts,
+  defects,
+  docPages,
+  parts,
+  rooms,
+  tasks,
+} from "$lib/server/db";
 import type { ServiceContext } from "$lib/server/service";
 
 type Db = Pick<ServiceContext, "db">;
@@ -75,6 +84,92 @@ export function searchRefs(
   return query(ctx, text, [kind], limit).map((row) => row.ref);
 }
 
+type Urls = (ctx: Db, ids: string[]) => Map<string, string>;
+
+const urlsOf = <T extends { id: string }>(
+  rows: T[],
+  url: (row: T) => string,
+): Map<string, string> => new Map(rows.map((row) => [row.id, url(row)]));
+
+/**
+ * App path of a hit per kind (the routes of the UI). Hits whose entity is gone (an index row
+ * should never outlive it) get no URL and are dropped.
+ */
+const URLS: Record<SearchKind, Urls> = {
+  page: (ctx, ids) =>
+    urlsOf(
+      ctx.db
+        .select({ id: docPages.id, slug: docPages.slug })
+        .from(docPages)
+        .where(inArray(docPages.id, ids))
+        .all(),
+      (row) => `/docs/${row.slug}`,
+    ),
+  asset: (ctx, ids) =>
+    urlsOf(
+      ctx.db
+        .select({ id: assets.id })
+        .from(assets)
+        .where(inArray(assets.id, ids))
+        .all(),
+      (row) => `/assets/${row.id}`,
+    ),
+  room: (ctx, ids) =>
+    urlsOf(
+      ctx.db
+        .select({ id: rooms.id })
+        .from(rooms)
+        .where(inArray(rooms.id, ids))
+        .all(),
+      (row) => `/rooms/${row.id}`,
+    ),
+  task: (ctx, ids) =>
+    urlsOf(
+      ctx.db
+        .select({ id: tasks.id })
+        .from(tasks)
+        .where(inArray(tasks.id, ids))
+        .all(),
+      (row) => `/tasks/${row.id}`,
+    ),
+  defect: (ctx, ids) =>
+    urlsOf(
+      ctx.db
+        .select({ id: defects.id })
+        .from(defects)
+        .where(inArray(defects.id, ids))
+        .all(),
+      (row) => `/defects/${row.id}`,
+    ),
+  part: (ctx, ids) =>
+    urlsOf(
+      ctx.db
+        .select({ id: parts.id })
+        .from(parts)
+        .where(inArray(parts.id, ids))
+        .all(),
+      (row) => `/parts/${row.id}`,
+    ),
+  contact: (ctx, ids) =>
+    urlsOf(
+      ctx.db
+        .select({ id: contacts.id })
+        .from(contacts)
+        .where(inArray(contacts.id, ids))
+        .all(),
+      (row) => `/contacts/${row.id}`,
+    ),
+  asset_hint: (ctx, ids) =>
+    urlsOf(
+      ctx.db
+        .select({ id: assetHints.id, assetId: assetHints.assetId })
+        .from(assetHints)
+        .where(inArray(assetHints.id, ids))
+        .all(),
+      (row) => `/assets/${row.assetId}`,
+    ),
+};
+
 export function search(
   ctx: Db,
   input: { q: string; type?: SearchKind; limit: number },
@@ -85,72 +180,21 @@ export function search(
     input.type ? [input.type] : undefined,
     input.limit,
   );
-  const ids = (kind: SearchKind) =>
-    rows.filter((row) => row.kind === kind).map((row) => row.ref);
-
-  const slugs = new Map(
-    ids("page").length === 0
-      ? []
-      : ctx.db
-          .select({ id: docPages.id, slug: docPages.slug })
-          .from(docPages)
-          .where(inArray(docPages.id, ids("page")))
-          .all()
-          .map((row) => [row.id, row.slug]),
-  );
-  const assetKinds = new Map(
-    ids("asset").length === 0
-      ? []
-      : ctx.db
-          .select({ id: assets.id, kind: assets.kind })
-          .from(assets)
-          .where(inArray(assets.id, ids("asset")))
-          .all()
-          .map((row) => [row.id, row.kind]),
-  );
-  const roomIds = new Set(
-    ids("room").length === 0
-      ? []
-      : ctx.db
-          .select({ id: rooms.id })
-          .from(rooms)
-          .where(inArray(rooms.id, ids("room")))
-          .all()
-          .map((row) => row.id),
-  );
-  const taskIds = new Set(
-    ids("task").length === 0
-      ? []
-      : ctx.db
-          .select({ id: tasks.id })
-          .from(tasks)
-          .where(inArray(tasks.id, ids("task")))
-          .all()
-          .map((row) => row.id),
-  );
-
-  const urlOf = (row: Row): string | null => {
-    switch (row.kind) {
-      case "page": {
-        const slug = slugs.get(row.ref);
-        return slug === undefined ? null : `/docs/${slug}`;
-      }
-      case "asset": {
-        const kind = assetKinds.get(row.ref);
-        if (kind === undefined) return null;
-        return `${kind === "plant" ? "/plants" : "/inventory"}/${row.ref}`;
-      }
-      case "room":
-        return roomIds.has(row.ref) ? `/rooms/${row.ref}` : null;
-      case "task":
-        return taskIds.has(row.ref) ? `/tasks/${row.ref}` : null;
-    }
-  };
+  const urls = new Map<SearchKind, Map<string, string>>();
+  for (const kind of new Set(rows.map((row) => row.kind))) {
+    urls.set(
+      kind,
+      URLS[kind](
+        ctx,
+        rows.filter((row) => row.kind === kind).map((row) => row.ref),
+      ),
+    );
+  }
 
   const hits: SearchHit[] = [];
   for (const row of rows) {
-    const url = urlOf(row);
-    if (url === null) continue;
+    const url = urls.get(row.kind)?.get(row.ref);
+    if (url === undefined) continue;
     hits.push({
       type: row.kind,
       id: row.ref,

@@ -1948,9 +1948,10 @@ export const endpoints = {
     id: "search",
     method: "GET",
     path: "/api/v1/search",
-    summary: "Search pages, assets, rooms and tasks",
+    summary:
+      "Search pages, assets, rooms, tasks, defects, contacts, parts and care hints",
     description:
-      "Full-text search, best match first; every word is matched as a prefix. Archived pages, assets and tasks are not searched. Pages are searched without their secret blocks, and the free text of assets, rooms and tasks is cut off at the first `:::` block when it mentions a secret, so a snippet never contains secret text. Snippets are plain text.",
+      "Full-text search, best match first; every word is matched as a prefix. Archived pages, assets, tasks and parts are not searched. Searched fields: titles and names, plus page text, device data and notes, descriptions, a defect's location, a contact's company and notes (never phone, e-mail or address), a part's number, supplier and notes, a hint's text. Pages are searched without their secret blocks, and every other free text is cut off at the first `:::` block when it mentions a secret, so a snippet never contains secret text. Snippets are plain text. `url` is the app path of the hit.",
     tags: ["search"],
     auth: "both",
     scopes: ["read"],

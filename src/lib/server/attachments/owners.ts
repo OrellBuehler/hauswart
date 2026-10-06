@@ -53,6 +53,17 @@ export function registerAttachmentOwner(
   };
 }
 
+/** Withdraws `type` (uploads are refused again). Returns a function that puts the previous check back (for tests). */
+export function unregisterAttachmentOwner(
+  type: AttachmentOwnerType,
+): () => void {
+  const previous = owners.get(type);
+  owners.delete(type);
+  return () => {
+    if (previous) owners.set(type, previous);
+  };
+}
+
 export function isOwnerTypeSupported(type: AttachmentOwnerType): boolean {
   return owners.has(type);
 }

@@ -1,6 +1,15 @@
 import { z } from "zod";
 
-export const SEARCH_HIT_TYPES = ["page", "asset", "room", "task"] as const;
+export const SEARCH_HIT_TYPES = [
+  "page",
+  "asset",
+  "room",
+  "task",
+  "defect",
+  "contact",
+  "part",
+  "asset_hint",
+] as const;
 export const searchHitTypeSchema = z.enum(SEARCH_HIT_TYPES);
 
 export const searchQuerySchema = z.object({
@@ -17,7 +26,7 @@ export const searchHitSchema = z
     title: z.string(),
     /** Plain text, not HTML-safe: escape it when displaying. Never contains secret text. */
     snippet: z.string(),
-    /** App path of the hit (`/docs/<slug>`, `/inventory/<id>`, `/plants/<id>`, `/rooms/<id>`, `/tasks/<id>`). */
+    /** App path of the hit: `/docs/<slug>`, `/assets/<id>` (also for plants and for a hint, which opens its asset), `/rooms/<id>`, `/tasks/<id>`, `/defects/<id>`, `/parts/<id>`, `/contacts/<id>`. */
     url: z.string(),
   })
   .meta({ id: "SearchHit" });

@@ -7,6 +7,7 @@ import type {
   UpdateServiceLogRequest,
 } from "$lib/api/schemas/service-log";
 import { minor } from "$lib/money";
+import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
 import { assets, contacts, serviceLog, type DB } from "$lib/server/db";
 import { commentCountSql } from "$lib/server/comments/counts";
 import { getHousehold } from "$lib/server/household/household";
@@ -232,9 +233,10 @@ export function updateEntry(
   return getEntry(ctx, entryId);
 }
 
-export function deleteEntry(ctx: Db, assetId: string, entryId: string): void {
+export function deleteEntry(ctx: Now, assetId: string, entryId: string): void {
   getAssetEntry(ctx, assetId, entryId);
   ctx.db.delete(serviceLog).where(eq(serviceLog.id, entryId)).run();
+  removeOwnedAttachments(ctx, "service_log", entryId);
 }
 
 /**

@@ -19,6 +19,7 @@ import {
   users,
   type DB,
 } from "$lib/server/db";
+import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
 import { allCommentsOf, type Viewer } from "$lib/server/comments/comments";
 import { commentCountSql } from "$lib/server/comments/counts";
 import { getHousehold } from "$lib/server/household/household";
@@ -388,7 +389,7 @@ export function addEvent(
   return selectEvents(ctx.db).where(eq(defectEvents.id, row.id)).get()!;
 }
 
-/** Removes the defect with its events, comments and reminder task. */
+/** Removes the defect with its events, comments, attachments and reminder task. */
 export function deleteDefect(ctx: ServiceContext, id: string): void {
   getDefect(ctx, id);
   ctx.db.transaction((tx) => {
@@ -401,6 +402,7 @@ export function deleteDefect(ctx: ServiceContext, id: string): void {
       deleteTask({ db: tx as unknown as DB, now: ctx.now }, task.id);
     tx.delete(defects).where(eq(defects.id, id)).run();
   });
+  removeOwnedAttachments(ctx, "defect", id);
 }
 
 export type TimelineItem =

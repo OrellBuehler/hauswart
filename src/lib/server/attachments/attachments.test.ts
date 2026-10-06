@@ -5,6 +5,16 @@ import { eq } from "drizzle-orm";
 import { describe, expect, it, vi } from "vitest";
 import { ApiError } from "$lib/api/errors";
 import { createAssetRequestSchema } from "$lib/api/schemas/assets";
+import { createContactRequestSchema } from "$lib/api/schemas/contacts";
+import { createDefectRequestSchema } from "$lib/api/schemas/defects";
+import { createHintRequestSchema } from "$lib/api/schemas/hints";
+import { createPartRequestSchema } from "$lib/api/schemas/parts";
+import { createServiceLogRequestSchema } from "$lib/api/schemas/service-log";
+import { createContact, deleteContact } from "$lib/server/contacts/contacts";
+import { createDefect, deleteDefect } from "$lib/server/defects/defects";
+import { createHint, deleteHint } from "$lib/server/hints/hints";
+import { createPart, deletePart } from "$lib/server/parts/parts";
+import { createEntry, deleteEntry } from "$lib/server/service-log/service-log";
 import {
   createAsset,
   deleteAsset,
@@ -44,6 +54,7 @@ import {
   isOwnerTypeSupported,
   ownerExists,
   registerAttachmentOwner,
+  unregisterAttachmentOwner,
 } from "./owners";
 
 const HOUR = 60 * 60 * 1000;
@@ -236,7 +247,21 @@ describe("attachments", () => {
       }
     });
 
+    it("accepts the owner types of the domains once the startup wiring ran", () => {
+      for (const type of [
+        "defect",
+        "service_log",
+        "part",
+        "asset_hint",
+        "contact",
+      ] as const) {
+        expect(isOwnerTypeSupported(type), type).toBe(true);
+        expect(ownerExists(ctx(), type, "missing"), type).toBe(false);
+      }
+    });
+
     it("refuses an owner type nobody registered, then accepts it once registered", async () => {
+      const restore = unregisterAttachmentOwner("defect");
       expect(isOwnerTypeSupported("defect")).toBe(false);
       const err = await upload({ ownerType: "defect", ownerId: "d1" }).catch(
         (e) => e,
@@ -262,8 +287,9 @@ describe("attachments", () => {
         ).toEqual(["ownerId"]);
       } finally {
         unregister();
+        restore();
       }
-      expect(isOwnerTypeSupported("defect")).toBe(false);
+      expect(isOwnerTypeSupported("defect")).toBe(true);
     });
 
     it("keeps the built-in checks when a registration is undone", () => {
@@ -462,6 +488,105 @@ describe("attachments", () => {
       deleteTask(ctx(), task.id);
       await sweepNow();
       for (const row of mine) {
+        expect(
+          test.db
+            .select()
+            .from(attachments)
+            .where(eq(attachments.id, row.id))
+            .all(),
+        ).toHaveLength(0);
+      }
+      expect(getAttachment(ctx(), kept.id).id).toBe(kept.id);
+    });
+
+    it("deleting a defect, service log entry, part, hint or contact removes its attachments", async () => {
+      const a = asset();
+      const defect = await createDefect(
+        ctx(),
+        createDefectRequestSchema.parse({ title: "Riss" }),
+        null,
+      );
+      const entry = createEntry(
+        ctx(),
+        a.id,
+        createServiceLogRequestSchema.parse({ title: "Entkalkt" }),
+        null,
+      );
+      const part = createPart(
+        ctx(),
+        createPartRequestSchema.parse({ name: "Dichtung" }),
+        null,
+      );
+      const hint = createHint(
+        ctx(),
+        a.id,
+        createHintRequestSchema.parse({ title: "Tipp" }),
+      );
+      const contact = createContact(
+        ctx(),
+        createContactRequestSchema.parse({ name: "Muster AG" }),
+      );
+      const owners = [
+        ["defect", defect.id],
+        ["service_log", entry.id],
+        ["part", part.id],
+        ["asset_hint", hint.id],
+        ["contact", contact.id],
+      ] as const;
+      const rows = [];
+      for (const [ownerType, ownerId] of owners) {
+        rows.push(await upload({ ownerType, ownerId }));
+      }
+      const kept = await upload({ ownerType: "asset", ownerId: a.id });
+      const countOf = (id: string) =>
+        test.db.select().from(attachments).where(eq(attachments.id, id)).all()
+          .length;
+      expect(rows.map((row) => countOf(row.id))).toEqual([1, 1, 1, 1, 1]);
+
+      await deleteDefect(ctx(), defect.id);
+      deleteEntry(ctx(), a.id, entry.id);
+      deletePart(ctx(), part.id);
+      deleteHint(ctx(), hint.id);
+      deleteContact(ctx(), contact.id);
+      await sweepNow();
+      expect(rows.map((row) => countOf(row.id))).toEqual([0, 0, 0, 0, 0]);
+      expect(countOf(kept.id)).toBe(1);
+    });
+
+    it("deleting an asset also removes the attachments of its service log entries and hints", async () => {
+      const a = asset();
+      const other = asset("Bleibt");
+      const entry = createEntry(
+        ctx(),
+        a.id,
+        createServiceLogRequestSchema.parse({ title: "Entkalkt" }),
+        null,
+      );
+      const hint = createHint(
+        ctx(),
+        a.id,
+        createHintRequestSchema.parse({ title: "Tipp" }),
+      );
+      const keptHint = createHint(
+        ctx(),
+        other.id,
+        createHintRequestSchema.parse({ title: "Anderer Tipp" }),
+      );
+      const gone = [
+        await upload({ ownerType: "service_log", ownerId: entry.id }),
+        await upload(
+          { ownerType: "asset_hint", ownerId: hint.id },
+          plainJpeg(),
+        ),
+        await upload({ ownerType: "asset", ownerId: a.id }, plainWebp()),
+      ];
+      const kept = await upload(
+        { ownerType: "asset_hint", ownerId: keptHint.id },
+        samplePdf(),
+      );
+      deleteAsset(ctx(), a.id);
+      await sweepNow();
+      for (const row of gone) {
         expect(
           test.db
             .select()
