@@ -26,7 +26,7 @@ export type CallInput<E extends AnyEndpoint> = ParamsInput<E> &
 type CallArgs<E extends AnyEndpoint> =
   object extends CallInput<E> ? [input?: CallInput<E>] : [input: CallInput<E>];
 
-/** Parsed response body of an endpoint (`null` for 204 endpoints). */
+/** Parsed response body of an endpoint (`null` for 204 endpoints; the `Response` itself for PDF endpoints). */
 export type CallResult<E extends AnyEndpoint> = Out<E["response"]>;
 
 /** What the client needs from `fetch`: SvelteKit's `event.fetch`, the global `fetch` or a test double. */
@@ -55,6 +55,17 @@ const STATUS_CODES: Record<number, ErrorCode> = {
   409: "conflict",
   429: "rate_limited",
 };
+
+export function endpointUrl(
+  endpoint: AnyEndpoint,
+  input: {
+    params?: Record<string, unknown>;
+    query?: Record<string, unknown>;
+  } = {},
+  baseUrl = "",
+): string {
+  return buildUrl(baseUrl, endpoint, input);
+}
 
 function buildUrl(
   baseUrl: string,
@@ -142,7 +153,13 @@ export function createApiClient(
         }
       }
 
+      if (endpoint.responseType === "pdf") headers.accept = "application/pdf";
+
       const res = await fetchFn(buildUrl(baseUrl, endpoint, input), init);
+      if (endpoint.responseType === "pdf") {
+        if (!res.ok) throw errorFrom(res, await readJson(res));
+        return res as CallResult<E>;
+      }
       const json = await readJson(res);
       if (!res.ok) throw errorFrom(res, json);
 

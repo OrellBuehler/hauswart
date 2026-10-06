@@ -12,6 +12,10 @@ export function notFound(what: string): ApiError {
   return new ApiError("not_found", `${what} not found`);
 }
 
+export function forbidden(message: string): ApiError {
+  return new ApiError("forbidden", message);
+}
+
 export function conflict(message: string): ApiError {
   return new ApiError("conflict", message);
 }

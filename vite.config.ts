@@ -17,12 +17,12 @@ export default defineConfig(({ command }) => ({
         ]
       : []),
   ],
-  // Native addon: loaded from node_modules at runtime, never bundled.
+  // Native addons and font-bearing packages: loaded from node_modules at runtime, never bundled.
   ssr: {
-    external: ["@napi-rs/canvas"],
+    external: ["@napi-rs/canvas", "pdfmake"],
   },
   optimizeDeps: {
-    exclude: ["@napi-rs/canvas"],
+    exclude: ["@napi-rs/canvas", "pdfmake"],
   },
   build: {
     rollupOptions: {

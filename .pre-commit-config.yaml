@@ -40,4 +40,5 @@ repos:
         name: vitest (related tests)
         entry: bunx --bun vitest related --run --passWithNoTests
         language: system
+        require_serial: true
         types_or: [ts, svelte]

@@ -26,6 +26,49 @@ import type { PreparationRecord } from "$lib/server/tasks/preparations";
 import type { DashboardRecord } from "$lib/server/tasks/dashboard";
 import type { NotificationRow } from "$lib/server/notifications/notifications";
 import type { HouseholdRecord } from "$lib/server/household/household";
+import type {
+  contactSchema,
+  assetContactSchema,
+} from "$lib/api/schemas/contacts";
+import type {
+  assetPartSchema,
+  orderNowItemSchema,
+  partDetailSchema,
+  partMovementSchema,
+  partSchema,
+  taskPartSchema,
+} from "$lib/api/schemas/parts";
+import type { serviceLogEntrySchema } from "$lib/api/schemas/service-log";
+import type {
+  defectDetailSchema,
+  defectEventSchema,
+  defectSchema,
+  defectTimelineItemSchema,
+} from "$lib/api/schemas/defects";
+import type { warrantySchema } from "$lib/api/schemas/warranties";
+import type { commentSchema } from "$lib/api/schemas/comments";
+import type { hintSchema } from "$lib/api/schemas/hints";
+import type {
+  AssetContactRecord,
+  ContactRow,
+} from "$lib/server/contacts/contacts";
+import type { AssetPartRecord, TaskPartRecord } from "$lib/server/parts/links";
+import type { OrderNowRecord } from "$lib/server/parts/order-now";
+import type {
+  MovementRecord,
+  PartDetailRecord,
+  PartRecord,
+} from "$lib/server/parts/parts";
+import type { ServiceLogRecord } from "$lib/server/service-log/service-log";
+import type {
+  DefectDetailRecord,
+  DefectEventRecord,
+  DefectRecord,
+  TimelineItem,
+} from "$lib/server/defects/defects";
+import type { WarrantyRecord } from "$lib/server/warranties/warranties";
+import type { CommentRecord } from "$lib/server/comments/comments";
+import type { HintRecord } from "$lib/server/hints/hints";
 
 /** Explicit field lists: a row never reaches the wire by accident (password hashes, token hashes). */
 export function wireUser(user: SessionUser): z.input<typeof userSchema> {
@@ -102,6 +145,7 @@ export function wireAsset(asset: AssetRecord): z.input<typeof assetSchema> {
     waterNotes: asset.waterNotes,
     photoAttachmentId: asset.photoAttachmentId,
     archivedAt: iso(asset.archivedAt),
+    commentCount: asset.commentCount,
     createdAt: toIso(asset.createdAt),
     updatedAt: toIso(asset.updatedAt),
   };
@@ -152,6 +196,7 @@ export function wireTask(task: TaskRecord): z.input<typeof taskSchema> {
     externalRef: task.externalRef,
     externalUrl: task.externalUrl,
     createdBy: task.createdBy,
+    commentCount: task.commentCount,
     createdAt: toIso(task.createdAt),
     updatedAt: toIso(task.updatedAt),
     state: task.state ? wireTaskState(task.state) : null,
@@ -227,6 +272,11 @@ export function wireHousehold(
 
 export function wireDashboard(
   d: DashboardRecord,
+  extras: {
+    openDefects: DefectRecord[];
+    expiringWarranties: WarrantyRecord[];
+    orderNow: OrderNowRecord[];
+  },
 ): z.input<typeof dashboardSchema> {
   return {
     today: d.today,
@@ -235,8 +285,311 @@ export function wireDashboard(
     upcoming: d.upcoming,
     preparations: d.preparations,
     recentCompletions: d.recentCompletions.map(wireCompletion),
-    openDefects: d.openDefects,
-    expiringWarranties: d.expiringWarranties,
-    orderNow: d.orderNow,
+    openDefects: extras.openDefects.map((x) => ({
+      id: x.id,
+      title: x.title,
+      date: x.deadlineDate,
+      number: x.number,
+      status: x.status,
+      severity: x.severity,
+      roomName: x.roomName,
+      assetName: x.assetName,
+    })),
+    expiringWarranties: extras.expiringWarranties.map((w) => ({
+      id: w.assetId,
+      title: w.assetName,
+      date: w.effectiveUntil,
+      assetId: w.assetId,
+      status: w.status,
+      daysLeft: w.daysLeft,
+    })),
+    orderNow: extras.orderNow.map(wireOrderNow),
+  };
+}
+
+export function wireContact(c: ContactRow): z.input<typeof contactSchema> {
+  return {
+    id: c.id,
+    kind: c.kind,
+    name: c.name,
+    company: c.company,
+    phone: c.phone,
+    email: c.email,
+    url: c.url,
+    address: c.address,
+    notes: c.notes,
+    emergency: c.emergency,
+    guestVisible: c.guestVisible,
+    sortOrder: c.sortOrder,
+    externalSource: c.externalSource,
+    externalRef: c.externalRef,
+    createdAt: toIso(c.createdAt),
+    updatedAt: toIso(c.updatedAt),
+  };
+}
+
+export function wireAssetContact(
+  link: AssetContactRecord,
+): z.input<typeof assetContactSchema> {
+  return {
+    id: link.id,
+    assetId: link.assetId,
+    contactId: link.contactId,
+    role: link.role,
+    contact: wireContact(link.contact),
+  };
+}
+
+export function wirePart(part: PartRecord): z.input<typeof partSchema> {
+  return {
+    id: part.id,
+    name: part.name,
+    partNumber: part.partNumber,
+    supplier: part.supplier,
+    shopUrl: part.shopUrl,
+    unitPriceMinor: part.unitPriceMinor,
+    currency: part.currency,
+    stockCount: part.stockCount,
+    minStock: part.minStock,
+    reorderQty: part.reorderQty,
+    leadTimeDays: part.leadTimeDays,
+    orderedAt: iso(part.orderedAt),
+    orderedQty: part.orderedQty,
+    lowStock: part.lowStock,
+    notes: part.notes,
+    archivedAt: iso(part.archivedAt),
+    createdAt: toIso(part.createdAt),
+    updatedAt: toIso(part.updatedAt),
+  };
+}
+
+export function wireMovement(
+  m: MovementRecord,
+): z.input<typeof partMovementSchema> {
+  return {
+    id: m.id,
+    partId: m.partId,
+    delta: m.delta,
+    reason: m.reason,
+    userId: m.userId,
+    userName: m.userName,
+    completionId: m.completionId,
+    note: m.note,
+    at: toIso(m.at),
+  };
+}
+
+export function wirePartDetail(
+  part: PartDetailRecord,
+): z.input<typeof partDetailSchema> {
+  return {
+    ...wirePart(part),
+    assets: part.assets,
+    tasks: part.tasks,
+    recentMovements: part.recentMovements.map(wireMovement),
+  };
+}
+
+export function wireAssetPart(
+  link: AssetPartRecord,
+): z.input<typeof assetPartSchema> {
+  return {
+    assetId: link.assetId,
+    partId: link.partId,
+    part: wirePart(link.part),
+  };
+}
+
+export function wireTaskPart(
+  link: TaskPartRecord,
+): z.input<typeof taskPartSchema> {
+  return {
+    taskId: link.taskId,
+    partId: link.partId,
+    qty: link.qty,
+    part: wirePart(link.part),
+  };
+}
+
+export function wireOrderNow(
+  item: OrderNowRecord,
+): z.input<typeof orderNowItemSchema> {
+  return {
+    id: `${item.taskId}:${item.partId}`,
+    title: item.partName,
+    date: item.orderBy,
+    taskId: item.taskId,
+    taskTitle: item.taskTitle,
+    partId: item.partId,
+    partName: item.partName,
+    quantity: item.quantity,
+    neededBy: item.neededBy,
+    orderBy: item.orderBy,
+    late: item.late,
+    stockCount: item.stockCount,
+    supplier: item.supplier,
+    shopUrl: item.shopUrl,
+    unitPriceMinor: item.unitPriceMinor,
+    currency: item.currency,
+  };
+}
+
+export function wireServiceLogEntry(
+  e: ServiceLogRecord,
+): z.input<typeof serviceLogEntrySchema> {
+  return {
+    id: e.id,
+    assetId: e.assetId,
+    assetName: e.assetName,
+    date: e.date,
+    kind: e.kind,
+    title: e.title,
+    descriptionMd: e.descriptionMd,
+    contactId: e.contactId,
+    contactName: e.contactName,
+    completionId: e.completionId,
+    costMinor: e.costMinor,
+    currency: e.currency,
+    costEntryId: e.costEntryId,
+    performedBy: e.performedBy,
+    createdBy: e.createdBy,
+    commentCount: e.commentCount,
+    createdAt: toIso(e.createdAt),
+    updatedAt: toIso(e.updatedAt),
+  };
+}
+
+export function wireDefect(d: DefectRecord): z.input<typeof defectSchema> {
+  return {
+    id: d.id,
+    number: d.number,
+    title: d.title,
+    descriptionMd: d.descriptionMd,
+    status: d.status,
+    severity: d.severity,
+    roomId: d.roomId,
+    roomName: d.roomName,
+    assetId: d.assetId,
+    assetName: d.assetName,
+    locationDetail: d.locationDetail,
+    discoveredOn: d.discoveredOn,
+    reportedOn: d.reportedOn,
+    responsibleContactId: d.responsibleContactId,
+    responsibleContactName: d.responsibleContactName,
+    deadlineDate: d.deadlineDate,
+    deadlineSource: d.deadlineSource,
+    fixedOn: d.fixedOn,
+    resolutionMd: d.resolutionMd,
+    costEntryId: d.costEntryId,
+    reminderTaskId: d.reminderTaskId,
+    commentCount: d.commentCount,
+    createdBy: d.createdBy,
+    createdAt: toIso(d.createdAt),
+    updatedAt: toIso(d.updatedAt),
+  };
+}
+
+export function wireDefectEvent(
+  e: DefectEventRecord,
+): z.input<typeof defectEventSchema> {
+  return {
+    id: e.id,
+    defectId: e.defectId,
+    at: toIso(e.at),
+    userId: e.userId,
+    userName: e.userName,
+    type: e.type,
+    fromStatus: e.fromStatus,
+    toStatus: e.toStatus,
+    bodyMd: e.bodyMd,
+    externalRef: e.externalRef,
+  };
+}
+
+export function wireDefectDetail(
+  d: DefectDetailRecord,
+): z.input<typeof defectDetailSchema> {
+  return { ...wireDefect(d), events: d.events.map(wireDefectEvent) };
+}
+
+export function wireTimelineItem(
+  item: TimelineItem,
+): z.input<typeof defectTimelineItemSchema> {
+  if (item.kind === "event") {
+    return {
+      kind: "event",
+      id: item.id,
+      at: toIso(item.at),
+      userId: item.userId,
+      userName: item.userName,
+      type: item.type,
+      fromStatus: item.fromStatus,
+      toStatus: item.toStatus,
+      bodyMd: item.bodyMd,
+      externalRef: item.externalRef,
+    };
+  }
+  return {
+    kind: "comment",
+    id: item.id,
+    at: toIso(item.at),
+    userId: item.userId,
+    userName: item.userName,
+    bodyMd: item.bodyMd,
+    editedAt: iso(item.editedAt),
+    deleted: item.deleted,
+  };
+}
+
+export function wireWarranty(
+  w: WarrantyRecord,
+): z.input<typeof warrantySchema> {
+  return {
+    assetId: w.assetId,
+    assetName: w.assetName,
+    roomName: w.roomName,
+    manufacturer: w.manufacturer,
+    model: w.model,
+    purchaseDate: w.purchaseDate,
+    warrantyUntil: w.warrantyUntil,
+    warrantyExtendedUntil: w.warrantyExtendedUntil,
+    effectiveUntil: w.effectiveUntil,
+    status: w.status,
+    daysLeft: w.daysLeft,
+  };
+}
+
+export function wireComment(c: CommentRecord): z.input<typeof commentSchema> {
+  return {
+    id: c.id,
+    entityType: c.entityType,
+    entityId: c.entityId,
+    author: c.author,
+    bodyMd: c.bodyMd,
+    createdAt: toIso(c.createdAt),
+    editedAt: iso(c.editedAt),
+    deleted: c.deleted,
+    canEdit: c.canEdit,
+    canDelete: c.canDelete,
+  };
+}
+
+export function wireHint(h: HintRecord): z.input<typeof hintSchema> {
+  return {
+    id: h.id,
+    assetId: h.assetId,
+    assetName: h.assetName,
+    title: h.title,
+    bodyMd: h.bodyMd,
+    kind: h.kind,
+    pinned: h.pinned,
+    sortOrder: h.sortOrder,
+    guestVisible: h.guestVisible,
+    taskId: h.taskId,
+    taskTitle: h.taskTitle,
+    reaction: h.reaction,
+    commentCount: h.commentCount,
+    createdAt: toIso(h.createdAt),
+    updatedAt: toIso(h.updatedAt),
   };
 }

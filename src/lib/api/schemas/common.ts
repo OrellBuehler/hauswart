@@ -86,3 +86,8 @@ export const slugSchema = z
     error:
       "Slug may only contain lowercase letters, digits and single hyphens.",
   });
+
+/** The body of a `responseType: "pdf"` endpoint: the handler returns a `Response`. */
+export const pdfResponseSchema = z.custom<Response>(
+  (value) => typeof Response !== "undefined" && value instanceof Response,
+);

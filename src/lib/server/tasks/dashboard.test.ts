@@ -31,9 +31,6 @@ describe("dashboard", () => {
       },
       preparations: [],
       recentCompletions: [],
-      openDefects: [],
-      expiringWarranties: [],
-      orderNow: [],
     });
     expect(d.generatedAt.getTime()).toBe(NOW);
   });

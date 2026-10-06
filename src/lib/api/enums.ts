@@ -123,6 +123,7 @@ export const NOTIFICATION_KINDS = [
   "overdue",
   "digest",
   "info",
+  "comment",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -134,5 +135,83 @@ export const NOTIFICATION_TITLE_KEYS = [
   "notification_overdue",
   "notification_digest",
   "notification_info",
+  "notification_comment",
 ] as const;
 export type NotificationTitleKey = (typeof NOTIFICATION_TITLE_KEYS)[number];
+
+export const CONTACT_KINDS = [
+  "installer",
+  "property_mgmt",
+  "manufacturer_support",
+  "emergency",
+  "utility",
+  "insurance",
+  "neighbor",
+  "seller",
+  "other",
+] as const;
+export type ContactKind = (typeof CONTACT_KINDS)[number];
+
+export const ASSET_CONTACT_ROLES = [
+  "support",
+  "installer",
+  "seller",
+  "service",
+  "other",
+] as const;
+export type AssetContactRole = (typeof ASSET_CONTACT_ROLES)[number];
+
+export const PART_MOVEMENT_REASONS = ["used", "bought", "correction"] as const;
+export type PartMovementReason = (typeof PART_MOVEMENT_REASONS)[number];
+
+export const SERVICE_LOG_KINDS = [
+  "maintenance",
+  "repair",
+  "installation",
+  "inspection",
+  "replacement",
+  "other",
+] as const;
+export type ServiceLogKind = (typeof SERVICE_LOG_KINDS)[number];
+
+export const DEFECT_STATUSES = [
+  "open",
+  "reported",
+  "in_progress",
+  "fixed",
+  "rejected",
+] as const;
+export type DefectStatus = (typeof DEFECT_STATUSES)[number];
+
+export const DEFECT_SEVERITIES = ["low", "medium", "high"] as const;
+export type DefectSeverity = (typeof DEFECT_SEVERITIES)[number];
+
+export const DEFECT_DEADLINE_SOURCES = ["manual", "handover"] as const;
+export type DefectDeadlineSource = (typeof DEFECT_DEADLINE_SOURCES)[number];
+
+export const DEFECT_EVENT_TYPES = [
+  "created",
+  "status",
+  "comment",
+  "correspondence",
+] as const;
+export type DefectEventType = (typeof DEFECT_EVENT_TYPES)[number];
+
+export const WARRANTY_STATUSES = ["valid", "expiring", "expired"] as const;
+export type WarrantyStatus = (typeof WARRANTY_STATUSES)[number];
+
+export const COMMENT_ENTITY_TYPES = [
+  "task",
+  "defect",
+  "asset",
+  "room",
+  "part",
+  "contact",
+  "service_log",
+  "asset_hint",
+  "doc_page",
+] as const;
+export type CommentEntityType = (typeof COMMENT_ENTITY_TYPES)[number];
+
+export const HINT_KINDS = ["tip", "rule", "warning"] as const;
+export type HintKind = (typeof HINT_KINDS)[number];

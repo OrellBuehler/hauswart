@@ -3,7 +3,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { ApiError } from "$lib/api/errors";
 import { defineEndpoint } from "$lib/api/registry";
-import { emptySchema, paginationQuerySchema } from "$lib/api/schemas/common";
+import {
+  emptySchema,
+  paginationQuerySchema,
+  pdfResponseSchema,
+} from "$lib/api/schemas/common";
 import {
   AuthError,
   type SessionUser,
@@ -804,6 +808,69 @@ describe("bind", () => {
       } finally {
         Bun.env.NODE_ENV = previous;
       }
+    });
+  });
+
+  describe("binary responses", () => {
+    const pdf = defineEndpoint({
+      ...base,
+      id: "doc",
+      auth: "public",
+      response: pdfResponseSchema,
+      responseType: "pdf",
+    });
+    const run = async (handler: () => unknown) => {
+      const event = createTestEvent({
+        url: "http://localhost/api/v1/things",
+        locals: { user: null, session: null, token: null },
+      });
+      const res = await bind(pdf, handler as never)(event as never);
+      return { res, bytes: new Uint8Array(await res.arrayBuffer()) };
+    };
+    const document = () =>
+      new Response(new Uint8Array([37, 80, 68, 70, 45]), {
+        headers: {
+          "content-type": "application/pdf",
+          "content-disposition": 'attachment; filename="a.pdf"',
+        },
+      });
+
+    it("passes the handler's Response through byte for byte and adds no-store", async () => {
+      const { res, bytes } = await run(document);
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toBe("application/pdf");
+      expect(res.headers.get("content-disposition")).toBe(
+        'attachment; filename="a.pdf"',
+      );
+      expect(res.headers.get("cache-control")).toBe("no-store");
+      expect([...bytes]).toEqual([37, 80, 68, 70, 45]);
+    });
+
+    it("fails with 500 when the handler returns something else or the wrong type", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      for (const handler of [
+        () => ({ ok: true }),
+        () =>
+          new Response("text", { headers: { "content-type": "text/plain" } }),
+        () =>
+          new Response("x", {
+            status: 500,
+            headers: { "content-type": "application/pdf" },
+          }),
+      ]) {
+        const { res } = await run(handler);
+        expect(res.status).toBe(500);
+      }
+    });
+
+    it("still maps thrown errors to the JSON envelope", async () => {
+      const { res, bytes } = await run(() => {
+        throw new ApiError("not_found", "Nothing here");
+      });
+      expect(res.status).toBe(404);
+      expect(JSON.parse(new TextDecoder().decode(bytes))).toMatchObject({
+        error: { code: "not_found" },
+      });
     });
   });
 

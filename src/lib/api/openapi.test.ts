@@ -57,28 +57,46 @@ describe("openapi document", () => {
       "AdminUser",
       "ApiToken",
       "Asset",
+      "AssetContact",
+      "AssetPart",
+      "Comment",
       "Completion",
+      "Contact",
       "CreatedApiToken",
       "Dashboard",
+      "DashboardDefect",
       "DashboardPreparation",
-      "DashboardReservedItem",
       "DashboardTask",
+      "DashboardWarranty",
+      "Defect",
+      "DefectDetail",
+      "DefectEvent",
+      "DefectTimelineItem",
       "DirectoryUser",
       "DueResult",
       "ErrorEnvelope",
       "GroupStats",
+      "Hint",
       "Household",
       "HouseholdSettings",
       "Notification",
       "NotificationParams",
+      "OrderNowItem",
+      "Part",
+      "PartDetail",
+      "PartMovement",
       "Preparation",
       "Room",
+      "ServiceLogEntry",
+      "SignalReaction",
       "Stats",
       "Task",
       "TaskDetail",
+      "TaskPart",
       "TaskState",
       "Trigger",
       "User",
+      "Warranty",
     ]);
     const login = doc.paths["/api/v1/auth/login"].post as {
       responses: Record<
@@ -154,6 +172,15 @@ describe("openapi document", () => {
     expect(Object.keys(op.requestBody.content)).toEqual([
       "multipart/form-data",
     ]);
+  });
+
+  it("documents PDF endpoints as application/pdf", () => {
+    const op = doc.paths["/api/v1/defects/export.pdf"].get as {
+      responses: Record<string, { content?: Record<string, unknown> }>;
+    };
+    expect(op.responses["200"].content).toEqual({
+      "application/pdf": { schema: { type: "string", format: "binary" } },
+    });
   });
 
   it("documents 204 as bodiless and errors with the envelope", () => {

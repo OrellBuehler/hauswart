@@ -250,7 +250,23 @@ function flatten(error: z.ZodError) {
   return { formErrors, fieldErrors };
 }
 
+function respondBinary(endpoint: AnyEndpoint, result: unknown): Response {
+  if (!(result instanceof Response))
+    throw new ResponseContractError(endpoint.id);
+  if (
+    validatesResponses() &&
+    (!result.ok ||
+      !/^application\/pdf\b/i.test(result.headers.get("content-type") ?? ""))
+  ) {
+    throw new ResponseContractError(endpoint.id);
+  }
+  const headers = new Headers(result.headers);
+  headers.set("cache-control", "no-store");
+  return new Response(result.body, { status: result.status, headers });
+}
+
 function respond(endpoint: AnyEndpoint, result: unknown): Response {
+  if (endpoint.responseType !== "json") return respondBinary(endpoint, result);
   const status = result instanceof Reply ? result.status : endpoint.status;
   const body = result instanceof Reply ? result.body : result;
   if (validatesResponses()) {
