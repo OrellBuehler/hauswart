@@ -55,13 +55,27 @@ const loaders = {
 } as Record<string, () => Promise<Record<string, unknown>>>;
 
 const isV1 = (file: string) => file.startsWith("/src/routes/api/v1/");
+/** Pages of the authenticated app shell: universal loads that only call `/api/v1`. */
+const isAppPage = (file: string) => file.startsWith("/src/routes/(app)/");
 
 describe("route inventory", () => {
   it("every route file is an /api/v1 route or listed in the matrix", () => {
     const unlisted = Object.keys(loaders).filter(
-      (f) => !isV1(f) && !(f in legacy),
+      (f) => !isV1(f) && !isAppPage(f) && !(f in legacy),
     );
     expect(unlisted, "add these routes to the matrix in authz.test.ts").toEqual(
+      [],
+    );
+  });
+
+  it("the app shell has only universal loads, which read through the API", () => {
+    const serverFiles = Object.keys(loaders).filter(
+      (f) =>
+        isAppPage(f) &&
+        /\/\+(page|layout|server)(\.server)?\.ts$/.test(f) &&
+        !/\/\+(page|layout)\.ts$/.test(f),
+    );
+    expect(serverFiles, "server-side files need their own authz entry").toEqual(
       [],
     );
   });
@@ -83,6 +97,28 @@ describe("route inventory", () => {
       if (e.auth === "public") expect(isPublicPath(e.path), e.id).toBe(true);
     }
   });
+});
+
+describe("app shell pages", () => {
+  useTestDB();
+
+  beforeEach(async () => {
+    await createTestUser();
+  });
+
+  it.each(["/", "/tasks", "/settings/tokens", "/admin/users"])(
+    "the hook sends anonymous page requests for %s to the login",
+    async (path) => {
+      const r = await callRoute(
+        () => {
+          throw new Error("page reached without authentication");
+        },
+        { url: `http://localhost${path}` },
+      );
+      expect(r.res.status).toBe(303);
+      expect(r.res.headers.get("location")).toContain("/login");
+    },
+  );
 });
 
 const routeFile = (e: AnyEndpoint) =>

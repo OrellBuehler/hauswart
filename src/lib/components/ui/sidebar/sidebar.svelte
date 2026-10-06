@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "$lib/paraglide/messages";
   import * as Sheet from "$lib/components/ui/sheet/index.js";
   import { cn, type WithElementRef } from "$lib/utils.js";
   import type { HTMLAttributes } from "svelte/elements";
@@ -51,8 +52,8 @@
       {side}
     >
       <Sheet.Header class="sr-only">
-        <Sheet.Title>Sidebar</Sheet.Title>
-        <Sheet.Description>Displays the mobile sidebar.</Sheet.Description>
+        <Sheet.Title>{m.nav_sidebar_title()}</Sheet.Title>
+        <Sheet.Description>{m.nav_sidebar_description()}</Sheet.Description>
       </Sheet.Header>
       <div class="flex h-full w-full flex-col">
         {@render children?.()}

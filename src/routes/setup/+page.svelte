@@ -3,7 +3,8 @@
   import { USER_LOCALES, type UserLocale } from "$lib/api/enums";
   import { endpoints } from "$lib/api/registry";
   import { api } from "$lib/api/browser";
-  import * as Alert from "$lib/components/ui/alert/index.js";
+  import AuthCard from "$lib/components/app/auth-card.svelte";
+  import FormAlert from "$lib/components/app/form-alert.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
@@ -12,9 +13,9 @@
   import { m } from "$lib/paraglide/messages";
   import { getLocale } from "$lib/paraglide/runtime";
 
-  const LOCALE_NAMES: Record<UserLocale, string> = {
-    de: "Deutsch",
-    en: "English",
+  const localeNames: Record<UserLocale, () => string> = {
+    de: () => m.locale_name_de(),
+    en: () => m.locale_name_en(),
   };
 
   let username = $state("");
@@ -48,7 +49,7 @@
   <title>{m.auth_setup_title()}</title>
 </svelte:head>
 
-<main class="mx-auto flex min-h-screen max-w-sm items-center px-4 py-8">
+<AuthCard>
   <Card.Root class="w-full">
     <Card.Header>
       <Card.Title class="text-xl">{m.auth_setup_title()}</Card.Title>
@@ -56,11 +57,7 @@
     </Card.Header>
     <Card.Content>
       <form class="flex flex-col gap-4" onsubmit={submit}>
-        {#if error}
-          <Alert.Root variant="destructive">
-            <Alert.Description>{error}</Alert.Description>
-          </Alert.Root>
-        {/if}
+        <FormAlert message={error} />
         <div class="flex flex-col gap-2">
           <Label for="username">{m.auth_username()}</Label>
           <Input
@@ -128,7 +125,7 @@
                 aria-pressed={locale === option}
                 onclick={() => (locale = option)}
               >
-                {LOCALE_NAMES[option]}
+                {localeNames[option]()}
               </Button>
             {/each}
           </div>
@@ -143,4 +140,4 @@
       </form>
     </Card.Content>
   </Card.Root>
-</main>
+</AuthCard>

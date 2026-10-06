@@ -2,7 +2,8 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { endpoints } from "$lib/api/registry";
   import { api } from "$lib/api/browser";
-  import * as Alert from "$lib/components/ui/alert/index.js";
+  import AuthCard from "$lib/components/app/auth-card.svelte";
+  import FormAlert from "$lib/components/app/form-alert.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
@@ -37,7 +38,7 @@
   <title>{m.auth_login_title()} · {m.app_name()}</title>
 </svelte:head>
 
-<main class="mx-auto flex min-h-screen max-w-sm items-center px-4 py-8">
+<AuthCard>
   <Card.Root class="w-full">
     <Card.Header>
       <Card.Title class="text-xl">{m.auth_login_title()}</Card.Title>
@@ -45,11 +46,7 @@
     </Card.Header>
     <Card.Content>
       <form class="flex flex-col gap-4" onsubmit={submit}>
-        {#if error}
-          <Alert.Root variant="destructive">
-            <Alert.Description>{error}</Alert.Description>
-          </Alert.Root>
-        {/if}
+        <FormAlert message={error} />
         <div class="flex flex-col gap-2">
           <Label for="username">{m.auth_username()}</Label>
           <Input
@@ -83,4 +80,4 @@
       </form>
     </Card.Content>
   </Card.Root>
-</main>
+</AuthCard>
