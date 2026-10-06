@@ -507,7 +507,7 @@ describe("comments", () => {
         kind: "comment",
         titleKey: "notification_comment",
         paramsJson: { author: "Anna", title: "Boiler" },
-        url: `/inventory/${asset.id}`,
+        url: `/assets/${asset.id}`,
         taskId: null,
         readAt: null,
         dedupeKey: expect.stringContaining(`comment:${c.id}:`),

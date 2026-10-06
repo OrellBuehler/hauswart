@@ -2,17 +2,16 @@
   import CircleCheckBigIcon from "@lucide/svelte/icons/circle-check-big";
   import HistoryIcon from "@lucide/svelte/icons/history";
   import PlusIcon from "@lucide/svelte/icons/plus";
-  import ShieldAlertIcon from "@lucide/svelte/icons/shield-alert";
-  import ShoppingCartIcon from "@lucide/svelte/icons/shopping-cart";
-  import WrenchIcon from "@lucide/svelte/icons/wrench";
   import { SvelteSet } from "svelte/reactivity";
   import { slide } from "svelte/transition";
   import { resolve } from "$app/paths";
   import EmptyState from "$lib/components/app/empty-state.svelte";
   import PageHeader from "$lib/components/app/page-header.svelte";
+  import DefectsCard from "$lib/components/dashboard/defects-card.svelte";
+  import OrderNowCard from "$lib/components/dashboard/order-now-card.svelte";
+  import WarrantiesCard from "$lib/components/dashboard/warranties-card.svelte";
   import CompletionItem from "$lib/components/tasks/completion-item.svelte";
   import PreparationRow from "$lib/components/tasks/preparation-row.svelte";
-  import ReservedCard from "$lib/components/tasks/reserved-card.svelte";
   import TaskRow from "$lib/components/tasks/task-row.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
@@ -290,28 +289,13 @@
       </Card.Root>
 
       {#if dashboard.openDefects.length > 0}
-        <ReservedCard
-          title={m.dashboard_open_defects()}
-          icon={WrenchIcon}
-          items={dashboard.openDefects}
-          {today}
-        />
+        <DefectsCard defects={dashboard.openDefects} {today} />
       {/if}
       {#if dashboard.expiringWarranties.length > 0}
-        <ReservedCard
-          title={m.dashboard_expiring_warranties()}
-          icon={ShieldAlertIcon}
-          items={dashboard.expiringWarranties}
-          {today}
-        />
+        <WarrantiesCard warranties={dashboard.expiringWarranties} />
       {/if}
       {#if dashboard.orderNow.length > 0}
-        <ReservedCard
-          title={m.dashboard_order_now()}
-          icon={ShoppingCartIcon}
-          items={dashboard.orderNow}
-          {today}
-        />
+        <OrderNowCard items={dashboard.orderNow} {today} />
       {/if}
     </div>
   </div>

@@ -101,7 +101,7 @@ registerCommentable(
   simple(
     assets,
     (r) => r.name as string,
-    (_db, id) => `/inventory/${id}`,
+    (_db, id) => `/assets/${id}`,
   ),
 );
 registerCommentable(
@@ -110,7 +110,7 @@ registerCommentable(
     assetHints,
     (r) => r.title as string,
     (db, id) =>
-      `/inventory/${
+      `/assets/${
         db
           .select({ assetId: assetHints.assetId })
           .from(assetHints)
@@ -149,7 +149,7 @@ registerCommentable(
     serviceLog,
     (r) => r.title as string,
     (db, id) =>
-      `/inventory/${
+      `/assets/${
         db
           .select({ assetId: serviceLog.assetId })
           .from(serviceLog)

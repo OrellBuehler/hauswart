@@ -19,6 +19,7 @@
   import OptionSelect from "$lib/components/assets/option-select.svelte";
   import RoomPicker from "$lib/components/assets/room-picker.svelte";
   import WarrantyBadge from "$lib/components/assets/warranty-badge.svelte";
+  import CommentCount from "$lib/components/comments/comment-count.svelte";
   import EmptyState from "$lib/components/app/empty-state.svelte";
   import PageHeader from "$lib/components/app/page-header.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
@@ -202,6 +203,7 @@
                       class="text-muted-foreground"
                     />
                     <span class="truncate">{asset.name}</span>
+                    <CommentCount count={asset.commentCount} class="shrink-0" />
                     {#if asset.archivedAt}
                       <Badge variant="secondary">{m.asset_archived()}</Badge>
                     {/if}

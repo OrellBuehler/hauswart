@@ -2,6 +2,7 @@
   import { resolve } from "$app/paths";
   import type { Asset } from "$lib/api/schemas/assets";
   import { warrantyStatus } from "$lib/assets/warranty";
+  import CommentCount from "$lib/components/comments/comment-count.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { m } from "$lib/paraglide/messages";
   import AssetKindIcon from "./asset-kind-icon.svelte";
@@ -36,7 +37,10 @@
   >
     <AssetKindIcon kind={asset.kind} tile />
     <span class="min-w-0 flex-1">
-      <span class="block truncate text-sm font-medium">{asset.name}</span>
+      <span class="flex items-center gap-2">
+        <span class="truncate text-sm font-medium">{asset.name}</span>
+        <CommentCount count={asset.commentCount} class="shrink-0" />
+      </span>
       {#if subtitle}
         <span class="text-muted-foreground block truncate text-xs">
           {subtitle}

@@ -19,6 +19,7 @@
   import { endpoints } from "$lib/api/registry";
   import type { Completion } from "$lib/api/schemas/tasks";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
+  import Comments from "$lib/components/comments/comments.svelte";
   import AssigneeAvatar from "$lib/components/tasks/assignee-avatar.svelte";
   import CompleteButton from "$lib/components/tasks/complete-button.svelte";
   import CompletionItem from "$lib/components/tasks/completion-item.svelte";
@@ -431,6 +432,8 @@
           {/if}
         </Card.Content>
       </Card.Root>
+
+      <Comments entityType="task" entityId={task.id} timeZone={data.timeZone} />
     </div>
 
     <div class="flex flex-col gap-6">
