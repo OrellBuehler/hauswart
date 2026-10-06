@@ -69,7 +69,8 @@ src/lib/server/api/handlers/     handlers: ({ ctx, params, query, body, event })
 src/lib/server/auth/             sessions, passwords, login + rate limits, API tokens, guards, routing
 src/lib/server/users/            user service (create, first admin, update, profile)
 src/lib/server/<domain>/         services: plain functions, no HTTP types
-src/lib/server/tasks/engine/     pure due-date engine: (rule, history, today) -> next due
+src/lib/dates.ts                 YYYY-MM-DD date math + time-zone helpers (client-safe)
+src/lib/tasks/engine/            pure due-date engine (client-safe): evaluateTask, estimates, rotation, upcoming
 src/lib/server/integrations/     optional adapters (homeassistant/, paperless/, kept/) — the core never imports these
 src/lib/server/db.ts             SQLite connection (WAL, foreign keys); migrations run on startup
 src/lib/server/schema.ts         Drizzle schema — one file, every table has created_at/updated_at
