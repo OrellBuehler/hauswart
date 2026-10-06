@@ -139,7 +139,7 @@
       "get": {
         "operationId": "setupStatus",
         "summary": "Whether first-run setup is still open",
-        "description": "True until the first administrator account exists.",
+        "description": "`needsSetup` is true until the first administrator account exists. `tokenRequired` is true while setup is open and the server was started with `HAUSWART_SETUP_TOKEN`: the setup request must then carry `setupToken`.",
         "tags": [
           "setup"
         ],
@@ -154,10 +154,14 @@
                   "properties": {
                     "needsSetup": {
                       "type": "boolean"
+                    },
+                    "tokenRequired": {
+                      "type": "boolean"
                     }
                   },
                   "required": [
-                    "needsSetup"
+                    "needsSetup",
+                    "tokenRequired"
                   ],
                   "additionalProperties": false
                 }
@@ -179,7 +183,7 @@
       "post": {
         "operationId": "setup",
         "summary": "Create the first administrator and sign in",
-        "description": "Only works while no user exists. Starts a browser session (sets the session cookie).",
+        "description": "Only works while no user exists (409 `setup_complete` afterwards). When the server runs with `HAUSWART_SETUP_TOKEN`, `setupToken` must match it (403 `forbidden`). Starts a browser session (sets the session cookie).",
         "tags": [
           "setup"
         ],
@@ -215,7 +219,7 @@
             }
           },
           "403": {
-            "description": "Error: `csrf_failed`",
+            "description": "Error: `csrf_failed`, `forbidden`",
             "content": {
               "application/json": {
                 "schema": {
@@ -226,6 +230,26 @@
           },
           "409": {
             "description": "Error: `setup_complete`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Error: `invalid_request` (request body too large)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Error: `invalid_request` (unsupported content type)",
             "content": {
               "application/json": {
                 "schema": {
@@ -284,6 +308,10 @@
                       "de",
                       "en"
                     ]
+                  },
+                  "setupToken": {
+                    "type": "string",
+                    "maxLength": 256
                   }
                 },
                 "required": [
@@ -350,6 +378,26 @@
           },
           "403": {
             "description": "Error: `csrf_failed`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Error: `invalid_request` (request body too large)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Error: `invalid_request` (unsupported content type)",
             "content": {
               "application/json": {
                 "schema": {
@@ -425,7 +473,7 @@
             "description": "No content"
           },
           "401": {
-            "description": "Error: `unauthenticated`",
+            "description": "Error: `unauthenticated`, `setup_required`",
             "content": {
               "application/json": {
                 "schema": {
@@ -516,7 +564,7 @@
             }
           },
           "401": {
-            "description": "Error: `unauthenticated`",
+            "description": "Error: `unauthenticated`, `setup_required`",
             "content": {
               "application/json": {
                 "schema": {
@@ -599,7 +647,7 @@
             }
           },
           "401": {
-            "description": "Error: `unauthenticated`",
+            "description": "Error: `unauthenticated`, `setup_required`",
             "content": {
               "application/json": {
                 "schema": {
@@ -610,6 +658,26 @@
           },
           "403": {
             "description": "Error: `forbidden`, `csrf_failed`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Error: `invalid_request` (request body too large)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Error: `invalid_request` (unsupported content type)",
             "content": {
               "application/json": {
                 "schema": {
@@ -714,6 +782,26 @@
               }
             }
           },
+          "413": {
+            "description": "Error: `invalid_request` (request body too large)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Error: `invalid_request` (unsupported content type)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "429": {
             "description": "Error: `rate_limited`",
             "content": {
@@ -790,7 +878,7 @@
             "description": "No content"
           },
           "401": {
-            "description": "Error: `unauthenticated`",
+            "description": "Error: `unauthenticated`, `setup_required`",
             "content": {
               "application/json": {
                 "schema": {
@@ -876,7 +964,7 @@
             }
           },
           "401": {
-            "description": "Error: `unauthenticated`",
+            "description": "Error: `unauthenticated`, `setup_required`",
             "content": {
               "application/json": {
                 "schema": {
@@ -941,7 +1029,7 @@
             }
           },
           "401": {
-            "description": "Error: `unauthenticated`",
+            "description": "Error: `unauthenticated`, `setup_required`",
             "content": {
               "application/json": {
                 "schema": {
@@ -952,6 +1040,26 @@
           },
           "403": {
             "description": "Error: `forbidden`, `csrf_failed`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Error: `invalid_request` (request body too large)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Error: `invalid_request` (unsupported content type)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1071,7 +1179,7 @@
             }
           },
           "401": {
-            "description": "Error: `unauthenticated`",
+            "description": "Error: `unauthenticated`, `setup_required`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1159,7 +1267,7 @@
             }
           },
           "401": {
-            "description": "Error: `unauthenticated`",
+            "description": "Error: `unauthenticated`, `setup_required`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1235,7 +1343,7 @@
             }
           },
           "401": {
-            "description": "Error: `unauthenticated`",
+            "description": "Error: `unauthenticated`, `setup_required`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1256,6 +1364,26 @@
           },
           "409": {
             "description": "Error: `conflict`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Error: `invalid_request` (request body too large)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Error: `invalid_request` (unsupported content type)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1336,7 +1464,7 @@
       "patch": {
         "operationId": "usersUpdate",
         "summary": "Change a user's role, name, cost share or password",
-        "description": "A password reset ends the user's sessions and revokes their device tokens. The last administrator cannot be demoted.",
+        "description": "A password reset ends the user's sessions and revokes all of their live API tokens. Demoting an administrator revokes their tokens that hold the `admin` scope. The last administrator cannot be demoted.",
         "tags": [
           "users"
         ],
@@ -1391,7 +1519,7 @@
             }
           },
           "401": {
-            "description": "Error: `unauthenticated`",
+            "description": "Error: `unauthenticated`, `setup_required`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1422,6 +1550,26 @@
           },
           "409": {
             "description": "Error: `conflict`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Error: `invalid_request` (request body too large)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Error: `invalid_request` (unsupported content type)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1472,6 +1620,109 @@
                   }
                 },
                 "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{id}/revoke-tokens": {
+      "post": {
+        "operationId": "usersRevokeTokens",
+        "summary": "Revoke all of a user's API tokens",
+        "description": "Revokes every live API token (mobile, integration, MCP) of the user, e.g. after a leaked token. Browser sessions are not affected. Returns how many tokens were revoked.",
+        "tags": [
+          "users"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "x-required-scopes": [
+          "admin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "revoked": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "revoked"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error: `invalid_request`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error: `unauthenticated`, `setup_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error: `forbidden`, `csrf_failed`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: `not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: `internal`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
               }
             }
           }

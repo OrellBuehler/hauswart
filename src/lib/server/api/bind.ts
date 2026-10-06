@@ -118,11 +118,12 @@ function payloadTooLarge(): ApiError {
   });
 }
 
-async function readText(request: Request, max: number): Promise<string> {
+/** Reads the body, counting bytes as they arrive: a chunked body cannot outgrow `max`. */
+async function readBytes(request: Request, max: number): Promise<Buffer> {
   const declared = Number(request.headers.get("content-length") ?? "0");
   if (declared > max) throw payloadTooLarge();
   const reader = request.body?.getReader();
-  if (!reader) return "";
+  if (!reader) return Buffer.alloc(0);
   const chunks: Uint8Array[] = [];
   let total = 0;
   for (;;) {
@@ -135,7 +136,26 @@ async function readText(request: Request, max: number): Promise<string> {
     }
     chunks.push(value);
   }
-  return new TextDecoder().decode(Buffer.concat(chunks));
+  return Buffer.concat(chunks);
+}
+
+async function readText(request: Request, max: number): Promise<string> {
+  return new TextDecoder().decode(await readBytes(request, max));
+}
+
+async function readFormData(request: Request, max: number): Promise<FormData> {
+  const bytes = await readBytes(request, max);
+  try {
+    return await new Response(bytes as BodyInit, {
+      headers: { "content-type": request.headers.get("content-type") ?? "" },
+    }).formData();
+  } catch (err) {
+    if (!(err instanceof TypeError)) throw err;
+    throw new ApiError(
+      "invalid_request",
+      "Body is not valid multipart/form-data",
+    );
+  }
 }
 
 function multiValueObject(entries: Iterable<[string, unknown]>) {
@@ -162,13 +182,8 @@ async function readBody(
         status: 415,
       });
     }
-    if (
-      Number(request.headers.get("content-length") ?? "0") >
-      endpoint.maxBodyBytes
-    ) {
-      throw payloadTooLarge();
-    }
-    return multiValueObject((await request.formData()).entries());
+    const form = await readFormData(request, endpoint.maxBodyBytes);
+    return multiValueObject(form.entries());
   }
   if (!JSON_CONTENT_TYPE.test(contentType)) {
     throw new ApiError("invalid_request", "Expected application/json", {
@@ -294,14 +309,15 @@ export function bind<E extends AnyEndpoint>(
     try {
       const principal = resolvePrincipal(event.locals);
 
-      if (principal?.auth === "token") {
-        const hit = tokenRequestLimiter.hit(principal.token.id);
-        if (!hit.allowed) throw rateLimitedError(hit.retryAfterMs);
-      } else if (
+      if (
         endpoint.auth === "public" &&
         !SAFE_METHODS.has(event.request.method)
       ) {
         const hit = publicRequestLimiter.hit(clientKey(event.getClientAddress));
+        if (!hit.allowed) throw rateLimitedError(hit.retryAfterMs);
+      }
+      if (principal?.auth === "token") {
+        const hit = tokenRequestLimiter.hit(principal.token.id);
         if (!hit.allowed) throw rateLimitedError(hit.retryAfterMs);
       }
 

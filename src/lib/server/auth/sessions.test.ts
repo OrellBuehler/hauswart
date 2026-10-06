@@ -7,6 +7,7 @@ import { FakeCookies } from "$lib/testing/event";
 import {
   SESSION_COOKIE,
   SESSION_LIFETIME_MS,
+  SESSION_MAX_LIFETIME_MS,
   createSession,
   deleteSessionCookie,
   hashToken,
@@ -128,6 +129,51 @@ describe("sessions", () => {
     createSession(user.id, T0);
     ctx.db.delete(users).where(eq(users.id, user.id)).run();
     expect(ctx.db.select().from(sessions).all()).toHaveLength(0);
+  });
+
+  describe("absolute lifetime", () => {
+    it("is 180 days", () => {
+      expect(SESSION_MAX_LIFETIME_MS).toBe(180 * DAY);
+    });
+
+    it("a session that is kept alive by regular use still ends 180 days after login", async () => {
+      const user = await createTestUser();
+      const { token } = createSession(user.id, T0);
+      let now = T0;
+      while (now + 20 * DAY < T0 + SESSION_MAX_LIFETIME_MS) {
+        now += 20 * DAY;
+        expect(
+          validateSessionToken(token, now),
+          `day ${(now - T0) / DAY}`,
+        ).not.toBeNull();
+      }
+      expect(
+        validateSessionToken(token, T0 + SESSION_MAX_LIFETIME_MS + 1),
+      ).toBeNull();
+      expect(ctx.db.select().from(sessions).all()).toHaveLength(0);
+    });
+
+    it("refreshing never extends the expiry beyond the absolute limit", async () => {
+      const user = await createTestUser();
+      const { token } = createSession(user.id, T0);
+      for (let day = 20; day <= 160; day += 20) {
+        expect(validateSessionToken(token, T0 + day * DAY)).not.toBeNull();
+      }
+      const v = validateSessionToken(token, T0 + 170 * DAY);
+      expect(v?.refreshed).toBe(true);
+      expect(v?.session.expiresAt.getTime()).toBe(T0 + SESSION_MAX_LIFETIME_MS);
+      expect(ctx.db.select().from(sessions).get()?.expiresAt.getTime()).toBe(
+        T0 + SESSION_MAX_LIFETIME_MS,
+      );
+    });
+
+    it("records the login time of the session", async () => {
+      const user = await createTestUser();
+      createSession(user.id, T0);
+      expect(ctx.db.select().from(sessions).get()?.createdAt.getTime()).toBe(
+        T0,
+      );
+    });
   });
 });
 

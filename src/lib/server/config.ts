@@ -33,3 +33,9 @@ export function dateInZone(now: number, timeZone: string): string {
 export function todayInHouseholdZone(now: number = Date.now()): string {
   return dateInZone(now, householdTimeZone());
 }
+
+/** The optional first-run setup token (`HAUSWART_SETUP_TOKEN`); null when unset or blank. */
+export function setupToken(): string | null {
+  const value = process.env.HAUSWART_SETUP_TOKEN?.trim();
+  return value ? value : null;
+}

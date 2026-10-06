@@ -7,6 +7,8 @@ import type { SessionInfo, SessionUser } from "./types";
 export { SESSION_COOKIE };
 export const SESSION_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
 export const SESSION_REFRESH_THRESHOLD_MS = 15 * 24 * 60 * 60 * 1000;
+/** A session ends this long after login however often it is used. */
+export const SESSION_MAX_LIFETIME_MS = 180 * 24 * 60 * 60 * 1000;
 
 export function hashToken(token: string): string {
   return new Bun.CryptoHasher("sha256").update(token).digest("hex");
@@ -25,7 +27,10 @@ export function createSession(
   const token = generateToken();
   const id = hashToken(token);
   const expiresAt = new Date(now + SESSION_LIFETIME_MS);
-  getDB().insert(sessions).values({ id, userId, expiresAt }).run();
+  getDB()
+    .insert(sessions)
+    .values({ id, userId, expiresAt, createdAt: new Date(now) })
+    .run();
   return { token, session: { id, expiresAt } };
 }
 
@@ -45,6 +50,7 @@ export function validateSessionToken(
   const row = db
     .select({
       expiresAt: sessions.expiresAt,
+      createdAt: sessions.createdAt,
       id: users.id,
       username: users.username,
       displayName: users.displayName,
@@ -57,7 +63,8 @@ export function validateSessionToken(
     .get();
   if (!row) return null;
 
-  if (row.expiresAt.getTime() <= now) {
+  const lastValid = row.createdAt.getTime() + SESSION_MAX_LIFETIME_MS;
+  if (row.expiresAt.getTime() <= now || lastValid <= now) {
     db.delete(sessions).where(eq(sessions.id, id)).run();
     return null;
   }
@@ -65,7 +72,7 @@ export function validateSessionToken(
   let expiresAt = row.expiresAt;
   let refreshed = false;
   if (expiresAt.getTime() - now < SESSION_REFRESH_THRESHOLD_MS) {
-    expiresAt = new Date(now + SESSION_LIFETIME_MS);
+    expiresAt = new Date(Math.min(now + SESSION_LIFETIME_MS, lastValid));
     db.update(sessions).set({ expiresAt }).where(eq(sessions.id, id)).run();
     refreshed = true;
   }

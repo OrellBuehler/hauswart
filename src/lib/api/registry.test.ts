@@ -73,6 +73,7 @@ describe("registry", () => {
         "GET /api/v1/users session",
         "POST /api/v1/users session",
         "PATCH /api/v1/users/{id} session",
+        "POST /api/v1/users/{id}/revoke-tokens session",
       ].sort(),
     );
   });

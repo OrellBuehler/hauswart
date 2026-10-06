@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "bun --bun vite dev",
-    "build": "bun scripts/i18n-compile.ts && bun --bun vite build",
+    "build": "bun scripts/i18n-compile.ts && bun --bun vite build && bun scripts/build-markdown-worker.ts",
     "preview": "bun --bun vite preview",
-    "start": "bun ./build/index.js",
+    "start": "NODE_ENV=production bun ./build/index.js",
     "i18n": "bun scripts/i18n-compile.ts",
     "prepare": "(bun scripts/i18n-compile.ts; svelte-kit sync) || echo \"\"",
     "check": "bun scripts/i18n-compile.ts && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",

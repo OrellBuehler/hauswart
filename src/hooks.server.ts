@@ -1,10 +1,11 @@
-import type { Handle } from "@sveltejs/kit";
+import type { Handle, HandleServerError } from "@sveltejs/kit";
 import { ApiError } from "$lib/api/errors";
 import { paraglideMiddleware } from "$lib/paraglide/server";
 import { householdTimeZone } from "$lib/server/config";
 import { assertSecretKeyConfigured } from "$lib/server/crypto";
 import { runMigrations } from "$lib/server/db";
 import { warmDummyHash } from "$lib/server/auth/password";
+import { startCredentialPurge } from "$lib/server/auth/purge";
 import {
   clearedSessionCookieHeader,
   deleteSessionCookie,
@@ -25,6 +26,7 @@ export async function init() {
   householdTimeZone();
   runMigrations();
   await warmDummyHash();
+  startCredentialPurge();
 }
 
 const BEARER = /^Bearer\s+(\S+)\s*$/i;
@@ -129,5 +131,78 @@ const withLocale = (
     });
   });
 
-export const handle: Handle = ({ event, resolve }) =>
-  authHandle({ event, resolve: (e) => withLocale(e, resolve) });
+const SECURITY_HEADERS: Record<string, string> = {
+  "x-content-type-options": "nosniff",
+  "x-frame-options": "DENY",
+  "referrer-policy": "strict-origin-when-cross-origin",
+  "permissions-policy": "camera=(self), geolocation=()",
+};
+
+/**
+ * Adds the security headers every response should carry. The Content-Security-Policy of pages
+ * comes from `kit.csp` in svelte.config.js (SvelteKit adds the nonces or hashes itself).
+ */
+function withSecurityHeaders(response: Response): Response {
+  const apply = (target: Response) => {
+    for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+      if (!target.headers.has(name)) target.headers.set(name, value);
+    }
+    return target;
+  };
+  try {
+    return apply(response);
+  } catch (error) {
+    // Responses from fetch() and Response.redirect() have immutable headers.
+    if (!(error instanceof TypeError)) throw error;
+    return apply(new Response(response.body, response));
+  }
+}
+
+function internalErrorResponse(): Response {
+  return new Response(
+    JSON.stringify(new ApiError("internal", "Internal server error").toBody()),
+    {
+      status: 500,
+      headers: {
+        "content-type": "application/json",
+        "cache-control": "no-store",
+      },
+    },
+  );
+}
+
+export const handle: Handle = async ({ event, resolve }) => {
+  let response: Response;
+  try {
+    response = await authHandle({
+      event,
+      resolve: (e) => withLocale(e, resolve),
+    });
+  } catch (error) {
+    if (!isApiPath(event.url.pathname)) throw error;
+    // Name only: messages and stacks can contain user data and paths.
+    console.error(
+      JSON.stringify({
+        event: "hook.error",
+        name: error instanceof Error ? error.name : "NonError",
+      }),
+    );
+    response = internalErrorResponse();
+  }
+  return withSecurityHeaders(response);
+};
+
+/** Unexpected page errors: log the error name only (no message or stack) and show nothing else. */
+export const handleError: HandleServerError = ({ error, event, status }) => {
+  if (status >= 500) {
+    console.error(
+      JSON.stringify({
+        event: "server.error",
+        name: error instanceof Error ? error.name : "NonError",
+        status,
+        route: event.route.id,
+      }),
+    );
+  }
+  return { message: status >= 500 ? "Internal Error" : "Not Found" };
+};

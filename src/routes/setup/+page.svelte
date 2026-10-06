@@ -8,6 +8,7 @@
   import * as Card from "$lib/components/ui/card/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
+  import { isApiError } from "$lib/api/errors";
   import { apiErrorMessage } from "$lib/error-message";
   import { m } from "$lib/paraglide/messages";
   import { getLocale } from "$lib/paraglide/runtime";
@@ -17,6 +18,9 @@
     en: "English",
   };
 
+  let { data } = $props();
+
+  let setupToken = $state("");
   let username = $state("");
   let displayName = $state("");
   let password = $state("");
@@ -34,11 +38,20 @@
     error = undefined;
     try {
       await api.call(endpoints.setup, {
-        body: { username, displayName, password, locale },
+        body: {
+          username,
+          displayName,
+          password,
+          locale,
+          ...(data.tokenRequired ? { setupToken } : {}),
+        },
       });
       window.location.assign("/");
     } catch (err) {
-      error = apiErrorMessage(err);
+      error =
+        isApiError(err) && err.code === "forbidden"
+          ? m.auth_setup_token_invalid()
+          : apiErrorMessage(err);
       pending = false;
     }
   }
@@ -60,6 +73,24 @@
           <Alert.Root variant="destructive">
             <Alert.Description>{error}</Alert.Description>
           </Alert.Root>
+        {/if}
+        {#if data.tokenRequired}
+          <div class="flex flex-col gap-2">
+            <Label for="setupToken">{m.auth_setup_token()}</Label>
+            <Input
+              id="setupToken"
+              name="setupToken"
+              type="password"
+              autocomplete="off"
+              spellcheck={false}
+              required
+              maxlength={256}
+              bind:value={setupToken}
+            />
+            <p class="text-muted-foreground text-xs">
+              {m.auth_setup_token_hint()}
+            </p>
+          </div>
         {/if}
         <div class="flex flex-col gap-2">
           <Label for="username">{m.auth_username()}</Label>

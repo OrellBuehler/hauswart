@@ -48,3 +48,7 @@ export const updateUserRequestSchema = z
   .refine((v) => Object.keys(v).length > 0, {
     error: "Provide at least one field to update.",
   });
+
+export const revokeTokensResponseSchema = z.object({
+  revoked: z.number().int().min(0),
+});

@@ -160,6 +160,38 @@ describe("openapi document", () => {
     expect(errorCodesFor(endpoints.tokensRevoke)).toContain("not_found");
   });
 
+  it("lists setup_required on every endpoint the hook gates, and on none of the public ones", () => {
+    for (const e of endpointList) {
+      const codes = errorCodesFor(e);
+      if (e.auth === "public")
+        expect(codes, e.id).not.toContain("setup_required");
+      else expect(codes, e.id).toContain("setup_required");
+    }
+    const logout = doc.paths["/api/v1/auth/logout"].post as {
+      responses: Record<string, { description: string }>;
+    };
+    expect(logout.responses["401"].description).toContain("setup_required");
+  });
+
+  it("documents 413 and 415 for endpoints with a request body only", () => {
+    for (const e of endpointList) {
+      const op = doc.paths[e.path][e.method.toLowerCase()] as {
+        responses: Record<string, { description: string }>;
+      };
+      if (e.body) {
+        expect(op.responses["413"].description, e.id).toContain(
+          "invalid_request",
+        );
+        expect(op.responses["415"].description, e.id).toContain(
+          "invalid_request",
+        );
+      } else {
+        expect(op.responses["413"], e.id).toBeUndefined();
+        expect(op.responses["415"], e.id).toBeUndefined();
+      }
+    }
+  });
+
   it("rejects a named schema that renders differently as input and output", () => {
     const named = z.object({ n: z.coerce.number() }).meta({ id: "Clash" });
     const clash = defineEndpoint({

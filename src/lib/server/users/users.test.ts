@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import { apiTokens, sessions, users } from "$lib/server/db";
 import { createTestToken, createTestUser } from "$lib/testing/auth";
 import { useTestDB } from "$lib/testing/db";
-import { verifyPassword } from "$lib/server/auth/password";
+import { hashPassword, verifyPassword } from "$lib/server/auth/password";
 import { createSession, validateSessionToken } from "$lib/server/auth/sessions";
 import { verifyToken } from "$lib/server/auth/tokens";
 import { AuthError } from "$lib/server/auth/types";
@@ -15,6 +15,12 @@ import {
   updateProfile,
   updateUser,
 } from "./users";
+
+vi.mock("$lib/server/auth/password", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("$lib/server/auth/password")>();
+  return { ...actual, hashPassword: vi.fn(actual.hashPassword) };
+});
 
 async function codeOf(p: Promise<unknown> | (() => unknown)) {
   try {
@@ -112,6 +118,20 @@ describe("users", () => {
     expect(countUsers()).toBe(1);
   });
 
+  it("first-admin setup after completion fails before any password hashing", async () => {
+    await createTestUser({ role: "admin" });
+    vi.mocked(hashPassword).mockClear();
+    expect(
+      await codeOf(
+        createFirstAdmin({
+          username: "bob",
+          password: "a-long-enough-password",
+        }),
+      ),
+    ).toBe("setup_closed");
+    expect(hashPassword).not.toHaveBeenCalled();
+  });
+
   it("lists users by username without credentials", async () => {
     await createTestUser({ username: "zed" });
     await createTestUser({ username: "amy" });
@@ -184,7 +204,7 @@ describe("updateUser", () => {
     );
   });
 
-  it("resets the password, ending sessions and device tokens but not integrations", async () => {
+  it("resets the password, ending sessions and every live token", async () => {
     const member = await createTestUser();
     const other = await createTestUser();
     const s1 = createSession(member.id);
@@ -214,9 +234,33 @@ describe("updateUser", () => {
     expect(validateSessionToken(s2.token)).not.toBeNull();
     expect(validateSessionToken(theirs.token)).not.toBeNull();
     expect(verifyToken(mobile.token)).toBeNull();
-    expect(verifyToken(mcp.token)).not.toBeNull();
+    expect(verifyToken(mcp.token)).toBeNull();
     expect(verifyToken(otherMobile.token)).not.toBeNull();
     expect(ctx.db.select().from(sessions).all()).toHaveLength(2);
     expect(ctx.db.select().from(apiTokens).all()).toHaveLength(3);
+  });
+
+  it("demoting an administrator revokes their admin-scoped tokens and keeps the others", async () => {
+    await createTestUser({ role: "admin" });
+    const demoted = await createTestUser({ role: "admin" });
+    const adminToken = createTestToken(demoted, {
+      kind: "mcp",
+      scopes: ["read", "write", "admin"],
+    });
+    const plainToken = createTestToken(demoted, {
+      kind: "mcp",
+      scopes: ["read"],
+    });
+    const result = await updateUser(demoted.id, { role: "member" });
+    expect(result.roleChanged).toBe(true);
+    expect(verifyToken(adminToken.token)).toBeNull();
+    expect(verifyToken(plainToken.token)).not.toBeNull();
+  });
+
+  it("promoting a member or changing other fields leaves tokens alone", async () => {
+    const member = await createTestUser();
+    const t = createTestToken(member, { kind: "mcp", scopes: ["read"] });
+    await updateUser(member.id, { role: "admin", displayName: "Maya" });
+    expect(verifyToken(t.token)).not.toBeNull();
   });
 });

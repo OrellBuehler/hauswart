@@ -548,6 +548,38 @@ describe("deleteIfUnreferenced", () => {
     );
   });
 
+  it("a re-upload while the reference check runs keeps the file", async () => {
+    const stored = await putFile(root, plainJpeg(64, 32), {
+      filename: "a.jpg",
+    });
+    const old = new Date(Date.now() - 3_600_000);
+    await utimes(join(root, stored.path), old, old);
+    const deleted = await deleteIfUnreferenced(
+      root,
+      stored.sha256,
+      async () => {
+        await putFile(root, plainJpeg(64, 32), { filename: "again.jpg" });
+        return false;
+      },
+    );
+    expect(deleted).toBe(false);
+    expect(await listAll(root)).toHaveLength(2);
+  });
+
+  it("concurrent uploads and sweeps of the same content never lose a stored file", async () => {
+    const bytes = plainJpeg(48, 48);
+    const first = await putFile(root, bytes, { filename: "a.jpg" });
+    for (let i = 0; i < 30; i++) {
+      const old = new Date(Date.now() - 3_600_000);
+      await utimes(join(root, first.path), old, old).catch(() => undefined);
+      const [, put] = await Promise.all([
+        deleteIfUnreferenced(root, first.sha256, () => false),
+        putFile(root, bytes, { filename: "a.jpg" }),
+      ]);
+      expect((await stat(join(root, put.path))).size).toBe(put.size);
+    }
+  });
+
   it("returns false for files that do not exist", async () => {
     expect(
       await deleteIfUnreferenced(root, "a".repeat(64), () => false, {
