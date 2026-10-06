@@ -1,5 +1,6 @@
 import { and, isNotNull, lt, or } from "drizzle-orm";
 import { apiTokens, getDB, sessions } from "$lib/server/db";
+import { purgeDeadShareLinks } from "$lib/server/share/purge";
 import { SESSION_MAX_LIFETIME_MS } from "./sessions";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -61,6 +62,10 @@ export function startCredentialPurge(
     try {
       const result = purgeStaleCredentials();
       console.info(JSON.stringify({ event: "auth.purge", ...result }));
+      const shared = purgeDeadShareLinks();
+      if (shared.guestLinks + shared.feeds > 0) {
+        console.info(JSON.stringify({ event: "share.purge", ...shared }));
+      }
     } catch (error) {
       console.error(
         JSON.stringify({

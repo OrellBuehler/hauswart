@@ -29,6 +29,8 @@ import {
   DOC_SECTIONS,
   DUE_KINDS,
   DUE_STATUSES,
+  FEED_SCOPES,
+  GUEST_SECTIONS,
   HINT_KINDS,
   INTEGRATION_KINDS,
   INTEGRATION_STATUSES,
@@ -1153,3 +1155,80 @@ export const notificationPrefs = sqliteTable("notification_prefs", {
   pushStages: text("push_stages", { mode: "json" }).$type<string[]>().notNull(),
   ...timestamps,
 });
+
+/**
+ * Calendar subscription addresses (`/api/public/cal/<token>.ics`). The token's sha256 finds the
+ * feed; `tokenEnc` (AES-GCM) lets the owner see the address again. A revoked feed keeps its row
+ * (and its hash, so the address stays dead) until the purge removes it.
+ */
+export const icalFeeds = sqliteTable(
+  "ical_feeds",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    tokenEnc: text("token_enc").notNull(),
+    scope: text("scope", { enum: FEED_SCOPES }).notNull().default("mine"),
+    includeEstimated: integer("include_estimated", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    includePreparations: integer("include_preparations", { mode: "boolean" })
+      .notNull()
+      .default(true),
+    includeDefects: integer("include_defects", { mode: "boolean" })
+      .notNull()
+      .default(true),
+    includeWarranties: integer("include_warranties", { mode: "boolean" })
+      .notNull()
+      .default(true),
+    /** `HH:MM` in the household time zone; null = no alarm. */
+    alarmTime: text("alarm_time"),
+    /** Days before the event the alarm rings (0 = the day itself, 1 = the evening before). */
+    alarmDaysBefore: integer("alarm_days_before").notNull().default(0),
+    locale: text("locale", { enum: USER_LOCALES }).notNull().default("de"),
+    lastFetchedAt: integer("last_fetched_at", { mode: "timestamp_ms" }),
+    revokedAt: integer("revoked_at", { mode: "timestamp_ms" }),
+    ...timestamps,
+  },
+  (t) => [index("ical_feeds_user_id_idx").on(t.userId)],
+);
+
+/**
+ * Links for guests (house sitters, neighbours): `/g/<token>`. Only the token's sha256 is stored;
+ * the address is shown once. `sectionsJson` is `{sections, pageIds}` (see `share/guest-links.ts`).
+ */
+export const guestLinks = sqliteTable(
+  "guest_links",
+  {
+    id: id(),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    label: text("label").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    startsAt: integer("starts_at", { mode: "timestamp_ms" }),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    revokedAt: integer("revoked_at", { mode: "timestamp_ms" }),
+    /** Argon2 hash of the 4 to 8 digit PIN; null = no PIN. */
+    pinHash: text("pin_hash"),
+    /** Consecutive wrong PINs; the link closes at `MAX_PIN_FAILURES` until the PIN is set again. */
+    pinFailures: integer("pin_failures").notNull().default(0),
+    includeSecrets: integer("include_secrets", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    sectionsJson: text("sections_json", { mode: "json" })
+      .$type<{
+        sections: (typeof GUEST_SECTIONS)[number][];
+        pageIds: string[];
+      }>()
+      .notNull(),
+    locale: text("locale", { enum: USER_LOCALES }).notNull().default("de"),
+    lastViewedAt: integer("last_viewed_at", { mode: "timestamp_ms" }),
+    viewCount: integer("view_count").notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [index("guest_links_expires_at_idx").on(t.expiresAt)],
+);

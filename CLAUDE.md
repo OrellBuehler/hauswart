@@ -7,8 +7,8 @@ iCal feed, a guest link and an MCP server. Home Assistant, Paperless-ngx and Kep
 optional adapters, never requirements. Status: early development — authentication, the API spine,
 the task core (rooms, assets, tasks, completions, notifications, dashboard), documentation (pages,
 attachments, search, file backup), contacts, spare parts, the service log, care hints, defects (with
-a PDF export), the warranty overview and generic comments exist; costs, the iCal feed and the guest
-link are still to come; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
+a PDF export), the warranty overview, generic comments, iCal feeds, the emergency page data and guest
+links exist; costs are still to come; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
 push notifications with a "done" button; see "Signals, integrations and delivery"); Paperless-ngx is wired as
 a per-person document provider (links, previews, warranty dates, pushing attachments; see "Documents and the
 document provider"); the MCP server covers the task core, documentation, defects, parts, contacts,
@@ -111,6 +111,12 @@ src/lib/server/hints/            per-asset care hints (tip/rule/warning), pinned
 src/lib/server/defects/          defects (Mängel): status machine, events, handover deadline, reminder task, timeline, PDF export
 src/lib/server/warranties/       warranty overview + status (valid / expiring ≤ 90 days / expired); feeds the dashboard
 src/lib/server/comments/         generic comments on any entity: commentable registry, soft delete, notifications, counts
+src/lib/server/calendar/         ical.ts (pure RFC 5545 builder), feeds.ts (ical_feeds CRUD, token), feed.ts (events of a feed),
+                                 public.ts (the public .ics response: limits, ETag/304)
+src/lib/server/share/            guest links: tokens.ts, guest-links.ts (CRUD, window, PIN counter), guest-access.ts (token ->
+                                 state, PIN attempts, signed unlock cookie), guest-view.ts (what a link shows), guest-http.ts
+                                 (gate + PIN action for the /g routes, response headers), purge.ts
+src/lib/server/emergency/        emergency page data (members) and the "Notfall- & Vertretungsblatt" PDF
 src/lib/server/pdf/render.ts     shared pdfmake wrapper (A4, Roboto from node_modules, no network or file access)
 src/lib/server/seed/import.ts    seed importer (through the REST API); CLI in scripts/seed.ts, data in seed/
 mcp/src/                         stdio MCP server (client-safe imports only): index.ts entry, server.ts (whoami handshake,
@@ -386,6 +392,66 @@ of the owner>` is added to the document unless an identical note exists (writes 
 - **Hint reactions** (`signalReactionSchema`, type `signal_change`) are stored with the hint
   (`GET /hints?reactive=true`) and executed by `signals/reactions.ts`, see below.
 
+### iCal feeds, emergency page and guest links
+
+- **Tokens** (`share/tokens.ts`): 32 random bytes base64url; only the sha256 is stored and looked up
+  (indexed by hash, then `timingSafeEqual`). A malformed token is rejected before the database.
+  Feeds also keep `tokenEnc` (AES-GCM, `crypto.ts`) so the owner can see the address again (`url` in
+  the DTO, only for the owner); guest links store no plaintext: the address is returned once on
+  create and rotate. Rotating replaces the hash (old address dead at once); revoking keeps the row
+  (hash stays, feed `tokenEnc` is wiped) until `purgeDeadShareLinks` deletes rows revoked or expired
+  over 30 days ago (runs with the credential purge).
+- **Calendar feeds** (`ical_feeds`; `/api/v1/calendar-feeds`, session only, own feeds only, 10 per
+  user): the public address is `/api/public/cal/<token>.ics` (`routes/api/public/cal/[token].ics`,
+  outside the registry and OpenAPI, listed as public in the authz inventory). Failures are all the same
+  404; limits: 240 requests/min per address, 120/min per feed, and an address that presents 20
+  unknown tokens in 15 minutes is blocked (`shareMissLimiter`, peeked before the lookup). Answers with
+  `text/calendar`, strong ETag (sha256 of the body) with 304, `private, max-age=900`, `noindex`,
+  `no-referrer`. Content (`calendar/feed.ts`): next occurrence of every active, not snoozed task
+  with a date (scope `mine` = current assignee is the owner or `assignMode` none; `all` = every
+  task); a `min_per_period` window is a multi-day span; estimates only with `includeEstimated`
+  (TENTATIVE, `~` prefix, medium confidence, within 45 days, no alarm); preparations as "Vorbereiten:
+  ..." on due date minus `leadDays` (not done, not skipped by stock); defect deadlines of open defects
+  (a defect's reminder task is skipped: the defect event stands for it); warranty ends within 365
+  days. Only titles, places and dates: never task descriptions, notes, comments, secrets. UID
+  `task-<id>-<occurrenceKey>@hauswart` (`prep-`, `defect-`, `warranty-` alike), LAST-MODIFIED/DTSTAMP/
+  SEQUENCE from the row's `updatedAt` (never from `task_state`, which the evaluator rewrites every
+  five minutes), events sorted, so the bytes only change with the content. Alarm = `alarmTime` in the
+  household zone, `alarmDaysBefore` days ahead (1 = evening before). Texts are Paraglide messages
+  with the feed's locale (`m.key(params, {locale})`).
+- **Emergency page**: `GET /api/v1/emergency` (read scope) = emergency + rules pages (member HTML,
+  secrets included), emergency contacts (full), `showOnEmergency` assets with pinned hints.
+  `GET /api/v1/emergency/export.pdf` is the A4 sheet; secrets only with `?includeSecrets=1|true`
+  (then a red confidentiality box on top and "Vertraulich" in the footer). The text of pages and
+  hints comes from the markdown renderer's HTML (guest audience = secrets stripped, fail closed),
+  turned into paragraphs by `htmlToBlocks`. `emergencyDocument` returns the pdfmake content so tests
+  can read what is on the sheet.
+- **Guest links** (`guest_links`; `/api/v1/guest-links`, session only, any member manages all):
+  `expiresAt` required and at most 90 days away (also on update), `startsAt` optional, `pin` 4 to 8
+  digits (argon2id), `includeSecrets`, `sections` (`emergency|rules|contacts|devices|howto`) and
+  explicit `pageIds`; `DELETE` revokes. Content is shared only when **both** the flag on the item and
+  the link agree: pages need `guestVisible` and a selected page section (emergency, rules, howto) or
+  their id in `pageIds`; contacts need `guestVisible` (section `emergency` shows those marked
+  emergency, `contacts` all of them, never notes or address); devices (section `devices`) are assets
+  with `showOnEmergency` or a guest-visible hint, with only their guest-visible hints; secret blocks
+  only with `includeSecrets`. Files (`/g/<token>/files/<id>`) need the attachment's own `guestVisible`
+  and an owner the link shows (a shared page, or a guest-visible hint of a listed device); anything
+  else is a 404 like a missing file.
+- **Public pages** `/g/[token]` (+ `docs/[slug]`, `files/[id]`) are SSR only (`csr = false`, no JS)
+  and use `+page.server.ts` loads, not the API (inventory: public). Every request passes
+  `guestGate` (address and link limits, token lookup). Unknown, revoked, expired, not-yet-valid and
+  PIN-locked links answer the same 404 page (German and English text, no detail); only unknown
+  tokens count as guesses. The PIN gate is the form action `default` on the home and docs pages:
+  5 wrong PINs per link and address, 10 per link and 20 per address in 15 minutes, 30 wrong PINs in
+  a row close the link until a member sets a PIN again (`pinFailures`); a correct PIN sets the
+  cookie `hauswart_guest` (path `/g/<token>`, HttpOnly, 12 h at most and never past the expiry), an
+  HMAC over link id, PIN-hash fingerprint and expiry (`signValue`), so changing the PIN ends all
+  unlocks. The hook adds `Cache-Control: no-store`, `X-Robots-Tag: noindex`, `Referrer-Policy:
+no-referrer` to everything under `/g/`. Language is the link's `locale` (explicit `{locale}`
+  option, not the visitor's). A visit counts (`viewCount`, `lastViewedAt`) at most every 10 minutes.
+  Guest HTML is `renderedHtmlGuest` with `fillGuestToken`; with `includeSecrets` it is rendered live
+  (60 s in-memory cache). Rendered HTML is the only `{@html}` (`components/guest/guest-html.svelte`).
+
 ### MCP server
 
 `mcp/` is a stdio server for Claude (Claude Code, Desktop) built on `@modelcontextprotocol/sdk` with
@@ -456,7 +522,8 @@ application/json` (`multipart/form-data` for multipart endpoints), else 403 `csr
 - **Public paths** (`src/lib/server/auth/routing.ts`): `/login`, `/setup`, `/api/health`,
   `/api/v1/health`, `/api/v1/openapi.json`, `/api/v1/setup`, `/api/v1/auth/login`,
   `/api/v1/auth/token`, `/api/public/*`, `/g/*`. A new `public` endpoint must be added there (a
-  test fails otherwise).
+  test fails otherwise). Route files outside `/api/v1` (the calendar feed, the `/g` pages) are
+  listed as `public` in the inventory of `src/routes/authz.test.ts`.
 - Not built yet, structure kept: TOTP, passkeys and recovery codes (extend `AUTH_EVENT_TYPES`, add
   a step after `verifyCredentials` in `auth/login.ts`), self-service password change.
 

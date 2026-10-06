@@ -7,7 +7,7 @@ import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ fetch, url }) => {
   const api = createApiClient(fetch);
-  const [assets, rooms, { today }] = await orFail(
+  const [assets, rooms, { today }, integrations] = await orFail(
     Promise.all([
       fetchAll((cursor) =>
         api.call(endpoints.assetsList, {
@@ -18,6 +18,10 @@ export const load: PageLoad = async ({ fetch, url }) => {
         api.call(endpoints.roomsList, { query: { cursor, limit: 200 } }),
       ),
       loadHousehold(api),
+      api.call(endpoints.integrationsList).catch((err: unknown) => {
+        console.warn("integrations unavailable", err);
+        return { items: [] };
+      }),
     ]),
     url.pathname,
   );
@@ -27,5 +31,9 @@ export const load: PageLoad = async ({ fetch, url }) => {
       (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
     ),
     today,
+    suggestionsAvailable: integrations.items.some(
+      (i) =>
+        i.kind === "homeassistant" && i.available && i.configured && i.enabled,
+    ),
   };
 };

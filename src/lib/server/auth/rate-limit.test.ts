@@ -114,6 +114,17 @@ describe("RequestRateLimiter", () => {
     expect(limiter.hit("b").allowed).toBe(true);
   });
 
+  it("peeks without counting", () => {
+    const { limiter, advance } = counter(2);
+    for (let i = 0; i < 10; i++) expect(limiter.peek("a").allowed).toBe(true);
+    limiter.hit("a");
+    limiter.hit("a");
+    expect(limiter.peek("a")).toEqual({ allowed: false, retryAfterMs: MIN });
+    expect(limiter.peek("b").allowed).toBe(true);
+    advance(MIN + 1);
+    expect(limiter.peek("a").allowed).toBe(true);
+  });
+
   it("slides: old hits age out and the wait shrinks", () => {
     const { limiter, advance } = counter(2);
     limiter.hit("a");

@@ -6,6 +6,7 @@
   import { describeTrigger } from "$lib/tasks/describe";
   import Field from "../field.svelte";
   import OptionSelect from "../option-select.svelte";
+  import AutoCompleteEditor from "./auto-complete-editor.svelte";
   import CalendarForm from "./calendar-form.svelte";
   import CounterDeltaForm from "./counter-delta-form.svelte";
   import HaCalendarForm from "./ha-calendar-form.svelte";
@@ -17,6 +18,7 @@
     ADVANCED_TYPES,
     defaultTrigger,
     EDITABLE_TYPES,
+    hasAutoComplete,
     type TriggerDraft,
   } from "./types";
   import WarrantyForm from "./warranty-form.svelte";
@@ -120,6 +122,9 @@
       <StateConditionForm bind:trigger {errors} />
     {:else if trigger.type === "ha_calendar"}
       <HaCalendarForm bind:trigger {errors} />
+    {/if}
+    {#if hasAutoComplete(trigger)}
+      <AutoCompleteEditor bind:trigger {errors} />
     {/if}
     {#if errors[""]}
       <p class="text-destructive text-xs text-pretty">{errors[""]}</p>

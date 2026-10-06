@@ -21,6 +21,7 @@ import {
   isPublicPath,
 } from "$lib/server/auth/routing";
 import { startFileSweeper } from "$lib/server/attachments/sweeper";
+import { withGuestHeaders } from "$lib/server/share/guest-http";
 import { registerBackups } from "$lib/server/backup";
 import { startAttachmentRerender } from "$lib/server/docs/pages";
 import { registerHomeAssistant } from "$lib/server/integrations/homeassistant";
@@ -135,6 +136,13 @@ const authHandle: Handle = async ({ event, resolve }) => {
 
 type Resolve = Parameters<Handle>[0]["resolve"];
 
+/**
+ * Guest pages are server-rendered without JavaScript, so SvelteKit adds no script nonce to their
+ * CSP and the colour-mode script of `app.html` would only be blocked (a console error on every
+ * view). They are light only; the script is removed instead.
+ */
+const GUEST_STRIPPED_SCRIPTS = /<script nonce="[^"]*">[\s\S]*?<\/script>/g;
+
 /** Runs the request with the locale Paraglide detects (cookie, then browser language). */
 const withLocale = (
   event: Parameters<Handle>[0]["event"],
@@ -142,8 +150,14 @@ const withLocale = (
 ): Promise<Response> =>
   paraglideMiddleware(event.request, ({ request, locale }) => {
     event.request = request;
+    const guest = event.url.pathname.startsWith("/g/");
     return resolve(event, {
-      transformPageChunk: ({ html }) => html.replace("%lang%", locale),
+      transformPageChunk: ({ html }) => {
+        const localized = html.replace("%lang%", locale);
+        return guest
+          ? localized.replace(GUEST_STRIPPED_SCRIPTS, "")
+          : localized;
+      },
     });
   });
 
@@ -205,7 +219,10 @@ export const handle: Handle = async ({ event, resolve }) => {
     );
     response = internalErrorResponse();
   }
-  return withSecurityHeaders(response);
+  const secured = withSecurityHeaders(response);
+  return event.url.pathname.startsWith("/g/")
+    ? withGuestHeaders(secured)
+    : secured;
 };
 
 /** Unexpected page errors: log the error name only (no message or stack) and show nothing else. */
