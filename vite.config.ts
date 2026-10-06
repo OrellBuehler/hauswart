@@ -30,7 +30,7 @@ export default defineConfig(({ command }) => ({
     },
   },
   test: {
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "mcp/**/*.test.ts"],
     environment: "node",
     globalSetup: ["./scripts/vitest-global-setup.ts"],
     setupFiles: ["./scripts/vitest-setup.ts"],

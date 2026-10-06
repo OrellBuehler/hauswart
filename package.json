@@ -26,13 +26,16 @@
     "security": "./scripts/security/scan-all.sh",
     "security:install": "./scripts/security/install-tools.sh",
     "openapi": "bun scripts/gen-openapi.ts",
-    "leak-guard": "bun scripts/leak-guard.ts"
+    "leak-guard": "bun scripts/leak-guard.ts",
+    "mcp": "bun mcp/src/index.ts",
+    "mcp:build": "bun build mcp/src/index.ts --compile --outfile dist/hauswart-mcp"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@inlang/paraglide-js": "^2.25.4",
     "@internationalized/date": "^3.12.4",
     "@lucide/svelte": "^1.52.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "@sveltejs/kit": "^2.70.3",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "@tailwindcss/vite": "^4.3.3",

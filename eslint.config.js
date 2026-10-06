@@ -11,6 +11,7 @@ export default ts.config(
       ".svelte-kit/",
       ".claude/worktrees/",
       "build/",
+      "dist/",
       "coverage/",
       "drizzle/",
       "src/lib/components/ui/",

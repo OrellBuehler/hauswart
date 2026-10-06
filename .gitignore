@@ -28,3 +28,6 @@ project.inlang/README.md
 
 # coverage output
 coverage/
+
+# compiled MCP server
+dist/
