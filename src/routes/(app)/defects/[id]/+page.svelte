@@ -1,7 +1,6 @@
 <script lang="ts">
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
   import BanIcon from "@lucide/svelte/icons/ban";
-  import CameraIcon from "@lucide/svelte/icons/camera";
   import CircleCheckIcon from "@lucide/svelte/icons/circle-check";
   import EllipsisIcon from "@lucide/svelte/icons/ellipsis";
   import FlagIcon from "@lucide/svelte/icons/flag";
@@ -17,9 +16,9 @@
   import type { DefectStatus } from "$lib/api/enums";
   import { endpoints } from "$lib/api/registry";
   import { DEFECT_TRANSITIONS } from "$lib/api/schemas/defects";
+  import Attachments from "$lib/components/attachments/attachments.svelte";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
   import CommentBody from "$lib/components/comments/comment-body.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
   import DefectDeadline from "$lib/components/defects/defect-deadline.svelte";
   import DefectSeverityBadge from "$lib/components/defects/defect-severity-badge.svelte";
   import DefectStatusBadge from "$lib/components/defects/defect-status-badge.svelte";
@@ -29,6 +28,7 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
+  import { IMAGE_ACCEPT } from "$lib/attachments/files";
   import { formatDateTime, formatDay } from "$lib/format";
   import { assetHref, roomHref, taskHref } from "$lib/links";
   import { m } from "$lib/paraglide/messages";
@@ -367,20 +367,13 @@
       />
     </div>
 
-    <Card.Root class="lg:col-start-1" data-slot="defect-photos">
-      <Card.Header>
-        <Card.Title class="text-base">{m.defect_photos()}</Card.Title>
-      </Card.Header>
-      <Card.Content>
-        <!-- Photos: attach images here once the attachments API (entityType "defect") is on main. -->
-        <EmptyState
-          icon={CameraIcon}
-          title={m.coming_soon_badge()}
-          description={m.defect_photos_soon()}
-          class="py-8"
-        />
-      </Card.Content>
-    </Card.Root>
+    <Attachments
+      class="lg:col-start-1"
+      ownerType="defect"
+      ownerId={defect.id}
+      accept={IMAGE_ACCEPT}
+      title={m.defect_photos()}
+    />
   </div>
 </div>
 

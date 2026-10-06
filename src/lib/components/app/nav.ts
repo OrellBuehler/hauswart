@@ -83,7 +83,6 @@ export const navGroups: NavGroup[] = [
       {
         href: "/docs",
         label: () => m.nav_docs(),
-        comingSoon: () => m.coming_soon_docs(),
         icon: BookOpenIcon,
       },
     ],

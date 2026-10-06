@@ -21,6 +21,7 @@
   import type { PartMovementReason } from "$lib/api/enums";
   import { endpoints } from "$lib/api/registry";
   import type { PartMovement } from "$lib/api/schemas/parts";
+  import Attachments from "$lib/components/attachments/attachments.svelte";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
   import EmptyState from "$lib/components/app/empty-state.svelte";
   import AssetPartDialog from "$lib/components/parts/asset-part-dialog.svelte";
@@ -612,6 +613,12 @@
           {/if}
         </Card.Content>
       </Card.Root>
+
+      <Attachments
+        ownerType="part"
+        ownerId={part.id}
+        title={m.part_files_title()}
+      />
     </div>
   </div>
 </div>

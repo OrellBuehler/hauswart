@@ -9,6 +9,7 @@
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import type { Hint } from "$lib/api/schemas/hints";
   import { planTaskHref } from "$lib/assets/links";
+  import Attachments from "$lib/components/attachments/attachments.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
@@ -143,6 +144,13 @@
       </p>
     {/if}
   </div>
+
+  <Attachments
+    ownerType="asset_hint"
+    ownerId={hint.id}
+    variant="compact"
+    title={m.hint_files_title()}
+  />
 
   {#if hint.guestVisible || hint.reaction}
     <div class="flex flex-col gap-1.5">

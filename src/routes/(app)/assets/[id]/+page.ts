@@ -37,7 +37,7 @@ async function loadAssetExtras(api: ApiClient, id: string) {
 
 export const load: PageLoad = async ({ fetch, params, url }) => {
   const api = createApiClient(fetch);
-  const [asset, tasks, { today, household }, m3] = await orFail(
+  const [asset, tasks, { today, household }, m3, pages] = await orFail(
     Promise.all([
       api.call(endpoints.assetsGet, { params: { id: params.id } }),
       fetchAll((cursor) =>
@@ -47,6 +47,11 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
       ),
       loadHousehold(api),
       loadAssetExtras(api, params.id),
+      fetchAll((cursor) =>
+        api.call(endpoints.pagesList, {
+          query: { cursor, limit: 200, assetId: params.id },
+        }),
+      ),
     ]),
     url.pathname,
   );
@@ -55,6 +60,7 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
     tasks: sortTasks(tasks),
     today,
     currency: household.currency,
+    pages,
     ...m3,
   };
 };
