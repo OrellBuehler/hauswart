@@ -4,6 +4,7 @@
   import { api } from "$lib/api/browser";
   import { endpoints } from "$lib/api/registry";
   import type { DueResultWire } from "$lib/api/schemas/tasks";
+  import EntityReading from "$lib/components/connections/entity-reading.svelte";
   import * as Card from "$lib/components/ui/card/index.js";
   import { apiErrorMessage } from "$lib/error-message";
   import { m } from "$lib/paraglide/messages";
@@ -31,6 +32,23 @@
   const summary = $derived(
     parsed.success ? describeTrigger(parsed.data, getLocale()) : null,
   );
+
+  /** The readings this trigger looks at, shown live when a connection can tell them. */
+  const readingIds = $derived.by(() => {
+    if (!parsed.success) return [];
+    const t = parsed.data;
+    if (t.type === "counter_delta") return [t.entityId];
+    if (t.type === "state_condition") {
+      return [
+        ...new Set(
+          [t.entityId, t.estimateFrom?.entityId].filter((id): id is string =>
+            Boolean(id),
+          ),
+        ),
+      ];
+    }
+    return [];
+  });
 
   let result = $state<DueResultWire | null>(null);
   let failure = $state<string | undefined>();
@@ -107,6 +125,13 @@
       <p class="text-muted-foreground text-pretty">{m.preview_incomplete()}</p>
     {:else}
       <p class="font-medium text-pretty">{summary}</p>
+      {#if readingIds.length > 0}
+        <div class="flex flex-col gap-1.5">
+          {#each readingIds as entityId (entityId)}
+            <EntityReading {entityId} class="min-h-0" />
+          {/each}
+        </div>
+      {/if}
       {#if failure}
         <p class="text-destructive text-pretty">{failure}</p>
       {:else if result}

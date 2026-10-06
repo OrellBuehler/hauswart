@@ -13,16 +13,43 @@ import type {
   WarrantyTrigger,
 } from "$lib/tasks/engine/types";
 
+/** An auto-complete rule while it is being edited: the entity and thresholds may still be missing. */
+export type AutoCompleteRuleDraft =
+  | {
+      type: "counter_reset";
+      entityId: string;
+      minDrop?: number | undefined;
+    }
+  | {
+      type: "state_change";
+      entityId: string;
+      to: string;
+      from?: string | undefined;
+    };
+
 /** A trigger while it is being edited: the discriminant is always set, every other field may still be missing. */
 type Draft<T extends { type: string; v: 1 }> = Pick<T, "type" | "v"> &
-  Partial<Omit<T, "type" | "v">>;
+  Partial<Omit<T, "type" | "v" | "autoComplete">> & {
+    autoComplete?: AutoCompleteRuleDraft[] | undefined;
+  };
 
 export type IntervalDraft = Draft<IntervalTrigger>;
 export type CalendarDraft = Draft<CalendarTrigger>;
 export type MinPerPeriodDraft = Draft<MinPerPeriodTrigger>;
 export type OneOffDraft = Draft<OneOffTrigger>;
 export type CounterDeltaDraft = Draft<CounterDeltaTrigger>;
-export type StateConditionDraft = Draft<StateConditionTrigger>;
+export type StateConditionDraft = Omit<
+  Draft<StateConditionTrigger>,
+  "estimateFrom"
+> & {
+  estimateFrom?:
+    | {
+        entityId: string;
+        target?: number | undefined;
+        direction: "down" | "up";
+      }
+    | undefined;
+};
 export type HaCalendarDraft = Draft<HaCalendarTrigger>;
 export type WarrantyDraft = Draft<WarrantyTrigger>;
 
@@ -36,6 +63,25 @@ export type TriggerDraft =
   | HaCalendarDraft
   | WarrantyDraft
   | KeptBillTrigger;
+
+/** Triggers a signal can complete by itself: every recurring one. */
+export type AutoCompleteDraft =
+  | IntervalDraft
+  | CalendarDraft
+  | MinPerPeriodDraft
+  | CounterDeltaDraft
+  | StateConditionDraft
+  | HaCalendarDraft;
+
+export function hasAutoComplete(
+  trigger: TriggerDraft,
+): trigger is AutoCompleteDraft {
+  return (
+    trigger.type !== "one_off" &&
+    trigger.type !== "warranty" &&
+    trigger.type !== "kept_bill"
+  );
+}
 
 export const EDITABLE_TYPES: TriggerType[] = [
   "interval",
