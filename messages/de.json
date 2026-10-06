@@ -26,5 +26,11 @@
   "error_csrf_failed": "Die Anfrage wurde abgelehnt. Bitte Seite neu laden.",
   "error_invalid_request": "Bitte die Eingaben prüfen.",
   "error_unauthenticated": "Bitte melde dich an.",
-  "error_generic": "Etwas ist schiefgelaufen. Bitte erneut versuchen."
+  "error_generic": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
+  "notification_prep": "Vorbereiten: {prep} für «{title}» ({date})",
+  "notification_due_soon": "«{title}» ist bald fällig ({date})",
+  "notification_due": "«{title}» ist fällig ({date})",
+  "notification_overdue": "«{title}» ist seit {days} Tagen überfällig (fällig am {date})",
+  "notification_digest": "Heute: {overdue} überfällig, {due} fällig, {soon} bald fällig",
+  "notification_info": "{message}"
 }

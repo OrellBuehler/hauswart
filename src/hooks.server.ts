@@ -18,6 +18,7 @@ import {
   isBearerPath,
   isPublicPath,
 } from "$lib/server/auth/routing";
+import { registerEvaluator } from "$lib/server/tasks/scheduler";
 import { countUsers } from "$lib/server/users/users";
 
 export async function init() {
@@ -25,6 +26,7 @@ export async function init() {
   householdTimeZone();
   runMigrations();
   await warmDummyHash();
+  registerEvaluator();
 }
 
 const BEARER = /^Bearer\s+(\S+)\s*$/i;

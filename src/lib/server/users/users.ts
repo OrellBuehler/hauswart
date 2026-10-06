@@ -1,7 +1,7 @@
-import { and, asc, count, eq, ne } from "drizzle-orm";
+import { and, asc, count, eq, ne, sql } from "drizzle-orm";
 import type { UserLocale, UserRole } from "$lib/api/enums";
 import { usernameSchema } from "$lib/api/schemas/auth";
-import { getDB, apiTokens, sessions, users } from "$lib/server/db";
+import { getDB, apiTokens, sessions, users, type DB } from "$lib/server/db";
 import { hashPassword } from "$lib/server/auth/password";
 import { AuthError, type SessionUser } from "$lib/server/auth/types";
 
@@ -234,4 +234,16 @@ export function findUserByUsername(username: string) {
 
 export function findUserById(id: string) {
   return getDB().select().from(users).where(eq(users.id, id)).get();
+}
+
+/** Everyone's id and display name (username when they have none): for assignee pickers and activity lines. */
+export function listDirectory(db: DB): { id: string; displayName: string }[] {
+  return db
+    .select({
+      id: users.id,
+      displayName: sql<string>`coalesce(${users.displayName}, ${users.username})`,
+    })
+    .from(users)
+    .orderBy(asc(sql`lower(coalesce(${users.displayName}, ${users.username}))`))
+    .all();
 }

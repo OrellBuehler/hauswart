@@ -27,7 +27,9 @@ describe("registry", () => {
 
   it("uses versioned paths and known methods", () => {
     for (const e of endpointList) {
-      expect(e.path, e.id).toMatch(/^\/api\/v1\/[a-z0-9{}/.-]+$/);
+      expect(e.path, e.id).toMatch(
+        /^\/api\/v1(\/([a-z0-9.-]+|\{[A-Za-z0-9]+\}))+$/,
+      );
       expect(HTTP_METHODS).toContain(e.method);
       expect(e.summary, e.id).not.toBe("");
       expect(e.tags.length, e.id).toBeGreaterThan(0);
@@ -73,6 +75,42 @@ describe("registry", () => {
         "GET /api/v1/users session",
         "POST /api/v1/users session",
         "PATCH /api/v1/users/{id} session",
+        "GET /api/v1/rooms both",
+        "POST /api/v1/rooms both",
+        "GET /api/v1/rooms/{id} both",
+        "PATCH /api/v1/rooms/{id} both",
+        "DELETE /api/v1/rooms/{id} both",
+        "GET /api/v1/assets both",
+        "POST /api/v1/assets both",
+        "GET /api/v1/assets/by-qr/{qrSlug} both",
+        "GET /api/v1/assets/{id} both",
+        "PATCH /api/v1/assets/{id} both",
+        "DELETE /api/v1/assets/{id} both",
+        "GET /api/v1/tasks both",
+        "POST /api/v1/tasks both",
+        "POST /api/v1/tasks/preview both",
+        "GET /api/v1/tasks/{id} both",
+        "PATCH /api/v1/tasks/{id} both",
+        "DELETE /api/v1/tasks/{id} both",
+        "POST /api/v1/tasks/{id}/complete both",
+        "POST /api/v1/tasks/{id}/skip both",
+        "POST /api/v1/tasks/{id}/snooze both",
+        "GET /api/v1/tasks/{id}/preparations both",
+        "POST /api/v1/tasks/{id}/preparations both",
+        "PATCH /api/v1/tasks/{id}/preparations/{prepId} both",
+        "DELETE /api/v1/tasks/{id}/preparations/{prepId} both",
+        "POST /api/v1/tasks/{id}/preparations/{prepId}/complete both",
+        "GET /api/v1/completions both",
+        "DELETE /api/v1/completions/{id} both",
+        "GET /api/v1/dashboard both",
+        "GET /api/v1/stats both",
+        "GET /api/v1/notifications both",
+        "GET /api/v1/notifications/unread-count both",
+        "POST /api/v1/notifications/read-all both",
+        "POST /api/v1/notifications/{id}/read both",
+        "GET /api/v1/household both",
+        "PATCH /api/v1/household both",
+        "GET /api/v1/users/directory both",
       ].sort(),
     );
   });

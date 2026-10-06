@@ -26,5 +26,11 @@
   "error_csrf_failed": "The request was rejected. Please reload the page.",
   "error_invalid_request": "Please check your input.",
   "error_unauthenticated": "Please sign in.",
-  "error_generic": "Something went wrong. Please try again."
+  "error_generic": "Something went wrong. Please try again.",
+  "notification_prep": "Prepare: {prep} for \"{title}\" ({date})",
+  "notification_due_soon": "\"{title}\" is due soon ({date})",
+  "notification_due": "\"{title}\" is due ({date})",
+  "notification_overdue": "\"{title}\" has been overdue for {days} days (was due {date})",
+  "notification_digest": "Today: {overdue} overdue, {due} due, {soon} due soon",
+  "notification_info": "{message}"
 }

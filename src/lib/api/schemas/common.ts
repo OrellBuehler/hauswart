@@ -53,3 +53,36 @@ export const emptySchema = z.null();
 export function toIso(value: Date | number): string {
   return new Date(value).toISOString();
 }
+
+/** `?flag=true|false`; `z.coerce.boolean()` would read the string "false" as true. */
+export const queryBooleanSchema = z
+  .enum(["true", "false"])
+  .transform((value) => value === "true");
+
+/** A PATCH body must change something. */
+export function atLeastOne<T extends z.ZodType>(schema: T): T {
+  return schema.refine((value) => Object.keys(value as object).length > 0, {
+    error: "Provide at least one field to update.",
+  }) as T;
+}
+
+/** Optional free text: trimmed, an empty string clears the field. */
+export function nullableText(max: number) {
+  return z
+    .string()
+    .trim()
+    .max(max)
+    .transform((value) => (value === "" ? null : value))
+    .nullable();
+}
+
+export const slugSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(1)
+  .max(64)
+  .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, {
+    error:
+      "Slug may only contain lowercase letters, digits and single hyphens.",
+  });

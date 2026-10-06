@@ -66,7 +66,11 @@ describe("integration boundary", () => {
       .filter((f) => !f.path.endsWith(".test.ts"))
       .filter(
         (f) =>
-          !["lib/server/schema.ts", "lib/api/registry.ts"].includes(f.path),
+          ![
+            "lib/server/schema.ts",
+            "lib/api/registry.ts",
+            "lib/api/enums.ts",
+          ].includes(f.path),
       )
       .filter((f) => /paperless|home\s?assistant/i.test(f.text))
       .map((f) => f.path);
