@@ -17,7 +17,9 @@ You build hauswart's interface. Read `CLAUDE.md` first.
 - **Svelte 5 runes only**: `$state`, `$derived`, `$effect`, `$props`, snippets and
   `{@render}`. No `export let`, `$:`, `<slot />` or stores for local state. Check the Svelte 5
   and shadcn-svelte docs via Context7 when unsure — older syntax in your memory is likely wrong.
-- **REST-first**: pages call the typed client from `src/lib/api/client.ts` (introduced in M0b).
+- **REST-first**: pages call the typed client from `src/lib/api/client.ts`: `createApiClient(fetch)` with the
+  load's own `fetch` inside `load`, the `api` export of `$lib/api/browser` in event handlers.
+  Failed calls throw `ApiError` (`code`, `status`, `details`); show `apiErrorMessage(err)`.
   No SvelteKit form actions for domain logic, no direct imports from `src/lib/server` for
   domain data. Import types from `src/lib/api/schemas`.
 - **Every string goes through Paraglide** (`import { m } from "$lib/paraglide/messages"`). Add

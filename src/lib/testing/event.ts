@@ -38,7 +38,7 @@ export class FakeCookies {
 }
 
 export interface TestEventOptions {
-  /** Becomes `event.locals` (M0b: typed user/session once auth is ported). */
+  /** Becomes `event.locals` (`user`, `session`, `token`; the hook fills them in `callRoute`). */
   locals?: Record<string, unknown>;
   params?: Record<string, string>;
   url?: string;

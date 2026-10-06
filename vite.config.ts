@@ -33,6 +33,7 @@ export default defineConfig(({ command }) => ({
     include: ["src/**/*.test.ts"],
     environment: "node",
     globalSetup: ["./scripts/vitest-global-setup.ts"],
+    setupFiles: ["./scripts/vitest-setup.ts"],
     testTimeout: 30000,
     coverage: {
       provider: "v8",

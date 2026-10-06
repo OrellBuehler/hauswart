@@ -21,12 +21,15 @@ Check by hand before merging:
   `.private-terms` are not staged.
 - **Migrations**: a schema change comes with a generated migration; no existing migration was
   edited; no `drizzle-kit push`.
-- **API**: a contract change updates the registry and `docs/openapi.json` and has an authz matrix
-  test entry (registry, `bind` and OpenAPI are introduced in M0b).
+- **API**: a contract change updates the registry and `docs/openapi.json` (`bun run openapi`; a
+  test fails when it is stale). The authz matrix and the route guard are generated from the
+  registry, so a new endpoint needs its route file and handler, not a matrix entry.
 - **i18n**: new UI strings exist in both `messages/de.json` and `messages/en.json`.
 - **UI**: new pages were looked at in a browser at 360 px and desktop width, light and dark.
 - **Runtime**: after `bun run build`, `HAUSWART_SECRET_KEY=$(openssl rand -base64 32)
 DATABASE_PATH=$(mktemp -d)/hauswart.db bun ./build/index.js` serves `/api/health` as
-  `{"status":"ok"}`; stop the server afterwards.
+  `{"status":"ok"}`; stop the server afterwards. For auth changes also smoke-test with curl: `GET
+/api/v1/setup`, `POST /api/v1/setup` (with `-H 'Origin: http://localhost:3000'` and JSON), then
+  `GET /api/v1/auth/me` with the cookie and with a token from `POST /api/v1/auth/token`.
 
 Report the result of each command, not just "green".

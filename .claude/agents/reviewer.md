@@ -20,8 +20,10 @@ You review; you never edit files. Read `CLAUDE.md`, then the diff you were point
    or commit messages; anything from `seed/local/` or `.env` committed. Run
    `bun run leak-guard --all`. A hit is always a blocker. Also flag a weakened leak-guard or
    gitleaks config.
-2. **Authz and security:** every endpoint has a registry entry and an authz matrix test; queries
-   scoped to the household; input parsed with Zod; no secrets or PII in logs; uploads validated
+2. **Authz and security:** every endpoint has a registry entry (the generated authz matrix covers it);
+   per-user data (tokens, sessions, connections, preferences) filtered by the caller and tested
+   for invisibility to other users; auth mode, scopes and CSRF behaviour sensible; input parsed
+   with Zod; no secrets or PII in logs; uploads validated
    (type, size, path traversal); no raw SQL with interpolation.
 3. **Correctness:** dates are `YYYY-MM-DD` in the household time zone (no `toISOString()` for
    calendar dates, no server-zone assumptions, DST edges); instants are `timestamp_ms`; money is
@@ -29,7 +31,7 @@ You review; you never edit files. Read `CLAUDE.md`, then the diff you were point
 4. **Architecture:** REST-first (no form actions for domain logic, route files are one-liners,
    services have no HTTP types); the core never imports `integrations/`; migrations generated,
    not hand-edited, no `drizzle-kit push`; `docs/openapi.json` regenerated after contract changes
-   (introduced in M0b).
+   (`bun run openapi`).
 5. **i18n and UI:** every user-visible string uses Paraglide with the key in both
    `messages/de.json` and `messages/en.json`; Svelte 5 runes only; shadcn-svelte and `cn()`;
    360 px and dark mode considered; empty/loading/error states present.

@@ -17,16 +17,20 @@ the same `/api/v1`, so the API contract is the product.
 ## Rules
 
 - **Contract first**: request/response Zod schemas in `src/lib/api/schemas` (client-safe, no
-  server imports), then the registry entry, then a one-liner route using `bind`
-  (introduced in M0b). Follow the `new-endpoint` skill.
+  server imports), then the registry entry in `src/lib/api/registry.ts`, then a handler in
+  `src/lib/server/api/handlers/` and a one-liner route using `bind`. Follow the `new-endpoint`
+  skill.
 - **Services are plain functions** `(ctx, input) => result` under `src/lib/server/<domain>/`.
   They know nothing about HTTP or SvelteKit and are unit-tested directly with `useTestDB()`.
 - **The task engine is pure**: due dates come from `(rule, history, today)`; `today` is injected
   as a `YYYY-MM-DD` string in the household time zone. Never read the clock or the server time
   zone inside the engine. Tests are table-driven.
 - Dates are `YYYY-MM-DD` strings, instants `timestamp_ms` integers, money integer minor units.
-- Every endpoint has an authz matrix test entry (anonymous, other household, allowed role). Add a
-  test that another household's data is invisible.
+- hauswart is one household with a few users: domain data is shared by all of them, so there is
+  no per-household scoping. Every endpoint is covered by the generated authz matrix
+  (`src/routes/authz.test.ts`: anonymous, wrong credential kind, missing scope, member vs admin,
+  cross-origin cookie request). Per-user resources (tokens, sessions, connections, preferences)
+  are filtered by the caller's id and need a test that user A cannot see or change user B's.
 - Parse all external input with Zod at the boundary; inside, trust the types.
 - Schema changes: edit `src/lib/server/schema.ts`, run `bun run db:generate`, commit the
   generated migration. Never edit an existing migration, never use `drizzle-kit push`.
