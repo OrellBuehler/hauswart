@@ -1,0 +1,67 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//hauswart//calendar feed//DE
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Küche\, Bad\; Keller 🏠
+NAME:Küche\, Bad\; Keller 🏠
+REFRESH-INTERVAL;VALUE=DURATION:PT6H
+X-PUBLISHED-TTL:PT6H
+BEGIN:VEVENT
+UID:edge-1@example.org
+DTSTAMP:20260101T120000Z
+DTSTART;VALUE=DATE:20261231
+DTEND;VALUE=DATE:20270101
+SUMMARY:Silvester\; Feuerwerk\, Raketen \\ Böller
+DESCRIPTION:Zeile eins\nZeile zwei\; mit Semikolon\, Komma und Backslash \\
+  am Ende\nWindows-Zeilenumbruch
+STATUS:CONFIRMED
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:edge-2@example.org
+DTSTAMP:20260101T120000Z
+DTSTART;VALUE=DATE:20260228
+DTEND;VALUE=DATE:20260301
+SUMMARY:Ein sehr langer Titel mit Umlauten äöüÄÖÜß und Emoji 🔧
+ 🏠🚿 der über mehrere gefaltete Zeilen läuft ohne ein Zeichen zu zer
+ teilen
+DESCRIPTION:Lange Beschreibung: Küche\, Bad & Keller prüfen 🧹 Küche\,
+  Bad & Keller prüfen 🧹 Küche\, Bad & Keller prüfen 🧹 Küche\, Bad
+  & Keller prüfen 🧹 Küche\, Bad & Keller prüfen 🧹 Küche\, Bad & K
+ eller prüfen 🧹 Küche\, Bad & Keller prüfen 🧹 Küche\, Bad & Kelle
+ r prüfen 🧹 Ende.
+CATEGORIES:Küche\, Bad,Übergabe\; Abnahme
+STATUS:TENTATIVE
+SEQUENCE:0
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:edge-3@example.org
+DTSTAMP:20260101T120000Z
+DTSTART;VALUE=DATE:20280229
+DTEND;VALUE=DATE:20280301
+SUMMARY:Schalttag
+STATUS:CONFIRMED
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Schalttag
+TRIGGER:PT8H30M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:edge-4@example.org
+DTSTAMP:20260101T120000Z
+DTSTART;VALUE=DATE:20260329
+DTEND;VALUE=DATE:20260330
+SUMMARY:Zeitumstellung
+STATUS:CONFIRMED
+TRANSP:TRANSPARENT
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Zeitumstellung
+TRIGGER:PT6H
+END:VALARM
+END:VEVENT
+END:VCALENDAR
