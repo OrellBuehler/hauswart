@@ -17,6 +17,13 @@ export default defineConfig(({ command }) => ({
         ]
       : []),
   ],
+  // Native addon: loaded from node_modules at runtime, never bundled.
+  ssr: {
+    external: ["@napi-rs/canvas"],
+  },
+  optimizeDeps: {
+    exclude: ["@napi-rs/canvas"],
+  },
   build: {
     rollupOptions: {
       external: [/^bun:/],
