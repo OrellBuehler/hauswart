@@ -42,12 +42,12 @@
 >
   <Select.Trigger
     {id}
-    class={cn("w-full data-[size=default]:h-10", className)}
+    class={cn("w-full min-w-0 data-[size=default]:h-10", className)}
     aria-invalid={invalid || undefined}
     aria-describedby={describedby}
   >
     {#if current}
-      {current.label}
+      <span class="truncate">{current.label}</span>
     {:else}
       <span class="text-muted-foreground">{placeholder}</span>
     {/if}

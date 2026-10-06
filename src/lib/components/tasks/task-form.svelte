@@ -316,7 +316,7 @@
   novalidate
 >
   <div
-    class="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
+    class="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
   >
     <Card.Root class="lg:col-start-1">
       <Card.Header>

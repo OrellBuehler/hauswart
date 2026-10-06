@@ -5,14 +5,18 @@
   import { endpoints } from "$lib/api/registry";
   import type { Hint, SignalReaction } from "$lib/api/schemas/hints";
   import { MAX_REACTION_DELAY_MINUTES } from "$lib/api/schemas/hints";
+  import EntityPicker from "$lib/components/connections/entity-picker.svelte";
   import FormDialog from "$lib/components/app/form-dialog.svelte";
   import SwitchField from "$lib/components/app/switch-field.svelte";
   import Field from "$lib/components/tasks/field.svelte";
   import NumberField from "$lib/components/tasks/number-field.svelte";
   import Segmented from "$lib/components/tasks/segmented.svelte";
+  import { Button } from "$lib/components/ui/button/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Textarea } from "$lib/components/ui/textarea/index.js";
   import { apiErrorMessage } from "$lib/error-message";
+  import { commonStates } from "$lib/connections/entities";
+  import type { ExternalEntity } from "$lib/connections/types";
   import { hintKindLabels } from "$lib/hints/labels";
   import { m } from "$lib/paraglide/messages";
   import { apiFieldErrors } from "$lib/tasks/field-errors";
@@ -45,12 +49,27 @@
   let notify = $state<NotifyChoice>("all");
   let customNotify = $state<string[]>([]);
   let fieldErrors = $state<Record<string, string>>({});
+  let resolved = $state<ExternalEntity | null | undefined>();
 
   const editing = $derived(hint !== undefined);
   const kindOptions = HINT_KINDS.map((value) => ({
     value,
     label: hintKindLabels[value](),
   }));
+  const stateChips = $derived.by(() => {
+    const chips = commonStates(entityId.split(".")[0] ?? "");
+    const current = resolved?.state;
+    if (
+      current &&
+      !chips.includes(current) &&
+      Number.isNaN(Number(current)) &&
+      current !== "unavailable" &&
+      current !== "unknown"
+    ) {
+      chips.push(current);
+    }
+    return chips;
+  });
   const notifyOptions = $derived([
     { value: "all" as NotifyChoice, label: m.hint_reaction_notify_all() },
     {
@@ -240,17 +259,13 @@
         error={fieldErrors.entityId}
       >
         {#snippet children({ describedby, invalid })}
-          <Input
+          <EntityPicker
             id="hint-entity"
-            autocomplete="off"
-            autocapitalize="none"
-            spellcheck={false}
-            maxlength={255}
-            placeholder="binary_sensor.example_door"
-            aria-invalid={invalid || undefined}
-            aria-describedby={describedby}
-            class="h-10"
             bind:value={entityId}
+            placeholder="binary_sensor.example_door"
+            {invalid}
+            {describedby}
+            onresolve={(entity) => (resolved = entity)}
           />
         {/snippet}
       </Field>
@@ -274,6 +289,25 @@
               class="h-10"
               bind:value={fromState}
             />
+            {#if stateChips.length > 0}
+              <div
+                class="flex flex-wrap items-center gap-1.5"
+                role="group"
+                aria-label={m.trigger_form_value_suggestions()}
+              >
+                {#each stateChips as chip (chip)}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    class="h-8 font-mono text-xs"
+                    onclick={() => (fromState = chip)}
+                  >
+                    {chip}
+                  </Button>
+                {/each}
+              </div>
+            {/if}
           {/snippet}
         </Field>
         <Field
@@ -294,6 +328,25 @@
               class="h-10"
               bind:value={toState}
             />
+            {#if stateChips.length > 0}
+              <div
+                class="flex flex-wrap items-center gap-1.5"
+                role="group"
+                aria-label={m.trigger_form_value_suggestions()}
+              >
+                {#each stateChips as chip (chip)}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    class="h-8 font-mono text-xs"
+                    onclick={() => (toState = chip)}
+                  >
+                    {chip}
+                  </Button>
+                {/each}
+              </div>
+            {/if}
           {/snippet}
         </Field>
       </div>
