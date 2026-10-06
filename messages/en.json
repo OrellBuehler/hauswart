@@ -204,5 +204,11 @@
   "admin_users_reset_pending": "Resetting …",
   "admin_users_reset_toast": "Password for “{name}” reset.",
   "admin_users_error_username_taken": "This username is already taken.",
-  "admin_users_error_last_admin": "The last administrator cannot be demoted."
+  "admin_users_error_last_admin": "The last administrator cannot be demoted.",
+  "notification_prep": "Prepare: {prep} for \"{title}\" ({date})",
+  "notification_due_soon": "\"{title}\" is due soon ({date})",
+  "notification_due": "\"{title}\" is due ({date})",
+  "notification_overdue": "\"{title}\" has been overdue for {days} days (was due {date})",
+  "notification_digest": "Today: {overdue} overdue, {due} due, {soon} due soon",
+  "notification_info": "{message}"
 }

@@ -204,5 +204,11 @@
   "admin_users_reset_pending": "Wird zurückgesetzt …",
   "admin_users_reset_toast": "Passwort für «{name}» zurückgesetzt.",
   "admin_users_error_username_taken": "Dieser Benutzername ist bereits vergeben.",
-  "admin_users_error_last_admin": "Der letzte Administrator kann nicht herabgestuft werden."
+  "admin_users_error_last_admin": "Der letzte Administrator kann nicht herabgestuft werden.",
+  "notification_prep": "Vorbereiten: {prep} für «{title}» ({date})",
+  "notification_due_soon": "«{title}» ist bald fällig ({date})",
+  "notification_due": "«{title}» ist fällig ({date})",
+  "notification_overdue": "«{title}» ist seit {days} Tagen überfällig (fällig am {date})",
+  "notification_digest": "Heute: {overdue} überfällig, {due} fällig, {soon} bald fällig",
+  "notification_info": "{message}"
 }

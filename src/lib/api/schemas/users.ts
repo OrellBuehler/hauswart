@@ -48,3 +48,11 @@ export const updateUserRequestSchema = z
   .refine((v) => Object.keys(v).length > 0, {
     error: "Provide at least one field to update.",
   });
+
+/** Just enough to render a person: names for assignee pickers and activity lines. */
+export const directoryUserSchema = z
+  .object({ id: z.string(), displayName: z.string() })
+  .meta({ id: "DirectoryUser" });
+export type DirectoryUser = z.infer<typeof directoryUserSchema>;
+
+export const listDirectoryResponseSchema = paginated(directoryUserSchema);

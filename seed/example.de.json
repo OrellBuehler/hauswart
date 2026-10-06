@@ -1,0 +1,236 @@
+{
+  "version": 1,
+  "household": { "name": "Musterwohnung", "handoverDate": "2026-01-01" },
+  "rooms": [
+    { "key": "kueche", "name": "Küche", "icon": "cooking-pot", "sortOrder": 0 },
+    { "key": "bad", "name": "Bad", "icon": "bath", "sortOrder": 1 },
+    {
+      "key": "wohnzimmer",
+      "name": "Wohnzimmer",
+      "icon": "sofa",
+      "sortOrder": 2
+    },
+    { "key": "keller", "name": "Keller", "icon": "warehouse", "sortOrder": 3 },
+    {
+      "key": "schlafzimmer",
+      "name": "Schlafzimmer",
+      "icon": "bed",
+      "sortOrder": 4
+    }
+  ],
+  "assets": [
+    {
+      "key": "waschmaschine",
+      "kind": "device",
+      "name": "Waschmaschine",
+      "room": "bad",
+      "category": "Haushaltsgerät",
+      "manufacturer": "Musterwerk",
+      "model": "WM-1000",
+      "purchaseDate": "2025-11-20",
+      "warrantyUntil": "2027-11-20",
+      "notes": "Flusensieb vorne rechts hinter der Klappe."
+    },
+    {
+      "key": "kuehlschrank",
+      "kind": "device",
+      "name": "Kühlschrank",
+      "room": "kueche",
+      "category": "Haushaltsgerät",
+      "manufacturer": "Musterwerk",
+      "model": "KS-300",
+      "showOnEmergency": false
+    },
+    {
+      "key": "backofen",
+      "kind": "device",
+      "name": "Backofen",
+      "room": "kueche",
+      "category": "Haushaltsgerät",
+      "manufacturer": "Musterwerk",
+      "model": "BO-50"
+    },
+    {
+      "key": "dampfabzug",
+      "kind": "device",
+      "name": "Dampfabzug",
+      "room": "kueche",
+      "category": "Haushaltsgerät",
+      "manufacturer": "Musterwerk",
+      "model": "DA-60",
+      "notes": "Umluftbetrieb mit Aktivkohlefilter."
+    },
+    {
+      "key": "muecken-rollo",
+      "kind": "fixture",
+      "name": "Mückennetz-Rollo",
+      "room": "schlafzimmer",
+      "category": "Fenster"
+    },
+    {
+      "key": "monstera",
+      "kind": "plant",
+      "name": "Monstera",
+      "room": "wohnzimmer",
+      "species": "Monstera deliciosa",
+      "light": "hell, ohne direkte Sonne",
+      "waterNotes": "Im Sommer wöchentlich, im Winter alle zwei Wochen giessen; Staunässe vermeiden."
+    }
+  ],
+  "tasks": [
+    {
+      "key": "waschmaschine-reinigen",
+      "title": "Waschmaschine reinigen",
+      "descriptionMd": "Trommel auslüften, Gummidichtung abwischen, Flusensieb leeren.",
+      "category": "maintenance",
+      "effortMinutes": 15,
+      "asset": "waschmaschine",
+      "trigger": {
+        "v": 1,
+        "type": "interval",
+        "every": 3,
+        "unit": "month",
+        "anchor": "completion",
+        "startDate": "2026-10-01"
+      },
+      "comment": "Platzhalter: sobald der Waschgang-Zähler angebunden ist, wird daraus ein counter_delta-Trigger (z. B. alle 60 Waschgänge). Bis dahin gilt ein fester Rhythmus."
+    },
+    {
+      "key": "kuehlschrank-reinigen",
+      "title": "Kühlschrank reinigen und abtauen",
+      "category": "cleaning",
+      "effortMinutes": 45,
+      "asset": "kuehlschrank",
+      "trigger": {
+        "v": 1,
+        "type": "interval",
+        "every": 6,
+        "unit": "month",
+        "anchor": "completion",
+        "startDate": "2026-11-15"
+      }
+    },
+    {
+      "key": "backofen-reinigen",
+      "title": "Backofen reinigen",
+      "category": "cleaning",
+      "effortMinutes": 40,
+      "asset": "backofen",
+      "trigger": {
+        "v": 1,
+        "type": "interval",
+        "every": 3,
+        "unit": "month",
+        "anchor": "completion",
+        "startDate": "2026-10-20"
+      }
+    },
+    {
+      "key": "dampfabzug-filter",
+      "title": "Aktivkohlefilter des Dampfabzugs wechseln",
+      "descriptionMd": "Filter von unten herausnehmen, neuen einsetzen, altes Gitter abspülen.",
+      "category": "filter",
+      "priority": "high",
+      "effortMinutes": 10,
+      "asset": "dampfabzug",
+      "trigger": {
+        "v": 1,
+        "type": "interval",
+        "every": 3,
+        "unit": "month",
+        "anchor": "completion",
+        "startDate": "2026-10-12"
+      },
+      "preparations": [
+        {
+          "title": "Aktivkohlefilter bestellen",
+          "kind": "order_part",
+          "leadDays": 14,
+          "qty": 1
+        }
+      ]
+    },
+    {
+      "key": "muecken-rollo-pruefen",
+      "title": "Mückennetz-Rollo kontrollieren und abstauben",
+      "category": "maintenance",
+      "effortMinutes": 5,
+      "asset": "muecken-rollo",
+      "trigger": {
+        "v": 1,
+        "type": "min_per_period",
+        "period": "month",
+        "count": 1
+      }
+    },
+    {
+      "key": "monstera-giessen",
+      "title": "Monstera giessen",
+      "category": "plant",
+      "effortMinutes": 5,
+      "asset": "monstera",
+      "trigger": {
+        "v": 1,
+        "type": "interval",
+        "every": 14,
+        "unit": "day",
+        "anchor": "completion",
+        "startDate": "2026-10-06",
+        "seasons": [{ "fromMonth": 4, "toMonth": 9, "every": 7, "unit": "day" }]
+      }
+    },
+    {
+      "key": "putzen-bad",
+      "title": "Bad putzen",
+      "category": "cleaning",
+      "effortMinutes": 30,
+      "room": "bad",
+      "trigger": {
+        "v": 1,
+        "type": "calendar",
+        "freq": "weekly",
+        "interval": 1,
+        "byWeekday": [6],
+        "startDate": "2026-10-03"
+      },
+      "assign": { "mode": "rotate", "users": "all", "strategy": "alternate" }
+    },
+    {
+      "key": "putzen-kueche",
+      "title": "Küche putzen",
+      "category": "cleaning",
+      "effortMinutes": 30,
+      "room": "kueche",
+      "trigger": {
+        "v": 1,
+        "type": "calendar",
+        "freq": "weekly",
+        "interval": 1,
+        "byWeekday": [6],
+        "startDate": "2026-10-03"
+      },
+      "assign": { "mode": "rotate", "users": "all", "strategy": "fair" }
+    },
+    {
+      "key": "kehricht",
+      "title": "Kehricht rausstellen",
+      "category": "waste",
+      "effortMinutes": 5,
+      "trigger": {
+        "v": 1,
+        "type": "calendar",
+        "freq": "weekly",
+        "interval": 1,
+        "byWeekday": [3],
+        "startDate": "2026-10-07"
+      },
+      "preparations": [
+        {
+          "title": "Kehrichtsack bereitstellen",
+          "kind": "generic",
+          "leadDays": 1
+        }
+      ]
+    }
+  ]
+}

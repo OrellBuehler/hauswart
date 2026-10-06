@@ -4,8 +4,9 @@ hauswart is a self-hosted apartment-management app for a single household with a
 recurring maintenance tasks with completion tracking, documentation (markdown, uploads,
 Paperless-ngx links), device inventory, defects, spare parts, contacts, costs, notifications, an
 iCal feed, a guest link and an MCP server. Home Assistant, Paperless-ngx and Kept (finance) are
-optional adapters, never requirements. Status: early development — authentication and the API
-spine exist; the domain features are still to come.
+optional adapters, never requirements. Status: early development — authentication, the API spine
+and the task core (rooms, assets, tasks, completions, notifications, dashboard) exist; documents,
+defects, parts, contacts, costs, the iCal feed, the guest link and the MCP server are still to come.
 
 There is one household, not many: all domain data is shared by every user. Only sessions, API
 tokens, integration connections and preferences belong to a single user.
@@ -36,6 +37,7 @@ bun run db:generate      # after editing src/lib/server/schema.ts
 bun run openapi          # regenerate docs/openapi.json from the registry (a test fails if stale)
 bun run i18n             # recompile Paraglide messages (also runs on install and in check)
 bun run leak-guard --all # scan the whole tree for private terms
+bun scripts/seed.ts --file seed/example.de.json --token hw_… [--url http://localhost:3000] [--update]
 bun run security         # semgrep, bun audit, trivy
 ```
 
@@ -71,6 +73,15 @@ src/lib/server/users/            user service (create, first admin, update, prof
 src/lib/server/<domain>/         services: plain functions, no HTTP types
 src/lib/dates.ts                 YYYY-MM-DD date math + time-zone helpers (client-safe)
 src/lib/tasks/engine/            pure due-date engine (client-safe): evaluateTask, estimates, rotation, upcoming
+src/lib/server/service.ts        ServiceContext {db, now}, notFound/conflict/invalidField, isUniqueViolation
+src/lib/server/pagination.ts     opaque cursors: paginateArray (offset) and pageOf (keyset)
+src/lib/server/household/        the singleton household row: name, time zone (follows HAUSWART_TZ), settings
+src/lib/server/rooms/            rooms CRUD, slugs
+src/lib/server/assets/           assets (devices, plants, fixtures), slugs, QR slugs, archive
+src/lib/server/tasks/            tasks CRUD, previewTrigger, evaluator (task_state cache), signals (provider seam),
+                                 completions (complete/skip/undo/snooze), preparations, dashboard, stats, scheduler
+src/lib/server/notifications/    in-app notifications, generateNotifications, channel registry for outward delivery
+src/lib/server/seed/import.ts    seed importer (through the REST API); CLI in scripts/seed.ts, data in seed/
 src/lib/server/integrations/     optional adapters (homeassistant/, paperless/, kept/) — the core never imports these
 src/lib/server/db.ts             SQLite connection (WAL, foreign keys); migrations run on startup
 src/lib/server/schema.ts         Drizzle schema — one file, every table has created_at/updated_at
@@ -85,6 +96,36 @@ src/routes/(app)/                pages; they read and write through the typed cl
 docs/openapi.json                generated; commit it with every contract change
 messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is generated, gitignored
 ```
+
+### Tasks, evaluation and notifications
+
+- **The engine decides, the database remembers.** `task_state` holds the engine's last verdict per
+  task (status, due date, occurrence key, estimate, current assignee). It is a cache: `evaluateAll`
+  rebuilds it from `tasks` and the non-revoked `task_completions`. A task is re-evaluated when it is
+  created, edited, completed, skipped, undone or snoozed (synchronously, before the response) and
+  every five minutes by the scheduler (`registerEvaluator()` in the startup hook; it also runs
+  `generateNotifications`). Lists, the dashboard and notifications read the cache.
+- **Live readings come through a seam.** `setSignalProvider()` (`tasks/signals.ts`) is how an
+  adapter supplies entity states, history and calendar dates; without one, signal-based triggers
+  report `unknown`. A failing provider is logged by name and treated as "no signals".
+- **A completion settles the occurrence the task shows** (`occurrenceKey` defaults to the cached
+  one; `dueDateAtCompletion` is stored with it). Sources: a session is `manual` (or `qr` /
+  `notification` when it says so); a token is attributed by its kind (`mcp`, `ha`, otherwise
+  `api`) and its own `source` field is ignored. `idempotencyKey` makes retries return the first
+  completion (200 instead of 201). Undo is a soft revoke within 7 days of recording, by any member.
+- **Rotation** is computed in the evaluator (`nextAssignee`); the "fair" strategy weighs minutes of
+  work (task effort, 15 if unset) of the last 90 days.
+- **Notifications** are rows per person with a Paraglide `titleKey` plus `params` (rendered by the
+  reader). `dedupeKey` = `<taskId>:<occurrence>:<stage>[:n]:<userId>`; stages are a preparation
+  becoming relevant, due soon, due, overdue (when it becomes overdue, then weekly, four in all) and
+  one digest per person per day after the household's digest time (skipped when empty). Snoozed and
+  archived tasks are silent. `userId` null means household-wide (shared read state). Outward
+  delivery is a `NotificationChannel` registered with `registerNotificationChannel`; the in-app
+  list needs none.
+- **Seed files** (`seedSchema`, `seed/*.json`; real data in gitignored `seed/local/`) are imported
+  by `scripts/seed.ts` through the REST API and matched by `key`, so repeating it changes nothing:
+  rooms and assets by slug, tasks by `externalSource: "seed"` + `externalRef`, preparations by title.
+  Existing entries are left alone unless `--update`. Changing the household needs the admin scope.
 
 ### Authentication and the API spine
 

@@ -1,6 +1,11 @@
 import type { endpoints } from "$lib/api/registry";
 import { logAuthEvent } from "$lib/server/auth/events";
-import { createUser, listUsers, updateUser } from "$lib/server/users/users";
+import {
+  createUser,
+  listDirectory,
+  listUsers,
+  updateUser,
+} from "$lib/server/users/users";
 import type { Handler } from "../bind";
 import { wireAdminUser } from "../wire";
 
@@ -33,3 +38,7 @@ export const update: Handler<typeof endpoints.usersUpdate> = async ({
     logAuthEvent("password_reset", params.id, ctx.user.id);
   return { user: wireAdminUser(result.user) };
 };
+
+export const directory: Handler<typeof endpoints.usersDirectory> = ({
+  ctx,
+}) => ({ items: listDirectory(ctx.db), nextCursor: null });
