@@ -81,8 +81,9 @@ export function errorCodeOf(err: unknown): string {
  *
  * Private, loopback and LAN addresses are allowed on purpose: the external
  * systems are self-hosted and sit on the same network, and the URL is entered
- * by an administrator of this instance, never by an anonymous caller. There is
- * therefore no SSRF host filter. Redirects are never followed and the token is
+ * by a signed-in member of the household (an administrator for household-wide
+ * connections), never by an anonymous caller. There is therefore no SSRF host
+ * filter. Redirects are never followed and the token is
  * only sent to this base URL.
  */
 export function normalizeBaseUrl(input: string, fail: Fail): string {

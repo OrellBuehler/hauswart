@@ -9,7 +9,9 @@ the task core (rooms, assets, tasks, completions, notifications, dashboard), doc
 attachments, search, file backup), contacts, spare parts, the service log, care hints, defects (with
 a PDF export), the warranty overview, generic comments, iCal feeds, the emergency page data and guest
 links exist; costs are still to come; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
-push notifications with a "done" button; see "Signals, integrations and delivery"); the MCP server covers the task core, documentation, defects, parts, contacts,
+push notifications with a "done" button; see "Signals, integrations and delivery"); Paperless-ngx is wired as
+a per-person document provider (links, previews, warranty dates, pushing attachments; see "Documents and the
+document provider"); the MCP server covers the task core, documentation, defects, parts, contacts,
 comments, hints, service log and warranties (see `mcp/README.md`).
 
 There is one household, not many: all domain data is shared by every user. Only sessions, API
@@ -98,6 +100,8 @@ src/lib/server/notifications/    in-app notifications, generateNotifications, ch
 src/lib/server/signals/          readings the adapters store (`signals`, `signal_samples`, `external_dates`), watch list,
                                  ingest (auto-complete, hint reactions, re-evaluation), worker for the time-driven parts
 src/lib/server/connections/      generic connections to outside systems (encrypted token, health), adapter registry
+src/lib/server/documents/        documents of an outside document system: provider seam (`provider.ts`), per-person cache, links,
+                                 warranty from documents, suggestions, uploads, search (see "Documents and the document provider")
 src/lib/server/events.ts         typed in-process domain events (completionRecorded/Revoked), emitted inside the writer's transaction
 src/lib/server/domain-events.ts  registerDomainEventHandlers(): wires reactions (parts stock) and the domain attachment owners at startup and in useTestDB()
 src/lib/server/contacts/         contacts CRUD + search, links to assets (role per link)
@@ -120,7 +124,9 @@ mcp/src/                         stdio MCP server (client-safe imports only): in
                                  tools/ (registry in tools/index.ts, one file per domain); mcp/README.md is the setup guide
 src/lib/server/integrations/     optional adapters (homeassistant/, paperless/, kept/) — the core never imports these;
                                  homeassistant/ has client, ws, helpers, fake-server plus adapter (settings, pickers), channel
-                                 (`ha_notify`), sync (polling, calendars) and scheduler, wired by `registerHomeAssistant()`
+                                 (`ha_notify`), sync (polling, calendars) and scheduler, wired by `registerHomeAssistant()`;
+                                 paperless/ has client, fake-server plus adapter (settings, pickers), provider, sync, scheduler,
+                                 wired by `registerPaperless()`
 src/lib/server/db.ts             SQLite connection (WAL, foreign keys); migrations run on startup
 src/lib/server/schema.ts         Drizzle schema — one file, every table has created_at/updated_at
 src/lib/server/crypto.ts         AES-256-GCM for stored secrets (HAUSWART_SECRET_KEY)
@@ -229,6 +235,73 @@ calendars,devices}` (any member; 404 not connected, 502 `upstream_error` with `d
   entity HA does not know is only counted. Assets can carry `externalSource`/`externalRef`; the devices
   picker lists registry devices matching no asset (reference, name, or model with overlapping name).
   Entity names in code and tests stay synthetic (`sensor.example_*`).
+
+### Documents and the document provider
+
+- **Per person, never shared.** A document system (Paperless-ngx) is connected by every person with their own token
+  (`INTEGRATION_LEVELS.paperless = "user"`, `connections.userId`), so everybody reads exactly what their own account
+  may. Every document call (list, meta, preview, thumb, download, link creation, push) goes through the caller's own
+  connection: no connection or a disabled one is 404, and another person's token is never used. A document the account
+  cannot see is 404 whatever other accounts see; an upstream refusal is 502 `upstream_error` with `details.code`
+  (`unauthorized`, `forbidden`, `too_large`, `timeout`, ...). Nothing about a document is logged.
+- **The seam** (`documents/provider.ts`): the core knows a `DocumentProvider` (`search`, `get` -> null when not visible,
+  `openFile`, `webUrl`, `startUpload`, `awaitUpload`, `shareUploaded`, `addNote`), registered by the adapter
+  (`registerDocumentProvider`) and named only by `DOCUMENT_PROVIDERS` in `enums.ts`. The core also reads the connection
+  settings (`documentProviderConfigSchema` in `api/schemas/documents.ts`: `sharedTagIds`, `warrantyFieldId`,
+  `warrantyExtendedFieldId`, `uploadTagIds`, `uploadStoragePathId`, `uploadCorrespondentId`, `shareGroupIds`,
+  `receiptTagIds`, `manualTagIds`, `writeBackNotes`, `appUrl`); every id is the person's choice, picked from
+  `GET /integrations/{kind}/{tags,correspondents,custom-fields,groups,storage-paths}` (own connection; `q` narrows).
+- **Tables** (migration `0009_documents`): `external_documents` (cache per connection: title, date, correspondent, tags,
+  mime, pages, notes count, the two warranty dates, `ownerVisible`; unique per connection and external id; a row with
+  `ownerVisible = false` keeps no content, it only says "asked, not shown"), `external_document_sync` (address and
+  scope the cache was built for, newest modification seen, last full read), `document_links` (provider, external id,
+  generic owner `asset|room|page|task|defect|service_log|part|contact` + id, `role`, `label`, the maker's connection;
+  unique per document, owner and role), `document_uploads` (push jobs). `AFTER DELETE` triggers on the eight owner
+  tables remove the links of a deleted owner (cascades included); a new link owner type needs its trigger and an entry
+  in `documents/owners.ts` (it reuses the comments registry for title and url).
+- **Sync** (`registerPaperless()` in `init()`, `integrations/paperless/sync.ts`, scheduler every 30 minutes, soon after
+  a connection is saved - backoff ignored - and after a link was made so other people's caches catch up): per
+  connection, the documents with a tag of `sharedTagIds` + `receiptTagIds` + `manualTagIds`, incremental by `modified`
+  (a second of overlap), and every run every document a link points at (links made at another address are skipped; a
+  linked document the account cannot see becomes `ownerVisible = false` without content). A full read (first run, other
+  address or scope or warranty fields, once a day) also drops rows nothing needs. Outcome and backoff (1, 2, 4 ... 15
+  min) are recorded on the connection like for Home Assistant.
+- **Links** (`GET|POST /document-links`, `DELETE /document-links/{id}`): creating one needs the caller's account to read
+  the document (404 otherwise) and caches what it saw; 409 for the same document, owner and role. The link DTO has
+  `available` (the caller's own cache row is visible and from the same instance): another person's private document
+  shows as not shared, with no title, no `document`, no file urls. A page owner needs `docs:write` (like attachments).
+  `GET /documents` lists the caller's synced documents (filters `tag`, `correspondent`, `linked`) or, with `q`, searches
+  live (title and text, at most 100 hits); every item has `linkedTo`. `GET /documents/{provider}/{id}` is asked live.
+- **Files** (`preview`, `thumb`, `download[?original=1]`): binary endpoints that stream through the caller's connection
+  (25 MB cap, redirects refused, `too_large` before any byte when declared, a stream error beyond it). Only PDF, raster
+  images and plain text are inline; everything else is `application/octet-stream` + `attachment`. `nosniff`, a CSP,
+  `Cache-Control: private, max-age=300`.
+- **Warranty from documents** (`documents/warranty.ts`, `assets.warrantySource` `manual|document`): after a link (role
+  `receipt` or `warranty` on an asset) and after every sync, an asset whose dates are empty or `document` takes the
+  latest date of each field of its documents; a manual edit that changes a date switches to `manual` and is never
+  overwritten; a document without a date changes nothing.
+- **Suggestions** (`GET /documents/suggestions?kind=asset|contact`, from the caller's own cache only): receipts (a
+  `receiptTagIds` tag) with a warranty date and no linked asset; correspondents of the synced documents that no contact
+  stands for. A contact made from a correspondent carries `externalSource = "document_correspondent"`, `externalRef =
+"<provider>:<correspondentId>"` (provider-scoped, not connection-scoped: contacts are the household's, the household
+  is assumed to use one instance per provider).
+- **Pushing** (`POST /attachments/{id}/push-to-documents` -> 202 + job, poll `GET /documents/uploads/{jobId}`, own jobs
+  only): uploads with the configured tags, storage path and correspondent, waits for the consumption task (10 minutes,
+  polled every 2 s), sets owner = the account and view/change groups = `shareGroupIds` (skipped without groups; a
+  failure is job `warning = permissions_failed`, the document and link stay), links the document to the attachment's
+  owner with the given role (hint attachments are refused), writes the note. A file the provider already holds is
+  linked as it is when the account can read it (`duplicate: true`), else the job fails `duplicate`. Jobs are rows
+  (`queued|uploading|processing|done|failed`, `errorCode` a short code): at startup a `processing` job resumes, the
+  others fail `interrupted`; a second push of a file still being handled returns the same job.
+- **Note write-back** (`writeBackNotes`): after a link, in the background, a note `Verknüpft in hauswart: <app url><path
+of the owner>` is added to the document unless an identical note exists (writes per document are serialised); a
+  failure is logged by name and never fails the link. The app address is `appUrl`, else `ORIGIN`, else the bare path.
+- **Search**: linked documents appear as hits of type `document` (id `<provider>:<externalId>`, url = the first thing
+  they are linked to), matched by title only, only from the caller's own cache (so never somebody's private document).
+- **Tests** live in `integrations/paperless/` (a core test must not import an adapter): `useFakePaperless()` gives a
+  fake with several accounts (`addAccount`) and `strictPermissions` (visibility by owner, view users and groups), the
+  harness registers the adapter and speeds up polling; `documents.api.test.ts`, `uploads.api.test.ts`, `sync.test.ts`,
+  `scheduler.test.ts` cover isolation, sync, links, files, suggestions, search, pushes and notes.
 
 ### Documentation, attachments, search and backup
 
@@ -467,7 +540,8 @@ application/json` (`multipart/form-data` for multipart endpoints), else 403 `csr
 - **Money is integer minor units** (`Minor`) plus an ISO 4217 code. Never floats. Cost splits use
   `shareOf` with `ownership_bps`.
 - **One household, several users.** Domain data is shared by all users and needs no per-user
-  scoping. Per-user resources (sessions, API tokens, integration connections, preferences) are
+  scoping. Per-user resources (sessions, API tokens, integration connections - Paperless included, with their document
+  cache - preferences) are
   filtered by the caller's id in the service and invisible to other users (404, never 403). Every
   endpoint is covered by the authz matrix (`src/routes/authz.test.ts`, generated from the registry):
   anonymous, wrong credential kind, missing scope, member vs administrator, cross-origin cookie

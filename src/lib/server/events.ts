@@ -15,6 +15,8 @@ export interface DomainEvents {
   signalNeedsChanged: { ctx: Pick<ServiceContext, "db"> };
   /** A connection to an outside system was saved, enabled or removed. */
   connectionChanged: { ctx: ServiceContext; kind: string };
+  /** A document was linked to something in hauswart (other people's document caches should catch up). */
+  documentLinksChanged: { ctx: Pick<ServiceContext, "db"> };
   /** A completion row was written (not for replays of an idempotent request). */
   completionRecorded: { ctx: ServiceContext; completion: CompletionFacts };
   /** A completion was undone. */
@@ -32,6 +34,7 @@ type Listener<K extends keyof DomainEvents> = (
 const listeners: { [K in keyof DomainEvents]: Set<Listener<K>> } = {
   signalNeedsChanged: new Set(),
   connectionChanged: new Set(),
+  documentLinksChanged: new Set(),
   completionRecorded: new Set(),
   completionRevoked: new Set(),
 };

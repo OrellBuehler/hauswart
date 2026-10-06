@@ -110,6 +110,28 @@ import {
   uploadAttachmentRequestSchema,
 } from "./schemas/attachments";
 import { searchQuerySchema, searchResponseSchema } from "./schemas/search";
+import {
+  createDocumentLinkRequestSchema,
+  documentDetailSchema,
+  documentLinkSchema,
+  documentParamsSchema,
+  documentSuggestionsQuerySchema,
+  documentSuggestionsResponseSchema,
+  documentUploadParamsSchema,
+  documentUploadSchema,
+  downloadQuerySchema,
+  listCorrespondentsResponseSchema,
+  listCustomFieldsResponseSchema,
+  listDocumentLinksQuerySchema,
+  listDocumentLinksResponseSchema,
+  listDocumentsQuerySchema,
+  listDocumentsResponseSchema,
+  listGroupsResponseSchema,
+  listPickerQuerySchema,
+  listStoragePathsResponseSchema,
+  listTagsResponseSchema,
+  pushToDocumentsRequestSchema,
+} from "./schemas/documents";
 
 import {
   assetContactParamsSchema,
@@ -216,6 +238,19 @@ import {
   updateGuestLinkRequestSchema,
 } from "./schemas/share";
 
+const DOCUMENT_CONTENT_TYPES = [
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+  "image/bmp",
+  "image/tiff",
+  "text/plain",
+  "application/octet-stream",
+] as const;
+
 export const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 export type HttpMethod = (typeof HTTP_METHODS)[number];
 
@@ -226,7 +261,7 @@ export type HttpMethod = (typeof HTTP_METHODS)[number];
 export type AuthMode = "session" | "bearer" | "both" | "public";
 
 export type ParamsSchema = z.ZodObject;
-export type SuccessStatus = 200 | 201 | 204;
+export type SuccessStatus = 200 | 201 | 202 | 204;
 
 export const DEFAULT_MAX_BODY_BYTES = 256 * 1024;
 /** Request body limit of the markdown endpoints (the source is capped at 200 KB; JSON escaping adds some). */
@@ -2244,6 +2279,255 @@ export const endpoints = {
     params: integrationKindParamsSchema,
     response: listDevicesResponseSchema,
     errors: ["not_found", "upstream_error"],
+  }),
+
+  integrationsTags: defineEndpoint({
+    id: "integrationsTags",
+    method: "GET",
+    path: "/api/v1/integrations/{kind}/tags",
+    summary: "Tags of the connected document system",
+    description:
+      "From the caller's own connection (each person connects their own account). 404 without a connection or for a kind without tags; 502 `upstream_error` when the system does not answer.",
+    tags: ["integrations"],
+    auth: "both",
+    scopes: ["read"],
+    params: integrationKindParamsSchema,
+    query: listPickerQuerySchema,
+    response: listTagsResponseSchema,
+    errors: ["not_found", "upstream_error"],
+  }),
+
+  integrationsCorrespondents: defineEndpoint({
+    id: "integrationsCorrespondents",
+    method: "GET",
+    path: "/api/v1/integrations/{kind}/correspondents",
+    summary: "Correspondents of the connected document system",
+    tags: ["integrations"],
+    auth: "both",
+    scopes: ["read"],
+    params: integrationKindParamsSchema,
+    query: listPickerQuerySchema,
+    response: listCorrespondentsResponseSchema,
+    errors: ["not_found", "upstream_error"],
+  }),
+
+  integrationsCustomFields: defineEndpoint({
+    id: "integrationsCustomFields",
+    method: "GET",
+    path: "/api/v1/integrations/{kind}/custom-fields",
+    summary: "Custom fields of the connected document system",
+    description: "Candidates for the warranty fields: pick date fields.",
+    tags: ["integrations"],
+    auth: "both",
+    scopes: ["read"],
+    params: integrationKindParamsSchema,
+    query: listPickerQuerySchema,
+    response: listCustomFieldsResponseSchema,
+    errors: ["not_found", "upstream_error"],
+  }),
+
+  integrationsGroups: defineEndpoint({
+    id: "integrationsGroups",
+    method: "GET",
+    path: "/api/v1/integrations/{kind}/groups",
+    summary: "Groups of the connected document system",
+    description:
+      "Candidates for the groups that get access to pushed documents. The account needs the permission to view groups, otherwise 502 `upstream_error` with `details.code` `forbidden`.",
+    tags: ["integrations"],
+    auth: "both",
+    scopes: ["read"],
+    params: integrationKindParamsSchema,
+    query: listPickerQuerySchema,
+    response: listGroupsResponseSchema,
+    errors: ["not_found", "upstream_error"],
+  }),
+
+  integrationsStoragePaths: defineEndpoint({
+    id: "integrationsStoragePaths",
+    method: "GET",
+    path: "/api/v1/integrations/{kind}/storage-paths",
+    summary: "Storage paths of the connected document system",
+    tags: ["integrations"],
+    auth: "both",
+    scopes: ["read"],
+    params: integrationKindParamsSchema,
+    query: listPickerQuerySchema,
+    response: listStoragePathsResponseSchema,
+    errors: ["not_found", "upstream_error"],
+  }),
+
+  documentsList: defineEndpoint({
+    id: "documentsList",
+    method: "GET",
+    path: "/api/v1/documents",
+    summary: "Documents of the caller's document system",
+    description:
+      "Read through the caller's own connection, so everybody sees what their own account may see. With `q` the title and text are searched live in the provider (at most 100 hits); without it the synced household documents are listed (tag, correspondent and linked filters apply to both). Every item says where hauswart uses it (`linkedTo`). 404 without a connection; 502 `upstream_error` when the system does not answer.",
+    tags: ["documents"],
+    auth: "both",
+    scopes: ["read"],
+    query: listDocumentsQuerySchema,
+    response: listDocumentsResponseSchema,
+    errors: ["not_found", "upstream_error"],
+  }),
+
+  documentsSuggestions: defineEndpoint({
+    id: "documentsSuggestions",
+    method: "GET",
+    path: "/api/v1/documents/suggestions",
+    summary: "Inventory and contact suggestions from the document system",
+    description:
+      "`kind=asset`: receipts (documents with a receipt tag) with a warranty date that no asset is linked to yet; accepting creates the asset and links the document with role `receipt` (the link fills the warranty dates). `kind=contact`: correspondents of the synced documents that no contact stands for yet; pass `externalSource` and `externalRef` of the item when creating the contact. Built from the caller's own synced documents only.",
+    tags: ["documents"],
+    auth: "both",
+    scopes: ["read"],
+    query: documentSuggestionsQuerySchema,
+    response: documentSuggestionsResponseSchema,
+    errors: ["not_found"],
+  }),
+
+  documentUploadsGet: defineEndpoint({
+    id: "documentUploadsGet",
+    method: "GET",
+    path: "/api/v1/documents/uploads/{jobId}",
+    summary: "State of a push to the document system",
+    description:
+      "Only the person who started the job sees it (404 for everybody else). Poll until `status` is `done` or `failed`.",
+    tags: ["documents"],
+    auth: "both",
+    scopes: ["read"],
+    params: documentUploadParamsSchema,
+    response: documentUploadSchema,
+    errors: ["not_found"],
+  }),
+
+  documentsGet: defineEndpoint({
+    id: "documentsGet",
+    method: "GET",
+    path: "/api/v1/documents/{provider}/{externalId}",
+    summary: "One document: metadata and where it is used",
+    description:
+      "Asked live through the caller's own connection (never another person's): 404 when the caller has no connection or the system does not show them the document.",
+    tags: ["documents"],
+    auth: "both",
+    scopes: ["read"],
+    params: documentParamsSchema,
+    response: documentDetailSchema,
+    errors: ["not_found", "upstream_error"],
+  }),
+
+  documentsPreview: defineEndpoint({
+    id: "documentsPreview",
+    method: "GET",
+    path: "/api/v1/documents/{provider}/{externalId}/preview",
+    summary: "Preview of a document (PDF or image)",
+    description:
+      "Streamed through the caller's own connection, at most 25 MB; only PDF, raster images and plain text are sent inline, anything else as `application/octet-stream` download. `nosniff`, a restrictive CSP, `Cache-Control: private`. 404 without a connection or when the account may not see the document.",
+    tags: ["documents"],
+    auth: "both",
+    scopes: ["read"],
+    params: documentParamsSchema,
+    response: binaryResponseSchema,
+    responseType: "binary",
+    contentTypes: DOCUMENT_CONTENT_TYPES,
+    errors: ["not_found", "upstream_error"],
+  }),
+
+  documentsThumb: defineEndpoint({
+    id: "documentsThumb",
+    method: "GET",
+    path: "/api/v1/documents/{provider}/{externalId}/thumb",
+    summary: "Thumbnail of a document",
+    description: "Same rules as the preview; WebP.",
+    tags: ["documents"],
+    auth: "both",
+    scopes: ["read"],
+    params: documentParamsSchema,
+    response: binaryResponseSchema,
+    responseType: "binary",
+    contentTypes: DOCUMENT_CONTENT_TYPES,
+    errors: ["not_found", "upstream_error"],
+  }),
+
+  documentsDownload: defineEndpoint({
+    id: "documentsDownload",
+    method: "GET",
+    path: "/api/v1/documents/{provider}/{externalId}/download",
+    summary: "Download of a document",
+    description:
+      "The archived PDF, or with `?original=1` the original file; sent as an attachment. Same rules as the preview.",
+    tags: ["documents"],
+    auth: "both",
+    scopes: ["read"],
+    params: documentParamsSchema,
+    query: downloadQuerySchema,
+    response: binaryResponseSchema,
+    responseType: "binary",
+    contentTypes: DOCUMENT_CONTENT_TYPES,
+    errors: ["not_found", "upstream_error"],
+  }),
+
+  documentLinksList: defineEndpoint({
+    id: "documentLinksList",
+    method: "GET",
+    path: "/api/v1/document-links",
+    summary: "Links between documents and things in hauswart",
+    description:
+      "Filter by owner (`ownerType` + `ownerId`) or by document (`provider` + `externalId`). Each link says whether the caller's own account can read the document (`available`); a document that is not shared with the caller shows no title.",
+    tags: ["documents"],
+    auth: "both",
+    scopes: ["read"],
+    query: listDocumentLinksQuerySchema,
+    response: listDocumentLinksResponseSchema,
+  }),
+
+  documentLinksCreate: defineEndpoint({
+    id: "documentLinksCreate",
+    method: "POST",
+    path: "/api/v1/document-links",
+    summary: "Link a document to an asset, room, task, ...",
+    description:
+      "The caller's own account must be able to read the document (404 otherwise). The same document can be linked to the same owner once per role (409 `conflict`). A receipt or warranty document on an asset fills its warranty dates when they are empty or came from a document. A page owner needs `docs:write`. With the connection setting `writeBackNotes` a note with the hauswart link is added to the document (once).",
+    tags: ["documents"],
+    auth: "both",
+    scopes: ["write"],
+    body: createDocumentLinkRequestSchema,
+    response: documentLinkSchema,
+    status: 201,
+    errors: ["not_found", "conflict", "upstream_error"],
+  }),
+
+  documentLinksDelete: defineEndpoint({
+    id: "documentLinksDelete",
+    method: "DELETE",
+    path: "/api/v1/document-links/{id}",
+    summary: "Remove a link",
+    description:
+      "Only the link: the document stays in its system and an asset keeps the warranty dates it got. A page owner needs `docs:write`.",
+    tags: ["documents"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
+  attachmentsPushToDocuments: defineEndpoint({
+    id: "attachmentsPushToDocuments",
+    method: "POST",
+    path: "/api/v1/attachments/{id}/push-to-documents",
+    summary: "Send an attachment to the caller's document system",
+    description:
+      "Starts a job (202) that uploads the file with the connection's upload tags, storage path and correspondent, waits until the system has consumed it, gives the connection's groups access, links the new document to the attachment's owner and, when enabled, leaves a note with the hauswart link. Poll `GET /documents/uploads/{jobId}`. Owners that cannot be linked (a hint) are refused with 400; 404 without a connection.",
+    tags: ["documents"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: pushToDocumentsRequestSchema,
+    response: documentUploadSchema,
+    status: 202,
+    errors: ["not_found"],
   }),
 
   haAction: defineEndpoint({

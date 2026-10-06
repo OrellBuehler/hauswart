@@ -1634,6 +1634,7 @@
   "search_type_contact": "Contacts",
   "search_type_part": "Spare parts",
   "search_type_hint": "Hints",
+  "search_type_document": "Documents",
   "editor_settings": "Settings",
   "editor_save_now": "Save now",
   "error_gone": "This is no longer available.",

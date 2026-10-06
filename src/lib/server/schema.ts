@@ -22,6 +22,10 @@ import {
   DEFECT_SEVERITIES,
   DEFECT_STATUSES,
   DELIVERY_STATUSES,
+  DOCUMENT_LINK_OWNER_TYPES,
+  DOCUMENT_LINK_ROLES,
+  DOCUMENT_PROVIDERS,
+  DOCUMENT_UPLOAD_STATUSES,
   DOC_SECTIONS,
   DUE_KINDS,
   DUE_STATUSES,
@@ -44,6 +48,7 @@ import {
   TOKEN_KINDS,
   USER_LOCALES,
   USER_ROLES,
+  WARRANTY_SOURCES,
 } from "$lib/api/enums";
 import type { Scope } from "$lib/api/scopes";
 import type { Minor } from "$lib/money";
@@ -193,6 +198,10 @@ export const assets = sqliteTable(
     installedDate: text("installed_date"),
     warrantyUntil: text("warranty_until"),
     warrantyExtendedUntil: text("warranty_extended_until"),
+    /** `document`: the dates came from a linked receipt or warranty document and follow it; a manual edit switches to `manual`. */
+    warrantySource: text("warranty_source", { enum: WARRANTY_SOURCES })
+      .notNull()
+      .default("manual"),
     showOnEmergency: integer("show_on_emergency", { mode: "boolean" })
       .notNull()
       .default(false),
@@ -855,6 +864,159 @@ export const connections = sqliteTable(
     uniqueIndex("connections_household_kind_idx")
       .on(t.kind)
       .where(sql`${t.userId} is null`),
+  ],
+);
+
+/**
+ * What one connection can see of the documents in a document provider (a cache: the provider is
+ * the source of truth). `connectionId` is whose token reads it, so every person has their own
+ * rows and sees only what their own account may; `ownerVisible` false = the connection asked for
+ * the document and the provider did not show it (deleted, or not shared with that account).
+ */
+export const externalDocuments = sqliteTable(
+  "external_documents",
+  {
+    id: id(),
+    provider: text("provider", { enum: DOCUMENT_PROVIDERS }).notNull(),
+    connectionId: text("connection_id")
+      .notNull()
+      .references(() => connections.id, { onDelete: "cascade" }),
+    externalId: integer("external_id").notNull(),
+    title: text("title").notNull(),
+    createdDate: text("created_date"),
+    /** The provider's modification instant (ISO), for incremental sync. */
+    modifiedAt: text("modified_at"),
+    correspondentId: integer("correspondent_id"),
+    correspondentName: text("correspondent_name"),
+    tagIds: text("tag_ids", { mode: "json" })
+      .$type<number[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    tagNames: text("tag_names", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    mimeType: text("mime_type"),
+    pageCount: integer("page_count"),
+    /** Only the configured warranty fields, as dates: `{warrantyUntil, warrantyExtendedUntil}`. */
+    customFieldsJson: text("custom_fields_json", { mode: "json" })
+      .$type<{
+        warrantyUntil: string | null;
+        warrantyExtendedUntil: string | null;
+      }>()
+      .notNull()
+      .default(sql`'{"warrantyUntil":null,"warrantyExtendedUntil":null}'`),
+    noteCount: integer("note_count").notNull().default(0),
+    ownerVisible: integer("owner_visible", { mode: "boolean" })
+      .notNull()
+      .default(true),
+    syncedAt: integer("synced_at", { mode: "timestamp_ms" }).notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("external_documents_conn_ext_idx").on(
+      t.connectionId,
+      t.externalId,
+    ),
+    index("external_documents_provider_ext_idx").on(t.provider, t.externalId),
+  ],
+);
+
+/** Where a connection's sync stands: what the cache was built from and how far it has read. */
+export const externalDocumentSync = sqliteTable("external_document_sync", {
+  connectionId: text("connection_id")
+    .primaryKey()
+    .references(() => connections.id, { onDelete: "cascade" }),
+  /** Address and scope the cache was built for; a change empties it and reads everything again. */
+  baseUrl: text("base_url").notNull(),
+  scopeHash: text("scope_hash").notNull(),
+  /** Newest modification instant seen; the next sync asks for documents changed after it. */
+  lastModified: text("last_modified"),
+  lastFullAt: integer("last_full_at", { mode: "timestamp_ms" }),
+  ...timestamps,
+});
+
+/**
+ * A document of a provider linked to an entity of hauswart (generic owner like attachments, no
+ * foreign keys on the owner: `AFTER DELETE` triggers remove the links of a deleted owner).
+ * `connectionId` is the connection of the person who made the link (the one whose account read
+ * the document then); other people read it through their own connection or see it as not shared.
+ */
+export const documentLinks = sqliteTable(
+  "document_links",
+  {
+    id: id(),
+    provider: text("provider", { enum: DOCUMENT_PROVIDERS }).notNull(),
+    externalId: integer("external_id").notNull(),
+    connectionId: text("connection_id").references(() => connections.id, {
+      onDelete: "set null",
+    }),
+    ownerType: text("owner_type", {
+      enum: DOCUMENT_LINK_OWNER_TYPES,
+    }).notNull(),
+    ownerId: text("owner_id").notNull(),
+    role: text("role", { enum: DOCUMENT_LINK_ROLES }).notNull(),
+    label: text("label"),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("document_links_unique").on(
+      t.provider,
+      t.externalId,
+      t.ownerType,
+      t.ownerId,
+      t.role,
+    ),
+    index("document_links_owner_idx").on(t.ownerType, t.ownerId),
+    index("document_links_doc_idx").on(t.provider, t.externalId),
+  ],
+);
+
+/** A hauswart attachment being pushed into a document provider (a job the person polls). */
+export const documentUploads = sqliteTable(
+  "document_uploads",
+  {
+    id: id(),
+    provider: text("provider", { enum: DOCUMENT_PROVIDERS }).notNull(),
+    connectionId: text("connection_id")
+      .notNull()
+      .references(() => connections.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** The attachment pushed; no foreign key, it may be deleted while the job runs. */
+    attachmentId: text("attachment_id").notNull(),
+    ownerType: text("owner_type", {
+      enum: DOCUMENT_LINK_OWNER_TYPES,
+    }).notNull(),
+    ownerId: text("owner_id").notNull(),
+    role: text("role", { enum: DOCUMENT_LINK_ROLES }).notNull(),
+    label: text("label"),
+    title: text("title").notNull(),
+    status: text("status", { enum: DOCUMENT_UPLOAD_STATUSES })
+      .notNull()
+      .default("queued"),
+    /** The provider's consumption task, once the file was handed over. */
+    taskId: text("task_id"),
+    externalId: integer("external_id"),
+    linkId: text("link_id"),
+    /** The provider already held this file: the job linked the existing document. */
+    duplicate: integer("duplicate", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    /** Short machine-readable code of the failure, never a message. */
+    errorCode: text("error_code"),
+    /** The document exists but a follow-up step failed (`permissions_failed`). */
+    warning: text("warning"),
+    ...timestamps,
+  },
+  (t) => [
+    index("document_uploads_user_idx").on(t.userId),
+    index("document_uploads_attachment_idx").on(t.connectionId, t.attachmentId),
+    index("document_uploads_status_idx").on(t.status),
   ],
 );
 

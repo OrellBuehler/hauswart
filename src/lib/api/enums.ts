@@ -227,6 +227,48 @@ export const DEFECT_EVENT_TYPES = [
 ] as const;
 export type DefectEventType = (typeof DEFECT_EVENT_TYPES)[number];
 
+/** Who set the warranty dates of an asset: a person, or a linked receipt or warranty document. */
+export const WARRANTY_SOURCES = ["manual", "document"] as const;
+export type WarrantySource = (typeof WARRANTY_SOURCES)[number];
+
+/** Systems that hold the household's documents; each is also an integration kind. */
+export const DOCUMENT_PROVIDERS = ["paperless"] as const;
+export type DocumentProviderKind = (typeof DOCUMENT_PROVIDERS)[number];
+
+/** What a linked document is for. */
+export const DOCUMENT_LINK_ROLES = [
+  "manual",
+  "receipt",
+  "warranty",
+  "datasheet",
+  "correspondence",
+  "invoice",
+  "other",
+] as const;
+export type DocumentLinkRole = (typeof DOCUMENT_LINK_ROLES)[number];
+
+/** What a document can be linked to (a subset of the attachment owner types; the owner registry checks existence). */
+export const DOCUMENT_LINK_OWNER_TYPES = [
+  "asset",
+  "room",
+  "page",
+  "task",
+  "defect",
+  "service_log",
+  "part",
+  "contact",
+] as const;
+export type DocumentLinkOwnerType = (typeof DOCUMENT_LINK_OWNER_TYPES)[number];
+
+export const DOCUMENT_UPLOAD_STATUSES = [
+  "queued",
+  "uploading",
+  "processing",
+  "done",
+  "failed",
+] as const;
+export type DocumentUploadStatus = (typeof DOCUMENT_UPLOAD_STATUSES)[number];
+
 export const WARRANTY_STATUSES = ["valid", "expiring", "expired"] as const;
 export type WarrantyStatus = (typeof WARRANTY_STATUSES)[number];
 
@@ -276,7 +318,7 @@ export type IntegrationKind = (typeof INTEGRATION_KINDS)[number];
 
 /** `household`: one connection for everybody, changed by administrators. `user`: each person connects their own. */
 export const INTEGRATION_LEVELS: Record<IntegrationKind, "household" | "user"> =
-  { homeassistant: "household", paperless: "household", kept: "user" };
+  { homeassistant: "household", paperless: "user", kept: "user" };
 
 export const INTEGRATION_STATUSES = ["ok", "error", "unknown"] as const;
 export type IntegrationStatus = (typeof INTEGRATION_STATUSES)[number];

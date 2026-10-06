@@ -25,6 +25,7 @@ import { withGuestHeaders } from "$lib/server/share/guest-http";
 import { registerBackups } from "$lib/server/backup";
 import { startAttachmentRerender } from "$lib/server/docs/pages";
 import { registerHomeAssistant } from "$lib/server/integrations/homeassistant";
+import { registerPaperless } from "$lib/server/integrations/paperless";
 import { registerSignalWorker } from "$lib/server/signals/worker";
 import { registerEvaluator } from "$lib/server/tasks/scheduler";
 import { countUsers } from "$lib/server/users/users";
@@ -38,6 +39,7 @@ export async function init() {
   registerEvaluator();
   registerSignalWorker();
   registerHomeAssistant();
+  registerPaperless();
   startCredentialPurge();
   startAttachmentRerender();
   startFileSweeper();
