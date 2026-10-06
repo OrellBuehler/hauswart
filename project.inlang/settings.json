@@ -1,0 +1,10 @@
+{
+  "baseLocale": "de",
+  "locales": ["de", "en"],
+  "modules": [
+    "https://cdn.jsdelivr.net/npm/@inlang/plugin-icu1@1.1.0/dist/index.js"
+  ],
+  "plugin.inlang.icu-messageformat-1": {
+    "pathPattern": "./messages/{locale}.json"
+  }
+}

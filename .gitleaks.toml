@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Synthetic test data"
+paths = ['''src/lib/testing/fixtures/''']

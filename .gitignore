@@ -1,0 +1,30 @@
+.private-terms
+.env
+.env.*
+!.env.example
+data/
+seed/local/
+.claude/progress.md
+.claude/worktrees/
+node_modules/
+.svelte-kit/
+build/
+coverage/
+.output
+.vercel
+.netlify
+.wrangler
+.DS_Store
+Thumbs.db
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Paraglide generated output and inlang cache
+src/lib/paraglide/
+project.inlang/cache/
+project.inlang/.lix/
+project.inlang/.meta.json
+project.inlang/README.md
+
+# coverage output
+coverage/
