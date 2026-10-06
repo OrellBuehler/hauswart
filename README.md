@@ -8,25 +8,110 @@ Self-hosted apartment management for a household: recurring maintenance tasks wi
 tracking, documentation, a device inventory, defects, spare parts, contacts and costs.
 Integrations (Home Assistant, Paperless-ngx, Kept) are optional adapters, never requirements.
 
-**Status: early development.** The core works (tasks, devices, defects, documentation, spare parts,
-costs, iCal feeds, guest links, Home Assistant, Paperless-ngx, Kept, REST API, MCP server); there
-is no stable release yet. The interface is in German (default) and English.
+**Status: early development (0.1.0).** The core works (tasks, devices, defects, documentation, spare
+parts, costs, iCal feeds, guest links, Home Assistant, Paperless-ngx, Kept, REST API, MCP server), but
+this is the first release: expect breaking changes between versions, keep backups of `/data`, and read
+the [changelog](CHANGELOG.md) before every update. The interface is in German (default) and English.
 
 ## Run with Docker
 
+The image is `ghcr.io/orellbuehler/hauswart` (`0.1.0`, `0.1` and `latest`; linux/amd64). Pin a
+version tag rather than `latest` while the project is in early development.
+
 ```bash
-docker build -t hauswart .
-docker run -d --name hauswart -p 3000:3000 -v hauswart-data:/data \
+docker run -d --name hauswart --restart unless-stopped -p 3000:3000 \
+  -v hauswart-data:/data \
   -e HAUSWART_SECRET_KEY="$(openssl rand -base64 32)" \
-  hauswart
+  -e ORIGIN=http://localhost:3000 \
+  -e HAUSWART_COOKIE_SECURE=false \
+  ghcr.io/orellbuehler/hauswart:0.1.0
 curl http://localhost:3000/api/health   # {"status":"ok"}
 ```
 
-Keep the secret key: it encrypts stored credentials, and losing it makes them unreadable.
-Set `ORIGIN` to the public URL (for example `https://hauswart.example.org`), always behind a
-reverse proxy and also on plain HTTP (`http://localhost:3000`, together with
-`HAUSWART_COOKIE_SECURE=false`): signing in checks the `Origin` header against it. The first
-visit opens the setup page, which creates the administrator account.
+That form is for trying it out on one machine: the generated key is not stored anywhere else and
+`HAUSWART_COOKIE_SECURE=false` is for plain HTTP only. For a real installation use Compose with the
+key in a file (below), put a reverse proxy with HTTPS in front, and drop `HAUSWART_COOKIE_SECURE`.
+
+### Docker Compose
+
+```yaml
+services:
+  hauswart:
+    image: ghcr.io/orellbuehler/hauswart:0.1.0
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - hauswart-data:/data
+    environment:
+      HAUSWART_SECRET_KEY: ${HAUSWART_SECRET_KEY:?set it in .env}
+      ORIGIN: https://hauswart.example.org
+      ADDRESS_HEADER: X-Forwarded-For
+      XFF_DEPTH: "1"
+      # HAUSWART_SETUP_TOKEN: ${HAUSWART_SETUP_TOKEN}
+      # HAUSWART_TZ: Europe/Zurich
+
+volumes:
+  hauswart-data:
+```
+
+```bash
+echo "HAUSWART_SECRET_KEY=$(openssl rand -base64 32)" > .env   # keep a copy somewhere safe
+docker compose up -d
+```
+
+What to know before the first start:
+
+- **`HAUSWART_SECRET_KEY` is required** (32 random bytes, base64). It encrypts stored credentials such as
+  the Home Assistant token. Keep it with your backups: without it those credentials are unreadable and
+  must be entered again.
+- **`ORIGIN` must be the public URL** the browser uses (`https://hauswart.example.org`, or
+  `http://localhost:3000` on plain HTTP together with `HAUSWART_COOKIE_SECURE=false`). Signing in and
+  every other cookie-authenticated request check the `Origin` header against it and fail with
+  `403 csrf_failed` otherwise.
+- **Behind a reverse proxy** (Caddy, nginx, Traefik) terminate TLS there and set `ADDRESS_HEADER` and
+  `XFF_DEPTH` to the header your proxy sets and the number of proxies you trust, so the login rate limit
+  sees the real client address. Without them every client looks like the proxy and they share one limit.
+  A complete Caddy setup is `hauswart.example.org { reverse_proxy 127.0.0.1:3000 }` with
+  `ADDRESS_HEADER=X-Forwarded-For` and `XFF_DEPTH=1`.
+- **Data lives in `/data`** (`hauswart.db`, `files/`, `backups/`). The container runs as user and group
+  `1001`. A named volume needs nothing; for a bind mount run `chown -R 1001:1001 ./data` first.
+- **`HAUSWART_SETUP_TOKEN`** (optional): when set, first-run setup asks for it. Use it if the instance is
+  reachable from the network before you have created the first account; anyone who opens `/setup` first
+  would otherwise become the administrator. It has no effect once an administrator exists.
+- **`HAUSWART_BACKUP_DIR`** defaults to `/data/backups`: a database copy per day (the newest 14 are kept,
+  `HAUSWART_BACKUP_KEEP`) and a mirror of the uploaded files in `backups/files`. That is on the same volume,
+  so copy it off the machine as well. Setting the variable empty turns the backups off.
+
+### First run
+
+Open the address in a browser. The setup page creates the administrator account (and asks for the setup
+token if you set one). Then add rooms and devices under Inventory, create tasks, and create accounts for the
+other household members under Users (administrators only). To look around with sample data first, create an API token under
+Settings, API tokens (scopes `read`, `write`, `docs:write`) and import the example apartment from a
+checkout of this repository:
+
+```bash
+bun scripts/seed.ts --file seed/example.de.json --token hw_... --url http://localhost:3000
+```
+
+### Updating and restoring
+
+Back up first (stop the container and copy the volume, or take the newest file from `backups/`), then
+pull the new tag and recreate the container: `docker compose pull && docker compose up -d`. Database
+migrations run automatically at start and cannot be undone, so going back to an older version means
+restoring the backup.
+
+To restore, stop the container, replace `hauswart.db` with a `hauswart-backup-<date>.db`, delete
+`hauswart.db-wal` and `hauswart.db-shm`, copy the contents of `backups/files/` into `files/` if files
+are missing, and start the container again.
+
+### Build the image yourself
+
+```bash
+git clone https://github.com/OrellBuehler/hauswart.git && cd hauswart
+docker build -t hauswart --build-arg APP_VERSION=dev .
+```
 
 ## Configuration
 
@@ -51,11 +136,92 @@ Set `HAUSWART_SETUP_TOKEN` when the instance is reachable before you have create
 account: anyone who can open `/setup` first would otherwise become the administrator. The setup
 page then asks for the token; it has no effect once an administrator exists.
 
-## Integrations and network access
+## Integrations
 
-Home Assistant is connected once for the household (administrators only); Paperless-ngx and Kept are
-connected by every person with their own account. The server fetches the address a person enters,
-so which hosts a connection may point at is restricted:
+Home Assistant, Paperless-ngx and Kept are optional: hauswart works without them. Home Assistant is
+connected once for the household (administrators only); Paperless-ngx and Kept are connected by every
+person with their own account, so everybody sees exactly what their own account may.
+
+### Home Assistant
+
+1. In Home Assistant, create a long-lived access token (your profile, Security). The user should be an
+   administrator if you want area names and device suggestions; readings and push work without.
+2. In hauswart open Settings, Integrations (as an administrator), enter the address of Home Assistant as
+   hauswart reaches it (usually with port 8123) and the token, and save. Optionally set "Address of this
+   app" (how phones reach hauswart; push notifications link to it).
+3. Tasks can then read counters and states, complete themselves when a counter resets or a state
+   changes, and take collection dates from Home Assistant calendars (the trigger editor offers an entity
+   picker).
+4. Push: install the Home Assistant companion app on your phone, then add its notify service (for
+   example `mobile_app_example_phone`) under Settings, Notifications. Quiet hours and the stages you
+   want are set there too.
+5. The "Done" button on a push notification calls hauswart back. Create an API token of kind "Home
+   Assistant" with the scope `ha:action` (Settings, API tokens), store `Bearer hw_...` in Home Assistant's
+   `secrets.yaml` as `hauswart_bearer`, and add this package (Settings, Notifications shows it with your
+   address filled in):
+
+```yaml
+# packages/hauswart.yaml
+rest_command:
+  hauswart_action:
+    url: "https://hauswart.example.org/api/v1/ha/action"
+    method: post
+    headers:
+      authorization: !secret hauswart_bearer
+      content-type: application/json
+    payload: '{"action": "{{ action }}"}'
+
+automation:
+  - alias: hauswart done button
+    triggers:
+      - trigger: event
+        event_type: mobile_app_notification_action
+    conditions:
+      - condition: template
+        value_template: "{{ trigger.event.data.action.startswith('HW_DONE_') }}"
+    actions:
+      - action: rest_command.hauswart_action
+        data:
+          action: "{{ trigger.event.data.action }}"
+```
+
+The tap completes the task for the person the notification was sent to, once; tapping again does
+nothing more.
+
+### Paperless-ngx
+
+Every person connects their own Paperless-ngx account, so a document is only ever shown to somebody whose
+own account can see it. There is no settings form for it yet: connect through the REST API with a token
+that has the `write` scope (the `admin` scope for a host that is not on the allow-list, see below). Create
+the API token in your Paperless profile.
+
+```bash
+curl -X PUT https://hauswart.example.org/api/v1/integrations/paperless \
+  -H "Authorization: Bearer hw_..." -H "Content-Type: application/json" \
+  -d '{"baseUrl": "https://paperless.example.org", "token": "<paperless api token>"}'
+curl -X POST https://hauswart.example.org/api/v1/integrations/paperless/test -H "Authorization: Bearer hw_..."
+```
+
+Which tags mark documents the household shares, the custom fields that hold "warranty until", and the
+tags, storage path and groups for documents pushed from hauswart are set in the connection's `config`
+(`sharedTagIds`, `warrantyFieldId`, `uploadTagIds`, ...; see the OpenAPI description). The pickers
+`GET /api/v1/integrations/paperless/{tags,correspondents,custom-fields,groups,storage-paths}` list the ids.
+Documents are linked to devices, tasks, defects and other entities with `POST /api/v1/document-links`.
+
+### Kept
+
+[Kept](https://github.com/OrellBuehler/kept) is the self-hosted finance app. In Kept, create an API token
+under Settings, API tokens with the scopes `transactions:read`, `bills:read`, `links:write` and
+`categories:read`, then connect it per person like Paperless-ngx (`PUT /api/v1/integrations/kept`, with
+the address of Kept and the token). Everything is opt-in: nothing is read from a Kept category until you
+map it to a cost category in `config.categoryMap`, and open bills only become tasks (visible to the whole
+household) with `"billTasks": true`. `POST /api/v1/integrations/kept/test` lists the scopes the token
+misses; offered transactions and bills wait in a private inbox (`GET /api/v1/finance/suggestions`) until
+you accept them.
+
+### Network access
+
+The server fetches the address a person enters, so which hosts a connection may point at is restricted:
 
 - **Allow-list.** Administrators may connect any host. Other members may only save a Paperless or
   Kept connection whose host is on the household's list, kept under Settings, Household
@@ -70,6 +236,13 @@ so which hosts a connection may point at is restricted:
 - **Loopback** (127.0.0.0/8, ::1) is reserved for administrators' connections and the household-wide
   Home Assistant connection.
 
+## MCP server
+
+An MCP server lets Claude (Claude Code, Claude Desktop, any MCP client) look things up and operate
+hauswart through the REST API with a scoped token. Each release has compiled binaries for Linux, macOS
+and Windows (`hauswart-mcp-<os>-<arch>`, with `SHA256SUMS`) attached; or run it from a checkout with
+`bun run mcp`. Setup, scopes and the tool list are in [mcp/README.md](mcp/README.md).
+
 ## Development
 
 Requires [Bun](https://bun.sh) 1.4 or newer.
@@ -83,8 +256,6 @@ bun run db:generate      # after editing src/lib/server/schema.ts
 bun run openapi          # regenerate docs/openapi.json (the versioned /api/v1 contract)
 bun run leak-guard --all # scan the tree for configured private terms
 ```
-
-An MCP server for Claude lives in [mcp/](mcp/README.md) (`bun run mcp`, `bun run mcp:build`).
 
 Hooks run through [prek](https://github.com/j178/prek): `prek install` once per clone.
 See [CLAUDE.md](CLAUDE.md) for architecture and conventions.
