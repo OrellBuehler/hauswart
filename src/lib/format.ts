@@ -9,6 +9,14 @@ export function formatDate(iso: string): string {
   }).format(new Date(iso));
 }
 
+/** A `YYYY-MM-DD` calendar date. Formatted as UTC so the browser's zone never shifts the day. */
+export function formatDay(date: string): string {
+  return new Intl.DateTimeFormat(INTL_LOCALES[getLocale()], {
+    dateStyle: "medium",
+    timeZone: "UTC",
+  }).format(new Date(`${date}T00:00:00Z`));
+}
+
 /** Basis points as a percentage, e.g. 5000 -> "50" and 3333 -> "33.33". */
 export function formatPercent(basisPoints: number): string {
   return new Intl.NumberFormat(INTL_LOCALES[getLocale()], {
