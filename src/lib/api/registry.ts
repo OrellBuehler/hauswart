@@ -238,6 +238,27 @@ import {
   updateGuestLinkRequestSchema,
 } from "./schemas/share";
 
+import {
+  costEntrySchema,
+  costsSummaryQuerySchema,
+  costsSummarySchema,
+  createCostRequestSchema,
+  exportCostsQuerySchema,
+  listCostsQuerySchema,
+  listCostsResponseSchema,
+  updateCostRequestSchema,
+} from "./schemas/costs";
+import {
+  acceptFinanceSuggestionRequestSchema,
+  acceptFinanceSuggestionResponseSchema,
+  financeSyncResponseSchema,
+  listFinanceAccountsResponseSchema,
+  listFinanceCategoriesResponseSchema,
+  listFinanceSuggestionsQuerySchema,
+  listFinanceSuggestionsResponseSchema,
+  financeSuggestionSchema,
+} from "./schemas/finance";
+
 const DOCUMENT_CONTENT_TYPES = [
   "application/pdf",
   "image/png",
@@ -1574,6 +1595,169 @@ export const endpoints = {
     errors: ["not_found"],
   }),
 
+  costsList: defineEndpoint({
+    id: "costsList",
+    method: "GET",
+    path: "/api/v1/costs",
+    summary: "List cost entries",
+    description:
+      "Newest first by date. Filter by year or a date range (`from`/`to`), category, asset, room, defect, who paid (`paidBy`, a user id or `me`) and a search text over title, payee and notes. Amounts are minor units of the entry's currency: positive = expense, negative = refund.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    query: listCostsQuerySchema,
+    response: listCostsResponseSchema,
+  }),
+
+  costsCreate: defineEndpoint({
+    id: "costsCreate",
+    method: "POST",
+    path: "/api/v1/costs",
+    summary: "Book a cost",
+    description:
+      "`currency` defaults to the household's, `date` to today. `splitMode` `ownership` (default) divides by the people's current ownership shares, `equal` equally, `custom` by `shares` (basis points, sum 10000), `none` does not split. The shares are frozen with the entry; the parts add up to the amount exactly (largest remainder). `countsAsExpense` defaults to false for a mortgage repayment (equity), else true. Entries cannot be created for a finance provider's transaction here: accept the suggestion instead.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    body: createCostRequestSchema,
+    response: costEntrySchema,
+    status: 201,
+  }),
+
+  costsSummary: defineEndpoint({
+    id: "costsSummary",
+    method: "GET",
+    path: "/api/v1/costs/summary",
+    summary: "Costs of a year: totals and settlement",
+    description:
+      "Totals per category, month and asset (top ten) and per tax class count entries in the household currency that count as an expense; mortgage repayments are reported as `equityTotalMinor`. `people` and `settlement` cover every split entry with a payer: `balanceMinor` = paid - share, and `settlement` lists who pays whom to square the balances.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    query: costsSummaryQuerySchema,
+    response: costsSummarySchema,
+  }),
+
+  costsExport: defineEndpoint({
+    id: "costsExport",
+    method: "GET",
+    path: "/api/v1/costs/export.csv",
+    summary: "Cost entries of a year as CSV",
+    description:
+      "UTF-8 with a byte order mark, semicolon separated and CRLF line ends (opens in Swiss Excel). Amounts are plain decimals with a point and no thousands separator (`-12.50`), so they parse the same everywhere. Text that would be read as a formula is prefixed with an apostrophe.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    query: exportCostsQuerySchema,
+    response: binaryResponseSchema,
+    responseType: "binary",
+    contentTypes: ["text/csv"],
+  }),
+
+  costsGet: defineEndpoint({
+    id: "costsGet",
+    method: "GET",
+    path: "/api/v1/costs/{id}",
+    summary: "Get a cost entry",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: costEntrySchema,
+    errors: ["not_found"],
+  }),
+
+  costsUpdate: defineEndpoint({
+    id: "costsUpdate",
+    method: "PATCH",
+    path: "/api/v1/costs/{id}",
+    summary: "Change a cost entry",
+    description:
+      "Setting `splitMode` to `ownership` or `equal` splits again by the people's current shares; `shares` need `custom`. Changing only the amount keeps the frozen shares. An entry booked from a finance provider keeps its source; its back-link in the provider is refreshed.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    body: updateCostRequestSchema,
+    response: costEntrySchema,
+    errors: ["not_found"],
+  }),
+
+  costsDelete: defineEndpoint({
+    id: "costsDelete",
+    method: "DELETE",
+    path: "/api/v1/costs/{id}",
+    summary: "Delete a cost entry",
+    description:
+      "Removes the entry with its comments and attachments, and its back-link in the finance provider. A transaction booked from a provider is not offered again.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
+  financeSuggestionsList: defineEndpoint({
+    id: "financeSuggestionsList",
+    method: "GET",
+    path: "/api/v1/finance/suggestions",
+    summary: "Your suggestions from the connected finance app",
+    description:
+      "Costs, assets and bill tasks the finance provider offers, waiting for a decision (`status` defaults to `pending`). Strictly your own: no other member sees them, and other members' suggestions are never listed or reachable by id.",
+    tags: ["finance"],
+    auth: "both",
+    scopes: ["read"],
+    query: listFinanceSuggestionsQuerySchema,
+    response: listFinanceSuggestionsResponseSchema,
+  }),
+
+  financeSuggestionsAccept: defineEndpoint({
+    id: "financeSuggestionsAccept",
+    method: "POST",
+    path: "/api/v1/finance/suggestions/{id}/accept",
+    summary: "Accept a suggestion",
+    description:
+      "Creates the cost entry (paid by you, split by ownership unless the body says otherwise), the asset or the bill task. The body may override category, title, split, asset link and so on; fields of another kind are a 400. Accepting twice is a 409.",
+    tags: ["finance"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    body: acceptFinanceSuggestionRequestSchema,
+    response: acceptFinanceSuggestionResponseSchema,
+    errors: ["not_found", "conflict"],
+  }),
+
+  financeSuggestionsDismiss: defineEndpoint({
+    id: "financeSuggestionsDismiss",
+    method: "POST",
+    path: "/api/v1/finance/suggestions/{id}/dismiss",
+    summary: "Dismiss a suggestion",
+    description:
+      "A dismissed suggestion is never offered again. Dismissing an accepted one is a 409.",
+    tags: ["finance"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    response: financeSuggestionSchema,
+    errors: ["not_found", "conflict"],
+  }),
+
+  financeSync: defineEndpoint({
+    id: "financeSync",
+    method: "POST",
+    path: "/api/v1/finance/sync",
+    summary: "Sync your finance connection now",
+    description:
+      "Runs one sync of your own connection (404 without one). A provider that cannot be reached is a normal answer (`ok: false` with an error code), not an HTTP error.",
+    tags: ["finance"],
+    auth: "both",
+    scopes: ["costs:write"],
+    response: financeSyncResponseSchema,
+    errors: ["not_found"],
+  }),
+
   defectsList: defineEndpoint({
     id: "defectsList",
     method: "GET",
@@ -2528,6 +2712,34 @@ export const endpoints = {
     response: documentUploadSchema,
     status: 202,
     errors: ["not_found"],
+  }),
+
+  integrationsCategories: defineEndpoint({
+    id: "integrationsCategories",
+    method: "GET",
+    path: "/api/v1/integrations/{kind}/categories",
+    summary: "Categories of the connected finance app (category map picker)",
+    description:
+      "Your own connection only. 404 when you have no connection of this kind or it has no such operation; 502 `upstream_error` when the system does not answer.",
+    tags: ["integrations"],
+    auth: "both",
+    scopes: ["read"],
+    params: integrationKindParamsSchema,
+    response: listFinanceCategoriesResponseSchema,
+    errors: ["not_found", "upstream_error"],
+  }),
+
+  integrationsAccounts: defineEndpoint({
+    id: "integrationsAccounts",
+    method: "GET",
+    path: "/api/v1/integrations/{kind}/accounts",
+    summary: "Accounts of the connected finance app",
+    tags: ["integrations"],
+    auth: "both",
+    scopes: ["read"],
+    params: integrationKindParamsSchema,
+    response: listFinanceAccountsResponseSchema,
+    errors: ["not_found", "upstream_error"],
   }),
 
   haAction: defineEndpoint({

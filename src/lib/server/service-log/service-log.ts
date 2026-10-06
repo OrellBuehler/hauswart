@@ -10,6 +10,7 @@ import { minor } from "$lib/money";
 import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
 import { assets, contacts, serviceLog, type DB } from "$lib/server/db";
 import { commentCountSql } from "$lib/server/comments/counts";
+import { costsOfSql, type CostsOf } from "$lib/server/costs/totals";
 import { getHousehold } from "$lib/server/household/household";
 import { decodeCursor, pageOf } from "$lib/server/pagination";
 import {
@@ -27,6 +28,7 @@ export interface ServiceLogRecord extends ServiceLogRow {
   assetName: string;
   contactName: string | null;
   commentCount: number;
+  costs: CostsOf;
 }
 
 const selectEntries = (db: DB) =>
@@ -36,6 +38,8 @@ const selectEntries = (db: DB) =>
       assetName: assets.name,
       contactName: contacts.name,
       commentCount: commentCountSql("service_log", serviceLog.id),
+      costTotal: costsOfSql("service_log_id", serviceLog.id).total,
+      costCount: costsOfSql("service_log_id", serviceLog.id).count,
       rowid: sql<number>`${serviceLog}.rowid`,
     })
     .from(serviceLog)
@@ -48,17 +52,22 @@ type Joined = {
   assetName: string;
   contactName: string | null;
   commentCount: number;
+  costTotal: number;
+  costCount: number;
 };
 const toRecord = ({
   entry,
   assetName,
   contactName,
   commentCount,
+  costTotal,
+  costCount,
 }: Joined): ServiceLogRecord => ({
   ...entry,
   assetName,
   contactName,
   commentCount: Number(commentCount),
+  costs: { totalMinor: Number(costTotal), count: Number(costCount) },
 });
 
 const cursorSchema = z.object({

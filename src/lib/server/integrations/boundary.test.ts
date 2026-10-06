@@ -78,6 +78,25 @@ describe("integration boundary", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("the core says finance provider, never the name of the one adapter (Kept)", () => {
+    // `kept_bill` is the stored name of a task trigger type and stays; the system's own name does not.
+    const offenders = files
+      .filter((f) => !mayImportIntegrations(f.path))
+      .filter((f) => !f.path.endsWith(".test.ts"))
+      .filter((f) => /^lib\/(?:server|tasks|api)\//.test(f.path))
+      .filter(
+        (f) =>
+          ![
+            "lib/server/schema.ts",
+            "lib/api/registry.ts",
+            "lib/api/enums.ts",
+          ].includes(f.path),
+      )
+      .filter((f) => /\bKept\b|["'`]kept["'`]/.test(f.text))
+      .map((f) => f.path);
+    expect(offenders).toEqual([]);
+  });
+
   it("adapters do not reach into routes or the hook", () => {
     const offenders = files
       .filter((f) => f.path.startsWith("lib/server/integrations/"))

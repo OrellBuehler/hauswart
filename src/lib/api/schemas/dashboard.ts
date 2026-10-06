@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { DUE_KINDS, PREPARATION_STATES, TASK_CATEGORIES } from "../enums";
 import { dateSchema, isoTimestampSchema } from "./common";
+import { dashboardCostsSchema } from "./costs";
 import { defectSeveritySchema, defectStatusSchema } from "./defects";
 import { orderNowItemSchema } from "./parts";
 import { warrantyStatusSchema } from "./warranties";
@@ -96,6 +97,7 @@ export const dashboardSchema = z
     openDefects: z.array(dashboardDefectSchema),
     expiringWarranties: z.array(dashboardWarrantySchema),
     orderNow: z.array(orderNowItemSchema),
+    costsYearToDate: dashboardCostsSchema,
   })
   .meta({ id: "Dashboard" });
 export type Dashboard = z.infer<typeof dashboardSchema>;

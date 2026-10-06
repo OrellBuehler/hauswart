@@ -1,4 +1,5 @@
 import type { endpoints } from "$lib/api/registry";
+import { costsYearToDate } from "$lib/server/costs/summary";
 import { selectAllDefects } from "$lib/server/defects/defects";
 import { listOrderNow } from "$lib/server/parts/order-now";
 import { getDashboard } from "$lib/server/tasks/dashboard";
@@ -12,6 +13,7 @@ export const get: Handler<typeof endpoints.dashboard> = async ({ ctx }) =>
     openDefects: selectAllDefects(ctx, { active: true }),
     expiringWarranties: dashboardWarranties(ctx),
     orderNow: listOrderNow(ctx),
+    costsYearToDate: costsYearToDate(ctx),
   });
 
 export const stats: Handler<typeof endpoints.stats> = ({ ctx, query }) =>

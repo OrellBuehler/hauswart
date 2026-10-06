@@ -11,6 +11,7 @@ const COMMENT_TYPE: Record<DocumentLinkOwnerType, CommentEntityType> = {
   service_log: "service_log",
   part: "part",
   contact: "contact",
+  cost: "cost",
 };
 
 export interface OwnerInfo {

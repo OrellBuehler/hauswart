@@ -19,6 +19,11 @@ export interface DomainEvents {
   documentLinksChanged: { ctx: Pick<ServiceContext, "db"> };
   /** A completion row was written (not for replays of an idempotent request). */
   completionRecorded: { ctx: ServiceContext; completion: CompletionFacts };
+  /** A cost entry booked from a finance provider was created, changed or deleted: its back-link there is to be written or removed. */
+  financeLinksPending: {
+    ctx: Pick<ServiceContext, "db">;
+    connectionId: string;
+  };
   /** A completion was undone. */
   completionRevoked: {
     ctx: ServiceContext;
@@ -37,6 +42,7 @@ const listeners: { [K in keyof DomainEvents]: Set<Listener<K>> } = {
   documentLinksChanged: new Set(),
   completionRecorded: new Set(),
   completionRevoked: new Set(),
+  financeLinksPending: new Set(),
 };
 
 /**

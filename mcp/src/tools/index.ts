@@ -3,6 +3,7 @@ import { assetTools } from "./assets";
 import { assetCareTools } from "./asset-care";
 import { commentTools } from "./comments";
 import { contactTools } from "./contacts";
+import { costTools } from "./costs";
 import { defectTools } from "./defects";
 import { docTools } from "./docs";
 import { getStats, listNotifications } from "./insights";
@@ -20,7 +21,6 @@ import { whoami } from "./whoami";
  * the typed client with an endpoint from `endpoints`, and add it below. Tools for
  * endpoints that do not exist yet go here once the endpoint is in the registry:
  *
- * - costs            cost entries and summaries (scope costs:write for writes)
  * - guest link       the guest link and what it shows
  * - iCal feed        subscribing to due dates
  *
@@ -39,5 +39,6 @@ export const tools: readonly Tool[] = [
   ...partTools,
   ...contactTools,
   ...commentTools,
+  ...costTools,
   ...assetCareTools,
 ];

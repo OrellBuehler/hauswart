@@ -11,6 +11,7 @@ import {
 } from "./common";
 import { minorAmountSchema } from "./fields";
 import { currencySchema } from "./household";
+import { costsOfSchema } from "./costs";
 
 export const serviceLogKindSchema = z.enum(SERVICE_LOG_KINDS);
 
@@ -29,6 +30,8 @@ export const serviceLogEntrySchema = z
     costMinor: z.number().int().nullable(),
     currency: z.string().nullable(),
     costEntryId: z.string().nullable(),
+    /** Cost entries booked against this entry (household currency); see `/costs?...`. */
+    costs: costsOfSchema,
     performedBy: z.string().nullable(),
     createdBy: z.string().nullable(),
     commentCount: z.number().int(),

@@ -297,6 +297,7 @@ export function wireDashboard(
     openDefects: DefectRecord[];
     expiringWarranties: WarrantyRecord[];
     orderNow: OrderNowRecord[];
+    costsYearToDate: z.input<typeof dashboardSchema>["costsYearToDate"];
   },
 ): z.input<typeof dashboardSchema> {
   return {
@@ -325,6 +326,7 @@ export function wireDashboard(
       daysLeft: w.daysLeft,
     })),
     orderNow: extras.orderNow.map(wireOrderNow),
+    costsYearToDate: extras.costsYearToDate,
   };
 }
 
@@ -472,6 +474,7 @@ export function wireServiceLogEntry(
     costMinor: e.costMinor,
     currency: e.currency,
     costEntryId: e.costEntryId,
+    costs: e.costs,
     performedBy: e.performedBy,
     createdBy: e.createdBy,
     commentCount: e.commentCount,
@@ -502,6 +505,7 @@ export function wireDefect(d: DefectRecord): z.input<typeof defectSchema> {
     fixedOn: d.fixedOn,
     resolutionMd: d.resolutionMd,
     costEntryId: d.costEntryId,
+    costs: d.costs,
     reminderTaskId: d.reminderTaskId,
     commentCount: d.commentCount,
     createdBy: d.createdBy,

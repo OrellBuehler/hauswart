@@ -15,6 +15,7 @@ import {
   paginationQuerySchema,
   queryBooleanSchema,
 } from "./common";
+import { costsOfSchema } from "./costs";
 
 export const defectStatusSchema = z.enum(DEFECT_STATUSES);
 export const defectSeveritySchema = z.enum(DEFECT_SEVERITIES);
@@ -65,6 +66,8 @@ export const defectSchema = z
     fixedOn: dateSchema.nullable(),
     resolutionMd: z.string(),
     costEntryId: z.string().nullable(),
+    /** Cost entries booked against this defect (household currency), refunds netted off. */
+    costs: costsOfSchema,
     /** The task that reminds the household of the deadline, while there is one. */
     reminderTaskId: z.string().nullable(),
     commentCount: z.number().int(),

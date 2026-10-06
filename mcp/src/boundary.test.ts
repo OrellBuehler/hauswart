@@ -23,6 +23,8 @@ describe("the MCP server only uses client-safe code", () => {
       "../../../src/lib/tasks/engine",
       "../../src/lib/dates",
       "../../../src/lib/dates",
+      "../../src/lib/money",
+      "../../../src/lib/money",
       "../../package.json",
     ];
     for (const file of sources(src)) {

@@ -172,7 +172,11 @@ describe("Paperless scheduler", () => {
     const stop = start({ firstRunDelayMs: 10, intervalMs: 10 });
     await vi.waitFor(() => expect(fake.requests.length).toBeGreaterThan(0));
     stop();
-    await new Promise((r) => setTimeout(r, 30));
+    let seen = -1;
+    while (seen !== fake.requests.length) {
+      seen = fake.requests.length;
+      await new Promise((r) => setTimeout(r, 100));
+    }
     fake.requests = [];
     emitEvent("connectionChanged", { ctx: ctx(), kind: "paperless" });
     emitEvent("documentLinksChanged", { ctx: ctx() });

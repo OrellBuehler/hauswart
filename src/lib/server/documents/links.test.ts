@@ -4,6 +4,7 @@ import type { DocumentLinkOwnerType } from "$lib/api/enums";
 import {
   connections,
   contacts,
+  costEntries,
   defects,
   docPages,
   documentLinks,
@@ -12,6 +13,7 @@ import {
   serviceLog,
   tasks,
 } from "$lib/server/db";
+import { minor } from "$lib/money";
 import { deleteAsset } from "$lib/server/assets/assets";
 import { deleteRoom } from "$lib/server/rooms/rooms";
 import { createTestUser } from "$lib/testing/auth";
@@ -163,6 +165,27 @@ describe("document links", () => {
           id: c.id,
           remove: () =>
             void test.db.delete(contacts).where(eq(contacts.id, c.id)).run(),
+        };
+      },
+      cost: () => {
+        const c = test.db
+          .insert(costEntries)
+          .values({
+            date: "2026-01-01",
+            title: "Repair",
+            amountMinor: minor(1000),
+            currency: "CHF",
+            category: "repair",
+          })
+          .returning()
+          .get();
+        return {
+          id: c.id,
+          remove: () =>
+            void test.db
+              .delete(costEntries)
+              .where(eq(costEntries.id, c.id))
+              .run(),
         };
       },
     };

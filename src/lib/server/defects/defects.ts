@@ -22,6 +22,7 @@ import {
 import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
 import { allCommentsOf, type Viewer } from "$lib/server/comments/comments";
 import { commentCountSql } from "$lib/server/comments/counts";
+import { costsOfSql, type CostsOf } from "$lib/server/costs/totals";
 import { getHousehold } from "$lib/server/household/household";
 import { paginateArray } from "$lib/server/pagination";
 import {
@@ -43,6 +44,7 @@ export interface DefectRecord extends DefectRow {
   responsibleContactName: string | null;
   reminderTaskId: string | null;
   commentCount: number;
+  costs: CostsOf;
 }
 
 const isActive = (status: DefectStatus) =>
@@ -59,6 +61,8 @@ const selectDefects = (db: DB) =>
         string | null
       >`(select id from tasks where tasks.external_source = 'defect' and tasks.external_ref = ${defects.id} and tasks.archived_at is null)`,
       commentCount: commentCountSql("defect", defects.id),
+      costTotal: costsOfSql("defect_id", defects.id).total,
+      costCount: costsOfSql("defect_id", defects.id).count,
     })
     .from(defects)
     .leftJoin(rooms, eq(rooms.id, defects.roomId))
@@ -72,6 +76,8 @@ type Joined = {
   contactName: string | null;
   reminderTaskId: string | null;
   commentCount: number;
+  costTotal: number;
+  costCount: number;
 };
 const toRecord = (j: Joined): DefectRecord => ({
   ...j.defect,
@@ -80,6 +86,7 @@ const toRecord = (j: Joined): DefectRecord => ({
   responsibleContactName: j.contactName,
   reminderTaskId: j.reminderTaskId,
   commentCount: Number(j.commentCount),
+  costs: { totalMinor: Number(j.costTotal), count: Number(j.costCount) },
 });
 
 function escapeLike(value: string): string {
