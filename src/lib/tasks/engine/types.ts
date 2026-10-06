@@ -23,6 +23,29 @@ export const seasonSchema = z.object({
 });
 export type Season = z.infer<typeof seasonSchema>;
 
+/**
+ * Completes the task by itself when a signal does something: a counter drops
+ * by at least `minDrop` (a filter counter reset after the swap), or a state
+ * changes to `to` (optionally from `from`). The completion is recorded as
+ * done by the system; it is applied once per occurrence.
+ */
+export const autoCompleteRuleSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("counter_reset"),
+    entityId: z.string().min(1).max(255),
+    minDrop: z.number().positive(),
+  }),
+  z.object({
+    type: z.literal("state_change"),
+    entityId: z.string().min(1).max(255),
+    to: z.string().trim().min(1).max(255),
+    from: z.string().trim().min(1).max(255).optional(),
+  }),
+]);
+export type AutoCompleteRule = z.infer<typeof autoCompleteRuleSchema>;
+
+const autoComplete = z.array(autoCompleteRuleSchema).max(5).optional();
+
 export const intervalTriggerSchema = z.object({
   v: z.literal(1),
   type: z.literal("interval"),
@@ -31,6 +54,7 @@ export const intervalTriggerSchema = z.object({
   anchor: z.enum(["completion", "schedule"]),
   startDate: dateSchema,
   seasons: z.array(seasonSchema).max(12).optional(),
+  autoComplete,
 });
 export type IntervalTrigger = z.infer<typeof intervalTriggerSchema>;
 
@@ -58,6 +82,7 @@ export const calendarTriggerSchema = z
     byMonth: z.array(monthSchema).min(1).max(12).optional(),
     startDate: dateSchema,
     earlyDays: z.number().int().min(0).max(366).optional(),
+    autoComplete,
   })
   .superRefine((t, ctx) => {
     const issue = (message: string) =>
@@ -85,6 +110,7 @@ export const minPerPeriodTriggerSchema = z.object({
   count: positiveInt,
   remindFromFraction: z.number().min(0).max(1).optional(),
   startDate: dateSchema.optional(),
+  autoComplete,
 });
 export type MinPerPeriodTrigger = z.infer<typeof minPerPeriodTriggerSchema>;
 
@@ -95,6 +121,7 @@ export const counterDeltaTriggerSchema = z.object({
   threshold: z.number().positive(),
   unit: z.string().optional(),
   autoCompleteOnReset: z.object({ minDrop: z.number().positive() }).optional(),
+  autoComplete,
 });
 export type CounterDeltaTrigger = z.infer<typeof counterDeltaTriggerSchema>;
 
@@ -109,6 +136,7 @@ export const stateConditionTriggerSchema = z
     op: conditionOpSchema,
     value: z.union([z.string(), z.number()]),
     forMinutes: z.number().int().min(0).optional(),
+    autoComplete,
     estimateFrom: z
       .object({
         entityId: z.string().min(1),
@@ -130,6 +158,7 @@ export const haCalendarTriggerSchema = z.object({
   summaryMatch: z.string().optional(),
   offsetDays: z.number().int().min(-366).max(366),
   time: timeSchema.optional(),
+  autoComplete,
 });
 export type HaCalendarTrigger = z.infer<typeof haCalendarTriggerSchema>;
 

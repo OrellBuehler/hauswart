@@ -11,6 +11,10 @@ export interface CompletionFacts {
 }
 
 export interface DomainEvents {
+  /** What the household watches in outside systems changed (a task, preparation or hint reaction was saved). */
+  signalNeedsChanged: { ctx: Pick<ServiceContext, "db"> };
+  /** A connection to an outside system was saved, enabled or removed. */
+  connectionChanged: { ctx: ServiceContext; kind: string };
   /** A completion row was written (not for replays of an idempotent request). */
   completionRecorded: { ctx: ServiceContext; completion: CompletionFacts };
   /** A completion was undone. */
@@ -26,6 +30,8 @@ type Listener<K extends keyof DomainEvents> = (
 ) => void;
 
 const listeners: { [K in keyof DomainEvents]: Set<Listener<K>> } = {
+  signalNeedsChanged: new Set(),
+  connectionChanged: new Set(),
   completionRecorded: new Set(),
   completionRevoked: new Set(),
 };

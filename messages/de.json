@@ -1355,5 +1355,17 @@
   "defect_pdf_status_rejected": "Abgelehnt",
   "defect_pdf_severity_low": "gering",
   "defect_pdf_severity_medium": "mittel",
-  "defect_pdf_severity_high": "hoch"
+  "defect_pdf_severity_high": "hoch",
+  "error_gone": "Das ist nicht mehr verfügbar.",
+  "error_upstream": "Das verbundene System hat nicht wie erwartet geantwortet.",
+  "notification_hint": "{asset}: {title}",
+  "push_title_prep": "Vorbereiten",
+  "push_title_due_soon": "Bald fällig",
+  "push_title_due": "Fällig",
+  "push_title_overdue": "Überfällig",
+  "push_title_digest": "Heute",
+  "push_title_hint": "Hinweis",
+  "push_title_comment": "Kommentar",
+  "push_title_info": "Hinweis",
+  "push_action_done": "Erledigt"
 }

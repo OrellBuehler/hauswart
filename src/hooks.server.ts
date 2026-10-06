@@ -23,6 +23,8 @@ import {
 import { startFileSweeper } from "$lib/server/attachments/sweeper";
 import { registerBackups } from "$lib/server/backup";
 import { startAttachmentRerender } from "$lib/server/docs/pages";
+import { registerHomeAssistant } from "$lib/server/integrations/homeassistant";
+import { registerSignalWorker } from "$lib/server/signals/worker";
 import { registerEvaluator } from "$lib/server/tasks/scheduler";
 import { countUsers } from "$lib/server/users/users";
 
@@ -33,6 +35,8 @@ export async function init() {
   await warmDummyHash();
   registerDomainEventHandlers();
   registerEvaluator();
+  registerSignalWorker();
+  registerHomeAssistant();
   startCredentialPurge();
   startAttachmentRerender();
   startFileSweeper();

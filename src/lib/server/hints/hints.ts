@@ -20,6 +20,7 @@ import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
 import { assetHints, assets, tasks, users, type DB } from "$lib/server/db";
 import { commentCountSql } from "$lib/server/comments/counts";
 import { parseStored } from "$lib/server/json";
+import { signalNeedsChanged } from "$lib/server/signals/watch";
 import { paginateArray } from "$lib/server/pagination";
 import {
   invalidField,
@@ -187,6 +188,7 @@ export function createHint(
     })
     .returning({ id: assetHints.id })
     .get();
+  if (input.reaction) signalNeedsChanged(ctx);
   return getHint(ctx, row.id);
 }
 
@@ -199,6 +201,7 @@ export function updateHint(
   if (patch.taskId !== undefined) assertTask(ctx, patch.taskId);
   assertReaction(ctx, patch.reaction);
   ctx.db.update(assetHints).set(patch).where(eq(assetHints.id, id)).run();
+  if (patch.reaction) signalNeedsChanged(ctx);
   return getHint(ctx, id);
 }
 

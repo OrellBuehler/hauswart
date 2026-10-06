@@ -12,7 +12,10 @@ import { updateTask } from "$lib/server/tasks/tasks";
 import { createTestUser } from "$lib/testing/auth";
 import { useTestDB } from "$lib/testing/db";
 import { at, ctxAt, everyDays, makeTask } from "$lib/testing/domain";
-import { registerNotificationChannel } from "./channels";
+import {
+  registerNotificationChannel,
+  type NotificationChannel,
+} from "./channels";
 import { generateNotifications, OVERDUE_REMINDERS } from "./generate";
 
 describe("generateNotifications", () => {
@@ -441,16 +444,16 @@ describe("generateNotifications", () => {
   describe("channels", () => {
     it("delivers each new notification once, to the people it concerns", async () => {
       const [anna, ben] = await household();
-      const deliver = vi.fn();
+      const deliver = vi.fn<NotificationChannel["deliver"]>(() => []);
       const unregister = registerNotificationChannel({ name: "test", deliver });
       await makeTask(ctx("2026-06-15"), {
         trigger: everyDays(30, "2026-06-20"),
       });
       await generateNotifications(ctx("2026-06-15", "07:00"));
       expect(deliver).toHaveBeenCalledTimes(2);
-      const targets = deliver.mock.calls.map(([n, recipients]) => [
+      const targets = deliver.mock.calls.map(([n, recipient]) => [
         n.userId,
-        recipients.map((r: { id: string }) => r.id),
+        [recipient.id],
       ]);
       expect(targets).toContainEqual([anna.id, [anna.id]]);
       expect(targets).toContainEqual([ben.id, [ben.id]]);
@@ -472,7 +475,7 @@ describe("generateNotifications", () => {
     it("a failing channel is logged by name and does not block others or the notifications", async () => {
       await household();
       const error = vi.spyOn(console, "error").mockImplementation(() => {});
-      const good = vi.fn();
+      const good = vi.fn<NotificationChannel["deliver"]>(() => []);
       const stop = [
         registerNotificationChannel({
           name: "broken",
@@ -498,7 +501,10 @@ describe("generateNotifications", () => {
 
     it("registering a channel under the same name replaces it", async () => {
       await household();
-      const [first, second] = [vi.fn(), vi.fn()];
+      const [first, second] = [
+        vi.fn<NotificationChannel["deliver"]>(() => []),
+        vi.fn<NotificationChannel["deliver"]>(() => []),
+      ];
       const stop1 = registerNotificationChannel({
         name: "same",
         deliver: first,

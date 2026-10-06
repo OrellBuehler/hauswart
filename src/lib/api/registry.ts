@@ -177,6 +177,24 @@ import {
   updateHintRequestSchema,
 } from "./schemas/hints";
 import {
+  actionRequestSchema,
+  actionResponseSchema,
+  integrationKindParamsSchema,
+  integrationSchema,
+  listCalendarsResponseSchema,
+  listDevicesResponseSchema,
+  listEntitiesQuerySchema,
+  listEntitiesResponseSchema,
+  listIntegrationsResponseSchema,
+  listNotifyServicesResponseSchema,
+  saveIntegrationRequestSchema,
+  testIntegrationResponseSchema,
+} from "./schemas/integrations";
+import {
+  notificationSettingsResponseSchema,
+  notificationSettingsSchema,
+} from "./schemas/notification-settings";
+import {
   commentSchema,
   createCommentRequestSchema,
   listCommentsQuerySchema,
@@ -2068,6 +2086,165 @@ export const endpoints = {
     responseType: "binary",
     contentTypes: ["image/webp"],
     errors: ["not_found"],
+  }),
+  notificationSettingsGet: defineEndpoint({
+    id: "notificationSettingsGet",
+    method: "GET",
+    path: "/api/v1/me/notification-settings",
+    summary: "The caller's push preferences and notification targets",
+    description:
+      "Own settings only. `pushStages` are the kinds of notification that reach the phone (the in-app list always has all of them); notifications arriving between `quietStart` and `quietEnd` (household time zone) are held back and sent afterwards. A target is a notify service of the connected smart-home system.",
+    tags: ["notifications"],
+    auth: "both",
+    scopes: ["read"],
+    response: notificationSettingsResponseSchema,
+  }),
+
+  notificationSettingsPut: defineEndpoint({
+    id: "notificationSettingsPut",
+    method: "PUT",
+    path: "/api/v1/me/notification-settings",
+    summary: "Replace the caller's push preferences and targets",
+    description:
+      "Replaces preferences and the whole list of targets (at most 10). Target names are lowercase letters, digits and underscores.",
+    tags: ["notifications"],
+    auth: "both",
+    scopes: ["write"],
+    body: notificationSettingsSchema,
+    response: notificationSettingsResponseSchema,
+  }),
+
+  integrationsList: defineEndpoint({
+    id: "integrationsList",
+    method: "GET",
+    path: "/api/v1/integrations",
+    summary: "The integrations and their connection status",
+    description:
+      "One entry per kind: the household's connection, or the caller's own for kinds each person connects. Never contains the access token; the address and settings of a household connection are shown to administrators only.",
+    tags: ["integrations"],
+    auth: "both",
+    scopes: ["read"],
+    response: listIntegrationsResponseSchema,
+  }),
+
+  integrationsSave: defineEndpoint({
+    id: "integrationsSave",
+    method: "PUT",
+    path: "/api/v1/integrations/{kind}",
+    summary: "Create or change a connection",
+    description:
+      "Household-level kinds need an administrator. A new connection needs the token, and so does a changed address (a stored token is never sent to another host); a blank token keeps the stored one. The status resets to `unknown` until the next check.",
+    tags: ["integrations"],
+    auth: "both",
+    scopes: ["write"],
+    params: integrationKindParamsSchema,
+    body: saveIntegrationRequestSchema,
+    response: integrationSchema,
+    errors: ["forbidden"],
+  }),
+
+  integrationsDelete: defineEndpoint({
+    id: "integrationsDelete",
+    method: "DELETE",
+    path: "/api/v1/integrations/{kind}",
+    summary: "Remove a connection",
+    description:
+      "Household-level kinds need an administrator. Tasks, assets and hints that refer to the system keep working without live data.",
+    tags: ["integrations"],
+    auth: "both",
+    scopes: ["write"],
+    params: integrationKindParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["forbidden", "not_found"],
+  }),
+
+  integrationsTest: defineEndpoint({
+    id: "integrationsTest",
+    method: "POST",
+    path: "/api/v1/integrations/{kind}/test",
+    summary: "Check the connection now",
+    description:
+      "Calls the system once and records the outcome as the connection's status. An unreachable system is a normal answer (`ok: false` with an error code and message), not an HTTP error. Household-level kinds need an administrator.",
+    tags: ["integrations"],
+    auth: "both",
+    scopes: ["write"],
+    params: integrationKindParamsSchema,
+    response: testIntegrationResponseSchema,
+    errors: ["forbidden", "not_found"],
+  }),
+
+  integrationsEntities: defineEndpoint({
+    id: "integrationsEntities",
+    method: "GET",
+    path: "/api/v1/integrations/{kind}/entities",
+    summary: "Entities of the connected system (entity picker)",
+    description:
+      "From a short-lived cache of the system's states. Filter by `q` (id or name) and `domain`. 404 when the kind has no connection or no such operation; 502 `upstream_error` when the system does not answer.",
+    tags: ["integrations"],
+    auth: "both",
+    scopes: ["read"],
+    params: integrationKindParamsSchema,
+    query: listEntitiesQuerySchema,
+    response: listEntitiesResponseSchema,
+    errors: ["not_found", "upstream_error"],
+  }),
+
+  integrationsNotifyServices: defineEndpoint({
+    id: "integrationsNotifyServices",
+    method: "GET",
+    path: "/api/v1/integrations/{kind}/notify-services",
+    summary: "Notify services of the connected system",
+    description: "Candidates for a person's notification targets.",
+    tags: ["integrations"],
+    auth: "both",
+    scopes: ["read"],
+    params: integrationKindParamsSchema,
+    response: listNotifyServicesResponseSchema,
+    errors: ["not_found", "upstream_error"],
+  }),
+
+  integrationsCalendars: defineEndpoint({
+    id: "integrationsCalendars",
+    method: "GET",
+    path: "/api/v1/integrations/{kind}/calendars",
+    summary: "Calendars of the connected system",
+    tags: ["integrations"],
+    auth: "both",
+    scopes: ["read"],
+    params: integrationKindParamsSchema,
+    response: listCalendarsResponseSchema,
+    errors: ["not_found", "upstream_error"],
+  }),
+
+  integrationsDevices: defineEndpoint({
+    id: "integrationsDevices",
+    method: "GET",
+    path: "/api/v1/integrations/{kind}/devices",
+    summary: "Devices of the connected system that no asset represents yet",
+    description:
+      "Suggestions for the inventory: manufacturer, model, name and area of every enabled device that matches no asset (by external reference, name, or manufacturer and model). Creating an asset from one is a separate call with `externalSource` and `externalRef`.",
+    tags: ["integrations"],
+    auth: "both",
+    scopes: ["read"],
+    params: integrationKindParamsSchema,
+    response: listDevicesResponseSchema,
+    errors: ["not_found", "upstream_error"],
+  }),
+
+  haAction: defineEndpoint({
+    id: "haAction",
+    method: "POST",
+    path: "/api/v1/ha/action",
+    summary: "A button on a pushed notification was tapped",
+    description:
+      'Called by the smart-home system when someone taps "done" on a notification: `{"action": "HW_DONE_<token>"}` with an API token of kind `ha` and the `ha:action` scope. The token resolves to the task occurrence the notification was about and to the person it was sent to; the completion is attributed to that person (source `notification`), not to the calling token. 404 for an unknown action, 410 `gone` when the token expired, its task is gone, the occurrence was settled otherwise, or the first completion was undone. Tapping again (or a retried request) answers 200 with the first completion and `replayed: true`.',
+    tags: ["notifications"],
+    auth: "bearer",
+    scopes: ["ha:action"],
+    body: actionRequestSchema,
+    response: actionResponseSchema,
+    errors: ["forbidden", "not_found", "gone"],
   }),
 };
 

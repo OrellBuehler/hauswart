@@ -7,11 +7,11 @@ import type { ServiceContext } from "$lib/server/service";
 import { clockAt } from "$lib/server/tasks/evaluator";
 import { preparationsForTasks } from "$lib/server/tasks/preparations";
 import { toStateRecord, type TaskStateRecord } from "$lib/server/tasks/state";
-import {
-  deliverToChannels,
-  type DeliverableNotification,
-  type NotificationRecipient,
+import type {
+  DeliverableNotification,
+  NotificationRecipient,
 } from "./channels";
+import { deliverToChannels } from "./deliveries";
 import { createNotification } from "./notifications";
 
 /** An overdue task is announced when it becomes overdue and then weekly, four times in all. */
@@ -108,6 +108,7 @@ export async function generateNotifications(
       titleKey: NotificationTitleKey;
       params: Record<string, string | number>;
       url: string;
+      occurrenceKey?: string;
     },
   ) => {
     for (const person of recipients) {
@@ -131,6 +132,7 @@ export async function generateNotifications(
             params: row.paramsJson,
             url: row.url,
             createdAt: row.createdAt,
+            occurrenceKey: spec.occurrenceKey ?? null,
           },
           [person],
         ]);
@@ -154,6 +156,7 @@ export async function generateNotifications(
         titleKey: "notification_prep",
         params: { title: task.title, prep: prep.title, date },
         url,
+        occurrenceKey: state.occurrenceKey,
       });
     }
 
@@ -165,6 +168,7 @@ export async function generateNotifications(
         titleKey: "notification_due_soon",
         params: { title: task.title, date },
         url,
+        occurrenceKey: state.occurrenceKey,
       });
     } else if (state.status === "due") {
       emit(recipients, {
@@ -174,6 +178,7 @@ export async function generateNotifications(
         titleKey: "notification_due",
         params: { title: task.title, date },
         url,
+        occurrenceKey: state.occurrenceKey,
       });
     } else if (state.status === "overdue" && state.dueDate) {
       const sinceOverdue = diffDays(
@@ -193,6 +198,7 @@ export async function generateNotifications(
             days: diffDays(today, state.dueDate),
           },
           url,
+          occurrenceKey: state.occurrenceKey,
         });
       }
     }
@@ -222,7 +228,7 @@ export async function generateNotifications(
   }
 
   for (const [notification, recipients] of delivered) {
-    await deliverToChannels(notification, recipients);
+    await deliverToChannels(ctx, notification, recipients);
   }
   return { created: delivered.length };
 }

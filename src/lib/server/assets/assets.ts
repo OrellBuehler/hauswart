@@ -132,11 +132,26 @@ function assertRoom(ctx: Db, roomId: string | null | undefined) {
   if (!room) throw invalidField("roomId", "Room does not exist");
 }
 
+const EXTERNAL_TAKEN = "An asset with this external reference already exists";
+
+function assertExternalPair(
+  source: string | null | undefined,
+  ref: string | null | undefined,
+) {
+  if (((source ?? null) === null) !== ((ref ?? null) === null)) {
+    throw invalidField(
+      "externalRef",
+      "externalSource and externalRef go together",
+    );
+  }
+}
+
 const slugTaken = (ctx: Db, slug: string) =>
   findAssetBySlug(ctx, slug) !== undefined;
 
 export function createAsset(ctx: Db, input: CreateAssetRequest): AssetRecord {
   assertRoom(ctx, input.roomId);
+  assertExternalPair(input.externalSource, input.externalRef);
   if (input.photoAttachmentId) {
     throw invalidField(
       "photoAttachmentId",
@@ -173,6 +188,8 @@ export function createAsset(ctx: Db, input: CreateAssetRequest): AssetRecord {
           light: input.light ?? null,
           waterNotes: input.waterNotes ?? null,
           photoAttachmentId: null,
+          externalSource: input.externalSource ?? null,
+          externalRef: input.externalRef ?? null,
         })
         .returning({ id: assets.id })
         .get();
@@ -181,6 +198,9 @@ export function createAsset(ctx: Db, input: CreateAssetRequest): AssetRecord {
       if (!isUniqueViolation(err)) throw err;
       if (slugTaken(ctx, slug)) {
         throw conflict("An asset with this slug already exists");
+      }
+      if (/external/.test(String((err as Error).message))) {
+        throw conflict(EXTERNAL_TAKEN);
       }
       // The QR slug collided (about 1 in 10^15): draw another.
       if (attempt >= 5) throw err;
@@ -195,6 +215,12 @@ export function updateAsset(
 ): AssetRecord {
   const current = getAsset(ctx, id);
   if (patch.roomId !== undefined) assertRoom(ctx, patch.roomId);
+  assertExternalPair(
+    patch.externalSource !== undefined
+      ? patch.externalSource
+      : current.externalSource,
+    patch.externalRef !== undefined ? patch.externalRef : current.externalRef,
+  );
   if (patch.photoAttachmentId) {
     assertAssetPhoto(ctx, id, patch.photoAttachmentId);
   }
@@ -219,7 +245,11 @@ export function updateAsset(
       .run();
   } catch (err) {
     if (isUniqueViolation(err)) {
-      throw conflict("An asset with this slug already exists");
+      throw conflict(
+        /external/.test(String((err as Error).message))
+          ? EXTERNAL_TAKEN
+          : "An asset with this slug already exists",
+      );
     }
     throw err;
   }
