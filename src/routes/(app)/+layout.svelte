@@ -5,6 +5,7 @@
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import AppNav from "$lib/components/app/app-nav.svelte";
   import Logo from "$lib/components/app/logo.svelte";
+  import NotificationBell from "$lib/components/notifications/notification-bell.svelte";
   import {
     adminNavItems,
     findNavItem,
@@ -67,6 +68,7 @@
         {section ? section.label() : m.app_name()}
       </span>
       <div class="ms-auto flex items-center gap-1">
+        <NotificationBell />
         <UserMenu user={data.user} />
       </div>
     </header>
