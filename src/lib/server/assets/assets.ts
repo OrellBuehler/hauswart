@@ -228,11 +228,18 @@ export function updateAsset(
     throw conflict("An asset with this slug already exists");
   }
   const { archived, ...fields } = patch;
+  // Dates a person changes are theirs: a linked document no longer overwrites them.
+  const warrantyEdited =
+    (patch.warrantyUntil !== undefined &&
+      patch.warrantyUntil !== current.warrantyUntil) ||
+    (patch.warrantyExtendedUntil !== undefined &&
+      patch.warrantyExtendedUntil !== current.warrantyExtendedUntil);
   try {
     ctx.db
       .update(assets)
       .set({
         ...fields,
+        ...(warrantyEdited ? { warrantySource: "manual" as const } : {}),
         ...(archived === undefined
           ? {}
           : {

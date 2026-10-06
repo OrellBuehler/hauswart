@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ASSET_KINDS } from "../enums";
+import { ASSET_KINDS, WARRANTY_SOURCES } from "../enums";
 import {
   atLeastOne,
   dateSchema,
@@ -36,6 +36,8 @@ export const assetSchema = z
     installedDate: dateSchema.nullable(),
     warrantyUntil: dateSchema.nullable(),
     warrantyExtendedUntil: dateSchema.nullable(),
+    /** `document`: the dates follow a linked receipt or warranty document; editing them switches to `manual`. */
+    warrantySource: z.enum(WARRANTY_SOURCES),
     showOnEmergency: z.boolean(),
     notes: z.string().nullable(),
     species: z.string().nullable(),

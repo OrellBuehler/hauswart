@@ -20,6 +20,7 @@ import {
   interpretTask,
   noteListSchema,
   pageSchema,
+  storagePathSchema,
   tagSchema,
   taskListSchema,
   uiSettingsSchema,
@@ -31,6 +32,7 @@ import {
   type PaperlessDocument,
   type PaperlessGroup,
   type PaperlessNote,
+  type PaperlessStoragePath,
   type PaperlessTag,
   type PaperlessTask,
   type PaperlessUser,
@@ -860,6 +862,10 @@ export class PaperlessClient {
       `correspondents/${assertId(correspondentId, "correspondent id")}`,
       correspondentSchema,
     );
+  }
+
+  listStoragePaths(): Promise<PaperlessStoragePath[]> {
+    return this.all("storage_paths", storagePathSchema);
   }
 
   listCustomFields(): Promise<PaperlessCustomField[]> {
