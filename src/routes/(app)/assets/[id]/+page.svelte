@@ -24,6 +24,7 @@
   import WarrantyBadge from "$lib/components/assets/warranty-badge.svelte";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
   import EmptyState from "$lib/components/app/empty-state.svelte";
+  import Comments from "$lib/components/comments/comments.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
@@ -289,6 +290,8 @@
           />
         </Card.Content>
       </Card.Root>
+
+      <Comments entityType="asset" entityId={asset.id} />
     </div>
 
     <div class="lg:sticky lg:top-16">

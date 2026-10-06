@@ -5,6 +5,7 @@
   import ExternalLinkIcon from "@lucide/svelte/icons/external-link";
   import SkipForwardIcon from "@lucide/svelte/icons/skip-forward";
   import { toast } from "svelte-sonner";
+  import CommentCount from "$lib/components/comments/comment-count.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
   import { apiErrorMessage } from "$lib/error-message";
@@ -108,6 +109,7 @@
           estimated={task.estimated}
           {today}
         />
+        <CommentCount count={task.commentCount ?? 0} />
         {#if task.assigneeUserId}
           <span
             class="text-muted-foreground inline-flex items-center gap-1.5 text-xs"
