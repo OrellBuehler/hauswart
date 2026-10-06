@@ -1,9 +1,18 @@
-import { isApiError } from "$lib/api/errors";
+import { isApiError, type ErrorCode } from "$lib/api/errors";
 import { m } from "$lib/paraglide/messages";
 
-/** A user-facing, localized message for a failed API call. */
-export function apiErrorMessage(err: unknown): string {
+/**
+ * A user-facing, localized message for a failed API call. `overrides` lets a
+ * caller give a stable code a more specific meaning (e.g. `conflict` on user
+ * creation means the username is taken).
+ */
+export function apiErrorMessage(
+  err: unknown,
+  overrides: Partial<Record<ErrorCode, string>> = {},
+): string {
   if (!isApiError(err)) return m.error_generic();
+  const override = overrides[err.code];
+  if (override) return override;
   switch (err.code) {
     case "invalid_credentials":
       return m.error_invalid_credentials();
@@ -18,7 +27,13 @@ export function apiErrorMessage(err: unknown): string {
     case "unauthenticated":
     case "setup_required":
       return m.error_unauthenticated();
-    default:
+    case "forbidden":
+      return m.error_forbidden();
+    case "not_found":
+      return m.error_not_found();
+    case "conflict":
+      return m.error_conflict();
+    case "internal":
       return m.error_generic();
   }
 }
