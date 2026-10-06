@@ -4,6 +4,7 @@ import { paraglideMiddleware } from "$lib/paraglide/server";
 import { householdTimeZone } from "$lib/server/config";
 import { assertSecretKeyConfigured } from "$lib/server/crypto";
 import { runMigrations } from "$lib/server/db";
+import { registerDomainEventHandlers } from "$lib/server/domain-events";
 import { warmDummyHash } from "$lib/server/auth/password";
 import {
   clearedSessionCookieHeader,
@@ -26,6 +27,7 @@ export async function init() {
   householdTimeZone();
   runMigrations();
   await warmDummyHash();
+  registerDomainEventHandlers();
   registerEvaluator();
 }
 

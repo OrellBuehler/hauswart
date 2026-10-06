@@ -3,6 +3,7 @@ import { atLeastOne, dateSchema, isoTimestampSchema } from "./common";
 
 export const DEFAULT_DUE_SOON_DAYS = 7;
 export const DEFAULT_DIGEST_TIME = "08:00";
+export const DEFAULT_DEFECT_DEADLINE_MONTHS = 24;
 
 const timeOfDaySchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, {
   error: "Expected HH:MM",
@@ -12,6 +13,13 @@ export const householdSettingsSchema = z
   .object({
     dueSoonDays: z.number().int().min(0).max(60).default(DEFAULT_DUE_SOON_DAYS),
     digestTime: timeOfDaySchema.default(DEFAULT_DIGEST_TIME),
+    /** Months after the handover date within which defects must be reported. */
+    defectDeadlineMonths: z
+      .number()
+      .int()
+      .min(1)
+      .max(120)
+      .default(DEFAULT_DEFECT_DEADLINE_MONTHS),
   })
   .meta({ id: "HouseholdSettings" });
 export type HouseholdSettings = z.infer<typeof householdSettingsSchema>;
@@ -42,6 +50,7 @@ export const updateHouseholdRequestSchema = atLeastOne(
       .strictObject({
         dueSoonDays: z.number().int().min(0).max(60).optional(),
         digestTime: timeOfDaySchema.optional(),
+        defectDeadlineMonths: z.number().int().min(1).max(120).optional(),
       })
       .optional(),
   }),

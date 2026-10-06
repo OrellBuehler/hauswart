@@ -43,6 +43,7 @@ export const assetSchema = z
     waterNotes: z.string().nullable(),
     photoAttachmentId: z.string().nullable(),
     archivedAt: isoTimestampSchema.nullable(),
+    commentCount: z.number().int(),
     createdAt: isoTimestampSchema,
     updatedAt: isoTimestampSchema,
   })

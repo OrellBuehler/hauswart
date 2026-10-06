@@ -6,9 +6,13 @@ import type {
   UpdatePreparationRequest,
 } from "$lib/api/schemas/tasks";
 import { leadValueSchema } from "$lib/api/schemas/tasks";
-import { taskPrepCompletions, taskPreparations } from "$lib/server/db";
+import { parts, taskPrepCompletions, taskPreparations } from "$lib/server/db";
 import { parseStored } from "$lib/server/json";
-import { notFound, type ServiceContext } from "$lib/server/service";
+import {
+  invalidField,
+  notFound,
+  type ServiceContext,
+} from "$lib/server/service";
 import { clockAt, evaluateTaskById } from "./evaluator";
 import { loadSignals } from "./signals";
 import { stateToDue, type TaskStateRecord } from "./state";
@@ -74,6 +78,12 @@ export async function preparationsForTasks(
     }
   }
 
+  const stock = partStock(
+    ctx,
+    rows.flatMap((r) =>
+      r.kind === "order_part" && r.partId ? [r.partId] : [],
+    ),
+  );
   const records = rows.map((row) => ({ row, leadValue: leadValueOf(row) }));
   const signals = await loadSignals(
     {
@@ -94,6 +104,9 @@ export async function preparationsForTasks(
     const config: PrepConfig = {
       kind: row.kind,
       qty: row.qty,
+      ...(row.partId !== null && stock.has(row.partId)
+        ? { partStock: stock.get(row.partId) }
+        : {}),
       ...(row.leadDays === null ? {} : { leadDays: row.leadDays }),
       ...(leadValue ? { leadValue } : {}),
     };
@@ -112,6 +125,32 @@ export async function preparationsForTasks(
     result.set(row.taskId, list);
   }
   return result;
+}
+
+/** Stock counts by part id; an order-part preparation is skipped while stock covers its quantity. */
+function partStock(ctx: Db, ids: string[]): Map<string, number> {
+  const result = new Map<string, number>();
+  const unique = [...new Set(ids)];
+  for (let i = 0; i < unique.length; i += 500) {
+    for (const row of ctx.db
+      .select({ id: parts.id, stock: parts.stockCount })
+      .from(parts)
+      .where(inArray(parts.id, unique.slice(i, i + 500)))
+      .all()) {
+      result.set(row.id, row.stock);
+    }
+  }
+  return result;
+}
+
+function assertPart(ctx: Db, partId: string | null | undefined) {
+  if (!partId) return;
+  const hit = ctx.db
+    .select({ id: parts.id })
+    .from(parts)
+    .where(eq(parts.id, partId))
+    .get();
+  if (!hit) throw invalidField("partId", "Part does not exist");
 }
 
 export async function listPreparations(
@@ -155,6 +194,7 @@ export async function createPreparation(
   input: CreatePreparationRequest,
 ): Promise<PreparationRecord> {
   getTask(ctx, taskId);
+  assertPart(ctx, input.partId);
   const row = ctx.db
     .insert(taskPreparations)
     .values({
@@ -179,6 +219,7 @@ export async function updatePreparation(
   patch: UpdatePreparationRequest,
 ): Promise<PreparationRecord> {
   findPrep(ctx, taskId, prepId);
+  assertPart(ctx, patch.partId);
   ctx.db
     .update(taskPreparations)
     .set(patch)

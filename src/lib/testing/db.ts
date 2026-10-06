@@ -1,4 +1,5 @@
 import { afterEach, beforeEach } from "vitest";
+import { registerDomainEventHandlers } from "$lib/server/domain-events";
 import { migrateDatabase, openDatabase, setDB, type DB } from "$lib/server/db";
 
 /**
@@ -15,6 +16,7 @@ export function useTestDB(): { readonly db: DB } {
     current = openDatabase(":memory:");
     migrateDatabase(current);
     setDB(current);
+    registerDomainEventHandlers();
   });
   afterEach(() => {
     current?.$client.close();

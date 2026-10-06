@@ -63,16 +63,13 @@ export interface DashboardRecord {
   };
   preparations: DashboardPreparationRecord[];
   recentCompletions: CompletionRecord[];
-  openDefects: never[];
-  expiringWarranties: never[];
-  orderNow: never[];
 }
 
 /**
  * Everything the start page shows, from the cached verdicts: what is overdue,
  * due today, this week and later (60 days), signal-based tasks, preparations
- * that have become relevant, and the last completions. Defects, expiring
- * warranties and parts to order are reserved (empty) until their milestones.
+ * that have become relevant, and the last completions. Defects, warranties
+ * and parts to order are added by the dashboard handler from their own services.
  */
 export async function getDashboard(
   ctx: ServiceContext,
@@ -190,8 +187,5 @@ export async function getDashboard(
     },
     preparations,
     recentCompletions: recentCompletions(ctx, DASHBOARD_RECENT_COMPLETIONS),
-    openDefects: [],
-    expiringWarranties: [],
-    orderNow: [],
   };
 }

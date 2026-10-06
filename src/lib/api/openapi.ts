@@ -128,6 +128,13 @@ function operation(endpoint: AnyEndpoint, components: Components): Json {
   const responses: Record<string, Json> = {};
   if (endpoint.status === 204) {
     responses["204"] = { description: "No content" };
+  } else if (endpoint.responseType === "pdf") {
+    responses[String(endpoint.status)] = {
+      description: "Success",
+      content: {
+        "application/pdf": { schema: { type: "string", format: "binary" } },
+      },
+    };
   } else {
     responses[String(endpoint.status)] = {
       description: "Success",

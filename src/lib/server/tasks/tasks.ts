@@ -7,6 +7,7 @@ import type {
   CreateTaskRequest,
   UpdateTaskRequest,
 } from "$lib/api/schemas/tasks";
+import { commentCountSql } from "$lib/server/comments/counts";
 import { assets, rooms, taskState, tasks, users } from "$lib/server/db";
 import { parseStored } from "$lib/server/json";
 import { getHousehold } from "$lib/server/household/household";
@@ -28,6 +29,7 @@ export interface TaskRecord extends Omit<TaskRow, "trigger"> {
   trigger: Trigger;
   assetName: string | null;
   roomName: string | null;
+  commentCount: number;
   state: TaskStateRecord | null;
 }
 
@@ -35,6 +37,7 @@ type Joined = {
   task: TaskRow;
   assetName: string | null;
   roomName: string | null;
+  commentCount: number;
   state: StateRow | null;
 };
 
@@ -44,6 +47,7 @@ const selectTasks = (db: ServiceContext["db"]) =>
       task: tasks,
       assetName: assets.name,
       roomName: rooms.name,
+      commentCount: commentCountSql("task", tasks.id),
       state: taskState,
     })
     .from(tasks)
@@ -51,12 +55,19 @@ const selectTasks = (db: ServiceContext["db"]) =>
     .leftJoin(rooms, eq(tasks.roomId, rooms.id))
     .leftJoin(taskState, eq(taskState.taskId, tasks.id));
 
-function toRecord({ task, assetName, roomName, state }: Joined): TaskRecord {
+function toRecord({
+  task,
+  assetName,
+  roomName,
+  commentCount,
+  state,
+}: Joined): TaskRecord {
   return {
     ...task,
     trigger: parseStored(triggerSchema, task.trigger, "task trigger"),
     assetName,
     roomName,
+    commentCount: Number(commentCount),
     state: state ? toStateRecord(state) : null,
   };
 }

@@ -26,6 +26,8 @@ export interface CallOptions extends Omit<
 export interface RouteResult {
   res: Response;
   body: unknown;
+  /** The raw body of a PDF response (`body` is null then). */
+  bytes?: Uint8Array;
   cookies: FakeCookies;
   event: ReturnType<typeof createTestEvent>;
 }
@@ -79,6 +81,15 @@ export async function callRoute(
     event: event as never,
     resolve: ((e: RequestEvent) => handler(e)) as never,
   });
+  if (/^application\/pdf\b/i.test(res.headers.get("content-type") ?? "")) {
+    return {
+      res,
+      body: null,
+      bytes: new Uint8Array(await res.arrayBuffer()),
+      cookies: event.cookies,
+      event,
+    };
+  }
   const text = await res.text();
   let body: unknown = null;
   if (text) {

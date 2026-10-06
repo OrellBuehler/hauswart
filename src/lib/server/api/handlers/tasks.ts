@@ -18,8 +18,18 @@ import {
   updateTask,
 } from "$lib/server/tasks/tasks";
 import { listPreparations } from "$lib/server/tasks/preparations";
+import {
+  checkCompletionLog,
+  entryOfCompletion,
+  logCompletion,
+} from "$lib/server/service-log/service-log";
 import { reply, type Handler } from "../bind";
-import { wireCompletion, wirePreparation, wireTask } from "../wire";
+import {
+  wireCompletion,
+  wirePreparation,
+  wireServiceLogEntry,
+  wireTask,
+} from "../wire";
 
 /**
  * Who did it, as the record will say. A browser session is `manual` unless it
@@ -98,6 +108,10 @@ export const complete: Handler<typeof endpoints.tasksComplete> = async ({
   params,
   body,
 }) => {
+  // The service log request is checked first: a bad one must not leave a half-done completion.
+  if (body.serviceLog) {
+    checkCompletionLog(ctx, getTask(ctx, params.id), body.serviceLog);
+  }
   const result = await completeTask(ctx, params.id, {
     kind: "done",
     source: completionSourceFor(ctx.principal, body.source),
@@ -108,9 +122,23 @@ export const complete: Handler<typeof endpoints.tasksComplete> = async ({
     idempotencyKey: body.idempotencyKey,
     counterValue: body.counterValue,
   });
+  const entry =
+    body.serviceLog && result.task.assetId && !result.replayed
+      ? logCompletion(
+          ctx,
+          result.completion.id,
+          { assetId: result.task.assetId, title: result.task.title },
+          body.serviceLog,
+          result.completion.completedDate,
+          ctx.user.id,
+        )
+      : result.replayed
+        ? entryOfCompletion(ctx, result.completion.id)
+        : null;
   const out = {
     completion: wireCompletion(result.completion),
     task: wireTask(result.task),
+    serviceLog: entry ? wireServiceLogEntry(entry) : null,
   };
   return result.replayed ? reply(200, out) : out;
 };
@@ -132,6 +160,7 @@ export const skip: Handler<typeof endpoints.tasksSkip> = async ({
   const out = {
     completion: wireCompletion(result.completion),
     task: wireTask(result.task),
+    serviceLog: null,
   };
   return result.replayed ? reply(200, out) : out;
 };

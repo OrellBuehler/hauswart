@@ -5,8 +5,9 @@ recurring maintenance tasks with completion tracking, documentation (markdown, u
 Paperless-ngx links), device inventory, defects, spare parts, contacts, costs, notifications, an
 iCal feed, a guest link and an MCP server. Home Assistant, Paperless-ngx and Kept (finance) are
 optional adapters, never requirements. Status: early development — authentication, the API spine
-and the task core (rooms, assets, tasks, completions, notifications, dashboard) exist; documents,
-defects, parts, contacts, costs, the iCal feed, the guest link and the MCP server are still to come.
+and the task core (rooms, assets, tasks, completions, notifications, dashboard) exist, as do contacts,
+spare parts, the service log, care hints, defects (with a PDF export), the warranty overview and
+generic comments; documents, costs, the iCal feed, the guest link and the MCP server are still to come.
 
 There is one household, not many: all domain data is shared by every user. Only sessions, API
 tokens, integration connections and preferences belong to a single user.
@@ -81,6 +82,16 @@ src/lib/server/assets/           assets (devices, plants, fixtures), slugs, QR s
 src/lib/server/tasks/            tasks CRUD, previewTrigger, evaluator (task_state cache), signals (provider seam),
                                  completions (complete/skip/undo/snooze), preparations, dashboard, stats, scheduler
 src/lib/server/notifications/    in-app notifications, generateNotifications, channel registry for outward delivery
+src/lib/server/events.ts         typed in-process domain events (completionRecorded/Revoked), emitted inside the writer's transaction
+src/lib/server/domain-events.ts  registerDomainEventHandlers(): wires reactions (parts stock) at startup and in useTestDB()
+src/lib/server/contacts/         contacts CRUD + search, links to assets (role per link)
+src/lib/server/parts/            spare parts: CRUD, stock movements, "ordered" state, links to assets/tasks, order-now, completion events
+src/lib/server/service-log/      per-asset work log (also written with a task completion by the complete handler)
+src/lib/server/hints/            per-asset care hints (tip/rule/warning), pinned, ordered, optional signal reaction (stored only)
+src/lib/server/defects/          defects (Mängel): status machine, events, handover deadline, reminder task, timeline, PDF export
+src/lib/server/warranties/       warranty overview + status (valid / expiring ≤ 90 days / expired); feeds the dashboard
+src/lib/server/comments/         generic comments on any entity: commentable registry, soft delete, notifications, counts
+src/lib/server/pdf/render.ts     shared pdfmake wrapper (A4, Roboto from node_modules, no network or file access)
 src/lib/server/seed/import.ts    seed importer (through the REST API); CLI in scripts/seed.ts, data in seed/
 src/lib/server/integrations/     optional adapters (homeassistant/, paperless/, kept/) — the core never imports these
 src/lib/server/db.ts             SQLite connection (WAL, foreign keys); migrations run on startup
@@ -126,6 +137,38 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   by `scripts/seed.ts` through the REST API and matched by `key`, so repeating it changes nothing:
   rooms and assets by slug, tasks by `externalSource: "seed"` + `externalRef`, preparations by title.
   Existing entries are left alone unless `--update`. Changing the household needs the admin scope.
+
+### Parts, defects, comments and other M3 domains
+
+- **Events keep domains apart.** `completeTask`/`undoCompletion` emit `completionRecorded` /
+  `completionRevoked` (`events.ts`) inside the same SQLite transaction as the change; the parts
+  service subscribes (`parts/events.ts`) and the tasks service knows nothing about parts. A
+  listener that throws rolls the completion back. Register new reactions in `domain-events.ts`.
+- **Stock** only changes through movements (`part_movements`, with `completionId` for task usage).
+  Completing a `done` task takes `task_parts.qty` out (never below zero, the movement records the
+  actual amount); undo books the net back as a `correction`. Manual `used` needs a negative delta,
+  `bought` a positive one and ends a pending order. `orderNow` = engine `orderNowItems` over
+  active tasks with linked parts, counting what is on order as stock. An `order_part` preparation is
+  `in_stock_skip` while the part's stock covers its qty.
+- **Defects**: transitions in `DEFECT_TRANSITIONS` (active statuses reach any other; fixed/rejected
+  only reopen); every status change writes a `defect_events` row; remarks are generic comments and
+  `GET /defects/{id}/timeline` merges both. The deadline defaults to household handover date +
+  `defectDeadlineMonths` (`deadlineSource` handover) and is recomputed when the household changes.
+  A deadline keeps one `one_off` reminder task (`externalSource: "defect"`, category `defect`, system
+  text in the base language) that is archived when the defect is fixed/rejected or has no deadline.
+- **Comments** (`comments` table, `entityType` + `entityId`): a kind of entity is commentable once
+  it is in `comments/registry.ts` (`exists`, `title`, `url`, optional `audience`); `doc_page` waits
+  for the docs milestone (`registerCommentable`). Deleting an entity removes its comments through
+  `AFTER DELETE` triggers (migration `0004`): add one per new commentable table. Delete is soft
+  (empty body, `deleted: true`), edit is author-only (403 otherwise), delete is author or admin. A new
+  comment notifies the other involved members (`notification_comment`). Tasks, assets and defects
+  carry `commentCount`.
+- **PDF endpoints** declare `responseType: "pdf"` in the registry; the handler returns a `Response`
+  (checked for `application/pdf` outside production), OpenAPI documents `application/pdf`, the typed
+  client returns the `Response` and `endpointUrl()` builds a plain download link. pdfmake is
+  external to the bundle (`vite.config.ts`) and read from `node_modules` at runtime.
+- **Hint reactions** (`signalReactionSchema`, type `signal_change`) are stored with the hint and
+  executed by an adapter later; the core only validates and lists them (`GET /hints?reactive=true`).
 
 ### Authentication and the API spine
 

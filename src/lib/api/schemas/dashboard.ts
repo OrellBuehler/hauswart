@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { DUE_KINDS, PREPARATION_STATES, TASK_CATEGORIES } from "../enums";
 import { dateSchema, isoTimestampSchema } from "./common";
+import { defectSeveritySchema, defectStatusSchema } from "./defects";
+import { orderNowItemSchema } from "./parts";
+import { warrantyStatusSchema } from "./warranties";
 import {
   completionSchema,
   dueStatusSchema,
@@ -42,14 +45,34 @@ export const dashboardPreparationSchema = z
   })
   .meta({ id: "DashboardPreparation" });
 
-/** Reserved for later milestones (defects, warranties, orders); always empty for now. */
-export const dashboardReservedItemSchema = z
+/** Every dashboard list item carries `id`, `title` and `date` (the date that matters for it). */
+const dashboardItemFields = {
+  id: z.string(),
+  title: z.string(),
+  date: dateSchema.nullable(),
+};
+
+/** An open defect; `date` is its deadline. */
+export const dashboardDefectSchema = z
   .object({
-    id: z.string(),
-    title: z.string(),
-    date: dateSchema.nullable(),
+    ...dashboardItemFields,
+    number: z.number().int(),
+    status: defectStatusSchema,
+    severity: defectSeveritySchema,
+    roomName: z.string().nullable(),
+    assetName: z.string().nullable(),
   })
-  .meta({ id: "DashboardReservedItem" });
+  .meta({ id: "DashboardDefect" });
+
+/** An asset whose warranty is about to end or just ended; `date` is its last day. */
+export const dashboardWarrantySchema = z
+  .object({
+    ...dashboardItemFields,
+    assetId: z.string(),
+    status: warrantyStatusSchema,
+    daysLeft: z.number().int(),
+  })
+  .meta({ id: "DashboardWarranty" });
 
 export const dashboardSchema = z
   .object({
@@ -70,9 +93,9 @@ export const dashboardSchema = z
     }),
     preparations: z.array(dashboardPreparationSchema),
     recentCompletions: z.array(completionSchema),
-    openDefects: z.array(dashboardReservedItemSchema),
-    expiringWarranties: z.array(dashboardReservedItemSchema),
-    orderNow: z.array(dashboardReservedItemSchema),
+    openDefects: z.array(dashboardDefectSchema),
+    expiringWarranties: z.array(dashboardWarrantySchema),
+    orderNow: z.array(orderNowItemSchema),
   })
   .meta({ id: "Dashboard" });
 export type Dashboard = z.infer<typeof dashboardSchema>;
