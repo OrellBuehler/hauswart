@@ -1,0 +1,142 @@
+<script lang="ts">
+  import EyeIcon from "@lucide/svelte/icons/eye";
+  import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
+  import { api } from "$lib/api/browser";
+  import { endpoints } from "$lib/api/registry";
+  import type { DueResultWire } from "$lib/api/schemas/tasks";
+  import * as Card from "$lib/components/ui/card/index.js";
+  import { apiErrorMessage } from "$lib/error-message";
+  import { m } from "$lib/paraglide/messages";
+  import { getLocale } from "$lib/paraglide/runtime";
+  import { describeTrigger } from "$lib/tasks/describe";
+  import { triggerSchema } from "$lib/tasks/engine/types";
+  import { reasonLabels } from "$lib/tasks/labels";
+  import DueBadge from "./due-badge.svelte";
+  import ProgressBar from "./progress-bar.svelte";
+  import type { TriggerDraft } from "./trigger-builder/types";
+
+  let {
+    trigger,
+    graceDays,
+    dueSoonDays,
+    today,
+  }: {
+    trigger: TriggerDraft;
+    graceDays: number | undefined;
+    dueSoonDays: number | undefined;
+    today: string;
+  } = $props();
+
+  const parsed = $derived(triggerSchema.safeParse($state.snapshot(trigger)));
+  const summary = $derived(
+    parsed.success ? describeTrigger(parsed.data, getLocale()) : null,
+  );
+
+  let result = $state<DueResultWire | null>(null);
+  let failure = $state<string | undefined>();
+  let pending = $state(false);
+  let sequence = 0;
+
+  $effect(() => {
+    const current = parsed;
+    const grace = graceDays;
+    const soon = dueSoonDays;
+    if (!current.success) {
+      result = null;
+      failure = undefined;
+      pending = false;
+      return;
+    }
+    pending = true;
+    const ticket = ++sequence;
+    const handle = setTimeout(async () => {
+      try {
+        const next = await api.call(endpoints.tasksPreview, {
+          body: {
+            trigger: current.data,
+            ...(grace !== undefined &&
+            Number.isInteger(grace) &&
+            grace >= 0 &&
+            grace <= 365
+              ? { graceDays: grace }
+              : {}),
+            ...(soon !== undefined &&
+            Number.isInteger(soon) &&
+            soon >= 0 &&
+            soon <= 365
+              ? { dueSoonDays: soon }
+              : {}),
+          },
+        });
+        if (ticket !== sequence) return;
+        result = next;
+        failure = undefined;
+      } catch (err) {
+        if (ticket !== sequence) return;
+        result = null;
+        failure = apiErrorMessage(err);
+      } finally {
+        if (ticket === sequence) pending = false;
+      }
+    }, 400);
+    return () => clearTimeout(handle);
+  });
+
+  const date = $derived(result?.dueDate ?? result?.estimate?.date ?? null);
+  const estimated = $derived(
+    result !== null &&
+      (result.dueKind === "estimated" || result.dueDate === null),
+  );
+</script>
+
+<Card.Root class="gap-3">
+  <Card.Header>
+    <Card.Title class="flex items-center gap-2 text-base">
+      <EyeIcon class="text-muted-foreground size-4" aria-hidden="true" />
+      {m.preview_title()}
+      {#if pending}
+        <LoaderCircleIcon
+          class="text-muted-foreground size-4 animate-spin"
+          aria-hidden="true"
+        />
+      {/if}
+    </Card.Title>
+  </Card.Header>
+  <Card.Content class="flex flex-col gap-3 text-sm" aria-live="polite">
+    {#if !parsed.success}
+      <p class="text-muted-foreground text-pretty">{m.preview_incomplete()}</p>
+    {:else}
+      <p class="font-medium text-pretty">{summary}</p>
+      {#if failure}
+        <p class="text-destructive text-pretty">{failure}</p>
+      {:else if result}
+        <div class="flex flex-col gap-2">
+          <DueBadge
+            status={result.status}
+            {date}
+            {estimated}
+            {today}
+            class="text-sm"
+          />
+          {#if result.progress}
+            <ProgressBar
+              current={result.progress.current}
+              target={result.progress.target}
+              unit={result.progress.unit}
+            />
+          {/if}
+          {#if result.reasons.length > 0}
+            <ul class="text-muted-foreground list-disc ps-4 text-xs">
+              {#each result.reasons as reason (reason)}
+                <li>{reasonLabels[reason]()}</li>
+              {/each}
+            </ul>
+          {/if}
+        </div>
+        <p class="text-muted-foreground text-xs text-pretty">
+          {m.preview_note()}
+        </p>
+      {/if}
+    {/if}
+  </Card.Content>
+</Card.Root>

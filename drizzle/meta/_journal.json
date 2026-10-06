@@ -26,15 +26,29 @@
     {
       "idx": 3,
       "version": "6",
-      "when": 1791304597884,
-      "tag": "0003_thin_overlord",
+      "when": 1791304716317,
+      "tag": "0003_wise_cerebro",
       "breakpoints": true
     },
     {
       "idx": 4,
       "version": "6",
-      "when": 1791304602903,
-      "tag": "0004_search_index",
+      "when": 1791304717977,
+      "tag": "0004_comment_cleanup_triggers",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1791307204249,
+      "tag": "0005_docs_attachments",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1791307321751,
+      "tag": "0006_search_index",
       "breakpoints": true
     }
   ]

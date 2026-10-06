@@ -200,14 +200,6 @@ describe("createApiClient", () => {
     );
   });
 
-  it("does not offer binary endpoints to call()", () => {
-    const api = createApiClient(fakeFetch(() => jsonResponse({})).fetch);
-    const content = endpoints.attachmentsContent;
-    // @ts-expect-error file content is fetched by URL, not parsed as JSON
-    const attempt = () => api.call(content, { params: { id: "x" } });
-    expect(attempt).toBeTypeOf("function");
-  });
-
   it("sends a bearer token and honours an absolute base URL", async () => {
     const { fetch, calls } = fakeFetch(() =>
       jsonResponse({ user, auth: "token", scopes: ["read"] }),
@@ -237,5 +229,43 @@ describe("createApiClient", () => {
   it("lets network errors through untouched", async () => {
     const api = createApiClient(() => Promise.reject(new TypeError("offline")));
     await expect(api.call(endpoints.health)).rejects.toThrow(TypeError);
+  });
+});
+
+describe("PDF endpoints", () => {
+  it("returns the response itself and asks for application/pdf", async () => {
+    const { fetch, calls } = fakeFetch(
+      () =>
+        new Response(new Uint8Array([37, 80, 68, 70]), {
+          headers: { "content-type": "application/pdf" },
+        }),
+    );
+    const res = await createApiClient(fetch).call(endpoints.defectsExport, {
+      query: { status: "open" },
+    });
+    expect(res).toBeInstanceOf(Response);
+    expect((await res.arrayBuffer()).byteLength).toBe(4);
+    expect(calls[0].url).toBe("/api/v1/defects/export.pdf?status=open");
+    expect((calls[0].init.headers as Record<string, string>).accept).toBe(
+      "application/pdf",
+    );
+  });
+
+  it("throws the API error for a failed request", async () => {
+    const { fetch } = fakeFetch(() =>
+      jsonResponse({ error: { code: "forbidden", message: "No" } }, 403),
+    );
+    await expect(
+      createApiClient(fetch).call(endpoints.defectsExport),
+    ).rejects.toMatchObject({ code: "forbidden", status: 403 });
+  });
+
+  it("builds the url for a plain download link", () => {
+    expect(
+      endpointUrl(endpoints.defectsExport, { query: { roomId: "r 1" } }),
+    ).toBe("/api/v1/defects/export.pdf?roomId=r+1");
+    expect(endpointUrl(endpoints.defectsExport)).toBe(
+      "/api/v1/defects/export.pdf",
+    );
   });
 });

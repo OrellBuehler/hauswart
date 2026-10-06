@@ -86,3 +86,8 @@ export const slugSchema = z
     error:
       "Slug may only contain lowercase letters, digits and single hyphens.",
   });
+
+/** The placeholder `response` of a `responseType: "binary"` endpoint: its handler returns a `Response`. */
+export const binaryResponseSchema = z.custom<Response>(
+  (value) => typeof Response !== "undefined" && value instanceof Response,
+);

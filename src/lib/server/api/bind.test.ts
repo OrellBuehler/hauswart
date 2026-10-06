@@ -3,7 +3,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { ApiError } from "$lib/api/errors";
 import { defineEndpoint } from "$lib/api/registry";
-import { emptySchema, paginationQuerySchema } from "$lib/api/schemas/common";
+import {
+  emptySchema,
+  paginationQuerySchema,
+  binaryResponseSchema,
+} from "$lib/api/schemas/common";
 import {
   AuthError,
   type SessionUser,
@@ -817,7 +821,7 @@ describe("bind", () => {
       scopes: ["read"],
       path: "/api/v1/things/{id}",
       params: z.object({ id: z.string() }),
-      response: z.null(),
+      response: binaryResponseSchema,
       responseType: "binary",
       contentTypes: ["image/png"],
     });
@@ -841,8 +845,29 @@ describe("bind", () => {
       expect(r.status).toBe(200);
       expect(r.headers.get("content-type")).toBe("image/png");
       expect(r.headers.get("etag")).toBe('"x"');
-      expect(r.headers.get("cache-control")).toBeNull();
+      expect(r.headers.get("cache-control")).toBe("no-store");
       expect(await r.text()).toBe("bytes of 42");
+    });
+
+    it("keeps the Cache-Control the handler set", async () => {
+      const bound = bind(
+        file,
+        () =>
+          new Response("x", {
+            headers: {
+              "content-type": "image/png",
+              "cache-control": "private, max-age=60",
+            },
+          }),
+      );
+      const r = await bound(
+        createTestEvent({
+          url: "http://localhost/api/v1/things/1",
+          params: { id: "1" },
+          locals: { user: member, session, token: null },
+        }) as never,
+      );
+      expect(r.headers.get("cache-control")).toBe("private, max-age=60");
     });
 
     it("keeps the guards: anonymous callers and missing scopes never reach the handler", async () => {
@@ -884,6 +909,68 @@ describe("bind", () => {
         { params: { id: "1" } },
       );
       expect([r.res.status, codeOf(r)]).toEqual([500, "internal"]);
+    });
+
+    const pdf = defineEndpoint({
+      ...base,
+      id: "doc",
+      auth: "public",
+      response: binaryResponseSchema,
+      responseType: "binary",
+      contentTypes: ["application/pdf"],
+    });
+    const run = async (handler: () => unknown) => {
+      const event = createTestEvent({
+        url: "http://localhost/api/v1/things",
+        locals: { user: null, session: null, token: null },
+      });
+      const res = await bind(pdf, handler as never)(event as never);
+      return { res, bytes: new Uint8Array(await res.arrayBuffer()) };
+    };
+    const document = () =>
+      new Response(new Uint8Array([37, 80, 68, 70, 45]), {
+        headers: {
+          "content-type": "application/pdf",
+          "content-disposition": 'attachment; filename="a.pdf"',
+        },
+      });
+
+    it("passes the handler's Response through byte for byte and adds no-store", async () => {
+      const { res, bytes } = await run(document);
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toBe("application/pdf");
+      expect(res.headers.get("content-disposition")).toBe(
+        'attachment; filename="a.pdf"',
+      );
+      expect(res.headers.get("cache-control")).toBe("no-store");
+      expect([...bytes]).toEqual([37, 80, 68, 70, 45]);
+    });
+
+    it("fails with 500 when the handler returns something else or the wrong type", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      for (const handler of [
+        () => ({ ok: true }),
+        () =>
+          new Response("text", { headers: { "content-type": "text/plain" } }),
+        () =>
+          new Response("x", {
+            status: 500,
+            headers: { "content-type": "application/pdf" },
+          }),
+      ]) {
+        const { res } = await run(handler);
+        expect(res.status).toBe(500);
+      }
+    });
+
+    it("still maps thrown errors to the JSON envelope", async () => {
+      const { res, bytes } = await run(() => {
+        throw new ApiError("not_found", "Nothing here");
+      });
+      expect(res.status).toBe(404);
+      expect(JSON.parse(new TextDecoder().decode(bytes))).toMatchObject({
+        error: { code: "not_found" },
+      });
     });
   });
 

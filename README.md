@@ -60,6 +60,8 @@ bun run openapi          # regenerate docs/openapi.json (the versioned /api/v1 c
 bun run leak-guard --all # scan the tree for configured private terms
 ```
 
+An MCP server for Claude lives in [mcp/](mcp/README.md) (`bun run mcp`, `bun run mcp:build`).
+
 Hooks run through [prek](https://github.com/j178/prek): `prek install` once per clone.
 See [CLAUDE.md](CLAUDE.md) for architecture and conventions.
 

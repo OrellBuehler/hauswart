@@ -132,7 +132,6 @@ function operation(endpoint: AnyEndpoint, components: Components): Json {
     responses[String(endpoint.status)] = {
       description: "The file",
       headers: {
-        ETag: { schema: { type: "string" } },
         "Content-Disposition": { schema: { type: "string" } },
         "Cache-Control": { schema: { type: "string" } },
       },
@@ -143,7 +142,6 @@ function operation(endpoint: AnyEndpoint, components: Components): Json {
         ]),
       ),
     };
-    responses["304"] = { description: "Not modified (If-None-Match matched)" };
   } else if (endpoint.status === 204) {
     responses["204"] = { description: "No content" };
   } else {

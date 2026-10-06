@@ -5,9 +5,10 @@ recurring maintenance tasks with completion tracking, documentation (markdown, u
 Paperless-ngx links), device inventory, defects, spare parts, contacts, costs, notifications, an
 iCal feed, a guest link and an MCP server. Home Assistant, Paperless-ngx and Kept (finance) are
 optional adapters, never requirements. Status: early development — authentication, the API spine,
-the task core (rooms, assets, tasks, completions, notifications, dashboard) and documentation
-(pages, attachments, search, file backup) exist; defects, parts, contacts, costs, the iCal feed, the
-guest link and the MCP server are still to come.
+the task core (rooms, assets, tasks, completions, notifications, dashboard), documentation (pages,
+attachments, search, file backup), contacts, spare parts, the service log, care hints, defects (with
+a PDF export), the warranty overview and generic comments exist; costs, the iCal feed and the guest
+link are still to come; the MCP server covers the task core (see `mcp/README.md`).
 
 There is one household, not many: all domain data is shared by every user. Only sessions, API
 tokens, integration connections and preferences belong to a single user.
@@ -39,6 +40,8 @@ bun run openapi          # regenerate docs/openapi.json from the registry (a tes
 bun run i18n             # recompile Paraglide messages (also runs on install and in check)
 bun run leak-guard --all # scan the whole tree for private terms
 bun scripts/seed.ts --file seed/example.de.json --token hw_… [--url http://localhost:3000] [--update]
+bun run mcp              # MCP server from source (HAUSWART_URL, HAUSWART_TOKEN)
+bun run mcp:build        # compile it to dist/hauswart-mcp (gitignored)
 bun run security         # semgrep, bun audit, trivy
 ```
 
@@ -89,7 +92,20 @@ src/lib/server/assets/           assets (devices, plants, fixtures), slugs, QR s
 src/lib/server/tasks/            tasks CRUD, previewTrigger, evaluator (task_state cache), signals (provider seam),
                                  completions (complete/skip/undo/snooze), preparations, dashboard, stats, scheduler
 src/lib/server/notifications/    in-app notifications, generateNotifications, channel registry for outward delivery
+src/lib/server/events.ts         typed in-process domain events (completionRecorded/Revoked), emitted inside the writer's transaction
+src/lib/server/domain-events.ts  registerDomainEventHandlers(): wires reactions (parts stock) at startup and in useTestDB()
+src/lib/server/contacts/         contacts CRUD + search, links to assets (role per link)
+src/lib/server/parts/            spare parts: CRUD, stock movements, "ordered" state, links to assets/tasks, order-now, completion events
+src/lib/server/service-log/      per-asset work log (also written with a task completion by the complete handler)
+src/lib/server/hints/            per-asset care hints (tip/rule/warning), pinned, ordered, optional signal reaction (stored only)
+src/lib/server/defects/          defects (Mängel): status machine, events, handover deadline, reminder task, timeline, PDF export
+src/lib/server/warranties/       warranty overview + status (valid / expiring ≤ 90 days / expired); feeds the dashboard
+src/lib/server/comments/         generic comments on any entity: commentable registry, soft delete, notifications, counts
+src/lib/server/pdf/render.ts     shared pdfmake wrapper (A4, Roboto from node_modules, no network or file access)
 src/lib/server/seed/import.ts    seed importer (through the REST API); CLI in scripts/seed.ts, data in seed/
+mcp/src/                         stdio MCP server (client-safe imports only): index.ts entry, server.ts (whoami handshake,
+                                 scope-based registration), tool.ts (defineTool), context.ts (client + name resolvers),
+                                 tools/ (registry in tools/index.ts, one file per domain); mcp/README.md is the setup guide
 src/lib/server/integrations/     optional adapters (homeassistant/, paperless/, kept/) — the core never imports these
 src/lib/server/db.ts             SQLite connection (WAL, foreign keys); migrations run on startup
 src/lib/server/schema.ts         Drizzle schema — one file, every table has created_at/updated_at
@@ -167,11 +183,15 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   others `write`. `deleteIfUnreferenced` keeps files younger than a minute, so a daily orphan sweep
   (`startFileSweeper`) removes what deletions left behind. `assets.photoAttachmentId` must be an
   image attachment owned by that asset (set it with an update; it cannot be set on create).
-- **Binary endpoints**: `responseType: "binary"` + `contentTypes` in the registry; the handler
-  returns a finished `Response` (`bind` only authenticates, parses and passes it through; OpenAPI
-  documents `string/binary` per content type). `createApiClient().call` refuses them at the type
-  level, use `endpointUrl(endpoint, {params, query})` for `<img src>`. Content is served with
-  `files/serve.ts` (nosniff, CSP, ETag = sha256, `private, immutable`).
+- **Binary endpoints** (file content, PDF exports): `responseType: "binary"` + `contentTypes` in the
+  registry, `response: binaryResponseSchema` as placeholder. The handler returns a finished
+  `Response` (`bind` authenticates, parses and passes it through, outside production it checks the
+  status and that the content type is one of `contentTypes`, and adds `Cache-Control: no-store` when
+  the handler set none). OpenAPI documents `string/binary` per content type. `createApiClient().call`
+  returns the raw `Response` (for downloads with a token); use `endpointUrl(endpoint, {params, query})`
+  for `<img src>` and plain download links. Stored files are served with `files/serve.ts` (nosniff,
+  CSP, ETag = sha256, `private, immutable`); the PDF export is `application/pdf`, `no-store`. pdfmake
+  is external to the bundle (`vite.config.ts`) and read from `node_modules` at runtime.
 - **Multipart bodies** are passed to `api.call` as a plain object (files as `File`, the rest
   strings); the client builds the `FormData`. In route tests use `callRoute(..., { form })`.
 - **Search** (`search_fts`, FTS5, created in a custom migration): triggers on pages, assets, rooms
@@ -183,6 +203,60 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   to turn off; `HAUSWART_BACKUP_KEEP` default 14). Hourly check: a `VACUUM INTO` copy
   (`hauswart-backup-<UTC>.db`) when the newest is a day old, then `mirrorFiles` copies the stored
   files missing in `<dir>/files` (never overwrites, never deletes).
+
+### Parts, defects, comments and other M3 domains
+
+- **Events keep domains apart.** `completeTask`/`undoCompletion` emit `completionRecorded` /
+  `completionRevoked` (`events.ts`) inside the same SQLite transaction as the change; the parts
+  service subscribes (`parts/events.ts`) and the tasks service knows nothing about parts. A
+  listener that throws rolls the completion back. Register new reactions in `domain-events.ts`.
+- **Stock** only changes through movements (`part_movements`, with `completionId` for task usage).
+  Completing a `done` task takes `task_parts.qty` out (never below zero, the movement records the
+  actual amount); undo books the net back as a `correction`. Manual `used` needs a negative delta,
+  `bought` a positive one and ends a pending order. `orderNow` = engine `orderNowItems` over
+  active tasks with linked parts, counting what is on order as stock. An `order_part` preparation is
+  `in_stock_skip` while the part's stock covers its qty.
+- **Defects**: transitions in `DEFECT_TRANSITIONS` (active statuses reach any other; fixed/rejected
+  only reopen); every status change writes a `defect_events` row; remarks are generic comments and
+  `GET /defects/{id}/timeline` merges both. The deadline defaults to household handover date +
+  `defectDeadlineMonths` (`deadlineSource` handover) and is recomputed when the household changes.
+  A deadline keeps one `one_off` reminder task (`externalSource: "defect"`, category `defect`, system
+  text in the base language) that is archived when the defect is fixed/rejected or has no deadline.
+- **Comments** (`comments` table, `entityType` + `entityId`): a kind of entity is commentable once
+  it is in `comments/registry.ts` (`exists`, `title`, `url`, optional `audience`); `doc_page` waits
+  for the docs milestone (`registerCommentable`). Deleting an entity removes its comments through
+  `AFTER DELETE` triggers (migration `0004`): add one per new commentable table. Delete is soft
+  (empty body, `deleted: true`), edit is author-only (403 otherwise), delete is author or admin. A new
+  comment notifies the other involved members (`notification_comment`). Tasks, assets and defects
+  carry `commentCount`.
+- **Hint reactions** (`signalReactionSchema`, type `signal_change`) are stored with the hint and
+  executed by an adapter later; the core only validates and lists them (`GET /hints?reactive=true`).
+
+### MCP server
+
+`mcp/` is a stdio server for Claude (Claude Code, Desktop) built on `@modelcontextprotocol/sdk` with
+Zod 4 input shapes. It is a REST client like the others: `createApiClient(fetch, HAUSWART_URL,
+{token})` from `src/lib/api`, so endpoint and schema changes break its build. It imports only
+client-safe modules (`src/lib/api/**`, `src/lib/tasks/engine/types`, `src/lib/dates`; a test bundles
+the entry and fails on any `src/lib/server`, `src/routes` or `src/lib/testing` input). `$lib` aliases
+inside those modules resolve through the root tsconfig (Bun and vite both honour it); the root
+tsconfig also includes `mcp/**` so `bun run check` type-checks it.
+
+- **Tools** are curated and task-oriented (`defineTool({name, title, description, mode, input,
+handler})` returning `{summary, data}`; output is a summary line plus compact JSON with empty
+  fields dropped). `mode` (`read|create|update|undo`) fixes the MCP annotations and the default
+  scope. At start-up the server calls `authMe` + `householdGet` and registers only tools whose
+  scopes the token holds, so a read-only token sees no write tools.
+- **New tool**: add the endpoint to the registry first, then a ~15-line `defineTool` in
+  `mcp/src/tools/` and an entry in `tools/index.ts` (which lists the planned extension points).
+  Triggers go through `parseTrigger` (engine schema, per-type docs in `trigger-docs.ts`, a `Record`
+  over `TriggerType` so a new trigger type must be documented).
+- **Errors** become MCP tool errors `Error [code]: message` (API code, or `unreachable`);
+  `complete_task`/`skip_task` send a fresh idempotency key; completions are attributed `mcp` by the
+  token kind.
+- **Tests** (`mcp/src/*.test.ts`, vitest) connect the real server to an in-process hauswart
+  (`createInProcessFetch`) via the SDK's in-memory transport: `useMcp().connect({scopes})` returns
+  `call`/`ok` helpers.
 
 ### Authentication and the API spine
 

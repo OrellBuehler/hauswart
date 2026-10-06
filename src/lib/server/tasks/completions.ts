@@ -1,7 +1,8 @@
 import { and, desc, eq, isNull, lt, or, sql, type SQL } from "drizzle-orm";
 import type { CompletionKind, CompletionSource } from "$lib/api/enums";
 import { UNDO_WINDOW_DAYS } from "$lib/api/schemas/tasks";
-import { taskCompletions, tasks, users } from "$lib/server/db";
+import { taskCompletions, tasks, users, type DB } from "$lib/server/db";
+import { emitEvent, type CompletionFacts } from "$lib/server/events";
 import { decodeCursor, pageOf } from "$lib/server/pagination";
 import {
   conflict,
@@ -57,6 +58,14 @@ export function getCompletion(
   if (!row) throw notFound("Completion");
   return toRecord(row);
 }
+
+const factsOf = (row: CompletionRow): CompletionFacts => ({
+  id: row.id,
+  taskId: row.taskId,
+  kind: row.kind,
+  userId: row.userId,
+  completedAt: row.completedAt,
+});
 
 /** The newest non-revoked completions of one task. */
 export function recentCompletionsOf(
@@ -189,24 +198,32 @@ export async function completeTask(
 
   let id: string;
   try {
-    id = ctx.db
-      .insert(taskCompletions)
-      .values({
-        taskId,
-        completedAt: new Date(completedAt),
-        completedDate: clockAt(completedAt).today,
-        userId: input.userId,
-        source: input.source,
-        kind: input.kind,
-        counterValue: input.counterValue ?? null,
-        occurrenceKey,
-        dueDateAtCompletion,
-        note: input.note ?? null,
-        idempotencyKey: input.idempotencyKey ?? null,
-        createdAt: new Date(ctx.now),
-      })
-      .returning({ id: taskCompletions.id })
-      .get().id;
+    // Insert and reactions (stock bookings, ...) commit or roll back together.
+    id = ctx.db.transaction((tx) => {
+      const row = tx
+        .insert(taskCompletions)
+        .values({
+          taskId,
+          completedAt: new Date(completedAt),
+          completedDate: clockAt(completedAt).today,
+          userId: input.userId,
+          source: input.source,
+          kind: input.kind,
+          counterValue: input.counterValue ?? null,
+          occurrenceKey,
+          dueDateAtCompletion,
+          note: input.note ?? null,
+          idempotencyKey: input.idempotencyKey ?? null,
+          createdAt: new Date(ctx.now),
+        })
+        .returning()
+        .get();
+      emitEvent("completionRecorded", {
+        ctx: { ...ctx, db: tx as unknown as DB },
+        completion: factsOf(row),
+      });
+      return row.id;
+    });
   } catch (err) {
     if (input.idempotencyKey && isUniqueViolation(err)) {
       const replay = findByIdempotencyKey(ctx, input.idempotencyKey, taskId);
@@ -262,11 +279,17 @@ export async function undoCompletion(
       `Completions can only be undone within ${UNDO_WINDOW_DAYS} days`,
     );
   }
-  ctx.db
-    .update(taskCompletions)
-    .set({ revokedAt: new Date(ctx.now), revokedBy: userId })
-    .where(eq(taskCompletions.id, completionId))
-    .run();
+  ctx.db.transaction((tx) => {
+    tx.update(taskCompletions)
+      .set({ revokedAt: new Date(ctx.now), revokedBy: userId })
+      .where(eq(taskCompletions.id, completionId))
+      .run();
+    emitEvent("completionRevoked", {
+      ctx: { ...ctx, db: tx as unknown as DB },
+      completion: factsOf(completion),
+      revokedBy: userId,
+    });
+  });
   await evaluateTaskById(ctx, completion.taskId);
 }
 

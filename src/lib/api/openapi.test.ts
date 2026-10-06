@@ -57,13 +57,22 @@ describe("openapi document", () => {
       "AdminUser",
       "ApiToken",
       "Asset",
+      "AssetContact",
+      "AssetPart",
       "Attachment",
+      "Comment",
       "Completion",
+      "Contact",
       "CreatedApiToken",
       "Dashboard",
+      "DashboardDefect",
       "DashboardPreparation",
-      "DashboardReservedItem",
       "DashboardTask",
+      "DashboardWarranty",
+      "Defect",
+      "DefectDetail",
+      "DefectEvent",
+      "DefectTimelineItem",
       "DirectoryUser",
       "DocPage",
       "DocPageSummary",
@@ -71,22 +80,31 @@ describe("openapi document", () => {
       "ErrorEnvelope",
       "GroupStats",
       "Heading",
+      "Hint",
       "Household",
       "HouseholdSettings",
       "Notification",
       "NotificationParams",
+      "OrderNowItem",
       "PageBacklink",
       "PageRevision",
       "PageRevisionSummary",
+      "Part",
+      "PartDetail",
+      "PartMovement",
       "Preparation",
       "Room",
       "SearchHit",
+      "ServiceLogEntry",
+      "SignalReaction",
       "Stats",
       "Task",
       "TaskDetail",
+      "TaskPart",
       "TaskState",
       "Trigger",
       "User",
+      "Warranty",
     ]);
     const login = doc.paths["/api/v1/auth/login"].post as {
       responses: Record<
@@ -117,7 +135,6 @@ describe("openapi document", () => {
     expect(content.responses["200"].content!["image/png"]).toEqual({
       schema: { type: "string", format: "binary" },
     });
-    expect(content.responses["304"]).toBeDefined();
     expect(content.responses["404"]).toBeDefined();
     const thumb = doc.paths["/api/v1/attachments/{id}/thumb"].get as {
       responses: Record<string, { content?: Record<string, unknown> }>;
@@ -203,6 +220,15 @@ describe("openapi document", () => {
     expect(Object.keys(op.requestBody.content)).toEqual([
       "multipart/form-data",
     ]);
+  });
+
+  it("documents PDF endpoints as application/pdf", () => {
+    const op = doc.paths["/api/v1/defects/export.pdf"].get as {
+      responses: Record<string, { content?: Record<string, unknown> }>;
+    };
+    expect(op.responses["200"].content).toEqual({
+      "application/pdf": { schema: { type: "string", format: "binary" } },
+    });
   });
 
   it("documents 204 as bodiless and errors with the envelope", () => {

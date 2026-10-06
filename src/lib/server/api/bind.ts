@@ -259,12 +259,33 @@ function flatten(error: z.ZodError) {
   return { formErrors, fieldErrors };
 }
 
-function respond(endpoint: AnyEndpoint, result: unknown): Response {
-  if (endpoint.responseType === "binary") {
-    if (!(result instanceof Response))
+/**
+ * A binary endpoint's handler returns a finished `Response`; `bind` passes it through. Outside
+ * production the status and content type are checked against the registry. A handler that sets
+ * no `Cache-Control` gets `no-store`.
+ */
+function respondBinary(endpoint: AnyEndpoint, result: unknown): Response {
+  if (!(result instanceof Response))
+    throw new ResponseContractError(endpoint.id);
+  if (validatesResponses()) {
+    const type = (result.headers.get("content-type") ?? "")
+      .split(";")[0]
+      .trim()
+      .toLowerCase();
+    const notModified = result.status === 304;
+    if (!notModified && (!result.ok || !endpoint.contentTypes.includes(type))) {
       throw new ResponseContractError(endpoint.id);
-    return result;
+    }
   }
+  if (result.headers.has("cache-control")) return result;
+  const headers = new Headers(result.headers);
+  headers.set("cache-control", "no-store");
+  return new Response(result.body, { status: result.status, headers });
+}
+
+function respond(endpoint: AnyEndpoint, result: unknown): Response {
+  if (endpoint.responseType === "binary")
+    return respondBinary(endpoint, result);
   const status = result instanceof Reply ? result.status : endpoint.status;
   const body = result instanceof Reply ? result.body : result;
   if (validatesResponses()) {

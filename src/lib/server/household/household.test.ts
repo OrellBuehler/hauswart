@@ -44,7 +44,11 @@ describe("household", () => {
     });
     expect(
       updateHousehold(ctx, { settings: { digestTime: "07:30" } }).settings,
-    ).toEqual({ dueSoonDays: 10, digestTime: "07:30" });
+    ).toEqual({
+      dueSoonDays: 10,
+      digestTime: "07:30",
+      defectDeadlineMonths: 24,
+    });
     expect(
       updateHousehold(ctx, { handoverDate: null }).handoverDate,
     ).toBeNull();

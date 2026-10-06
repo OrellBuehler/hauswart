@@ -35,6 +35,8 @@ export type NavItem = {
   href: NavHref;
   /** Path prefix that marks the item active; defaults to `href`. */
   match?: string;
+  /** More path prefixes that belong to the same section (e.g. detail pages). */
+  alsoMatch?: string[];
   label: () => string;
   /** One sentence for the placeholder page of a section that is not built yet. */
   comingSoon?: () => string;
@@ -61,6 +63,7 @@ export const navGroups: NavGroup[] = [
     items: [
       {
         href: "/inventory",
+        alsoMatch: ["/assets", "/d"],
         label: () => m.nav_inventory(),
         comingSoon: () => m.coming_soon_inventory(),
         icon: BoxesIcon,
@@ -155,9 +158,11 @@ const allItems = [
 ];
 
 export function isNavActive(item: NavItem, pathname: string): boolean {
-  const base = item.match ?? item.href;
-  if (base === "/") return pathname === "/";
-  return pathname === base || pathname.startsWith(`${base}/`);
+  return [item.match ?? item.href, ...(item.alsoMatch ?? [])].some((base) =>
+    base === "/"
+      ? pathname === "/"
+      : pathname === base || pathname.startsWith(`${base}/`),
+  );
 }
 
 export function findNavItem(pathname: string): NavItem | undefined {

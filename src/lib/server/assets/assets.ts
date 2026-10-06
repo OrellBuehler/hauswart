@@ -5,6 +5,7 @@ import {
   type CreateAssetRequest,
   type UpdateAssetRequest,
 } from "$lib/api/schemas/assets";
+import { commentCountSql } from "$lib/server/comments/counts";
 import { assets, rooms } from "$lib/server/db";
 import { paginateArray } from "$lib/server/pagination";
 import {
@@ -26,6 +27,7 @@ type Now = Pick<ServiceContext, "db" | "now">;
 export type AssetRow = typeof assets.$inferSelect;
 export interface AssetRecord extends AssetRow {
   roomName: string | null;
+  commentCount: number;
 }
 
 const BASE32 = "abcdefghijklmnopqrstuvwxyz234567";
@@ -38,14 +40,23 @@ export function generateQrSlug(): string {
 
 const selectAsset = (db: Db["db"]) =>
   db
-    .select({ asset: assets, roomName: rooms.name })
+    .select({
+      asset: assets,
+      roomName: rooms.name,
+      commentCount: commentCountSql("asset", assets.id),
+    })
     .from(assets)
     .leftJoin(rooms, eq(assets.roomId, rooms.id));
 
-type Joined = { asset: AssetRow; roomName: string | null };
-const toRecord = ({ asset, roomName }: Joined): AssetRecord => ({
+type Joined = {
+  asset: AssetRow;
+  roomName: string | null;
+  commentCount: number;
+};
+const toRecord = ({ asset, roomName, commentCount }: Joined): AssetRecord => ({
   ...asset,
   roomName,
+  commentCount: Number(commentCount),
 });
 
 function escapeLike(value: string): string {

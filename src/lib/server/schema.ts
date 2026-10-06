@@ -8,19 +8,29 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import {
+  ASSET_CONTACT_ROLES,
   ASSET_KINDS,
   ASSIGN_MODES,
   ATTACHMENT_OWNER_TYPES,
+  COMMENT_ENTITY_TYPES,
   COMPLETION_KINDS,
   COMPLETION_SOURCES,
-  DUE_KINDS,
+  CONTACT_KINDS,
+  DEFECT_DEADLINE_SOURCES,
+  DEFECT_EVENT_TYPES,
+  DEFECT_SEVERITIES,
+  DEFECT_STATUSES,
   DOC_SECTIONS,
+  DUE_KINDS,
   DUE_STATUSES,
+  HINT_KINDS,
   NOTIFICATION_KINDS,
   NOTIFICATION_TITLE_KEYS,
   NOTIFY_MODES,
+  PART_MOVEMENT_REASONS,
   PREPARATION_KINDS,
   ROTATION_STRATEGIES,
+  SERVICE_LOG_KINDS,
   TASK_CATEGORIES,
   TASK_PRIORITIES,
   TASK_SOURCES,
@@ -399,6 +409,293 @@ export const notifications = sqliteTable(
   (t) => [
     index("notifications_user_idx").on(t.userId, t.readAt),
     index("notifications_created_at_idx").on(sql`${t.createdAt} desc`),
+  ],
+);
+
+export const contacts = sqliteTable(
+  "contacts",
+  {
+    id: id(),
+    kind: text("kind", { enum: CONTACT_KINDS }).notNull().default("other"),
+    name: text("name").notNull(),
+    company: text("company"),
+    phone: text("phone"),
+    email: text("email"),
+    url: text("url"),
+    address: text("address"),
+    notes: text("notes"),
+    emergency: integer("emergency", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    guestVisible: integer("guest_visible", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    sortOrder: integer("sort_order").notNull().default(0),
+    /** Opaque link to an external record (an adapter's id space); the core never interprets it. */
+    externalSource: text("external_source"),
+    externalRef: text("external_ref"),
+    ...timestamps,
+  },
+  (t) => [
+    index("contacts_kind_idx").on(t.kind),
+    uniqueIndex("contacts_external_idx").on(t.externalSource, t.externalRef),
+  ],
+);
+
+export const assetContacts = sqliteTable(
+  "asset_contacts",
+  {
+    id: id(),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    contactId: text("contact_id")
+      .notNull()
+      .references(() => contacts.id, { onDelete: "cascade" }),
+    role: text("role", { enum: ASSET_CONTACT_ROLES }).notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("asset_contacts_unique").on(t.assetId, t.contactId, t.role),
+    index("asset_contacts_contact_id_idx").on(t.contactId),
+  ],
+);
+
+export const parts = sqliteTable(
+  "parts",
+  {
+    id: id(),
+    name: text("name").notNull(),
+    partNumber: text("part_number"),
+    supplier: text("supplier"),
+    shopUrl: text("shop_url"),
+    unitPriceMinor: minor("unit_price_minor"),
+    currency: text("currency").notNull().default("CHF"),
+    stockCount: integer("stock_count").notNull().default(0),
+    minStock: integer("min_stock").notNull().default(0),
+    reorderQty: integer("reorder_qty").notNull().default(1),
+    leadTimeDays: integer("lead_time_days").notNull().default(14),
+    orderedAt: integer("ordered_at", { mode: "timestamp_ms" }),
+    orderedQty: integer("ordered_qty").notNull().default(0),
+    notes: text("notes"),
+    archivedAt: integer("archived_at", { mode: "timestamp_ms" }),
+    ...timestamps,
+  },
+  (t) => [index("parts_archived_at_idx").on(t.archivedAt)],
+);
+
+export const assetParts = sqliteTable(
+  "asset_parts",
+  {
+    id: id(),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    partId: text("part_id")
+      .notNull()
+      .references(() => parts.id, { onDelete: "cascade" }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("asset_parts_unique").on(t.assetId, t.partId),
+    index("asset_parts_part_id_idx").on(t.partId),
+  ],
+);
+
+export const taskParts = sqliteTable(
+  "task_parts",
+  {
+    id: id(),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    partId: text("part_id")
+      .notNull()
+      .references(() => parts.id, { onDelete: "cascade" }),
+    qty: integer("qty").notNull().default(1),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("task_parts_unique").on(t.taskId, t.partId),
+    index("task_parts_part_id_idx").on(t.partId),
+  ],
+);
+
+export const partMovements = sqliteTable(
+  "part_movements",
+  {
+    id: id(),
+    partId: text("part_id")
+      .notNull()
+      .references(() => parts.id, { onDelete: "cascade" }),
+    delta: integer("delta").notNull(),
+    reason: text("reason", { enum: PART_MOVEMENT_REASONS }).notNull(),
+    userId: text("user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    completionId: text("completion_id").references(() => taskCompletions.id, {
+      onDelete: "set null",
+    }),
+    note: text("note"),
+    at: integer("at", { mode: "timestamp_ms" }).notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    index("part_movements_part_idx").on(t.partId, sql`${t.at} desc`),
+    index("part_movements_completion_id_idx").on(t.completionId),
+  ],
+);
+
+export const serviceLog = sqliteTable(
+  "service_log",
+  {
+    id: id(),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    date: text("date").notNull(),
+    kind: text("kind", { enum: SERVICE_LOG_KINDS }).notNull(),
+    title: text("title").notNull(),
+    descriptionMd: text("description_md").notNull().default(""),
+    contactId: text("contact_id").references(() => contacts.id, {
+      onDelete: "set null",
+    }),
+    completionId: text("completion_id").references(() => taskCompletions.id, {
+      onDelete: "set null",
+    }),
+    costMinor: minor("cost_minor"),
+    currency: text("currency"),
+    /** Cost entries arrive with the costs milestone; no foreign key yet. */
+    costEntryId: text("cost_entry_id"),
+    performedBy: text("performed_by"),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    ...timestamps,
+  },
+  (t) => [
+    index("service_log_asset_idx").on(t.assetId, sql`${t.date} desc`),
+    index("service_log_date_idx").on(sql`${t.date} desc`),
+    uniqueIndex("service_log_completion_idx").on(t.completionId),
+  ],
+);
+
+export const defects = sqliteTable(
+  "defects",
+  {
+    id: id(),
+    /** Stable running number, for talking about a defect ("Mangel 3"). */
+    number: integer("number").notNull().unique(),
+    title: text("title").notNull(),
+    descriptionMd: text("description_md").notNull().default(""),
+    status: text("status", { enum: DEFECT_STATUSES }).notNull().default("open"),
+    severity: text("severity", { enum: DEFECT_SEVERITIES })
+      .notNull()
+      .default("medium"),
+    roomId: text("room_id").references(() => rooms.id, {
+      onDelete: "set null",
+    }),
+    assetId: text("asset_id").references(() => assets.id, {
+      onDelete: "set null",
+    }),
+    locationDetail: text("location_detail"),
+    discoveredOn: text("discovered_on").notNull(),
+    reportedOn: text("reported_on"),
+    responsibleContactId: text("responsible_contact_id").references(
+      () => contacts.id,
+      { onDelete: "set null" },
+    ),
+    deadlineDate: text("deadline_date"),
+    deadlineSource: text("deadline_source", { enum: DEFECT_DEADLINE_SOURCES })
+      .notNull()
+      .default("manual"),
+    fixedOn: text("fixed_on"),
+    resolutionMd: text("resolution_md").notNull().default(""),
+    /** Cost entries arrive with the costs milestone; no foreign key yet. */
+    costEntryId: text("cost_entry_id"),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    ...timestamps,
+  },
+  (t) => [
+    index("defects_status_idx").on(t.status),
+    index("defects_room_id_idx").on(t.roomId),
+    index("defects_asset_id_idx").on(t.assetId),
+    index("defects_deadline_idx").on(t.deadlineDate),
+  ],
+);
+
+export const defectEvents = sqliteTable(
+  "defect_events",
+  {
+    id: id(),
+    defectId: text("defect_id")
+      .notNull()
+      .references(() => defects.id, { onDelete: "cascade" }),
+    at: integer("at", { mode: "timestamp_ms" }).notNull(),
+    userId: text("user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    type: text("type", { enum: DEFECT_EVENT_TYPES }).notNull(),
+    fromStatus: text("from_status", { enum: DEFECT_STATUSES }),
+    toStatus: text("to_status", { enum: DEFECT_STATUSES }),
+    bodyMd: text("body_md").notNull().default(""),
+    /** E.g. a linked document; opaque to the core. */
+    externalRef: text("external_ref"),
+    ...timestamps,
+  },
+  (t) => [index("defect_events_defect_idx").on(t.defectId, t.at)],
+);
+
+export const comments = sqliteTable(
+  "comments",
+  {
+    id: id(),
+    entityType: text("entity_type", { enum: COMMENT_ENTITY_TYPES }).notNull(),
+    entityId: text("entity_id").notNull(),
+    userId: text("user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    bodyMd: text("body_md").notNull(),
+    editedAt: integer("edited_at", { mode: "timestamp_ms" }),
+    /** Soft delete: the row stays so the thread keeps its order; the body is cleared. */
+    deletedAt: integer("deleted_at", { mode: "timestamp_ms" }),
+    ...timestamps,
+  },
+  (t) => [
+    index("comments_entity_idx").on(t.entityType, t.entityId, t.createdAt),
+  ],
+);
+
+export const assetHints = sqliteTable(
+  "asset_hints",
+  {
+    id: id(),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    bodyMd: text("body_md").notNull().default(""),
+    kind: text("kind", { enum: HINT_KINDS }).notNull().default("tip"),
+    pinned: integer("pinned", { mode: "boolean" }).notNull().default(false),
+    sortOrder: integer("sort_order").notNull().default(0),
+    guestVisible: integer("guest_visible", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    /** A recurring task created from or linked to the hint. */
+    taskId: text("task_id").references(() => tasks.id, {
+      onDelete: "set null",
+    }),
+    /** Validated by `signalReactionSchema` on read and write; executed by an adapter. */
+    reaction: text("reaction", { mode: "json" }).$type<
+      Record<string, unknown>
+    >(),
+    ...timestamps,
+  },
+  (t) => [
+    index("asset_hints_asset_idx").on(t.assetId, t.sortOrder),
+    index("asset_hints_task_id_idx").on(t.taskId),
   ],
 );
 

@@ -17,12 +17,12 @@ export default defineConfig(({ command }) => ({
         ]
       : []),
   ],
-  // Native addon: loaded from node_modules at runtime, never bundled.
+  // Native addons and font-bearing packages: loaded from node_modules at runtime, never bundled.
   ssr: {
-    external: ["@napi-rs/canvas"],
+    external: ["@napi-rs/canvas", "pdfmake"],
   },
   optimizeDeps: {
-    exclude: ["@napi-rs/canvas"],
+    exclude: ["@napi-rs/canvas", "pdfmake"],
   },
   build: {
     rollupOptions: {
@@ -30,7 +30,7 @@ export default defineConfig(({ command }) => ({
     },
   },
   test: {
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "mcp/**/*.test.ts"],
     environment: "node",
     globalSetup: ["./scripts/vitest-global-setup.ts"],
     setupFiles: ["./scripts/vitest-setup.ts"],

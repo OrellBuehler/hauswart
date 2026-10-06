@@ -16,6 +16,10 @@ import {
 } from "../enums";
 import { conditionOpSchema, triggerSchema } from "../../tasks/engine/types";
 import {
+  completionServiceLogSchema,
+  serviceLogEntrySchema,
+} from "./service-log";
+import {
   atLeastOne,
   dateSchema,
   idSchema,
@@ -114,6 +118,7 @@ export const taskSchema = z
     externalRef: z.string().nullable(),
     externalUrl: z.string().nullable(),
     createdBy: z.string().nullable(),
+    commentCount: z.number().int(),
     createdAt: isoTimestampSchema,
     updatedAt: isoTimestampSchema,
     state: taskStateSchema.nullable(),
@@ -284,17 +289,22 @@ export const completeTaskRequestSchema = z.strictObject({
   /** Browser sessions only; API tokens are attributed by their kind. */
   source: z.enum(["manual", "qr", "notification"]).optional(),
   counterValue: z.number().finite().optional(),
+  /** Also log the work in the asset's service log (tasks with an asset only). */
+  serviceLog: completionServiceLogSchema.optional(),
 });
 export type CompleteTaskRequest = z.output<typeof completeTaskRequestSchema>;
 
 export const skipTaskRequestSchema = completeTaskRequestSchema.omit({
   counterValue: true,
+  serviceLog: true,
 });
 export type SkipTaskRequest = z.output<typeof skipTaskRequestSchema>;
 
 export const completeTaskResponseSchema = z.object({
   completion: completionSchema,
   task: taskSchema,
+  /** The service log entry created with `serviceLog`; null when none was asked for. */
+  serviceLog: serviceLogEntrySchema.nullable(),
 });
 
 export const snoozeTaskRequestSchema = z.strictObject({

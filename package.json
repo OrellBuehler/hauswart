@@ -26,18 +26,23 @@
     "security": "./scripts/security/scan-all.sh",
     "security:install": "./scripts/security/install-tools.sh",
     "openapi": "bun scripts/gen-openapi.ts",
-    "leak-guard": "bun scripts/leak-guard.ts"
+    "leak-guard": "bun scripts/leak-guard.ts",
+    "mcp": "bun mcp/src/index.ts",
+    "mcp:build": "bun build mcp/src/index.ts --compile --outfile dist/hauswart-mcp"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@inlang/paraglide-js": "^2.25.4",
     "@internationalized/date": "^3.12.4",
     "@lucide/svelte": "^1.52.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "@sveltejs/kit": "^2.70.3",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/bun": "^1.4.2",
     "@types/node": "^26.6.2",
+    "@types/qrcode": "^1.5.6",
+    "@types/pdfmake": "^0.3.3",
     "@types/sanitize-html": "^2.16.2",
     "@vitest/coverage-v8": "^5.0.3",
     "bits-ui": "^2.19.2",
@@ -69,6 +74,8 @@
     "@napi-rs/canvas": "^1.0.10",
     "drizzle-orm": "^0.45.3",
     "marked": "^18.1.0",
+    "qrcode": "^1.5.4",
+    "pdfmake": "^0.3.11",
     "sanitize-html": "^2.18.0",
     "zod": "^4.6.5"
   },

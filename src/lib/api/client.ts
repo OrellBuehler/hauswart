@@ -26,7 +26,7 @@ export type CallInput<E extends AnyEndpoint> = ParamsInput<E> &
 type CallArgs<E extends AnyEndpoint> =
   object extends CallInput<E> ? [input?: CallInput<E>] : [input: CallInput<E>];
 
-/** Parsed response body of an endpoint (`null` for 204 endpoints). */
+/** Parsed response body of an endpoint (`null` for 204 endpoints; the `Response` itself for binary endpoints). */
 export type CallResult<E extends AnyEndpoint> = Out<E["response"]>;
 
 /** What the client needs from `fetch`: SvelteKit's `event.fetch`, the global `fetch` or a test double. */
@@ -41,11 +41,8 @@ export interface ApiClientOptions {
   headers?: Record<string, string>;
 }
 
-/** Endpoints that answer with JSON; binary endpoints (file content) are fetched by URL, see `endpointUrl`. */
-export type JsonEndpoint = AnyEndpoint & { readonly responseType: "json" };
-
 export interface ApiClient {
-  call<E extends JsonEndpoint>(
+  call<E extends AnyEndpoint>(
     endpoint: E,
     ...args: CallArgs<E>
   ): Promise<CallResult<E>>;
@@ -142,7 +139,7 @@ export function createApiClient(
   options: ApiClientOptions = {},
 ): ApiClient {
   return {
-    async call<E extends JsonEndpoint>(
+    async call<E extends AnyEndpoint>(
       endpoint: E,
       ...args: CallArgs<E>
     ): Promise<CallResult<E>> {
@@ -169,7 +166,15 @@ export function createApiClient(
         }
       }
 
+      if (endpoint.responseType === "binary") {
+        headers.accept = endpoint.contentTypes.join(", ");
+      }
+
       const res = await fetchFn(buildUrl(baseUrl, endpoint, input), init);
+      if (endpoint.responseType === "binary") {
+        if (!res.ok) throw errorFrom(res, await readJson(res));
+        return res as CallResult<E>;
+      }
       const json = await readJson(res);
       if (!res.ok) throw errorFrom(res, json);
 
