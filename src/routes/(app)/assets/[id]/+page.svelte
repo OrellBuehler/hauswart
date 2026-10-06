@@ -5,7 +5,6 @@
   import ArchiveIcon from "@lucide/svelte/icons/archive";
   import ArchiveRestoreIcon from "@lucide/svelte/icons/archive-restore";
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
-  import ContactIcon from "@lucide/svelte/icons/contact";
   import EllipsisVerticalIcon from "@lucide/svelte/icons/ellipsis-vertical";
   import FileTextIcon from "@lucide/svelte/icons/file-text";
   import ListChecksIcon from "@lucide/svelte/icons/list-checks";
@@ -19,6 +18,10 @@
   import { newTaskHref } from "$lib/assets/links";
   import { warrantyStatus } from "$lib/assets/warranty";
   import AssetKindIcon from "$lib/components/assets/asset-kind-icon.svelte";
+  import AssetContactsCard from "$lib/components/assets/asset-contacts-card.svelte";
+  import AssetHintsCard from "$lib/components/assets/asset-hints-card.svelte";
+  import AssetPartsCard from "$lib/components/assets/asset-parts-card.svelte";
+  import AssetServiceLogCard from "$lib/components/assets/asset-service-log-card.svelte";
   import QrCard from "$lib/components/assets/qr-card.svelte";
   import TaskRows from "$lib/components/assets/task-rows.svelte";
   import WarrantyBadge from "$lib/components/assets/warranty-badge.svelte";
@@ -189,7 +192,7 @@
   </div>
 
   <div class="grid items-start gap-6 lg:grid-cols-3 print:block">
-    <div class="flex flex-col gap-6 lg:col-span-2 print:hidden">
+    <div class="flex min-w-0 flex-col gap-6 lg:col-span-2 print:hidden">
       <Card.Root>
         <Card.Header>
           <Card.Title>{m.asset_facts_title()}</Card.Title>
@@ -277,19 +280,20 @@
         </Card.Content>
       </Card.Root>
 
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>{m.asset_contacts_title()}</Card.Title>
-        </Card.Header>
-        <Card.Content>
-          <EmptyState
-            icon={ContactIcon}
-            title={m.coming_soon_badge()}
-            description={m.asset_contacts_soon()}
-            class="py-8"
-          />
-        </Card.Content>
-      </Card.Root>
+      <AssetHintsCard assetId={asset.id} hints={data.hints} />
+      <AssetContactsCard assetId={asset.id} links={data.contacts} />
+      <AssetPartsCard
+        assetId={asset.id}
+        parts={data.parts}
+        currency={data.currency}
+      />
+      <AssetServiceLogCard
+        assetId={asset.id}
+        entries={data.serviceLog.items}
+        nextCursor={data.serviceLog.nextCursor}
+        today={data.today}
+        currency={data.currency}
+      />
 
       <Comments entityType="asset" entityId={asset.id} />
     </div>

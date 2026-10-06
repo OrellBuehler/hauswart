@@ -114,6 +114,7 @@ import { searchQuerySchema, searchResponseSchema } from "./schemas/search";
 import {
   assetContactParamsSchema,
   assetContactSchema,
+  contactDetailSchema,
   contactSchema,
   createContactRequestSchema,
   linkAssetContactRequestSchema,
@@ -1104,12 +1105,12 @@ export const endpoints = {
     id: "contactsGet",
     method: "GET",
     path: "/api/v1/contacts/{id}",
-    summary: "Get a contact",
+    summary: "Get a contact with the assets it is linked to",
     tags: ["contacts"],
     auth: "both",
     scopes: ["read"],
     params: idParamsSchema,
-    response: contactSchema,
+    response: contactDetailSchema,
     errors: ["not_found"],
   }),
 

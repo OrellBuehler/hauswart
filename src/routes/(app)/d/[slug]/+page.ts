@@ -22,16 +22,23 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
     }
     return orFail(Promise.reject(err), url.pathname);
   }
-  const tasks = sortTasks(
-    await orFail(
+  const [taskList, hints] = await orFail(
+    Promise.all([
       fetchAll((cursor) =>
         api.call(endpoints.tasksList, {
           query: { cursor, limit: 200, assetId: asset.id },
         }),
       ),
-      url.pathname,
-    ),
+      fetchAll((cursor) =>
+        api.call(endpoints.assetHintsList, {
+          params: { id: asset.id },
+          query: { cursor, limit: 200 },
+        }),
+      ),
+    ]),
+    url.pathname,
   );
+  const tasks = sortTasks(taskList);
   const details = await orFail(
     Promise.all(
       tasks.map((task) =>
@@ -45,5 +52,5 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
     .filter((completion) => completion.kind === "done" && !completion.revokedAt)
     .sort((a, b) => b.completedAt.localeCompare(a.completedAt))
     .slice(0, 5);
-  return { slug: params.slug, found: { asset, tasks, completions } };
+  return { slug: params.slug, found: { asset, tasks, completions, hints } };
 };

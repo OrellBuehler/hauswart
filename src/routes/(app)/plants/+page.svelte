@@ -5,6 +5,7 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import SproutIcon from "@lucide/svelte/icons/sprout";
+  import type { Hint } from "$lib/api/schemas/hints";
   import type { Task } from "$lib/api/schemas/tasks";
   import { completeWithUndo } from "$lib/assets/complete";
   import { newAssetHref, newTaskHref } from "$lib/assets/links";
@@ -13,6 +14,8 @@
   import EmptyState from "$lib/components/app/empty-state.svelte";
   import PageHeader from "$lib/components/app/page-header.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
+  import { hintKindIcons, hintTones } from "$lib/hints/labels";
+  import { cn } from "$lib/utils";
   import { m } from "$lib/paraglide/messages";
   import type { PageProps } from "./$types";
 
@@ -26,6 +29,14 @@
       if (task.assetId && !(task.assetId in byAsset)) {
         byAsset[task.assetId] = task;
       }
+    }
+    return byAsset;
+  });
+
+  const hintsByAsset = $derived.by(() => {
+    const byAsset: Record<string, Hint[]> = {};
+    for (const hint of data.hints) {
+      (byAsset[hint.assetId] ??= []).push(hint);
     }
     return byAsset;
   });
@@ -110,6 +121,36 @@
               </p>
             </div>
           </div>
+          {#if hintsByAsset[plant.id]?.length}
+            {@const hints = hintsByAsset[plant.id]}
+            <div class="flex flex-col gap-1.5">
+              <p class="text-muted-foreground text-xs font-medium">
+                {m.plants_hints()}
+              </p>
+              <ul class="flex flex-col gap-1">
+                {#each hints.slice(0, 2) as hint (hint.id)}
+                  {@const HintIcon = hintKindIcons[hint.kind]}
+                  <li class="flex items-start gap-2 text-sm">
+                    <HintIcon
+                      class={cn(
+                        "mt-0.5 size-4 shrink-0",
+                        hintTones[hint.kind].text,
+                      )}
+                      aria-hidden="true"
+                    />
+                    <span class="line-clamp-2 min-w-0 break-words"
+                      >{hint.title}</span
+                    >
+                  </li>
+                {/each}
+              </ul>
+              {#if hints.length > 2}
+                <p class="text-muted-foreground text-xs">
+                  {m.plants_hints_more({ count: hints.length - 2 })}
+                </p>
+              {/if}
+            </div>
+          {/if}
           <div
             class="relative z-10 mt-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t pt-3"
           >

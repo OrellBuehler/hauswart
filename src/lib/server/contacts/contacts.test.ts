@@ -10,6 +10,7 @@ import {
   createContact,
   deleteContact,
   getContact,
+  getContactDetail,
   linkAssetContact,
   listAssetContacts,
   listContacts,
@@ -138,6 +139,25 @@ describe("contacts", () => {
           .items.map((l) => l.role)
           .sort(),
       ).toEqual(["installer", "service"]);
+    });
+
+    it("shows the linked assets with their role on the contact", () => {
+      const a = asset();
+      const c = make();
+      expect(getContactDetail(ctx(), c.id).assets).toEqual([]);
+      const link = linkAssetContact(ctx(), a.id, {
+        contactId: c.id,
+        role: "installer",
+      });
+      expect(getContactDetail(ctx(), c.id).assets).toEqual([
+        {
+          linkId: link.id,
+          assetId: a.id,
+          assetName: "Boiler",
+          role: "installer",
+        },
+      ]);
+      expect(() => getContactDetail(ctx(), "missing")).toThrow(/not found/i);
     });
 
     it("unlinks by link id and answers 404 for a link of another asset", () => {

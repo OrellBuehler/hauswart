@@ -16,3 +16,11 @@ export function assetHref(id: string) {
 export function roomHref(id: string) {
   return resolve(`/rooms/${encodeURIComponent(id)}` as "/");
 }
+
+export function contactHref(id: string) {
+  return resolve(`/contacts/${encodeURIComponent(id)}` as "/");
+}
+
+export function partHref(id: string) {
+  return resolve(`/parts/${encodeURIComponent(id)}` as "/");
+}
