@@ -282,6 +282,7 @@ describe("haWsCommand", () => {
       await run(false);
       expect(seen).toEqual([undefined, undefined]);
       await run(true);
+      // nosemgrep: problem-based-packs.insecure-transport.js-node.bypass-tls-verification.bypass-tls-verification -- test-only: asserts the opt-in insecure path
       expect(seen[2]).toEqual({ rejectUnauthorized: false });
     } finally {
       vi.unstubAllGlobals();

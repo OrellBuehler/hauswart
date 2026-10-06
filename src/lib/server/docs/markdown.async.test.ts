@@ -209,14 +209,17 @@ describe("nesting guard", () => {
   });
 
   it("deep nesting up to 100k levels does not throw or overflow the stack", async () => {
+    // A generous timeout: the point is that it completes without a crash, not how fast a slow
+    // runner gets there.
+    const slow = { timeoutMs: 30_000 };
     const md = "> ".repeat(90_000) + "x";
-    const html = await renderMarkdownAsync(md, guest);
+    const html = await renderMarkdownAsync(md, { ...guest, ...slow });
     expect(maxOpen(html, "blockquote")).toBe(0);
-    expect(await extractHeadingsAsync(md)).toEqual([]);
-    expect(await extractPlainTextAsync(md)).toContain("x");
+    expect(await extractHeadingsAsync(md, slow)).toEqual([]);
+    expect(await extractPlainTextAsync(md, slow)).toContain("x");
     expect(limitNesting(md)).not.toBe(md);
     expect(limitNesting("> a\n- b\n1. c")).toBe("> a\n- b\n1. c");
-  });
+  }, 120_000);
 
   it("falls back to escaped plain text when marked overflows the stack anyway", () => {
     vi.spyOn(

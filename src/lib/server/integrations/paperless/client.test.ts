@@ -193,6 +193,7 @@ describe("requests", () => {
       await client({ allowInsecureTls: false }).json("documents", z.unknown());
       expect(seen).toEqual([undefined, undefined]);
       await client({ allowInsecureTls: true }).json("documents", z.unknown());
+      // nosemgrep: problem-based-packs.insecure-transport.js-node.bypass-tls-verification.bypass-tls-verification -- test-only: asserts the opt-in insecure path
       expect(seen[2]).toEqual({ rejectUnauthorized: false });
     } finally {
       spy.mockRestore();
