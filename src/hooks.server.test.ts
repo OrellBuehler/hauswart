@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { SESSION_COOKIE } from "$lib/api/constants";
 import { getDB, sessions } from "$lib/server/db";
 import {
@@ -224,3 +224,147 @@ function expireSoon(sessionId: string) {
     .where(eq(sessions.id, sessionId))
     .run();
 }
+
+describe("security headers", () => {
+  useTestDB();
+
+  const EXPECTED = {
+    "x-frame-options": "DENY",
+    "referrer-policy": "strict-origin-when-cross-origin",
+    "x-content-type-options": "nosniff",
+    "permissions-policy": "camera=(self), geolocation=()",
+  };
+
+  async function headersOf(
+    url: string,
+    respond: () => Response | Promise<Response>,
+    session?: string,
+  ) {
+    const event = createTestEvent({
+      url,
+      cookies: session ? { [SESSION_COOKIE]: session } : undefined,
+    });
+    const res = await handle({
+      event: event as never,
+      resolve: respond as never,
+    });
+    return res.headers;
+  }
+
+  it("are set on page responses", async () => {
+    const user = await createTestUser();
+    const headers = await headersOf(
+      "http://localhost/tasks",
+      () =>
+        new Response("<html></html>", {
+          headers: { "content-type": "text/html" },
+        }),
+      loginTestUser(user).token,
+    );
+    for (const [name, value] of Object.entries(EXPECTED)) {
+      expect(headers.get(name), name).toBe(value);
+    }
+  });
+
+  it("are set on redirects, API errors and JSON responses too", async () => {
+    for (const url of [
+      "http://localhost/tasks",
+      "http://localhost/api/v1/tokens",
+      "http://localhost/api/health",
+    ]) {
+      const headers = await headersOf(url, () => new Response("{}"));
+      for (const [name, value] of Object.entries(EXPECTED)) {
+        expect(headers.get(name), `${url} ${name}`).toBe(value);
+      }
+    }
+  });
+
+  it("are set on responses whose headers are immutable", async () => {
+    const headers = await headersOf("http://localhost/api/health", () =>
+      Response.redirect("http://localhost/elsewhere", 302),
+    );
+    expect(headers.get("x-frame-options")).toBe("DENY");
+    expect(headers.get("location")).toBe("http://localhost/elsewhere");
+  });
+
+  it("do not override a header the response already sets", async () => {
+    const headers = await headersOf(
+      "http://localhost/api/health",
+      () =>
+        new Response("x", { headers: { "referrer-policy": "no-referrer" } }),
+    );
+    expect(headers.get("referrer-policy")).toBe("no-referrer");
+  });
+});
+
+describe("unexpected failures", () => {
+  const ctx = useTestDB();
+  afterEach(() => vi.restoreAllMocks());
+
+  const failing = () => {
+    throw new Error("sensitive detail: /srv/secret/path");
+  };
+
+  it("answer /api paths with the JSON error envelope and leak nothing", async () => {
+    const error = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const user = await createTestUser();
+    const s = loginTestUser(user).token;
+    for (const url of ["/api/v1/tokens", "/api/other"]) {
+      const event = createTestEvent({
+        url: `http://localhost${url}`,
+        cookies: { [SESSION_COOKIE]: s },
+      });
+      const res = await handle({
+        event: event as never,
+        resolve: failing as never,
+      });
+      expect(res.status, url).toBe(500);
+      expect(res.headers.get("content-type")).toContain("application/json");
+      expect(res.headers.get("cache-control")).toBe("no-store");
+      expect(res.headers.get("x-frame-options")).toBe("DENY");
+      const text = await res.text();
+      expect(JSON.parse(text)).toEqual({
+        error: { code: "internal", message: "Internal server error" },
+      });
+      expect(text).not.toContain("sensitive");
+    }
+    const logged = error.mock.calls.map((c) => String(c[0])).join("\n");
+    expect(logged).toContain("hook.error");
+    expect(logged).not.toContain("sensitive");
+    error.mockRestore();
+  });
+
+  it("answer an API request whose authentication lookup fails the same way", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const user = await createTestUser();
+    const s = loginTestUser(user).token;
+    ctx.db.$client.close();
+    const event = createTestEvent({
+      url: "http://localhost/api/v1/tokens",
+      cookies: { [SESSION_COOKIE]: s },
+    });
+    const res = await handle({
+      event: event as never,
+      resolve: (() => new Response("never")) as never,
+    });
+    expect([res.status, (await res.json()).error.code]).toEqual([
+      500,
+      "internal",
+    ]);
+  });
+
+  it("leave page errors to SvelteKit", async () => {
+    const user = await createTestUser();
+    const event = createTestEvent({
+      url: "http://localhost/tasks",
+      cookies: { [SESSION_COOKIE]: loginTestUser(user).token },
+    });
+    await expect(
+      Promise.resolve(
+        handle({ event: event as never, resolve: failing as never }),
+      ),
+    ).rejects.toThrow("sensitive detail");
+  });
+});

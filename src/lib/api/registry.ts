@@ -23,6 +23,7 @@ import {
   createUserRequestSchema,
   listDirectoryResponseSchema,
   listUsersResponseSchema,
+  revokeTokensResponseSchema,
   updateUserRequestSchema,
 } from "./schemas/users";
 import { healthResponseSchema, openApiDocumentSchema } from "./schemas/system";
@@ -230,7 +231,8 @@ export const endpoints = {
     method: "GET",
     path: "/api/v1/setup",
     summary: "Whether first-run setup is still open",
-    description: "True until the first administrator account exists.",
+    description:
+      "`needsSetup` is true until the first administrator account exists. `tokenRequired` is true while setup is open and the server was started with `HAUSWART_SETUP_TOKEN`: the setup request must then carry `setupToken`.",
     tags: ["setup"],
     auth: "public",
     scopes: [],
@@ -243,7 +245,7 @@ export const endpoints = {
     path: "/api/v1/setup",
     summary: "Create the first administrator and sign in",
     description:
-      "Only works while no user exists. Starts a browser session (sets the session cookie).",
+      "Only works while no user exists (409 `setup_complete` afterwards). When the server runs with `HAUSWART_SETUP_TOKEN`, `setupToken` must match it (403 `forbidden`). Starts a browser session (sets the session cookie).",
     tags: ["setup"],
     auth: "public",
     scopes: [],
@@ -251,7 +253,7 @@ export const endpoints = {
     body: setupRequestSchema,
     response: userEnvelopeSchema,
     status: 201,
-    errors: ["setup_complete"],
+    errors: ["setup_complete", "forbidden"],
   }),
 
   authLogin: defineEndpoint({
@@ -407,7 +409,7 @@ export const endpoints = {
     path: "/api/v1/users/{id}",
     summary: "Change a user's role, name, cost share or password",
     description:
-      "A password reset ends the user's sessions and revokes their device tokens. The last administrator cannot be demoted.",
+      "A password reset ends the user's sessions and revokes all of their live API tokens. Demoting an administrator revokes their tokens that hold the `admin` scope. The last administrator cannot be demoted.",
     tags: ["users"],
     auth: "session",
     scopes: ["admin"],
@@ -923,6 +925,21 @@ export const endpoints = {
     auth: "both",
     scopes: [],
     response: listDirectoryResponseSchema,
+  }),
+
+  usersRevokeTokens: defineEndpoint({
+    id: "usersRevokeTokens",
+    method: "POST",
+    path: "/api/v1/users/{id}/revoke-tokens",
+    summary: "Revoke all of a user's API tokens",
+    description:
+      "Revokes every live API token (mobile, integration, MCP) of the user, e.g. after a leaked token. Browser sessions are not affected. Returns how many tokens were revoked.",
+    tags: ["users"],
+    auth: "session",
+    scopes: ["admin"],
+    params: idParamsSchema,
+    response: revokeTokensResponseSchema,
+    errors: ["not_found"],
   }),
 };
 

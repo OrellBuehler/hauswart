@@ -56,3 +56,6 @@ export const directoryUserSchema = z
 export type DirectoryUser = z.infer<typeof directoryUserSchema>;
 
 export const listDirectoryResponseSchema = paginated(directoryUserSchema);
+export const revokeTokensResponseSchema = z.object({
+  revoked: z.number().int().min(0),
+});

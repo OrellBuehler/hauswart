@@ -1,4 +1,4 @@
-import { and, asc, count, eq, ne, sql } from "drizzle-orm";
+import { and, asc, count, eq, isNull, ne, sql } from "drizzle-orm";
 import type { UserLocale, UserRole } from "$lib/api/enums";
 import { usernameSchema } from "$lib/api/schemas/auth";
 import { getDB, apiTokens, sessions, users, type DB } from "$lib/server/db";
@@ -93,12 +93,16 @@ export async function createUser(input: NewUser): Promise<UserRecord> {
 }
 
 /**
- * First-run setup: creates an admin only if no user exists. The check and the
- * insert share one immediate transaction, so concurrent attempts cannot both win.
+ * First-run setup: creates an admin only if no user exists. A cheap check runs before
+ * the expensive password hash; the authoritative check and the insert share one immediate
+ * transaction, so concurrent attempts cannot both win.
  */
 export async function createFirstAdmin(
   input: Omit<NewUser, "role">,
 ): Promise<UserRecord> {
+  if (countUsers() > 0) {
+    throw new AuthError("setup_closed", "Setup has already been completed.");
+  }
   const passwordHash = await hashPassword(input.password);
   return getDB().transaction(
     (tx) => {
@@ -132,8 +136,9 @@ export interface UpdateResult {
 /**
  * Administrator edit of another (or their own) account. The last administrator
  * cannot be demoted. A password reset ends the account's sessions (except the
- * caller's own, `keepSessionId`) and revokes its device tokens, since those
- * were issued against the old password.
+ * caller's own, `keepSessionId`) and revokes all of its live API tokens, since
+ * they were issued against the old password. Demoting an administrator revokes
+ * the tokens that hold the `admin` scope.
  */
 export async function updateUser(
   targetId: string,
@@ -203,9 +208,28 @@ export async function updateUser(
         tx.update(apiTokens)
           .set({ revokedAt: new Date() })
           .where(
-            and(eq(apiTokens.userId, targetId), eq(apiTokens.kind, "mobile")),
+            and(eq(apiTokens.userId, targetId), isNull(apiTokens.revokedAt)),
           )
           .run();
+      } else if (
+        roleChanged &&
+        target.role === "admin" &&
+        patch.role !== "admin"
+      ) {
+        const adminTokens = tx
+          .select({ id: apiTokens.id, scopes: apiTokens.scopes })
+          .from(apiTokens)
+          .where(
+            and(eq(apiTokens.userId, targetId), isNull(apiTokens.revokedAt)),
+          )
+          .all()
+          .filter((t) => t.scopes.includes("admin"));
+        for (const t of adminTokens) {
+          tx.update(apiTokens)
+            .set({ revokedAt: new Date() })
+            .where(eq(apiTokens.id, t.id))
+            .run();
+        }
       }
       return { user, roleChanged, passwordReset: passwordHash !== undefined };
     },

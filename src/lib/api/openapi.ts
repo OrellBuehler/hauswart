@@ -73,6 +73,8 @@ export function errorCodesFor(endpoint: AnyEndpoint): ErrorCode[] {
   }
   if (endpoint.auth !== "public") {
     codes.add("unauthenticated");
+    // the hook answers anonymous callers with this while no user exists
+    codes.add("setup_required");
     codes.add("forbidden");
     if (endpoint.auth !== "bearer" && endpoint.method !== "GET") {
       codes.add("csrf_failed");
@@ -152,6 +154,22 @@ function operation(endpoint: AnyEndpoint, components: Components): Json {
         },
       },
     };
+  }
+
+  if (endpoint.body) {
+    for (const [status, reason] of [
+      [413, "request body too large"],
+      [415, "unsupported content type"],
+    ] as const) {
+      responses[String(status)] = {
+        description: `Error: \`invalid_request\` (${reason})`,
+        content: {
+          "application/json": {
+            schema: { $ref: `${REF_PREFIX}ErrorEnvelope` },
+          },
+        },
+      };
+    }
   }
 
   const op: Json = {

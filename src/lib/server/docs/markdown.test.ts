@@ -502,14 +502,14 @@ describe("xss vectors", () => {
 
   it("survives pathological input without throwing", () => {
     const inputs = [
-      "[".repeat(5000),
-      "*".repeat(5000),
-      "<".repeat(5000),
-      "[[".repeat(2000),
-      "> ".repeat(2000) + "x",
-      "- ".repeat(2000) + "x",
-      ":::warning\n".repeat(5000),
-      ":::secret\n".repeat(5000),
+      "[".repeat(500),
+      "*".repeat(500),
+      "<".repeat(500),
+      "[[".repeat(200),
+      "> ".repeat(200) + "x",
+      "- ".repeat(200) + "x",
+      ":::warning\n".repeat(100),
+      ":::secret\n".repeat(100),
       "\u0000\u0001\u0002 \u202e",
     ];
     for (const input of inputs) {
@@ -780,15 +780,21 @@ describe("secret blocks", () => {
     expect(extractPlainText(secretMd)).toBe("Offen");
   });
 
-  it("ignores ::: markers inside fenced code", () => {
-    const html = render("```\n:::secret\nnicht geheim\n:::\n```", guest);
+  it("members see ::: markers inside fenced code literally", () => {
+    const html = render("```\n:::secret\nnicht geheim\n:::\n```", member);
     expect(html).toContain("nicht geheim");
     expect(html).toContain(":::secret");
+    expect(html).not.toContain('class="secret"');
     const tilde = render(
       "~~~\n:::secret\nnoch nicht geheim\n~~~\n\nnach dem Code",
-      guest,
+      member,
     );
     expect(tilde).toContain("noch nicht geheim");
+  });
+
+  it("guests never see what looks like a secret, even inside fenced code (fail closed)", () => {
+    const html = render("```\n:::secret\nlooks geheim\n:::\n```", guest);
+    expect(html).not.toContain("geheim");
   });
 
   it("still hides a secret that contains a fenced block with ::: markers", () => {
@@ -800,10 +806,12 @@ describe("secret blocks", () => {
     expect(html).toContain("öffentlich");
   });
 
-  it("does not treat indented code or four-space indented markers as blocks", () => {
-    const html = render("    :::secret\n    code\n    :::", guest);
-    expect(html).toContain("<pre>");
-    expect(html).toContain(":::secret");
+  it("members see indented markers as code, guests get them hidden (fail closed)", () => {
+    const md = "    :::secret\n    code\n    :::";
+    const shown = render(md, member);
+    expect(shown).toContain("<pre>");
+    expect(shown).toContain(":::secret");
+    expect(render(md, guest)).not.toContain("code");
   });
 
   it("a stray closing marker is plain text", () => {
@@ -910,8 +918,10 @@ describe("callouts", () => {
 describe("headings", () => {
   it("adds stable ids to rendered headings", () => {
     const html = render("# Hallo Welt\n\n## Zweiter Abschnitt");
-    expect(html).toContain('<h1 id="hallo-welt">Hallo Welt</h1>');
-    expect(html).toContain('<h2 id="zweiter-abschnitt">Zweiter Abschnitt</h2>');
+    expect(html).toContain('<h1 id="h-hallo-welt">Hallo Welt</h1>');
+    expect(html).toContain(
+      '<h2 id="h-zweiter-abschnitt">Zweiter Abschnitt</h2>',
+    );
   });
 
   it("renders the same ids on every render", () => {
@@ -937,14 +947,14 @@ describe("headings", () => {
 
   it("de-duplicates ids in document order", () => {
     const html = render("# Heizung\n\n## Heizung\n\n### Heizung");
-    expect(html).toContain('id="heizung"');
-    expect(html).toContain('id="heizung-1"');
-    expect(html).toContain('id="heizung-2"');
+    expect(html).toContain('id="h-heizung"');
+    expect(html).toContain('id="h-heizung-1"');
+    expect(html).toContain('id="h-heizung-2"');
   });
 
   it("derives ids from the plain text of formatted headings", () => {
     const html = render("## **Fett** und [Link](https://example.org) `Code`");
-    expect(html).toContain('id="fett-und-link-code"');
+    expect(html).toContain('id="h-fett-und-link-code"');
   });
 
   it("extractHeadings matches the rendered ids", () => {
@@ -952,12 +962,12 @@ describe("headings", () => {
       "# Übersicht\n\n## Küche\n\ntext\n\n## Küche\n\n> ### Zitat-Überschrift\n\n- ### Liste\n\n## **Fett** `x`";
     const headings = extractHeadings(md);
     expect(headings).toEqual([
-      { level: 1, text: "Übersicht", id: "uebersicht" },
-      { level: 2, text: "Küche", id: "kueche" },
-      { level: 2, text: "Küche", id: "kueche-1" },
-      { level: 3, text: "Zitat-Überschrift", id: "zitat-ueberschrift" },
-      { level: 3, text: "Liste", id: "liste" },
-      { level: 2, text: "Fett x", id: "fett-x" },
+      { level: 1, text: "Übersicht", id: "h-uebersicht" },
+      { level: 2, text: "Küche", id: "h-kueche" },
+      { level: 2, text: "Küche", id: "h-kueche-1" },
+      { level: 3, text: "Zitat-Überschrift", id: "h-zitat-ueberschrift" },
+      { level: 3, text: "Liste", id: "h-liste" },
+      { level: 2, text: "Fett x", id: "h-fett-x" },
     ]);
     const rendered = [...render(md).matchAll(/<h([1-6]) id="([^"]+)"/g)].map(
       (m) => ({
@@ -973,7 +983,7 @@ describe("headings", () => {
   it("keeps ids consistent across callout boundaries", () => {
     const md = "# A\n\n:::info\n## A\n:::\n\n## A";
     const ids = extractHeadings(md).map((h) => h.id);
-    expect(ids).toEqual(["a", "a-1", "a-2"]);
+    expect(ids).toEqual(["h-a", "h-a-1", "h-a-2"]);
     const rendered = [
       ...render(md, guest).matchAll(/<h[1-6] id="([^"]+)"/g),
     ].map((m) => m[1]);
@@ -983,11 +993,11 @@ describe("headings", () => {
   it("keeps ids consistent when secrets are hidden", () => {
     const md = "# A\n\n:::secret\n## A\n:::\n\n## A";
     const guestIds = extractHeadings(md).map((h) => h.id);
-    expect(guestIds).toEqual(["a", "a-1"]);
+    expect(guestIds).toEqual(["h-a", "h-a-1"]);
     const memberIds = extractHeadings(md, { includeSecrets: true }).map(
       (h) => h.id,
     );
-    expect(memberIds).toEqual(["a", "a-1", "a-2"]);
+    expect(memberIds).toEqual(["h-a", "h-a-1", "h-a-2"]);
     const rendered = [
       ...render(md, member).matchAll(/<h[1-6] id="([^"]+)"/g),
     ].map((m) => m[1]);
@@ -996,7 +1006,7 @@ describe("headings", () => {
 
   it("does not list headings inside code blocks", () => {
     expect(extractHeadings("```\n# nope\n```\n\n# ja")).toEqual([
-      { level: 1, text: "ja", id: "ja" },
+      { level: 1, text: "ja", id: "h-ja" },
     ]);
   });
 

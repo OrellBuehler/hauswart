@@ -71,6 +71,7 @@ src/lib/server/api/handlers/     handlers: ({ ctx, params, query, body, event })
 src/lib/server/auth/             sessions, passwords, login + rate limits, API tokens, guards, routing
 src/lib/server/users/            user service (create, first admin, update, profile)
 src/lib/server/<domain>/         services: plain functions, no HTTP types
+src/lib/server/docs/markdown*.ts markdown -> sanitized html; async variants run marked in a worker (see below)
 src/lib/dates.ts                 YYYY-MM-DD date math + time-zone helpers (client-safe)
 src/lib/tasks/engine/            pure due-date engine (client-safe): evaluateTask, estimates, rotation, upcoming
 src/lib/server/service.ts        ServiceContext {db, now}, notFound/conflict/invalidField, isUniqueViolation
@@ -148,8 +149,25 @@ application/json` (`multipart/form-data` for multipart endpoints), else 403 `csr
   maps them. Unknown errors become 500 `internal` and are logged by name and code only.
 - **Rate limits**: failed password attempts (login and device-token login share one budget, per
   user + client address, per address, per user); 300 requests/min per bearer token; 30
-  state-changing requests/min per client address on public endpoints. In-memory, so behind a proxy
-  set `ADDRESS_HEADER`/`XFF_DEPTH`. 429 carries `Retry-After`.
+  state-changing requests/min per client address on public endpoints (whatever the caller sends
+  as credentials). Client addresses are keyed as IPv4, or the /64 for IPv6 (IPv4-mapped IPv6 is
+  IPv4). In-memory, so behind a proxy set `ADDRESS_HEADER`/`XFF_DEPTH`. 429 carries `Retry-After`.
+- **Hardening**: every response carries `X-Frame-Options`, `X-Content-Type-Options`,
+  `Referrer-Policy` and `Permissions-Policy` (hook); pages get a nonce-based CSP from `kit.csp`
+  (svelte.config.js), so inline scripts need `%sveltekit.nonce%` (the theme script lives in
+  `app.html` for that reason). Unexpected errors on `/api/*` become the 500 envelope. Sessions end
+  180 days after login at the latest; a scheduler (`auth/purge.ts`) deletes sessions that expired
+  over 7 days ago and tokens that were revoked or expired over 30 days ago. `HAUSWART_SETUP_TOKEN`,
+  if set, guards first-run setup. A password reset revokes all of the user's API tokens; demoting
+  an administrator revokes the tokens with the `admin` scope; `POST /users/{id}/revoke-tokens`
+  does it on demand.
+- **Markdown** (`server/docs/markdown.ts`): marked is quadratic on some input and recursive on
+  nesting, so documents go through `renderMarkdownAsync` / `extractPlainTextAsync` /
+  `extractHeadingsAsync` (cap 200 KB, worker thread with a 2 s timeout -> `MarkdownError`
+  `too_complex`; sanitising and secret stripping stay on the main thread). The sync functions only
+  take up to 2 KB. `bun run build` also bundles the worker to `build/server/markdown.worker.js`.
+  Secret blocks fail closed for guests: any `:::secret…` line (any indentation, fence or html
+  state) hides the rest of its block.
 - **Response validation** against the endpoint's schema runs outside production only.
 - **Public paths** (`src/lib/server/auth/routing.ts`): `/login`, `/setup`, `/api/health`,
   `/api/v1/health`, `/api/v1/openapi.json`, `/api/v1/setup`, `/api/v1/auth/login`,

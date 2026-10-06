@@ -111,6 +111,7 @@ describe("registry", () => {
         "GET /api/v1/household both",
         "PATCH /api/v1/household both",
         "GET /api/v1/users/directory both",
+        "POST /api/v1/users/{id}/revoke-tokens session",
       ].sort(),
     );
   });

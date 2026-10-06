@@ -13,6 +13,7 @@ import { useTestDB } from "$lib/testing/db";
 import { callRoute } from "$lib/testing/route";
 import { POST as login } from "../auth/login/+server";
 import { PATCH } from "./[id]/+server";
+import { POST as revokeTokens } from "./[id]/revoke-tokens/+server";
 import { GET, POST } from "./+server";
 
 const list = (session?: string) =>
@@ -31,6 +32,14 @@ const patch = (id: string, session: string, json: unknown, extra = {}) =>
     params: { id },
     session,
     json,
+    ...extra,
+  });
+const revoke = (id: string, session?: string, extra = {}) =>
+  callRoute(revokeTokens, {
+    url: `http://localhost/api/v1/users/${id}/revoke-tokens`,
+    method: "POST",
+    params: { id },
+    session,
     ...extra,
   });
 const code = (r: { body: unknown }) =>
@@ -151,7 +160,7 @@ describe("users API", () => {
     ).toEqual(["role_changed"]);
   });
 
-  it("resets a password: old one stops working, their sessions and device tokens end", async () => {
+  it("resets a password: old one stops working, their sessions and all tokens end", async () => {
     const admin = await createTestUser({ role: "admin" });
     const member = await createTestUser({ username: "maya" });
     const memberSession = loginTestUser(member);
@@ -163,7 +172,7 @@ describe("users API", () => {
     expect(r.res.status).toBe(200);
     expect(validateSessionToken(memberSession.token)).toBeNull();
     expect(verifyToken(mobile.token)).toBeNull();
-    expect(verifyToken(mcp.token)).not.toBeNull();
+    expect(verifyToken(mcp.token)).toBeNull();
     const oldLogin = await callRoute(login, {
       url: "http://localhost/api/v1/auth/login",
       json: { username: "maya", password: member.password },
@@ -191,6 +200,40 @@ describe("users API", () => {
     await patch(admin.id, s.token, { password: "brand-new-password" });
     expect(validateSessionToken(s.token)).not.toBeNull();
     expect(validateSessionToken(other.token)).toBeNull();
+  });
+
+  it("revoke-tokens ends every live token of the user but keeps sessions and other users' tokens", async () => {
+    const admin = await createTestUser({ role: "admin" });
+    const member = await createTestUser();
+    const other = await createTestUser();
+    const memberSession = loginTestUser(member);
+    const mobile = createTestToken(member, { kind: "mobile" });
+    const mcp = createTestToken(member, { kind: "mcp" });
+    const otherToken = createTestToken(other, { kind: "mcp" });
+    const r = await revoke(member.id, loginTestUser(admin).token);
+    expect(r.res.status).toBe(200);
+    expect(r.body).toEqual({ revoked: 2 });
+    expect(verifyToken(mobile.token)).toBeNull();
+    expect(verifyToken(mcp.token)).toBeNull();
+    expect(verifyToken(otherToken.token)).not.toBeNull();
+    expect(validateSessionToken(memberSession.token)).not.toBeNull();
+    const events = ctx.db.select().from(authEvents).all();
+    expect(events.map((e) => [e.type, e.userId, e.actorId])).toEqual([
+      ["token_revoked", member.id, admin.id],
+    ]);
+  });
+
+  it("revoke-tokens answers 404 for unknown users, 403 for members and 403 cross-origin", async () => {
+    const admin = await createTestUser({ role: "admin" });
+    const member = await createTestUser();
+    const s = loginTestUser(admin).token;
+    expect((await revoke("nope", s)).res.status).toBe(404);
+    expect(
+      (await revoke(admin.id, loginTestUser(member).token)).res.status,
+    ).toBe(403);
+    const cross = await revoke(member.id, s, { origin: "http://evil.example" });
+    expect([cross.res.status, code(cross)]).toEqual([403, "csrf_failed"]);
+    expect((await revoke(member.id)).res.status).toBe(401);
   });
 
   it("refuses to demote the last administrator", async () => {

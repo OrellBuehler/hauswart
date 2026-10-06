@@ -1,3 +1,5 @@
+import { isIP } from "node:net";
+import { logLoginAttempt } from "./events";
 import { loginRateLimiter, type LoginRateLimiter } from "./rate-limit";
 import { verifyAgainstDummy, verifyPassword } from "./password";
 import { createSession, purgeExpiredSessions } from "./sessions";
@@ -19,10 +21,58 @@ export interface LoginResult {
 
 let warnedAddress = false;
 
+function parseIPv6(address: string): number[] | null {
+  let value = address.trim().replace(/^\[|\]$/g, "");
+  const zone = value.indexOf("%");
+  if (zone >= 0) value = value.slice(0, zone);
+  if (!value.includes(":") || isIP(value) !== 6) return null;
+
+  const tail = /(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(value);
+  if (tail) {
+    const [a, b, c, d] = tail.slice(1).map(Number);
+    value =
+      value.slice(0, tail.index) +
+      ((a << 8) | b).toString(16) +
+      ":" +
+      ((c << 8) | d).toString(16);
+  }
+  const [head, rest, extra] = value.split("::");
+  if (extra !== undefined) return null;
+  const left = head ? head.split(":") : [];
+  const right = rest ? rest.split(":") : [];
+  const missing = 8 - left.length - right.length;
+  if (rest === undefined ? missing !== 0 : missing < 1) return null;
+  const groups = [
+    ...left,
+    ...Array<string>(rest === undefined ? 0 : missing).fill("0"),
+    ...right,
+  ];
+  const numbers = groups.map((g) => parseInt(g, 16));
+  return numbers.length === 8 && numbers.every((n) => n >= 0 && n <= 0xffff)
+    ? numbers
+    : null;
+}
+
+/**
+ * Rate-limit key for a client address: IPv4-mapped IPv6 addresses become the IPv4 address and
+ * other IPv6 addresses their /64 network (one subscriber can use billions of addresses in it).
+ */
+export function normalizeClientAddress(address: string): string {
+  const groups = parseIPv6(address);
+  if (!groups) return address;
+  if (groups.slice(0, 5).every((g) => g === 0) && groups[5] === 0xffff) {
+    return `${groups[6] >> 8}.${groups[6] & 255}.${groups[7] >> 8}.${groups[7] & 255}`;
+  }
+  return `${groups
+    .slice(0, 4)
+    .map((g) => g.toString(16))
+    .join(":")}::/64`;
+}
+
 /** Client address for rate limiting; a fixed shared key if the adapter cannot provide one. */
 export function clientKey(getClientAddress: () => string): string {
   try {
-    return getClientAddress();
+    return normalizeClientAddress(getClientAddress());
   } catch {
     if (!warnedAddress) {
       warnedAddress = true;
@@ -66,9 +116,13 @@ export async function verifyCredentials(
   if (row) ok = await verifyPassword(password, row.passwordHash);
   else await verifyAgainstDummy(password);
 
-  if (!row || !ok) return null;
+  if (!row || !ok) {
+    logLoginAttempt("login_failed", row?.id);
+    return null;
+  }
 
   release();
+  logLoginAttempt("login_succeeded", row.id);
   return toSessionUser(row);
 }
 

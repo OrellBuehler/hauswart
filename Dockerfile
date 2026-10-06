@@ -40,7 +40,7 @@ ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     DATABASE_PATH=/data/hauswart.db \
     HAUSWART_FILES_DIR=/data/files \
-    BODY_SIZE_LIMIT=25M \
+    BODY_SIZE_LIMIT=30M \
     APP_VERSION=${APP_VERSION}
 VOLUME ["/data"]
 EXPOSE 3000

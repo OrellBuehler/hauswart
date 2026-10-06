@@ -42,6 +42,13 @@ describe("sanitizeFilename", () => {
     expect(sanitizeFilename("a\u200bb\u200e\u2066c\ufeff.pdf")).toBe("abc.pdf");
   });
 
+  it("removes the Arabic letter mark and invisible word joiners", () => {
+    expect(sanitizeFilename("a\u061Cb.pdf")).toBe("ab.pdf");
+    expect(sanitizeFilename("a\u2060b\u2061c\u2062d\u2063e\u2064f.pdf")).toBe(
+      "abcdef.pdf",
+    );
+  });
+
   it("replaces quotes and reserved characters", () => {
     expect(sanitizeFilename('a"b.pdf')).toBe("a_b.pdf");
     expect(sanitizeFilename("a<b>c:d|e?f*g.pdf")).toBe("a_b_c_d_e_f_g.pdf");

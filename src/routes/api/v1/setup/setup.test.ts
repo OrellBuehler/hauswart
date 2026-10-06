@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { SESSION_COOKIE } from "$lib/api/constants";
 import { authEvents, users } from "$lib/server/db";
 import { validateSessionToken } from "$lib/server/auth/sessions";
@@ -20,22 +20,81 @@ describe("GET /api/v1/setup", () => {
   it("reports whether setup is still open", async () => {
     expect(
       (await callRoute(GET, { url: "http://localhost/api/v1/setup" })).body,
-    ).toEqual({
-      needsSetup: true,
-    });
+    ).toEqual({ needsSetup: true, tokenRequired: false });
     await createTestUser();
     expect(
       (await callRoute(GET, { url: "http://localhost/api/v1/setup" })).body,
-    ).toEqual({
-      needsSetup: false,
+    ).toEqual({ needsSetup: false, tokenRequired: false });
+  });
+
+  describe("with HAUSWART_SETUP_TOKEN", () => {
+    afterEach(() => vi.unstubAllEnvs());
+
+    it("announces that a token is required while setup is open", async () => {
+      vi.stubEnv("HAUSWART_SETUP_TOKEN", "s3cret-setup-token");
+      const status = () =>
+        callRoute(GET, { url: "http://localhost/api/v1/setup" });
+      expect((await status()).body).toEqual({
+        needsSetup: true,
+        tokenRequired: true,
+      });
+      await createTestUser();
+      expect((await status()).body).toEqual({
+        needsSetup: false,
+        tokenRequired: false,
+      });
+    });
+
+    it("an empty value means no token is required", async () => {
+      vi.stubEnv("HAUSWART_SETUP_TOKEN", "  ");
+      expect(
+        (await callRoute(GET, { url: "http://localhost/api/v1/setup" })).body,
+      ).toEqual({ needsSetup: true, tokenRequired: false });
     });
   });
 });
 
 describe("POST /api/v1/setup", () => {
   const ctx = useTestDB();
+  afterEach(() => vi.unstubAllEnvs());
   const setup = (json: unknown = body, extra = {}) =>
     callRoute(POST, { url: "http://localhost/api/v1/setup", json, ...extra });
+  const code = (r: { body: unknown }) =>
+    (r.body as { error: { code: string } }).error.code;
+
+  it("requires the setup token when HAUSWART_SETUP_TOKEN is set", async () => {
+    vi.stubEnv("HAUSWART_SETUP_TOKEN", "s3cret-setup-token");
+    for (const bad of [
+      body,
+      { ...body, setupToken: "" },
+      { ...body, setupToken: "wrong" },
+      { ...body, setupToken: "s3cret-setup-token " },
+      { ...body, setupToken: "S3CRET-SETUP-TOKEN" },
+    ]) {
+      const r = await setup(bad);
+      expect([r.res.status, code(r)], JSON.stringify(bad)).toEqual([
+        403,
+        "forbidden",
+      ]);
+      expect(r.cookies.get(SESSION_COOKIE)).toBeUndefined();
+    }
+    expect(ctx.db.select().from(users).all()).toHaveLength(0);
+    const ok = await setup({ ...body, setupToken: "s3cret-setup-token" });
+    expect(ok.res.status).toBe(201);
+    expect(ctx.db.select().from(users).all()).toHaveLength(1);
+  });
+
+  it("ignores a supplied token when none is configured", async () => {
+    const r = await setup({ ...body, setupToken: "whatever" });
+    expect(r.res.status).toBe(201);
+  });
+
+  it("reports a completed setup before it looks at the token", async () => {
+    vi.stubEnv("HAUSWART_SETUP_TOKEN", "s3cret-setup-token");
+    await createTestUser();
+    const r = await setup({ ...body, setupToken: "wrong" });
+    expect([r.res.status, code(r)]).toEqual([409, "setup_complete"]);
+  });
 
   it("creates the first admin, starts a session and sets the locale", async () => {
     const r = await setup();

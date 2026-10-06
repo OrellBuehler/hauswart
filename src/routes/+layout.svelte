@@ -5,7 +5,8 @@
   let { children } = $props();
 </script>
 
-<ModeWatcher />
+<!-- The theme script lives in app.html so it can carry the CSP nonce. -->
+<ModeWatcher disableHeadScriptInjection />
 <Toaster richColors closeButton />
 
 {@render children()}

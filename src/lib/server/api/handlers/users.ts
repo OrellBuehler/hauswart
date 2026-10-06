@@ -1,7 +1,10 @@
 import type { endpoints } from "$lib/api/registry";
+import { ApiError } from "$lib/api/errors";
 import { logAuthEvent } from "$lib/server/auth/events";
+import { revokeUserTokens } from "$lib/server/auth/tokens";
 import {
   createUser,
+  findUserById,
   listDirectory,
   listUsers,
   updateUser,
@@ -42,3 +45,14 @@ export const update: Handler<typeof endpoints.usersUpdate> = async ({
 export const directory: Handler<typeof endpoints.usersDirectory> = ({
   ctx,
 }) => ({ items: listDirectory(ctx.db), nextCursor: null });
+
+export const revokeTokens: Handler<typeof endpoints.usersRevokeTokens> = ({
+  ctx,
+  params,
+}) => {
+  if (!findUserById(params.id))
+    throw new ApiError("not_found", "User not found");
+  const revoked = revokeUserTokens(params.id, undefined, ctx.now);
+  if (revoked > 0) logAuthEvent("token_revoked", params.id, ctx.user.id);
+  return { revoked };
+};

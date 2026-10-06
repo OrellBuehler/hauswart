@@ -113,13 +113,40 @@ async function writeAtomic(path: string, bytes: Uint8Array): Promise<void> {
   }
 }
 
-async function ensureWritten(path: string, bytes: Uint8Array): Promise<void> {
-  if (await exists(path, bytes.byteLength)) {
-    const now = new Date();
-    await utimes(path, now, now);
-    return;
+const shaLocks = new Map<string, Promise<unknown>>();
+
+/**
+ * Serializes the filesystem steps that touch one stored file (write or touch in `putFile`,
+ * the final check and unlink in `deleteIfUnreferenced`) within this process.
+ */
+async function withShaLock<T>(
+  sha256: string,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const previous = shaLocks.get(sha256) ?? Promise.resolve();
+  const run = previous.then(fn, fn);
+  const tail = run.catch(() => undefined);
+  shaLocks.set(sha256, tail);
+  try {
+    return await run;
+  } finally {
+    if (shaLocks.get(sha256) === tail) shaLocks.delete(sha256);
   }
-  await writeAtomic(path, bytes);
+}
+
+async function ensureWritten(
+  sha256: string,
+  path: string,
+  bytes: Uint8Array,
+): Promise<void> {
+  await withShaLock(sha256, async () => {
+    if (await exists(path, bytes.byteLength)) {
+      const now = new Date();
+      await utimes(path, now, now);
+      return;
+    }
+    await writeAtomic(path, bytes);
+  });
 }
 
 /**
@@ -165,12 +192,12 @@ export async function putFile(
   const sha256 = createHash("sha256").update(stored).digest("hex");
   const path = shardPath(sha256);
   const ext = extFor(mime);
-  await ensureWritten(resolveInside(root, path), stored);
+  await ensureWritten(sha256, resolveInside(root, path), stored);
 
   let thumbPath: string | null = null;
   if (thumbnail) {
     thumbPath = `${path}.thumb.webp`;
-    await ensureWritten(resolveInside(root, thumbPath), thumbnail);
+    await ensureWritten(sha256, resolveInside(root, thumbPath), thumbnail);
   }
 
   return {
@@ -223,7 +250,9 @@ export interface DeleteOptions {
 
 /**
  * Deletes a stored file and its thumbnail when `isReferenced(sha256)` is false. Returns whether
- * the files were removed.
+ * the files were removed. The modification time is checked again right before the unlink (under
+ * the same in-process per-sha lock `putFile` uses), so a re-upload that lands while the
+ * reference check is running keeps the file.
  */
 export async function deleteIfUnreferenced(
   root: string,
@@ -244,12 +273,28 @@ export async function deleteIfUnreferenced(
   if ((options.now ?? Date.now()) - info.mtimeMs < minAge) return false;
   if (await isReferenced(sha256)) return false;
 
-  for (const target of [path, `${path}.thumb.webp`]) {
-    await unlink(target).catch((error: NodeJS.ErrnoException) => {
-      if (error.code !== "ENOENT") throw error;
-    });
-  }
-  return true;
+  return withShaLock(sha256, async () => {
+    // A re-upload may have touched the file while the reference check ran.
+    let latest;
+    try {
+      latest = await stat(path);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+      throw error;
+    }
+    if (
+      latest.mtimeMs !== info.mtimeMs ||
+      (options.now ?? Date.now()) - latest.mtimeMs < minAge
+    ) {
+      return false;
+    }
+    for (const target of [path, `${path}.thumb.webp`]) {
+      await unlink(target).catch((error: NodeJS.ErrnoException) => {
+        if (error.code !== "ENOENT") throw error;
+      });
+    }
+    return true;
+  });
 }
 
 export function pathFor(sha256: string): string {

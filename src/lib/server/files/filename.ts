@@ -2,10 +2,11 @@ const MAX_NAME_LENGTH = 120;
 const MAX_EXT_LENGTH = 10;
 const WINDOWS_RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
 
-// C0/C1 controls, bidi controls and overrides, zero-width and line/paragraph separators, BOM
+// C0/C1 controls, bidi controls and overrides (incl. U+061C), zero-width characters, word joiners and
+// invisible operators (U+2060-2064), line/paragraph separators, BOM
 /* eslint-disable no-control-regex */
 const UNSAFE_CHARS =
-  /[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069\ufeff]/g;
+  /[\u0000-\u001f\u007f-\u009f\u061c\u200b-\u200f\u2028-\u202e\u2060-\u2064\u2066-\u2069\ufeff]/g;
 /* eslint-enable no-control-regex */
 const RESERVED_FS_CHARS = /[<>:"|?*\\/]/g;
 

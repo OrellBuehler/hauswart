@@ -603,6 +603,84 @@ describe("bind", () => {
       expect(fits.res.status).toBe(200);
     });
 
+    describe("multipart bodies", () => {
+      const up$ = bind(
+        defineEndpoint({
+          ...base,
+          id: "mp",
+          method: "POST",
+          auth: "bearer",
+          bodyType: "multipart",
+          maxBodyBytes: 1024,
+          body: z.object({ title: z.string(), file: z.file() }),
+        }),
+        ({ body }) => ({ ok: body.file.size > 0 }),
+      );
+      const bearer: Who = { user: member, token: token([]) };
+
+      it("answers 400 invalid_request, not 500, for a malformed multipart body", async () => {
+        for (const contentType of [
+          "multipart/form-data; boundary=abc",
+          "multipart/form-data",
+        ]) {
+          const r = await call(up$, bearer, {
+            body: "garbage",
+            headers: { "content-type": contentType },
+          });
+          expect([r.res.status, codeOf(r)], contentType).toEqual([
+            400,
+            "invalid_request",
+          ]);
+        }
+      });
+
+      it("enforces the size limit on chunked bodies without Content-Length", async () => {
+        const event = createTestEvent({
+          url: "http://localhost/api/v1/things",
+          method: "POST",
+          locals: { user: bearer.user, session: null, token: bearer.token },
+        });
+        const boundary = "xxBOUNDARYxx";
+        const chunk = new TextEncoder().encode(
+          `--${boundary}\r\ncontent-disposition: form-data; name="title"\r\n\r\nt\r\n--${boundary}\r\ncontent-disposition: form-data; name="file"; filename="a.bin"\r\n\r\n${"a".repeat(600)}`,
+        );
+        let sent = 0;
+        const stream = new ReadableStream<Uint8Array>({
+          pull(controller) {
+            sent++;
+            if (sent > 20) {
+              controller.close();
+              return;
+            }
+            controller.enqueue(chunk);
+          },
+        });
+        event.request = new Request(event.url, {
+          method: "POST",
+          headers: {
+            "content-type": `multipart/form-data; boundary=${boundary}`,
+          },
+          body: stream,
+          // @ts-expect-error Bun and Node need duplex for stream bodies
+          duplex: "half",
+        });
+        expect(event.request.headers.get("content-length")).toBeNull();
+        const res = await up$(event as never);
+        expect([res.status, (await res.json()).error.code]).toEqual([
+          413,
+          "invalid_request",
+        ]);
+        expect(sent).toBeLessThan(10);
+      });
+
+      it("still accepts a valid upload within the limit", async () => {
+        const r = await call(up$, bearer, {
+          form: { title: "t", file: new File(["abc"], "a.txt") },
+        });
+        expect([r.res.status, r.body]).toEqual([200, { ok: true }]);
+      });
+    });
+
     it("is not affected by a __proto__ query key", async () => {
       const q = bind(
         defineEndpoint({
@@ -856,6 +934,42 @@ describe("bind", () => {
         "rate_limited",
       ]);
       expect((await call(e, {}, opts("198.51.100.2"))).res.status).toBe(200);
+    });
+
+    it("limits public posts regardless of the principal, and per IPv6 /64", async () => {
+      const e = bind(
+        defineEndpoint({
+          ...base,
+          id: "pl2",
+          method: "POST",
+          auth: "public",
+          body: z.object({}),
+        }),
+        ok,
+      );
+      const who: Who = { user: member, token: token(["read"]) };
+      for (let i = 0; i < PUBLIC_POSTS_PER_MINUTE; i++) {
+        const r = await call(e, who, { ...json({}), ip: "198.51.100.8" });
+        expect(r.res.status).toBe(200);
+      }
+      const asToken = await call(e, who, { ...json({}), ip: "198.51.100.8" });
+      expect([asToken.res.status, codeOf(asToken)]).toEqual([
+        429,
+        "rate_limited",
+      ]);
+      const anon = await call(e, {}, { ...json({}), ip: "198.51.100.8" });
+      expect(anon.res.status).toBe(429);
+
+      for (let i = 0; i < PUBLIC_POSTS_PER_MINUTE; i++) {
+        const ip = `2001:db8:5:6:${i + 1}:${i + 2}::${i + 3}`;
+        expect((await call(e, {}, { ...json({}), ip })).res.status).toBe(200);
+      }
+      const sameNet = await call(
+        e,
+        {},
+        { ...json({}), ip: "2001:db8:5:6::ff" },
+      );
+      expect(sameNet.res.status).toBe(429);
     });
 
     it("does not limit public reads", async () => {

@@ -37,13 +37,19 @@ export type User = z.infer<typeof userSchema>;
 
 export const userEnvelopeSchema = z.object({ user: userSchema });
 
-export const setupStatusSchema = z.object({ needsSetup: z.boolean() });
+export const setupStatusSchema = z.object({
+  needsSetup: z.boolean(),
+  /** True while setup is open and the server was started with `HAUSWART_SETUP_TOKEN`. */
+  tokenRequired: z.boolean(),
+});
 
 export const setupRequestSchema = z.strictObject({
   username: usernameSchema,
   displayName: displayNameSchema,
   password: passwordSchema,
   locale: localeSchema,
+  /** Required when the server was started with `HAUSWART_SETUP_TOKEN`; ignored otherwise. */
+  setupToken: z.string().max(256).optional(),
 });
 
 /** Login accepts any non-empty input so malformed usernames are just "invalid credentials". */

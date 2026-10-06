@@ -1,9 +1,12 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import { ApiError } from "$lib/api/errors";
 import type { endpoints } from "$lib/api/registry";
 import { MOBILE_TOKEN_SCOPES } from "$lib/api/scopes";
 import { toIso } from "$lib/api/schemas/common";
+import { setupToken } from "$lib/server/config";
 import { logAuthEvent } from "$lib/server/auth/events";
 import { setLocaleCookie } from "$lib/server/auth/locale";
+import { AuthError } from "$lib/server/auth/types";
 import {
   authenticate,
   clientKey,
@@ -28,14 +31,31 @@ import {
 import type { Handler } from "../bind";
 import { wireUser } from "../wire";
 
-export const setupStatus: Handler<typeof endpoints.setupStatus> = () => ({
-  needsSetup: countUsers() === 0,
-});
+export const setupStatus: Handler<typeof endpoints.setupStatus> = () => {
+  const needsSetup = countUsers() === 0;
+  return { needsSetup, tokenRequired: needsSetup && setupToken() !== null };
+};
+
+function digest(value: string): Buffer {
+  return createHash("sha256").update(value).digest();
+}
+
+function checkSetupToken(supplied: string | undefined): void {
+  const expected = setupToken();
+  if (expected === null) return;
+  if (!timingSafeEqual(digest(supplied ?? ""), digest(expected))) {
+    throw new ApiError("forbidden", "Invalid setup token");
+  }
+}
 
 export const setup: Handler<typeof endpoints.setup> = async ({
   body,
   event,
 }) => {
+  if (countUsers() > 0) {
+    throw new AuthError("setup_closed", "Setup has already been completed.");
+  }
+  checkSetupToken(body.setupToken);
   const created = await createFirstAdmin(body);
   logAuthEvent("setup_completed", created.id);
   const { token, session } = createSession(created.id);
