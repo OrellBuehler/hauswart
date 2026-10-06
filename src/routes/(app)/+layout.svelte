@@ -56,7 +56,7 @@
 
   <Sidebar.Inset class="min-w-0">
     <header
-      class="bg-background/70 sticky top-0 z-10 flex h-12 items-center gap-2 border-b px-4 backdrop-blur-md backdrop-saturate-150"
+      class="bg-background/70 sticky top-0 z-10 flex h-12 items-center gap-2 border-b px-4 backdrop-blur-md backdrop-saturate-150 print:hidden"
     >
       <Sidebar.Trigger class="-ms-1" />
       <Separator
@@ -70,7 +70,9 @@
         <UserMenu user={data.user} />
       </div>
     </header>
-    <div class="mx-auto w-full max-w-5xl min-w-0 flex-1 p-4 md:p-8">
+    <div
+      class="mx-auto w-full max-w-5xl min-w-0 flex-1 p-4 md:p-8 print:max-w-none print:p-0"
+    >
       {#key pathname}
         <div
           class="animate-in fade-in slide-in-from-bottom-1 duration-300 ease-out motion-reduce:animate-none"
