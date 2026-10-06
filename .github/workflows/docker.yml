@@ -29,6 +29,17 @@ jobs:
         with:
           bun-version-file: .bun-version
 
+      - name: Release tag matches package.json
+        if: github.event_name == 'release'
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version=$(jq -r .version package.json)
+          if [ "${TAG#v}" != "$version" ]; then
+            echo "Release tag $TAG does not match the package.json version $version"
+            exit 1
+          fi
+
       - run: bun install --frozen-lockfile
 
       - name: Typecheck, lint, test
@@ -82,13 +93,20 @@ jobs:
             BUILD_TIMESTAMP=${{ github.event.head_commit.timestamp || github.event.release.created_at || github.event.pull_request.updated_at }}
 
       - name: Smoke test
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
         run: |
           image=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
           docker run -d --name hauswart-smoke -p 3000:3000 \
-            -e HAUSWART_SECRET_KEY="$(openssl rand -base64 32)" "$image"
+            -e HAUSWART_SECRET_KEY="$(openssl rand -base64 32)" \
+            -e ORIGIN=http://127.0.0.1:3000 -e HAUSWART_COOKIE_SECURE=false "$image"
           for i in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:3000/api/health; then
-              echo; echo "healthy after ${i}s"; exit 0
+              echo; echo "healthy after ${i}s"
+              # Setup, a Markdown page, an image upload, a PDF and a calendar feed exercise
+              # the worker bundle, the image library and the fonts the image has to ship.
+              ./scripts/docker-smoke.sh http://127.0.0.1:3000 "$VERSION" && exit 0
+              break
             fi
             sleep 1
           done
