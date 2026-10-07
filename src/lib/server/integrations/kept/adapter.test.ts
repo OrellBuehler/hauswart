@@ -131,6 +131,23 @@ describe("Kept adapter settings", () => {
       expect(result.info?.scopes).toContain("transactions:read");
     });
 
+    it("says whether links back to hauswart can be written (the app address is known)", async () => {
+      const previous = process.env.ORIGIN;
+      try {
+        process.env.ORIGIN = "https://hauswart.example.org";
+        expect(
+          (await keptIntegration.test(await connection())).info?.backLinks,
+        ).toBe(true);
+        delete process.env.ORIGIN;
+        expect(
+          (await keptIntegration.test(await connection())).info?.backLinks,
+        ).toBe(false);
+      } finally {
+        if (previous === undefined) delete process.env.ORIGIN;
+        else process.env.ORIGIN = previous;
+      }
+    });
+
     it("warns about missing scopes by name", async () => {
       fake.setToken({ scopes: ["accounts:read", "categories:read"] });
       const result = await keptIntegration.test(await connection());

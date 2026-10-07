@@ -5,7 +5,7 @@ import type {
 } from "$lib/server/connections/registry";
 import { normalizeBaseUrl } from "./client";
 import { parseConfig } from "./config";
-import { KIND, clientFor, toIntegrationError } from "./connection";
+import { KIND, appOrigin, clientFor, toIntegrationError } from "./connection";
 import { KeptError, describeError, errorCode } from "./errors";
 import { missingScopes } from "./schemas";
 
@@ -83,6 +83,8 @@ export const keptIntegration: IntegrationAdapter = {
           /** Scopes the adapter would use that this token lacks; empty when all are held. */
           missingScopes: missing.join(","),
           categoryRestricted: me.token.categoryIds !== null,
+          /** False without `ORIGIN`: links back to hauswart cannot be written then. */
+          backLinks: appOrigin() !== null,
         },
       };
     } catch (err) {

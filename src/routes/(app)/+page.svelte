@@ -8,6 +8,7 @@
   import EmptyState from "$lib/components/app/empty-state.svelte";
   import PageHeader from "$lib/components/app/page-header.svelte";
   import DefectsCard from "$lib/components/dashboard/defects-card.svelte";
+  import FinanceInboxCard from "$lib/components/dashboard/finance-inbox-card.svelte";
   import OrderNowCard from "$lib/components/dashboard/order-now-card.svelte";
   import WarrantiesCard from "$lib/components/dashboard/warranties-card.svelte";
   import CompletionItem from "$lib/components/tasks/completion-item.svelte";
@@ -288,6 +289,9 @@
         </Card.Content>
       </Card.Root>
 
+      {#if dashboard.pendingFinanceSuggestions > 0}
+        <FinanceInboxCard count={dashboard.pendingFinanceSuggestions} />
+      {/if}
       {#if dashboard.openDefects.length > 0}
         <DefectsCard defects={dashboard.openDefects} {today} />
       {/if}

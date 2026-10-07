@@ -33,6 +33,7 @@ const READ_TOOLS = [
   "search_documents",
   "get_document",
   "list_document_links",
+  "list_finance_suggestions",
 ];
 const WRITE_TOOLS = [
   "create_task",
@@ -52,7 +53,12 @@ const WRITE_TOOLS = [
   "unlink_document",
 ];
 const DOCS_WRITE_TOOLS = ["create_page", "update_page"];
-const COSTS_WRITE_TOOLS = ["create_cost"];
+const COSTS_WRITE_TOOLS = [
+  "create_cost",
+  "accept_finance_suggestion",
+  "dismiss_finance_suggestion",
+  "sync_finance",
+];
 
 describe("tool registration", () => {
   const mcp = useMcp();

@@ -591,6 +591,8 @@ describe("Kept sync", () => {
         trigger: { status: "paid" },
         state: { status: "ok" },
       });
+      // a settled task keeps the invoiced total instead of "still to pay: 0"
+      expect(getTask(ctx(), task.id).descriptionMd).toContain("123.45");
       // the next run does not ask about it again, nor complete twice
       fake.requests = [];
       await run(user.id);

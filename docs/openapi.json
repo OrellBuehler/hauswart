@@ -30730,6 +30730,11 @@
           },
           "costsYearToDate": {
             "$ref": "#/components/schemas/DashboardCosts"
+          },
+          "pendingFinanceSuggestions": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
           }
         },
         "required": [
@@ -30742,7 +30747,8 @@
           "openDefects",
           "expiringWarranties",
           "orderNow",
-          "costsYearToDate"
+          "costsYearToDate",
+          "pendingFinanceSuggestions"
         ],
         "additionalProperties": false
       },

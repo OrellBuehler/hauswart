@@ -297,6 +297,8 @@ export type KeptTestInfo = {
   missingScopes: string[];
   /** The token sees only some of the categories. */
   restricted: boolean;
+  /** The server does not know its own address (`ORIGIN`), so it cannot link bookings back. */
+  backLinksOff: boolean;
 };
 
 type TestInfo = Record<string, string | number | boolean | null>;
@@ -314,6 +316,7 @@ export function readKeptTestInfo(info: TestInfo | null): KeptTestInfo {
             .filter(Boolean)
         : [],
     restricted: info?.categoryRestricted === true,
+    backLinksOff: info?.backLinks === false,
   };
 }
 

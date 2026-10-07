@@ -126,6 +126,11 @@
           {m.integration_kept_test_restricted()}
         </p>
       {/if}
+      {#if info.backLinksOff}
+        <p class="text-xs font-medium text-pretty">
+          {m.integration_kept_test_no_back_links()}
+        </p>
+      {/if}
     {/if}
   </div>
 </div>

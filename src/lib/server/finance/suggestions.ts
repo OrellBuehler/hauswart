@@ -1,4 +1,4 @@
-import { and, desc, eq, lt, or, sql, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, lt, or, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import type {
   FinanceSuggestionKind,
@@ -211,6 +211,25 @@ export function listSuggestions(
     t: r.createdAt.getTime(),
     id: r.id,
   }));
+}
+
+/** How many of the person's own suggestions wait for a decision. */
+export function countPendingSuggestions(
+  ctx: Pick<ServiceContext, "db">,
+  userId: string,
+): number {
+  return (
+    ctx.db
+      .select({ n: count() })
+      .from(financeSuggestions)
+      .where(
+        and(
+          eq(financeSuggestions.userId, userId),
+          eq(financeSuggestions.status, "pending"),
+        ),
+      )
+      .get()?.n ?? 0
+  );
 }
 
 /** One of the person's own suggestions; another person's is a 404, exactly like a missing one. */
