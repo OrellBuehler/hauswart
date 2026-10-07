@@ -212,12 +212,13 @@ Documents are linked to devices, tasks, defects and other entities with `POST /a
 
 [Kept](https://github.com/OrellBuehler/kept) is the self-hosted finance app. In Kept, create an API token
 under Settings, API tokens with the scopes `transactions:read`, `bills:read`, `links:write` and
-`categories:read`, then connect it per person like Paperless-ngx (`PUT /api/v1/integrations/kept`, with
-the address of Kept and the token). Everything is opt-in: nothing is read from a Kept category until you
-map it to a cost category in `config.categoryMap`, and open bills only become tasks (visible to the whole
-household) with `"billTasks": true`. `POST /api/v1/integrations/kept/test` lists the scopes the token
-misses; offered transactions and bills wait in a private inbox (`GET /api/v1/finance/suggestions`) until
-you accept them.
+`categories:read`, then connect it per person under Settings, Integrations (or through the API,
+`PUT /api/v1/integrations/kept`, with the address of Kept and the token). Everything is opt-in: nothing
+is read from a Kept category until you map it to a cost category (`config.categoryMap`), and open bills
+only become tasks (visible to the whole household) with `"billTasks": true`. The card lists the scopes
+the token misses (`POST /api/v1/integrations/kept/test`), picks the categories from your Kept, and syncs
+on request (`POST /api/v1/finance/sync`); offered transactions and bills wait in a private inbox
+(`GET /api/v1/finance/suggestions`) until you accept them.
 
 ### Network access
 

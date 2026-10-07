@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Settings, Integrations: a Kept card to connect, test (missing token permissions are listed), choose
+  the categories and what happens with them, switch bill tasks on (visible to the whole household), and
+  sync now.
+
 ## 0.1.0
 
 First early release. hauswart is in early development: the core works and is well tested, but this
