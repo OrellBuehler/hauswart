@@ -26,6 +26,7 @@
   import DocProse from "$lib/components/docs/doc-prose.svelte";
   import DocRevisionsSheet from "$lib/components/docs/doc-revisions-sheet.svelte";
   import DocToc from "$lib/components/docs/doc-toc.svelte";
+  import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
@@ -351,6 +352,11 @@
           ownerId={page.id}
           editable={canWrite}
           title={m.docs_attachments_title()}
+        />
+        <LinkedDocuments
+          ownerType="page"
+          ownerId={page.id}
+          editable={canWrite}
         />
         <Comments
           entityType="doc_page"

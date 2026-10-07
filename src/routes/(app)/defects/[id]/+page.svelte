@@ -17,6 +17,7 @@
   import { endpoints } from "$lib/api/registry";
   import { DEFECT_TRANSITIONS } from "$lib/api/schemas/defects";
   import Attachments from "$lib/components/attachments/attachments.svelte";
+  import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
   import CommentBody from "$lib/components/comments/comment-body.svelte";
   import DefectDeadline from "$lib/components/defects/defect-deadline.svelte";
@@ -373,6 +374,12 @@
       ownerId={defect.id}
       accept={IMAGE_ACCEPT}
       title={m.defect_photos()}
+    />
+
+    <LinkedDocuments
+      class="lg:col-start-1"
+      ownerType="defect"
+      ownerId={defect.id}
     />
   </div>
 </div>

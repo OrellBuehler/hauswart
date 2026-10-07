@@ -5,6 +5,7 @@
   import ExternalLinkIcon from "@lucide/svelte/icons/external-link";
   import EyeIcon from "@lucide/svelte/icons/eye";
   import FileTextIcon from "@lucide/svelte/icons/file-text";
+  import FileUpIcon from "@lucide/svelte/icons/file-up";
   import ImageIcon from "@lucide/svelte/icons/image";
   import ImagePlusIcon from "@lucide/svelte/icons/image-plus";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
@@ -40,11 +41,16 @@
     isPdf,
   } from "$lib/attachments/files";
   import { AttachmentList } from "$lib/attachments/list.svelte";
+  import { isLinkableOwner } from "$lib/documents/labels";
+  import { isActive, pushes } from "$lib/documents/pushes.svelte";
+  import { DocumentSystem } from "$lib/documents/system.svelte";
   import { CAPTION_MAX } from "$lib/api/schemas/attachments";
   import { apiErrorMessage } from "$lib/error-message";
   import { m } from "$lib/paraglide/messages";
   import { cn } from "$lib/utils";
   import AttachmentLightbox from "./attachment-lightbox.svelte";
+  import PushJobs from "./push-jobs.svelte";
+  import PushToDocumentsDialog from "./push-to-documents-dialog.svelte";
 
   /** Owners whose files a guest can be shown. */
   const GUEST_OWNERS: AttachmentOwnerType[] = [
@@ -110,6 +116,16 @@
     };
   });
 
+  const system = new DocumentSystem();
+  $effect(() => system.start());
+
+  /** A file can be sent to the person's document system when they have one and the owner can be linked (a hint cannot). */
+  const linkableOwner = $derived(
+    isLinkableOwner(ownerType) ? ownerType : undefined,
+  );
+  const provider = $derived(system.provider);
+  const canPush = $derived(editable && Boolean(provider) && linkableOwner);
+
   const compact = $derived(variant === "compact");
   const guestOwner = $derived(GUEST_OWNERS.includes(ownerType));
   const images = $derived(list.items.filter(isImage));
@@ -125,6 +141,18 @@
   let deleteTarget = $state<Attachment | undefined>();
   let deleteOpen = $state(false);
   let busy = $state<string | null>(null);
+  let pushTarget = $state<Attachment | undefined>();
+  let pushOpen = $state(false);
+
+  const pushing = (attachment: Attachment) =>
+    pushes.jobs.some(
+      (job) => job.attachmentId === attachment.id && isActive(job),
+    );
+
+  function askPush(attachment: Attachment) {
+    pushTarget = attachment;
+    pushOpen = true;
+  }
 
   async function addFiles(chosen: File[]) {
     if (!editable || chosen.length === 0) return;
@@ -308,6 +336,15 @@
           </a>
         {/snippet}
       </DropdownMenu.Item>
+      {#if canPush}
+        <DropdownMenu.Item
+          class="min-h-10"
+          disabled={pushing(attachment)}
+          onSelect={() => askPush(attachment)}
+        >
+          <FileUpIcon />{m.document_push_action()}
+        </DropdownMenu.Item>
+      {/if}
       {#if editable}
         <DropdownMenu.Separator />
         <DropdownMenu.Item
@@ -449,6 +486,8 @@
           {/each}
         </ul>
       {/if}
+
+      <PushJobs {ownerType} {ownerId} />
 
       {#if list.items.length === 0 && list.jobs.length === 0}
         {#if !compact}
@@ -664,6 +703,15 @@
 />
 
 <AttachmentLightbox {images} bind:index={lightbox} />
+
+{#if canPush && provider && linkableOwner}
+  <PushToDocumentsDialog
+    bind:open={pushOpen}
+    attachment={pushTarget}
+    ownerType={linkableOwner}
+    {provider}
+  />
+{/if}
 
 <FormDialog
   bind:open={captionOpen}

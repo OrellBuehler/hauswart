@@ -65,7 +65,7 @@
         <Dialog.Description class="sr-only">{title}</Dialog.Description>
       {/if}
     </Dialog.Header>
-    <form class="flex flex-col gap-5" novalidate onsubmit={submit}>
+    <form class="flex min-w-0 flex-col gap-5" novalidate onsubmit={submit}>
       {@render children()}
       <FormAlert message={error} />
       <Dialog.Footer class="gap-2">

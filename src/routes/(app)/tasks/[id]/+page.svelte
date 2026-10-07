@@ -20,6 +20,7 @@
   import type { Completion } from "$lib/api/schemas/tasks";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
   import Comments from "$lib/components/comments/comments.svelte";
+  import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
   import AssigneeAvatar from "$lib/components/tasks/assignee-avatar.svelte";
   import CompleteButton from "$lib/components/tasks/complete-button.svelte";
   import CompletionItem from "$lib/components/tasks/completion-item.svelte";
@@ -386,6 +387,8 @@
       </Card.Root>
 
       <TaskPartsCard taskId={task.id} parts={data.parts} />
+
+      <LinkedDocuments ownerType="task" ownerId={task.id} />
 
       <Card.Root>
         <Card.Header>

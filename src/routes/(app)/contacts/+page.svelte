@@ -1,6 +1,7 @@
 <script lang="ts">
   import { invalidateAll } from "$app/navigation";
   import ContactIcon from "@lucide/svelte/icons/contact";
+  import FileSearchIcon from "@lucide/svelte/icons/file-search";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import SearchIcon from "@lucide/svelte/icons/search";
   import SearchXIcon from "@lucide/svelte/icons/search-x";
@@ -10,9 +11,11 @@
   import PageHeader from "$lib/components/app/page-header.svelte";
   import ContactFormDialog from "$lib/components/contacts/contact-form-dialog.svelte";
   import ContactRow from "$lib/components/contacts/contact-row.svelte";
+  import DocumentSuggestionsSheet from "$lib/components/documents/document-suggestions-sheet.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import { contactKindGroupLabels } from "$lib/contacts/labels";
+  import { DocumentSystem } from "$lib/documents/system.svelte";
   import { m } from "$lib/paraglide/messages";
   import { cn } from "$lib/utils";
   import type { PageProps } from "./$types";
@@ -22,6 +25,10 @@
   let q = $state("");
   let emergencyOnly = $state(false);
   let createOpen = $state(false);
+  let suggestionsOpen = $state(false);
+
+  const documents = new DocumentSystem();
+  $effect(() => documents.start());
 
   const query = $derived(q.trim().toLowerCase());
   const visible = $derived(
@@ -58,6 +65,15 @@
 <div class="flex flex-col gap-6">
   <PageHeader title={m.nav_contacts()} description={m.contacts_description()}>
     {#snippet actions()}
+      {#if documents.provider}
+        <Button
+          size="lg"
+          variant="outline"
+          onclick={() => (suggestionsOpen = true)}
+        >
+          <FileSearchIcon />{m.contacts_from_documents()}
+        </Button>
+      {/if}
       <Button size="lg" onclick={() => (createOpen = true)}>
         <PlusIcon />{m.contacts_create()}
       </Button>
@@ -74,6 +90,11 @@
         <Button onclick={() => (createOpen = true)}>
           <PlusIcon />{m.contacts_create()}
         </Button>
+        {#if documents.provider}
+          <Button variant="outline" onclick={() => (suggestionsOpen = true)}>
+            <FileSearchIcon />{m.contacts_from_documents()}
+          </Button>
+        {/if}
       {/snippet}
     </EmptyState>
   {:else}
@@ -166,3 +187,12 @@
 </div>
 
 <ContactFormDialog bind:open={createOpen} onsaved={() => invalidateAll()} />
+
+{#if documents.provider}
+  <DocumentSuggestionsSheet
+    bind:open={suggestionsOpen}
+    kind="contact"
+    provider={documents.provider}
+    onadded={() => invalidateAll()}
+  />
+{/if}
