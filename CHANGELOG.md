@@ -11,6 +11,9 @@
   out, the one you changed it in stays. API tokens stay valid, unlike after an administrator's reset: they
   are credentials you made on purpose, revoke them under Settings > API tokens if the password changed
   because of a leak. The change is recorded as the security event `password_changed`.
+- Settings, Integrations: a Kept card to connect, test (missing token permissions are listed), choose
+  the categories and what happens with them, switch bill tasks on (visible to the whole household), and
+  sync now.
 
 ### Fixed
 
