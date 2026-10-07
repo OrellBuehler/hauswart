@@ -22,6 +22,7 @@
   import { endpoints } from "$lib/api/registry";
   import type { PartMovement } from "$lib/api/schemas/parts";
   import Attachments from "$lib/components/attachments/attachments.svelte";
+  import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
   import EmptyState from "$lib/components/app/empty-state.svelte";
   import AssetPartDialog from "$lib/components/parts/asset-part-dialog.svelte";
@@ -619,6 +620,8 @@
         ownerId={part.id}
         title={m.part_files_title()}
       />
+
+      <LinkedDocuments ownerType="part" ownerId={part.id} />
     </div>
   </div>
 </div>

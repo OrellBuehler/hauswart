@@ -19,6 +19,7 @@
   import RoomFormDialog from "$lib/components/assets/room-form-dialog.svelte";
   import TaskRows from "$lib/components/assets/task-rows.svelte";
   import LinkedDocsCard from "$lib/components/docs/linked-docs-card.svelte";
+  import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
   import EmptyState from "$lib/components/app/empty-state.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
@@ -193,6 +194,8 @@
     moreLabel={m.docs_show_all({ count: data.pages.length })}
     canWrite={data.scopes.includes("docs:write")}
   />
+
+  <LinkedDocuments ownerType="room" ownerId={data.room.id} />
 </div>
 
 <RoomFormDialog bind:open={editOpen} room={data.room} onsaved={invalidateAll} />
