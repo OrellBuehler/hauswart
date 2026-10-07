@@ -49,6 +49,8 @@ export interface TestEventOptions {
   headers?: Record<string, string>;
   cookies?: Record<string, string>;
   ip?: string;
+  /** `event.fetch`: SvelteKit calls the app in process. The global fetch unless a test provides one. */
+  fetch?: typeof fetch;
 }
 
 /**
@@ -77,7 +79,7 @@ export function createTestEvent(opts: TestEventOptions = {}) {
     isDataRequest: false,
     isSubRequest: false,
     platform: undefined,
-    fetch: globalThis.fetch,
+    fetch: opts.fetch ?? globalThis.fetch,
   };
 }
 

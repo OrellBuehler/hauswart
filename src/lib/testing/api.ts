@@ -68,7 +68,7 @@ export interface InProcessAuth {
  * can be tested without a server.
  */
 export function createInProcessFetch(auth: InProcessAuth = {}): FetchLike {
-  return async (input, init = {}) => {
+  const inProcess: FetchLike = async (input, init = {}) => {
     const url = new URL(input, "http://localhost");
     const found = findRoute(url.pathname);
     if (!found) return new Response("not found", { status: 404 });
@@ -95,13 +95,19 @@ export function createInProcessFetch(auth: InProcessAuth = {}): FetchLike {
             >)
           : undefined,
       cookies: auth.session ? { [SESSION_COOKIE]: auth.session } : {},
+      // `event.fetch` calls the app in process here too, as it does in SvelteKit.
+      fetch: inProcess as typeof fetch,
     });
     return handle({
       event: event as never,
       resolve: ((e: RequestEvent) => handler(e)) as never,
     });
   };
+  return inProcess;
 }
+
+/** The `event.fetch` of route tests: handlers that call the app (the MCP endpoint) reach it in process. */
+const inProcessEventFetch = createInProcessFetch() as typeof fetch;
 
 type Auth = { session: string } | { bearer: string };
 
@@ -126,6 +132,7 @@ export function createCaller(auth: Auth): ApiCall {
       throw new Error(`No route for ${method} ${url.pathname}`);
     }
     return callRoute(handler, {
+      fetch: inProcessEventFetch,
       ...opts,
       url: url.toString(),
       method,

@@ -86,6 +86,26 @@ expect_status 403 -X POST "$base/api/v1/attachments" -b "$jar" \
 expect_status 403 -X POST "$base/api/v1/tokens" -b "$jar" -H "Origin: $evil" --data-urlencode name=forged
 api "$base/api/v1/attachments?ownerType=defect&ownerId=$defect" | jq -e '.items | length == 1' >/dev/null
 
+step "mcp over http"
+mcp_token="$(session -X POST "$base/api/v1/tokens" \
+  -d '{"name":"smoke mcp","kind":"mcp","scopes":["read"]}' | jq -r '.token')"
+mcp_headers=(-H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream')
+mcp() { curl --fail-with-body -sS -H "Authorization: Bearer $mcp_token" "${mcp_headers[@]}" "$base/api/v1/mcp" "$@"; }
+mcp -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}' |
+  jq -e '.result.serverInfo.name == "hauswart"' >/dev/null
+mcp -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' |
+  jq -e '[.result.tools[].name] | index("list_upcoming") != null and index("create_task") == null' >/dev/null
+mcp -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"whoami","arguments":{}}}' |
+  jq -e '.result.isError != true and (.result.content[0].text | contains("Smoke Test"))' >/dev/null
+# no token, a foreign origin and the session cookie are all refused; a stateless server opens no stream
+expect_status 401 -X POST "$base/api/v1/mcp" "${mcp_headers[@]}" -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+expect_status 403 -X POST "$base/api/v1/mcp" "${mcp_headers[@]}" -H "Authorization: Bearer $mcp_token" -H "Origin: $evil" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+expect_status 403 -X POST "$base/api/v1/mcp" "${mcp_headers[@]}" -b "$jar" -H "Origin: $base" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+expect_status 405 "$base/api/v1/mcp" -H "Authorization: Bearer $mcp_token" -H 'Accept: text/event-stream'
+expect_status 405 -X DELETE "$base/api/v1/mcp" -H "Authorization: Bearer $mcp_token"
+
 step "calendar feed"
 feed="$(session -X POST "$base/api/v1/calendar-feeds" -d '{"name":"smoke"}' | jq -r '.url')"
 curl --fail-with-body -sS "$feed" | grep -q '^BEGIN:VCALENDAR' || fail "feed is not an iCalendar document"
