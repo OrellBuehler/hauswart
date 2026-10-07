@@ -39,14 +39,32 @@
   device yet, which are linked on creation) and contacts ("From documents", correspondents without a
   contact).
 
+- A Documents page (sidebar, once you are connected to a document system): your synced documents, or a
+  live search in the title and text of the whole document system, filtered by tag, correspondent and whether
+  a document is linked yet. A document opens in a sheet with its details, preview, download, a link to it in
+  the document system and every place it is used (devices, rooms, tasks, ...), where a link can be removed.
+  The page also says when the connection to the document system is disturbed.
+- Devices say when their warranty dates come from a linked receipt or warranty document, and the edit form
+  explains that a date you enter yourself is kept.
+- MCP tools for archived documents: `search_documents` (live search or the synced documents, filtered by tag
+  and correspondent name, linked or not), `get_document`, `list_document_links` (the documents of a device,
+  room, page, task, defect, part, contact or cost entry, or where one document is used), `link_document` and
+  `unlink_document`. They work through the token owner's own document account; the `search` tool reports the
+  `documentId` of linked-document hits. The documents of a list now carry the app address of each place they
+  are used (`ownerUrl` in `linkedTo`).
+
 ### Changed
 
+- The sidebar entry for documents appears and disappears when a connection is saved or removed, without
+  reloading the page.
 - The error messages of a failing connection name the system they belong to (Paperless-ngx or Home
   Assistant).
 - Dialogs no longer grow wider than a narrow screen when a list in them has long lines.
 
 ### Fixed
 
+- A file the document system could not process (for example a password-protected PDF) is now explained when
+  sending it fails, instead of the general "connection failed" sentence.
 - Guest pages are served with `Referrer-Policy: same-origin` instead of `no-referrer`, so browsers send
   the real `Origin` with the PIN form (the token in the address still never reaches another site).
 
