@@ -40,7 +40,7 @@
     <Sidebar.Header>
       <a
         href={resolve("/")}
-        class="ring-sidebar-ring flex h-11 items-center rounded-md px-1 outline-hidden transition-opacity hover:opacity-80 focus-visible:ring-2"
+        class="ring-sidebar-ring flex h-11 items-center rounded-md outline-hidden transition-opacity hover:opacity-80 focus-visible:ring-2"
         aria-label={m.nav_home_aria()}
       >
         <Logo />
