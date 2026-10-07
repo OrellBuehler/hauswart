@@ -4,6 +4,7 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import RefreshCwIcon from "@lucide/svelte/icons/refresh-cw";
   import type { z } from "zod";
+  import { resolve } from "$app/paths";
   import { api } from "$lib/api/browser";
   import { endpoints } from "$lib/api/registry";
   import type { Integration } from "$lib/api/schemas/integrations";
@@ -96,6 +97,11 @@
           {#if offersWaiting(result.stats)}
             <p class="text-xs font-medium text-pretty">
               {m.integration_kept_sync_review()}
+              <a
+                href={resolve("/costs/inbox")}
+                class="underline underline-offset-4"
+                >{m.integration_kept_sync_open_inbox()}</a
+              >
             </p>
           {/if}
         </div>
