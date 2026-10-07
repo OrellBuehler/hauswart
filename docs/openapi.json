@@ -34779,6 +34779,12 @@
               "null"
             ]
           },
+          "ownerUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "role": {
             "type": "string",
             "enum": [
@@ -34797,6 +34803,7 @@
           "ownerType",
           "ownerId",
           "ownerTitle",
+          "ownerUrl",
           "role"
         ],
         "additionalProperties": false

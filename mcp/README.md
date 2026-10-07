@@ -11,11 +11,11 @@ change breaks the build here too.
 1. In hauswart open **Settings → API tokens**, create a token of kind **MCP server** and choose
    the scopes:
    - `read`: Claude can look things up (upcoming tasks, tasks, assets, documentation pages,
-     defects, spare parts, contacts, comments, warranties, statistics, notifications) and search
-     across all of it.
+     defects, spare parts, contacts, comments, warranties, statistics, notifications, the archived
+     documents of your own document system) and search across all of it.
    - `write` (in addition): Claude can also create and change tasks and assets, mark tasks done,
-     skip, snooze and undo, report defects and change their status, book spare-part stock, comment
-     and log service work. Without it the write tools are not even offered.
+     skip, snooze and undo, report defects and change their status, book spare-part stock, comment,
+     log service work and link archived documents to devices, rooms and more. Without it the write tools are not even offered.
    - `docs:write` (in addition): Claude can create and edit documentation pages.
    - `costs:write` (in addition): Claude can book costs.
 
@@ -85,7 +85,7 @@ Restart Claude Desktop afterwards.
 
 ```bash
 HAUSWART_URL=https://hauswart.example.org HAUSWART_TOKEN=hw_xxxxxxxx bun run mcp
-# stderr: hauswart-mcp: connected to https://hauswart.example.org, 34 tools
+# stderr: hauswart-mcp: connected to https://hauswart.example.org, 44 tools
 ```
 
 The server asks hauswart who the token belongs to when it starts and exits with a message if the
@@ -99,53 +99,65 @@ Results are a one-line summary followed by compact JSON (empty fields left out).
 `Error [code]: message` with the API's error code (`not_found`, `invalid_request`, `forbidden`,
 `unauthenticated`, …), or `unreachable` when hauswart cannot be reached.
 
-| Tool                 | Scope       | What it does                                                                                                                                     |
-| -------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `whoami`             | read        | Token user, scopes, household, today's date                                                                                                      |
-| `list_upcoming`      | read        | Overdue / today / this week / later / sensor-based tasks, due preparations, open defects, expiring warranties, parts to order; `mine`, `horizon` |
-| `list_tasks`         | read        | Filter by status, category, room, asset, assignee, text; paged                                                                                   |
-| `get_task`           | read        | One task: trigger, state, preparations, recent completions                                                                                       |
-| `preview_trigger`    | read        | Check a trigger and see its first due date without creating anything                                                                             |
-| `list_rooms`         | read        | Rooms with ids                                                                                                                                   |
-| `list_assets`        | read        | Devices, plants, fixtures; filter by kind, room, text; paged                                                                                     |
-| `get_asset`          | read        | One asset in full, with its tasks                                                                                                                |
-| `get_stats`          | read        | Done / skipped / on time per person and category                                                                                                 |
-| `list_notifications` | read        | The token user's notifications as readable text                                                                                                  |
-| `create_task`        | write       | New task; the trigger is validated with the engine's schema and documented in the tool                                                           |
-| `update_task`        | write       | Change fields, replace the trigger, archive or restore                                                                                           |
-| `complete_task`      | write       | Mark done (optionally backdated, with a note); returns the next due date                                                                         |
-| `skip_task`          | write       | Skip the current occurrence                                                                                                                      |
-| `snooze_task`        | write       | Hide a task until a date, or end a snooze                                                                                                        |
-| `undo_completion`    | write       | Revoke a completion or skip (within 7 days)                                                                                                      |
-| `create_asset`       | write       | New device, plant or fixture                                                                                                                     |
-| `update_asset`       | write       | Change fields, archive or restore                                                                                                                |
-| `search`             | read        | Full-text search over pages, assets, rooms, tasks, defects, contacts, parts and hints                                                            |
-| `list_pages`         | read        | Documentation pages: filter by section, asset, room, text; paged                                                                                 |
-| `get_page`           | read        | One page: markdown (secret blocks included), `rev`, backlinks, attached file names                                                               |
-| `list_defects`       | read        | Defects: active (default), all or one status; filter by severity, room, asset, text; paged                                                       |
-| `get_defect`         | read        | One defect with its timeline (status changes, correspondence, comments) and attachment names                                                     |
-| `list_parts`         | read        | Spare parts with stock and orders; filter by text, asset, low stock; `orderNow` = shopping list                                                  |
-| `list_contacts`      | read        | Contacts; filter by kind, emergency, text                                                                                                        |
-| `get_contact`        | read        | One contact in full, by id or name                                                                                                               |
-| `list_comments`      | read        | The comment thread of a task, defect, asset, room, part, contact, log entry, hint or page                                                        |
-| `list_hints`         | read        | Care hints (tips, rules, warnings) of assets                                                                                                     |
-| `list_warranties`    | read        | Warranty status per asset, soonest to expire first                                                                                               |
-| `list_costs`         | read        | Cost entries (repairs, utilities, purchases, mortgage ...); filter by year, category, asset, room, payer, text; paged                            |
-| `cost_summary`       | read        | A year's costs: total, per category and month, top assets, tax classes, and who owes whom                                                        |
-| `create_defect`      | write       | Report a defect (room, asset and responsible contact by name)                                                                                    |
-| `set_defect_status`  | write       | Move a defect to reported, in progress, fixed, rejected or back to open, with a note                                                             |
-| `adjust_stock`       | write       | Book a stock movement for a part: used, bought or a correction                                                                                   |
-| `add_comment`        | write       | Comment on a task, defect, asset, room, part, contact, log entry, hint or page                                                                   |
-| `add_service_log`    | write       | Log maintenance, repair or other work on an asset, with contact and cost                                                                         |
-| `create_cost`        | costs:write | Book an expense or refund (decimal amount, category, asset and payer by name; split by ownership, equal or none)                                 |
-| `create_page`        | docs:write  | New documentation page (needs `docs:write`)                                                                                                      |
-| `update_page`        | docs:write  | Edit a page; needs the `rev` from `get_page`, a concurrent edit is reported, not overwritten                                                     |
+| Tool                  | Scope       | What it does                                                                                                                                               |
+| --------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `whoami`              | read        | Token user, scopes, household, today's date                                                                                                                |
+| `list_upcoming`       | read        | Overdue / today / this week / later / sensor-based tasks, due preparations, open defects, expiring warranties, parts to order; `mine`, `horizon`           |
+| `list_tasks`          | read        | Filter by status, category, room, asset, assignee, text; paged                                                                                             |
+| `get_task`            | read        | One task: trigger, state, preparations, recent completions                                                                                                 |
+| `preview_trigger`     | read        | Check a trigger and see its first due date without creating anything                                                                                       |
+| `list_rooms`          | read        | Rooms with ids                                                                                                                                             |
+| `list_assets`         | read        | Devices, plants, fixtures; filter by kind, room, text; paged                                                                                               |
+| `get_asset`           | read        | One asset in full, with its tasks                                                                                                                          |
+| `get_stats`           | read        | Done / skipped / on time per person and category                                                                                                           |
+| `list_notifications`  | read        | The token user's notifications as readable text                                                                                                            |
+| `create_task`         | write       | New task; the trigger is validated with the engine's schema and documented in the tool                                                                     |
+| `update_task`         | write       | Change fields, replace the trigger, archive or restore                                                                                                     |
+| `complete_task`       | write       | Mark done (optionally backdated, with a note); returns the next due date                                                                                   |
+| `skip_task`           | write       | Skip the current occurrence                                                                                                                                |
+| `snooze_task`         | write       | Hide a task until a date, or end a snooze                                                                                                                  |
+| `undo_completion`     | write       | Revoke a completion or skip (within 7 days)                                                                                                                |
+| `create_asset`        | write       | New device, plant or fixture                                                                                                                               |
+| `update_asset`        | write       | Change fields, archive or restore                                                                                                                          |
+| `search`              | read        | Full-text search over pages, assets, rooms, tasks, defects, contacts, parts and hints; linked documents by title                                           |
+| `list_pages`          | read        | Documentation pages: filter by section, asset, room, text; paged                                                                                           |
+| `get_page`            | read        | One page: markdown (secret blocks included), `rev`, backlinks, attached file names                                                                         |
+| `list_defects`        | read        | Defects: active (default), all or one status; filter by severity, room, asset, text; paged                                                                 |
+| `get_defect`          | read        | One defect with its timeline (status changes, correspondence, comments) and attachment names                                                               |
+| `list_parts`          | read        | Spare parts with stock and orders; filter by text, asset, low stock; `orderNow` = shopping list                                                            |
+| `list_contacts`       | read        | Contacts; filter by kind, emergency, text                                                                                                                  |
+| `get_contact`         | read        | One contact in full, by id or name                                                                                                                         |
+| `list_comments`       | read        | The comment thread of a task, defect, asset, room, part, contact, log entry, hint or page                                                                  |
+| `search_documents`    | read        | Documents of your own document system (Paperless-ngx): live title and text search, or the synced household documents; filter by tag, correspondent, linked |
+| `get_document`        | read        | One document: date, correspondent, tags, warranty dates, its address in the document system and where it is linked                                         |
+| `list_document_links` | read        | The documents linked to an asset, room, page, task, defect, part, contact or cost entry, or where one document is used                                     |
+| `list_hints`          | read        | Care hints (tips, rules, warnings) of assets                                                                                                               |
+| `list_warranties`     | read        | Warranty status per asset, soonest to expire first                                                                                                         |
+| `list_costs`          | read        | Cost entries (repairs, utilities, purchases, mortgage ...); filter by year, category, asset, room, payer, text; paged                                      |
+| `cost_summary`        | read        | A year's costs: total, per category and month, top assets, tax classes, and who owes whom                                                                  |
+| `create_defect`       | write       | Report a defect (room, asset and responsible contact by name)                                                                                              |
+| `set_defect_status`   | write       | Move a defect to reported, in progress, fixed, rejected or back to open, with a note                                                                       |
+| `adjust_stock`        | write       | Book a stock movement for a part: used, bought or a correction                                                                                             |
+| `add_comment`         | write       | Comment on a task, defect, asset, room, part, contact, log entry, hint or page                                                                             |
+| `add_service_log`     | write       | Log maintenance, repair or other work on an asset, with contact and cost                                                                                   |
+| `link_document`       | write       | Link an archived document to an asset, room, page, task, defect, part, contact or cost entry, with a role (manual, receipt, ...)                           |
+| `unlink_document`     | write       | Remove one document link (the document itself stays in the document system)                                                                                |
+| `create_cost`         | costs:write | Book an expense or refund (decimal amount, category, asset and payer by name; split by ownership, equal or none)                                           |
+| `create_page`         | docs:write  | New documentation page (needs `docs:write`)                                                                                                                |
+| `update_page`         | docs:write  | Edit a page; needs the `rev` from `get_page`, a concurrent edit is reported, not overwritten                                                               |
+
+The document tools read and link through **your own account** in the document system (each person
+connects theirs under Settings, Integrations): without a connection they answer `not_found`, so does a
+document your account cannot see, and another person's private documents never appear. Linking to a
+documentation page needs `docs:write` in addition. The files themselves are not transferred, and sending
+a file to the document system is not offered.
 
 Rooms, assets and people can be given by name (`asset: "Dishwasher"`, `assignee: "Ben"`, `me`)
 instead of an id, and so can contacts and parts; an ambiguous name is reported with the candidates. Tools are annotated with the
-MCP `readOnlyHint`, `destructiveHint` and `idempotentHint`: only `undo_completion` is marked
-destructive, and only the `update_*`, `set_defect_status`, `snooze_task` and read tools are idempotent.
-Nothing here deletes data; files can be listed by name but not uploaded or downloaded.
+MCP `readOnlyHint`, `destructiveHint` and `idempotentHint`: only `undo_completion` and `unlink_document`
+are marked destructive, and only the `update_*`, `set_defect_status`, `snooze_task`, those two and the read
+tools are idempotent. Nothing here deletes data except a document link (never the document); files can be
+listed by name but not uploaded or downloaded.
 
 ## Adding a tool
 

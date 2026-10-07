@@ -421,6 +421,10 @@ describe("document links", () => {
         ["Boiler", "manual"],
         [null, "other"],
       ]);
+      expect(summary.map((s) => s.ownerUrl)).toEqual([
+        `/assets/${asset.id}`,
+        null,
+      ]);
       expect(linkSummaries(ctx(), "paperless", [2]).size).toBe(0);
     });
   });

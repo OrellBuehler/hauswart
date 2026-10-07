@@ -6,6 +6,7 @@ import { contactTools } from "./contacts";
 import { costTools } from "./costs";
 import { defectTools } from "./defects";
 import { docTools } from "./docs";
+import { documentTools } from "./documents";
 import { getStats, listNotifications } from "./insights";
 import { partTools } from "./parts";
 import { taskTools } from "./tasks";
@@ -24,8 +25,10 @@ import { whoami } from "./whoami";
  * - guest link       the guest link and what it shows
  * - iCal feed        subscribing to due dates
  *
- * Not offered on purpose: deleting anything, uploading files (attachments are
- * listed by name only) and changing contacts or parts beyond stock bookings.
+ * Not offered on purpose: deleting anything (the one exception is unlinking a
+ * document, which only removes the link), uploading files (attachments are listed
+ * by name only), sending files to the document system and changing contacts or
+ * parts beyond stock bookings.
  */
 export const tools: readonly Tool[] = [
   whoami,
@@ -35,6 +38,7 @@ export const tools: readonly Tool[] = [
   getStats,
   listNotifications,
   ...docTools,
+  ...documentTools,
   ...defectTools,
   ...partTools,
   ...contactTools,

@@ -52,6 +52,8 @@ export interface LinkSummary {
   ownerType: DocumentLinkOwnerType;
   ownerId: string;
   ownerTitle: string | null;
+  /** App path of the owner; null when it is gone. */
+  ownerUrl: string | null;
   role: DocumentLinkRole;
 }
 
@@ -217,11 +219,13 @@ export function linkSummaries(
     .orderBy(asc(documentLinks.createdAt), asc(documentLinks.id))
     .all();
   for (const row of rows) {
+    const owner = ownerInfo(ctx.db, row.ownerType, row.ownerId);
     const summary: LinkSummary = {
       linkId: row.id,
       ownerType: row.ownerType,
       ownerId: row.ownerId,
-      ownerTitle: ownerInfo(ctx.db, row.ownerType, row.ownerId)?.title ?? null,
+      ownerTitle: owner?.title ?? null,
+      ownerUrl: owner?.url ?? null,
       role: row.role,
     };
     out.set(row.externalId, [...(out.get(row.externalId) ?? []), summary]);

@@ -104,6 +104,7 @@ describe("document API", () => {
             ownerType: "asset",
             ownerId: asset.id,
             ownerTitle: "Boiler",
+            ownerUrl: `/assets/${asset.id}`,
             role: "manual",
           },
         ],

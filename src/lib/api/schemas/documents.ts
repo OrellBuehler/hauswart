@@ -70,6 +70,8 @@ export const documentLinkSummarySchema = z
     ownerType: documentLinkOwnerTypeSchema,
     ownerId: z.string(),
     ownerTitle: z.string().nullable(),
+    /** App path of the owner, or null when it is gone. */
+    ownerUrl: z.string().nullable(),
     role: documentLinkRoleSchema,
   })
   .meta({ id: "DocumentLinkSummary" });
