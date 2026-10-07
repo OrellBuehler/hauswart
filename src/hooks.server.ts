@@ -14,6 +14,7 @@ import {
   SESSION_COOKIE,
   validateSessionToken,
 } from "$lib/server/auth/sessions";
+import { crossSiteWriteResponse } from "$lib/server/auth/origin";
 import { verifyToken } from "$lib/server/auth/tokens";
 import {
   isApiPath,
@@ -205,11 +206,15 @@ function internalErrorResponse(): Response {
 
 export const handle: Handle = async ({ event, resolve }) => {
   let response: Response;
+  // First of all, before a session is looked up or refreshed.
+  const refused = crossSiteWriteResponse(event.request, event.url);
   try {
-    response = await authHandle({
-      event,
-      resolve: (e) => withLocale(e, resolve),
-    });
+    response =
+      refused ??
+      (await authHandle({
+        event,
+        resolve: (e) => withLocale(e, resolve),
+      }));
   } catch (error) {
     if (!isApiPath(event.url.pathname)) throw error;
     // Name only: messages and stacks can contain user data and paths.

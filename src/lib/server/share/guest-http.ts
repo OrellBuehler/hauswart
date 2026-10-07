@@ -87,7 +87,7 @@ export async function unlockAction(
 
 const GUEST_HEADERS: Record<string, string> = {
   "x-robots-tag": "noindex, nofollow, noarchive",
-  "referrer-policy": "no-referrer",
+  "referrer-policy": "same-origin",
 };
 
 /** Headers for every response under `/g/`: never cached, never indexed, no referrer to other sites. */

@@ -2,6 +2,7 @@
   import { invalidateAll } from "$app/navigation";
   import { resolve } from "$app/paths";
   import BoxesIcon from "@lucide/svelte/icons/boxes";
+  import FileSearchIcon from "@lucide/svelte/icons/file-search";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import QrCodeIcon from "@lucide/svelte/icons/qr-code";
   import SearchIcon from "@lucide/svelte/icons/search";
@@ -24,6 +25,7 @@
   import WarrantyBadge from "$lib/components/assets/warranty-badge.svelte";
   import DeviceSuggestionsSheet from "$lib/components/connections/device-suggestions-sheet.svelte";
   import CommentCount from "$lib/components/comments/comment-count.svelte";
+  import DocumentSuggestionsSheet from "$lib/components/documents/document-suggestions-sheet.svelte";
   import EmptyState from "$lib/components/app/empty-state.svelte";
   import PageHeader from "$lib/components/app/page-header.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
@@ -32,6 +34,7 @@
   import { Label } from "$lib/components/ui/label/index.js";
   import { Switch } from "$lib/components/ui/switch/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
+  import { DocumentSystem } from "$lib/documents/system.svelte";
   import { formatDay } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
   import type { PageProps } from "./$types";
@@ -40,6 +43,10 @@
 
   let filter = $state<AssetFilter>({ ...emptyFilter });
   let suggestionsOpen = $state(false);
+  let receiptsOpen = $state(false);
+
+  const documents = new DocumentSystem();
+  $effect(() => documents.start());
 
   const warrantyLabels = {
     valid: () => m.warranty_filter_valid(),
@@ -86,6 +93,11 @@
           <SparklesIcon />{m.inventory_suggestions()}
         </Button>
       {/if}
+      {#if documents.provider}
+        <Button variant="outline" onclick={() => (receiptsOpen = true)}>
+          <FileSearchIcon />{m.inventory_receipts()}
+        </Button>
+      {/if}
       <Button href={resolve("/inventory/qr")} variant="outline">
         <QrCodeIcon />{m.inventory_qr_sheet()}
       </Button>
@@ -108,6 +120,11 @@
         {#if data.suggestionsAvailable}
           <Button variant="outline" onclick={() => (suggestionsOpen = true)}>
             <SparklesIcon />{m.inventory_suggestions()}
+          </Button>
+        {/if}
+        {#if documents.provider}
+          <Button variant="outline" onclick={() => (receiptsOpen = true)}>
+            <FileSearchIcon />{m.inventory_receipts()}
           </Button>
         {/if}
       {/snippet}
@@ -257,6 +274,15 @@
   <DeviceSuggestionsSheet
     bind:open={suggestionsOpen}
     rooms={data.rooms}
+    onadded={invalidateAll}
+  />
+{/if}
+
+{#if documents.provider}
+  <DocumentSuggestionsSheet
+    bind:open={receiptsOpen}
+    kind="asset"
+    provider={documents.provider}
     onadded={invalidateAll}
   />
 {/if}

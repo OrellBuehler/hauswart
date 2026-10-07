@@ -1,5 +1,64 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Self-service password change: everybody can set a new password under Settings > Account, or with
+  `POST /api/v1/me/password` (browser session only; the current password is required). The new password
+  follows the rules of the first-run setup and must differ from the current one. A wrong current password
+  counts against the same failed-attempt limit as signing in. Your other browsers and devices are signed
+  out, the one you changed it in stays. API tokens stay valid, unlike after an administrator's reset: they
+  are credentials you made on purpose, revoke them under Settings > API tokens if the password changed
+  because of a leak. The change is recorded as the security event `password_changed`.
+- Settings, Integrations: a Kept card to connect, test (missing token permissions are listed), choose
+  the categories and what happens with them, switch bill tasks on (visible to the whole household), and
+  sync now.
+- Costs in the web interface (replacing the placeholder page): a year view with the expense total, equity,
+  the settlement of who owes whom and a report by month, category, device and tax treatment, a list with
+  search and filters, a CSV download, adding, editing and deleting entries (amount in minor units, refunds,
+  split by ownership, equally, custom percentages or not at all, expense flag, tax treatment, links to a
+  device, room, defect and service log entry), a detail page with the frozen shares, receipts and
+  comments, and the finance inbox: accept a suggestion as it is or adjust it first, dismiss it, and sync
+  now.
+- Paperless-ngx in the web interface. Under Settings, Integrations, every person connects their own
+  account (address and API token, a test, the status, disconnect) and chooses from the lists of their
+  own Paperless: tags for household documents, receipts, manuals and for documents sent from hauswart,
+  the two warranty date fields, the correspondent, storage path and groups for sent documents, and
+  whether a note with the hauswart link is left in a linked document. Members who point the connection
+  at a host the household has not allowed see which host and what to do about it.
+- Archived documents on devices, rooms, documentation pages, tasks, defects, spare parts, contacts,
+  service log entries and costs: link a document of the document system after searching it (title and text, with
+  the type of document and an optional label), open its preview, download it or its original, or remove
+  the link. A document that the caller's own account cannot see shows as "not shared with you", without a
+  title. The section stays out of the way for people without a connection.
+- Send a file to the document system: the attachment menu has "Send to document system" (not for care
+  hints), which uploads the file with the configured tags, links it to the entry and shows the progress,
+  also while leaving the page.
+- Suggestions from the document system: inventory ("From receipts", receipts with a warranty date but no
+  device yet, which are linked on creation) and contacts ("From documents", correspondents without a
+  contact).
+
+### Changed
+
+- The error messages of a failing connection name the system they belong to (Paperless-ngx or Home
+  Assistant).
+- Dialogs no longer grow wider than a narrow screen when a list in them has long lines.
+
+### Fixed
+
+- Guest pages are served with `Referrer-Policy: same-origin` instead of `no-referrer`, so browsers send
+  the real `Origin` with the PIN form (the token in the address still never reaches another site).
+
+- Uploads through the API with a bearer token no longer need an `Origin` header. SvelteKit's built-in form
+  check rejected them (403) before the API could tell a token from a browser session; it is switched off
+  and the server now refuses cross-site writes itself: for cookie-authenticated API requests as before,
+  and for everything outside `/api/v1` (the guest PIN form and any other form) in the request hook,
+  whatever the content type.
+- The PIN form on guest pages was refused with 403 in browsers: guest pages send no referrer, so browsers
+  post the form with `Origin: null`. It is accepted now when the browser reports the request as
+  same-origin (`Sec-Fetch-Site`); posts from other sites are still refused.
+
 ## 0.1.0
 
 First early release. hauswart is in early development: the core works and is well tested, but this

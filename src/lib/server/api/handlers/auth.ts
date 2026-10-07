@@ -4,6 +4,7 @@ import type { endpoints } from "$lib/api/registry";
 import { MOBILE_TOKEN_SCOPES } from "$lib/api/scopes";
 import { toIso } from "$lib/api/schemas/common";
 import { setupToken } from "$lib/server/config";
+import { changePassword } from "$lib/server/auth/change-password";
 import { logAuthEvent } from "$lib/server/auth/events";
 import { setLocaleCookie } from "$lib/server/auth/locale";
 import { AuthError } from "$lib/server/auth/types";
@@ -110,6 +111,23 @@ export const updateMe: Handler<typeof endpoints.authUpdateMe> = ({
   const user = updateProfile(ctx.user.id, body);
   if (body.locale) setLocaleCookie(event.cookies, body.locale);
   return { user: wireUser(user) };
+};
+
+export const changeMyPassword: Handler<
+  typeof endpoints.authChangePassword
+> = async ({ ctx, body, event }) => {
+  // The endpoint is session-only; the check keeps the type honest and fails closed.
+  if (ctx.principal.auth !== "session") {
+    throw new ApiError("forbidden", "This endpoint requires a browser session");
+  }
+  await changePassword(ctx, {
+    userId: ctx.user.id,
+    currentPassword: body.currentPassword,
+    newPassword: body.newPassword,
+    keepSessionId: ctx.principal.session.id,
+    clientKey: clientKey(event.getClientAddress),
+  });
+  return null;
 };
 
 export const issueDeviceToken: Handler<typeof endpoints.authToken> = async ({

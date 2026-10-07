@@ -10,6 +10,13 @@ export function logAuthEvent(
   console.info(JSON.stringify({ event: `auth.${type}`, userId, actorId }));
 }
 
+/** Logs a refused password change (wrong current password) without storing it. Never pass a password. */
+export function logPasswordChangeFailed(userId: string): void {
+  console.info(
+    JSON.stringify({ event: "auth.password_change_failed", userId }),
+  );
+}
+
 /**
  * Logs a sign-in attempt without storing it: successes carry the user id, failures carry it
  * only when the user exists. Never pass a username, address or password.

@@ -150,7 +150,7 @@ describe("guest pages", () => {
         expect(r.res.headers.get("x-robots-tag")).toBe(
           "noindex, nofollow, noarchive",
         );
-        expect(r.res.headers.get("referrer-policy")).toBe("no-referrer");
+        expect(r.res.headers.get("referrer-policy")).toBe("same-origin");
         expect(r.res.headers.get("x-frame-options")).toBe("DENY");
         expect(r.res.headers.get("x-content-type-options")).toBe("nosniff");
       }

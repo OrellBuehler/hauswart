@@ -37,6 +37,7 @@
     <Card
       {integration}
       canEdit={integration.level === "user" || isAdmin}
+      {isAdmin}
       timeZone={data.timeZone}
       onchanged={reload}
     />

@@ -30,6 +30,7 @@
   import Attachments from "$lib/components/attachments/attachments.svelte";
   import LinkedDocsCard from "$lib/components/docs/linked-docs-card.svelte";
   import Comments from "$lib/components/comments/comments.svelte";
+  import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
@@ -302,6 +303,8 @@
         onprimary={setPhoto}
         onchange={() => invalidateAll()}
       />
+
+      <LinkedDocuments ownerType="asset" ownerId={asset.id} />
 
       <AssetHintsCard assetId={asset.id} hints={data.hints} />
       <AssetContactsCard assetId={asset.id} links={data.contacts} />

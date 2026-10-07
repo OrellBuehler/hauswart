@@ -16,6 +16,7 @@
   import { m } from "$lib/paraglide/messages";
   import { applyLocale } from "$lib/locale";
   import type { PageProps } from "./$types";
+  import PasswordCard from "./password-card.svelte";
 
   let { data }: PageProps = $props();
 
@@ -68,62 +69,65 @@
   <title>{m.account_title()} · {m.settings_title()} · {m.app_name()}</title>
 </svelte:head>
 
-<Card.Root class="max-w-xl">
-  <Card.Header>
-    <Card.Title>{m.account_title()}</Card.Title>
-    <Card.Description>{m.account_description()}</Card.Description>
-  </Card.Header>
-  <Card.Content>
-    <form class="flex flex-col gap-5" onsubmit={submit}>
-      <FormAlert message={error} />
-      <dl
-        class="grid grid-cols-[auto_1fr] items-center gap-x-6 gap-y-2 text-sm"
-      >
-        <dt class="text-muted-foreground">{m.account_username()}</dt>
-        <dd class="truncate font-medium">{data.user.username}</dd>
-        <dt class="text-muted-foreground">{m.account_role()}</dt>
-        <dd>
-          <Badge variant="secondary">
-            {data.user.role === "admin" ? m.role_admin() : m.role_member()}
-          </Badge>
-        </dd>
-      </dl>
-      <div class="flex flex-col gap-2">
-        <Label for="displayName">{m.auth_display_name()}</Label>
-        <Input
-          id="displayName"
-          name="displayName"
-          autocomplete="name"
-          required
-          maxlength={DISPLAY_NAME_MAX}
-          bind:value={displayName}
-        />
-      </div>
-      <fieldset class="flex flex-col gap-2">
-        <legend class="mb-2 text-sm font-medium">{m.auth_language()}</legend>
-        <div class="flex gap-2">
-          {#each USER_LOCALES as option (option)}
-            <Button
-              type="button"
-              size="sm"
-              variant={locale === option ? "default" : "outline"}
-              aria-pressed={locale === option}
-              onclick={() => (locale = option)}
-            >
-              {localeNames[option]()}
-            </Button>
-          {/each}
+<div class="flex flex-col gap-6">
+  <Card.Root class="max-w-xl">
+    <Card.Header>
+      <Card.Title>{m.account_title()}</Card.Title>
+      <Card.Description>{m.account_description()}</Card.Description>
+    </Card.Header>
+    <Card.Content>
+      <form class="flex flex-col gap-5" onsubmit={submit}>
+        <FormAlert message={error} />
+        <dl
+          class="grid grid-cols-[auto_1fr] items-center gap-x-6 gap-y-2 text-sm"
+        >
+          <dt class="text-muted-foreground">{m.account_username()}</dt>
+          <dd class="truncate font-medium">{data.user.username}</dd>
+          <dt class="text-muted-foreground">{m.account_role()}</dt>
+          <dd>
+            <Badge variant="secondary">
+              {data.user.role === "admin" ? m.role_admin() : m.role_member()}
+            </Badge>
+          </dd>
+        </dl>
+        <div class="flex flex-col gap-2">
+          <Label for="displayName">{m.auth_display_name()}</Label>
+          <Input
+            id="displayName"
+            name="displayName"
+            autocomplete="name"
+            required
+            maxlength={DISPLAY_NAME_MAX}
+            bind:value={displayName}
+          />
         </div>
-      </fieldset>
-      <div>
-        <Button type="submit" disabled={!dirty || pending}>
-          {#if pending}
-            <LoaderCircleIcon class="animate-spin" />{m.common_saving()}
-          {:else}
-            {m.common_save()}
-          {/if}
-        </Button>
-      </div>
-    </form>
-  </Card.Content>
-</Card.Root>
+        <fieldset class="flex flex-col gap-2">
+          <legend class="mb-2 text-sm font-medium">{m.auth_language()}</legend>
+          <div class="flex gap-2">
+            {#each USER_LOCALES as option (option)}
+              <Button
+                type="button"
+                size="sm"
+                variant={locale === option ? "default" : "outline"}
+                aria-pressed={locale === option}
+                onclick={() => (locale = option)}
+              >
+                {localeNames[option]()}
+              </Button>
+            {/each}
+          </div>
+        </fieldset>
+        <div>
+          <Button type="submit" disabled={!dirty || pending}>
+            {#if pending}
+              <LoaderCircleIcon class="animate-spin" />{m.common_saving()}
+            {:else}
+              {m.common_save()}
+            {/if}
+          </Button>
+        </div>
+      </form>
+    </Card.Content>
+  </Card.Root>
+  <PasswordCard username={data.user.username} />
+</div>

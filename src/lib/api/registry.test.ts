@@ -191,6 +191,7 @@ describe("registry", () => {
         "GET /api/v1/hints/{id} both",
         "PATCH /api/v1/hints/{id} both",
         "DELETE /api/v1/hints/{id} both",
+        "POST /api/v1/me/password session",
         "GET /api/v1/me/notification-settings both",
         "PUT /api/v1/me/notification-settings both",
         "GET /api/v1/integrations both",

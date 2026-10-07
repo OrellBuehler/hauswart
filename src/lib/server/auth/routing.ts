@@ -26,9 +26,14 @@ export function isApiPath(pathname: string): boolean {
   return pathname === "/api" || pathname.startsWith("/api/");
 }
 
+/** The versioned API: every route there is a registry endpoint run through `bind`. */
+export function isVersionedApiPath(pathname: string): boolean {
+  return pathname.startsWith("/api/v1/");
+}
+
 /** Bearer tokens are honoured on the versioned API only. */
 export function isBearerPath(pathname: string): boolean {
-  return pathname.startsWith("/api/v1/");
+  return isVersionedApiPath(pathname);
 }
 
 /**

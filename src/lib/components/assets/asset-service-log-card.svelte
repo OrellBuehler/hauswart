@@ -13,6 +13,7 @@
   import Attachments from "$lib/components/attachments/attachments.svelte";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
   import EmptyState from "$lib/components/app/empty-state.svelte";
+  import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
@@ -170,6 +171,12 @@
                 ownerId={entry.id}
                 variant="compact"
                 title={m.service_files_title()}
+                class="mt-2"
+              />
+              <LinkedDocuments
+                ownerType="service_log"
+                ownerId={entry.id}
+                variant="compact"
                 class="mt-2"
               />
             </div>

@@ -120,7 +120,6 @@ export const navGroups: NavGroup[] = [
       {
         href: "/costs",
         label: () => m.nav_costs(),
-        comingSoon: () => m.coming_soon_costs(),
         icon: CoinsIcon,
       },
       {

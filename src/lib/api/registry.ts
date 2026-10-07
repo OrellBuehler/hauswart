@@ -9,6 +9,7 @@ import {
   binaryResponseSchema,
 } from "./schemas/common";
 import {
+  changePasswordRequestSchema,
   loginRequestSchema,
   meResponseSchema,
   setupRequestSchema,
@@ -523,6 +524,22 @@ export const endpoints = {
     scopes: [],
     body: updateMeRequestSchema,
     response: userEnvelopeSchema,
+  }),
+
+  authChangePassword: defineEndpoint({
+    id: "authChangePassword",
+    method: "POST",
+    path: "/api/v1/me/password",
+    summary: "Change the calling user's own password",
+    description:
+      "Needs the current password; a wrong one is a 400 field error on `currentPassword` (never 401, which would read as an expired session) and counts against the same failed-password budget as sign-in, so repeated guesses end in 429 with `Retry-After`. The new password follows the rules of setup and the administrator's reset (10 to 256 characters) and must differ from the current one. Every other browser session of the user ends; the session that made the call stays. API tokens stay valid (unlike an administrator's reset, which revokes them): revoke them with `DELETE /api/v1/tokens/{id}` when the password changed because of a leak.",
+    tags: ["auth"],
+    auth: "session",
+    scopes: [],
+    body: changePasswordRequestSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["rate_limited"],
   }),
 
   authToken: defineEndpoint({
