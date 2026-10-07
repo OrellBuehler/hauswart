@@ -20,7 +20,7 @@
     type KeptCategory,
     type KeptSettings,
   } from "$lib/connections/kept";
-  import { costCategoryLabel } from "$lib/cost-categories";
+  import { categoryLabels } from "$lib/costs/labels";
   import { m } from "$lib/paraglide/messages";
 
   let {
@@ -46,7 +46,7 @@
     { value: NONE, label: m.integration_kept_category_none() },
     ...COST_CATEGORIES.map((category) => ({
       value: category,
-      label: costCategoryLabel(category),
+      label: categoryLabels[category](),
     })),
   ]);
 

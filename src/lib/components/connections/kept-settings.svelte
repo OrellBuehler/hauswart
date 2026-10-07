@@ -26,7 +26,7 @@
     type KeptCategory,
     type KeptSettings,
   } from "$lib/connections/kept";
-  import { costCategoryLabel } from "$lib/cost-categories";
+  import { categoryLabels } from "$lib/costs/labels";
   import { apiErrorMessage } from "$lib/error-message";
   import { m } from "$lib/paraglide/messages";
   import KeptCategoryMap from "./kept-category-map.svelte";
@@ -62,7 +62,7 @@
     { value: NONE, label: m.integration_kept_bill_cost_none() },
     ...COST_CATEGORIES.map((category) => ({
       value: category,
-      label: costCategoryLabel(category),
+      label: categoryLabels[category](),
     })),
   ]);
 

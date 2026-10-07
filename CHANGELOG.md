@@ -14,6 +14,13 @@
 - Settings, Integrations: a Kept card to connect, test (missing token permissions are listed), choose
   the categories and what happens with them, switch bill tasks on (visible to the whole household), and
   sync now.
+- Costs in the web interface (replacing the placeholder page): a year view with the expense total, equity,
+  the settlement of who owes whom and a report by month, category, device and tax treatment, a list with
+  search and filters, a CSV download, adding, editing and deleting entries (amount in minor units, refunds,
+  split by ownership, equally, custom percentages or not at all, expense flag, tax treatment, links to a
+  device, room, defect and service log entry), a detail page with the frozen shares, receipts and
+  comments, and the finance inbox: accept a suggestion as it is or adjust it first, dismiss it, and sync
+  now.
 
 ### Fixed
 
