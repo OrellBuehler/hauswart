@@ -129,7 +129,7 @@
       </Popover.Trigger>
       <Popover.Content
         align="start"
-        class="w-(--bits-popover-anchor-width) min-w-[min(20rem,calc(100vw-2rem))] p-0"
+        class="w-(--bits-popover-anchor-width) min-w-[min(18rem,calc(100vw-3rem))] p-0"
       >
         <Command.Root class="rounded-md">
           <Command.Input
@@ -195,10 +195,10 @@
                     onSelect={() => pick(area.id)}
                   >
                     <span class="flex min-w-0 flex-1 flex-col">
-                      <span class="truncate font-medium">{area.name}</span>
+                      <span class="font-medium break-words">{area.name}</span>
                       {#if area.floor || taken}
                         <span
-                          class="text-muted-foreground truncate text-[11px]"
+                          class="text-muted-foreground text-[11px] break-words"
                         >
                           {[area.floor, taken ? m.rooms_ha_area_taken() : ""]
                             .filter(Boolean)

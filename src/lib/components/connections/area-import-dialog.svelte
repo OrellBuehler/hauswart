@@ -138,7 +138,7 @@
   <Dialog.Content
     class="flex max-h-[calc(100svh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg"
   >
-    <Dialog.Header class="border-b p-4 pe-12 sm:p-6 sm:pe-12">
+    <Dialog.Header class="border-b p-4 pe-12 text-start sm:p-6 sm:pe-12">
       <Dialog.Title>{m.rooms_import_title()}</Dialog.Title>
       <Dialog.Description class="text-pretty">
         {m.rooms_import_description()}
@@ -269,7 +269,9 @@
               class="animate-spin"
             />{m.rooms_import_submitting()}
           {:else}
-            {m.rooms_import_submit({ count: selected.length })}
+            {selected.length === 0
+              ? m.rooms_import_submit_none()
+              : m.rooms_import_submit({ count: selected.length })}
           {/if}
         </Button>
       </Dialog.Footer>
