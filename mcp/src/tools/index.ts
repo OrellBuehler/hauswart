@@ -6,6 +6,7 @@ import { contactTools } from "./contacts";
 import { costTools } from "./costs";
 import { defectTools } from "./defects";
 import { docTools } from "./docs";
+import { financeTools } from "./finance";
 import { getStats, listNotifications } from "./insights";
 import { partTools } from "./parts";
 import { taskTools } from "./tasks";
@@ -41,4 +42,5 @@ export const tools: readonly Tool[] = [
   ...commentTools,
   ...costTools,
   ...assetCareTools,
+  ...financeTools,
 ];

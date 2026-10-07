@@ -414,6 +414,9 @@ export const COST_SOURCES = [
 ] as const;
 export type CostSource = (typeof COST_SOURCES)[number];
 
+/** `tasks.externalSource` of the tasks that follow a bill in a finance system. */
+export const FINANCE_BILL_TASK_SOURCE = "finance_bill";
+
 export const FINANCE_SUGGESTION_KINDS = ["cost", "bill_task", "asset"] as const;
 export type FinanceSuggestionKind = (typeof FINANCE_SUGGESTION_KINDS)[number];
 

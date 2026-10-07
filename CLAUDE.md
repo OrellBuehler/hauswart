@@ -13,8 +13,8 @@ connection (Kept) exist; Home Assistant is wired end to end (readings, auto-comp
 push notifications with a "done" button, areas taken over as rooms; see "Signals, integrations and delivery"); Paperless-ngx is wired as
 a per-person document provider (links, previews, warranty dates, pushing attachments; see "Documents and the
 document provider"); the MCP server covers the task core, documentation, defects, parts, contacts,
-comments, hints, service log, warranties and costs, and hauswart serves it over HTTP at `/api/v1/mcp`
-(see "MCP server" and `mcp/README.md`).
+comments, hints, service log, warranties, costs and the finance inbox, and hauswart serves it over HTTP at
+`/api/v1/mcp` (see "MCP server" and `mcp/README.md`).
 
 There is one household, not many: all domain data is shared by every user. Only sessions, API
 tokens, integration connections and preferences belong to a single user.
@@ -309,7 +309,8 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   **Settlement** covers every split entry with a payer, equity included (it is about who paid cash):
   `balanceMinor` = paid - share (positive = the others owe this person), `settlement` = greedy payments
   from the largest debtor to the largest creditor ("A owes B CHF x"). Split entries without a payer are
-  counted in `unassignedPayerCount`, never guessed. The dashboard carries `costsYearToDate`.
+  counted in `unassignedPayerCount`, never guessed. The dashboard carries `costsYearToDate` and `pendingFinanceSuggestions` (the caller's own pending
+  offers, shown as a card linking to the inbox).
 - **CSV** (`GET /costs/export.csv?year=`, binary `text/csv`): UTF-8 with BOM, `;` separated, CRLF,
   fixed English column names (`costs/csv.ts` `CSV_COLUMNS`), amounts as plain decimals with a point, no
   thousands separator and the currency's own precision (`-12.50`, `1500` for JPY) so they parse the same
@@ -339,10 +340,17 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
 <connectionId>:<billId>` (the connection in the reference keeps two people's bills apart), category
   `payment`, assigned to the connection's owner (fixed, notify the assignee), trigger `kept_bill`
   (`status` open/overdue/paid/cancelled). A paid bill completes it with a system completion
-  (`source` = the provider's name, no user), a bill that becomes payable again revokes that, a cancelled bill
+  (`source` = the provider's name, no user; none if a person already settled the occurrence `bill:<id>`), a bill
+  that becomes payable again revokes that system completion only (never one a person recorded), a cancelled bill
   settles it without a completion, archived tasks are never touched again, bills without a due date are
   skipped. The task is **visible to the whole household** with creditor, invoice number, amount and due
-  date: that is what the person consents to by switching `billTasks` on. Housekeeping archives tasks
+  date: that is what the person consents to by switching `billTasks` on. The description carries what is still
+  to pay while the bill needs paying, the invoiced total once it is settled. The address of the bill in the
+  finance app (`externalUrl`) is **not** part of that consent: the task endpoints return it only to the person
+  whose connection the task follows (`billUrlVisibility`), `null` for everybody else; the task page shows
+  "open in finance app" for that person. Title, description, due date and status are overwritten at every sync
+  (the task form says so); deleting the task of a still open bill makes the next sync create it again, so the
+  delete dialog points to archiving, which is respected. Housekeeping archives tasks
   settled for 90 days and those of a deleted connection.
 
 #### Kept adapter (`integrations/kept/`)
@@ -351,7 +359,8 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   `{categoryMap: {keptCategoryId: costCategory}, purchaseCategoryIds, autoAcceptCategoryIds (subset of the
 map), billTasks, billCreditorFilter (case-insensitive exact creditor names; applies to bill tasks and to paid-bill cost offers), billCostCategory, assignBillTasksTo:
 "owner", syncFrom}`; unknown keys are dropped. Everything is opt-in: no category, nothing read. `test` calls
-  `me()` and reports `info.missingScopes` (of `transactions:read, bills:read, links:write, categories:read`).
+  `me()` and reports `info.missingScopes` (of `transactions:read, bills:read, links:write, categories:read`)
+  and `info.backLinks` (false without `ORIGIN`: no back-links can be written then; the card says so).
 - **Sync** (`syncConnection`, scheduler every 30 min, backoff 1, 2, 4 ... 15 min via the connection's
   health, immediately when a connection is saved, overlap guard per connection and in the scheduler; each
   part runs on its own and the first failure becomes the connection's `lastError` code):
@@ -630,6 +639,10 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
   fields dropped). `mode` (`read|create|update|undo`) fixes the MCP annotations and the default
   scope. Only tools whose scopes the token holds are registered (stdio: after an `authMe` +
   `householdGet` handshake, HTTP: from the principal), so a read-only token sees no write tools.
+- **Finance inbox tools** (`tools/finance.ts`): `list_finance_suggestions` (read), `accept_finance_suggestion`,
+  `dismiss_finance_suggestion` (mode `undo`: destructive, idempotent) and `sync_finance`, the last three with the
+  `costs:write` scope like their endpoints. Strictly the token user's own inbox; a sync that ends `ok: false` is a
+  normal result, not a tool error. 43 tools when the token holds every scope.
 - **New tool**: add the endpoint to the registry first, then a ~15-line `defineTool` in
   `mcp/src/tools/` and an entry in `tools/index.ts` (which lists the planned extension points).
   Triggers go through `parseTrigger` (engine schema, per-type docs in `trigger-docs.ts`, a `Record`

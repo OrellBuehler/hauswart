@@ -1,5 +1,5 @@
 import { and, eq, isNull, like } from "drizzle-orm";
-import type { IntegrationKind } from "$lib/api/enums";
+import { FINANCE_BILL_TASK_SOURCE, type IntegrationKind } from "$lib/api/enums";
 import { m } from "$lib/paraglide/messages";
 import { formatAmount, minor } from "$lib/money";
 import { connections, taskCompletions, tasks } from "$lib/server/db";
@@ -13,8 +13,7 @@ import {
 import type { ServiceContext } from "$lib/server/service";
 import { completionSourceFor, taskSourceFor } from "./providers";
 
-/** `tasks.externalSource` of the tasks that follow a bill in a finance system. */
-export const FINANCE_BILL_SOURCE = "finance_bill";
+export const FINANCE_BILL_SOURCE = FINANCE_BILL_TASK_SOURCE;
 
 /** The system text of these tasks is stored, so it is written in the base language of the app. */
 const BASE = { locale: "de" } as const;
@@ -97,10 +96,62 @@ function activeCompletions(
 }
 
 /**
+ * Who may see the address of a bill in the finance app: the person whose
+ * connection the task follows. The task itself (creditor, amount, due date) is
+ * for the household; where the bill lives in somebody's private finance app is
+ * not. Returns a check for the tasks of one response; it asks the database
+ * for the person's connections only if a bill task turns up.
+ */
+export function billUrlVisibility(
+  ctx: Pick<ServiceContext, "db">,
+  userId: string,
+): (task: {
+  externalSource: string | null;
+  externalRef: string | null;
+}) => boolean {
+  let own: Set<string> | undefined;
+  return (task) => {
+    if (task.externalSource !== FINANCE_BILL_SOURCE) return true;
+    own ??= new Set(
+      ctx.db
+        .select({ id: connections.id })
+        .from(connections)
+        .where(eq(connections.userId, userId))
+        .all()
+        .map((c) => c.id),
+    );
+    return own.has((task.externalRef ?? "").split(":")[0]);
+  };
+}
+
+/** Whether the occurrence of this bill is settled already (a done or a skip that was not undone). */
+function occurrenceSettled(
+  ctx: Pick<ServiceContext, "db">,
+  taskId: string,
+  billId: string,
+): boolean {
+  return (
+    ctx.db
+      .select({ id: taskCompletions.id })
+      .from(taskCompletions)
+      .where(
+        and(
+          eq(taskCompletions.taskId, taskId),
+          eq(taskCompletions.occurrenceKey, `bill:${billId}`),
+          isNull(taskCompletions.revokedAt),
+        ),
+      )
+      .limit(1)
+      .all().length > 0
+  );
+}
+
+/**
  * Keeps the task of one bill in step with the bill: created while the bill
  * needs paying, due on its due date, assigned to the person whose finance
  * system it came from. A paid bill completes the task (a system completion
- * attributed to the provider); a bill that is open again takes that back.
+ * attributed to the provider, unless a person settled it before); a bill that
+ * is open again takes that back, but never what a person recorded.
  * A cancelled bill settles the task without a completion. Tasks someone
  * archived are left alone. Nothing is created for a bill that is already
  * paid or cancelled. The task shows the creditor, the amount and the due
@@ -146,7 +197,11 @@ export async function upsertFinanceBillTask(
 
   let outcome: BillTaskOutcome = "unchanged";
   const done = activeCompletions(ctx, existing.id, input.kind);
-  if (input.status === "paid" && done.length === 0) {
+  if (
+    input.status === "paid" &&
+    done.length === 0 &&
+    !occurrenceSettled(ctx, existing.id, input.billId)
+  ) {
     await completeTask(ctx, existing.id, {
       kind: "done",
       source: completionSourceFor(input.kind),

@@ -1,10 +1,12 @@
 <script lang="ts">
+  import InfoIcon from "@lucide/svelte/icons/info";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { untrack } from "svelte";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
   import {
+    FINANCE_BILL_TASK_SOURCE,
     NOTIFY_MODES,
     TASK_CATEGORIES,
     TASK_PRIORITIES,
@@ -28,6 +30,7 @@
   } from "$lib/api/schemas/tasks";
   import type { DirectoryUser } from "$lib/api/schemas/users";
   import FormAlert from "$lib/components/app/form-alert.svelte";
+  import * as Alert from "$lib/components/ui/alert/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
@@ -315,6 +318,14 @@
   onsubmit={submit}
   novalidate
 >
+  {#if task?.externalSource === FINANCE_BILL_TASK_SOURCE}
+    <Alert.Root>
+      <InfoIcon />
+      <Alert.Description class="text-pretty">
+        {m.task_bill_managed()}
+      </Alert.Description>
+    </Alert.Root>
+  {/if}
   <div
     class="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
   >

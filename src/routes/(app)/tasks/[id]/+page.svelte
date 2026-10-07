@@ -6,6 +6,7 @@
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
   import CheckIcon from "@lucide/svelte/icons/check";
   import EllipsisIcon from "@lucide/svelte/icons/ellipsis";
+  import ExternalLinkIcon from "@lucide/svelte/icons/external-link";
   import HistoryIcon from "@lucide/svelte/icons/history";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import MessageSquarePlusIcon from "@lucide/svelte/icons/message-square-plus";
@@ -16,6 +17,7 @@
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
   import { api } from "$lib/api/browser";
+  import { FINANCE_BILL_TASK_SOURCE } from "$lib/api/enums";
   import { endpoints } from "$lib/api/registry";
   import type { Completion } from "$lib/api/schemas/tasks";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
@@ -65,6 +67,13 @@
   });
   const row = $derived(rowFromTask(task, people));
   const archived = $derived(task.archivedAt !== null);
+  const isBill = $derived(task.externalSource === FINANCE_BILL_TASK_SOURCE);
+  /** Only the person whose finance app it is gets the address (the server leaves it out for everybody else). */
+  const billUrl = $derived(
+    isBill && task.externalUrl && /^https?:\/\//i.test(task.externalUrl)
+      ? task.externalUrl
+      : null,
+  );
   const now = Date.now();
 
   let dialog = $state<"complete" | "skip" | "snooze" | null>(null);
@@ -590,6 +599,25 @@
                 </dd>
               </div>
             {/if}
+            {#if billUrl}
+              <div>
+                <dt class="text-muted-foreground text-xs">
+                  {m.task_bill_label()}
+                </dt>
+                <dd class="mt-0.5">
+                  <Button
+                    variant="link"
+                    href={billUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="h-auto min-h-8 gap-1.5 p-0 text-sm text-inherit"
+                  >
+                    <ExternalLinkIcon aria-hidden="true" />
+                    {m.finance_open_in_app()}
+                  </Button>
+                </dd>
+              </div>
+            {/if}
             {#if task.effortMinutes}
               <div>
                 <dt class="text-muted-foreground text-xs">{m.task_effort()}</dt>
@@ -624,7 +652,9 @@
 <ConfirmDialog
   bind:open={deleteOpen}
   title={m.task_delete_title()}
-  description={m.task_delete_description({ title: task.title })}
+  description={isBill
+    ? `${m.task_delete_description({ title: task.title })} ${m.task_bill_delete_note()}`
+    : m.task_delete_description({ title: task.title })}
   confirmLabel={m.common_delete()}
   pendingLabel={m.common_deleting()}
   destructive

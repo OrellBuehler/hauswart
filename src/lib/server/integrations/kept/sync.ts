@@ -29,7 +29,7 @@ import type { ServiceContext } from "$lib/server/service";
 import { clockAt } from "$lib/server/tasks/evaluator";
 import { KeptClient } from "./client";
 import { storedConfig, type KeptConfig } from "./config";
-import { KIND, LINK_SOURCE, clientFor } from "./connection";
+import { KIND, LINK_SOURCE, appOrigin, clientFor } from "./connection";
 import { KeptError, describeError, errorCode } from "./errors";
 import {
   SEED_TEXT_MAX,
@@ -282,7 +282,11 @@ async function followBill(
     title: seed.title,
     dueDate,
     status: seed.status,
-    amountMinor: seed.remainingMinor ?? seed.amountMinor,
+    // What is still to pay while it needs paying; the invoiced total once it is settled.
+    amountMinor:
+      seed.status === "open" || seed.status === "overdue"
+        ? (seed.remainingMinor ?? seed.amountMinor)
+        : seed.amountMinor,
     currency: seed.currency,
     url: seed.url,
   });
@@ -408,21 +412,6 @@ async function syncPaidBills(run: Run): Promise<void> {
 
 // ---- back-links ----------------------------------------------------------------
 
-/** The public address of this app, for links in Kept; null when `ORIGIN` is not set. */
-function originOf(): string | null {
-  const raw = process.env.ORIGIN?.trim();
-  if (!raw || !URL.canParse(raw)) return null;
-  const url = new URL(raw);
-  if (
-    (url.protocol !== "http:" && url.protocol !== "https:") ||
-    url.username ||
-    url.password
-  ) {
-    return null;
-  }
-  return `${url.origin}${url.pathname.replace(/\/+$/, "")}`;
-}
-
 function refTarget(ref: string): { type: "transaction" | "bill"; id: string } {
   return ref.startsWith(BILL_PREFIX)
     ? { type: "bill", id: ref.slice(BILL_PREFIX.length) }
@@ -469,7 +458,7 @@ export async function syncLinks(
     stats.linksRemoved++;
   }
 
-  const origin = originOf();
+  const origin = appOrigin();
   const pending = ctx.db
     .select({ cost: costEntries, assetName: assets.name })
     .from(costEntries)
