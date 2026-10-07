@@ -15,6 +15,7 @@ import {
   vetConnectionTarget,
   type ConnectionView,
 } from "$lib/server/connections/connections";
+import { listAreas } from "$lib/server/rooms/areas";
 import type { Handler } from "../bind";
 import type { AuthedContext } from "../context";
 
@@ -135,6 +136,11 @@ export const devices: Handler<typeof endpoints.integrationsDevices> = async ({
   ctx,
   params,
 }) => (await devicesOf(ctx, params.kind)) as never;
+
+export const areas: Handler<typeof endpoints.integrationsAreas> = async ({
+  ctx,
+  params,
+}) => ({ items: await listAreas(ctx, params.kind, ctx.user.id) });
 
 const tagsOf = operation("tags");
 const correspondentsOf = operation("correspondents");

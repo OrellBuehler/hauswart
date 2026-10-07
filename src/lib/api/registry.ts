@@ -44,6 +44,8 @@ import {
 } from "./schemas/assets";
 import {
   createRoomRequestSchema,
+  importRoomAreasRequestSchema,
+  importRoomAreasResponseSchema,
   listRoomsQuerySchema,
   listRoomsResponseSchema,
   roomSchema,
@@ -205,6 +207,7 @@ import {
   actionResponseSchema,
   integrationKindParamsSchema,
   integrationSchema,
+  listAreasResponseSchema,
   listCalendarsResponseSchema,
   listDevicesResponseSchema,
   listEntitiesQuerySchema,
@@ -724,6 +727,21 @@ export const endpoints = {
     body: updateRoomRequestSchema,
     response: roomSchema,
     errors: ["not_found", "conflict"],
+  }),
+
+  roomsImportAreas: defineEndpoint({
+    id: "roomsImportAreas",
+    method: "POST",
+    path: "/api/v1/rooms/import-areas",
+    summary: "Take over areas of the connected system as rooms",
+    description:
+      "Takes ids from `GET /integrations/{kind}/areas`. Per area, in one transaction: a room that already stores the area id is left alone (`unchanged`); an unlinked room with the same name takes the area id instead of a duplicate (`linked`); otherwise a room named like the area is created (`created`) with the area id in `haAreaId`. An area the system no longer lists answers `not_found` and changes nothing. Repeating the call changes nothing more, and renaming the area later never touches the room. 404 without a connection or for a kind without areas; 502 `upstream_error` when the system does not answer.",
+    tags: ["rooms"],
+    auth: "both",
+    scopes: ["write"],
+    body: importRoomAreasRequestSchema,
+    response: importRoomAreasResponseSchema,
+    errors: ["not_found", "upstream_error"],
   }),
 
   roomsDelete: defineEndpoint({
@@ -2498,6 +2516,21 @@ export const endpoints = {
     scopes: ["read"],
     params: integrationKindParamsSchema,
     response: listDevicesResponseSchema,
+    errors: ["not_found", "upstream_error"],
+  }),
+
+  integrationsAreas: defineEndpoint({
+    id: "integrationsAreas",
+    method: "GET",
+    path: "/api/v1/integrations/{kind}/areas",
+    summary: "Areas of the connected system (area picker)",
+    description:
+      "Every area with its name, the name of its floor when the system has floors, and the id of the room that already stores it in `haAreaId` (null when none does). Candidates for `POST /rooms/import-areas`. 404 without a connection or for a kind without areas; 502 `upstream_error` when the system does not answer.",
+    tags: ["integrations"],
+    auth: "both",
+    scopes: ["read"],
+    params: integrationKindParamsSchema,
+    response: listAreasResponseSchema,
     errors: ["not_found", "upstream_error"],
   }),
 

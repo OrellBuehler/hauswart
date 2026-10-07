@@ -10,27 +10,32 @@ import {
   areaRegistrySchema,
   deviceRegistrySchema,
   entityRegistrySchema,
+  floorRegistrySchema,
   type HaArea,
   type HaDevice,
   type HaEntityRegistryEntry,
+  type HaFloor,
 } from "./schemas";
 
 export type WsRegistryCommand = {
   type:
     | "config/device_registry/list"
     | "config/area_registry/list"
+    | "config/floor_registry/list"
     | "config/entity_registry/list";
 };
 
 export interface WsResultMap {
   "config/device_registry/list": HaDevice[];
   "config/area_registry/list": HaArea[];
+  "config/floor_registry/list": HaFloor[];
   "config/entity_registry/list": HaEntityRegistryEntry[];
 }
 
 const SCHEMAS: Record<WsRegistryCommand["type"], z.ZodType> = {
   "config/device_registry/list": deviceRegistrySchema,
   "config/area_registry/list": areaRegistrySchema,
+  "config/floor_registry/list": floorRegistrySchema,
   "config/entity_registry/list": entityRegistrySchema,
 };
 

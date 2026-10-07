@@ -81,6 +81,8 @@ export class FakeHomeAssistant {
   ]);
   devices: unknown[] = [];
   areas: unknown[] = [];
+  /** `null` answers like a Home Assistant older than 2024.4, which has no floor registry. */
+  floors: unknown[] | null = [];
   entityRegistry: unknown[] = [];
   delayMs = 0;
   redirectAll = false;
@@ -170,6 +172,7 @@ export class FakeHomeAssistant {
     ]);
     this.devices = [];
     this.areas = [];
+    this.floors = [];
     this.entityRegistry = [];
     this.delayMs = 0;
     this.redirectAll = false;
@@ -267,9 +270,10 @@ export class FakeHomeAssistant {
         });
         return;
     }
-    const registry: Record<string, unknown[]> = {
+    const registry: Record<string, unknown[] | undefined> = {
       "config/device_registry/list": this.devices,
       "config/area_registry/list": this.areas,
+      "config/floor_registry/list": this.floors ?? undefined,
       "config/entity_registry/list": this.entityRegistry,
     };
     const list = registry[msg.type];

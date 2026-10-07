@@ -71,6 +71,7 @@ export type {
   HaConfig,
   HaDevice,
   HaEntityRegistryEntry,
+  HaFloor,
   HaEventTime,
   HaState,
 } from "./schemas";

@@ -54,7 +54,13 @@ describe("Home Assistant integration (settings API against the fake server)", ()
         baseUrl: fake.baseUrl,
         config: { appUrl: "https://app.example.org" },
         available: true,
-        capabilities: ["entities", "notify-services", "calendars", "devices"],
+        capabilities: [
+          "entities",
+          "notify-services",
+          "calendars",
+          "devices",
+          "areas",
+        ],
       });
       const bad = await save(admin, {
         config: { appUrl: "ftp://app.example.org" },
@@ -331,6 +337,120 @@ describe("Home Assistant integration (settings API against the fake server)", ()
     });
   });
 
+  describe("area picker", () => {
+    const area = (over: Record<string, unknown>) => ({
+      area_id: "a",
+      name: "A",
+      floor_id: null,
+      ...over,
+    });
+
+    it("lists every area with the name of its floor, by floor level and then name", async () => {
+      const admin = await session();
+      await save(admin);
+      fake.floors = [
+        { floor_id: "upper", name: "Obergeschoss", level: 1 },
+        { floor_id: "ground", name: "Erdgeschoss", level: 0 },
+        { floor_id: "unlevelled", name: "Anbau" },
+      ];
+      fake.areas = [
+        area({ area_id: "bedroom", name: "Schlafzimmer", floor_id: "upper" }),
+        area({ area_id: "garden", name: "Garten" }),
+        area({ area_id: "kitchen", name: "Küche", floor_id: "ground" }),
+        area({ area_id: "bath_up", name: "Bad", floor_id: "upper" }),
+        area({ area_id: "shed", name: "Schopf", floor_id: "unlevelled" }),
+        area({ area_id: "ghost", name: "Keller", floor_id: "unknown_floor" }),
+      ];
+      const r = await admin("GET", "/api/v1/integrations/homeassistant/areas");
+      expect(r.res.status).toBe(200);
+      expect(r.body).toEqual({
+        items: [
+          { id: "kitchen", name: "Küche", floor: "Erdgeschoss", roomId: null },
+          { id: "bath_up", name: "Bad", floor: "Obergeschoss", roomId: null },
+          {
+            id: "bedroom",
+            name: "Schlafzimmer",
+            floor: "Obergeschoss",
+            roomId: null,
+          },
+          { id: "garden", name: "Garten", floor: null, roomId: null },
+          { id: "ghost", name: "Keller", floor: null, roomId: null },
+          { id: "shed", name: "Schopf", floor: "Anbau", roomId: null },
+        ],
+      });
+    });
+
+    it("still lists the areas when the system has no floor registry", async () => {
+      const admin = await session();
+      await save(admin);
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      fake.floors = null;
+      fake.areas = [area({ area_id: "kitchen", name: "Küche", floor_id: "x" })];
+      const r = await admin("GET", "/api/v1/integrations/homeassistant/areas");
+      expect(r.body).toEqual({
+        items: [{ id: "kitchen", name: "Küche", floor: null, roomId: null }],
+      });
+      expect(warn).toHaveBeenCalledWith(
+        "homeassistant: floor lookup unavailable",
+        expect.any(String),
+      );
+    });
+
+    it("marks the areas that already have a room", async () => {
+      const admin = await session();
+      await save(admin);
+      fake.areas = [
+        area({ area_id: "kitchen", name: "Küche" }),
+        area({ area_id: "bath", name: "Bad" }),
+      ];
+      const room = (
+        await admin("POST", "/api/v1/rooms", {
+          json: { name: "Küche", haAreaId: "kitchen" },
+        })
+      ).body as { id: string };
+      const r = await admin("GET", "/api/v1/integrations/homeassistant/areas");
+      expect(
+        (r.body as { items: { id: string; roomId: string | null }[] }).items,
+      ).toEqual([
+        expect.objectContaining({ id: "bath", roomId: null }),
+        expect.objectContaining({ id: "kitchen", roomId: room.id }),
+      ]);
+    });
+
+    it("imports the areas as rooms through the real registry answer", async () => {
+      const admin = await session();
+      await save(admin);
+      fake.floors = [{ floor_id: "ground", name: "Erdgeschoss", level: 0 }];
+      fake.areas = [
+        area({ area_id: "kitchen", name: "Küche", floor_id: "ground" }),
+        area({ area_id: "bath", name: "Bad" }),
+      ];
+      const r = await admin("POST", "/api/v1/rooms/import-areas", {
+        json: { kind: "homeassistant", areaIds: ["kitchen", "bath", "nope"] },
+      });
+      expect(r.res.status).toBe(200);
+      expect(
+        (
+          r.body as {
+            items: { areaId: string; outcome: string }[];
+          }
+        ).items.map((i) => [i.areaId, i.outcome]),
+      ).toEqual([
+        ["kitchen", "created"],
+        ["bath", "created"],
+        ["nope", "not_found"],
+      ]);
+    });
+
+    it("answers 502 when the registry fails", async () => {
+      const admin = await session();
+      await save(admin);
+      fake.wsMode = "drop";
+      const r = await admin("GET", "/api/v1/integrations/homeassistant/areas");
+      expect([r.res.status, errorCode(r)]).toEqual([502, "upstream_error"]);
+    });
+  });
+
   describe("device suggestions", () => {
     const device = (over: Record<string, unknown>) => ({
       id: "d",
@@ -398,6 +518,7 @@ describe("Home Assistant integration (settings API against the fake server)", ()
             manufacturer: "Examplewerk",
             model: "T-9",
             area: "Bathroom",
+            areaId: "bath",
           },
         ],
       });
