@@ -105,6 +105,37 @@ describe("route inventory", () => {
   });
 });
 
+/** `/src/routes/g/[token]/docs/[slug]/+page.server.ts` -> `http://localhost/g/sample/docs/sample`. */
+const urlOfRouteFile = (file: string) =>
+  `http://localhost${
+    file
+      .replace("/src/routes", "")
+      .replace(/\/\+(page|layout|server)(\.server)?\.ts$/, "")
+      .replace(/\[(\w+)\]/g, "sample") || "/"
+  }`;
+
+describe("routes outside /api/v1", () => {
+  it.each(Object.keys(legacy))(
+    "%s: the hook refuses writes from another origin or without Origin before any handler runs",
+    async (file) => {
+      for (const origin of ["https://evil.example", null]) {
+        const r = await callRoute(
+          () => {
+            throw new Error("handler reached by a cross-site write");
+          },
+          {
+            url: urlOfRouteFile(file),
+            method: "POST",
+            form: { pin: "1234" },
+            origin,
+          },
+        );
+        expect([origin, r.res.status]).toEqual([origin, 403]);
+      }
+    },
+  );
+});
+
 describe("app shell pages", () => {
   useTestDB();
 

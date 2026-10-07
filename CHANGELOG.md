@@ -12,6 +12,17 @@
   are credentials you made on purpose, revoke them under Settings > API tokens if the password changed
   because of a leak. The change is recorded as the security event `password_changed`.
 
+### Fixed
+
+- Uploads through the API with a bearer token no longer need an `Origin` header. SvelteKit's built-in form
+  check rejected them (403) before the API could tell a token from a browser session; it is switched off
+  and the server now refuses cross-site writes itself: for cookie-authenticated API requests as before,
+  and for everything outside `/api/v1` (the guest PIN form and any other form) in the request hook,
+  whatever the content type.
+- The PIN form on guest pages was refused with 403 in browsers: guest pages send no referrer, so browsers
+  post the form with `Origin: null`. It is accepted now when the browser reports the request as
+  same-origin (`Sec-Fetch-Site`); posts from other sites are still refused.
+
 ## 0.1.0
 
 First early release. hauswart is in early development: the core works and is well tested, but this

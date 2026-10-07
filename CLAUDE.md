@@ -77,7 +77,8 @@ src/lib/api/browser.ts           `api`: the client for event handlers in the bro
 src/lib/api/openapi.ts           registry -> OpenAPI 3.1; `bun run openapi` writes docs/openapi.json
 src/lib/server/api/bind.ts       bind(endpoint, handler): authn/authz, scopes, CSRF, Zod, errors
 src/lib/server/api/handlers/     handlers: ({ ctx, params, query, body, event }) -> response body
-src/lib/server/auth/             sessions, passwords (+ change-password.ts), login + rate limits, API tokens, guards, routing
+src/lib/server/auth/             sessions, passwords (+ change-password.ts), login + rate limits, API tokens, guards, routing,
+                                 origin.ts (cross-site write check for everything outside /api/v1)
 src/lib/server/users/            user service (create, first admin, update, profile)
 src/lib/server/<domain>/         services: plain functions, no HTTP types
 src/lib/server/docs/markdown*.ts markdown -> sanitized html; async variants run marked in a worker (see below)
@@ -563,8 +564,9 @@ of the owner>` is added to the document unless an identical note exists (writes 
   cookie `hauswart_guest` (path `/g/<token>`, HttpOnly, 12 h at most and never past the expiry), an
   HMAC over link id, PIN-hash fingerprint and expiry (`signValue`), so changing the PIN ends all
   unlocks. The hook adds `Cache-Control: no-store`, `X-Robots-Tag: noindex`, `Referrer-Policy:
-no-referrer` to everything under `/g/`. Language is the link's `locale` (explicit `{locale}`
-  option, not the visitor's). A visit counts (`viewCount`, `lastViewedAt`) at most every 10 minutes.
+no-referrer` to everything under `/g/` (which is why browsers post the PIN form with `Origin:
+null`; the origin check of the hook accepts that with `Sec-Fetch-Site: same-origin`, see CSRF). Language
+  is the link's `locale` (explicit `{locale}` option, not the visitor's). A visit counts (`viewCount`, `lastViewedAt`) at most every 10 minutes.
   Guest HTML is `renderedHtmlGuest` with `fillGuestToken`; with `includeSecrets` it is rendered live
   (60 s in-memory cache). Rendered HTML is the only `{@html}` (`components/guest/guest-html.svelte`).
 
@@ -609,7 +611,17 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
 - **CSRF** (in `bind`): a state-changing request authenticated by cookie — and every endpoint with
   `setsSession` (login, setup) — needs `Origin` equal to the app origin and `Content-Type:
 application/json` (`multipart/form-data` for multipart endpoints), else 403 `csrf_failed`. Bearer
-  requests skip it. Set `ORIGIN` behind a reverse proxy.
+  requests skip it (so a bearer upload needs no `Origin`). Set `ORIGIN` behind a reverse proxy.
+  **SvelteKit's own form check is off** (`kit.csrf.trustedOrigins: ["*"]` in svelte.config.js, pinned
+  by `src/csrf.test.ts`): it refused bearer multipart uploads before `bind` ran. Outside `/api/v1` the
+  hook (`auth/origin.ts`, first thing in `handle`, before any session lookup) takes its place and
+  refuses every write (any method but GET/HEAD/OPTIONS, any content type) whose `Origin` is not the app
+  origin with 403: the error envelope under `/api`, plain text elsewhere. That covers the guest PIN form,
+  any form action and every other route outside the registry. One exception: `Origin: null` with
+  `Sec-Fetch-Site: same-origin` passes, because browsers post a form from a page served with
+  `Referrer-Policy: no-referrer` (the `/g` pages) that way (`same-site` and `cross-site` do not). A
+  new route outside `/api/v1` needs nothing: the check is path-based, and `authz.test.ts` runs it over
+  the inventory.
 - **Errors** are always `{error: {code, message, details?}}` with the codes in
   `src/lib/api/errors.ts`; services throw `AuthError`-style domain errors or `ApiError`, `bind`
   maps them. Unknown errors become 500 `internal` and are logged by name and code only.

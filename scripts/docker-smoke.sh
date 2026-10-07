@@ -47,8 +47,8 @@ defect="$(api -X POST "$base/api/v1/defects" -H 'Content-Type: application/json'
   -d '{"title":"Smoke defect","severity":"low"}' | jq -r '.id')"
 printf '%s' 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' |
   base64 -d >"$work/pixel.png"
-# Multipart bodies are checked by SvelteKit's form CSRF guard, which wants an Origin header.
-api -X POST "$base/api/v1/attachments" -H "Origin: $base" \
+# A bearer upload carries no Origin header: only cookie requests are checked against forgery.
+api -X POST "$base/api/v1/attachments" \
   -F "file=@$work/pixel.png;type=image/png" -F ownerType=defect -F "ownerId=$defect" |
   jq -e '.mime == "image/png" and .thumbUrl != null' >/dev/null
 api "$base/api/v1/defects/export.pdf" -o "$work/defects.pdf"
@@ -61,6 +61,30 @@ expires="$(date -u -d '+7 days' +%Y-%m-%dT%H:%M:%SZ)"
 guest="$(session -X POST "$base/api/v1/guest-links" \
   -d "{\"label\":\"smoke\",\"expiresAt\":\"$expires\"}" | jq -r '.url')"
 curl --fail-with-body -sS "$guest" | grep -qi '<html' || fail "guest page did not render"
+
+step "cross-site writes are refused"
+evil="https://evil.example"
+expect_status() {
+  local want="$1" got
+  shift
+  got="$(curl -sS -o /dev/null -w '%{http_code}' "$@")"
+  [ "$got" = "$want" ] || fail "expected HTTP $want, got $got for: $*"
+}
+# the PIN form of a guest page is a SvelteKit form action, outside the API
+expect_status 403 -X POST "$guest" -H "Origin: $evil" --data-urlencode pin=1234
+expect_status 403 -X POST "$guest" --data-urlencode pin=1234
+expect_status 303 -X POST "$guest" -H "Origin: $base" -H "Accept: text/html" --data-urlencode pin=1234
+# a browser posts that form from the guest page with "Origin: null" (that page sends no referrer)
+expect_status 303 -X POST "$guest" -H "Origin: null" -H "Sec-Fetch-Site: same-origin" \
+  -H "Accept: text/html" --data-urlencode pin=1234
+expect_status 403 -X POST "$guest" -H "Origin: null" -H "Sec-Fetch-Site: cross-site" --data-urlencode pin=1234
+# cookie requests in the encodings a cross-site HTML form can send
+expect_status 403 -X POST "$base/api/v1/attachments" -b "$jar" -H "Origin: $evil" \
+  -F "file=@$work/pixel.png;type=image/png" -F ownerType=defect -F "ownerId=$defect"
+expect_status 403 -X POST "$base/api/v1/attachments" -b "$jar" \
+  -F "file=@$work/pixel.png;type=image/png" -F ownerType=defect -F "ownerId=$defect"
+expect_status 403 -X POST "$base/api/v1/tokens" -b "$jar" -H "Origin: $evil" --data-urlencode name=forged
+api "$base/api/v1/attachments?ownerType=defect&ownerId=$defect" | jq -e '.items | length == 1' >/dev/null
 
 step "calendar feed"
 feed="$(session -X POST "$base/api/v1/calendar-feeds" -d '{"name":"smoke"}' | jq -r '.url')"

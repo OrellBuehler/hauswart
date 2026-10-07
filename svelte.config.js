@@ -6,6 +6,10 @@ const config = {
     adapter: adapter({
       precompress: true,
     }),
+    // SvelteKit's own origin check for form posts is off: it rejects bearer uploads (multipart,
+    // no Origin header) before bind() runs. hooks.server.ts refuses cross-site writes outside
+    // /api/v1 instead (auth/origin.ts); inside /api/v1 bind() checks cookie requests.
+    csrf: { trustedOrigins: ["*"] },
     // SvelteKit adds nonces (hashes for prerendered pages) to its own inline scripts.
     csp: {
       mode: "auto",
