@@ -23,9 +23,9 @@
   import { Skeleton } from "$lib/components/ui/skeleton/index.js";
   import { pickerErrorMessage } from "$lib/connections/errors";
   import {
-    documentOwnerLabels,
     documentRoleLabels,
     defaultRoleFor,
+    linkedPlaces,
   } from "$lib/documents/labels";
   import { apiErrorMessage } from "$lib/error-message";
   import { formatDay } from "$lib/format";
@@ -138,14 +138,6 @@
     } finally {
       loadingMore = false;
     }
-  }
-
-  function usedIn(document: ExternalDocument): string {
-    const names = document.linkedTo.map(
-      (link) => link.ownerTitle ?? documentOwnerLabels[link.ownerType](),
-    );
-    const shown = names.slice(0, 2).join(", ");
-    return names.length > 2 ? `${shown} +${names.length - 2}` : shown;
   }
 
   function isLinkedHere(document: ExternalDocument): boolean {
@@ -308,7 +300,9 @@
                     <span
                       class="text-muted-foreground mt-0.5 block truncate text-xs"
                     >
-                      {m.document_link_used_in({ places: usedIn(document) })}
+                      {m.document_link_used_in({
+                        places: linkedPlaces(document.linkedTo),
+                      })}
                     </span>
                   {/if}
                 </span>

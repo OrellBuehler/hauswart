@@ -21,9 +21,18 @@ export function loadIntegrations(force = false): Promise<Integration[]> {
   return promise;
 }
 
+const forgetListeners = new Set<() => void>();
+
+/** Calls `listener` whenever the loaded integrations were forgotten, so what depends on them can ask again. Returns the way to stop. */
+export function onIntegrationsForgotten(listener: () => void): () => void {
+  forgetListeners.add(listener);
+  return () => void forgetListeners.delete(listener);
+}
+
 /** Forget what was loaded (a connection was saved, tested or removed). */
 export function forgetIntegrations(): void {
   cached = undefined;
+  for (const listener of forgetListeners) listener();
 }
 
 /** A connection that pickers can ask: an adapter runs, a connection is saved and switched on. */

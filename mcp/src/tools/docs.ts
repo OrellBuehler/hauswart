@@ -52,7 +52,7 @@ export const search = defineTool({
   name: "search",
   title: "Search everything",
   description:
-    "Full-text search across documentation pages, assets, rooms, tasks, defects, contacts, spare parts and care hints, best match first. Every word matches as a prefix; case and accents are ignored. type restricts the kind of result. Each hit has its kind, id, a snippet and the app path; read a page with get_page (its slug is in the hit), defects, contacts and assets with their get_* tool. Phone numbers, e-mail and addresses of contacts and secret blocks of pages are never searched.",
+    "Full-text search across documentation pages, assets, rooms, tasks, defects, contacts, spare parts and care hints, best match first. Every word matches as a prefix; case and accents are ignored. type restricts the kind of result. Each hit has its kind, id, a snippet and the app path; read a page with get_page (its slug is in the hit), defects, contacts and assets with their get_* tool. Archived documents that are already linked to something are found by title (type document, from the token user's own document system; its documentId is in the hit, the url is the first thing it is linked to): read one with get_document, and look for unlinked ones with search_documents. Phone numbers, e-mail and addresses of contacts and secret blocks of pages are never searched.",
   mode: "read",
   input: {
     q: z.string().trim().min(1).max(100).describe("Words to look for"),
@@ -67,6 +67,7 @@ export const search = defineTool({
       title: hit.title,
       snippet: hit.snippet,
       slug: hit.type === "page" ? hit.url.replace(/^\/docs\//, "") : null,
+      documentId: hit.type === "document" ? Number(hit.id.split(":")[1]) : null,
       url: hit.url,
     });
     return {

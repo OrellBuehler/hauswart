@@ -6,6 +6,7 @@
   import ArchiveRestoreIcon from "@lucide/svelte/icons/archive-restore";
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
   import EllipsisVerticalIcon from "@lucide/svelte/icons/ellipsis-vertical";
+  import FileCheckIcon from "@lucide/svelte/icons/file-check";
   import ListChecksIcon from "@lucide/svelte/icons/list-checks";
   import PencilIcon from "@lucide/svelte/icons/pencil";
   import PlusIcon from "@lucide/svelte/icons/plus";
@@ -222,6 +223,14 @@
               <dt class="text-muted-foreground">{m.asset_warranty()}</dt>
               <dd class="flex flex-col items-start gap-1">
                 <WarrantyBadge info={warranty} />
+                {#if asset.warrantySource === "document" && (asset.warrantyUntil || asset.warrantyExtendedUntil)}
+                  <span
+                    class="text-muted-foreground flex items-center gap-1.5 text-xs"
+                  >
+                    <FileCheckIcon class="size-3.5" aria-hidden="true" />
+                    {m.asset_warranty_from_document()}
+                  </span>
+                {/if}
                 {#if asset.warrantyUntil && asset.warrantyExtendedUntil}
                   <span class="text-muted-foreground text-xs">
                     {m.asset_warranty_detail({

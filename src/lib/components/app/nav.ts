@@ -5,6 +5,7 @@ import BookOpenIcon from "@lucide/svelte/icons/book-open";
 import ContactIcon from "@lucide/svelte/icons/contact";
 import CoinsIcon from "@lucide/svelte/icons/coins";
 import DoorOpenIcon from "@lucide/svelte/icons/door-open";
+import FileStackIcon from "@lucide/svelte/icons/file-stack";
 import LayoutDashboardIcon from "@lucide/svelte/icons/layout-dashboard";
 import ListChecksIcon from "@lucide/svelte/icons/list-checks";
 import PuzzleIcon from "@lucide/svelte/icons/puzzle";
@@ -22,6 +23,7 @@ export type NavHref =
   | "/rooms"
   | "/plants"
   | "/docs"
+  | "/documents"
   | "/defects"
   | "/parts"
   | "/contacts"
@@ -38,6 +40,8 @@ export type NavItem = {
   /** More path prefixes that belong to the same section (e.g. detail pages). */
   alsoMatch?: string[];
   label: () => string;
+  /** The entry is only offered to people who have this feature (an optional integration). */
+  requires?: "documentSystem";
   /** One sentence for the placeholder page of a section that is not built yet. */
   comingSoon?: () => string;
   icon: Component;
@@ -85,6 +89,12 @@ export const navGroups: NavGroup[] = [
         label: () => m.nav_docs(),
         icon: BookOpenIcon,
       },
+      {
+        href: "/documents",
+        label: () => m.nav_documents(),
+        requires: "documentSystem",
+        icon: FileStackIcon,
+      },
     ],
   },
   {
@@ -130,6 +140,23 @@ export const navGroups: NavGroup[] = [
     ],
   },
 ];
+
+export type NavFeatures = { documentSystem: boolean };
+
+/** The groups with the entries the person can use: those of an optional integration only when they have it. */
+export function visibleNavGroups(
+  groups: readonly NavGroup[],
+  features: NavFeatures,
+): NavGroup[] {
+  return groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) => item.requires === undefined || features[item.requires],
+      ),
+    }))
+    .filter((group) => group.items.length > 0);
+}
 
 export const settingsNavItem: NavItem = {
   href: "/settings/account",

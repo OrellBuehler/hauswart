@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import FileCheckIcon from "@lucide/svelte/icons/file-check";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { toast } from "svelte-sonner";
   import { api } from "$lib/api/browser";
@@ -403,6 +404,17 @@
             {m.asset_warranty_extended_hint()}
           </p>
         </div>
+        {#if seed?.warrantySource === "document"}
+          <p
+            class="text-muted-foreground flex items-start gap-2 text-xs text-pretty sm:col-span-2"
+          >
+            <FileCheckIcon
+              class="mt-0.5 size-3.5 shrink-0"
+              aria-hidden="true"
+            />
+            {m.asset_warranty_from_document_hint()}
+          </p>
+        {/if}
       </Card.Content>
     </Card.Root>
   {/if}

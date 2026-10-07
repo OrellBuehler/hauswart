@@ -212,7 +212,10 @@ Which tags mark documents the household shares, the custom fields that hold "war
 tags, storage path and groups for documents pushed from hauswart are set in the connection's `config`
 (`sharedTagIds`, `warrantyFieldId`, `uploadTagIds`, ...; see the OpenAPI description). The pickers
 `GET /api/v1/integrations/paperless/{tags,correspondents,custom-fields,groups,storage-paths}` list the ids.
-Documents are linked to devices, tasks, defects and other entities with `POST /api/v1/document-links`.
+Documents are linked to devices, tasks, defects and other entities with `POST /api/v1/document-links`, or
+in the web app from the "Archived documents" section of each entry. The **Documents** page (in the sidebar
+once you are connected) lists and searches your documents and shows where each one is used. The MCP server
+can search, read, link and unlink documents too (`search_documents`, `link_document`, ...).
 
 ### Kept
 

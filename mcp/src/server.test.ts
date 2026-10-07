@@ -30,6 +30,9 @@ const READ_TOOLS = [
   "list_warranties",
   "list_costs",
   "cost_summary",
+  "search_documents",
+  "get_document",
+  "list_document_links",
   "list_finance_suggestions",
 ];
 const WRITE_TOOLS = [
@@ -46,6 +49,8 @@ const WRITE_TOOLS = [
   "adjust_stock",
   "add_comment",
   "add_service_log",
+  "link_document",
+  "unlink_document",
 ];
 const DOCS_WRITE_TOOLS = ["create_page", "update_page"];
 const COSTS_WRITE_TOOLS = [

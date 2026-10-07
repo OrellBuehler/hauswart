@@ -13,7 +13,7 @@ connection (Kept) exist; Home Assistant is wired end to end (readings, auto-comp
 push notifications with a "done" button, areas taken over as rooms; see "Signals, integrations and delivery"); Paperless-ngx is wired as
 a per-person document provider (links, previews, warranty dates, pushing attachments; see "Documents and the
 document provider"); the MCP server covers the task core, documentation, defects, parts, contacts,
-comments, hints, service log, warranties, costs and the finance inbox, and hauswart serves it over HTTP at
+comments, hints, service log, warranties, costs, the finance inbox and archived documents, and hauswart serves it over HTTP at
 `/api/v1/mcp` (see "MCP server" and `mcp/README.md`).
 
 There is one household, not many: all domain data is shared by every user. Only sessions, API
@@ -398,10 +398,10 @@ map), billTasks, billCreditorFilter (case-insensitive exact creditor names; appl
   mime, pages, notes count, the two warranty dates, `ownerVisible`; unique per connection and external id; a row with
   `ownerVisible = false` keeps no content, it only says "asked, not shown"), `external_document_sync` (address and
   scope the cache was built for, newest modification seen, last full read), `document_links` (provider, external id,
-  generic owner `asset|room|page|task|defect|service_log|part|contact` + id, `role`, `label`, the maker's connection;
-  unique per document, owner and role), `document_uploads` (push jobs). `AFTER DELETE` triggers on the eight owner
-  tables remove the links of a deleted owner (cascades included); a new link owner type needs its trigger and an entry
-  in `documents/owners.ts` (it reuses the comments registry for title and url).
+  generic owner `asset|room|page|task|defect|service_log|part|contact|cost` + id, `role`, `label`, the maker's
+  connection; unique per document, owner and role), `document_uploads` (push jobs). `AFTER DELETE` triggers on the
+  nine owner tables (`0011`, and `0014` for costs) remove the links of a deleted owner (cascades included); a new link
+  owner type needs its trigger and an entry in `documents/owners.ts` (it reuses the comments registry for title and url).
 - **Sync** (`registerPaperless()` in `init()`, `integrations/paperless/sync.ts`, scheduler every 30 minutes, soon after
   a connection is saved - backoff ignored - and after a link was made so other people's caches catch up): per
   connection, the documents with a tag of `sharedTagIds` + `receiptTagIds` + `manualTagIds`, incremental by `modified`
@@ -409,12 +409,20 @@ map), billTasks, billCreditorFilter (case-insensitive exact creditor names; appl
   linked document the account cannot see becomes `ownerVisible = false` without content). A full read (first run, other
   address or scope or warranty fields, once a day) also drops rows nothing needs. Outcome and backoff (1, 2, 4 ... 15
   min) are recorded on the connection like for Home Assistant.
+- **In the web app**: every owner page has the "Archived documents" section (`components/documents/linked-documents.svelte`:
+  link after a live search, preview, download, unlink); the **Documents** page (`/documents`, `GET /documents` with live
+  search `q`, tag, correspondent and `linked` filters, a detail sheet from `GET /documents/{provider}/{id}` with the
+  places the document is used and unlink) and its sidebar entry exist only for people with a working connection
+  (`DocumentSystem` in `$lib/documents/system.svelte.ts` asks again when a connection is saved or removed); the page
+  shows the connection's health (`status`, `lastError`) above the list. A device whose dates follow a document
+  (`warrantySource = document`) says so on its page and in the edit form. Failure codes of a push are all worded in
+  `$lib/connections/errors.ts` (`consume_failed`, `duplicate`, `interrupted`, `file_missing`, ...).
 - **Links** (`GET|POST /document-links`, `DELETE /document-links/{id}`): creating one needs the caller's account to read
   the document (404 otherwise) and caches what it saw; 409 for the same document, owner and role. The link DTO has
   `available` (the caller's own cache row is visible and from the same instance): another person's private document
   shows as not shared, with no title, no `document`, no file urls. A page owner needs `docs:write` (like attachments).
   `GET /documents` lists the caller's synced documents (filters `tag`, `correspondent`, `linked`) or, with `q`, searches
-  live (title and text, at most 100 hits); every item has `linkedTo`. `GET /documents/{provider}/{id}` is asked live.
+  live (title and text, at most 100 hits); every item has `linkedTo` (link id, owner type, id, title, `ownerUrl`, role). `GET /documents/{provider}/{id}` is asked live.
 - **Files** (`preview`, `thumb`, `download[?original=1]`): binary endpoints that stream through the caller's connection
   (25 MB cap, redirects refused, `too_large` before any byte when declared, a stream error beyond it). Only PDF, raster
   images and plain text are inline; everything else is `application/octet-stream` + `attachment`. `nosniff`, a CSP,
@@ -642,7 +650,7 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
 - **Finance inbox tools** (`tools/finance.ts`): `list_finance_suggestions` (read), `accept_finance_suggestion`,
   `dismiss_finance_suggestion` (mode `undo`: destructive, idempotent) and `sync_finance`, the last three with the
   `costs:write` scope like their endpoints. Strictly the token user's own inbox; a sync that ends `ok: false` is a
-  normal result, not a tool error. 43 tools when the token holds every scope.
+  normal result, not a tool error. 48 tools when the token holds every scope.
 - **New tool**: add the endpoint to the registry first, then a ~15-line `defineTool` in
   `mcp/src/tools/` and an entry in `tools/index.ts` (which lists the planned extension points).
   Triggers go through `parseTrigger` (engine schema, per-type docs in `trigger-docs.ts`, a `Record`
@@ -650,9 +658,15 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
 - **Errors** become MCP tool errors `Error [code]: message` (API code, or `unreachable`);
   `complete_task`/`skip_task` send a fresh idempotency key; completions are attributed `mcp` by the
   token kind.
+- **Documents** (`tools/documents.ts`): `search_documents`, `get_document`, `list_document_links`, `link_document`,
+  `unlink_document` go through the token user's own document connection like every other caller (no connection or a
+  document that account cannot see: `not_found` with a sentence saying which; linking to a page also needs
+  `docs:write`). Owners are given as id, or name for asset, room, part and contact and slug for a page; tags and
+  correspondents by name or id. The files are not transferred, sending a file is not offered.
 - **Tests** (`mcp/src/*.test.ts`, vitest) connect the real server to an in-process hauswart
   (`createInProcessFetch`) via the SDK's in-memory transport: `useMcp().connect({scopes})` returns
-  `call`/`ok` helpers. The HTTP endpoint is tested through the real hook in
+  `call`/`ok` helpers. Document tests also use the fake Paperless of `integrations/paperless/testing.ts`
+  (`useFakePaperless()`, a test may import an adapter's harness; the core may not). The HTTP endpoint is tested through the real hook in
   `src/routes/api/v1/mcp/mcp.test.ts` (including the SDK's own HTTP client). `createInProcessFetch`
   and `createCaller` give test events an in-process `event.fetch` (`createTestEvent({fetch})`), which
   handlers that call the app need. `scripts/docker-smoke.sh` checks the endpoint on the built image.
