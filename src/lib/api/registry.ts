@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { API_PREFIX } from "./constants";
+import { API_PREFIX, MCP_PATH } from "./constants";
 import type { ErrorCode } from "./errors";
 import type { Scope } from "./scopes";
 import {
@@ -33,6 +33,7 @@ import {
   updateUserRequestSchema,
 } from "./schemas/users";
 import { healthResponseSchema, openApiDocumentSchema } from "./schemas/system";
+import { mcpRequestSchema } from "./schemas/mcp";
 import {
   assetByQrParamsSchema,
   assetSchema,
@@ -43,6 +44,8 @@ import {
 } from "./schemas/assets";
 import {
   createRoomRequestSchema,
+  importRoomAreasRequestSchema,
+  importRoomAreasResponseSchema,
   listRoomsQuerySchema,
   listRoomsResponseSchema,
   roomSchema,
@@ -204,6 +207,7 @@ import {
   actionResponseSchema,
   integrationKindParamsSchema,
   integrationSchema,
+  listAreasResponseSchema,
   listCalendarsResponseSchema,
   listDevicesResponseSchema,
   listEntitiesQuerySchema,
@@ -391,8 +395,8 @@ export function defineEndpoint<
   }
   const status = def.status ?? 200;
   if (def.responseType === "binary") {
-    if (def.method !== "GET") {
-      throw new Error(`${def.id}: binary endpoints must be GET`);
+    if (def.method !== "GET" && def.method !== "POST") {
+      throw new Error(`${def.id}: binary endpoints must be GET or POST`);
     }
     if (!def.contentTypes || def.contentTypes.length === 0) {
       throw new Error(`${def.id}: binary endpoints must list contentTypes`);
@@ -442,6 +446,24 @@ export const endpoints = {
     auth: "public",
     scopes: [],
     response: openApiDocumentSchema,
+  }),
+
+  mcp: defineEndpoint({
+    id: "mcp",
+    method: "POST",
+    path: MCP_PATH,
+    summary: "MCP server (Streamable HTTP, stateless)",
+    description:
+      "The Model Context Protocol server of hauswart, for Claude Code and other MCP clients: `claude mcp add --transport http hauswart <address>/api/v1/mcp --header \"Authorization: Bearer hw_...\"`. Every POST carries one JSON-RPC message and is answered on its own (no session; the `Mcp-Session-Id` header is not used) with `application/json`; a notification is answered with 202 and no body. GET and DELETE are 405. The tools run through this API with the caller's token, so they offer what its scopes allow and completions are attributed to the token's kind. A request with an `Origin` header other than the app's own is refused with 403 `csrf_failed` (DNS rebinding); clients that are not browsers send none. Protocol and tools: mcp/README.md.",
+    tags: ["mcp"],
+    auth: "bearer",
+    scopes: ["read"],
+    body: mcpRequestSchema,
+    maxBodyBytes: MAX_MARKDOWN_REQUEST_BYTES,
+    response: binaryResponseSchema,
+    responseType: "binary",
+    contentTypes: ["application/json"],
+    errors: ["csrf_failed"],
   }),
 
   setupStatus: defineEndpoint({
@@ -705,6 +727,21 @@ export const endpoints = {
     body: updateRoomRequestSchema,
     response: roomSchema,
     errors: ["not_found", "conflict"],
+  }),
+
+  roomsImportAreas: defineEndpoint({
+    id: "roomsImportAreas",
+    method: "POST",
+    path: "/api/v1/rooms/import-areas",
+    summary: "Take over areas of the connected system as rooms",
+    description:
+      "Takes ids from `GET /integrations/{kind}/areas`. Per area, in one transaction: a room that already stores the area id is left alone (`unchanged`); an unlinked room with the same name takes the area id instead of a duplicate (`linked`); otherwise a room named like the area is created (`created`) with the area id in `haAreaId`. An area the system no longer lists answers `not_found` and changes nothing. Repeating the call changes nothing more, and renaming the area later never touches the room. 404 without a connection or for a kind without areas; 502 `upstream_error` when the system does not answer.",
+    tags: ["rooms"],
+    auth: "both",
+    scopes: ["write"],
+    body: importRoomAreasRequestSchema,
+    response: importRoomAreasResponseSchema,
+    errors: ["not_found", "upstream_error"],
   }),
 
   roomsDelete: defineEndpoint({
@@ -2479,6 +2516,21 @@ export const endpoints = {
     scopes: ["read"],
     params: integrationKindParamsSchema,
     response: listDevicesResponseSchema,
+    errors: ["not_found", "upstream_error"],
+  }),
+
+  integrationsAreas: defineEndpoint({
+    id: "integrationsAreas",
+    method: "GET",
+    path: "/api/v1/integrations/{kind}/areas",
+    summary: "Areas of the connected system (area picker)",
+    description:
+      "Every area with its name, the name of its floor when the system has floors, and the id of the room that already stores it in `haAreaId` (null when none does). Candidates for `POST /rooms/import-areas`. 404 without a connection or for a kind without areas; 502 `upstream_error` when the system does not answer.",
+    tags: ["integrations"],
+    auth: "both",
+    scopes: ["read"],
+    params: integrationKindParamsSchema,
+    response: listAreasResponseSchema,
     errors: ["not_found", "upstream_error"],
   }),
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { integrationKindSchema } from "./integrations";
 import {
   atLeastOne,
   isoTimestampSchema,
@@ -59,3 +60,38 @@ export const updateRoomRequestSchema = atLeastOne(
   }),
 );
 export type UpdateRoomRequest = z.output<typeof updateRoomRequestSchema>;
+
+export const IMPORT_AREAS_MAX = 200;
+
+/** The areas to take over, by the ids `GET /integrations/{kind}/areas` lists. */
+export const importRoomAreasRequestSchema = z.strictObject({
+  kind: integrationKindSchema,
+  areaIds: z
+    .array(z.string().trim().min(1).max(200))
+    .min(1)
+    .max(IMPORT_AREAS_MAX),
+});
+export type ImportRoomAreasRequest = z.output<
+  typeof importRoomAreasRequestSchema
+>;
+
+export const ROOM_IMPORT_OUTCOMES = [
+  "created",
+  "linked",
+  "unchanged",
+  "not_found",
+] as const;
+export type RoomImportOutcome = (typeof ROOM_IMPORT_OUTCOMES)[number];
+
+export const importRoomAreasResponseSchema = z
+  .object({
+    items: z.array(
+      z.object({
+        areaId: z.string(),
+        /** `created`: a new room. `linked`: a room of the same name took the area. `unchanged`: a room already stands for it. `not_found`: the system lists no such area. */
+        outcome: z.enum(ROOM_IMPORT_OUTCOMES),
+        room: roomSchema.nullable(),
+      }),
+    ),
+  })
+  .meta({ id: "RoomAreaImport" });

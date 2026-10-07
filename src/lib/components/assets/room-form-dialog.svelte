@@ -6,6 +6,7 @@
   import { ROOM_NAME_MAX, type Room } from "$lib/api/schemas/rooms";
   import { roomIconNames, roomIcons } from "$lib/assets/room-icons";
   import FormAlert from "$lib/components/app/form-alert.svelte";
+  import AreaPicker from "$lib/components/connections/area-picker.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
@@ -151,16 +152,11 @@
         </summary>
         <div class="mt-3 flex flex-col gap-2 pb-1">
           <Label for="room-ha-area">{m.rooms_ha_area()}</Label>
-          <Input
+          <AreaPicker
             id="room-ha-area"
-            autocomplete="off"
-            autocapitalize="none"
-            spellcheck={false}
-            maxlength={200}
-            placeholder="wohnzimmer"
+            roomId={room?.id}
             bind:value={haAreaId}
           />
-          <p class="text-muted-foreground text-xs">{m.rooms_ha_area_hint()}</p>
         </div>
       </details>
       <FormAlert message={error} />

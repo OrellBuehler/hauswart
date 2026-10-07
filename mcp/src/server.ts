@@ -1,9 +1,15 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { createApiClient, type FetchLike } from "../../src/lib/api/client";
+import {
+  createApiClient,
+  type ApiClient,
+  type FetchLike,
+} from "../../src/lib/api/client";
 import { isApiError } from "../../src/lib/api/errors";
 import { endpoints } from "../../src/lib/api/registry";
+import type { Scope } from "../../src/lib/api/scopes";
+import type { Household } from "../../src/lib/api/schemas/household";
 import pkg from "../../package.json" with { type: "json" };
-import { createContext, type ToolContext } from "./context";
+import { createContext, type Me, type ToolContext } from "./context";
 import { ToolError } from "./errors";
 import { tools as allTools } from "./tools";
 import type { Tool } from "./tool";
@@ -60,39 +66,61 @@ export interface HauswartServer {
   tools: string[];
 }
 
+export interface BuildOptions {
+  api: ApiClient;
+  me: Me;
+  scopes: readonly Scope[];
+  household: Household;
+  /** Reported to clients; defaults to the version in package.json. */
+  version?: string;
+  now?: () => number;
+  newKey?: () => string;
+  tools?: readonly Tool[];
+}
+
 /**
- * Connects to hauswart, learns the token's scopes with one `whoami` call and
- * registers only the tools those scopes allow.
+ * Registers the tools a token's scopes allow on a new server. Needs no network: the caller
+ * already knows who the token belongs to (hauswart's own HTTP endpoint has just authenticated it).
  */
-export async function createHauswartServer(
-  options: ConnectOptions,
-): Promise<HauswartServer> {
-  const { api, me, household } = await handshake(options);
-  if (!me.scopes.includes("read")) {
+export function buildHauswartServer(options: BuildOptions): HauswartServer {
+  const { scopes } = options;
+  if (!scopes.includes("read")) {
     throw new ToolError(
       "forbidden",
       "The token has no read scope; the MCP server needs at least read.",
     );
   }
-  const context = createContext({
+  const context = createContext(options);
+  const server = new McpServer(
+    { name: "hauswart", version: options.version ?? pkg.version },
+    {
+      instructions: `${INSTRUCTIONS}${scopes.includes("write") ? "" : " This token is read-only: tools that change data are not available."}`,
+    },
+  );
+  const registered: string[] = [];
+  for (const tool of options.tools ?? allTools) {
+    if (!tool.scopes.every((s) => scopes.includes(s))) continue;
+    tool.register(server, context);
+    registered.push(tool.name);
+  }
+  return { server, context, tools: registered };
+}
+
+/**
+ * Connects to hauswart, learns the token's scopes with one `whoami` call and
+ * registers only the tools those scopes allow (the stdio server).
+ */
+export async function createHauswartServer(
+  options: ConnectOptions,
+): Promise<HauswartServer> {
+  const { api, me, household } = await handshake(options);
+  return buildHauswartServer({
     api,
     me: me.user,
     scopes: me.scopes,
     household,
     now: options.now,
     newKey: options.newKey,
+    tools: options.tools,
   });
-  const server = new McpServer(
-    { name: "hauswart", version: pkg.version },
-    {
-      instructions: `${INSTRUCTIONS}${me.scopes.includes("write") ? "" : " This token is read-only: tools that change data are not available."}`,
-    },
-  );
-  const registered: string[] = [];
-  for (const tool of options.tools ?? allTools) {
-    if (!tool.scopes.every((s) => me.scopes.includes(s))) continue;
-    tool.register(server, context);
-    registered.push(tool.name);
-  }
-  return { server, context, tools: registered };
 }

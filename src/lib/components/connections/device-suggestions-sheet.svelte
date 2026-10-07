@@ -105,7 +105,7 @@
     busy[device.id] = true;
     delete rowError[device.id];
     try {
-      const room = roomForArea(device.area, rooms);
+      const room = roomForArea(device.area, rooms, device.areaId);
       const asset = await api.call(endpoints.assetsCreate, {
         body: {
           kind: "device",
@@ -189,7 +189,7 @@
         {:else}
           <ul class="divide-y" aria-label={m.device_suggestions_title()}>
             {#each visible as device (device.id)}
-              {@const room = roomForArea(device.area, rooms)}
+              {@const room = roomForArea(device.area, rooms, device.areaId)}
               <li class="flex flex-col gap-3 px-4 py-3">
                 <div class="flex min-w-0 flex-col gap-1">
                   <p class="font-medium break-words">{device.name}</p>

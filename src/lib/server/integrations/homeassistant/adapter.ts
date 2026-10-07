@@ -19,6 +19,7 @@ import type {
   HaArea,
   HaDevice,
   HaEntityRegistryEntry,
+  HaFloor,
   HaState,
 } from "./schemas";
 
@@ -218,6 +219,51 @@ const calendars: IntegrationOperation = async (connection) => {
   }
 };
 
+/** Floors are optional (Home Assistant before 2024.4 has none): areas are listed without them rather than not at all. */
+async function loadFloors(
+  connection: ResolvedConnection,
+): Promise<Map<string, HaFloor>> {
+  try {
+    const floors = await clientFor(connection).registry(
+      "config/floor_registry/list",
+    );
+    return new Map(floors.map((f) => [f.floorId, f]));
+  } catch (err) {
+    console.warn("homeassistant: floor lookup unavailable", errorCode(err));
+    return new Map();
+  }
+}
+
+/** Every area with the name of its floor, ordered by floor level, then name; the core adds which room each one is. */
+const areas: IntegrationOperation = async (connection) => {
+  try {
+    const [list, floors] = await Promise.all([
+      clientFor(connection).registry("config/area_registry/list"),
+      loadFloors(connection),
+    ]);
+    const items = list
+      .map((a) => {
+        const floor = a.floorId ? floors.get(a.floorId) : undefined;
+        return {
+          id: a.areaId,
+          name: a.name,
+          floor: floor?.name ?? null,
+          level: floor?.level ?? null,
+        };
+      })
+      .sort(
+        (a, b) =>
+          (a.level ?? Number.MAX_SAFE_INTEGER) -
+            (b.level ?? Number.MAX_SAFE_INTEGER) ||
+          a.name.localeCompare(b.name),
+      )
+      .map(({ id, name, floor }) => ({ id, name, floor }));
+    return { items };
+  } catch (err) {
+    throw toIntegrationError(err);
+  }
+};
+
 const normal = (value: string | null | undefined): string =>
   (value ?? "").trim().toLowerCase();
 
@@ -280,6 +326,7 @@ const devices: IntegrationOperation = async (connection, _query, ctx) => {
         manufacturer: d.manufacturer,
         model: d.model,
         area: d.areaId ? (areaName.get(d.areaId) ?? null) : null,
+        areaId: d.areaId && areaName.has(d.areaId) ? d.areaId : null,
       }))
       .filter((d) => !existing.some((a) => deviceIsKnown(d, a)))
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -314,12 +361,19 @@ export const homeAssistantIntegration: IntegrationAdapter = {
     }
   },
   describe: () => ({
-    capabilities: ["entities", "notify-services", "calendars", "devices"],
+    capabilities: [
+      "entities",
+      "notify-services",
+      "calendars",
+      "devices",
+      "areas",
+    ],
   }),
   operations: {
     entities,
     "notify-services": notifyServices,
     calendars,
     devices,
+    areas,
   },
 };

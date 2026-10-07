@@ -4,6 +4,7 @@
   import ArrowDownIcon from "@lucide/svelte/icons/arrow-down";
   import ArrowUpIcon from "@lucide/svelte/icons/arrow-up";
   import DoorOpenIcon from "@lucide/svelte/icons/door-open";
+  import DownloadIcon from "@lucide/svelte/icons/download";
   import EllipsisVerticalIcon from "@lucide/svelte/icons/ellipsis-vertical";
   import PencilIcon from "@lucide/svelte/icons/pencil";
   import PlusIcon from "@lucide/svelte/icons/plus";
@@ -15,6 +16,7 @@
   import { roomIconFor } from "$lib/assets/room-icons";
   import { roomStats } from "$lib/assets/tasks";
   import RoomFormDialog from "$lib/components/assets/room-form-dialog.svelte";
+  import AreaImportDialog from "$lib/components/connections/area-import-dialog.svelte";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
   import EmptyState from "$lib/components/app/empty-state.svelte";
   import PageHeader from "$lib/components/app/page-header.svelte";
@@ -29,6 +31,7 @@
   let reordered = $state<Room[] | null>(null);
   let moving = $state(false);
   let formOpen = $state(false);
+  let importOpen = $state(false);
   let editing = $state<Room | undefined>();
   let deleteOpen = $state(false);
   let deleting = $state<Room | undefined>();
@@ -103,6 +106,11 @@
 <div class="flex flex-col gap-6">
   <PageHeader title={m.nav_rooms()} description={m.rooms_description()}>
     {#snippet actions()}
+      {#if data.areasAvailable}
+        <Button variant="outline" onclick={() => (importOpen = true)}>
+          <DownloadIcon />{m.rooms_import_ha()}
+        </Button>
+      {/if}
       <Button onclick={openCreate}><PlusIcon />{m.rooms_create()}</Button>
     {/snippet}
   </PageHeader>
@@ -114,6 +122,11 @@
       description={m.rooms_empty_body()}
     >
       {#snippet actions()}
+        {#if data.areasAvailable}
+          <Button variant="outline" onclick={() => (importOpen = true)}>
+            <DownloadIcon />{m.rooms_import_ha()}
+          </Button>
+        {/if}
         <Button onclick={openCreate}><PlusIcon />{m.rooms_create()}</Button>
       {/snippet}
     </EmptyState>
@@ -210,6 +223,14 @@
   {nextSortOrder}
   onsaved={invalidateAll}
 />
+
+{#if data.areasAvailable}
+  <AreaImportDialog
+    bind:open={importOpen}
+    rooms={data.rooms}
+    onimported={invalidateAll}
+  />
+{/if}
 
 <ConfirmDialog
   bind:open={deleteOpen}

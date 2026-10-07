@@ -10,10 +10,11 @@ attachments, search, file backup), contacts, spare parts, the service log, care 
 a PDF export), the warranty overview, generic comments, iCal feeds, the emergency page data and guest
 links, costs (with the settlement between the people and a CSV export) and the per-person finance
 connection (Kept) exist; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
-push notifications with a "done" button; see "Signals, integrations and delivery"); Paperless-ngx is wired as
+push notifications with a "done" button, areas taken over as rooms; see "Signals, integrations and delivery"); Paperless-ngx is wired as
 a per-person document provider (links, previews, warranty dates, pushing attachments; see "Documents and the
 document provider"); the MCP server covers the task core, documentation, defects, parts, contacts,
-comments, hints, service log, warranties, costs and archived documents (see `mcp/README.md`).
+comments, hints, service log, warranties, costs and archived documents, and hauswart serves it over HTTP at
+`/api/v1/mcp` (see "MCP server" and `mcp/README.md`).
 
 There is one household, not many: all domain data is shared by every user. Only sessions, API
 tokens, integration connections and preferences belong to a single user.
@@ -45,8 +46,7 @@ bun run openapi          # regenerate docs/openapi.json from the registry (a tes
 bun run i18n             # recompile Paraglide messages (also runs on install and in check)
 bun run leak-guard --all # scan the whole tree for private terms
 bun scripts/seed.ts --file seed/example.de.json --token hw_… [--url http://localhost:3000] [--update]
-bun run mcp              # MCP server from source (HAUSWART_URL, HAUSWART_TOKEN)
-bun run mcp:build        # compile it to dist/hauswart-mcp (gitignored)
+bun run mcp              # stdio MCP server from source, for development (HAUSWART_URL, HAUSWART_TOKEN); the app serves MCP at /api/v1/mcp
 bun run security         # semgrep, bun audit, trivy
 ```
 
@@ -93,7 +93,8 @@ src/lib/tasks/engine/            pure due-date engine (client-safe): evaluateTas
 src/lib/server/service.ts        ServiceContext {db, now}, notFound/conflict/invalidField, isUniqueViolation
 src/lib/server/pagination.ts     opaque cursors: paginateArray (offset) and pageOf (keyset)
 src/lib/server/household/        the singleton household row: name, time zone (follows HAUSWART_TZ), settings
-src/lib/server/rooms/            rooms CRUD, slugs
+src/lib/server/rooms/            rooms CRUD, slugs; areas.ts takes the areas of a connected system over as rooms (see "Signals,
+                                 integrations and delivery")
 src/lib/server/assets/           assets (devices, plants, fixtures), slugs, QR slugs, archive
 src/lib/server/tasks/            tasks CRUD, previewTrigger, evaluator (task_state cache), signals (provider seam),
                                  completions (complete/skip/undo/snooze), preparations, dashboard, stats, scheduler
@@ -127,9 +128,11 @@ src/lib/server/share/            guest links: tokens.ts, guest-links.ts (CRUD, w
 src/lib/server/emergency/        emergency page data (members) and the "Notfall- & Vertretungsblatt" PDF
 src/lib/server/pdf/render.ts     shared pdfmake wrapper (A4, Roboto from node_modules, no network or file access)
 src/lib/server/seed/import.ts    seed importer (through the REST API); CLI in scripts/seed.ts, data in seed/
-mcp/src/                         stdio MCP server (client-safe imports only): index.ts entry, server.ts (whoami handshake,
-                                 scope-based registration), tool.ts (defineTool), context.ts (client + name resolvers),
-                                 tools/ (registry in tools/index.ts, one file per domain); mcp/README.md is the setup guide
+mcp/src/                         MCP server (client-safe imports only): index.ts stdio entry, server.ts (buildHauswartServer =
+                                 scope-based registration; createHauswartServer adds the whoami handshake), tool.ts (defineTool),
+                                 context.ts (client + name resolvers), tools/ (registry in tools/index.ts, one file per domain);
+                                 mcp/README.md is the setup guide
+src/lib/server/api/handlers/mcp.ts  POST /api/v1/mcp: the MCP server over Streamable HTTP (stateless, see "MCP server")
 src/lib/server/integrations/     optional adapters (homeassistant/, paperless/, kept/) — the core never imports these;
                                  homeassistant/ has client, ws, helpers, fake-server plus adapter (settings, pickers), channel
                                  (`ha_notify`), sync (polling, calendars) and scheduler, wired by `registerHomeAssistant()`;
@@ -231,7 +234,7 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   `GET /integrations` (never the token; the address of a household connection only for administrators),
   `PUT|DELETE /integrations/{kind}` and `POST .../test` (household kinds need an administrator; a
   changed address needs the token again), pickers `GET /integrations/{kind}/{entities,notify-services,
-calendars,devices}` (any member; 404 not connected, 502 `upstream_error` with `details.code`). An
+calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` with `details.code`). An
   adapter registers `registerIntegration({kind, validate?, test, describe, operations})`; it throws
   `IntegrationError(code, message)`. Health (`status`, `lastError` code, `consecutiveFailures`) is
   recorded by the adapter; `dueForAttempt`/`backoffMs` give the 1, 2, 4 ... 15 minute backoff.
@@ -262,6 +265,21 @@ calendars,devices}` (any member; 404 not connected, 502 `upstream_error` with `d
   entity HA does not know is only counted. Assets can carry `externalSource`/`externalRef`; the devices
   picker lists registry devices matching no asset (reference, name, or model with overlapping name).
   Entity names in code and tests stay synthetic (`sensor.example_*`).
+- **Areas as rooms** (`rooms/areas.ts`, `connections/areas.ts` client-safe): the adapter operation `areas` answers
+  `{id, name, floor}` (floor names from `config/floor_registry/list`, which an older Home Assistant refuses: then no
+  floors, logged by code; ordered by floor level, then name) and knows nothing about rooms; the core says "areas of
+  a connected system" and stores the id in `rooms.haAreaId` (a name kept for the column, no provider is recorded).
+  `GET /integrations/{kind}/areas` adds `roomId` (the room that stores that id, compared without case and punctuation).
+  `POST /rooms/import-areas {kind, areaIds}` (scope `write`) re-reads the areas, so names come from the system and
+  never from the caller, then in one transaction, per area in the order given: a room that stores the id is
+  `unchanged`; else an unlinked room of the same name (case, accents and `ue`/`ü` spellings ignored) takes the id
+  (`linked`; a stored id that no listed area has counts as unlinked, one that belongs to another listed area does not);
+  else a room is `created` (name cut to 100 characters, sort order at the end, slug as for any room); an id the system
+  does not list is `not_found`. Repeating changes nothing, and a later rename in Home Assistant never touches the room.
+  There is no unique index on `haAreaId`: the room form's area picker (`components/connections/area-picker.svelte`,
+  a plain field without a usable connection) disables areas another room already stores. `matchAreaToRoom` is shared by
+  the service and the import dialog (`area-import-dialog.svelte`, "Aus Home Assistant übernehmen" on the rooms page)
+  so the preview and the result agree. Device suggestions carry `areaId` so `roomForArea` matches by id first.
 
 ### Costs and finance providers
 
@@ -580,19 +598,46 @@ same-origin` to everything under `/g/` (the token in the path never leaves the s
 
 ### MCP server
 
-`mcp/` is a stdio server for Claude (Claude Code, Desktop) built on `@modelcontextprotocol/sdk` with
-Zod 4 input shapes. It is a REST client like the others: `createApiClient(fetch, HAUSWART_URL,
-{token})` from `src/lib/api`, so endpoint and schema changes break its build. It imports only
-client-safe modules (`src/lib/api/**`, `src/lib/tasks/engine/types`, `src/lib/dates`; a test bundles
-the entry and fails on any `src/lib/server`, `src/routes` or `src/lib/testing` input). `$lib` aliases
+`mcp/` holds the MCP server for Claude (Claude Code, Desktop) built on `@modelcontextprotocol/sdk` with
+Zod 4 input shapes. hauswart serves it itself over HTTP (`POST /api/v1/mcp`, below); `bun run mcp` runs
+the same tools over stdio from source for development (no compiled binaries). It is a REST client like
+the others: `createApiClient(fetch, baseUrl, {token})` from `src/lib/api`, so endpoint and schema
+changes break its build. It imports only client-safe modules (`src/lib/api/**`,
+`src/lib/tasks/engine/types`, `src/lib/dates`; a test bundles the stdio entry, which pulls in the whole
+server, and fails on any `src/lib/server`, `src/routes` or `src/lib/testing` input). `$lib` aliases
 inside those modules resolve through the root tsconfig (Bun and vite both honour it); the root
-tsconfig also includes `mcp/**` so `bun run check` type-checks it.
+tsconfig also includes `mcp/**` so `bun run check` type-checks it. The app imports
+`mcp/src/server.ts` (`buildHauswartServer`) from `handlers/mcp.ts`; never the other way round.
 
+- **Over HTTP** (`handlers/mcp.ts`, registry entry `mcp`, `src/routes/api/v1/mcp/+server.ts` exports
+  POST only): Streamable HTTP, **stateless** - per request a new `McpServer` and a
+  `WebStandardStreamableHTTPServerTransport` with `sessionIdGenerator: undefined` and
+  `enableJsonResponse: true`, answered with plain `application/json` (a notification gets an empty
+  202). No session, no stream: GET and DELETE have no route, so SvelteKit answers 405 (the SDK's
+  stateless transport would open an SSE stream on GET, which must not happen). It sits under `/api/v1`
+  as a registry endpoint (`auth: "bearer"`, scope `read`, `responseType: "binary"` - allowed for POST
+  too - with the JSON-RPC message as the body schema), so it gets everything `bind` does: bearer
+  tokens only (the cookie is 403, a missing or bad token 401 with `WWW-Authenticate: Bearer` from the
+  hook), the 300/min token limit (the tools' own API calls count too), the 512 KB body cap and the
+  authz matrix. The handler passes the already parsed body to the transport (`parsedBody`), maps what
+  the transport refuses (406 `Accept`, 400 protocol version, ...) to the API error envelope with the
+  same status, and builds the server with `buildHauswartServer` from the principal (user, scopes,
+  household), so there is no `authMe`/`householdGet` round trip. The tools' API client calls
+  `event.fetch` with the caller's own bearer token (`credentials: "omit"`): SvelteKit answers it in
+  process through the hook and `bind`, so scopes and attribution (kind `mcp` -> completions source
+  `mcp`) are the token's. Any token kind works; only `read` is needed. **Origin**: `hasForeignOrigin`
+  (`auth/origin.ts`) refuses a request whose `Origin` is present and not the app's own with 403
+  `csrf_failed` (MCP spec, DNS rebinding); `origin.ts` leaves `/api/v1` alone, programs send no
+  `Origin`, so none is required. The check sits in the handler, not in the hook, because the hook sees
+  the raw path (`/api/v1/%6dcp`, a trailing slash) and SvelteKit routes the decoded one. The SDK
+  1.32 implements protocol revisions up to 2025-11-25; a client that tries the stateless 2026-07-28
+  revision first gets a 400 and falls back to `initialize`. OAuth (needed by the claude.ai web
+  connectors) is not implemented.
 - **Tools** are curated and task-oriented (`defineTool({name, title, description, mode, input,
 handler})` returning `{summary, data}`; output is a summary line plus compact JSON with empty
   fields dropped). `mode` (`read|create|update|undo`) fixes the MCP annotations and the default
-  scope. At start-up the server calls `authMe` + `householdGet` and registers only tools whose
-  scopes the token holds, so a read-only token sees no write tools.
+  scope. Only tools whose scopes the token holds are registered (stdio: after an `authMe` +
+  `householdGet` handshake, HTTP: from the principal), so a read-only token sees no write tools.
 - **New tool**: add the endpoint to the registry first, then a ~15-line `defineTool` in
   `mcp/src/tools/` and an entry in `tools/index.ts` (which lists the planned extension points).
   Triggers go through `parseTrigger` (engine schema, per-type docs in `trigger-docs.ts`, a `Record`
@@ -608,7 +653,10 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
 - **Tests** (`mcp/src/*.test.ts`, vitest) connect the real server to an in-process hauswart
   (`createInProcessFetch`) via the SDK's in-memory transport: `useMcp().connect({scopes})` returns
   `call`/`ok` helpers. Document tests also use the fake Paperless of `integrations/paperless/testing.ts`
-  (`useFakePaperless()`, a test may import an adapter's harness; the core may not).
+  (`useFakePaperless()`, a test may import an adapter's harness; the core may not). The HTTP endpoint is tested through the real hook in
+  `src/routes/api/v1/mcp/mcp.test.ts` (including the SDK's own HTTP client). `createInProcessFetch`
+  and `createCaller` give test events an in-process `event.fetch` (`createTestEvent({fetch})`), which
+  handlers that call the app need. `scripts/docker-smoke.sh` checks the endpoint on the built image.
 
 ### Authentication and the API spine
 
@@ -753,9 +801,8 @@ Version numbers follow `package.json` (`APP_VERSION` and the MCP server read it;
 the build argument). To release: bump `version` in `package.json`, add a `## <version>` section to
 `CHANGELOG.md`, merge, then publish a GitHub release for the tag `v<version>`. `docker.yml` refuses a tag
 that differs from `package.json`, runs the checks, builds the image, runs `scripts/docker-smoke.sh` against
-it (setup, Markdown worker, image upload, PDFs, iCal, guest page) and pushes `ghcr.io/<owner>/<repo>` with
-`<version>`, `<major>.<minor>` and `latest`; `release-assets.yml` attaches the compiled MCP binaries. Run
-the same smoke test locally: start the image with `ORIGIN` and `HAUSWART_COOKIE_SECURE=false` and an empty
+it (setup, Markdown worker, image upload, PDFs, MCP over HTTP, iCal, guest page) and pushes
+`ghcr.io/<owner>/<repo>` with `<version>`, `<major>.<minor>` and `latest`. Run the same smoke test locally: start the image with `ORIGIN` and `HAUSWART_COOKIE_SECURE=false` and an empty
 volume, then `scripts/docker-smoke.sh <url> <version>`.
 
 ## Git

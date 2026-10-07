@@ -77,6 +77,7 @@ describe("registry", () => {
         "PATCH /api/v1/users/{id} session",
         "GET /api/v1/rooms both",
         "POST /api/v1/rooms both",
+        "POST /api/v1/rooms/import-areas both",
         "GET /api/v1/rooms/{id} both",
         "PATCH /api/v1/rooms/{id} both",
         "DELETE /api/v1/rooms/{id} both",
@@ -192,6 +193,7 @@ describe("registry", () => {
         "PATCH /api/v1/hints/{id} both",
         "DELETE /api/v1/hints/{id} both",
         "POST /api/v1/me/password session",
+        "POST /api/v1/mcp bearer",
         "GET /api/v1/me/notification-settings both",
         "PUT /api/v1/me/notification-settings both",
         "GET /api/v1/integrations both",
@@ -215,6 +217,7 @@ describe("registry", () => {
         "POST /api/v1/finance/sync both",
         "GET /api/v1/integrations/{kind}/categories both",
         "GET /api/v1/integrations/{kind}/accounts both",
+        "GET /api/v1/integrations/{kind}/areas both",
         "GET /api/v1/integrations/{kind}/tags both",
         "GET /api/v1/integrations/{kind}/correspondents both",
         "GET /api/v1/integrations/{kind}/custom-fields both",
@@ -277,23 +280,25 @@ describe("defineEndpoint", () => {
     ).toThrow(/cannot have a body/);
   });
 
-  it("binary endpoints must be GET and list their content types", () => {
+  it("binary endpoints must be GET or POST and list their content types", () => {
     const binary = {
       ...base,
       path: "/api/v1/things",
       responseType: "binary",
     } as const;
     expect(() => defineEndpoint(binary)).toThrow(/must list contentTypes/);
-    expect(() =>
-      defineEndpoint({
-        ...binary,
-        method: "POST",
-        contentTypes: ["image/png"],
-      }),
-    ).toThrow(/must be GET/);
+    for (const method of ["PUT", "PATCH", "DELETE"] as const) {
+      expect(() =>
+        defineEndpoint({ ...binary, method, contentTypes: ["image/png"] }),
+      ).toThrow(/must be GET or POST/);
+    }
     const e = defineEndpoint({ ...binary, contentTypes: ["image/png"] });
     expect(e.responseType).toBe("binary");
     expect(e.contentTypes).toEqual(["image/png"]);
+    expect(
+      defineEndpoint({ ...binary, method: "POST", contentTypes: ["image/png"] })
+        .method,
+    ).toBe("POST");
   });
 
   it("fills in defaults", () => {
