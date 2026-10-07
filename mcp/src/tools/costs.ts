@@ -16,7 +16,7 @@ const date = z.iso.date();
 const category = z.enum(COST_CATEGORIES);
 
 /** `12.50 CHF`, `-3 CHF`: the amount as a plain decimal in the currency's own precision. */
-const money = (amountMinor: number, currency: string) =>
+export const money = (amountMinor: number, currency: string) =>
   `${toDecimalString(minor(amountMinor), currencyExponent(currency))} ${currency}`;
 
 const costRow = (c: CostEntry) => ({
