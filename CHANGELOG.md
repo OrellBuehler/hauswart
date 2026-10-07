@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Self-service password change: everybody can set a new password under Settings > Account, or with
+  `POST /api/v1/me/password` (browser session only; the current password is required). The new password
+  follows the rules of the first-run setup and must differ from the current one. A wrong current password
+  counts against the same failed-attempt limit as signing in. Your other browsers and devices are signed
+  out, the one you changed it in stays. API tokens stay valid, unlike after an administrator's reset: they
+  are credentials you made on purpose, revoke them under Settings > API tokens if the password changed
+  because of a leak. The change is recorded as the security event `password_changed`.
+
 ## 0.1.0
 
 First early release. hauswart is in early development: the core works and is well tested, but this

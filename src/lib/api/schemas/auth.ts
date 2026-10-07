@@ -75,6 +75,21 @@ export const updateMeRequestSchema = z
     error: "Provide at least one field to update.",
   });
 
+/**
+ * Self-service password change. The new password follows the same rules as setup and the
+ * administrator's reset; the current one is only compared with the stored hash, so like at
+ * sign-in any non-empty string is accepted.
+ */
+export const changePasswordRequestSchema = z
+  .strictObject({
+    currentPassword: loginRequestSchema.shape.password,
+    newPassword: passwordSchema,
+  })
+  .refine((v) => v.newPassword !== v.currentPassword, {
+    path: ["newPassword"],
+    error: "The new password must differ from the current one.",
+  });
+
 export const PLATFORM_MAX = 32;
 
 export const tokenRequestSchema = z.strictObject({

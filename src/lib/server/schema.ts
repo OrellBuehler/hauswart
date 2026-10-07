@@ -111,6 +111,7 @@ export const AUTH_EVENT_TYPES = [
   "user_created",
   "role_changed",
   "password_reset",
+  "password_changed",
   "token_created",
   "token_revoked",
 ] as const;
