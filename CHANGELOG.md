@@ -52,6 +52,15 @@
 
 ### Changed
 
+- The MCP server is part of hauswart now and is served over HTTP at `/api/v1/mcp` (Streamable HTTP,
+  stateless, JSON responses): add it with `claude mcp add --transport http hauswart
+https://hauswart.example.org/api/v1/mcp --header "Authorization: Bearer hw_..."`; nothing to install.
+  It takes bearer tokens only (an unknown token is 401, the session cookie is refused), offers the
+  tools the token's scopes allow, runs them through the REST API with that token, and refuses requests
+  that carry a foreign `Origin` header (browsers). Claude Desktop connects through the `mcp-remote`
+  bridge; the OAuth-only connectors of claude.ai are not supported yet.
+- The compiled MCP binaries are gone: releases no longer carry `hauswart-mcp-<os>-<arch>` files and
+  `bun run mcp:build` was removed. `bun run mcp` (stdio, from a checkout) remains for development.
 - The error messages of a failing connection name the system they belong to (Paperless-ngx or Home
   Assistant).
 - Dialogs no longer grow wider than a narrow screen when a list in them has long lines.

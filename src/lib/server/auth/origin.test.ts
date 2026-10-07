@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { crossSiteWriteResponse, isCrossSiteWrite } from "./origin";
+import {
+  crossSiteWriteResponse,
+  hasForeignOrigin,
+  isCrossSiteWrite,
+} from "./origin";
 
 const APP = "https://hauswart.example.org";
 const EVIL = "https://evil.example";
@@ -205,5 +209,23 @@ describe("crossSiteWriteResponse", () => {
     expect(await res.json()).toEqual({
       error: { code: "csrf_failed", message: "Cross-origin request rejected" },
     });
+  });
+});
+
+describe("hasForeignOrigin", () => {
+  const url = new URL(`${APP}/api/v1/mcp`);
+
+  it("is false without an Origin header: programs send none", () => {
+    expect(hasForeignOrigin(request("POST", null), url)).toBe(false);
+  });
+
+  it("is false for the app's own origin", () => {
+    expect(hasForeignOrigin(request("POST", APP), url)).toBe(false);
+  });
+
+  it("is true for any other origin, a sibling port and the opaque origin", () => {
+    for (const origin of [EVIL, `${APP}:8443`, "null"]) {
+      expect(hasForeignOrigin(request("POST", origin), url), origin).toBe(true);
+    }
   });
 });

@@ -33,6 +33,18 @@ export function isCrossSiteWrite(request: Request, url: URL): boolean {
   );
 }
 
+/**
+ * Whether the request names an origin other than the app's own. Browsers send `Origin` on every
+ * cross-site request (and on every POST); programs such as MCP clients and curl send none, and a
+ * request without one is not refused. For endpoints that are only meant for programs (the MCP
+ * endpoint, where the spec requires it against DNS rebinding): `bind` and this file's write check
+ * leave `/api/v1` requests with a bearer token alone, so the endpoint asks.
+ */
+export function hasForeignOrigin(request: Request, url: URL): boolean {
+  const origin = request.headers.get("origin");
+  return origin !== null && origin !== url.origin;
+}
+
 /** The 403 for a cross-site write, or null when the request is fine. */
 export function crossSiteWriteResponse(
   request: Request,

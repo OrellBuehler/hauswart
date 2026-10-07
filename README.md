@@ -244,10 +244,17 @@ The server fetches the address a person enters, so which hosts a connection may 
 
 ## MCP server
 
-An MCP server lets Claude (Claude Code, Claude Desktop, any MCP client) look things up and operate
-hauswart through the REST API with a scoped token. Each release has compiled binaries for Linux, macOS
-and Windows (`hauswart-mcp-<os>-<arch>`, with `SHA256SUMS`) attached; or run it from a checkout with
-`bun run mcp`. Setup, scopes and the tool list are in [mcp/README.md](mcp/README.md).
+hauswart serves an MCP server itself, so Claude (Claude Code, Claude Desktop, any MCP client) can look
+things up and operate hauswart through the REST API with a scoped token. Nothing to install: create a
+token of kind "MCP server" under Settings > API tokens, then
+
+```bash
+claude mcp add --transport http hauswart https://hauswart.example.org/api/v1/mcp \
+  --header "Authorization: Bearer hw_xxxxxxxx"
+```
+
+Claude Desktop and the OAuth-only connectors of claude.ai are covered in [mcp/README.md](mcp/README.md),
+which also has the scopes and the tool list.
 
 ## Development
 
