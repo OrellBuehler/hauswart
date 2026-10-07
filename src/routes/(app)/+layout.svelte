@@ -12,13 +12,23 @@
     findNavItem,
     navGroups,
     settingsNavItem,
+    visibleNavGroups,
   } from "$lib/components/app/nav";
   import UserMenu from "$lib/components/app/user-menu.svelte";
+  import { DocumentSystem } from "$lib/documents/system.svelte";
   import { m } from "$lib/paraglide/messages";
   import type { LayoutProps } from "./$types";
 
   let { data, children }: LayoutProps = $props();
 
+  const documents = new DocumentSystem();
+  $effect(() => documents.start());
+
+  const groups = $derived(
+    visibleNavGroups(navGroups, {
+      documentSystem: Boolean(documents.provider),
+    }),
+  );
   const pathname = $derived(page.url.pathname);
   const section = $derived(findNavItem(pathname));
   const headerTitle = $derived(
@@ -47,7 +57,7 @@
       </a>
     </Sidebar.Header>
     <Sidebar.Content>
-      {#each navGroups as group (group.label())}
+      {#each groups as group (group.label())}
         <Sidebar.Group>
           <Sidebar.GroupLabel>{group.label()}</Sidebar.GroupLabel>
           <Sidebar.GroupContent>

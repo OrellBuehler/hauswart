@@ -9,6 +9,7 @@ import {
   documentOwnerLabels,
   documentRoleLabels,
   isLinkableOwner,
+  linkedPlaces,
 } from "./labels";
 
 describe("document labels", () => {
@@ -41,5 +42,27 @@ describe("isLinkableOwner", () => {
     expect(isLinkableOwner("asset_hint")).toBe(false);
     const refused = ATTACHMENT_OWNER_TYPES.filter((o) => !isLinkableOwner(o));
     expect(refused).toEqual(["asset_hint"]);
+  });
+});
+
+describe("linkedPlaces", () => {
+  const link = (ownerTitle: string | null) => ({
+    ownerType: "asset" as const,
+    ownerTitle,
+  });
+
+  it("names up to two places and counts the rest", () => {
+    expect(linkedPlaces([])).toBe("");
+    expect(linkedPlaces([link("Boiler")])).toBe("Boiler");
+    expect(linkedPlaces([link("Boiler"), link("Washer")])).toBe(
+      "Boiler, Washer",
+    );
+    expect(
+      linkedPlaces([link("Boiler"), link("Washer"), link("A"), link("B")]),
+    ).toBe("Boiler, Washer +2");
+  });
+
+  it("falls back to the kind of thing when its title is gone", () => {
+    expect(linkedPlaces([link(null)])).toBe(documentOwnerLabels.asset());
   });
 });

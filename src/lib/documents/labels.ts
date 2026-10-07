@@ -30,6 +30,20 @@ export const documentOwnerLabels: Record<DocumentLinkOwnerType, () => string> =
     cost: () => m.document_owner_cost(),
   };
 
+/** Where a document is used, as a short list: the first two titles, then "+n". */
+export function linkedPlaces(
+  links: readonly {
+    ownerType: DocumentLinkOwnerType;
+    ownerTitle: string | null;
+  }[],
+): string {
+  const names = links.map(
+    (link) => link.ownerTitle ?? documentOwnerLabels[link.ownerType](),
+  );
+  const shown = names.slice(0, 2).join(", ");
+  return names.length > 2 ? `${shown} +${names.length - 2}` : shown;
+}
+
 const DEFAULT_ROLES: Partial<Record<DocumentLinkOwnerType, DocumentLinkRole>> =
   {
     asset: "manual",
