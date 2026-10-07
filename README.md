@@ -219,7 +219,11 @@ is read from a Kept category until you map it to a cost category (`config.catego
 only become tasks (visible to the whole household) with `"billTasks": true`. The card lists the scopes
 the token misses (`POST /api/v1/integrations/kept/test`), picks the categories from your Kept, and syncs
 on request (`POST /api/v1/finance/sync`); offered transactions and bills wait in a private inbox
-(Costs, Inbox in the web interface, or `GET /api/v1/finance/suggestions`) until you accept them.
+(Costs, Inbox in the web interface, a card on the dashboard while something waits, or
+`GET /api/v1/finance/suggestions`) until you accept them. Bills shown as tasks link back to the bill in
+Kept for the person whose Kept it is. Booked costs are linked back in Kept when the server knows its own
+address (`ORIGIN`); the connection test says when it does not. The MCP server can work through the inbox
+too (`list_finance_suggestions`, `accept_finance_suggestion`, `dismiss_finance_suggestion`, `sync_finance`).
 
 ### Network access
 

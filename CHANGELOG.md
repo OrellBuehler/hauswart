@@ -39,6 +39,17 @@
   device yet, which are linked on creation) and contacts ("From documents", correspondents without a
   contact).
 
+- A "Finance inbox" card on the dashboard while suggestions from your finance app wait for a decision
+  (`pendingFinanceSuggestions` in `GET /api/v1/dashboard`, your own only).
+- Bill tasks from the finance app: the task page links to the bill for the person whose finance app it is,
+  the edit form says that title, description and due date are taken from the bill, and the delete dialog
+  points to archiving (a deleted task of a still open bill is created again at the next sync).
+- The Kept connection test says when the server does not know its own address (`ORIGIN`), because
+  booked costs cannot be linked back in Kept then.
+- MCP: four finance inbox tools, `list_finance_suggestions`, `accept_finance_suggestion` (with the same
+  overrides as the web interface), `dismiss_finance_suggestion` and `sync_finance` (the last three need
+  `costs:write`), 43 tools when the token holds every scope.
+
 ### Changed
 
 - The error messages of a failing connection name the system they belong to (Paperless-ngx or Home
@@ -46,6 +57,13 @@
 - Dialogs no longer grow wider than a narrow screen when a list in them has long lines.
 
 ### Fixed
+
+- The address of a bill in somebody's finance app was part of the bill task that the whole household sees;
+  only the person whose finance app it is gets it now.
+- A bill task that somebody had already ticked off got a second completion when the bill showed as paid, and
+  a bill that opened again took such a completion back. The finance app's own completion is now only added
+  and removed when nobody settled the bill's task by hand.
+- A settled bill task said "Amount: 0.00"; it keeps the invoiced total.
 
 - Guest pages are served with `Referrer-Policy: same-origin` instead of `no-referrer`, so browsers send
   the real `Origin` with the PIN form (the token in the address still never reaches another site).
