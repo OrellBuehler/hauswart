@@ -10,7 +10,7 @@ attachments, search, file backup), contacts, spare parts, the service log, care 
 a PDF export), the warranty overview, generic comments, iCal feeds, the emergency page data and guest
 links, costs (with the settlement between the people and a CSV export) and the per-person finance
 connection (Kept) exist; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
-push notifications with a "done" button; see "Signals, integrations and delivery"); Paperless-ngx is wired as
+push notifications with a "done" button, areas taken over as rooms; see "Signals, integrations and delivery"); Paperless-ngx is wired as
 a per-person document provider (links, previews, warranty dates, pushing attachments; see "Documents and the
 document provider"); the MCP server covers the task core, documentation, defects, parts, contacts,
 comments, hints, service log, warranties and costs (see `mcp/README.md`).
@@ -93,7 +93,8 @@ src/lib/tasks/engine/            pure due-date engine (client-safe): evaluateTas
 src/lib/server/service.ts        ServiceContext {db, now}, notFound/conflict/invalidField, isUniqueViolation
 src/lib/server/pagination.ts     opaque cursors: paginateArray (offset) and pageOf (keyset)
 src/lib/server/household/        the singleton household row: name, time zone (follows HAUSWART_TZ), settings
-src/lib/server/rooms/            rooms CRUD, slugs
+src/lib/server/rooms/            rooms CRUD, slugs; areas.ts takes the areas of a connected system over as rooms (see "Signals,
+                                 integrations and delivery")
 src/lib/server/assets/           assets (devices, plants, fixtures), slugs, QR slugs, archive
 src/lib/server/tasks/            tasks CRUD, previewTrigger, evaluator (task_state cache), signals (provider seam),
                                  completions (complete/skip/undo/snooze), preparations, dashboard, stats, scheduler
@@ -231,7 +232,7 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   `GET /integrations` (never the token; the address of a household connection only for administrators),
   `PUT|DELETE /integrations/{kind}` and `POST .../test` (household kinds need an administrator; a
   changed address needs the token again), pickers `GET /integrations/{kind}/{entities,notify-services,
-calendars,devices}` (any member; 404 not connected, 502 `upstream_error` with `details.code`). An
+calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` with `details.code`). An
   adapter registers `registerIntegration({kind, validate?, test, describe, operations})`; it throws
   `IntegrationError(code, message)`. Health (`status`, `lastError` code, `consecutiveFailures`) is
   recorded by the adapter; `dueForAttempt`/`backoffMs` give the 1, 2, 4 ... 15 minute backoff.
@@ -262,6 +263,21 @@ calendars,devices}` (any member; 404 not connected, 502 `upstream_error` with `d
   entity HA does not know is only counted. Assets can carry `externalSource`/`externalRef`; the devices
   picker lists registry devices matching no asset (reference, name, or model with overlapping name).
   Entity names in code and tests stay synthetic (`sensor.example_*`).
+- **Areas as rooms** (`rooms/areas.ts`, `connections/areas.ts` client-safe): the adapter operation `areas` answers
+  `{id, name, floor}` (floor names from `config/floor_registry/list`, which an older Home Assistant refuses: then no
+  floors, logged by code; ordered by floor level, then name) and knows nothing about rooms; the core says "areas of
+  a connected system" and stores the id in `rooms.haAreaId` (a name kept for the column, no provider is recorded).
+  `GET /integrations/{kind}/areas` adds `roomId` (the room that stores that id, compared without case and punctuation).
+  `POST /rooms/import-areas {kind, areaIds}` (scope `write`) re-reads the areas, so names come from the system and
+  never from the caller, then in one transaction, per area in the order given: a room that stores the id is
+  `unchanged`; else an unlinked room of the same name (case, accents and `ue`/`ü` spellings ignored) takes the id
+  (`linked`; a stored id that no listed area has counts as unlinked, one that belongs to another listed area does not);
+  else a room is `created` (name cut to 100 characters, sort order at the end, slug as for any room); an id the system
+  does not list is `not_found`. Repeating changes nothing, and a later rename in Home Assistant never touches the room.
+  There is no unique index on `haAreaId`: the room form's area picker (`components/connections/area-picker.svelte`,
+  a plain field without a usable connection) disables areas another room already stores. `matchAreaToRoom` is shared by
+  the service and the import dialog (`area-import-dialog.svelte`, "Aus Home Assistant übernehmen" on the rooms page)
+  so the preview and the result agree. Device suggestions carry `areaId` so `roomForArea` matches by id first.
 
 ### Costs and finance providers
 

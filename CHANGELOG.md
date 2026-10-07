@@ -4,6 +4,16 @@
 
 ### Added
 
+- Rooms from Home Assistant areas: on the rooms page, "Import from Home Assistant" (only with a working
+  connection) lists the areas with their floor and lets you choose which ones to take over, with select
+  all and none. A room is created for each (the name is the area's, editable later), or an unlinked room
+  of the same name takes the area instead of a duplicate; areas that already have a room are shown as
+  imported and are never changed, so repeating the import does nothing, and renaming an area in Home
+  Assistant never renames your room. Editing a room now offers the areas of Home Assistant as a list
+  (with "Not linked" to unlink one) instead of a field for the area id. In the API:
+  `GET /api/v1/integrations/{kind}/areas` (name, floor, and the room that already stores the area) and
+  `POST /api/v1/rooms/import-areas` (the chosen area ids, one transaction, per area `created`, `linked`,
+  `unchanged` or `not_found`). Device suggestions now also match rooms by the area's id.
 - Self-service password change: everybody can set a new password under Settings > Account, or with
   `POST /api/v1/me/password` (browser session only; the current password is required). The new password
   follows the rules of the first-run setup and must differ from the current one. A wrong current password

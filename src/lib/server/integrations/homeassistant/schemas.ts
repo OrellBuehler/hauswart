@@ -181,6 +181,26 @@ export const areaRegistrySchema = z.array(
     })),
 );
 
+export interface HaFloor {
+  floorId: string;
+  name: string;
+  level: number | null;
+}
+
+export const floorRegistrySchema = z.array(
+  z
+    .object({
+      floor_id: z.string(),
+      name: z.string(),
+      level: z.number().nullish(),
+    })
+    .transform((f): HaFloor => ({
+      floorId: f.floor_id,
+      name: f.name,
+      level: f.level ?? null,
+    })),
+);
+
 export interface HaEntityRegistryEntry {
   entityId: string;
   name: string | null;

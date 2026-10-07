@@ -116,11 +116,32 @@ export const externalDeviceSchema = z
     manufacturer: z.string().nullable(),
     model: z.string().nullable(),
     area: z.string().nullable(),
+    /** The id of that area in the connected system, to match a room by what it stores in `haAreaId`. */
+    areaId: z.string().nullable(),
   })
   .meta({ id: "ExternalDevice" });
 
 export const listDevicesResponseSchema = z.object({
   items: z.array(externalDeviceSchema),
+});
+
+/** What an adapter reports for an area (a room or zone of the connected system). */
+export const providerAreaSchema = z.object({
+  id: z.string().min(1),
+  name: z.string(),
+  floor: z.string().nullable(),
+});
+
+/** An area of the connected system, with the room that already stands for it. */
+export const externalAreaSchema = providerAreaSchema
+  .extend({
+    /** The room whose `haAreaId` is this area; null when no room is linked to it yet. */
+    roomId: z.string().nullable(),
+  })
+  .meta({ id: "ExternalArea" });
+
+export const listAreasResponseSchema = z.object({
+  items: z.array(externalAreaSchema),
 });
 
 export const actionRequestSchema = z.strictObject({

@@ -145,17 +145,22 @@ person with their own account, so everybody sees exactly what their own account 
 ### Home Assistant
 
 1. In Home Assistant, create a long-lived access token (your profile, Security). The user should be an
-   administrator if you want area names and device suggestions; readings and push work without.
+   administrator if you want area names, device suggestions and the import of rooms; readings and push work
+   without.
 2. In hauswart open Settings, Integrations (as an administrator), enter the address of Home Assistant as
    hauswart reaches it (usually with port 8123) and the token, and save. Optionally set "Address of this
    app" (how phones reach hauswart; push notifications link to it).
-3. Tasks can then read counters and states, complete themselves when a counter resets or a state
+3. Rooms: on the Rooms page, "Import from Home Assistant" lists your areas (with their floors) and creates
+   a room for each one you choose, or links an existing room of the same name. Importing again changes
+   nothing, and renaming an area in Home Assistant does not rename your room. A room can also be linked
+   to or unlinked from an area when you edit it.
+4. Tasks can then read counters and states, complete themselves when a counter resets or a state
    changes, and take collection dates from Home Assistant calendars (the trigger editor offers an entity
    picker).
-4. Push: install the Home Assistant companion app on your phone, then add its notify service (for
+5. Push: install the Home Assistant companion app on your phone, then add its notify service (for
    example `mobile_app_example_phone`) under Settings, Notifications. Quiet hours and the stages you
    want are set there too.
-5. The "Done" button on a push notification calls hauswart back. Create an API token of kind "Home
+6. The "Done" button on a push notification calls hauswart back. Create an API token of kind "Home
    Assistant" with the scope `ha:action` (Settings, API tokens), store `Bearer hw_...` in Home Assistant's
    `secrets.yaml` as `hauswart_bearer`, and add this package (Settings, Notifications shows it with your
    address filled in):
