@@ -98,6 +98,8 @@ export const dashboardSchema = z
     expiringWarranties: z.array(dashboardWarrantySchema),
     orderNow: z.array(orderNowItemSchema),
     costsYearToDate: dashboardCostsSchema,
+    /** The caller's own offers from a connected finance app that wait for a decision; other members' offers are never counted. */
+    pendingFinanceSuggestions: z.number().int().min(0),
   })
   .meta({ id: "Dashboard" });
 export type Dashboard = z.infer<typeof dashboardSchema>;

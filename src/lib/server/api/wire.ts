@@ -190,7 +190,11 @@ export function wireTaskState(
   };
 }
 
-export function wireTask(task: TaskRecord): z.input<typeof taskSchema> {
+/** `urlVisible` decides per task whether the caller may see its address in an outside system. */
+export function wireTask(
+  task: TaskRecord,
+  urlVisible: (task: TaskRecord) => boolean = () => true,
+): z.input<typeof taskSchema> {
   return {
     id: task.id,
     title: task.title,
@@ -215,7 +219,7 @@ export function wireTask(task: TaskRecord): z.input<typeof taskSchema> {
     source: task.source,
     externalSource: task.externalSource,
     externalRef: task.externalRef,
-    externalUrl: task.externalUrl,
+    externalUrl: urlVisible(task) ? task.externalUrl : null,
     createdBy: task.createdBy,
     commentCount: task.commentCount,
     createdAt: toIso(task.createdAt),
@@ -302,6 +306,7 @@ export function wireDashboard(
     expiringWarranties: WarrantyRecord[];
     orderNow: OrderNowRecord[];
     costsYearToDate: z.input<typeof dashboardSchema>["costsYearToDate"];
+    pendingFinanceSuggestions: number;
   },
 ): z.input<typeof dashboardSchema> {
   return {
@@ -331,6 +336,7 @@ export function wireDashboard(
     })),
     orderNow: extras.orderNow.map(wireOrderNow),
     costsYearToDate: extras.costsYearToDate,
+    pendingFinanceSuggestions: extras.pendingFinanceSuggestions,
   };
 }
 

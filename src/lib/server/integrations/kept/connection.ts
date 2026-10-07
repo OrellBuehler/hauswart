@@ -9,6 +9,21 @@ export const KIND = "kept";
 /** The `source` of the back-links written to Kept: part of a link's identity there. */
 export const LINK_SOURCE = "hauswart";
 
+/** The public address of this app, for links in Kept; null when `ORIGIN` is not set. */
+export function appOrigin(): string | null {
+  const raw = process.env.ORIGIN?.trim();
+  if (!raw || !URL.canParse(raw)) return null;
+  const url = new URL(raw);
+  if (
+    (url.protocol !== "http:" && url.protocol !== "https:") ||
+    url.username ||
+    url.password
+  ) {
+    return null;
+  }
+  return `${url.origin}${url.pathname.replace(/\/+$/, "")}`;
+}
+
 export function clientFor(connection: ResolvedConnection): KeptClient {
   return new KeptClient({
     baseUrl: connection.baseUrl,

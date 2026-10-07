@@ -16,7 +16,9 @@ import {
   listTasks,
   previewTrigger,
   updateTask,
+  type TaskRecord,
 } from "$lib/server/tasks/tasks";
+import { billUrlVisibility } from "$lib/server/finance/bill-tasks";
 import { listPreparations } from "$lib/server/tasks/preparations";
 import {
   checkCompletionLog,
@@ -24,6 +26,7 @@ import {
   logCompletion,
 } from "$lib/server/service-log/service-log";
 import { reply, type Handler } from "../bind";
+import type { AuthedContext } from "../context";
 import {
   wireCompletion,
   wirePreparation,
@@ -52,16 +55,25 @@ export function completionSourceFor(
   }
 }
 
+/** `wireTask` for this caller: the finance address of somebody else's bill task stays hidden. */
+function wireTaskFor(ctx: AuthedContext) {
+  const visible = billUrlVisibility(ctx, ctx.user.id);
+  return (task: TaskRecord) => wireTask(task, visible);
+}
+
 export const list: Handler<typeof endpoints.tasksList> = ({ ctx, query }) => {
   const { cursor, limit, ...filter } = query;
   const page = listTasks(ctx, filter, { cursor, limit }, ctx.user.id);
-  return { items: page.items.map(wireTask), nextCursor: page.nextCursor };
+  return {
+    items: page.items.map(wireTaskFor(ctx)),
+    nextCursor: page.nextCursor,
+  };
 };
 
 export const create: Handler<typeof endpoints.tasksCreate> = async ({
   ctx,
   body,
-}) => wireTask(await createTask(ctx, body, ctx.user.id));
+}) => wireTaskFor(ctx)(await createTask(ctx, body, ctx.user.id));
 
 export const preview: Handler<typeof endpoints.tasksPreview> = ({
   ctx,
@@ -79,7 +91,7 @@ export const get: Handler<typeof endpoints.tasksGet> = async ({
 }) => {
   const task = getTask(ctx, params.id);
   return {
-    ...wireTask(task),
+    ...wireTaskFor(ctx)(task),
     preparations: (await listPreparations(ctx, task.id)).map(wirePreparation),
     recentCompletions: recentCompletionsOf(
       ctx,
@@ -93,7 +105,7 @@ export const update: Handler<typeof endpoints.tasksUpdate> = async ({
   ctx,
   params,
   body,
-}) => wireTask(await updateTask(ctx, params.id, body));
+}) => wireTaskFor(ctx)(await updateTask(ctx, params.id, body));
 
 export const remove: Handler<typeof endpoints.tasksDelete> = ({
   ctx,
@@ -137,7 +149,7 @@ export const complete: Handler<typeof endpoints.tasksComplete> = async ({
         : null;
   const out = {
     completion: wireCompletion(result.completion),
-    task: wireTask(result.task),
+    task: wireTaskFor(ctx)(result.task),
     serviceLog: entry ? wireServiceLogEntry(entry) : null,
   };
   return result.replayed ? reply(200, out) : out;
@@ -159,7 +171,7 @@ export const skip: Handler<typeof endpoints.tasksSkip> = async ({
   });
   const out = {
     completion: wireCompletion(result.completion),
-    task: wireTask(result.task),
+    task: wireTaskFor(ctx)(result.task),
     serviceLog: null,
   };
   return result.replayed ? reply(200, out) : out;
@@ -169,7 +181,7 @@ export const snooze: Handler<typeof endpoints.tasksSnooze> = async ({
   ctx,
   params,
   body,
-}) => wireTask(await snoozeTask(ctx, params.id, body.until));
+}) => wireTaskFor(ctx)(await snoozeTask(ctx, params.id, body.until));
 
 export const listAllCompletions: Handler<typeof endpoints.completionsList> = ({
   ctx,

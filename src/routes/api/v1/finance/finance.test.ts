@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { saveConnection } from "$lib/server/connections/connections";
 import { getDB } from "$lib/server/db";
+import { upsertFinanceBillTask } from "$lib/server/finance/bill-tasks";
 import { registerFinanceProvider } from "$lib/server/finance/providers";
 import { recordSuggestion } from "$lib/server/finance/suggestions";
 import { createCaller, errorCode } from "$lib/testing/api";
@@ -324,6 +325,90 @@ describe("finance suggestions API", () => {
       } finally {
         off();
       }
+    });
+  });
+  it("counts a person's own pending suggestions on the dashboard", async () => {
+    const anna = await member("Anna");
+    const ben = await member("Ben");
+    const first = anna.offer("tx:1");
+    anna.offer("tx:2");
+    ben.offer("tx:3");
+    const count = async (who: typeof anna) =>
+      (
+        (await who.call("GET", "/api/v1/dashboard")).body as {
+          pendingFinanceSuggestions: number;
+        }
+      ).pendingFinanceSuggestions;
+    expect(await count(anna)).toBe(2);
+    expect(await count(ben)).toBe(1);
+    await anna.call("POST", `/api/v1/finance/suggestions/${first.id}/dismiss`);
+    expect(await count(anna)).toBe(1);
+    const nobody = createCaller({
+      session: loginTestUser(await createTestUser({ displayName: "Cleo" }))
+        .token,
+    });
+    expect(
+      (
+        (await nobody("GET", "/api/v1/dashboard")).body as {
+          pendingFinanceSuggestions: number;
+        }
+      ).pendingFinanceSuggestions,
+    ).toBe(0);
+  });
+
+  describe("bill tasks", () => {
+    const BILL_URL = "https://anna-finance.example.org/bills/b1";
+
+    async function withBillTask() {
+      const anna = await member("Anna");
+      const ben = await member("Ben");
+      const { taskId } = await upsertFinanceBillTask(ctx(), {
+        connectionId: anna.connection.id,
+        kind: "kept",
+        ownerId: anna.user.id,
+        billId: "b1",
+        title: "Muster Verwaltung AG: INV-7",
+        dueDate: "2026-07-01",
+        status: "open",
+        amountMinor: 45000,
+        currency: "CHF",
+        url: BILL_URL,
+      });
+      return { anna, ben, taskId: taskId! };
+    }
+
+    type TaskBody = { externalUrl: string | null; title: string };
+
+    it("shows the address in the finance app to the person it belongs to only", async () => {
+      const { anna, ben, taskId } = await withBillTask();
+      for (const who of [anna, ben]) {
+        const detail = (await who.call("GET", `/api/v1/tasks/${taskId}`))
+          .body as TaskBody;
+        const listed = (
+          (await who.call("GET", "/api/v1/tasks")).body as {
+            items: TaskBody[];
+          }
+        ).items.find((t) => t.title.startsWith("Muster"));
+        const expected = who === anna ? BILL_URL : null;
+        expect(detail.externalUrl).toBe(expected);
+        expect(listed?.externalUrl).toBe(expected);
+        // the household still sees what it consented to
+        expect(detail.title).toBe("Muster Verwaltung AG: INV-7");
+      }
+    });
+
+    it("leaves the address of other tasks alone", async () => {
+      const { ben } = await withBillTask();
+      const created = await ben.call("POST", "/api/v1/tasks", {
+        json: {
+          title: "Offerte prüfen",
+          trigger: { v: 1, type: "one_off", date: "2026-09-01" },
+          externalUrl: "https://example.org/offer",
+        },
+      });
+      expect((created.body as TaskBody).externalUrl).toBe(
+        "https://example.org/offer",
+      );
     });
   });
 });

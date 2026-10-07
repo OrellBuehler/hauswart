@@ -5,6 +5,7 @@ import {
   saveConnection,
   deleteConnection,
 } from "$lib/server/connections/connections";
+import { completeTask } from "$lib/server/tasks/completions";
 import { updateTask, getTask } from "$lib/server/tasks/tasks";
 import { createTestUser } from "$lib/testing/auth";
 import { ctxAt, NOW } from "$lib/testing/domain";
@@ -162,6 +163,38 @@ describe("tasks that follow bills", () => {
     expect(
       (await upsertFinanceBillTask(ctx(), bill({ status: "paid" }))).outcome,
     ).toBe("completed");
+    expect(
+      test.db
+        .select()
+        .from(taskCompletions)
+        .all()
+        .filter((c) => c.revokedAt === null),
+    ).toHaveLength(1);
+  });
+
+  it("adds no second completion when somebody ticked the task off before the bill showed as paid", async () => {
+    const { user, bill } = await setup();
+    const { taskId } = await upsertFinanceBillTask(ctx(), bill());
+    await completeTask(ctx(), taskId!, {
+      kind: "done",
+      source: "manual",
+      userId: user.id,
+    });
+    const paid = await upsertFinanceBillTask(
+      ctx(),
+      bill({ status: "paid", amountMinor: 0 }),
+    );
+    expect(paid.outcome).not.toBe("completed");
+    const rows = test.db
+      .select()
+      .from(taskCompletions)
+      .where(eq(taskCompletions.taskId, taskId!))
+      .all();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ source: "manual", userId: user.id });
+    // a bill that is open again does not take back what a person recorded
+    const reopened = await upsertFinanceBillTask(ctx(), bill());
+    expect(reopened.outcome).not.toBe("reopened");
     expect(
       test.db
         .select()

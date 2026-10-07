@@ -267,17 +267,33 @@ describe("readKeptTestInfo", () => {
       currency: "CHF",
       missingScopes: ["bills:read", "links:write"],
       restricted: true,
+      backLinksOff: false,
     });
+  });
+
+  it("notices when links back to hauswart cannot be written", () => {
+    expect(readKeptTestInfo({ backLinks: false }).backLinksOff).toBe(true);
+    expect(readKeptTestInfo({ backLinks: true }).backLinksOff).toBe(false);
+    // an older answer without the entry says nothing
+    expect(readKeptTestInfo({ defaultCurrency: "CHF" }).backLinksOff).toBe(
+      false,
+    );
   });
 
   it("treats a complete token and a missing info alike", () => {
     expect(
       readKeptTestInfo({ defaultCurrency: "CHF", missingScopes: "" }),
-    ).toEqual({ currency: "CHF", missingScopes: [], restricted: false });
+    ).toEqual({
+      currency: "CHF",
+      missingScopes: [],
+      restricted: false,
+      backLinksOff: false,
+    });
     expect(readKeptTestInfo(null)).toEqual({
       currency: null,
       missingScopes: [],
       restricted: false,
+      backLinksOff: false,
     });
   });
 });
