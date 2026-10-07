@@ -946,6 +946,15 @@ describe("bind", () => {
       expect([...bytes]).toEqual([37, 80, 68, 70, 45]);
     });
 
+    it("lets an empty 202 or 204 through: there is no content type to check", async () => {
+      for (const status of [202, 204]) {
+        const { res, bytes } = await run(() => new Response(null, { status }));
+        expect(res.status).toBe(status);
+        expect(bytes).toHaveLength(0);
+        expect(res.headers.get("cache-control")).toBe("no-store");
+      }
+    });
+
     it("fails with 500 when the handler returns something else or the wrong type", async () => {
       vi.spyOn(console, "error").mockImplementation(() => {});
       for (const handler of [
@@ -957,6 +966,8 @@ describe("bind", () => {
             status: 500,
             headers: { "content-type": "application/pdf" },
           }),
+        () => new Response(null, { status: 200 }),
+        () => new Response("x", { status: 202 }),
       ]) {
         const { res } = await run(handler);
         expect(res.status).toBe(500);

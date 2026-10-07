@@ -27,8 +27,7 @@
     "security:install": "./scripts/security/install-tools.sh",
     "openapi": "bun scripts/gen-openapi.ts",
     "leak-guard": "bun scripts/leak-guard.ts",
-    "mcp": "bun mcp/src/index.ts",
-    "mcp:build": "bun build mcp/src/index.ts --compile --outfile dist/hauswart-mcp"
+    "mcp": "bun mcp/src/index.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

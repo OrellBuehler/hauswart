@@ -10,6 +10,9 @@
       "name": "system"
     },
     {
+      "name": "mcp"
+    },
+    {
       "name": "setup"
     },
     {
@@ -198,6 +201,162 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mcp": {
+      "post": {
+        "operationId": "mcp",
+        "summary": "MCP server (Streamable HTTP, stateless)",
+        "description": "The Model Context Protocol server of hauswart, for Claude Code and other MCP clients: `claude mcp add --transport http hauswart <address>/api/v1/mcp --header \"Authorization: Bearer hw_...\"`. Every POST carries one JSON-RPC message and is answered on its own (no session; the `Mcp-Session-Id` header is not used) with `application/json`; a notification is answered with 202 and no body. GET and DELETE are 405. The tools run through this API with the caller's token, so they offer what its scopes allow and completions are attributed to the token's kind. A request with an `Origin` header other than the app's own is refused with 403 `csrf_failed` (DNS rebinding); clients that are not browsers send none. Protocol and tools: mcp/README.md.",
+        "tags": [
+          "mcp"
+        ],
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "x-required-scopes": [
+          "read"
+        ],
+        "responses": {
+          "200": {
+            "description": "The file",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error: `invalid_request`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error: `unauthenticated`, `setup_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error: `forbidden`, `csrf_failed`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Error: `invalid_request` (request body too large)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Error: `invalid_request` (unsupported content type)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error: `rate_limited`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: `internal`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "jsonrpc": {
+                        "type": "string",
+                        "const": "2.0"
+                      }
+                    },
+                    "required": [
+                      "jsonrpc"
+                    ],
+                    "additionalProperties": {}
+                  },
+                  {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "jsonrpc": {
+                          "type": "string",
+                          "const": "2.0"
+                        }
+                      },
+                      "required": [
+                        "jsonrpc"
+                      ],
+                      "additionalProperties": {}
+                    }
+                  }
+                ]
               }
             }
           }

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { API_PREFIX } from "./constants";
+import { API_PREFIX, MCP_PATH } from "./constants";
 import type { ErrorCode } from "./errors";
 import type { Scope } from "./scopes";
 import {
@@ -33,6 +33,7 @@ import {
   updateUserRequestSchema,
 } from "./schemas/users";
 import { healthResponseSchema, openApiDocumentSchema } from "./schemas/system";
+import { mcpRequestSchema } from "./schemas/mcp";
 import {
   assetByQrParamsSchema,
   assetSchema,
@@ -391,8 +392,8 @@ export function defineEndpoint<
   }
   const status = def.status ?? 200;
   if (def.responseType === "binary") {
-    if (def.method !== "GET") {
-      throw new Error(`${def.id}: binary endpoints must be GET`);
+    if (def.method !== "GET" && def.method !== "POST") {
+      throw new Error(`${def.id}: binary endpoints must be GET or POST`);
     }
     if (!def.contentTypes || def.contentTypes.length === 0) {
       throw new Error(`${def.id}: binary endpoints must list contentTypes`);
@@ -442,6 +443,24 @@ export const endpoints = {
     auth: "public",
     scopes: [],
     response: openApiDocumentSchema,
+  }),
+
+  mcp: defineEndpoint({
+    id: "mcp",
+    method: "POST",
+    path: MCP_PATH,
+    summary: "MCP server (Streamable HTTP, stateless)",
+    description:
+      "The Model Context Protocol server of hauswart, for Claude Code and other MCP clients: `claude mcp add --transport http hauswart <address>/api/v1/mcp --header \"Authorization: Bearer hw_...\"`. Every POST carries one JSON-RPC message and is answered on its own (no session; the `Mcp-Session-Id` header is not used) with `application/json`; a notification is answered with 202 and no body. GET and DELETE are 405. The tools run through this API with the caller's token, so they offer what its scopes allow and completions are attributed to the token's kind. A request with an `Origin` header other than the app's own is refused with 403 `csrf_failed` (DNS rebinding); clients that are not browsers send none. Protocol and tools: mcp/README.md.",
+    tags: ["mcp"],
+    auth: "bearer",
+    scopes: ["read"],
+    body: mcpRequestSchema,
+    maxBodyBytes: MAX_MARKDOWN_REQUEST_BYTES,
+    response: binaryResponseSchema,
+    responseType: "binary",
+    contentTypes: ["application/json"],
+    errors: ["csrf_failed"],
   }),
 
   setupStatus: defineEndpoint({

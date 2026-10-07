@@ -272,8 +272,12 @@ function respondBinary(endpoint: AnyEndpoint, result: unknown): Response {
       .split(";")[0]
       .trim()
       .toLowerCase();
-    const notModified = result.status === 304;
-    if (!notModified && (!result.ok || !endpoint.contentTypes.includes(type))) {
+    // 304 and an empty 202 or 204 (the MCP endpoint's answer to a notification) have no content type.
+    const bodyless =
+      result.status === 304 ||
+      ((result.status === 202 || result.status === 204) &&
+        result.body === null);
+    if (!bodyless && (!result.ok || !endpoint.contentTypes.includes(type))) {
       throw new ResponseContractError(endpoint.id);
     }
   }
