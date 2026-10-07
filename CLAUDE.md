@@ -564,8 +564,8 @@ of the owner>` is added to the document unless an identical note exists (writes 
   cookie `hauswart_guest` (path `/g/<token>`, HttpOnly, 12 h at most and never past the expiry), an
   HMAC over link id, PIN-hash fingerprint and expiry (`signValue`), so changing the PIN ends all
   unlocks. The hook adds `Cache-Control: no-store`, `X-Robots-Tag: noindex`, `Referrer-Policy:
-no-referrer` to everything under `/g/` (which is why browsers post the PIN form with `Origin:
-null`; the origin check of the hook accepts that with `Sec-Fetch-Site: same-origin`, see CSRF). Language
+same-origin` to everything under `/g/` (the token in the path never leaves the site; browsers still send the
+  real `Origin` on the PIN form, and `Origin: null` with `Sec-Fetch-Site: same-origin` is accepted as a fallback, see CSRF). Language
   is the link's `locale` (explicit `{locale}` option, not the visitor's). A visit counts (`viewCount`, `lastViewedAt`) at most every 10 minutes.
   Guest HTML is `renderedHtmlGuest` with `fillGuestToken`; with `includeSecrets` it is rendered live
   (60 s in-memory cache). Rendered HTML is the only `{@html}` (`components/guest/guest-html.svelte`).
@@ -619,7 +619,7 @@ application/json` (`multipart/form-data` for multipart endpoints), else 403 `csr
   origin with 403: the error envelope under `/api`, plain text elsewhere. That covers the guest PIN form,
   any form action and every other route outside the registry. One exception: `Origin: null` with
   `Sec-Fetch-Site: same-origin` passes, because browsers post a form from a page served with
-  `Referrer-Policy: no-referrer` (the `/g` pages) that way (`same-site` and `cross-site` do not). A
+  `Referrer-Policy: no-referrer` that way (the `/g` pages used to be; they are `same-origin` now) (`same-site` and `cross-site` do not). A
   new route outside `/api/v1` needs nothing: the check is path-based, and `authz.test.ts` runs it over
   the inventory.
 - **Errors** are always `{error: {code, message, details?}}` with the codes in

@@ -20,7 +20,7 @@
   <title>{title}</title>
   <meta name="color-scheme" content="light" />
   <meta name="robots" content="noindex, nofollow, noarchive" />
-  <meta name="referrer" content="no-referrer" />
+  <meta name="referrer" content="same-origin" />
 </svelte:head>
 
 <main

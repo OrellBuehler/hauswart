@@ -27,8 +27,8 @@
   the two warranty date fields, the correspondent, storage path and groups for sent documents, and
   whether a note with the hauswart link is left in a linked document. Members who point the connection
   at a host the household has not allowed see which host and what to do about it.
-- Archived documents on devices, rooms, documentation pages, tasks, defects, spare parts, contacts and
-  service log entries: link a document of the document system after searching it (title and text, with
+- Archived documents on devices, rooms, documentation pages, tasks, defects, spare parts, contacts,
+  service log entries and costs: link a document of the document system after searching it (title and text, with
   the type of document and an optional label), open its preview, download it or its original, or remove
   the link. A document that the caller's own account cannot see shows as "not shared with you", without a
   title. The section stays out of the way for people without a connection.
@@ -46,6 +46,9 @@
 - Dialogs no longer grow wider than a narrow screen when a list in them has long lines.
 
 ### Fixed
+
+- Guest pages are served with `Referrer-Policy: same-origin` instead of `no-referrer`, so browsers send
+  the real `Origin` with the PIN form (the token in the address still never reaches another site).
 
 - Uploads through the API with a bearer token no longer need an `Origin` header. SvelteKit's built-in form
   check rejected them (403) before the API could tell a token from a browser session; it is switched off

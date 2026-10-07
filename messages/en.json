@@ -1854,6 +1854,7 @@
   "integration_error_too_large": "The answer from Home Assistant is too large.",
   "integration_error_invalid_input": "The request to Home Assistant was not valid.",
   "integration_error_unknown": "The connection failed. Try again later.",
+  "integration_error_token_unreadable": "The stored token can no longer be read (the server's secret key changed). Enter the token again.",
   "entity_state_unavailable": "unavailable",
   "entity_state_unknown": "unknown",
   "entity_reading_loading": "Loading value …",

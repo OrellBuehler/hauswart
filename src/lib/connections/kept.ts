@@ -4,7 +4,7 @@ import { isApiError } from "$lib/api/errors";
 import type { financeCategorySchema } from "$lib/api/schemas/finance";
 import { apiErrorMessage } from "$lib/error-message";
 import { m } from "$lib/paraglide/messages";
-import { integrationErrorMessage } from "./errors";
+import { hostOf, integrationErrorMessage } from "./errors";
 
 export type KeptCategory = z.infer<typeof financeCategorySchema>;
 
@@ -346,14 +346,6 @@ export function keptPickerErrorMessage(err: unknown): string {
     if (typeof code === "string") return keptErrorMessage(code);
   }
   return apiErrorMessage(err);
-}
-
-function hostOf(baseUrl: string): string {
-  try {
-    return new URL(baseUrl.trim()).host;
-  } catch {
-    return baseUrl.trim();
-  }
 }
 
 /**

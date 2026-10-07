@@ -11,6 +11,7 @@
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
   import Attachments from "$lib/components/attachments/attachments.svelte";
   import Comments from "$lib/components/comments/comments.svelte";
+  import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
   import CostAmount from "$lib/components/costs/cost-amount.svelte";
   import CostFlags from "$lib/components/costs/cost-flags.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
@@ -293,6 +294,12 @@
       editable={canWrite}
       title={m.cost_receipts()}
       description={m.cost_receipts_description()}
+    />
+
+    <LinkedDocuments
+      class="lg:col-start-1"
+      ownerType="cost"
+      ownerId={cost.id}
     />
 
     <div class="lg:col-start-1">

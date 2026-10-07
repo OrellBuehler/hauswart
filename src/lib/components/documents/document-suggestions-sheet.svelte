@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import { goto } from "$app/navigation";
   import CheckIcon from "@lucide/svelte/icons/check";
   import ContactIcon from "@lucide/svelte/icons/contact";
@@ -80,7 +81,7 @@
 
   $effect(() => {
     if (!open) return;
-    dismissed = loadDismissedSuggestions();
+    dismissed = loadDismissedSuggestions(page.data.user.id);
     showDismissed = false;
     rowError = {};
     void load();
@@ -95,12 +96,12 @@
 
   function dismiss(s: Suggestion) {
     dismissed = [...dismissed, keyOf(s)];
-    saveDismissedSuggestions(dismissed);
+    saveDismissedSuggestions(page.data.user.id, dismissed);
   }
 
   function restore(s: Suggestion) {
     dismissed = dismissed.filter((id) => id !== keyOf(s));
-    saveDismissedSuggestions(dismissed);
+    saveDismissedSuggestions(page.data.user.id, dismissed);
   }
 
   function nameOf(s: Suggestion): string {

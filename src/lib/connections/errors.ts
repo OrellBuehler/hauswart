@@ -45,6 +45,11 @@ const PAPERLESS: Messages = {
   file_missing: () => m.integration_paperless_error_file_missing(),
 };
 
+/** Codes the core records for any kind. */
+const COMMON: Messages = {
+  token_unreadable: () => m.integration_error_token_unreadable(),
+};
+
 const BY_KIND: Partial<Record<IntegrationKind, Messages>> = {
   homeassistant: HOME_ASSISTANT,
   paperless: PAPERLESS,
@@ -55,7 +60,10 @@ export function integrationErrorMessage(
   code: string | null,
   kind: IntegrationKind = "homeassistant",
 ): string {
-  return (code && BY_KIND[kind]?.[code]?.()) || m.integration_error_unknown();
+  return (
+    (code && (BY_KIND[kind]?.[code] ?? COMMON[code])?.()) ||
+    m.integration_error_unknown()
+  );
 }
 
 /** The message for a failed picker call: the stored adapter code when the connected system itself failed, else the generic API wording. */
@@ -70,7 +78,7 @@ export function pickerErrorMessage(
   return apiErrorMessage(err);
 }
 
-function hostOf(address: string): string {
+export function hostOf(address: string): string {
   return URL.canParse(address) ? new URL(address).host : address.trim();
 }
 

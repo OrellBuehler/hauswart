@@ -191,9 +191,10 @@ nothing more.
 ### Paperless-ngx
 
 Every person connects their own Paperless-ngx account, so a document is only ever shown to somebody whose
-own account can see it. There is no settings form for it yet: connect through the REST API with a token
-that has the `write` scope (the `admin` scope for a host that is not on the allow-list, see below). Create
-the API token in your Paperless profile.
+own account can see it. Create an API token in your Paperless profile, then connect it under Settings,
+Integrations: the card tests the connection and picks tags, custom fields, groups and storage paths from
+your Paperless. Members can only use a host that is on the allow-list (see below). Or connect through the
+REST API with a token that has the `write` scope:
 
 ```bash
 curl -X PUT https://hauswart.example.org/api/v1/integrations/paperless \
