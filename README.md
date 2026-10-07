@@ -216,8 +216,8 @@ under Settings, API tokens with the scopes `transactions:read`, `bills:read`, `l
 the address of Kept and the token). Everything is opt-in: nothing is read from a Kept category until you
 map it to a cost category in `config.categoryMap`, and open bills only become tasks (visible to the whole
 household) with `"billTasks": true`. `POST /api/v1/integrations/kept/test` lists the scopes the token
-misses; offered transactions and bills wait in a private inbox (`GET /api/v1/finance/suggestions`) until
-you accept them.
+misses; offered transactions and bills wait in a private inbox (Costs, Inbox in the web interface, or
+`GET /api/v1/finance/suggestions`) until you accept them.
 
 ### Network access
 
