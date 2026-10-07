@@ -61,3 +61,23 @@ describe("the MCP server only uses client-safe code", () => {
     );
   });
 });
+
+describe("the app serves the MCP server through one file", () => {
+  it("only the HTTP handler imports from mcp/", () => {
+    const appSources = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const path = join(dir, entry.name);
+        if (entry.isDirectory()) return appSources(path);
+        return /\.(ts|svelte)$/.test(entry.name) &&
+          !/\.test\.ts$/.test(entry.name)
+          ? [path]
+          : [];
+      });
+    const importers = appSources(join(root, "src")).filter((file) =>
+      /from "[./]*\/mcp\/src\//.test(readFileSync(file, "utf8")),
+    );
+    expect(importers.map((f) => f.replace(root + "/", ""))).toEqual([
+      "src/lib/server/api/handlers/mcp.ts",
+    ]);
+  });
+});

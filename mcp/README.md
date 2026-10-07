@@ -1,10 +1,11 @@
 # hauswart MCP server
 
 A [Model Context Protocol](https://modelcontextprotocol.io) server that lets Claude (Claude Code,
-Claude Desktop, any MCP client) query and operate hauswart. It runs on your machine over stdio and
-talks to your hauswart instance through the REST API (`/api/v1`) with a scoped bearer token. It
-uses the same typed client and endpoint registry as the web app (`src/lib/api`), so a contract
-change breaks the build here too.
+Claude Desktop, any MCP client) query and operate hauswart. hauswart serves it itself at
+`/api/v1/mcp` (Streamable HTTP), so there is nothing to install next to Claude: you add the address
+and a token. The tools call hauswart's REST API (`/api/v1`) with that token, through the same typed
+client and endpoint registry as the web app (`src/lib/api`), so a contract change breaks the build
+here too.
 
 ## Setup
 
@@ -20,77 +21,94 @@ change breaks the build here too.
    - `costs:write` (in addition): Claude can book costs.
 
    The token is shown once. Completions made through it are recorded as coming from `mcp`, under
-   the token owner's name.
+   the token owner's name (a token of another kind works too, but its completions are recorded
+   under that kind).
 
-2. Set two environment variables for the server:
-
-   | Variable         | Meaning                                                        |
-   | ---------------- | -------------------------------------------------------------- |
-   | `HAUSWART_URL`   | Base URL of the instance, e.g. `https://hauswart.example.org`. |
-   | `HAUSWART_TOKEN` | The token from step 1 (`hw_…`).                                |
-
-3. Register the server with your client.
+2. Register the server with your client. The address is your hauswart address plus `/api/v1/mcp`.
 
 ### Claude Code
 
-From a clone of this repository (needs [Bun](https://bun.sh) and `bun install`):
-
 ```bash
-claude mcp add hauswart \
-  --env HAUSWART_URL=https://hauswart.example.org \
-  --env HAUSWART_TOKEN=hw_xxxxxxxx \
-  -- bun /path/to/hauswart/mcp/src/index.ts
+claude mcp add --transport http hauswart https://hauswart.example.org/api/v1/mcp \
+  --header "Authorization: Bearer hw_xxxxxxxx"
 ```
 
-With the compiled binary (no Bun or checkout needed on the machine that runs Claude):
-
-```bash
-bun run mcp:build        # writes dist/hauswart-mcp (a single executable for this platform)
-claude mcp add hauswart \
-  --env HAUSWART_URL=https://hauswart.example.org \
-  --env HAUSWART_TOKEN=hw_xxxxxxxx \
-  -- /path/to/hauswart-mcp
-```
-
-Add `--scope user` to make it available in every project.
-
-Every GitHub release has the compiled server attached, so you do not need to build it:
-`hauswart-mcp-linux-x64`, `-linux-arm64`, `-darwin-x64`, `-darwin-arm64` and `-windows-x64.exe`, plus a
-`SHA256SUMS` file. Download the one for your machine, check it with `sha256sum -c SHA256SUMS --ignore-missing`,
-make it executable (`chmod +x`) and, on macOS, remove the download quarantine with
-`xattr -d com.apple.quarantine hauswart-mcp-darwin-arm64`.
+Add `--scope user` to make it available in every project (the default is the current project,
+stored in your local settings). `claude mcp list` shows whether it connects.
 
 ### Claude Desktop
 
-In `claude_desktop_config.json` (Settings → Developer → Edit Config):
+The connectors in Claude Desktop's settings sign in with OAuth (see below), so a token goes through
+a small bridge that starts locally, [`mcp-remote`](https://github.com/geelen/mcp-remote) (needs
+Node.js). In `claude_desktop_config.json` (Settings → Developer → Edit Config):
 
 ```json
 {
   "mcpServers": {
     "hauswart": {
-      "command": "/path/to/hauswart-mcp",
-      "env": {
-        "HAUSWART_URL": "https://hauswart.example.org",
-        "HAUSWART_TOKEN": "hw_xxxxxxxx"
-      }
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://hauswart.example.org/api/v1/mcp",
+        "--header",
+        "Authorization:${HAUSWART_AUTH}"
+      ],
+      "env": { "HAUSWART_AUTH": "Bearer hw_xxxxxxxx" }
     }
   }
 }
 ```
 
-For the source version use `"command": "bun"` and `"args": ["/path/to/hauswart/mcp/src/index.ts"]`.
-Restart Claude Desktop afterwards.
+The header is built from an environment variable because Claude Desktop on Windows mangles spaces
+in arguments. For an address that is plain `http://` (a home network without TLS) add
+`"--allow-http"` to the arguments. Restart Claude Desktop afterwards.
+
+### claude.ai and other connectors that sign in with OAuth
+
+The custom connectors of claude.ai (web, mobile) authenticate with OAuth. hauswart does not
+implement that yet: it only takes a bearer token (`Authorization: Bearer hw_…`), which those
+connectors cannot send. Use Claude Code or Claude Desktop for now.
 
 ### Check it
 
 ```bash
-HAUSWART_URL=https://hauswart.example.org HAUSWART_TOKEN=hw_xxxxxxxx bun run mcp
-# stderr: hauswart-mcp: connected to https://hauswart.example.org, 34 tools
+curl -sS https://hauswart.example.org/api/v1/mcp \
+  -H "Authorization: Bearer hw_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-The server asks hauswart who the token belongs to when it starts and exits with a message if the
-URL is unreachable, the token was rejected, or it lacks `read`. Scopes are read at start-up: after
-changing a token's scopes, restart the client.
+lists the tools your token's scopes allow. Scopes are read on every request, so a token whose
+scopes changed offers the new tools as soon as the client asks again (most clients ask when they
+connect: restart or reconnect the client).
+
+## How it works
+
+- **Stateless.** Every POST carries one JSON-RPC message and is answered on its own with
+  `application/json`; a notification gets `202` and no body. There is no session
+  (`Mcp-Session-Id` is not used) and no event stream, so GET and DELETE answer `405`. Each request
+  builds its own server with the tools the token's scopes allow, which is why nothing has to be
+  kept between requests or shared between instances. The server speaks the protocol revisions
+  `2024-11-05` to `2025-11-25` that the SDK implements; a client that tries a newer revision first
+  gets a `400` and falls back to `initialize`.
+- **Bearer tokens only.** A missing, unknown, expired or revoked token is `401` with
+  `WWW-Authenticate: Bearer`; the session cookie is never accepted (`403`); a token without
+  `read` is `403`.
+- **Origin.** Browsers send an `Origin` header, MCP clients do not. A request that carries one
+  other than hauswart's own is refused with `403 csrf_failed` (the MCP specification requires this
+  against DNS rebinding), so a web page cannot use the endpoint, even with a token.
+- **The tools use the REST API.** They call it with the caller's token through the application's
+  own request handling (no network hop), so scopes, the rate limit (300 requests a minute per
+  token, the tool calls count as well as the MCP requests) and the attribution of completions are
+  the token's.
+- **Limits.** A request body is at most 512 KB. Behind a reverse proxy set `ORIGIN` to the public
+  address (as for the rest of hauswart); responses are plain JSON, so no special buffering
+  settings are needed.
+- Errors of a tool come back as MCP tool errors (below); errors of the transport (`406` without
+  `Accept: application/json, text/event-stream`, `415`, `400`) use hauswart's usual error
+  envelope.
 
 ## Tools
 
@@ -181,7 +199,18 @@ resolve rooms, assets and people by name. Only import client-safe code: `src/lib
 ## Development
 
 ```bash
-bun run mcp              # run from source
-bun run mcp:build        # dist/hauswart-mcp
-bun --bun vitest run mcp # tests: the server against an in-process hauswart over the SDK's in-memory transport
+bun --bun vitest run mcp                     # the tools against an in-process hauswart over the SDK's in-memory transport
+bun --bun vitest run src/routes/api/v1/mcp   # the HTTP endpoint through the real hook
+HAUSWART_URL=http://localhost:5173 HAUSWART_TOKEN=hw_xxxxxxxx bun run mcp   # the same tools over stdio, from a checkout
 ```
+
+`bun run mcp` is the stdio entry point (`mcp/src/index.ts`), kept for working on the tools without
+a deployed hauswart: it connects to the REST API of any instance with the token in the environment,
+tells you on stderr how many tools it registered, and exits with a message if the address is
+unreachable or the token was rejected. Claude Desktop can run it too (`"command": "bun"`,
+`"args": ["/path/to/hauswart/mcp/src/index.ts"]`, the two variables under `"env"`). There are no
+compiled binaries any more: the HTTP endpoint replaced them.
+
+`mcp/src/server.ts` builds a server in two ways: `createHauswartServer` asks the instance who the
+token belongs to first (stdio, tests), `buildHauswartServer` takes that as given (the HTTP endpoint,
+`src/lib/server/api/handlers/mcp.ts`, which has just authenticated the request itself).
