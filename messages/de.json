@@ -2603,5 +2603,6 @@
   "integration_paperless_error_wrong_type": "Paperless-ngx hat eine Datei unerwarteten Typs geschickt.",
   "integration_paperless_error_duplicate": "Paperless-ngx hat diese Datei schon, aber dein Konto darf das Dokument nicht sehen. Bitte die Besitzerin oder den Besitzer, es freizugeben.",
   "integration_paperless_error_interrupted": "Das Senden wurde unterbrochen, weil hauswart neu gestartet ist. Sende die Datei erneut.",
-  "integration_paperless_error_file_missing": "Die Datei ist in hauswart nicht mehr vorhanden."
+  "integration_paperless_error_file_missing": "Die Datei ist in hauswart nicht mehr vorhanden.",
+  "integration_paperless_error_consume_failed": "Paperless-ngx konnte die Datei nicht verarbeiten. Prüfe, ob sie lesbar ist (zum Beispiel ein PDF ohne Passwort), und sieh in Paperless-ngx unter «Aufgaben» nach."
 }

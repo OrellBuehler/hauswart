@@ -31,7 +31,12 @@ describe("integrationErrorMessage", () => {
   });
 
   it("knows the codes of a push that the connection never reports", () => {
-    for (const code of ["duplicate", "interrupted", "file_missing"]) {
+    for (const code of [
+      "duplicate",
+      "interrupted",
+      "file_missing",
+      "consume_failed",
+    ]) {
       expect(integrationErrorMessage(code, "paperless")).not.toBe(UNKNOWN);
     }
   });

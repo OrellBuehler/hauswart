@@ -43,6 +43,7 @@ const PAPERLESS: Messages = {
   duplicate: () => m.integration_paperless_error_duplicate(),
   interrupted: () => m.integration_paperless_error_interrupted(),
   file_missing: () => m.integration_paperless_error_file_missing(),
+  consume_failed: () => m.integration_paperless_error_consume_failed(),
 };
 
 /** Codes the core records for any kind. */
