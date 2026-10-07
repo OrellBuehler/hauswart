@@ -3,6 +3,7 @@ import type { IntegrationKind } from "$lib/api/enums";
 import type { Integration } from "$lib/api/schemas/integrations";
 import GenericCard from "./generic-card.svelte";
 import HomeAssistantCard from "./home-assistant-card.svelte";
+import KeptCard from "./kept-card.svelte";
 
 export type IntegrationCardProps = {
   integration: Integration;
@@ -18,6 +19,7 @@ export type IntegrationCardProps = {
 const cards: Partial<Record<IntegrationKind, Component<IntegrationCardProps>>> =
   {
     homeassistant: HomeAssistantCard,
+    kept: KeptCard,
   };
 
 export function cardFor(
