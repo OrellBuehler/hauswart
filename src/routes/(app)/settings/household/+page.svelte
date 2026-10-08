@@ -84,7 +84,7 @@
   <title>{m.household_title()} · {m.settings_title()} · {m.app_name()}</title>
 </svelte:head>
 
-<Card.Root class="max-w-xl">
+<Card.Root>
   <Card.Header>
     <Card.Title>{m.household_title()}</Card.Title>
     <Card.Description>

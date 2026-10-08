@@ -70,7 +70,7 @@
 </svelte:head>
 
 <div class="flex flex-col gap-6">
-  <Card.Root class="max-w-xl">
+  <Card.Root>
     <Card.Header>
       <Card.Title>{m.account_title()}</Card.Title>
       <Card.Description>{m.account_description()}</Card.Description>

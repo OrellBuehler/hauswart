@@ -16,7 +16,7 @@
   >
 </svelte:head>
 
-<div class="mx-auto flex max-w-2xl flex-col gap-6">
+<div class="flex flex-col gap-6">
   <div class="flex flex-col gap-4">
     <Button
       href={resolve(`/defects/${data.defect.id}` as "/")}

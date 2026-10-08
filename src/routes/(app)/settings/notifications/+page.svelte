@@ -225,7 +225,7 @@
   <title>{m.notify_title()} · {m.settings_title()} · {m.app_name()}</title>
 </svelte:head>
 
-<div class="flex max-w-2xl flex-col gap-6">
+<div class="flex flex-col gap-6">
   <form class="contents" onsubmit={submit} novalidate>
     <Card.Root>
       <Card.Header>

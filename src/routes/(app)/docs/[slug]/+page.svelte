@@ -307,11 +307,7 @@
 
         <Card.Root>
           <Card.Content>
-            <article
-              bind:this={article}
-              aria-label={page.title}
-              class="max-w-3xl"
-            >
+            <article bind:this={article} aria-label={page.title}>
               {#if page.renderedHtml.trim()}
                 <DocProse html={page.renderedHtml} />
               {:else}

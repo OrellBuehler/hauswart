@@ -65,7 +65,7 @@
   }
 </script>
 
-<Card.Root class="max-w-xl">
+<Card.Root>
   <Card.Header>
     <Card.Title>{m.account_password_title()}</Card.Title>
     <Card.Description>{m.account_password_description()}</Card.Description>
