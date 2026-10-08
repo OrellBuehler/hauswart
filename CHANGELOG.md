@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
+
+Still early development. **Back up `/data` before you upgrade**; the new database migrations run at
+start and cannot be undone. If you used the MCP binaries, switch to the HTTP endpoint (see Changed).
 
 ### Added
 
