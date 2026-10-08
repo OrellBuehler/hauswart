@@ -74,6 +74,10 @@ What to know before the first start:
   sees the real client address. Without them every client looks like the proxy and they share one limit.
   A complete Caddy setup is `hauswart.example.org { reverse_proxy 127.0.0.1:3000 }` with
   `ADDRESS_HEADER=X-Forwarded-For` and `XFF_DEPTH=1`.
+- **Installing as an app** works over HTTPS (or on `localhost`): the browser offers to install hauswart, iOS
+  uses "Add to Home Screen". Nothing about your household is stored on the device, only static files; without
+  a connection the app shows a notice. The service worker at `/sw.js` is sent with `Cache-Control: no-cache`:
+  do not override that in a proxy or CDN, or new versions reach the installed apps late.
 - **Data lives in `/data`** (`hauswart.db`, `files/`, `backups/`). The container runs as user and group
   `1001`. A named volume needs nothing; for a bind mount run `chown -R 1001:1001 ./data` first.
 - **`HAUSWART_SETUP_TOKEN`** (optional): when set, first-run setup asks for it. Use it if the instance is
@@ -276,6 +280,7 @@ bun run build && bun run start  # start runs with NODE_ENV=production: HAUSWART_
 bun run db:generate      # after editing src/lib/server/schema.ts
 bun run openapi          # regenerate docs/openapi.json (the versioned /api/v1 contract)
 bun run leak-guard --all # scan the tree for configured private terms
+bun scripts/generate-pwa-icons.ts  # re-render static/icons from the logo
 ```
 
 Hooks run through [prek](https://github.com/j178/prek): `prek install` once per clone.
