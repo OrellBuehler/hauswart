@@ -110,6 +110,34 @@ step "calendar feed"
 feed="$(session -X POST "$base/api/v1/calendar-feeds" -d '{"name":"smoke"}' | jq -r '.url')"
 curl --fail-with-body -sS "$feed" | grep -q '^BEGIN:VCALENDAR' || fail "feed is not an iCalendar document"
 
+step "installable app: manifest, service worker, offline page (anonymous)"
+# A browser fetches the manifest without credentials and the worker before anybody signs in. No
+# cookie and no token below: all three are public and hold no user data.
+header() { tr -d '\r' <"$1" | grep -i "^$2:" | head -n 1 | cut -d: -f2- | sed 's/^ *//'; }
+curl --fail-with-body -sS -D "$work/manifest.headers" -o "$work/manifest.json" "$base/manifest.webmanifest"
+[ "$(header "$work/manifest.headers" content-type)" = "application/manifest+json" ] ||
+  fail "manifest content type is '$(header "$work/manifest.headers" content-type)'"
+jq -e '.name == "hauswart" and .display == "standalone" and .start_url == "/" and .scope == "/"
+  and ([.icons[] | select(.sizes == "192x192" and .purpose == "any")] | length == 1)
+  and ([.icons[] | select(.sizes == "512x512" and .purpose == "any")] | length == 1)
+  and ([.icons[] | select(.sizes == "512x512" and .purpose == "maskable")] | length == 1)' \
+  "$work/manifest.json" >/dev/null || fail "manifest is incomplete"
+for icon in $(jq -r '.icons[].src' "$work/manifest.json") /icons/apple-touch-icon.png; do
+  expect_status 200 "$base$icon"
+done
+curl --fail-with-body -sS -D "$work/sw.headers" -o "$work/sw.js" "$base/sw.js"
+case "$(header "$work/sw.headers" content-type)" in "text/javascript"*) ;; *) fail "service worker content type is '$(header "$work/sw.headers" content-type)'" ;; esac
+[ "$(header "$work/sw.headers" cache-control)" = "no-cache" ] || fail "service worker must be served with Cache-Control: no-cache"
+[ "$(header "$work/sw.headers" x-content-type-options)" = "nosniff" ] || fail "service worker lacks the hook's security headers"
+grep -q 'SKIP_WAITING' "$work/sw.js" || fail "sw.js is not the generated service worker"
+sw_etag="$(header "$work/sw.headers" etag)"
+[ -n "$sw_etag" ] || fail "service worker has no ETag"
+expect_status 304 -H "If-None-Match: $sw_etag" "$base/sw.js"
+expect_status 200 "$base/offline"
+# nothing else changed: the API still needs its credentials, and public files stay public
+expect_status 401 "$base/api/v1/tokens"
+expect_status 200 "$base/api/v1/health"
+
 step "openapi"
 api "$base/api/v1/openapi.json" | jq -e '.openapi | startswith("3.1")' >/dev/null
 

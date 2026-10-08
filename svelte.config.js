@@ -20,6 +20,9 @@ const config = {
         "img-src": ["self", "data:", "blob:"],
         "font-src": ["self", "data:"],
         "connect-src": ["self"],
+        // The service worker (/sw.js) and the manifest (/manifest.webmanifest) are same-origin.
+        "worker-src": ["self"],
+        "manifest-src": ["self"],
         "object-src": ["none"],
         "frame-ancestors": ["none"],
         "base-uri": ["self"],

@@ -20,6 +20,7 @@ import {
   isApiPath,
   isBearerPath,
   isPublicPath,
+  isScriptlessPath,
 } from "$lib/server/auth/routing";
 import { startFileSweeper } from "$lib/server/attachments/sweeper";
 import { withGuestHeaders } from "$lib/server/share/guest-http";
@@ -140,11 +141,11 @@ const authHandle: Handle = async ({ event, resolve }) => {
 type Resolve = Parameters<Handle>[0]["resolve"];
 
 /**
- * Guest pages are server-rendered without JavaScript, so SvelteKit adds no script nonce to their
- * CSP and the colour-mode script of `app.html` would only be blocked (a console error on every
- * view). They are light only; the script is removed instead.
+ * Pages without JavaScript (the guest pages and the offline page, `isScriptlessPath`) get no script
+ * nonce in their CSP from SvelteKit, so the colour-mode script of `app.html` would only be blocked
+ * (a console error on every view). They are light only; the script is removed instead.
  */
-const GUEST_STRIPPED_SCRIPTS = /<script nonce="[^"]*">[\s\S]*?<\/script>/g;
+const STRIPPED_SCRIPTS = /<script nonce="[^"]*">[\s\S]*?<\/script>/g;
 
 /** Runs the request with the locale Paraglide detects (cookie, then browser language). */
 const withLocale = (
@@ -153,13 +154,11 @@ const withLocale = (
 ): Promise<Response> =>
   paraglideMiddleware(event.request, ({ request, locale }) => {
     event.request = request;
-    const guest = event.url.pathname.startsWith("/g/");
+    const scriptless = isScriptlessPath(event.url.pathname);
     return resolve(event, {
       transformPageChunk: ({ html }) => {
         const localized = html.replace("%lang%", locale);
-        return guest
-          ? localized.replace(GUEST_STRIPPED_SCRIPTS, "")
-          : localized;
+        return scriptless ? localized.replace(STRIPPED_SCRIPTS, "") : localized;
       },
     });
   });

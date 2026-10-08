@@ -1,6 +1,11 @@
 const PUBLIC_EXACT = new Set([
   "/login",
   "/setup",
+  // The installable app: browsers fetch the manifest without credentials and the service worker
+  // before anybody is signed in; the offline page is cached by the worker. None holds user data.
+  "/manifest.webmanifest",
+  "/sw.js",
+  "/offline",
   "/api/health",
   "/api/v1/health",
   "/api/v1/openapi.json",
@@ -20,6 +25,15 @@ export function isPublicPath(pathname: string): boolean {
     PUBLIC_EXACT.has(pathname) ||
     PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))
   );
+}
+
+/**
+ * Pages rendered without JavaScript (`csr = false`): the guest pages and the offline page. With
+ * nothing to hydrate SvelteKit adds no script nonce to the CSP, so the inline colour-mode script of
+ * `app.html` could only be blocked.
+ */
+export function isScriptlessPath(pathname: string): boolean {
+  return pathname.startsWith("/g/") || pathname === "/offline";
 }
 
 export function isApiPath(pathname: string): boolean {
