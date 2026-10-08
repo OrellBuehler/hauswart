@@ -34,6 +34,46 @@ async function renderedLang(headers: Record<string, string> = {}) {
   return html;
 }
 
+async function renderedPage(url: string, html: string) {
+  const event = createTestEvent({ url });
+  let rendered = "";
+  const resolve = async (
+    _event: unknown,
+    opts?: {
+      transformPageChunk?: (input: {
+        html: string;
+        done: boolean;
+      }) => string | undefined;
+    },
+  ) => {
+    rendered = opts?.transformPageChunk?.({ html, done: true }) ?? "";
+    return new Response("ok");
+  };
+  await handle({ event: event as never, resolve: resolve as never });
+  return rendered;
+}
+
+describe("pages without JavaScript", () => {
+  const page =
+    '<head><script nonce="abc">document.title = "x";</script></head><body>%lang%</body>';
+
+  it("lose the nonce-bound colour-mode script, which their CSP would block anyway", async () => {
+    for (const path of ["/offline", "/g/sample-token"]) {
+      expect(await renderedPage(`http://localhost${path}`, page), path).toBe(
+        "<head></head><body>de</body>",
+      );
+    }
+  });
+
+  it("keep it everywhere else", async () => {
+    for (const path of ["/login", "/setup"]) {
+      expect(await renderedPage(`http://localhost${path}`, page), path).toBe(
+        '<head><script nonce="abc">document.title = "x";</script></head><body>de</body>',
+      );
+    }
+  });
+});
+
 describe("handle", () => {
   it("falls back to the base locale", async () => {
     expect(await renderedLang()).toBe('<html lang="de">');
@@ -106,6 +146,9 @@ describe("authentication gate", () => {
       "/api/v1/auth/token",
       "/api/public/anything",
       "/g/abc",
+      "/manifest.webmanifest",
+      "/sw.js",
+      "/offline",
     ]) {
       const { resolved } = await run(`http://localhost${path}`);
       expect(resolved, path).toBeDefined();

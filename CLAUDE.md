@@ -14,7 +14,7 @@ push notifications with a "done" button, areas taken over as rooms; see "Signals
 a per-person document provider (links, previews, warranty dates, pushing attachments; see "Documents and the
 document provider"); the MCP server covers the task core, documentation, defects, parts, contacts,
 comments, hints, service log, warranties, costs, the finance inbox and archived documents, and hauswart serves it over HTTP at
-`/api/v1/mcp` (see "MCP server" and `mcp/README.md`).
+`/api/v1/mcp` (see "MCP server" and `mcp/README.md`); the web app is installable as a PWA (see "Installable app").
 
 There is one household, not many: all domain data is shared by every user. Only sessions, API
 tokens, integration connections and preferences belong to a single user.
@@ -46,6 +46,7 @@ bun run openapi          # regenerate docs/openapi.json from the registry (a tes
 bun run i18n             # recompile Paraglide messages (also runs on install and in check)
 bun run leak-guard --all # scan the whole tree for private terms
 bun scripts/seed.ts --file seed/example.de.json --token hw_… [--url http://localhost:3000] [--update]
+bun scripts/generate-pwa-icons.ts  # re-render static/icons from the logo (commit the PNGs)
 bun run mcp              # stdio MCP server from source, for development (HAUSWART_URL, HAUSWART_TOKEN); the app serves MCP at /api/v1/mcp
 bun run security         # semgrep, bun audit, trivy
 ```
@@ -127,6 +128,9 @@ src/lib/server/share/            guest links: tokens.ts, guest-links.ts (CRUD, w
                                  (gate + PIN action for the /g routes, response headers), purge.ts
 src/lib/server/emergency/        emergency page data (members) and the "Notfall- & Vertretungsblatt" PDF
 src/lib/server/pdf/render.ts     shared pdfmake wrapper (A4, Roboto from node_modules, no network or file access)
+src/lib/pwa/                     client-safe PWA parts: colors.ts (theme colours, tested against app.css), manifest.ts, options.ts
+                                 (the service worker's whole behaviour; see "Installable app")
+src/lib/server/pwa/service-worker.ts  serves the built worker (build/server/sw.js) with Cache-Control: no-cache and an ETag
 src/lib/server/seed/import.ts    seed importer (through the REST API); CLI in scripts/seed.ts, data in seed/
 mcp/src/                         MCP server (client-safe imports only): index.ts stdio entry, server.ts (buildHauswartServer =
                                  scope-based registration; createHauswartServer adds the whoami handshake), tool.ts (defineTool),
@@ -148,6 +152,7 @@ src/hooks.server.ts              init (secret key, time zone, migrations) + auth
 src/routes/api/v1/**             one-liner route files: export const GET = bind(endpoints.x, handler)
 src/routes/api/health            liveness probe, no database
 src/routes/{login,setup}         the only pages that exist outside the app shell; they call the API
+src/routes/{manifest.webmanifest,sw.js,offline}  the installable app: public, no user data (see "Installable app")
 src/routes/(app)/                pages; they read and write through the typed client
 docs/openapi.json                generated; commit it with every contract change
 messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is generated, gitignored
@@ -670,6 +675,31 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
   `src/routes/api/v1/mcp/mcp.test.ts` (including the SDK's own HTTP client). `createInProcessFetch`
   and `createCaller` give test events an in-process `event.fetch` (`createTestEvent({fetch})`), which
   handlers that call the app need. `scripts/docker-smoke.sh` checks the endpoint on the built image.
+
+### Installable app (PWA)
+
+- **Parts.** `@vite-pwa/sveltekit` (pinned, `generateSW`) only generates the service worker; the rest is ours:
+  the manifest route `GET /manifest.webmanifest` (`lib/pwa/manifest.ts`: standalone, `start_url`/`scope` `/`, light
+  palette, icons from `static/icons`, `description` in the browser's language), registration plus update toast
+  (`components/app/pwa-update.svelte`), `ThemeColor` (the `theme-color` tags follow the colour mode) and `GET /offline`
+  (`csr = false`, light only like the guest pages, see `isScriptlessPath`). The three routes are public paths and
+  `public` in the authz inventory. Registration needs HTTPS or localhost and does nothing in `bun dev`.
+- **Caching rule: the worker never holds user data.** `lib/pwa/options.ts` (tested) is its whole behaviour. It
+  precaches built static client files (`_app/immutable/**` js/css/woff2, `icons/*.png`, favicon) and the `/offline`
+  page, nothing else. Navigations to app pages are `NetworkOnly` and get `/offline` only when the network fails.
+  `/api`, `/g`, `/login`, `/setup`, `/offline`, `/sw.js`, the manifest, downloads and every `fetch()` are not
+  intercepted at all (`isAppNavigation`; workbox copies its source into the worker, so it must stay self-contained).
+  No navigation fallback (`navigateFallback: undefined`, and the key must exist: the plugin otherwise fills in `/` and
+  would serve pages from the cache), no runtime cache, no `_app/version.json`.
+- **Serving.** adapter-bun answers `build/client` files before the hook and without `Cache-Control`, so `bun run
+build` moves `sw.js` (runtime inlined, one file) to `build/server/sw.js` (`scripts/move-service-worker.ts`) and
+  `src/routes/sw.js` serves it with `no-cache`, an ETag (304) and the hook's headers. It is a 404 in `bun dev` and
+  tests (`setServiceWorkerSource`). `base`/`scope` are `/` explicitly: SvelteKit's relative Vite base would register
+  `sw.js` next to the current page. `scripts/docker-smoke.sh` checks manifest, worker and offline page.
+- **Update flow.** `registerType: "prompt"` plus `clientsClaim`. A new worker waits until the person clicks "Reload"
+  in the toast; only that tab reloads (`onNeedReload` is a no-op so the plugin does not reload every tab; `apply`
+  listens for `controllerchange` itself, which also covers a page that no worker controlled when it loaded). The
+  offline page's `revision` is the build time. An update check runs hourly.
 
 ### Authentication and the API spine
 

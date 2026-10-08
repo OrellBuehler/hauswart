@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun --bun vite dev",
-    "build": "bun scripts/i18n-compile.ts && bun --bun vite build && bun scripts/build-markdown-worker.ts",
+    "build": "bun scripts/i18n-compile.ts && bun --bun vite build && bun scripts/build-markdown-worker.ts && bun scripts/move-service-worker.ts",
     "preview": "bun --bun vite preview",
     "start": "NODE_ENV=production bun ./build/index.js",
     "i18n": "bun scripts/i18n-compile.ts",
@@ -43,6 +43,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/pdfmake": "^0.3.3",
     "@types/sanitize-html": "^2.16.2",
+    "@vite-pwa/sveltekit": "1.1.0",
     "@vitest/coverage-v8": "^5.0.3",
     "bits-ui": "^2.19.2",
     "clsx": "^2.1.1",

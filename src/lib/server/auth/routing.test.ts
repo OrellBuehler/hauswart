@@ -3,6 +3,7 @@ import {
   isApiPath,
   isBearerPath,
   isPublicPath,
+  isScriptlessPath,
   safeRedirectTo,
 } from "./routing";
 
@@ -49,6 +50,9 @@ describe("path classification", () => {
       "/api/v1/auth/token",
       "/api/public/hook",
       "/g/abc123",
+      "/manifest.webmanifest",
+      "/sw.js",
+      "/offline",
     ]) {
       expect(isPublicPath(p), p).toBe(true);
     }
@@ -65,8 +69,21 @@ describe("path classification", () => {
       "/api/v1/users",
       "/api/v1/setup/extra",
       "/admin/users",
+      "/manifest.webmanifest/x",
+      "/sw.js/x",
+      "/sw.json",
+      "/offline/x",
     ]) {
       expect(isPublicPath(p), p).toBe(false);
+    }
+  });
+
+  it("knows the pages rendered without JavaScript", () => {
+    for (const p of ["/g/abc123", "/g/abc123/docs/page", "/offline"]) {
+      expect(isScriptlessPath(p), p).toBe(true);
+    }
+    for (const p of ["/", "/g", "/gx/abc", "/login", "/offline/x"]) {
+      expect(isScriptlessPath(p), p).toBe(false);
     }
   });
 

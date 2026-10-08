@@ -2675,5 +2675,12 @@
   "integration_paperless_error_duplicate": "Paperless-ngx already holds this file, but your account cannot see the document. Ask its owner to share it.",
   "integration_paperless_error_interrupted": "Sending was interrupted because hauswart restarted. Send the file again.",
   "integration_paperless_error_file_missing": "The file no longer exists in hauswart.",
-  "integration_paperless_error_consume_failed": "Paperless-ngx could not process the file. Check that it can be read (for example a PDF without a password) and look under “Tasks” in Paperless-ngx."
+  "integration_paperless_error_consume_failed": "Paperless-ngx could not process the file. Check that it can be read (for example a PDF without a password) and look under “Tasks” in Paperless-ngx.",
+  "pwa_update_available": "A new version of hauswart is available.",
+  "pwa_update_reload": "Reload",
+  "pwa_update_applying": "Updating …",
+  "pwa_update_failed": "The update failed. Reload the page.",
+  "offline_title": "No connection",
+  "offline_description": "hauswart needs a connection to the server. Check your network or your VPN and try again.",
+  "offline_retry": "Try again"
 }

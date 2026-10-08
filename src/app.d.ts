@@ -1,4 +1,5 @@
 /// <reference types="bun" />
+/// <reference types="vite-plugin-pwa/vanillajs" />
 
 import type {
   SessionInfo,

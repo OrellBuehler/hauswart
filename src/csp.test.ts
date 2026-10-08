@@ -21,6 +21,8 @@ describe("content security policy", () => {
       "default-src": ["self"],
       "img-src": ["self", "data:", "blob:"],
       "style-src": ["self", "unsafe-inline"],
+      "worker-src": ["self"],
+      "manifest-src": ["self"],
       "frame-ancestors": ["none"],
       "base-uri": ["self"],
       "form-action": ["self"],

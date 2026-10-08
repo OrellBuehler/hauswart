@@ -1,13 +1,20 @@
 import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
+import { SvelteKitPWA } from "@vite-pwa/sveltekit";
 import { defineConfig } from "vitest/config";
 import { paraglideOptions } from "./paraglide.config.ts";
+import { pwaOptions } from "./src/lib/pwa/options.ts";
+
+// Revises the precached offline page, which links hashed assets, with every build.
+const buildId = Date.now().toString(36);
 
 export default defineConfig(({ command }) => ({
   plugins: [
     tailwindcss(),
     sveltekit(),
+    // The service worker and nothing else of a PWA (src/lib/pwa/options.ts says what it caches).
+    SvelteKitPWA(pwaOptions(buildId)),
     ...(command === "serve" && !process.env.VITEST
       ? [
           paraglideVitePlugin({

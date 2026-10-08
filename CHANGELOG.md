@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Install hauswart as an app. Browsers over HTTPS (or on localhost) offer to install it, and iOS can add it
+  to the home screen: it opens in its own window with the hauswart icon, and the title bar follows the light
+  or dark colour mode. A new version is announced by a message with a "Reload" button instead of
+  reloading by itself, so nothing you are typing is lost; only the tab where you press it reloads. The
+  app does not keep your data on the device: pages and the API always come from the server, and only the
+  static files (scripts, styles, fonts, icons) are stored for faster starts. Without a connection an app page
+  shows a short notice with a "Try again" button; sign-in, the guest links, downloads and the API are never
+  answered from the device. The manifest is served at `/manifest.webmanifest`, the service worker at `/sw.js`
+  (revalidated on every check, so a proxy or CDN in front of hauswart must not cache it) and the offline page
+  at `/offline`; all three are public and hold no user data. The Docker smoke test checks them.
+
 ## 0.2.0
 
 Still early development. **Back up `/data` before you upgrade**; the new database migrations run at
