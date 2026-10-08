@@ -8,14 +8,14 @@ Self-hosted apartment management for a household: recurring maintenance tasks wi
 tracking, documentation, a device inventory, defects, spare parts, contacts and costs.
 Integrations (Home Assistant, Paperless-ngx, Kept) are optional adapters, never requirements.
 
-**Status: early development (0.3.0).** The core works (tasks, devices, defects, documentation, spare
+**Status: early development (0.3.1).** The core works (tasks, devices, defects, documentation, spare
 parts, costs, iCal feeds, guest links, Home Assistant, Paperless-ngx, Kept, REST API, MCP server), but
 this is not a stable release: expect breaking changes between versions, keep backups of `/data`, and read
 the [changelog](CHANGELOG.md) before every update. The interface is in German (default) and English.
 
 ## Run with Docker
 
-The image is `ghcr.io/orellbuehler/hauswart` (`0.3.0`, `0.3` and `latest`; linux/amd64). Pin a
+The image is `ghcr.io/orellbuehler/hauswart` (`0.3.1`, `0.3` and `latest`; linux/amd64). Pin a
 version tag rather than `latest` while the project is in early development.
 
 ```bash
@@ -24,7 +24,7 @@ docker run -d --name hauswart --restart unless-stopped -p 3000:3000 \
   -e HAUSWART_SECRET_KEY="$(openssl rand -base64 32)" \
   -e ORIGIN=http://localhost:3000 \
   -e HAUSWART_COOKIE_SECURE=false \
-  ghcr.io/orellbuehler/hauswart:0.3.0
+  ghcr.io/orellbuehler/hauswart:0.3.1
 curl http://localhost:3000/api/health   # {"status":"ok"}
 ```
 
@@ -37,7 +37,7 @@ key in a file (below), put a reverse proxy with HTTPS in front, and drop `HAUSWA
 ```yaml
 services:
   hauswart:
-    image: ghcr.io/orellbuehler/hauswart:0.3.0
+    image: ghcr.io/orellbuehler/hauswart:0.3.1
     restart: unless-stopped
     ports:
       - "127.0.0.1:3000:3000"

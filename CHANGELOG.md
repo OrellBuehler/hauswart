@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1
+
+### Changed
+
+- Settings, the forms for devices, costs and defects, and documentation pages now use the full width of the
+  content area instead of a narrow column.
+
 ## 0.3.0
 
 ### Added
