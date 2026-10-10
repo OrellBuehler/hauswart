@@ -30,7 +30,7 @@
 <Button
   type="button"
   variant="outline"
-  class="text-muted-foreground hidden h-8 w-52 justify-start gap-2 px-3 font-normal sm:inline-flex lg:w-64"
+  class="text-muted-foreground hidden h-8 w-64 justify-start gap-2 px-3 font-normal lg:inline-flex"
   aria-label={m.search_open()}
   aria-keyshortcuts={mac ? "Meta+K" : "Control+K"}
   onclick={() => (open = true)}
@@ -45,7 +45,7 @@
   type="button"
   variant="ghost"
   size="icon"
-  class="size-9 sm:hidden"
+  class="size-10 lg:hidden"
   aria-label={m.search_open()}
   onclick={() => (open = true)}
 >

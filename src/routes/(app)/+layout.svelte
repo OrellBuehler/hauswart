@@ -1,17 +1,24 @@
 <script lang="ts">
+  import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
+  import { invalidateAll } from "$app/navigation";
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
+  import { Button } from "$lib/components/ui/button/index.js";
   import { Separator } from "$lib/components/ui/separator/index.js";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import AppNav from "$lib/components/app/app-nav.svelte";
+  import { backTarget } from "$lib/components/app/back-target";
+  import BottomNav from "$lib/components/app/bottom-nav.svelte";
   import Logo from "$lib/components/app/logo.svelte";
+  import NavProgress from "$lib/components/app/nav-progress.svelte";
   import SearchTrigger from "$lib/components/search/search-trigger.svelte";
   import NotificationBell from "$lib/components/notifications/notification-bell.svelte";
   import {
     adminNavItems,
-    findNavItem,
+    headerTitleFor,
     navGroups,
     settingsNavItem,
+    showsBottomNav,
     visibleNavGroups,
   } from "$lib/components/app/nav";
   import UserMenu from "$lib/components/app/user-menu.svelte";
@@ -30,20 +37,36 @@
     }),
   );
   const pathname = $derived(page.url.pathname);
-  const section = $derived(findNavItem(pathname));
-  const headerTitle = $derived(
-    section
-      ? section.label()
-      : pathname === "/search"
-        ? m.search_page_title()
-        : m.app_name(),
-  );
+  const headerTitle = $derived(headerTitleFor(pathname));
+  const back = $derived(backTarget(pathname));
+  const bottomNav = $derived(showsBottomNav(pathname));
   const bottomItems = $derived(
     data.user.role === "admin"
       ? [settingsNavItem, ...adminNavItems]
       : [settingsNavItem],
   );
+
+  /** An installed app that sat in the background shows stale lists: load them again on return. */
+  const STALE_AFTER_MS = 60_000;
+  let hiddenAt: number | null = null;
+
+  function onvisibilitychange() {
+    if (document.visibilityState === "hidden") {
+      hiddenAt = Date.now();
+      return;
+    }
+    const wasAwayFor = hiddenAt === null ? 0 : Date.now() - hiddenAt;
+    hiddenAt = null;
+    if (wasAwayFor <= STALE_AFTER_MS || !navigator.onLine) return;
+    invalidateAll().catch((err) =>
+      console.warn("refresh after resume failed", err),
+    );
+  }
 </script>
+
+<svelte:document {onvisibilitychange} />
+
+<NavProgress />
 
 <Sidebar.Provider>
   <Sidebar.Root collapsible="icon">
@@ -75,32 +98,46 @@
 
   <Sidebar.Inset class="min-w-0">
     <header
-      class="bg-background/70 sticky top-0 z-10 flex h-12 items-center gap-2 border-b px-4 backdrop-blur-md backdrop-saturate-150 print:hidden"
+      class="bg-background/70 sticky top-0 z-10 flex h-12 items-center gap-1 border-b px-3 backdrop-blur-md backdrop-saturate-150 md:gap-2 md:px-4 print:hidden"
     >
-      <Sidebar.Trigger class="-ms-1" />
+      {#if back}
+        <Button
+          href={resolve(back as "/")}
+          variant="ghost"
+          size="icon-lg"
+          class="-ms-2 md:hidden"
+          aria-label={m.nav_back()}
+        >
+          <ArrowLeftIcon />
+        </Button>
+      {/if}
+      <Sidebar.Trigger class="-ms-1 hidden md:inline-flex" />
       <Separator
         orientation="vertical"
-        class="me-1 data-[orientation=vertical]:h-4"
+        class="me-1 hidden data-[orientation=vertical]:h-4 md:block"
       />
-      <span class="truncate text-sm font-medium">
+      <span class="min-w-0 flex-1 truncate text-sm font-medium">
         {headerTitle}
       </span>
-      <div class="ms-auto flex items-center gap-1">
+      <div class="flex shrink-0 items-center gap-1">
         <SearchTrigger />
         <NotificationBell />
         <UserMenu user={data.user} />
       </div>
     </header>
     <div
-      class="mx-auto w-full max-w-5xl min-w-0 flex-1 p-4 md:p-8 print:max-w-none print:p-0"
+      class="mx-auto w-full max-w-5xl min-w-0 flex-1 p-4 pb-[calc(var(--bottom-nav)+env(safe-area-inset-bottom)+6rem)] md:p-8 md:pb-8 print:max-w-none print:p-0 print:pb-0"
     >
       {#key pathname}
         <div
-          class="animate-in fade-in slide-in-from-bottom-1 duration-300 ease-out motion-reduce:animate-none"
+          class="animate-in fade-in slide-in-from-bottom-1 duration-150 ease-out motion-reduce:animate-none"
         >
           {@render children()}
         </div>
       {/key}
     </div>
   </Sidebar.Inset>
+  {#if bottomNav}
+    <BottomNav {pathname} />
+  {/if}
 </Sidebar.Provider>

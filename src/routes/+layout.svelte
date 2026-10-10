@@ -10,7 +10,15 @@
 <!-- The theme script lives in app.html so it can carry the CSP nonce. -->
 <ModeWatcher disableHeadScriptInjection />
 <ThemeColor />
-<Toaster richColors closeButton />
+<!-- Clear of the bottom bar and the round action button on phones (--bottom-nav: app.css). -->
+<Toaster
+  richColors
+  closeButton
+  offset={{ bottom: "calc(var(--bottom-nav, 0px) + 2rem)" }}
+  mobileOffset={{
+    bottom: "calc(var(--bottom-nav, 0px) + env(safe-area-inset-bottom) + 5rem)",
+  }}
+/>
 <PwaUpdate />
 
 {@render children()}
