@@ -29,6 +29,7 @@
   import { apiErrorMessage } from "$lib/error-message";
   import { haActionPackage } from "$lib/connections/ha-package";
   import { m } from "$lib/paraglide/messages";
+  import { cn } from "$lib/utils";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -262,7 +263,7 @@
                 {m.notify_not_connected_body()}
                 <a
                   href={resolve("/settings/integrations")}
-                  class="text-foreground mt-1 inline-block font-medium underline underline-offset-2"
+                  class="text-foreground mt-1 inline-flex min-h-10 items-center font-medium underline underline-offset-2"
                 >
                   {m.notify_not_connected_link()}
                 </a>
@@ -310,7 +311,7 @@
                         >{prettyName(target)}</span
                       >
                       <span
-                        class="text-muted-foreground truncate font-mono text-xs"
+                        class="text-muted-foreground font-mono text-xs break-all"
                         >notify.{target}</span
                       >
                     </span>
@@ -331,13 +332,13 @@
             </p>
           {/if}
 
-          <details class="rounded-lg border px-3 py-2 text-sm">
+          <details class="rounded-lg border text-sm">
             <summary
-              class="focus-visible:ring-ring/50 min-h-8 cursor-pointer rounded font-medium outline-none select-none focus-visible:ring-[3px]"
+              class="focus-visible:ring-ring/50 cursor-pointer rounded-lg px-3 py-3 font-medium outline-none select-none focus-visible:ring-[3px]"
             >
               {m.notify_manual_title()}
             </summary>
-            <div class="mt-3 flex flex-col gap-2 pb-1">
+            <div class="flex flex-col gap-2 px-3 pb-3">
               <Field
                 id="notify-manual"
                 label={m.notify_manual_label()}
@@ -351,6 +352,7 @@
                       class="h-10 font-mono"
                       autocomplete="off"
                       autocapitalize="none"
+                      enterkeyhint="done"
                       spellcheck={false}
                       maxlength={100}
                       placeholder="mobile_app_example_phone"
@@ -429,7 +431,9 @@
             hint={m.notify_quiet_hint({ zone: data.timeZone })}
           />
           {#if quietOn}
-            <div class="grid grid-cols-2 gap-4 ps-11">
+            <div
+              class="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 sm:ps-11"
+            >
               <div class="flex flex-col gap-2">
                 <Label for="quiet-start">{m.notify_quiet_start()}</Label>
                 <Input
@@ -454,8 +458,19 @@
           {/if}
         </section>
 
-        <div>
-          <Button type="submit" disabled={!dirty || pending}>
+        <div
+          class={cn(
+            "flex items-center gap-3",
+            dirty &&
+              "bg-card/95 sticky bottom-[calc(var(--bottom-nav,0px)+env(safe-area-inset-bottom))] z-10 justify-between rounded-lg border p-3 shadow-lg backdrop-blur",
+          )}
+        >
+          {#if dirty}
+            <p class="text-muted-foreground text-sm text-pretty" role="status">
+              {m.notify_unsaved()}
+            </p>
+          {/if}
+          <Button type="submit" size="lg" disabled={!dirty || pending}>
             {#if pending}
               <LoaderCircleIcon class="animate-spin" />{m.common_saving()}
             {:else}
@@ -483,20 +498,20 @@
           {m.notify_done_step2()}
           <a
             href={resolve("/settings/tokens")}
-            class="text-foreground underline underline-offset-2"
+            class="text-foreground underline underline-offset-2 pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center"
           >
             {m.notify_done_step2_link()}
           </a>
         </li>
         <li>{m.notify_done_step3()}</li>
       </ol>
-      <details class="rounded-lg border px-3 py-2">
+      <details class="rounded-lg border">
         <summary
-          class="focus-visible:ring-ring/50 min-h-8 cursor-pointer rounded font-medium outline-none select-none focus-visible:ring-[3px]"
+          class="focus-visible:ring-ring/50 cursor-pointer rounded-lg px-3 py-3 font-medium outline-none select-none focus-visible:ring-[3px]"
         >
           {m.notify_done_package()}
         </summary>
-        <div class="mt-3 flex flex-col gap-3 pb-1">
+        <div class="flex flex-col gap-3 px-3 pb-3">
           <p class="text-muted-foreground text-xs text-pretty">
             {m.notify_done_package_hint()}
           </p>

@@ -218,6 +218,7 @@
               : m.entity_picker_search()}
             autocapitalize="none"
             autocomplete="off"
+            enterkeyhint="search"
             spellcheck={false}
           />
           <Command.List>
@@ -258,7 +259,7 @@
                       <span class="flex min-w-0 flex-1 flex-col">
                         <span class="truncate font-medium">{entity.name}</span>
                         <span
-                          class="text-muted-foreground truncate font-mono text-[11px]"
+                          class="text-muted-foreground line-clamp-2 font-mono text-[11px] break-all"
                         >
                           {entity.id}{entity.area ? ` · ${entity.area}` : ""}
                         </span>
@@ -304,7 +305,7 @@
                     <span class="flex min-w-0 flex-1 flex-col">
                       <span class="truncate font-medium">{calendar.name}</span>
                       <span
-                        class="text-muted-foreground truncate font-mono text-[11px]"
+                        class="text-muted-foreground line-clamp-2 font-mono text-[11px] break-all"
                         >{calendar.id}</span
                       >
                     </span>
@@ -355,7 +356,7 @@
         {m.entity_picker_manual()}
         <a
           href={resolve("/settings/integrations")}
-          class="text-foreground underline underline-offset-2"
+          class="text-foreground underline underline-offset-2 pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center"
         >
           {m.entity_picker_connect()}
         </a>

@@ -99,7 +99,7 @@
               {m.integration_kept_sync_review()}
               <a
                 href={resolve("/costs/inbox")}
-                class="underline underline-offset-4"
+                class="underline underline-offset-4 pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center"
                 >{m.integration_kept_sync_open_inbox()}</a
               >
             </p>

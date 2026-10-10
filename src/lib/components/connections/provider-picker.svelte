@@ -184,6 +184,7 @@
             aria-label={searchPlaceholder}
             autocapitalize="none"
             autocomplete="off"
+            enterkeyhint="search"
             spellcheck={false}
           />
           <Command.List>
@@ -264,7 +265,7 @@
           <Badge
             variant="secondary"
             class={cn(
-              "h-7 max-w-full gap-1 ps-2.5 pe-1",
+              "h-auto max-w-full gap-1 py-0.5 ps-2.5 pe-0.5",
               unknown && "text-muted-foreground italic",
             )}
           >
@@ -272,11 +273,11 @@
             {#if !disabled}
               <button
                 type="button"
-                class="hover:bg-foreground/10 focus-visible:ring-ring/50 -me-0.5 flex size-5 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-[3px]"
+                class="hover:bg-foreground/10 focus-visible:ring-ring/50 flex size-7 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-[3px]"
                 aria-label={m.picker_remove({ name: nameOf(itemId) })}
                 onclick={() => remove(itemId)}
               >
-                <XIcon class="size-3" aria-hidden="true" />
+                <XIcon class="size-3.5" aria-hidden="true" />
               </button>
             {/if}
           </Badge>
