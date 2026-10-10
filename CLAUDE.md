@@ -681,7 +681,8 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   deletes the policy.
 - **Derived, never stored** (`lib/insurance/policy.ts`, pure, client-safe, table-tested): `annualPremiumMinor` =
   premium times the periods in a year (exact integer) and `cancellationDeadline` = `endDate` minus the notice months,
-  clamped to the end of a shorter month (31 December and 3 months = 30 September), only for `renewal: auto` with an
+  clamped to the end of a shorter month (31 May and 3 months = 28 February); an end date that is the last day of its
+  month gives the last day of the target month (30 June and 3 months = 31 March), only for `renewal: auto` with an
   end date and a notice period, else null. It is a function of three stored fields, so storing it could only let it
   disagree with them; the web form can show it live with the same function. It does not roll by itself: after an
   automatic renewal somebody moves `endDate` to the end of the next term and the deadline and reminder follow.

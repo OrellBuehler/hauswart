@@ -118,7 +118,7 @@ describe("insurance reminder task", () => {
     expect(updated.reminderTaskId).toBe(p.reminderTaskId);
     expect(getTask(ctx(), p.reminderTaskId!)).toMatchObject({
       title: "Kündigungsfrist: Neu",
-      trigger: { type: "one_off", date: "2026-12-30" },
+      trigger: { type: "one_off", date: "2026-12-31" },
     });
     expect(reminders()).toHaveLength(1);
   });
