@@ -13,6 +13,7 @@
   import { endpointUrl } from "$lib/api/client";
   import { endpoints } from "$lib/api/registry";
   import EmptyState from "$lib/components/app/empty-state.svelte";
+  import Fab from "$lib/components/app/fab.svelte";
   import PageHeader from "$lib/components/app/page-header.svelte";
   import CommentCount from "$lib/components/comments/comment-count.svelte";
   import CostAmount from "$lib/components/costs/cost-amount.svelte";
@@ -494,12 +495,5 @@
 </div>
 
 {#if canWrite}
-  <Button
-    href={resolve("/costs/new")}
-    size="icon-lg"
-    class="shadow-raised fixed end-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-20 size-14 rounded-full md:hidden"
-    aria-label={m.cost_new()}
-  >
-    <PlusIcon class="size-6" />
-  </Button>
+  <Fab href={resolve("/costs/new")} label={m.cost_new()} />
 {/if}
