@@ -183,14 +183,22 @@
 @layer base {
   /*
    * Height of the bottom navigation on phones: 0 while it is hidden and from md up. Content,
-   * round action buttons and toasts keep clear of it (components/app/bottom-nav.svelte, fab.svelte).
+   * round action buttons and toasts keep clear of it (components/app/bottom-nav.svelte, fab.svelte, the Toaster in
+   * routes/+layout.svelte via --toast-bottom).
    */
   :root {
     --bottom-nav: 0px;
+    --toast-bottom: 2rem;
   }
   @media (width < 48rem) {
     :root:has([data-bottom-nav]) {
       --bottom-nav: 3.5rem;
+    }
+    /* Clear of the bottom bar and the round action button, at every width below md. */
+    :root {
+      --toast-bottom: calc(
+        var(--bottom-nav) + env(safe-area-inset-bottom, 0px) + 5rem
+      );
     }
   }
   * {
