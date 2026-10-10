@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { createAssetRequestSchema } from "$lib/api/schemas/assets";
+import { createTireSetRequestSchema } from "$lib/api/schemas/tire-sets";
 import {
   vehicleSchema,
   putVehicleRequestSchema,
@@ -16,8 +17,9 @@ import { vehicleDetails } from "$lib/server/db";
 import { search } from "$lib/server/search/search";
 import { useTestDB } from "$lib/testing/db";
 import { ctxAt, NOW } from "$lib/testing/domain";
-import { failure, makeVehicle } from "$lib/testing/vehicles";
-import { recordOdometer } from "./odometer";
+import { failure, fieldErrors, makeVehicle } from "$lib/testing/vehicles";
+import { deleteOdometerReading, recordOdometer } from "./odometer";
+import { createTireSet } from "./tires";
 import { getVehicle, putVehicle } from "./vehicles";
 
 describe("vehicle details", () => {
@@ -256,17 +258,130 @@ describe("vehicles among the assets", () => {
     expect(find("zh 0000 ")).toEqual(["Auto"]);
     expect(find("BE 1")).toEqual([]);
   });
+});
 
-  it("changing the kind away keeps the details and drops the summary", () => {
+describe("the kind of a vehicle", () => {
+  const test = useTestDB();
+  const ctx = (now = NOW) => ctxAt(test.db, now);
+  const save = (assetId: string, body: Record<string, unknown>) =>
+    putVehicle(ctx(), assetId, putVehicleRequestSchema.parse(body));
+  const kindOf = (id: string) => getAsset(ctx(), id).kind;
+
+  it("cannot change while the vehicle has saved details", async () => {
     const car = makeVehicle(test, "Auto");
-    putVehicle(
+    save(car.id, { plate: "ZH 000000" });
+    const err = await failure(() =>
+      updateAsset(ctx(), car.id, { kind: "other" }),
+    );
+    expect(err.code).toBe("invalid_request");
+    expect(err.status).toBe(400);
+    expect(fieldErrors(err, "kind")).toEqual([
+      expect.stringMatching(/details/),
+    ]);
+    expect(kindOf(car.id)).toBe("vehicle");
+    expect(getAsset(ctx(), car.id).vehicle).toEqual({
+      plate: "ZH 000000",
+      odometer: null,
+    });
+    expect(test.db.select().from(vehicleDetails).all()).toHaveLength(1);
+  });
+
+  it("cannot change while the vehicle has odometer readings", async () => {
+    const car = makeVehicle(test, "Auto");
+    await recordOdometer(ctx(), {
+      assetId: car.id,
+      date: "2026-06-10",
+      value: 82_300,
+      source: "manual",
+    });
+    const err = await failure(() =>
+      updateAsset(ctx(), car.id, { kind: "device" }),
+    );
+    expect(err.code).toBe("invalid_request");
+    expect(fieldErrors(err, "kind")).toEqual([
+      expect.stringMatching(/odometer readings/),
+    ]);
+    expect(kindOf(car.id)).toBe("vehicle");
+  });
+
+  it("cannot change while the vehicle has tire sets", async () => {
+    const car = makeVehicle(test, "Auto");
+    createTireSet(
       ctx(),
       car.id,
-      putVehicleRequestSchema.parse({ plate: "ZH 000000" }),
+      createTireSetRequestSchema.parse({ season: "winter" }),
     );
-    updateAsset(ctx(), car.id, { kind: "other" });
+    const err = await failure(() =>
+      updateAsset(ctx(), car.id, { kind: "device" }),
+    );
+    expect(fieldErrors(err, "kind")).toEqual([
+      expect.stringMatching(/tire sets/),
+    ]);
+    expect(kindOf(car.id)).toBe("vehicle");
+  });
+
+  it("names everything that stands in the way", async () => {
+    const car = makeVehicle(test, "Auto");
+    save(car.id, { plate: "ZH 000000" });
+    await recordOdometer(ctx(), {
+      assetId: car.id,
+      date: "2026-06-10",
+      value: 82_300,
+      source: "manual",
+    });
+    const err = await failure(() =>
+      updateAsset(ctx(), car.id, { kind: "device" }),
+    );
+    const [message] = fieldErrors(err, "kind");
+    expect(message).toMatch(/details/);
+    expect(message).toMatch(/odometer readings/);
+  });
+
+  it("changes once the readings are deleted and the details cleared", async () => {
+    const car = makeVehicle(test, "Auto");
+    save(car.id, { plate: "ZH 000000" });
+    const reading = await recordOdometer(ctx(), {
+      assetId: car.id,
+      date: "2026-06-10",
+      value: 82_300,
+      source: "manual",
+    });
+    await deleteOdometerReading(ctx(), reading.id);
+    expect(
+      (await failure(() => updateAsset(ctx(), car.id, { kind: "device" })))
+        .code,
+    ).toBe("invalid_request");
+    save(car.id, {});
+    expect(updateAsset(ctx(), car.id, { kind: "device" }).kind).toBe("device");
     expect(getAsset(ctx(), car.id).vehicle).toBeUndefined();
-    expect(test.db.select().from(vehicleDetails).all()).toHaveLength(1);
+    expect(test.db.select().from(vehicleDetails).all()).toEqual([]);
+  });
+
+  it("changes freely for a vehicle without any data, and back", () => {
+    const car = makeVehicle(test, "Auto");
+    expect(updateAsset(ctx(), car.id, { kind: "other" }).kind).toBe("other");
+    expect(updateAsset(ctx(), car.id, { kind: "vehicle" }).kind).toBe(
+      "vehicle",
+    );
+  });
+
+  it("keeps a vehicle's kind when the request repeats it, and edits the rest", () => {
+    const car = makeVehicle(test, "Auto");
+    save(car.id, { plate: "ZH 000000" });
+    const updated = updateAsset(ctx(), car.id, {
+      kind: "vehicle",
+      name: "Zweitwagen",
+    });
+    expect(updated).toMatchObject({ kind: "vehicle", name: "Zweitwagen" });
+    expect(updated.vehicle?.plate).toBe("ZH 000000");
+  });
+
+  it("leaves other kinds alone", () => {
+    const device = createAsset(
+      ctx(),
+      createAssetRequestSchema.parse({ name: "Backofen" }),
+    );
+    expect(updateAsset(ctx(), device.id, { kind: "plant" }).kind).toBe("plant");
   });
 });
 

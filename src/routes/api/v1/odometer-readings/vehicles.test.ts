@@ -18,6 +18,7 @@ type Reading = {
   note: string | null;
   createdBy: string | null;
 };
+type Asset = { id: string; kind: string; vehicle?: unknown };
 type Page<T> = { items: T[]; nextCursor: string | null };
 
 function fieldError(body: unknown, field: string): string[] {
@@ -199,6 +200,45 @@ describe("vehicles API", () => {
           await call("PUT", "/api/v1/assets/nope/vehicle", { json: {} }),
         ),
       ).toBe("not_found");
+    });
+
+    it("a vehicle with details or readings keeps its kind (400 on kind); once they are gone it may change", async () => {
+      const { call, create } = await setup();
+      const car = await create();
+      await call("PUT", `/api/v1/assets/${car.id}/vehicle`, {
+        json: { plate: "ZH 000000" },
+      });
+      const refused = await call("PATCH", `/api/v1/assets/${car.id}`, {
+        json: { kind: "device" },
+      });
+      expect(refused.res.status).toBe(400);
+      expect(errorCode(refused)).toBe("invalid_request");
+      expect(fieldError(refused.body, "kind")).toHaveLength(1);
+      expect(
+        ((await call("GET", `/api/v1/assets/${car.id}`)).body as Asset).kind,
+      ).toBe("vehicle");
+
+      const reading = (
+        await call("POST", `/api/v1/assets/${car.id}/odometer`, {
+          json: { value: 1000 },
+        })
+      ).body as Reading;
+      await call("PUT", `/api/v1/assets/${car.id}/vehicle`, { json: {} });
+      expect(
+        (
+          await call("PATCH", `/api/v1/assets/${car.id}`, {
+            json: { kind: "device" },
+          })
+        ).res.status,
+      ).toBe(400);
+
+      await call("DELETE", `/api/v1/odometer-readings/${reading.id}`);
+      const changed = await call("PATCH", `/api/v1/assets/${car.id}`, {
+        json: { kind: "device" },
+      });
+      expect(changed.res.status).toBe(200);
+      expect((changed.body as Asset).kind).toBe("device");
+      expect((changed.body as Asset).vehicle).toBeUndefined();
     });
 
     it("tokens need read to see and write to save", async () => {

@@ -596,7 +596,11 @@ of the owner>` is added to the document unless an identical note exists (writes 
   unit relabels the readings, it does not convert them), 400 for an asset of another kind, 404 for a
   missing one; GET answers empty details for a vehicle never saved and 404 for another kind. The asset
   DTO carries `vehicle: {plate, odometer: {value, date, unit} | null}` for vehicles only. The plate is
-  indexed for search (see "Search"); deleting the asset removes the odometer signal as well.
+  indexed for search (see "Search"); deleting the asset removes the odometer signal as well. A vehicle cannot
+  change its kind away (`PATCH /assets/{id}`) while it holds saved details (a row that says something; one saved
+  with nothing in it does not count and goes with the change), odometer readings or tire sets: 400 field error on
+  `kind` naming what is left (`vehicles/kind.ts`, `storedVehicleData`). Fuel log entries need no check of their own,
+  each is also an odometer reading.
 - **Odometer readings** (`odometer_readings`, never pruned): `POST /assets/{id}/odometer` (`date`
   defaults to today and is never in the future), `GET` newest first (keyset), `DELETE
 /odometer-readings/{id}`. A value lower than the reading before it (the newest on or before the date)

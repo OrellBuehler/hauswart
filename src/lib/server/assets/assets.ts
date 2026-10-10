@@ -25,6 +25,7 @@ import {
   type ServiceContext,
 } from "$lib/server/service";
 import { slugify, uniqueSlug } from "$lib/server/slug";
+import { storedVehicleData } from "$lib/server/vehicles/kind";
 import { forgetOdometerSignal } from "$lib/server/vehicles/signal";
 import { vehicleSummaries } from "$lib/server/vehicles/summary";
 import {
@@ -242,6 +243,23 @@ export function updateAsset(
   patch: UpdateAssetRequest,
 ): AssetRecord {
   const current = getAsset(ctx, id);
+  const leavesVehicle =
+    current.kind === "vehicle" &&
+    patch.kind !== undefined &&
+    patch.kind !== "vehicle";
+  if (leavesVehicle) {
+    const held = storedVehicleData(ctx.db, id);
+    if (held.length > 0) {
+      const words =
+        held.length === 1
+          ? held[0]
+          : `${held.slice(0, -1).join(", ")} and ${held[held.length - 1]}`;
+      throw invalidField(
+        "kind",
+        `Remove the vehicle's ${words} before changing its kind`,
+      );
+    }
+  }
   if (patch.roomId !== undefined) assertRoom(ctx, patch.roomId);
   assertExternalPair(
     patch.externalSource !== undefined
@@ -278,6 +296,10 @@ export function updateAsset(
       })
       .where(eq(assets.id, id))
       .run();
+    // Details saved with nothing in them are no details (see `storedVehicleData`): they go.
+    if (leavesVehicle) {
+      ctx.db.delete(vehicleDetails).where(eq(vehicleDetails.assetId, id)).run();
+    }
   } catch (err) {
     if (isUniqueViolation(err)) {
       throw conflict(

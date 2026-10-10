@@ -865,7 +865,8 @@ export const endpoints = {
     method: "PATCH",
     path: "/api/v1/assets/{id}",
     summary: "Update or archive an asset",
-    description: "Set archived to true to archive, false to restore.",
+    description:
+      "Set archived to true to archive, false to restore. A vehicle that holds saved details, odometer readings or tire sets cannot change its kind: 400 with a field error on `kind` until they are removed (details saved with nothing in them do not count).",
     tags: ["assets"],
     auth: "both",
     scopes: ["write"],
