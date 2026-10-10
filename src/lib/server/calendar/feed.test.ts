@@ -223,6 +223,28 @@ describe("calendar feed content", () => {
       return task;
     }
 
+    it("a hard time limit stays in the calendar, exact, when the counter is expected to get there first", async () => {
+      const user = await createTestUser();
+      const task = await estimatedTask({
+        date: "2026-07-01",
+        confidence: "medium",
+      });
+      test.db
+        .update(taskState)
+        .set({ dueDate: "2026-12-01" })
+        .where(eq(taskState.taskId, task.id))
+        .run();
+      for (const includeEstimated of [false, true]) {
+        const { parsed } = await feedFor(user.id, { includeEstimated });
+        expect(parsed.events).toHaveLength(1);
+        expect(parsed.events[0]).toMatchObject({
+          summary: "Batterie",
+          start: "20261201",
+        });
+        expect(parsed.events[0].status).not.toBe("TENTATIVE");
+      }
+    });
+
     it("are left out unless the feed asks for them", async () => {
       const user = await createTestUser();
       await estimatedTask({ date: "2026-07-01", confidence: "medium" });

@@ -11,6 +11,7 @@ export { evaluateOneOff } from "./one-off";
 export { evaluateKeptBill } from "./kept-bill";
 export { evaluateWarranty } from "./warranty";
 export * from "./estimate";
+export * from "./shown";
 export * from "./preparations";
 export * from "./rotation";
 export * from "./stats";

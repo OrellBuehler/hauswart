@@ -179,6 +179,27 @@ describe("buildUpcoming, ordering", () => {
     );
   });
 
+  it("an estimate that comes before the hard limit is the date shown, the limit stays behind it", () => {
+    const result = buildUpcoming(
+      [
+        item("limit", {
+          dueDate: "2027-03-01",
+          dueKind: "estimated",
+          estimate: { date: "2026-10-08", confidence: "medium" },
+        }),
+      ],
+      TODAY,
+      30,
+    );
+    expect(ids(result.thisWeek)).toEqual(["limit"]);
+    expect(result.thisWeek[0]).toMatchObject({
+      date: "2026-10-08",
+      estimated: true,
+    });
+    expect(result.thisWeek[0].due.dueDate).toBe("2027-03-01");
+    expect(result.later).toEqual([]);
+  });
+
   it("ties are broken by title, then id", () => {
     const items: UpcomingInput[] = [
       { ...item("2", { dueDate: "2026-10-08" }), title: "same" },

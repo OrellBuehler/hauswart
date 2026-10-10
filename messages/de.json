@@ -338,6 +338,7 @@
   "task_due_none": "Kein Termin",
   "task_estimate_low": "grobe Schätzung",
   "task_estimate_medium": "Schätzung",
+  "task_due_limit": "spätestens {date}",
   "task_progress": "Fortschritt",
   "task_grace_days": "Karenzfrist (Tage)",
   "task_grace_days_hint": "So viele Tage nach dem Termin gilt die Aufgabe noch nicht als überfällig.",

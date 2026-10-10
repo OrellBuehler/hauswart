@@ -139,8 +139,10 @@ export function evaluateCounterDelta(
     }
   }
 
-  // The earlier of the two dates is the one shown. The time limit is certain, the estimate only
-  // a guess, so it decides the date only when the counter is expected to get there first.
+  // The earlier of the two dates is the one shown (`shownDate`). The time limit is certain, the
+  // estimate only a guess, so the guess is shown only when the counter is expected to get there
+  // first; the limit stays the due date either way, because it is a hard one: the status, the
+  // "due soon" notification and the calendar feed are about it, and they must not lose it.
   if (limit !== null && !(estimate && estimate.date < limit)) {
     return datedResult(limit, "exact", key, ctx, { progress, reasons });
   }
@@ -148,7 +150,7 @@ export function evaluateCounterDelta(
     if (fromHistory) reasons.push("estimate_from_history");
     return {
       status: limit === null ? "ok" : statusFor(limit, ctx),
-      dueDate: null,
+      dueDate: limit,
       dueKind: "estimated",
       occurrenceKey: key,
       progress,

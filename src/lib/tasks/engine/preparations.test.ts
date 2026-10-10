@@ -82,6 +82,20 @@ describe("prepState, lead days", () => {
     ).toBe("now");
   });
 
+  it("an estimate that comes before the hard limit is what the lead time counts from", () => {
+    const early = due({
+      dueDate: "2027-03-01",
+      dueKind: "estimated",
+      estimate: { date: "2026-10-20", confidence: "medium" },
+    });
+    expect(
+      state(early, { kind: "generic", leadDays: 7 }, { today: "2026-10-12" }),
+    ).toBe("not_yet");
+    expect(
+      state(early, { kind: "generic", leadDays: 7 }, { today: "2026-10-13" }),
+    ).toBe("now");
+  });
+
   it("a due date wins over an estimate", () => {
     const both = due({
       dueDate: "2026-10-20",
@@ -347,6 +361,23 @@ describe("orderNowItems", () => {
             dueDate: null,
             dueKind: "estimated",
             estimate: { date: "2026-10-20", confidence: "low" },
+          }),
+        }),
+      ],
+      "2026-10-13",
+    );
+    expect(items).toHaveLength(1);
+    expect(items[0].neededBy).toBe("2026-10-20");
+  });
+
+  it("orders for the estimate that comes before the hard limit", () => {
+    const items = orderNowItems(
+      [
+        task({
+          due: due({
+            dueDate: "2027-03-01",
+            dueKind: "estimated",
+            estimate: { date: "2026-10-20", confidence: "medium" },
           }),
         }),
       ],

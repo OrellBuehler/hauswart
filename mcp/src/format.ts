@@ -81,6 +81,27 @@ export function describeTrigger(t: Trigger): string {
   }
 }
 
+/**
+ * "ok, due 2026-11-06", "ok, estimated 2026-11-06" or, when a counter is expected to get there
+ * before its hard time limit, both: "ok, estimated 2026-11-06, at the latest 2027-01-15".
+ */
+export function describeWhen(state: {
+  status: string;
+  dueDate: string | null;
+  dueKind?: string | undefined;
+  estimate?: { date: string } | null | undefined;
+}): string {
+  if (state.dueKind === "estimated" && state.estimate) {
+    return `${state.status}, estimated ${state.estimate.date}${
+      state.dueDate ? `, at the latest ${state.dueDate}` : ""
+    }`;
+  }
+  if (state.dueDate) return `${state.status}, due ${state.dueDate}`;
+  if (state.estimate)
+    return `${state.status}, estimated ${state.estimate.date}`;
+  return state.status;
+}
+
 export function taskRow(task: Task, users: UserNames) {
   const state = task.state;
   return {
