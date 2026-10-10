@@ -965,7 +965,7 @@ export const endpoints = {
     path: "/api/v1/tasks/{id}/complete",
     summary: "Mark a task done",
     description:
-      "Returns the completion and the re-evaluated task. A repeated idempotencyKey returns the first completion with status 200. Browser sessions are attributed as manual (or qr when sent); API tokens by their kind (mcp, ha, otherwise api) and their source field is ignored. Linked spare parts are taken out of stock. With serviceLog the work is also logged on the task's asset (400 for a task without an asset); the entry comes back as serviceLog.",
+      "Returns the completion and the re-evaluated task. A repeated idempotencyKey returns the first completion with status 200. Browser sessions are attributed as manual (or qr when sent); API tokens by their kind (mcp, ha, otherwise api) and their source field is ignored. Linked spare parts are taken out of stock. With serviceLog the work is also logged on the task's asset (400 for a task without an asset); the entry comes back as serviceLog, and serviceLog.resolvedNoteIds resolves notes of that asset with it (undoing the completion reopens them; another asset's note is a 400 and nothing is completed). The returned task is read after the entry was written, so its openNoteCount is current.",
     tags: ["tasks"],
     auth: "both",
     scopes: ["write"],
@@ -1099,7 +1099,7 @@ export const endpoints = {
     path: "/api/v1/completions/{id}",
     summary: "Undo a completion",
     description:
-      "Any household member may undo within 7 days of the completion being recorded; the task goes back to its previous due date. Undoing twice is not an error.",
+      "Any household member may undo within 7 days of the completion being recorded; the task goes back to its previous due date. Notes that the service log entry written with the completion had resolved are open again (the entry stays in the log). Undoing twice is not an error.",
     tags: ["tasks"],
     auth: "both",
     scopes: ["write"],
@@ -1622,6 +1622,8 @@ export const endpoints = {
     method: "POST",
     path: "/api/v1/assets/{id}/service-log",
     summary: "Add a service log entry",
+    description:
+      "resolvedNoteIds: notes of this asset (see /assets/{id}/notes) the work addressed. They become resolved with this entry; another asset's note or an unknown id is a 400 and nothing is written.",
     tags: ["service-log", "assets"],
     auth: "both",
     scopes: ["write"],
@@ -1650,6 +1652,8 @@ export const endpoints = {
     method: "PATCH",
     path: "/api/v1/assets/{id}/service-log/{entryId}",
     summary: "Update a service log entry",
+    description:
+      "resolvedNoteIds adds notes of this asset to those the entry resolved (open ones become resolved with it, resolved ones stay as they are); it can be the only field. Notes are reopened by changing the note, deleting the entry or undoing the completion the entry was written with.",
     tags: ["service-log", "assets"],
     auth: "both",
     scopes: ["write"],
@@ -1664,6 +1668,8 @@ export const endpoints = {
     method: "DELETE",
     path: "/api/v1/assets/{id}/service-log/{entryId}",
     summary: "Delete a service log entry",
+    description:
+      "The notes the entry had resolved are open again; its attachments and comments go with it.",
     tags: ["service-log", "assets"],
     auth: "both",
     scopes: ["write"],

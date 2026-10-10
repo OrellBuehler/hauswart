@@ -149,7 +149,8 @@ export const complete: Handler<typeof endpoints.tasksComplete> = async ({
         : null;
   const out = {
     completion: wireCompletion(result.completion),
-    task: wireTaskFor(ctx)(result.task),
+    // Read again once the entry is written: it may have resolved notes (the open note count).
+    task: wireTaskFor(ctx)(entry ? getTask(ctx, params.id) : result.task),
     serviceLog: entry ? wireServiceLogEntry(entry) : null,
   };
   return result.replayed ? reply(200, out) : out;

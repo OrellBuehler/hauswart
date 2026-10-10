@@ -166,6 +166,8 @@ export const NOTIFICATION_TITLE_KEYS = [
   "notification_prep",
   "notification_due_soon",
   "notification_due",
+  "notification_due_soon_notes",
+  "notification_due_notes",
   "notification_overdue",
   "notification_digest",
   "notification_info",

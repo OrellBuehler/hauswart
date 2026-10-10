@@ -9,6 +9,11 @@ import type {
 import { minor } from "$lib/money";
 import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
 import { assets, contacts, serviceLog, type DB } from "$lib/server/db";
+import {
+  assertNotesOfAsset,
+  reopenNotesOf,
+  resolveNotes,
+} from "$lib/server/asset-notes/resolve";
 import { commentCountSql } from "$lib/server/comments/counts";
 import { costsOfSql, type CostsOf } from "$lib/server/costs/totals";
 import { getHousehold } from "$lib/server/household/household";
@@ -238,6 +243,7 @@ export function createEntry(
   assertContact(ctx, input.contactId);
   const date = input.date ?? clockAt(ctx.now).today;
   const odometer = input.odometer ?? null;
+  const noteIds = assertNotesOfAsset(ctx, assetId, input.resolvedNoteIds ?? []);
   const id = ctx.db.transaction((tx) => {
     const row = tx
       .insert(serviceLog)
@@ -260,6 +266,12 @@ export function createEntry(
       { ...ctx, db: tx as unknown as DB },
       { id: row.id, assetId, date, odometer, createdBy },
     );
+    resolveNotes(
+      { db: tx as unknown as DB, now: ctx.now },
+      noteIds,
+      row.id,
+      createdBy,
+    );
     return row.id;
   });
   return getEntry(ctx, id);
@@ -270,10 +282,12 @@ export function updateEntry(
   assetId: string,
   entryId: string,
   patch: UpdateServiceLogRequest,
+  userId: string | null = null,
 ): ServiceLogRecord {
   const current = getAssetEntry(ctx, assetId, entryId);
   if (patch.contactId !== undefined) assertContact(ctx, patch.contactId);
-  const { costMinor, currency, ...rest } = patch;
+  const { costMinor, currency, resolvedNoteIds, ...rest } = patch;
+  const noteIds = assertNotesOfAsset(ctx, assetId, resolvedNoteIds ?? []);
   const touchesCost = costMinor !== undefined || currency !== undefined;
   const nextCost = costMinor !== undefined ? costMinor : current.costMinor;
   const odometer =
@@ -286,6 +300,8 @@ export function updateEntry(
         ...(touchesCost
           ? costFields(ctx, nextCost, currency ?? current.currency)
           : {}),
+        // Also set when only notes are resolved, which touches no column of the entry.
+        updatedAt: new Date(ctx.now),
       })
       .where(eq(serviceLog.id, entryId))
       .run();
@@ -305,13 +321,21 @@ export function updateEntry(
         },
       );
     }
+    resolveNotes(
+      { db: tx as unknown as DB, now: ctx.now },
+      noteIds,
+      entryId,
+      userId,
+    );
   });
   return getEntry(ctx, entryId);
 }
 
+/** The notes the entry had resolved are open again; its attachments go with it. */
 export function deleteEntry(ctx: Now, assetId: string, entryId: string): void {
   getAssetEntry(ctx, assetId, entryId);
   ctx.db.transaction((tx) => {
+    reopenNotesOf({ db: tx as unknown as DB, now: ctx.now }, [entryId]);
     tx.delete(serviceLog).where(eq(serviceLog.id, entryId)).run();
     // The reading it wrote goes with it.
     removeReadingsOfSource(
@@ -339,6 +363,12 @@ export function checkCompletionLog(
     );
   }
   assertContact(ctx, input.contactId);
+  assertNotesOfAsset(
+    ctx,
+    task.assetId,
+    input.resolvedNoteIds ?? [],
+    "serviceLog",
+  );
   return task.assetId;
 }
 
@@ -366,6 +396,7 @@ export function logCompletion(
       descriptionMd: input.descriptionMd ?? "",
       contactId: input.contactId,
       costMinor: input.costMinor,
+      resolvedNoteIds: input.resolvedNoteIds,
     },
     createdBy,
     { completionId },

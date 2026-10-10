@@ -140,6 +140,10 @@ const NOTIFICATION_TEXT: Record<
   notification_prep: (p) => `Prepare: ${p.prep} for "${p.title}" (${p.date})`,
   notification_due_soon: (p) => `"${p.title}" is due soon (${p.date})`,
   notification_due: (p) => `"${p.title}" is due (${p.date})`,
+  notification_due_soon_notes: (p) =>
+    `"${p.title}" is due soon (${p.date}); ${plural(Number(p.notes), "open note")}`,
+  notification_due_notes: (p) =>
+    `"${p.title}" is due (${p.date}); ${plural(Number(p.notes), "open note")}`,
   notification_overdue: (p) =>
     `"${p.title}" has been overdue for ${p.days} days (was due ${p.date})`,
   notification_digest: (p) =>

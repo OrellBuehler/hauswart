@@ -57,7 +57,7 @@ export const update: Handler<typeof endpoints.assetServiceLogUpdate> = async ({
   params,
   body,
 }) => {
-  const entry = updateEntry(ctx, params.id, params.entryId, body);
+  const entry = updateEntry(ctx, params.id, params.entryId, body, ctx.user.id);
   if (body.odometer !== undefined || entry.odometer !== null) {
     await refreshOdometerReaders(ctx, entry.assetId);
   }

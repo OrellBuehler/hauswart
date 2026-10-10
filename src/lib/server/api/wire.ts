@@ -264,6 +264,7 @@ export function wireTask(
     externalUrl: urlVisible(task) ? task.externalUrl : null,
     createdBy: task.createdBy,
     commentCount: task.commentCount,
+    openNoteCount: task.openNoteCount,
     createdAt: toIso(task.createdAt),
     updatedAt: toIso(task.updatedAt),
     state: task.state ? wireTaskState(task.state) : null,

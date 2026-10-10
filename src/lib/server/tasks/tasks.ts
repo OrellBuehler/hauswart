@@ -7,6 +7,7 @@ import type {
   CreateTaskRequest,
   UpdateTaskRequest,
 } from "$lib/api/schemas/tasks";
+import { openNoteCountSql } from "$lib/server/asset-notes/counts";
 import { commentCountSql } from "$lib/server/comments/counts";
 import { assets, rooms, taskState, tasks, users } from "$lib/server/db";
 import { parseStored } from "$lib/server/json";
@@ -32,6 +33,8 @@ export interface TaskRecord extends Omit<TaskRow, "trigger"> {
   assetName: string | null;
   roomName: string | null;
   commentCount: number;
+  /** Open notes on the task's asset (0 without an asset). */
+  openNoteCount: number;
   state: TaskStateRecord | null;
 }
 
@@ -40,6 +43,7 @@ type Joined = {
   assetName: string | null;
   roomName: string | null;
   commentCount: number;
+  openNoteCount: number;
   state: StateRow | null;
 };
 
@@ -50,6 +54,7 @@ const selectTasks = (db: ServiceContext["db"]) =>
       assetName: assets.name,
       roomName: rooms.name,
       commentCount: commentCountSql("task", tasks.id),
+      openNoteCount: openNoteCountSql(tasks.assetId),
       state: taskState,
     })
     .from(tasks)
@@ -62,6 +67,7 @@ function toRecord({
   assetName,
   roomName,
   commentCount,
+  openNoteCount,
   state,
 }: Joined): TaskRecord {
   return {
@@ -70,6 +76,7 @@ function toRecord({
     assetName,
     roomName,
     commentCount: Number(commentCount),
+    openNoteCount: Number(openNoteCount),
     state: state ? toStateRecord(state) : null,
   };
 }

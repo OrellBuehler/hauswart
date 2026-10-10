@@ -32,6 +32,8 @@ export const dashboardTaskSchema = z
     estimated: z.boolean(),
     estimate: estimateSchema.nullable(),
     progress: progressSchema.nullable(),
+    /** Open notes on the task's asset, to mention at this appointment; 0 without an asset. */
+    openNoteCount: z.number().int(),
   })
   .meta({ id: "DashboardTask" });
 

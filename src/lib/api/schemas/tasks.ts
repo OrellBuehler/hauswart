@@ -119,6 +119,8 @@ export const taskSchema = z
     externalUrl: z.string().nullable(),
     createdBy: z.string().nullable(),
     commentCount: z.number().int(),
+    /** Open notes on the task's asset ("brakes squeak"), to mention at this appointment; 0 without an asset. See `/assets/{id}/notes`. */
+    openNoteCount: z.number().int(),
     createdAt: isoTimestampSchema,
     updatedAt: isoTimestampSchema,
     state: taskStateSchema.nullable(),

@@ -9,6 +9,7 @@ import {
   DASHBOARD_HORIZON_DAYS,
   DASHBOARD_RECENT_COMPLETIONS,
 } from "$lib/api/schemas/dashboard";
+import { openNoteCountSql } from "$lib/server/asset-notes/counts";
 import { assets, rooms, taskState, tasks, users } from "$lib/server/db";
 import type { ServiceContext } from "$lib/server/service";
 import { recentCompletions, type CompletionRecord } from "./completions";
@@ -34,6 +35,7 @@ export interface DashboardTaskRecord {
   estimated: boolean;
   estimate: TaskStateRecord["estimate"];
   progress: TaskStateRecord["progress"];
+  openNoteCount: number;
 }
 
 export interface DashboardPreparationRecord {
@@ -84,6 +86,7 @@ export async function getDashboard(
       roomId: assets.roomId,
       ownRoomName: rooms.name,
       assetRoomName: assetRoom.name,
+      openNoteCount: openNoteCountSql(tasks.assetId),
     })
     .from(tasks)
     .innerJoin(taskState, eq(taskState.taskId, tasks.id))
@@ -155,6 +158,7 @@ export async function getDashboard(
       estimated: item.estimated,
       estimate: item.due.estimate ?? null,
       progress: item.due.progress ?? null,
+      openNoteCount: Number(r.openNoteCount),
     };
   };
 

@@ -1,7 +1,7 @@
-import { eq, isNull } from "drizzle-orm";
+import { eq, isNull, sql } from "drizzle-orm";
 import { addDays, diffDays, zonedTimeToInstant } from "$lib/dates";
 import type { NotificationKind, NotificationTitleKey } from "$lib/api/enums";
-import { taskState, tasks, users } from "$lib/server/db";
+import { assetNotes, taskState, tasks, users } from "$lib/server/db";
 import { getHousehold } from "$lib/server/household/household";
 import type { ServiceContext } from "$lib/server/service";
 import { clockAt } from "$lib/server/tasks/evaluator";
@@ -102,6 +102,20 @@ export async function generateNotifications(
     new Map(active.map((c) => [c.task.id, c.state])),
   );
 
+  // Open notes per asset: the notices of a task that is (nearly) due say how many issues wait for it.
+  const openNotes = new Map(
+    ctx.db
+      .select({
+        assetId: assetNotes.assetId,
+        n: sql<number>`count(*)`,
+      })
+      .from(assetNotes)
+      .where(eq(assetNotes.status, "open"))
+      .groupBy(assetNotes.assetId)
+      .all()
+      .map((row) => [row.assetId, Number(row.n)]),
+  );
+
   const delivered: [DeliverableNotification, NotificationRecipient[]][] = [];
   const emit = (
     recipients: NotificationRecipient[],
@@ -150,6 +164,7 @@ export async function generateNotifications(
     const base = `${task.id}:${state.occurrenceKey}`;
     const date = state.dueDate ?? state.estimate?.date ?? "";
     const url = `/tasks/${task.id}`;
+    const notes = task.assetId ? (openNotes.get(task.assetId) ?? 0) : 0;
 
     for (const prep of preps.get(task.id) ?? []) {
       if (prep.state !== "now") continue;
@@ -169,8 +184,12 @@ export async function generateNotifications(
         kind: "due_soon",
         taskId: task.id,
         key: `${base}:due_soon`,
-        titleKey: "notification_due_soon",
-        params: { title: task.title, date },
+        titleKey:
+          notes > 0 ? "notification_due_soon_notes" : "notification_due_soon",
+        params:
+          notes > 0
+            ? { title: task.title, date, notes }
+            : { title: task.title, date },
         url,
         occurrenceKey: state.occurrenceKey,
       });
@@ -179,8 +198,11 @@ export async function generateNotifications(
         kind: "due",
         taskId: task.id,
         key: `${base}:due`,
-        titleKey: "notification_due",
-        params: { title: task.title, date },
+        titleKey: notes > 0 ? "notification_due_notes" : "notification_due",
+        params:
+          notes > 0
+            ? { title: task.title, date, notes }
+            : { title: task.title, date },
         url,
         occurrenceKey: state.occurrenceKey,
       });

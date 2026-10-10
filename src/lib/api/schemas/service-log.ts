@@ -55,6 +55,10 @@ export const listAssetServiceLogQuerySchema = paginationQuerySchema.extend({
 });
 export const listServiceLogResponseSchema = paginated(serviceLogEntrySchema);
 
+/** How many notes one service log entry can resolve (see `/assets/{id}/notes`). */
+export const MAX_RESOLVED_NOTES = 50;
+const resolvedNoteIds = z.array(idSchema).max(MAX_RESOLVED_NOTES);
+
 const logFields = {
   date: dateSchema,
   kind: serviceLogKindSchema,
@@ -81,6 +85,8 @@ export const createServiceLogRequestSchema = z.strictObject({
   currency: logFields.currency.optional(),
   odometer: logFields.odometer.optional(),
   performedBy: logFields.performedBy.optional(),
+  /** Notes of this asset the entry addresses: they become resolved with this entry. Another asset's note or an unknown id is a 400. */
+  resolvedNoteIds: resolvedNoteIds.optional(),
 });
 export type CreateServiceLogRequest = z.output<
   typeof createServiceLogRequestSchema
@@ -97,6 +103,8 @@ export const updateServiceLogRequestSchema = atLeastOne(
     currency: logFields.currency.optional(),
     odometer: logFields.odometer.optional(),
     performedBy: logFields.performedBy.optional(),
+    /** Notes of this asset the entry addresses, added to those it resolved already; open notes become resolved with this entry, resolved ones stay as they are. */
+    resolvedNoteIds: resolvedNoteIds.optional(),
   }),
 );
 export type UpdateServiceLogRequest = z.output<
@@ -115,6 +123,8 @@ export const completionServiceLogSchema = z.strictObject({
   descriptionMd: logFields.descriptionMd.optional(),
   contactId: logFields.contactId.optional(),
   costMinor: logFields.costMinor.optional(),
+  /** Notes of the task's asset this work addressed: they become resolved with the entry, and open again if the completion is undone. */
+  resolvedNoteIds: resolvedNoteIds.optional(),
 });
 export type CompletionServiceLogRequest = z.output<
   typeof completionServiceLogSchema
