@@ -38,6 +38,9 @@ import {
   FINANCE_SUGGESTION_STATUSES,
   GUEST_SECTIONS,
   HINT_KINDS,
+  INSURANCE_PREMIUM_PERIODS,
+  INSURANCE_RENEWALS,
+  INSURANCE_TYPES,
   INTEGRATION_KINDS,
   INTEGRATION_STATUSES,
   NOTIFICATION_KINDS,
@@ -732,6 +735,68 @@ export const defectEvents = sqliteTable(
     ...timestamps,
   },
   (t) => [index("defect_events_defect_idx").on(t.defectId, t.at)],
+);
+
+/**
+ * An insurance policy of the household (car, contents, liability, building ...). Domain data shared
+ * by everybody. The cancellation deadline is not stored: it follows from the end date, the notice
+ * period and the renewal mode (`insurance/policy.ts`), so it can never be out of step with them.
+ */
+export const insurancePolicies = sqliteTable(
+  "insurance_policies",
+  {
+    id: id(),
+    title: text("title").notNull(),
+    type: text("type", { enum: INSURANCE_TYPES }).notNull().default("other"),
+    insurerContactId: text("insurer_contact_id").references(() => contacts.id, {
+      onDelete: "set null",
+    }),
+    policyNumber: text("policy_number"),
+    premiumMinor: integer("premium_minor").notNull().$type<Minor>(),
+    /** ISO 4217; the deductible is in the same currency. */
+    currency: text("currency").notNull(),
+    premiumPeriod: text("premium_period", { enum: INSURANCE_PREMIUM_PERIODS })
+      .notNull()
+      .default("annual"),
+    deductibleMinor: integer("deductible_minor").$type<Minor>(),
+    startDate: text("start_date").notNull(),
+    /** The last day of cover of the current term; null = open-ended. */
+    endDate: text("end_date"),
+    renewal: text("renewal", { enum: INSURANCE_RENEWALS })
+      .notNull()
+      .default("auto"),
+    cancellationNoticeMonths: integer("cancellation_notice_months"),
+    /** A number to call when something happens (breakdown service, claims line). */
+    assistancePhone: text("assistance_phone"),
+    showOnEmergency: integer("show_on_emergency", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    notes: text("notes"),
+    archivedAt: integer("archived_at", { mode: "timestamp_ms" }),
+    ...timestamps,
+  },
+  (t) => [
+    index("insurance_policies_type_idx").on(t.type),
+    index("insurance_policies_archived_at_idx").on(t.archivedAt),
+    index("insurance_policies_insurer_idx").on(t.insurerContactId),
+  ],
+);
+
+/** What a policy covers: any number of assets, and an asset can be covered by several policies. */
+export const insurancePolicyAssets = sqliteTable(
+  "insurance_policy_assets",
+  {
+    policyId: text("policy_id")
+      .notNull()
+      .references(() => insurancePolicies.id, { onDelete: "cascade" }),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.policyId, t.assetId] }),
+    index("insurance_policy_assets_asset_id_idx").on(t.assetId),
+  ],
 );
 
 export const comments = sqliteTable(

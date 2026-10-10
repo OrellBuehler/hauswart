@@ -460,3 +460,30 @@ export const FINANCE_SUGGESTION_STATUSES = [
 ] as const;
 export type FinanceSuggestionStatus =
   (typeof FINANCE_SUGGESTION_STATUSES)[number];
+
+export const INSURANCE_TYPES = [
+  "motor_liability",
+  "motor_partial_casco",
+  "motor_full_casco",
+  "household",
+  "personal_liability",
+  "building",
+  "legal",
+  "travel",
+  "health",
+  "life",
+  "other",
+] as const;
+export type InsuranceType = (typeof INSURANCE_TYPES)[number];
+
+export const INSURANCE_PREMIUM_PERIODS = [
+  "monthly",
+  "quarterly",
+  "semiannual",
+  "annual",
+] as const;
+export type InsurancePremiumPeriod = (typeof INSURANCE_PREMIUM_PERIODS)[number];
+
+/** `auto`: renews by itself unless cancelled in time. `fixed`: ends on its end date, nothing to cancel. */
+export const INSURANCE_RENEWALS = ["auto", "fixed"] as const;
+export type InsuranceRenewal = (typeof INSURANCE_RENEWALS)[number];
