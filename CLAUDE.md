@@ -2,18 +2,19 @@
 
 hauswart is a self-hosted apartment-management app for a single household with a few users:
 recurring maintenance tasks with completion tracking, documentation (markdown, uploads,
-Paperless-ngx links), device inventory, defects, spare parts, contacts, costs, notifications, an
+Paperless-ngx links), device inventory, defects, spare parts, contacts, costs, insurance policies, notifications, an
 iCal feed, a guest link and an MCP server. Home Assistant, Paperless-ngx and Kept (finance) are
 optional adapters, never requirements. Status: early development — authentication, the API spine,
 the task core (rooms, assets, tasks, completions, notifications, dashboard), documentation (pages,
 attachments, search, file backup), contacts, spare parts, the service log, care hints, defects (with
 a PDF export), the warranty overview, generic comments, iCal feeds, the emergency page data and guest
 links, costs (with the settlement between the people and a CSV export), the per-person finance
-connection (Kept) and vehicles (details, odometer readings, task templates; see "Vehicles") exist; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
+connection (Kept), insurance policies (with a cancellation reminder), asset notes and vehicles (details, odometer
+readings, task templates; see "Vehicles") exist; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
 push notifications with a "done" button, areas taken over as rooms; see "Signals, integrations and delivery"); Paperless-ngx is wired as
 a per-person document provider (links, previews, warranty dates, pushing attachments; see "Documents and the
 document provider"); the MCP server covers the task core, documentation, defects, parts, contacts,
-comments, hints, service log, warranties, costs, the finance inbox and archived documents, and hauswart serves it over HTTP at
+comments, hints, service log, warranties, costs, the finance inbox, archived documents, insurance policies and asset notes, and hauswart serves it over HTTP at
 `/api/v1/mcp` (see "MCP server" and `mcp/README.md`); the web app is installable as a PWA (see "Installable app").
 
 There is one household, not many: all domain data is shared by every user. Only sessions, API
@@ -113,6 +114,11 @@ src/lib/server/domain-events.ts  registerDomainEventHandlers(): wires reactions 
 src/lib/server/contacts/         contacts CRUD + search, links to assets (role per link)
 src/lib/server/parts/            spare parts: CRUD, stock movements, "ordered" state, links to assets/tasks, order-now, completion events
 src/lib/server/service-log/      per-asset work log (also written with a task completion by the complete handler)
+src/lib/insurance/policy.ts      premium per year and the cancellation deadline (pure, client-safe)
+src/lib/server/insurance/        insurance policies: policies.ts (CRUD, filters, covered assets), reminder.ts (the cancellation
+                                 reminder task); see "Insurance policies and asset notes"
+src/lib/server/asset-notes/      asset notes: notes.ts (CRUD, to a defect), resolve.ts (service log resolution), events.ts (undo
+                                 reopens), counts.ts (openNoteCount)
 src/lib/server/costs/            cost entries: split.ts (frozen shares), costs.ts (CRUD, list), summary.ts (year totals, settlement),
                                  csv.ts, totals.ts (cost sums on defects and service log entries)
 src/lib/server/finance/          generic finance-provider seam: providers.ts (registry), suggestions.ts (the private inbox, accept,
@@ -201,7 +207,8 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   one digest per person per day after the household's digest time (skipped when empty). Snoozed and
   archived tasks are silent. `userId` null means household-wide (shared read state). Outward
   delivery is a `NotificationChannel` registered with `registerNotificationChannel`; the in-app
-  list needs none.
+  list needs none. A task whose asset has open notes announces due soon and due with the `*_notes` variants
+  of the message (see "Insurance policies and asset notes").
 - **Seed files** (`seedSchema`, `seed/*.json`; real data in gitignored `seed/local/`) are imported
   by `scripts/seed.ts` through the REST API and matched by `key`, so repeating it changes nothing:
   rooms and assets by slug, tasks by `externalSource: "seed"` + `externalRef`, preparations by title.
@@ -422,9 +429,9 @@ map), billTasks, billCreditorFilter (case-insensitive exact creditor names; appl
   mime, pages, notes count, the two warranty dates, `ownerVisible`; unique per connection and external id; a row with
   `ownerVisible = false` keeps no content, it only says "asked, not shown"), `external_document_sync` (address and
   scope the cache was built for, newest modification seen, last full read), `document_links` (provider, external id,
-  generic owner `asset|room|page|task|defect|service_log|part|contact|cost` + id, `role`, `label`, the maker's
+  generic owner `asset|room|page|task|defect|service_log|part|contact|cost|insurance_policy` + id, `role`, `label`, the maker's
   connection; unique per document, owner and role), `document_uploads` (push jobs). `AFTER DELETE` triggers on the
-  nine owner tables (`0011`, and `0014` for costs) remove the links of a deleted owner (cascades included); a new link
+  ten owner tables (`0011`, `0014` for costs and `0018` for insurance policies) remove the links of a deleted owner (cascades included); a new link
   owner type needs its trigger and an entry in `documents/owners.ts` (it reuses the comments registry for title and url).
 - **Sync** (`registerPaperless()` in `init()`, `integrations/paperless/sync.ts`, scheduler every 30 minutes, soon after
   a connection is saved - backoff ignored - and after a link was made so other people's caches catch up): per
@@ -499,16 +506,16 @@ of the owner>` is added to the document unless an identical note exists (writes 
   flipping `guestVisible` re-renders the pages that embed it (`onAttachmentsChanged` listener,
   started in `init()` by `startAttachmentRerender`; only the two HTML caches change, guarded by `rev`).
 - **Attachments** (`attachments`): one row per upload, generic owner `ownerType` + `ownerId` without
-  foreign keys (`asset|room|page|task|defect|service_log|part|asset_hint|contact|cost`), files stored
+  foreign keys (`asset|room|page|task|defect|service_log|part|asset_hint|contact|cost|insurance_policy|asset_note`), files stored
   once by sha256 in `HAUSWART_FILES_DIR` (`files/store.ts`: images re-encoded, metadata stripped,
   thumbnail; PDFs as uploaded; HEIC/SVG/HTML/GIF refused). Owner existence is checked through the
   registry in `attachments/owners.ts`: asset, room, page and task are built in; defect, service_log,
-  part, asset_hint and contact are registered by `registerDomainAttachmentOwners()`
+  part, asset_hint, contact, cost, insurance_policy and asset_note are registered by `registerDomainAttachmentOwners()`
   (`attachments/domain-owners.ts`, called from `registerDomainEventHandlers()`, so from `init()` and
   `useTestDB()`). A new owner type registers with `registerAttachmentOwner(type, existsFn)` **from
   `init()`** (never from a module that is only loaded with its routes) and calls
-  `removeOwnedAttachments(ctx, type, id)` from its delete service (done for all ten; deleting an
-  asset also removes the attachments of its service log entries and hints, whose rows go by cascade
+  `removeOwnedAttachments(ctx, type, id)` from its delete service (done for all twelve; deleting an
+  asset also removes the attachments of its service log entries, hints and notes, whose rows go by cascade
   without a foreign key to follow). A type nobody registered is a 400 field error on `ownerType`. Uploading, patching or deleting an attachment of a page needs `docs:write`,
   others `write`. `deleteIfUnreferenced` keeps files younger than a minute, so a daily orphan sweep
   (`startFileSweeper`) removes what deletions left behind. `assets.photoAttachmentId` must be an
@@ -527,13 +534,13 @@ of the owner>` is added to the document unless an identical note exists (writes 
   strings); the client builds the `FormData`. In route tests use `callRoute(..., { form })`.
 - **Search** (`search_fts`, FTS5, created in custom migration `0006_search_index`): triggers on pages,
   assets, rooms, tasks, defects (title, description, location), contacts (name, company, notes; never
-  phone, e-mail or address), parts (name, part number, supplier, notes) and asset hints (title, body)
-  keep it current (archived assets, tasks, pages and parts are dropped). The plate of a vehicle is part
-  of its asset's row (migration `0016_vehicle_search`: replaces `search_assets_au`, adds triggers on
-  `vehicle_details`); nothing else of `vehicle_details` is indexed. No secret text enters the
+  phone, e-mail or address), parts (name, part number, supplier, notes), asset hints (title, body) and insurance
+  policies (title, policy number, notes; custom migration `0018`) keep it current (archived assets, tasks, pages and
+  parts are dropped). The plate of a vehicle is part of its asset's row (custom migration `0016_vehicle_search`:
+  replaces `search_assets_au`, adds triggers on `vehicle_details`); nothing else of `vehicle_details` is indexed. No secret text enters the
   index: pages index `plain_text`; every other free text is cut off at the first `:::` when it
   mentions "secret" anywhere. Hit `url`s are the UI routes (`/docs/<slug>`, `/assets/<id>` also for
-  plants and hints, `/rooms/<id>`, `/tasks/<id>`, `/defects/<id>`, `/parts/<id>`, `/contacts/<id>`).
+  plants and hints, `/rooms/<id>`, `/tasks/<id>`, `/defects/<id>`, `/parts/<id>`, `/contacts/<id>`, `/insurance/<id>`).
   New searchable entities need their own triggers in a new migration and an entry in `URLS`
   (`search/search.ts`). Queries become quoted prefix terms (`ftsExpression`), so no FTS syntax reaches SQLite.
 - **Backup** (`backup/`): on by default (`HAUSWART_BACKUP_DIR` default `./data/backups`, set it empty
@@ -558,15 +565,16 @@ of the owner>` is added to the document unless an identical note exists (writes 
   `GET /defects/{id}/timeline` merges both. The deadline defaults to household handover date +
   `defectDeadlineMonths` (`deadlineSource` handover) and is recomputed when the household changes.
   A deadline keeps one `one_off` reminder task (`externalSource: "defect"`, category `defect`, system
-  text in the base language) that is archived when the defect is fixed/rejected or has no deadline.
+  text in the base language) that is archived when the defect is fixed/rejected or has no deadline. A note on an
+  asset can become a defect (`POST /asset-notes/{id}/to-defect`, see "Insurance policies and asset notes").
 - **Comments** (`comments` table, `entityType` + `entityId`): a kind of entity is commentable once
   it is in `comments/registry.ts` (`exists`, `title`, `url`, optional `audience`; the urls are the UI
   routes, `/docs/<slug>` for pages). Deleting an entity removes its comments through
   `AFTER DELETE` triggers (migrations `0004` and `0007` for pages): add one per new commentable table. Delete is soft
   (empty body, `deleted: true`), edit is author-only (403 otherwise), delete is author or admin. A new
   comment notifies the other involved members (`notification_comment`). Tasks, assets, defects, hints,
-  service log entries, pages and cost entries carry `commentCount`; cost entries are commentable too
-  (trigger in migration `0013`).
+  service log entries, pages, cost entries and insurance policies carry `commentCount`; cost entries (trigger in
+  migration `0013`) and insurance policies (`/insurance/<id>`, trigger in `0018`) are commentable too.
 - **Hint reactions** (`signalReactionSchema`, type `signal_change`) are stored with the hint
   (`GET /hints?reactive=true`) and executed by `signals/reactions.ts`, see below.
 
@@ -615,6 +623,71 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   air-conditioning service (every 2 years). Each returns `{id, task, preparations}`: the frontend sends
   `task` to `POST /tasks`, then each preparation to `POST /tasks/{id}/preparations`.
 
+### Insurance policies and asset notes
+
+- **Insurance policies** (`insurance_policies`, `insurance_policy_assets`, migrations `0017` and, for the
+  triggers, `0018`; `insurance/policies.ts`): generic and shared by the household (`type`: car liability / partial /
+  full casco, contents, personal liability, building, legal, travel, health, life, other). `title`, the insurer as
+  a contact (`insurerContactId`, set null when the contact is deleted; the DTO has `insurerName`), `policyNumber`,
+  `premiumMinor` per `premiumPeriod` (`monthly|quarterly|semiannual|annual`) + `currency` (the household's when
+  omitted), `deductibleMinor` (same currency), `startDate`, `endDate` = the **last day of cover** of the current term
+  (what an insurer prints as "expires 1 January" is 31 December here), `renewal` (`auto|fixed`),
+  `cancellationNoticeMonths`, `assistancePhone`, `showOnEmergency`, `notes`, `archivedAt`. What a policy covers is
+  a many-to-many list (`assetIds`, replaced as a whole by PATCH); deleting an asset or the insurer's contact never
+  deletes the policy.
+- **Derived, never stored** (`lib/insurance/policy.ts`, pure, client-safe, table-tested): `annualPremiumMinor` =
+  premium times the periods in a year (exact integer) and `cancellationDeadline` = `endDate` minus the notice months,
+  clamped to the end of a shorter month (31 December and 3 months = 30 September), only for `renewal: auto` with an
+  end date and a notice period, else null. It is a function of three stored fields, so storing it could only let it
+  disagree with them; the web form can show it live with the same function. It does not roll by itself: after an
+  automatic renewal somebody moves `endDate` to the end of the next term and the deadline and reminder follow.
+- **API**: `GET|POST /insurance-policies` (filters `assetId`, `type`, `q` over title, policy number and insurer's
+  name; only active ones unless `archived=true`, which lists the archived ones; sorted by deadline, none last, then
+  title), `GET|PATCH|DELETE /insurance-policies/{id}` (`archived` archives and restores), `GET
+/assets/{id}/insurance-policies` (for the asset page; 404 for an unknown asset). The DTO carries the covered
+  assets (id, name, kind), `reminderTaskId` and `commentCount`.
+- **Reminder task** (`insurance/reminder.ts`, `syncReminder` after every create and update; the defect pattern): a
+  `one_off` task with `externalSource: "insurance"`, `externalRef` = the policy id, category `payment`, text in the base
+  language, `externalUrl` `/insurance/<id>`, **due on the deadline itself** (so every date shown anywhere is the real
+  one), `dueSoonDays` 14 and a preparation 30 days ahead. It exists while the policy is active and the deadline is
+  today or later; it is archived when the policy is archived or the deadline goes away or lies in the past (an
+  overdue reminder that nobody finished stays until the dates change) and the same task comes back. A one-off task
+  stays done once completed, so when the deadline moves and the reminder was completed or skipped, that task is kept
+  archived with its history under `externalRef` `<policyId>@<taskId>` and a new one is created for the new deadline;
+  an unfinished one moves in place. Deleting the policy deletes all of them.
+- **Owner type `insurance_policy`**: attachments (policy documents), document links (new roles `policy` and
+  `registration` = vehicle registration; trigger in `0018`), comments (`/insurance/<id>`, trigger in `0018`) and search
+  (`search_fts` kind `insurance_policy`: title, policy number and notes cut at a secret block, never the assistance
+  phone; archived policies are dropped).
+- **Emergency**: not archived policies with `showOnEmergency` are in `GET /emergency` (`insurance`: insurer name and
+  phone, policy number, assistance phone) and in a section of the sheet (left out when there are none). Guest links
+  never show policies: no guest section fits, the guest view reads none.
+- **Asset notes** (`asset_notes`, migration `0019`; `asset-notes/`): small issues to mention at the next
+  appointment ("brakes squeak"). `body` (at most 2000 characters), `status` `open|resolved`, `resolvedAt`,
+  `resolvedBy`, `serviceLogId` (the entry that addressed it, set null with the entry), `defectId` (set null with the
+  defect), `createdBy`. `GET|POST /assets/{id}/notes` (`status` `open` (default), `resolved` or `all`, newest first),
+  `PATCH|DELETE /asset-notes/{id}`: resolving records who and when, reopening clears both and the service log link,
+  asking for the status a note already has changes nothing. The owner type `asset_note` takes photos (they go with the
+  note, and with the asset); a note takes no document links.
+- **To a defect** (`POST /asset-notes/{id}/to-defect`, 201 `{note, defect}`): in one transaction a defect on the asset
+  (title = the first line cut to 200 characters, description = the text, discovered the day the note was written,
+  medium, **no deadline and so no reminder task**: a note is not a claim against the builder, so the household's
+  handover deadline is not assumed) and the note resolved with `defectId`. 409 for a note that already is a defect;
+  once that defect is deleted the note can be converted again.
+- **Resolving through the service log** (`asset-notes/resolve.ts`): `resolvedNoteIds` on service log create and
+  update and inside `serviceLog` of `POST /tasks/{id}/complete`. The notes must exist and belong to the entry's asset
+  (400 on `resolvedNoteIds`, in a completion on `serviceLog`, before anything is written); open ones become resolved
+  with the entry (`resolvedBy` = whoever wrote it), resolved ones stay as they are, so a retry changes nothing; an
+  update only adds. The notes and the entry are written in one transaction. **Undoing** the completion that wrote the
+  entry reopens its notes (listener on `completionRevoked`, `asset-notes/events.ts`; the entry stays in the log) and
+  **deleting** an entry reopens them too.
+- **`openNoteCount`** is on every task and every dashboard task: the open notes of the task's asset (a correlated
+  subquery, 0 without an asset), so the due service task can say "3 Anliegen". The complete endpoint reads the task
+  again after writing the entry, so the count it returns is current.
+- **Notices**: the due soon and due notices of a task whose asset has open notes are
+  `notification_due_soon_notes` / `notification_due_notes` (the usual params plus `notes`, counted when the notice is
+  written; the dedupe key is the same, so a stage is still announced once). Prep and overdue notices are unchanged.
+
 ### iCal feeds, emergency page and guest links
 
 - **Tokens** (`share/tokens.ts`): 32 random bytes base64url; only the sha256 is stored and looked up
@@ -643,7 +716,8 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   household zone, `alarmDaysBefore` days ahead (1 = evening before). Texts are Paraglide messages
   with the feed's locale (`m.key(params, {locale})`).
 - **Emergency page**: `GET /api/v1/emergency` (read scope) = emergency + rules pages (member HTML,
-  secrets included), emergency contacts (full), `showOnEmergency` assets with pinned hints.
+  secrets included), emergency contacts (full), `showOnEmergency` assets with pinned hints and `showOnEmergency` insurance policies
+  (insurer, policy number, assistance line; a section of the sheet when there are any).
   `GET /api/v1/emergency/export.pdf` is the A4 sheet; secrets only with `?includeSecrets=1|true`
   (then a red confidentiality box on top and "Vertraulich" in the footer). The text of pages and
   hints comes from the markdown renderer's HTML (guest audience = secrets stripped, fail closed),
@@ -721,7 +795,11 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
 - **Finance inbox tools** (`tools/finance.ts`): `list_finance_suggestions` (read), `accept_finance_suggestion`,
   `dismiss_finance_suggestion` (mode `undo`: destructive, idempotent) and `sync_finance`, the last three with the
   `costs:write` scope like their endpoints. Strictly the token user's own inbox; a sync that ends `ok: false` is a
-  normal result, not a tool error. 50 tools when the token holds every scope.
+  normal result, not a tool error.
+- **Insurance and asset notes** (`tools/insurance.ts`, `tools/notes.ts`): `list_insurance_policies` and
+  `get_insurance_policy` (read; a policy by id, title or policy number), `add_asset_note`, `list_asset_notes` and
+  `resolve_asset_note` (the asset by id or name; resolving is idempotent). `add_service_log` takes `resolvedNoteIds`, task
+  rows carry `openNotes`, and documents can be linked to a policy by its title. 55 tools when the token holds every scope.
 - **New tool**: add the endpoint to the registry first, then a ~15-line `defineTool` in
   `mcp/src/tools/` and an entry in `tools/index.ts` (which lists the planned extension points).
   Triggers go through `parseTrigger` (engine schema, per-type docs in `trigger-docs.ts`, a `Record`
