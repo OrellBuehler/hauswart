@@ -134,6 +134,24 @@ sw_etag="$(header "$work/sw.headers" etag)"
 [ -n "$sw_etag" ] || fail "service worker has no ETag"
 expect_status 304 -H "If-None-Match: $sw_etag" "$base/sw.js"
 expect_status 200 "$base/offline"
+# The worker serves the offline page in place of any app page (/tasks/12, /d/<slug>), so its asset links
+# must not depend on its own address: "./_app/..." would resolve to /tasks/_app/... and leave it unstyled.
+curl --fail-with-body -sS -o "$work/offline.html" "$base/offline"
+if grep -Eq '(href|src)="\.{1,2}/' "$work/offline.html"; then
+  fail "the offline page links assets relative to its own address: $(grep -Eo '(href|src)="\.{1,2}/[^"]*"' "$work/offline.html" | head -n 3 | tr '\n' ' ')"
+fi
+grep -Eq 'href="/_app/immutable/assets/[^"]+\.css"' "$work/offline.html" || fail "the offline page links no absolute stylesheet"
+# Every file the worker precaches must be served (a 404 makes the worker's install fail, so the app
+# would never become installable offline). The entries are relative to /sw.js, which sits at the root.
+grep -Eo '\{url:"[^"]+"' "$work/sw.js" | sed -E 's/^\{url:"//; s/"$//; s#^/##' >"$work/precache.txt"
+precached="$(wc -l <"$work/precache.txt")"
+[ "$precached" -gt 10 ] || fail "found only $precached precache entries in sw.js"
+# one curl for all of them: the connection is reused instead of opening hundreds
+fetch_args=()
+while IFS= read -r precache_url; do fetch_args+=(-o /dev/null "$base/$precache_url"); done <"$work/precache.txt"
+served="$(curl -sS -w '%{http_code}\n' "${fetch_args[@]}" | grep -c '^200$' || true)"
+[ "$served" = "$precached" ] || fail "only $served of $precached precached files are served with 200"
+echo "precached files: $precached"
 # nothing else changed: the API still needs its credentials, and public files stay public
 expect_status 401 "$base/api/v1/tokens"
 expect_status 200 "$base/api/v1/health"
