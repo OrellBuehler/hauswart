@@ -1230,6 +1230,7 @@
   "defects_pdf": "Mängelliste PDF",
   "defects_pdf_hint": "Mängelliste als PDF herunterladen (Filter: {filter})",
   "defects_pdf_all_statuses": "alle Status",
+  "defects_pdf_scope": "Enthält: {filter}",
   "defects_empty_title": "Noch keine Mängel erfasst",
   "defects_empty_body": "Halte Mängel in der Wohnung fest, damit du sie fristgerecht melden und ihre Behebung belegen kannst.",
   "defects_none_active_title": "Keine offenen Mängel",

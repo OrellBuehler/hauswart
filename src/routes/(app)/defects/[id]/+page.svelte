@@ -129,21 +129,23 @@
       </div>
     </div>
 
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex items-center gap-2 sm:flex-wrap">
       {#each primary as status, index (status)}
         {@const Icon = actionIcons[status]}
         <Button
           size="lg"
           variant={index === 0 && !closed ? "default" : "outline"}
+          class={index === 0 ? "max-sm:min-w-0 max-sm:flex-1" : "max-sm:hidden"}
           onclick={() => change(status)}
         >
           <Icon />
-          {actionLabels[status]}
+          <span class="truncate">{actionLabels[status]}</span>
         </Button>
       {/each}
       <Button
         size="lg"
         variant="outline"
+        class="max-sm:hidden"
         href={resolve(`/defects/${defect.id}/edit` as "/")}
       >
         <PencilIcon />
@@ -162,7 +164,24 @@
             </Button>
           {/snippet}
         </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="start" class="min-w-52">
+        <DropdownMenu.Content align="end" class="min-w-52">
+          {#each primary.slice(1) as status (status)}
+            {@const Icon = actionIcons[status]}
+            <DropdownMenu.Item
+              class="min-h-10 sm:hidden"
+              onSelect={() => change(status)}
+            >
+              <Icon />
+              {actionLabels[status]}
+            </DropdownMenu.Item>
+          {/each}
+          <DropdownMenu.Item
+            class="min-h-10 sm:hidden"
+            onSelect={() => goto(resolve(`/defects/${defect.id}/edit` as "/"))}
+          >
+            <PencilIcon />
+            {m.common_edit()}
+          </DropdownMenu.Item>
           {#each more as status (status)}
             {@const Icon = status === "open" ? UndoIcon : actionIcons[status]}
             <DropdownMenu.Item class="min-h-10" onSelect={() => change(status)}>
@@ -170,9 +189,9 @@
               {actionLabels[status]}
             </DropdownMenu.Item>
           {/each}
-          {#if more.length > 0}
-            <DropdownMenu.Separator />
-          {/if}
+          <DropdownMenu.Separator
+            class={more.length === 0 ? "sm:hidden" : ""}
+          />
           <DropdownMenu.Item
             class="text-destructive focus:text-destructive min-h-10"
             onSelect={() => (deleteOpen = true)}
@@ -189,7 +208,7 @@
     class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
   >
     <Card.Root class="min-w-0 lg:col-start-1">
-      <Card.Content>
+      <Card.Content class="px-3 sm:px-6">
         <DefectStepper
           status={defect.status}
           discoveredOn={defect.discoveredOn}

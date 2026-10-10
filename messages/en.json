@@ -1230,6 +1230,7 @@
   "defects_pdf": "Defect list PDF",
   "defects_pdf_hint": "Download the defect list as a PDF (filter: {filter})",
   "defects_pdf_all_statuses": "all statuses",
+  "defects_pdf_scope": "Includes: {filter}",
   "defects_empty_title": "No defects recorded yet",
   "defects_empty_body": "Record defects in the apartment so that you can report them in time and show that they were fixed.",
   "defects_none_active_title": "No open defects",

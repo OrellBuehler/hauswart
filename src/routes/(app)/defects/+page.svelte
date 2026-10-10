@@ -49,9 +49,14 @@
     endpointUrl(endpoints.defectsExport, { query: exportQuery(filters) }),
   );
   const pdfHint = $derived(
-    filters.statuses.length === 1
-      ? statusLabels[filters.statuses[0]]()
-      : m.defects_pdf_all_statuses(),
+    [
+      filters.statuses.length === 1
+        ? statusLabels[filters.statuses[0]]()
+        : m.defects_pdf_all_statuses(),
+      data.rooms.find((r) => r.id === filters.roomId)?.name,
+    ]
+      .filter(Boolean)
+      .join(", "),
   );
 
   let filtersOpen = $state(false);
@@ -134,18 +139,27 @@
 <div class="flex flex-col gap-6">
   <PageHeader title={m.defects_title()} description={m.defects_description()}>
     {#snippet actions()}
+      <div class="flex flex-col items-start gap-1">
+        <Button
+          href={pdfHref}
+          download
+          data-sveltekit-reload
+          variant="outline"
+          size="lg"
+          title={m.defects_pdf_hint({ filter: pdfHint })}
+        >
+          <FileDownIcon />
+          {m.defects_pdf()}
+        </Button>
+        <p class="text-muted-foreground max-w-60 text-xs text-pretty">
+          {m.defects_pdf_scope({ filter: pdfHint })}
+        </p>
+      </div>
       <Button
-        href={pdfHref}
-        download
-        data-sveltekit-reload
-        variant="outline"
+        href={resolve("/defects/new")}
         size="lg"
-        title={m.defects_pdf_hint({ filter: pdfHint })}
+        class="max-md:hidden md:self-start"
       >
-        <FileDownIcon />
-        {m.defects_pdf()}
-      </Button>
-      <Button href={resolve("/defects/new")} size="lg" class="max-md:hidden">
         <PlusIcon />
         {m.defect_new()}
       </Button>
@@ -310,7 +324,7 @@
       </EmptyState>
     {/if}
   {:else}
-    <Card.Root class="gap-0 py-0 md:hidden">
+    <Card.Root class="gap-0 py-0 lg:hidden">
       <ul class="divide-y">
         {#each shown as defect (defect.id)}
           <DefectRow {defect} today={data.today} />
@@ -318,7 +332,7 @@
       </ul>
     </Card.Root>
 
-    <Card.Root class="gap-0 py-0 max-md:hidden">
+    <Card.Root class="gap-0 py-0 max-lg:hidden">
       <Table.Root>
         <Table.Header>
           <Table.Row>

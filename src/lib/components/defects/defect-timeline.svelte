@@ -127,11 +127,15 @@
                   {/if}
                 </span>
                 <time
-                  class="text-muted-foreground text-xs"
+                  class="text-muted-foreground text-xs max-sm:basis-full"
                   datetime={item.at}
                   title={formatDateTime(item.at, { timeZone })}
-                  >{formatRelativeInstant(item.at, now)}</time
                 >
+                  {formatRelativeInstant(item.at, now)}
+                  <span class="tabular-nums sm:hidden"
+                    >· {formatDateTime(item.at, { timeZone })}</span
+                  >
+                </time>
               </p>
               {#if item.type === "status" && item.toStatus}
                 <p class="mt-1.5 flex flex-wrap items-center gap-2">
