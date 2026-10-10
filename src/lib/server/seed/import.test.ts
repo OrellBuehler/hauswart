@@ -16,6 +16,8 @@ const exampleJson = (): SeedInput =>
     readFileSync(join(process.cwd(), "seed", "example.de.json"), "utf8"),
   );
 const example = (): Seed => seedSchema.parse(exampleJson());
+const vehiclesInFile = (seed: Seed) =>
+  seed.assets.filter((a) => a.vehicle !== undefined).length;
 
 describe("seed import", () => {
   const test = useTestDB();
@@ -78,6 +80,7 @@ describe("seed import", () => {
       household: "skipped",
       rooms: { created: 5, updated: 0, unchanged: 0 },
       assets: { created: seed.assets.length, updated: 0, unchanged: 0 },
+      vehicles: { created: vehiclesInFile(seed), updated: 0, unchanged: 0 },
       tasks: { created: seed.tasks.length, updated: 0, unchanged: 0 },
       preparations: {
         created: seed.tasks.reduce((n, t) => n + t.preparations.length, 0),
@@ -150,6 +153,7 @@ describe("seed import", () => {
       household: "unchanged",
       rooms: { created: 0, updated: 0, unchanged: 5 },
       assets: { created: 0, updated: 0, unchanged: seed.assets.length },
+      vehicles: { created: 0, updated: 0, unchanged: vehiclesInFile(seed) },
       tasks: { created: 0, updated: 0, unchanged: seed.tasks.length },
       preparations: {
         created: 0,
@@ -296,6 +300,133 @@ describe("seed import", () => {
     });
     expect(monstera?.roomId).toBeTruthy();
     expect(monstera?.qrSlug).toMatch(/^[a-z2-7]{10}$/);
+  });
+
+  describe("vehicles", () => {
+    const detailsOf = async (
+      api: Awaited<ReturnType<typeof client>>["api"],
+    ) => {
+      const car = test.db
+        .select()
+        .from(assets)
+        .all()
+        .find((a) => a.slug === "familienauto")!;
+      return {
+        car,
+        details: await api.call(endpoints.vehiclesGet, {
+          params: { id: car.id },
+        }),
+      };
+    };
+    const withVehicle = (over: Record<string, unknown>): SeedInput => {
+      const json = exampleJson();
+      json.assets = (json.assets ?? []).map((a) =>
+        a.key === "familienauto"
+          ? { ...a, vehicle: { ...a.vehicle, ...over } }
+          : a,
+      );
+      return json;
+    };
+
+    it("saves the details of the example vehicle with the asset", async () => {
+      const { api } = await client();
+      const report = await importSeed(api, example());
+      expect(report.vehicles).toEqual({ created: 1, updated: 0, unchanged: 0 });
+      const { car, details } = await detailsOf(api);
+      expect(car).toMatchObject({ kind: "vehicle", name: "Familienauto" });
+      expect(car.roomId).toBeNull();
+      expect(details).toMatchObject({
+        plate: "ZH 000000",
+        firstRegistration: "2022-03-10",
+        fuelType: "plugin_hybrid",
+        tireSizeWinter: "205/55 R16 91H",
+        location: "Tiefgarage, Platz 0",
+        odometerUnit: "km",
+      });
+    });
+
+    it("leaves saved details alone unless asked to update", async () => {
+      const { api, writes, reset } = await client();
+      await importSeed(api, example());
+      reset();
+      const changed = seedSchema.parse(withVehicle({ plate: "ZH 111111" }));
+      const skipped = await importSeed(api, changed);
+      expect(skipped.vehicles).toEqual({
+        created: 0,
+        updated: 0,
+        unchanged: 1,
+      });
+      expect(writes().filter((w) => w.includes("/vehicle"))).toEqual([]);
+      expect((await detailsOf(api)).details.plate).toBe("ZH 000000");
+
+      const updated = await importSeed(api, changed, { update: true });
+      expect(updated.vehicles).toEqual({
+        created: 0,
+        updated: 1,
+        unchanged: 0,
+      });
+      expect((await detailsOf(api)).details.plate).toBe("ZH 111111");
+
+      reset();
+      const again = await importSeed(api, changed, { update: true });
+      expect(again.vehicles).toEqual({ created: 0, updated: 0, unchanged: 1 });
+      expect(writes().filter((w) => w.includes("/vehicle"))).toEqual([]);
+    });
+
+    it("saves details that a run which stopped half way left out", async () => {
+      const { api } = await client();
+      await importSeed(
+        api,
+        seedSchema.parse({
+          version: 1,
+          assets: [
+            { key: "familienauto", kind: "vehicle", name: "Familienauto" },
+          ],
+        }),
+      );
+      expect((await detailsOf(api)).details.updatedAt).toBeNull();
+      const report = await importSeed(api, example());
+      expect(report.assets.unchanged).toBeGreaterThanOrEqual(1);
+      expect(report.vehicles).toEqual({ created: 1, updated: 0, unchanged: 0 });
+      expect((await detailsOf(api)).details.plate).toBe("ZH 000000");
+    });
+
+    it("clears what the file leaves out when updating (PUT replaces)", async () => {
+      const { api } = await client();
+      await importSeed(api, example());
+      const json = exampleJson();
+      json.assets = (json.assets ?? []).map((a) =>
+        a.key === "familienauto"
+          ? { ...a, vehicle: { plate: "BE 222222" } }
+          : a,
+      );
+      await importSeed(api, seedSchema.parse(json), { update: true });
+      expect((await detailsOf(api)).details).toMatchObject({
+        plate: "BE 222222",
+        vin: null,
+        fuelType: null,
+        odometerUnit: "km",
+      });
+    });
+
+    it("rejects details on an asset that is no vehicle, and unknown fields", () => {
+      const json = exampleJson();
+      json.assets = (json.assets ?? []).map((a) =>
+        a.key === "backofen" ? { ...a, vehicle: { plate: "ZH 1" } } : a,
+      );
+      const result = seedSchema.safeParse(json);
+      expect(result.success).toBe(false);
+      expect(
+        result.error?.issues.map((i) => `${i.path.join(".")}: ${i.message}`),
+      ).toEqual([
+        expect.stringMatching(
+          /^assets\.\d+\.vehicle: Only an asset of kind "vehicle"/,
+        ),
+      ]);
+      expect(seedSchema.safeParse(withVehicle({ colour: "red" })).success).toBe(
+        false,
+      );
+    });
   });
 });
 

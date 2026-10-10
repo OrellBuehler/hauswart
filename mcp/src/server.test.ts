@@ -34,6 +34,7 @@ const READ_TOOLS = [
   "get_document",
   "list_document_links",
   "list_finance_suggestions",
+  "get_vehicle",
 ];
 const WRITE_TOOLS = [
   "create_task",
@@ -51,6 +52,7 @@ const WRITE_TOOLS = [
   "add_service_log",
   "link_document",
   "unlink_document",
+  "record_odometer",
 ];
 const DOCS_WRITE_TOOLS = ["create_page", "update_page"];
 const COSTS_WRITE_TOOLS = [

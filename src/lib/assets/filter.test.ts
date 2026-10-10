@@ -92,6 +92,22 @@ describe("filterAssets", () => {
     expect(names({ q: "küche" })).toEqual(["Backofen"]);
     expect(names({ q: "nothing" })).toEqual([]);
   });
+
+  it("finds a vehicle by its plate, with or without the space", () => {
+    const car = asset({
+      name: "Familienauto",
+      kind: "vehicle",
+      vehicle: { plate: "ZH 000000", odometer: null },
+    });
+    const find = (q: string) =>
+      filterAssets([...assets, car], { ...emptyFilter, q }, TODAY).map(
+        (a) => a.name,
+      );
+    expect(find("zh 000000")).toEqual(["Familienauto"]);
+    expect(find("ZH000000")).toEqual(["Familienauto"]);
+    expect(find("0000")).toEqual(["Familienauto"]);
+    expect(find("BE 1")).toEqual([]);
+  });
 });
 
 describe("isFiltered", () => {

@@ -55,13 +55,17 @@ function soonDaysOf(task: TaskRow, fallback: number): number {
   return task.dueSoonDays ?? fallback;
 }
 
-/** `open` within the lead window; progress-based tasks (x per month) only speak up once due. */
+/**
+ * `open` within the lead window; progress-based tasks (x per month) only speak up once due. A
+ * counter task with a time limit has progress too, but its date is a fixed one (`exact`), so it
+ * does announce that.
+ */
 function isDueSoon(c: Candidate, today: string, fallback: number): boolean {
   const { state } = c;
   return (
     state.status === "open" &&
     state.dueDate !== null &&
-    state.progress === null &&
+    (state.progress === null || state.dueKind === "exact") &&
     diffDays(state.dueDate, today) <= soonDaysOf(c.task, fallback)
   );
 }

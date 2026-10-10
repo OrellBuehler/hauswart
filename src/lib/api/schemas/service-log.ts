@@ -12,6 +12,7 @@ import {
 import { minorAmountSchema } from "./fields";
 import { currencySchema } from "./household";
 import { costsOfSchema } from "./costs";
+import { odometerValueSchema } from "./vehicles";
 
 export const serviceLogKindSchema = z.enum(SERVICE_LOG_KINDS);
 
@@ -32,6 +33,8 @@ export const serviceLogEntrySchema = z
     costEntryId: z.string().nullable(),
     /** Cost entries booked against this entry (household currency); see `/costs?...`. */
     costs: costsOfSchema,
+    /** The odometer when the work was done (vehicles only); it is also a reading of the vehicle. */
+    odometer: z.number().nullable(),
     performedBy: z.string().nullable(),
     createdBy: z.string().nullable(),
     commentCount: z.number().int(),
@@ -60,10 +63,14 @@ const logFields = {
   contactId: idSchema.nullable(),
   costMinor: minorAmountSchema.nullable(),
   currency: currencySchema.nullable(),
+  odometer: odometerValueSchema.nullable(),
   performedBy: nullableText(160),
 };
 
-/** `date` defaults to today, `currency` to the household's when a cost is given. */
+/**
+ * `date` defaults to today, `currency` to the household's when a cost is given. An `odometer` (vehicles
+ * only, 400 on any other asset) is also recorded as a reading of the vehicle on the entry's date.
+ */
 export const createServiceLogRequestSchema = z.strictObject({
   date: logFields.date.optional(),
   kind: logFields.kind.default("maintenance"),
@@ -72,6 +79,7 @@ export const createServiceLogRequestSchema = z.strictObject({
   contactId: logFields.contactId.optional(),
   costMinor: logFields.costMinor.optional(),
   currency: logFields.currency.optional(),
+  odometer: logFields.odometer.optional(),
   performedBy: logFields.performedBy.optional(),
 });
 export type CreateServiceLogRequest = z.output<
@@ -87,6 +95,7 @@ export const updateServiceLogRequestSchema = atLeastOne(
     contactId: logFields.contactId.optional(),
     costMinor: logFields.costMinor.optional(),
     currency: logFields.currency.optional(),
+    odometer: logFields.odometer.optional(),
     performedBy: logFields.performedBy.optional(),
   }),
 );

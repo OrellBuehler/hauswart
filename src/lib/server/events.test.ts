@@ -10,6 +10,8 @@ const payload = {
     kind: "done" as const,
     userId: null,
     completedAt: new Date(0),
+    completedDate: "1970-01-01",
+    counterValue: null,
   },
 };
 

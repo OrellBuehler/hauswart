@@ -179,6 +179,14 @@ import {
   updateServiceLogRequestSchema,
 } from "./schemas/service-log";
 import {
+  listOdometerQuerySchema,
+  listOdometerResponseSchema,
+  odometerReadingSchema,
+  putVehicleRequestSchema,
+  recordOdometerRequestSchema,
+  vehicleSchema,
+} from "./schemas/vehicles";
+import {
   addDefectEventRequestSchema,
   changeDefectStatusRequestSchema,
   createDefectRequestSchema,
@@ -1644,6 +1652,86 @@ export const endpoints = {
     auth: "both",
     scopes: ["write"],
     params: serviceLogParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
+  vehiclesGet: defineEndpoint({
+    id: "vehiclesGet",
+    method: "GET",
+    path: "/api/v1/assets/{id}/vehicle",
+    summary: "Details of a vehicle",
+    description:
+      "Plate, VIN, registration data, tire sizes, where it is kept and the newest odometer reading. A vehicle whose details were never saved answers with empty ones (and kilometres). 404 for a missing asset and for an asset that is no vehicle.",
+    tags: ["vehicles", "assets"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: vehicleSchema,
+    errors: ["not_found"],
+  }),
+
+  vehiclesPut: defineEndpoint({
+    id: "vehiclesPut",
+    method: "PUT",
+    path: "/api/v1/assets/{id}/vehicle",
+    summary: "Save the details of a vehicle",
+    description:
+      "Replaces the details: a field left out is cleared and the odometer unit goes back to km. Changing the unit relabels the readings, it does not convert them. 400 unless the asset has kind `vehicle`, 404 for a missing asset.",
+    tags: ["vehicles", "assets"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: putVehicleRequestSchema,
+    response: vehicleSchema,
+    errors: ["not_found"],
+  }),
+
+  odometerList: defineEndpoint({
+    id: "odometerList",
+    method: "GET",
+    path: "/api/v1/assets/{id}/odometer",
+    summary: "Odometer readings of a vehicle, newest first",
+    description:
+      "Every reading ever recorded, by date and then by when it was entered. Readings are never pruned.",
+    tags: ["vehicles", "assets"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    query: listOdometerQuerySchema,
+    response: listOdometerResponseSchema,
+    errors: ["not_found"],
+  }),
+
+  odometerCreate: defineEndpoint({
+    id: "odometerCreate",
+    method: "POST",
+    path: "/api/v1/assets/{id}/odometer",
+    summary: "Record an odometer reading",
+    description:
+      "The date defaults to today and must not be in the future. A value lower than the reading before it (by date) is a 400 on `value`, unless `force` is true (a replaced instrument cluster). The newest reading becomes the signal `odometer:<asset id>` that tasks with a counter trigger read, so due dates, estimates and notifications follow at once. 400 for an asset that is no vehicle.",
+    tags: ["vehicles", "assets"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: recordOdometerRequestSchema,
+    response: odometerReadingSchema,
+    status: 201,
+    errors: ["not_found"],
+  }),
+
+  odometerDelete: defineEndpoint({
+    id: "odometerDelete",
+    method: "DELETE",
+    path: "/api/v1/odometer-readings/{id}",
+    summary: "Delete an odometer reading",
+    description:
+      "The vehicle's newest remaining reading becomes its current one. Readings written by a completion or a service log entry go with them.",
+    tags: ["vehicles"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
     response: emptySchema,
     status: 204,
     errors: ["not_found"],

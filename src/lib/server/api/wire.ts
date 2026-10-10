@@ -55,6 +55,12 @@ import type {
 } from "$lib/api/schemas/parts";
 import type { serviceLogEntrySchema } from "$lib/api/schemas/service-log";
 import type {
+  odometerReadingSchema,
+  vehicleSchema,
+} from "$lib/api/schemas/vehicles";
+import type { OdometerRow } from "$lib/server/vehicles/odometer";
+import type { VehicleRecord } from "$lib/server/vehicles/vehicles";
+import type {
   defectDetailSchema,
   defectEventSchema,
   defectSchema,
@@ -167,8 +173,44 @@ export function wireAsset(asset: AssetRecord): z.input<typeof assetSchema> {
     externalRef: asset.externalRef,
     archivedAt: iso(asset.archivedAt),
     commentCount: asset.commentCount,
+    ...(asset.vehicle ? { vehicle: asset.vehicle } : {}),
     createdAt: toIso(asset.createdAt),
     updatedAt: toIso(asset.updatedAt),
+  };
+}
+
+export function wireVehicle(v: VehicleRecord): z.input<typeof vehicleSchema> {
+  return {
+    assetId: v.assetId,
+    plate: v.plate,
+    vin: v.vin,
+    registrationNumber: v.registrationNumber,
+    firstRegistration: v.firstRegistration,
+    fuelType: v.fuelType,
+    tireSizeSummer: v.tireSizeSummer,
+    tireSizeWinter: v.tireSizeWinter,
+    location: v.location,
+    odometerUnit: v.odometerUnit,
+    notes: v.notes,
+    odometer: v.odometer,
+    updatedAt: iso(v.updatedAt),
+  };
+}
+
+export function wireOdometerReading(
+  r: OdometerRow,
+): z.input<typeof odometerReadingSchema> {
+  return {
+    id: r.id,
+    assetId: r.assetId,
+    date: r.date,
+    value: r.value,
+    source: r.source,
+    sourceId: r.sourceId,
+    note: r.note,
+    createdBy: r.createdBy,
+    createdAt: toIso(r.createdAt),
+    updatedAt: toIso(r.updatedAt),
   };
 }
 
@@ -485,6 +527,7 @@ export function wireServiceLogEntry(
     currency: e.currency,
     costEntryId: e.costEntryId,
     costs: e.costs,
+    odometer: e.odometer,
     performedBy: e.performedBy,
     createdBy: e.createdBy,
     commentCount: e.commentCount,

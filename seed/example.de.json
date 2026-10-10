@@ -75,6 +75,26 @@
       "species": "Monstera deliciosa",
       "light": "hell, ohne direkte Sonne",
       "waterNotes": "Im Sommer wöchentlich, im Winter alle zwei Wochen giessen; Staunässe vermeiden."
+    },
+    {
+      "key": "familienauto",
+      "kind": "vehicle",
+      "name": "Familienauto",
+      "category": "Personenwagen",
+      "manufacturer": "Musterwerk",
+      "model": "Kombi 2.0",
+      "purchaseDate": "2022-03-10",
+      "vehicle": {
+        "plate": "ZH 000000",
+        "vin": "EXAMPLEVIN0000000",
+        "registrationNumber": "000.000.000",
+        "firstRegistration": "2022-03-10",
+        "fuelType": "plugin_hybrid",
+        "tireSizeSummer": "205/55 R16 91V",
+        "tireSizeWinter": "205/55 R16 91H",
+        "location": "Tiefgarage, Platz 0",
+        "odometerUnit": "km"
+      }
     }
   ],
   "tasks": [
@@ -231,6 +251,38 @@
           "leadDays": 1
         }
       ]
+    },
+    {
+      "key": "familienauto-winterreifen",
+      "title": "Winterreifen aufziehen",
+      "category": "maintenance",
+      "asset": "familienauto",
+      "trigger": {
+        "v": 1,
+        "type": "calendar",
+        "freq": "yearly",
+        "interval": 1,
+        "byMonth": [10],
+        "byMonthDay": 15,
+        "startDate": "2026-10-15",
+        "earlyDays": 14
+      },
+      "preparations": [
+        {
+          "title": "Garagentermin buchen",
+          "kind": "generic",
+          "leadDays": 28
+        }
+      ]
+    },
+    {
+      "key": "familienauto-mfk",
+      "title": "MFK (Motorfahrzeugkontrolle)",
+      "category": "inspection",
+      "priority": "high",
+      "asset": "familienauto",
+      "trigger": { "v": 1, "type": "one_off", "date": "2029-03-10" },
+      "comment": "Die Kilometer-Aufgabe (Service alle 15 000 km oder 12 Monate) braucht die Kennung des Fahrzeugs (odometer:<Fahrzeug-ID>) und wird deshalb in der App mit der Vorlage „Service“ angelegt."
     }
   ]
 }

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { triggerSchema } from "../../tasks/engine/types";
 import { createAssetRequestSchema } from "./assets";
 import { createRoomRequestSchema } from "./rooms";
+import { putVehicleRequestSchema } from "./vehicles";
 import {
   createPreparationRequestSchema,
   createTaskRequestSchema,
@@ -48,6 +49,8 @@ export const seedAssetSchema = z.strictObject({
   species: assetShape.species,
   light: assetShape.light,
   waterNotes: assetShape.waterNotes,
+  /** The details of an asset of kind `vehicle` (what `PUT /assets/{id}/vehicle` takes). */
+  vehicle: putVehicleRequestSchema.optional(),
 });
 
 export const seedPreparationSchema = z.strictObject({
@@ -133,6 +136,12 @@ export const seedSchema = z
     seed.assets.forEach((a, i) => {
       if (a.room && !rooms.has(a.room)) {
         issue(["assets", i, "room"], `Unknown room "${a.room}"`);
+      }
+      if (a.vehicle && a.kind !== "vehicle") {
+        issue(
+          ["assets", i, "vehicle"],
+          'Only an asset of kind "vehicle" has vehicle details',
+        );
       }
     });
     seed.tasks.forEach((t, i) => {

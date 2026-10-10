@@ -158,6 +158,59 @@ describe("generateNotifications", () => {
     });
   });
 
+  describe("counter tasks with a time limit", () => {
+    const service = {
+      v: 1,
+      type: "counter_delta",
+      entityId: "odometer:example-car",
+      threshold: 15_000,
+      unit: "km",
+      orEvery: { every: 1, unit: "month" },
+    } as const;
+
+    it("announce the time limit coming up, due and overdue like any dated task", async () => {
+      const [anna] = await household();
+      const task = await makeTask(ctx("2026-06-15"), {
+        title: "Service",
+        trigger: service,
+      });
+      expect(task.state).toMatchObject({
+        status: "ok",
+        dueDate: "2026-07-15",
+        dueKind: "exact",
+      });
+      const kindsAt = async (when: string) => {
+        await runEvaluationCycle(ctx(when, "07:00"));
+        return rows(test.db, { userId: anna.id })
+          .filter((r) => r.kind !== "digest")
+          .map((r) => r.kind)
+          .sort();
+      };
+      expect(await kindsAt("2026-07-01")).toEqual([]);
+      expect(await kindsAt("2026-07-10")).toEqual(["due_soon"]);
+      expect(await kindsAt("2026-07-15")).toEqual(["due", "due_soon"]);
+      expect(await kindsAt("2026-07-16")).toEqual([
+        "due",
+        "due_soon",
+        "overdue",
+      ]);
+    });
+
+    it("a counter task without a time limit stays quiet until it is due", async () => {
+      const [anna] = await household();
+      await makeTask(ctx("2026-06-15"), {
+        trigger: {
+          v: 1,
+          type: "counter_delta",
+          entityId: service.entityId,
+          threshold: service.threshold,
+        },
+      });
+      await runEvaluationCycle(ctx("2026-07-10", "07:00"));
+      expect(rows(test.db, { userId: anna.id, kind: "due_soon" })).toEqual([]);
+    });
+  });
+
   describe("overdue reminders", () => {
     it("repeat weekly and stop after four", async () => {
       const [anna] = await household();

@@ -5,8 +5,15 @@ import {
   type CreateAssetRequest,
   type UpdateAssetRequest,
 } from "$lib/api/schemas/assets";
+import type { VehicleSummary } from "$lib/api/schemas/vehicles";
 import { commentCountSql } from "$lib/server/comments/counts";
-import { assetHints, assets, rooms, serviceLog } from "$lib/server/db";
+import {
+  assetHints,
+  assets,
+  rooms,
+  serviceLog,
+  vehicleDetails,
+} from "$lib/server/db";
 import { paginateArray } from "$lib/server/pagination";
 import {
   conflict,
@@ -16,6 +23,8 @@ import {
   type ServiceContext,
 } from "$lib/server/service";
 import { slugify, uniqueSlug } from "$lib/server/slug";
+import { forgetOdometerSignal } from "$lib/server/vehicles/signal";
+import { vehicleSummaries } from "$lib/server/vehicles/summary";
 import {
   assertAssetPhoto,
   removeOwnedAttachments,
@@ -28,6 +37,8 @@ export type AssetRow = typeof assets.$inferSelect;
 export interface AssetRecord extends AssetRow {
   roomName: string | null;
   commentCount: number;
+  /** Vehicles only: the plate and the newest odometer reading. */
+  vehicle?: VehicleSummary;
 }
 
 const BASE32 = "abcdefghijklmnopqrstuvwxyz234567";
@@ -59,6 +70,17 @@ const toRecord = ({ asset, roomName, commentCount }: Joined): AssetRecord => ({
   commentCount: Number(commentCount),
 });
 
+/** Vehicles among the records get their plate and newest odometer reading. */
+function withVehicles(db: Db["db"], records: AssetRecord[]): AssetRecord[] {
+  const ids = records.filter((r) => r.kind === "vehicle").map((r) => r.id);
+  if (ids.length === 0) return records;
+  const summaries = vehicleSummaries(db, ids);
+  return records.map((r) => {
+    const vehicle = summaries.get(r.id);
+    return vehicle ? { ...r, vehicle } : r;
+  });
+}
+
 function escapeLike(value: string): string {
   return value.replace(/[\\%_]/g, (c) => `\\${c}`);
 }
@@ -81,6 +103,7 @@ export function listAssets(
   if (filter.roomId) where.push(eq(assets.roomId, filter.roomId));
   if (filter.q) {
     const pattern = `%${escapeLike(filter.q.toLowerCase())}%`;
+    const compactPattern = pattern.replace(/\s+/g, "");
     const match = (column: Parameters<typeof like>[0]) =>
       sql`lower(${column}) like ${pattern} escape '\\'`;
     where.push(
@@ -90,6 +113,8 @@ export function listAssets(
         match(assets.model),
         match(assets.category),
         match(assets.species),
+        // A vehicle is found by its plate as well, written with or without spaces.
+        sql`exists (select 1 from ${vehicleDetails} where ${vehicleDetails.assetId} = ${assets.id} and (lower(${vehicleDetails.plate}) like ${pattern} escape '\\' or replace(lower(${vehicleDetails.plate}), ' ', '') like ${compactPattern} escape '\\'))`,
       ) as SQL,
     );
   }
@@ -98,12 +123,13 @@ export function listAssets(
     .orderBy(asc(assets.name), asc(assets.id))
     .all()
     .map(toRecord);
-  return paginateArray(rows, page.cursor, page.limit);
+  const paged = paginateArray(rows, page.cursor, page.limit);
+  return { ...paged, items: withVehicles(ctx.db, paged.items) };
 }
 
 export function findAsset(ctx: Db, id: string): AssetRecord | undefined {
   const row = selectAsset(ctx.db).where(eq(assets.id, id)).get();
-  return row && toRecord(row);
+  return row && withVehicles(ctx.db, [toRecord(row)])[0];
 }
 
 export function getAsset(ctx: Db, id: string): AssetRecord {
@@ -115,7 +141,7 @@ export function getAsset(ctx: Db, id: string): AssetRecord {
 export function getAssetByQr(ctx: Db, qrSlug: string): AssetRecord {
   const row = selectAsset(ctx.db).where(eq(assets.qrSlug, qrSlug)).get();
   if (!row) throw notFound("Asset");
-  return toRecord(row);
+  return withVehicles(ctx.db, [toRecord(row)])[0];
 }
 
 export function findAssetBySlug(ctx: Db, slug: string) {
@@ -287,6 +313,8 @@ export function deleteAsset(ctx: Now, id: string): void {
     .returning({ id: assets.id })
     .all();
   if (result.length === 0) throw notFound("Asset");
+  // The readings went with the asset; the signal the tasks read from them has no foreign key to follow.
+  forgetOdometerSignal(ctx, id);
   removeOwnedAttachments(ctx, "asset", id);
   for (const entryId of entryIds) {
     removeOwnedAttachments(ctx, "service_log", entryId);

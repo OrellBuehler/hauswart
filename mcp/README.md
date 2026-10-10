@@ -125,7 +125,7 @@ Results are a one-line summary followed by compact JSON (empty fields left out).
 | `get_task`                   | read        | One task: trigger, state, preparations, recent completions                                                                                                 |
 | `preview_trigger`            | read        | Check a trigger and see its first due date without creating anything                                                                                       |
 | `list_rooms`                 | read        | Rooms with ids                                                                                                                                             |
-| `list_assets`                | read        | Devices, plants, fixtures; filter by kind, room, text; paged                                                                                               |
+| `list_assets`                | read        | Devices, plants, fixtures, vehicles; filter by kind, room, text; paged                                                                                     |
 | `get_asset`                  | read        | One asset in full, with its tasks                                                                                                                          |
 | `get_stats`                  | read        | Done / skipped / on time per person and category                                                                                                           |
 | `list_notifications`         | read        | The token user's notifications as readable text                                                                                                            |
@@ -165,6 +165,8 @@ Results are a one-line summary followed by compact JSON (empty fields left out).
 | `accept_finance_suggestion`  | costs:write | Turn a suggestion into a cost entry, device or payment task, optionally overriding title, category, asset, room, payer, split ...                          |
 | `dismiss_finance_suggestion` | costs:write | Reject a suggestion for good (it is never offered again)                                                                                                   |
 | `sync_finance`               | costs:write | Sync your finance connection now and report what changed                                                                                                   |
+| `get_vehicle`                | read        | A vehicle by id, name or plate: details, the latest odometer reading and its date, and its open tasks with their due state                                 |
+| `record_odometer`            | write       | Record a vehicle's odometer (value, optional date and note); a lower value than before is refused unless `force`; lists the tasks that now need attention  |
 | `create_page`                | docs:write  | New documentation page (needs `docs:write`)                                                                                                                |
 | `update_page`                | docs:write  | Edit a page; needs the `rev` from `get_page`, a concurrent edit is reported, not overwritten                                                               |
 

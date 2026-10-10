@@ -44,6 +44,8 @@ import {
   NOTIFICATION_TARGET_CHANNELS,
   NOTIFICATION_TITLE_KEYS,
   NOTIFY_MODES,
+  ODOMETER_SOURCES,
+  ODOMETER_UNITS,
   PART_MOVEMENT_REASONS,
   PREPARATION_KINDS,
   ROTATION_STRATEGIES,
@@ -54,6 +56,7 @@ import {
   TOKEN_KINDS,
   USER_LOCALES,
   USER_ROLES,
+  VEHICLE_FUEL_TYPES,
   WARRANTY_SOURCES,
 } from "$lib/api/enums";
 import type { Scope } from "$lib/api/scopes";
@@ -228,6 +231,60 @@ export const assets = sqliteTable(
     index("assets_room_id_idx").on(t.roomId),
     index("assets_kind_idx").on(t.kind),
     uniqueIndex("assets_external_idx").on(t.externalSource, t.externalRef),
+  ],
+);
+
+/** What only a vehicle has (assets of kind `vehicle`); one row per vehicle, created by the first save. */
+export const vehicleDetails = sqliteTable("vehicle_details", {
+  assetId: text("asset_id")
+    .primaryKey()
+    .references(() => assets.id, { onDelete: "cascade" }),
+  plate: text("plate"),
+  vin: text("vin"),
+  /** The Swiss "Stammnummer". */
+  registrationNumber: text("registration_number"),
+  firstRegistration: text("first_registration"),
+  fuelType: text("fuel_type", { enum: VEHICLE_FUEL_TYPES }),
+  tireSizeSummer: text("tire_size_summer"),
+  tireSizeWinter: text("tire_size_winter"),
+  /** Where the vehicle is kept; a car has no room. */
+  location: text("location"),
+  odometerUnit: text("odometer_unit", { enum: ODOMETER_UNITS })
+    .notNull()
+    .default("km"),
+  notes: text("notes"),
+  ...timestamps,
+});
+
+/**
+ * Odometer readings of a vehicle, never pruned. The latest one is mirrored as the signal
+ * `odometer:<asset id>` (with a sample per reading) so tasks can count on it.
+ */
+export const odometerReadings = sqliteTable(
+  "odometer_readings",
+  {
+    id: id(),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    date: text("date").notNull(),
+    value: real("value").notNull(),
+    source: text("source", { enum: ODOMETER_SOURCES })
+      .notNull()
+      .default("manual"),
+    /** The record the reading came from (a completion, a service log entry, ...); one reading per record. */
+    sourceId: text("source_id"),
+    note: text("note"),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    ...timestamps,
+  },
+  (t) => [
+    index("odometer_readings_asset_idx").on(t.assetId, sql`${t.date} desc`),
+    uniqueIndex("odometer_readings_source_idx")
+      .on(t.source, t.sourceId)
+      .where(sql`${t.sourceId} is not null`),
   ],
 );
 
@@ -594,6 +651,8 @@ export const serviceLog = sqliteTable(
     currency: text("currency"),
     /** Cost entries arrive with the costs milestone; no foreign key yet. */
     costEntryId: text("cost_entry_id"),
+    /** The odometer when the work was done (vehicles); it also writes a reading of the vehicle. */
+    odometer: real("odometer"),
     performedBy: text("performed_by"),
     createdBy: text("created_by").references(() => users.id, {
       onDelete: "set null",

@@ -124,6 +124,8 @@ describe("openapi document", () => {
       "NotificationParams",
       "NotificationSettings",
       "NotificationTarget",
+      "OdometerReading",
+      "OdometerSummary",
       "OrderNowItem",
       "PageBacklink",
       "PageRevision",
@@ -144,6 +146,8 @@ describe("openapi document", () => {
       "TaskState",
       "Trigger",
       "User",
+      "Vehicle",
+      "VehicleSummary",
       "Warranty",
     ]);
     const login = doc.paths["/api/v1/auth/login"].post as {

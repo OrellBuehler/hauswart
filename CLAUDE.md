@@ -8,8 +8,8 @@ optional adapters, never requirements. Status: early development — authenticat
 the task core (rooms, assets, tasks, completions, notifications, dashboard), documentation (pages,
 attachments, search, file backup), contacts, spare parts, the service log, care hints, defects (with
 a PDF export), the warranty overview, generic comments, iCal feeds, the emergency page data and guest
-links, costs (with the settlement between the people and a CSV export) and the per-person finance
-connection (Kept) exist; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
+links, costs (with the settlement between the people and a CSV export), the per-person finance
+connection (Kept) and vehicles (details, odometer readings, task templates; see "Vehicles") exist; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
 push notifications with a "done" button, areas taken over as rooms; see "Signals, integrations and delivery"); Paperless-ngx is wired as
 a per-person document provider (links, previews, warranty dates, pushing attachments; see "Documents and the
 document provider"); the MCP server covers the task core, documentation, defects, parts, contacts,
@@ -127,6 +127,10 @@ src/lib/server/share/            guest links: tokens.ts, guest-links.ts (CRUD, w
                                  state, PIN attempts, signed unlock cookie), guest-view.ts (what a link shows), guest-http.ts
                                  (gate + PIN action for the /g routes, response headers), purge.ts
 src/lib/server/emergency/        emergency page data (members) and the "Notfall- & Vertretungsblatt" PDF
+src/lib/server/vehicles/         vehicle details (`vehicle_details`), odometer readings and the signal they feed: odometer.ts
+                                 (`writeOdometer` sync, `recordOdometer` async), signal.ts (readings -> signal + samples),
+                                 summary.ts (plate + newest reading on assets), events.ts (completions), vehicles.ts (see "Vehicles")
+src/lib/vehicles/                client-safe: odometer.ts (`odometer:<asset id>` key helpers), templates.ts (task bodies for a vehicle)
 src/lib/server/pdf/render.ts     shared pdfmake wrapper (A4, Roboto from node_modules, no network or file access)
 src/lib/pwa/                     client-safe PWA parts: colors.ts (theme colours, tested against app.css), manifest.ts, options.ts
                                  (the service worker's whole behaviour; see "Installable app")
@@ -171,7 +175,19 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   (tests). Without readings, signal-based triggers report `unknown`. A failing provider is logged by
   name and treated as "no signals". The evaluator also keeps `task_state.counterBaseline` (the first
   fresh reading of a counter task, until a completion snapshots one) and `activeSince` (since when a
-  state condition holds; forgotten when it stops holding).
+  state condition holds; forgotten when it stops holding). A reading with source `manual` (typed in
+  by a person, e.g. an odometer) never goes stale (`isSignalFresh`), is never pruned (neither the
+  signal nor its samples), its samples are loaded 400 days back and its estimates look back up to a
+  year (`SPARSE_WINDOWS_DAYS`); every other reading is stale after 24 h as before.
+- **`counter_delta.orEvery`** `{every, unit}` makes a counter task also fall due by time: when the
+  counter threshold is reached or the interval since the last completion (the task's creation, the
+  `startedOn` the evaluator passes, when there is none) has passed, whichever comes first. The date
+  shown is the earlier of the time limit and the counter estimate (`dueKind` `exact` for the time
+  limit, `condition` once the counter is there, `estimated` while the estimate comes first; the status
+  always follows the time limit). A missing, stale or baseline-less counter no longer makes the task
+  `unknown`: the time half decides, the reason (`signal_missing`, `signal_stale`, `baseline_missing`)
+  is still reported. The occurrence key stays `c:<last completion id>`. `createTask` stores
+  `createdAt` from the injected clock.
 - **A completion settles the occurrence the task shows** (`occurrenceKey` defaults to the cached
   one; `dueDateAtCompletion` is stored with it). Sources: a session is `manual` (or `qr` /
   `notification` when it says so); a token is attributed by its kind (`mcp`, `ha`, otherwise
@@ -190,6 +206,9 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   by `scripts/seed.ts` through the REST API and matched by `key`, so repeating it changes nothing:
   rooms and assets by slug, tasks by `externalSource: "seed"` + `externalRef`, preparations by title.
   Existing entries are left alone unless `--update`. Changing the household needs the admin scope.
+  An asset of kind `vehicle` may carry a `vehicle` block (the body of `PUT /assets/{id}/vehicle`):
+  saved when the vehicle has no saved details yet, overwritten (and what the file leaves out cleared)
+  only with `--update`.
 
 ### Signals, integrations and delivery
 
@@ -509,7 +528,9 @@ of the owner>` is added to the document unless an identical note exists (writes 
 - **Search** (`search_fts`, FTS5, created in custom migration `0006_search_index`): triggers on pages,
   assets, rooms, tasks, defects (title, description, location), contacts (name, company, notes; never
   phone, e-mail or address), parts (name, part number, supplier, notes) and asset hints (title, body)
-  keep it current (archived assets, tasks, pages and parts are dropped). No secret text enters the
+  keep it current (archived assets, tasks, pages and parts are dropped). The plate of a vehicle is part
+  of its asset's row (migration `0016_vehicle_search`: replaces `search_assets_au`, adds triggers on
+  `vehicle_details`); nothing else of `vehicle_details` is indexed. No secret text enters the
   index: pages index `plain_text`; every other free text is cut off at the first `:::` when it
   mentions "secret" anywhere. Hit `url`s are the UI routes (`/docs/<slug>`, `/assets/<id>` also for
   plants and hints, `/rooms/<id>`, `/tasks/<id>`, `/defects/<id>`, `/parts/<id>`, `/contacts/<id>`).
@@ -548,6 +569,51 @@ of the owner>` is added to the document unless an identical note exists (writes 
   (trigger in migration `0013`).
 - **Hint reactions** (`signalReactionSchema`, type `signal_change`) are stored with the hint
   (`GET /hints?reactive=true`) and executed by `signals/reactions.ts`, see below.
+
+### Vehicles
+
+- **A vehicle is an asset of kind `vehicle`** (no room; `GET /assets?kind=vehicle`, and `q` also matches
+  the plate). `vehicle_details` (1:1, created by the first save) holds plate, VIN, Stammnummer
+  (`registrationNumber`), `firstRegistration`, `fuelType`, tire sizes, `location`, `odometerUnit`
+  (`km|mi`) and notes. `GET|PUT /assets/{id}/vehicle`: PUT replaces (a field left out is cleared; the
+  unit relabels the readings, it does not convert them), 400 for an asset of another kind, 404 for a
+  missing one; GET answers empty details for a vehicle never saved and 404 for another kind. The asset
+  DTO carries `vehicle: {plate, odometer: {value, date, unit} | null}` for vehicles only. The plate is
+  indexed for search (see "Search"); deleting the asset removes the odometer signal as well.
+- **Odometer readings** (`odometer_readings`, never pruned): `POST /assets/{id}/odometer` (`date`
+  defaults to today and is never in the future), `GET` newest first (keyset), `DELETE
+/odometer-readings/{id}`. A value lower than the reading before it (the newest on or before the date)
+  is a 400 on `value`, unless `force: true` (replaced instrument cluster); a later reading is then
+  compared with the new, lower one. `recordOdometer(ctx, {assetId, date, value, source, sourceId?, note?,
+createdBy?, force?})` is what other features call when they learn the odometer on the side (fuel log,
+  tire change); `source` is `manual|completion|service_log|fuel_log|tire_change|signal` and one
+  `(source, sourceId)` has one reading, so saving the record again updates it. `writeOdometer` is its
+  synchronous half (runs in the caller's transaction, `fields` names the request field a problem is
+  reported on); `settleOdometer` re-evaluates the tasks that read the odometer and announces what became
+  due (`recordOdometer` runs both).
+- **The engine reads a signal, the readings stay the truth.** `syncOdometerSignal` rebuilds, after every
+  insert, update and delete, the signal `odometer:<asset id>` (`odometerSignalKey`; source `manual`, so
+  it never goes stale and is never pruned; unit of the vehicle) from the newest reading and one sample
+  per reading (at noon of its date in the household zone, or the moment it was entered when earlier).
+  A task counts on it with `counter_delta` and `entityId: "odometer:<asset id>"` (optionally `orEvery`);
+  the Home Assistant adapter never asks for such a key (not an entity id). A change of the newest value
+  goes through `settleSignalChanges` (auto-complete, hint reactions, re-evaluation, notifications, as for
+  an adapter's readings).
+- **Other writers.** A completion with a `counterValue` of a task that reads the odometer records a
+  reading dated the day of the completion (`vehicles/events.ts`, a listener on `completionRecorded`, so
+  inside the completion's transaction): a value equal to the newest (including the counter snapshot a
+  completion takes by itself) adds nothing, a lower one fails the completion with a 400 on
+  `counterValue`, undo removes the reading, other tasks reading the same odometer follow at the next
+  scheduler tick. A service log entry's `odometer` (vehicles only, 400 on `odometer` for anything else)
+  keeps one reading in step with the entry through create, update (value or date) and delete, in the
+  entry's transaction; the handlers re-evaluate the readers at once (`refreshOdometerReaders`).
+- **Task templates** (`lib/vehicles/templates.ts`, pure, titles are Paraglide messages in the given
+  locale): winter and summer tires (yearly calendar, October/April 15th, `earlyDays` 14, preparation
+  "Garagentermin buchen" 28 days ahead), service (`counter_delta` on the odometer, 15000 km / 10000 mi,
+  `orEvery` 12 months), MFK (`one_off`; `suggestMfkDate` = 4, 7, then every 2 years after the first
+  registration), vignette (yearly, end of January), vehicle tax (yearly, payment), brake fluid and
+  air-conditioning service (every 2 years). Each returns `{id, task, preparations}`: the frontend sends
+  `task` to `POST /tasks`, then each preparation to `POST /tasks/{id}/preparations`.
 
 ### iCal feeds, emergency page and guest links
 
@@ -655,7 +721,7 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
 - **Finance inbox tools** (`tools/finance.ts`): `list_finance_suggestions` (read), `accept_finance_suggestion`,
   `dismiss_finance_suggestion` (mode `undo`: destructive, idempotent) and `sync_finance`, the last three with the
   `costs:write` scope like their endpoints. Strictly the token user's own inbox; a sync that ends `ok: false` is a
-  normal result, not a tool error. 48 tools when the token holds every scope.
+  normal result, not a tool error. 50 tools when the token holds every scope.
 - **New tool**: add the endpoint to the registry first, then a ~15-line `defineTool` in
   `mcp/src/tools/` and an entry in `tools/index.ts` (which lists the planned extension points).
   Triggers go through `parseTrigger` (engine schema, per-type docs in `trigger-docs.ts`, a `Record`
@@ -668,6 +734,10 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
   document that account cannot see: `not_found` with a sentence saying which; linking to a page also needs
   `docs:write`). Owners are given as id, or name for asset, room, part and contact and slug for a page; tags and
   correspondents by name or id. The files are not transferred, sending a file is not offered.
+- **Vehicle tools** (`tools/vehicles.ts`): `get_vehicle` (read: details, newest reading, open tasks) and
+  `record_odometer` (write: value, date, note, `force`; answers with the tasks that now need attention). A
+  vehicle is given by id, name or plate (spaces, dashes and case do not matter; parts of a name or plate
+  work when unambiguous); a device given by name is told apart from "no such vehicle".
 - **Tests** (`mcp/src/*.test.ts`, vitest) connect the real server to an in-process hauswart
   (`createInProcessFetch`) via the SDK's in-memory transport: `useMcp().connect({scopes})` returns
   `call`/`ok` helpers. Document tests also use the fake Paperless of `integrations/paperless/testing.ts`

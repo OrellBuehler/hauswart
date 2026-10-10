@@ -14,7 +14,9 @@ const assetRef = z
   .describe("Asset id or name, from list_assets");
 
 const fields = {
-  kind: z.enum(ASSET_KINDS).describe("device, plant, fixture or other"),
+  kind: z
+    .enum(ASSET_KINDS)
+    .describe("device, plant, fixture, vehicle or other"),
   room: z.string().min(1).max(100).describe("Room id, slug or name"),
   category: z.string().max(64).describe("Free text, e.g. a type of appliance"),
   manufacturer: z.string().max(120),
@@ -85,7 +87,7 @@ export const listAssets = defineTool({
   name: "list_assets",
   title: "List assets",
   description:
-    "Devices, plants, fixtures and other things in the household. Filter by kind, room (id, slug or name) and q (text in name, model, manufacturer). Archived assets are hidden unless includeArchived.",
+    "Devices, plants, fixtures, vehicles and other things in the household. Filter by kind, room (id, slug or name) and q (text in name, model, manufacturer). Archived assets are hidden unless includeArchived.",
   mode: "read",
   input: {
     kind: fields.kind.optional(),
@@ -144,7 +146,7 @@ export const createAsset = defineTool({
   name: "create_asset",
   title: "Create an asset",
   description:
-    "Adds a device, plant, fixture or other thing. Only name is required; kind defaults to device. Dates are YYYY-MM-DD. Add tasks for it with create_task (asset = its name or id).",
+    "Adds a device, plant, fixture, vehicle or other thing. Only name is required; kind defaults to device. A vehicle's plate and registration data are entered in the app; record its odometer with record_odometer. Dates are YYYY-MM-DD. Add tasks for it with create_task (asset = its name or id).",
   mode: "create",
   input: {
     name: z.string().trim().min(1).max(120),

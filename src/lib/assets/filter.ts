@@ -27,6 +27,8 @@ function haystack(asset: Asset): string {
     asset.model,
     asset.serialNumber,
     asset.species,
+    asset.vehicle?.plate,
+    asset.vehicle?.plate?.replace(/\s+/g, ""),
   ]
     .filter(Boolean)
     .join(" ")

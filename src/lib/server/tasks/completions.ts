@@ -67,6 +67,8 @@ const factsOf = (row: CompletionRow): CompletionFacts => ({
   kind: row.kind,
   userId: row.userId,
   completedAt: row.completedAt,
+  completedDate: row.completedDate,
+  counterValue: row.counterValue,
 });
 
 /** The newest non-revoked completions of one task. */

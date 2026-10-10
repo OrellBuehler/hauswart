@@ -12,6 +12,7 @@ import { getStats, listNotifications } from "./insights";
 import { partTools } from "./parts";
 import { taskTools } from "./tasks";
 import { listUpcoming } from "./upcoming";
+import { vehicleTools } from "./vehicles";
 import { whoami } from "./whoami";
 
 /**
@@ -47,4 +48,5 @@ export const tools: readonly Tool[] = [
   ...costTools,
   ...assetCareTools,
   ...financeTools,
+  ...vehicleTools,
 ];
