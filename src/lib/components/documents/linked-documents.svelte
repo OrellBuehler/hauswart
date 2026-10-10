@@ -292,7 +292,7 @@
     type="button"
     variant="outline"
     size="icon-sm"
-    class="sm:hidden"
+    class="@md/card-header:hidden"
     aria-label={m.document_link_add()}
     onclick={() => (addOpen = true)}
   >
@@ -302,7 +302,7 @@
     type="button"
     variant="outline"
     size="sm"
-    class="max-sm:hidden"
+    class="hidden @md/card-header:inline-flex"
     onclick={() => (addOpen = true)}
   >
     <PlusIcon />{m.document_link_add()}

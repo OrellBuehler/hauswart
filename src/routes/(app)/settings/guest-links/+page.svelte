@@ -218,7 +218,7 @@
             </p>
             <a
               href={resolve(place.href)}
-              class="text-brand mt-auto text-xs font-medium underline underline-offset-4"
+              class="text-brand mt-auto inline-flex min-h-10 items-center self-start text-xs font-medium underline underline-offset-4"
             >
               {m.glinks_where_open()}
             </a>
@@ -229,7 +229,7 @@
         {m.glinks_info_emergency()}
         <a
           href={resolve("/emergency")}
-          class="text-brand font-medium underline underline-offset-4"
+          class="text-brand font-medium underline underline-offset-4 pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center"
         >
           {m.glinks_info_emergency_link()}
         </a>

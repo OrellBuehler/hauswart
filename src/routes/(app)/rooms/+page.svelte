@@ -131,12 +131,12 @@
       {/snippet}
     </EmptyState>
   {:else}
-    <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {#each rooms as room, index (room.id)}
         {@const Icon = roomIconFor(room.icon)}
         {@const count = stats.get(room.id)}
         <li
-          class="bg-card hover:border-foreground/20 shadow-card relative flex items-center gap-3 rounded-xl border p-3 transition-colors"
+          class="bg-card hover:border-foreground/20 shadow-card relative flex min-w-0 items-center gap-3 rounded-xl border p-3 transition-colors"
         >
           <span
             class="bg-muted text-muted-foreground flex size-11 shrink-0 items-center justify-center rounded-lg"
@@ -166,32 +166,14 @@
               {/if}
             </p>
           </div>
-          <div class="relative z-10 flex shrink-0 items-center">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              disabled={index === 0 || moving}
-              aria-label={m.rooms_move_up({ name: room.name })}
-              onclick={() => move(index, -1)}
-            >
-              <ArrowUpIcon />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              disabled={index === rooms.length - 1 || moving}
-              aria-label={m.rooms_move_down({ name: room.name })}
-              onclick={() => move(index, 1)}
-            >
-              <ArrowDownIcon />
-            </Button>
+          <div class="relative z-10 shrink-0">
             <DropdownMenu.Root>
               <DropdownMenu.Trigger>
                 {#snippet child({ props })}
                   <Button
                     {...props}
                     variant="ghost"
-                    size="icon-sm"
+                    size="icon-lg"
                     aria-label={m.rooms_actions({ name: room.name })}
                   >
                     <EllipsisVerticalIcon />
@@ -202,6 +184,19 @@
                 <DropdownMenu.Item onclick={() => openEdit(room)}>
                   <PencilIcon />{m.common_edit()}
                 </DropdownMenu.Item>
+                <DropdownMenu.Item
+                  disabled={index === 0 || moving}
+                  onclick={() => move(index, -1)}
+                >
+                  <ArrowUpIcon />{m.rooms_move_up_item()}
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
+                  disabled={index === rooms.length - 1 || moving}
+                  onclick={() => move(index, 1)}
+                >
+                  <ArrowDownIcon />{m.rooms_move_down_item()}
+                </DropdownMenu.Item>
+                <DropdownMenu.Separator />
                 <DropdownMenu.Item
                   variant="destructive"
                   onclick={() => askDelete(room)}

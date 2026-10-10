@@ -13,6 +13,7 @@
   import { endpointUrl } from "$lib/api/client";
   import { endpoints } from "$lib/api/registry";
   import EmptyState from "$lib/components/app/empty-state.svelte";
+  import Fab from "$lib/components/app/fab.svelte";
   import PageHeader from "$lib/components/app/page-header.svelte";
   import CommentCount from "$lib/components/comments/comment-count.svelte";
   import CostAmount from "$lib/components/costs/cost-amount.svelte";
@@ -203,7 +204,7 @@
         title={m.costs_csv_hint({ year: filters.year })}
       >
         <DownloadIcon />
-        {m.costs_csv()}
+        {m.costs_csv({ year: filters.year })}
       </Button>
       {#if canWrite}
         <Button href={resolve("/costs/new")} size="lg" class="max-md:hidden">
@@ -412,7 +413,7 @@
           </EmptyState>
         {/if}
       {:else}
-        <Card.Root class="gap-0 py-0 md:hidden">
+        <Card.Root class="gap-0 py-0 lg:hidden">
           <ul class="divide-y">
             {#each data.costs as cost (cost.id)}
               <CostRow {cost} />
@@ -420,7 +421,7 @@
           </ul>
         </Card.Root>
 
-        <Card.Root class="gap-0 py-0 max-md:hidden">
+        <Card.Root class="gap-0 py-0 max-lg:hidden">
           <Table.Root>
             <Table.Header>
               <Table.Row>
@@ -446,12 +447,12 @@
                   <Table.Cell class="max-w-sm whitespace-normal">
                     <a
                       href={resolve(`/costs/${cost.id}` as "/")}
-                      class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 rounded-sm font-medium break-words outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
+                      class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 rounded-sm font-medium wrap-anywhere outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
                       >{cost.title}</a
                     >
                     {#if cost.payee || place}
                       <span
-                        class="text-muted-foreground mt-0.5 block text-xs break-words"
+                        class="text-muted-foreground mt-0.5 block text-xs wrap-anywhere"
                         >{[cost.payee, place].filter(Boolean).join(" · ")}</span
                       >
                     {/if}
@@ -494,12 +495,5 @@
 </div>
 
 {#if canWrite}
-  <Button
-    href={resolve("/costs/new")}
-    size="icon-lg"
-    class="shadow-raised fixed end-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-20 size-14 rounded-full md:hidden"
-    aria-label={m.cost_new()}
-  >
-    <PlusIcon class="size-6" />
-  </Button>
+  <Fab href={resolve("/costs/new")} label={m.cost_new()} />
 {/if}

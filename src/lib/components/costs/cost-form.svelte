@@ -42,6 +42,7 @@
   import { formatDay } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
   import { apiFieldErrors } from "$lib/tasks/field-errors";
+  import { cn } from "$lib/utils";
   import SplitEditor from "./split-editor.svelte";
 
   let {
@@ -589,25 +590,36 @@
     </Card.Content>
   </Card.Root>
 
-  <FormAlert message={formError} />
-
-  <div class="flex flex-wrap justify-end gap-2">
-    <Button
-      href={cancelHref}
-      variant="outline"
-      size="lg"
-      class={pending ? "pointer-events-none opacity-50" : ""}
-    >
-      {m.common_cancel()}
-    </Button>
-    <Button type="submit" size="lg" disabled={pending}>
-      {#if pending}
-        <LoaderCircleIcon class="animate-spin" />{m.common_saving()}
-      {:else if entry}
-        {m.common_save()}
-      {:else}
-        {m.common_create()}
-      {/if}
-    </Button>
+  <div
+    class="bg-background/90 sticky bottom-0 z-10 -mx-4 flex flex-col gap-3 border-t px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:-mx-8 md:px-8"
+  >
+    <FormAlert message={formError} />
+    <div class="flex justify-end gap-2">
+      <Button
+        href={cancelHref}
+        variant="outline"
+        size="lg"
+        class={cn(
+          "flex-1 sm:flex-none",
+          pending && "pointer-events-none opacity-50",
+        )}
+      >
+        {m.common_cancel()}
+      </Button>
+      <Button
+        type="submit"
+        size="lg"
+        class="flex-1 sm:flex-none"
+        disabled={pending}
+      >
+        {#if pending}
+          <LoaderCircleIcon class="animate-spin" />{m.common_saving()}
+        {:else if entry}
+          {m.common_save()}
+        {:else}
+          {m.common_create()}
+        {/if}
+      </Button>
+    </div>
   </div>
 </form>

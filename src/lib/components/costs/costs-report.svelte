@@ -73,11 +73,16 @@
   Icon: Component | undefined,
   onclick: (() => void) | undefined,
   percent: string | null,
+  active: boolean = false,
 )}
   {#if onclick}
     <button
       type="button"
-      class="hover:bg-accent/50 focus-visible:ring-ring/50 -mx-2 flex w-[calc(100%+1rem)] flex-col gap-1.5 rounded-lg px-2 py-2 text-start transition-colors outline-none focus-visible:ring-[3px]"
+      class={cn(
+        "hover:bg-accent/50 focus-visible:ring-ring/50 -mx-2 flex w-[calc(100%+1rem)] flex-col gap-1.5 rounded-lg px-2 py-2 text-start transition-colors outline-none focus-visible:ring-[3px]",
+        active && "bg-accent",
+      )}
+      aria-pressed={active ? true : undefined}
       {onclick}
     >
       {@render rowBody(label, value, max, Icon, percent)}
@@ -133,8 +138,27 @@
         <Card.Description>{m.costs_by_month_hint()}</Card.Description>
       </Card.Header>
       <Card.Content>
+        <ul class="flex flex-col sm:hidden" aria-label={m.costs_by_month()}>
+          {#each summary.byMonth as entry (entry.month)}
+            {@const number = Number(entry.month.slice(5, 7))}
+            {@const key = entry.month.slice(5, 7)}
+            {#if entry.count > 0 || activeMonth === key}
+              <li>
+                {@render row(
+                  monthName(number),
+                  entry.totalMinor,
+                  maxMonth,
+                  undefined,
+                  () => onfilter({ month: activeMonth === key ? "" : key }),
+                  share(entry.totalMinor),
+                  activeMonth === key,
+                )}
+              </li>
+            {/if}
+          {/each}
+        </ul>
         <div
-          class="grid h-40 grid-cols-12 items-stretch gap-1"
+          class="grid h-40 grid-cols-12 items-stretch gap-1 max-sm:hidden"
           role="group"
           aria-label={m.costs_by_month()}
         >

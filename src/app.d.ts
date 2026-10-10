@@ -17,6 +17,10 @@ declare global {
       /** Present when the caller authenticated with an API token. */
       token: TokenInfo | null;
     }
+    interface PageState {
+      /** Id of the dialog or sheet that owns the current history entry (see `$lib/overlays`). */
+      overlay?: string;
+    }
   }
 }
 

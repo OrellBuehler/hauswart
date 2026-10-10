@@ -8,6 +8,7 @@
   import Field from "$lib/components/tasks/field.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
+  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import { apiErrorMessage } from "$lib/error-message";
   import { m } from "$lib/paraglide/messages";
@@ -18,6 +19,7 @@
   let currentPassword = $state("");
   let newPassword = $state("");
   let repeat = $state("");
+  let reveal = $state(false);
   let pending = $state(false);
   let error = $state<string | undefined>();
   let fieldErrors = $state<Record<string, string>>({});
@@ -71,7 +73,7 @@
     <Card.Description>{m.account_password_description()}</Card.Description>
   </Card.Header>
   <Card.Content>
-    <form class="flex flex-col gap-5" onsubmit={submit}>
+    <form method="post" class="flex flex-col gap-5" onsubmit={submit}>
       <FormAlert message={error} />
       <input
         type="text"
@@ -92,7 +94,7 @@
           <Input
             id="current-password"
             name="current-password"
-            type="password"
+            type={reveal ? "text" : "password"}
             autocomplete="current-password"
             required
             maxlength={PASSWORD_MAX}
@@ -112,7 +114,7 @@
           <Input
             id="new-password"
             name="new-password"
-            type="password"
+            type={reveal ? "text" : "password"}
             autocomplete="new-password"
             required
             minlength={PASSWORD_MIN}
@@ -132,7 +134,7 @@
           <Input
             id="repeat-password"
             name="repeat-password"
-            type="password"
+            type={reveal ? "text" : "password"}
             autocomplete="new-password"
             required
             maxlength={PASSWORD_MAX}
@@ -142,6 +144,12 @@
           />
         {/snippet}
       </Field>
+      <label
+        class="flex min-h-10 w-fit cursor-pointer items-center gap-3 text-sm"
+      >
+        <Checkbox bind:checked={reveal} />
+        {m.account_password_show()}
+      </label>
       <div>
         <Button type="submit" disabled={pending || mismatch}>
           {#if pending}

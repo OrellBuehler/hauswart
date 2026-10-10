@@ -17,6 +17,12 @@
 <Sonner
   theme={mode.current}
   class="toaster group"
+  toastOptions={{
+    classes: {
+      actionButton: "pointer-coarse:min-h-10 pointer-coarse:px-4",
+      cancelButton: "pointer-coarse:min-h-10 pointer-coarse:px-4",
+    },
+  }}
   style="--normal-bg: var(--color-popover); --normal-text: var(--color-popover-foreground); --normal-border: var(--color-border);"
   {...restProps}
   >{#snippet loadingIcon()}

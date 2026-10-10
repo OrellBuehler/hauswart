@@ -18,18 +18,28 @@
     checked?: boolean;
     label: string;
     hint?: string;
-    /** Optional pointer to the place that explains or manages the setting, shown after the hint. */
-    link?: { href: "/settings/guest-links"; label: string };
+    /**
+     * Optional pointer to the place that explains or manages the setting, shown after the hint. It
+     * opens in a tab of its own, so the form keeps what was typed; `sameTab` is for a form that asks
+     * before it is left.
+     */
+    link?: { href: "/settings/guest-links"; label: string; sameTab?: boolean };
     disabled?: boolean;
     class?: string;
     onchange?: (checked: boolean) => void;
   } = $props();
 </script>
 
-<div class={cn("flex items-start gap-3", className)}>
+<div
+  class={cn(
+    "relative flex items-start gap-3 pointer-coarse:min-h-11 pointer-coarse:py-1.5",
+    !hint && "pointer-coarse:items-center",
+    className,
+  )}
+>
   <Switch
     {id}
-    class="mt-0.5"
+    class={cn("mt-0.5", !hint && "pointer-coarse:mt-0")}
     {disabled}
     aria-describedby={hint ? `${id}-hint` : undefined}
     bind:checked={
@@ -40,17 +50,22 @@
       }
     }
   />
-  <div class="flex flex-col gap-1">
-    <Label for={id} class="leading-snug font-normal">{label}</Label>
+  <div class="flex min-w-0 flex-col gap-1">
+    <Label
+      for={id}
+      class="leading-snug font-normal pointer-coarse:after:absolute pointer-coarse:after:inset-0"
+    >
+      {label}
+    </Label>
     {#if hint}
       <p id={`${id}-hint`} class="text-muted-foreground text-xs text-pretty">
         {hint}
         {#if link}
           <a
             href={resolve(link.href)}
-            target="_blank"
-            rel="noopener"
-            class="text-brand font-medium underline underline-offset-4"
+            target={link.sameTab ? undefined : "_blank"}
+            rel={link.sameTab ? undefined : "noopener"}
+            class="text-brand relative z-10 font-medium underline underline-offset-4"
           >
             {link.label}
           </a>

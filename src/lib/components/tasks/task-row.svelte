@@ -53,6 +53,9 @@
     }
   }
 
+  /** Not due yet or put off: the check stays available but does not compete with what is due. */
+  const quiet = $derived(task.status === "ok" || task.status === "snoozed");
+
   const place = $derived(
     [
       task.roomName
@@ -71,29 +74,24 @@
   );
 </script>
 
-<div
-  class={cn(
-    "flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:gap-4",
-    className,
-  )}
->
+<div class={cn("relative flex items-center gap-3 py-3.5 sm:gap-4", className)}>
   <div class="flex min-w-0 flex-1 gap-3">
     <StatusDot status={task.status} class="mt-1.5" />
     <div class="min-w-0 flex-1">
       <a
         href={taskHref(task.id)}
-        class="focus-visible:ring-ring/50 -mx-1 rounded px-1 font-medium text-pretty break-words outline-none hover:underline focus-visible:ring-[3px]"
+        class="focus-visible:after:ring-ring/50 rounded-sm font-medium text-pretty wrap-anywhere outline-none after:absolute after:inset-0 hover:underline focus-visible:after:ring-[3px]"
       >
         {task.title}
       </a>
       {#if place.length > 0}
-        <p class="text-muted-foreground mt-0.5 text-xs">
-          {#each place as p, i (p.name)}
+        <p class="text-muted-foreground mt-0.5 text-xs wrap-anywhere">
+          {#each place as p, i (i)}
             {#if i > 0}<span class="mx-1" aria-hidden="true">·</span>{/if}
             {#if p.href}
               <a
                 href={p.href}
-                class="focus-visible:ring-ring/50 rounded outline-none hover:underline focus-visible:ring-[3px]"
+                class="focus-visible:ring-ring/50 relative z-10 -my-1.5 inline-block rounded py-1.5 outline-none hover:underline focus-visible:ring-[3px]"
                 >{p.name}</a
               >
             {:else}
@@ -130,10 +128,11 @@
     </div>
   </div>
   {#if !task.archived}
-    <div class="flex items-center gap-1.5 sm:shrink-0">
+    <div class="relative z-10 flex shrink-0 items-center gap-1 sm:gap-1.5">
       <CompleteButton
         {task}
-        class="flex-1 sm:flex-none"
+        compact
+        variant={quiet ? "ghost" : "outline"}
         {onstart}
         {onfail}
         {onsettled}

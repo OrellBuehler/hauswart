@@ -12,6 +12,7 @@
   import * as Card from "$lib/components/ui/card/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
+  import Segmented from "$lib/components/tasks/segmented.svelte";
   import { apiErrorMessage } from "$lib/error-message";
   import { m } from "$lib/paraglide/messages";
   import { applyLocale } from "$lib/locale";
@@ -24,6 +25,9 @@
     de: () => m.locale_name_de(),
     en: () => m.locale_name_en(),
   };
+  const localeOptions = $derived(
+    USER_LOCALES.map((value) => ({ value, label: localeNames[value]() })),
+  );
 
   // svelte-ignore state_referenced_locally
   let displayName = $state(data.user.displayName ?? "");
@@ -95,28 +99,22 @@
           <Input
             id="displayName"
             name="displayName"
-            autocomplete="name"
+            autocomplete="nickname"
             required
             maxlength={DISPLAY_NAME_MAX}
             bind:value={displayName}
           />
         </div>
-        <fieldset class="flex flex-col gap-2">
-          <legend class="mb-2 text-sm font-medium">{m.auth_language()}</legend>
-          <div class="flex gap-2">
-            {#each USER_LOCALES as option (option)}
-              <Button
-                type="button"
-                size="sm"
-                variant={locale === option ? "default" : "outline"}
-                aria-pressed={locale === option}
-                onclick={() => (locale = option)}
-              >
-                {localeNames[option]()}
-              </Button>
-            {/each}
-          </div>
-        </fieldset>
+        <div class="flex flex-col gap-2">
+          <span class="text-sm leading-none font-medium">
+            {m.auth_language()}
+          </span>
+          <Segmented
+            options={localeOptions}
+            bind:value={locale}
+            label={m.auth_language()}
+          />
+        </div>
         <div>
           <Button type="submit" disabled={!dirty || pending}>
             {#if pending}

@@ -550,7 +550,7 @@
   </div>
 
   <div
-    class="bg-background/90 sticky bottom-0 z-10 -mx-4 flex flex-col gap-3 border-t px-4 py-3 backdrop-blur md:-mx-8 md:px-8"
+    class="bg-background/90 sticky bottom-0 z-10 -mx-4 flex flex-col gap-3 border-t px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:-mx-8 md:px-8"
   >
     <FormAlert message={formError} />
     <div class="flex justify-end gap-2">
@@ -558,12 +558,18 @@
         type="button"
         variant="outline"
         size="lg"
+        class="flex-1 sm:flex-none"
         disabled={pending}
         href={task ? taskHref(task.id) : resolve("/tasks")}
       >
         {m.common_cancel()}
       </Button>
-      <Button type="submit" size="lg" disabled={pending}>
+      <Button
+        type="submit"
+        size="lg"
+        class="flex-1 sm:flex-none"
+        disabled={pending}
+      >
         {#if pending}
           <LoaderCircleIcon class="animate-spin" />
           {m.common_saving()}

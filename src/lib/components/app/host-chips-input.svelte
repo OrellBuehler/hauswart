@@ -60,13 +60,16 @@
   {#if value.length > 0}
     <ul class="flex flex-wrap gap-1.5">
       {#each value as host (host)}
-        <li>
-          <Badge variant="secondary" class="gap-1 pr-1 font-mono">
-            {host}
+        <li class="max-w-full">
+          <Badge
+            variant="secondary"
+            class="h-auto max-w-full gap-1 pe-1 text-start font-mono whitespace-normal"
+          >
+            <span class="min-w-0 break-all">{host}</span>
             {#if !disabled}
               <button
                 type="button"
-                class="hover:bg-foreground/10 focus-visible:ring-ring rounded-full p-0.5 outline-none focus-visible:ring-2"
+                class="hover:bg-foreground/10 focus-visible:ring-ring flex size-7 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-2 pointer-coarse:-me-1 pointer-coarse:size-8"
                 aria-label={m.household_host_allowlist_remove({ host })}
                 onclick={() => remove(host)}
               >
@@ -88,6 +91,7 @@
         {id}
         autocomplete="off"
         autocapitalize="none"
+        enterkeyhint="done"
         spellcheck="false"
         placeholder={m.household_host_allowlist_placeholder()}
         aria-invalid={invalid}

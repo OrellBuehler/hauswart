@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { THEME_COLORS } from "$lib/pwa/colors";
 import { createTestUser } from "$lib/testing/auth";
 import { useTestDB } from "$lib/testing/db";
 import { callRoute } from "$lib/testing/route";
@@ -48,6 +49,35 @@ describe("GET /manifest.webmanifest", () => {
       description: "Apartment management for your own household",
     });
     expect(en.res.headers.get("vary")).toBe("Accept-Language");
+  });
+
+  it("names the shortcuts in the language of the browser", async () => {
+    type Shortcuts = { shortcuts: { name: string; url: string }[] };
+    const de = (await fetchManifest()).body as Shortcuts;
+    expect(de.shortcuts).toEqual([
+      expect.objectContaining({ name: "Neue Aufgabe", url: "/tasks/new" }),
+      expect.objectContaining({ name: "Mangel erfassen", url: "/defects/new" }),
+      expect.objectContaining({ name: "Notfall", url: "/emergency" }),
+      expect.objectContaining({ name: "Suche", url: "/search" }),
+    ]);
+    const en = (await fetchManifest({ "accept-language": "en" }))
+      .body as Shortcuts;
+    expect(en.shortcuts.map((s) => s.name)).toEqual([
+      "New task",
+      "Record defect",
+      "Emergency",
+      "Search",
+    ]);
+  });
+
+  it("carries the dark palette", async () => {
+    const { body } = await fetchManifest();
+    expect(body).toMatchObject({
+      color_scheme_dark: {
+        theme_color: THEME_COLORS.dark,
+        background_color: THEME_COLORS.dark,
+      },
+    });
   });
 
   it("only offers the icons it ships", async () => {

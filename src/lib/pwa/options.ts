@@ -45,8 +45,9 @@ export function isAppNavigation({
  */
 export function pwaOptions(buildId: string): Partial<SvelteKitPWAOptions> {
   return {
-    // SvelteKit builds with relative asset paths (Vite's base is "./"), which the plugin would
-    // take over: the worker would then be registered as "sw.js" relative to the current page.
+    // Explicit even though SvelteKit builds with absolute asset paths (`paths.relative: false`
+    // in svelte.config.js): were Vite's base ever "./" again, the plugin would take it over and
+    // register the worker as "sw.js" relative to the current page.
     base: "/",
     scope: "/",
     registerType: "prompt",

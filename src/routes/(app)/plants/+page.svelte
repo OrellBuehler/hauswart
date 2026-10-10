@@ -91,13 +91,13 @@
       {/snippet}
     </EmptyState>
   {:else}
-    <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {#each plants as plant (plant.id)}
         {@const task = waterTasks[plant.id]}
         <li
-          class="bg-card shadow-card relative flex flex-col gap-4 rounded-xl border p-4"
+          class="bg-card shadow-card relative flex min-w-0 flex-col gap-4 rounded-xl border p-4"
         >
-          <div class="flex items-start gap-3">
+          <div class="flex min-w-0 items-start gap-3">
             {#if plant.photoUrl}
               <AssetPhoto
                 kind="plant"
@@ -112,7 +112,7 @@
                 <LeafIcon class="size-7" />
               </span>
             {/if}
-            <div class="min-w-0">
+            <div class="min-w-0 flex-1">
               <a
                 href={resolve(`/assets/${plant.id}`)}
                 class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 block truncate rounded-sm font-medium outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:ring-[3px]"
@@ -166,7 +166,7 @@
             {#if task}
               <DueBadge state={task.state} />
               <Button
-                size="sm"
+                size="lg"
                 disabled={watering !== null}
                 aria-label={m.plants_water_aria({ name: plant.name })}
                 onclick={() => water(plant.id, plant.name)}

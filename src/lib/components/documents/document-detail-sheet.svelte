@@ -149,7 +149,7 @@
 <Sheet.Root bind:open>
   <Sheet.Content side="right" class="w-full gap-0 p-0 sm:max-w-md">
     <Sheet.Header class="border-b p-4 pe-12">
-      <Sheet.Title class="text-pretty break-words">
+      <Sheet.Title class="text-pretty wrap-anywhere">
         {shown?.title ?? ""}
       </Sheet.Title>
       <Sheet.Description class="text-pretty">
@@ -209,11 +209,11 @@
 
         {#if facts.length > 0 || shown.tagNames.length > 0}
           <dl
-            class="grid grid-cols-[minmax(6rem,auto)_1fr] gap-x-4 gap-y-2 text-sm"
+            class="grid grid-cols-[minmax(5rem,auto)_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm"
           >
             {#each facts as [label, value] (label)}
               <dt class="text-muted-foreground">{label}</dt>
-              <dd class="font-medium break-words">{value}</dd>
+              <dd class="font-medium wrap-anywhere">{value}</dd>
             {/each}
             {#if shown.tagNames.length > 0}
               <dt class="text-muted-foreground">
@@ -259,7 +259,7 @@
                     {#if link.ownerUrl}
                       <a
                         href={resolve(link.ownerUrl as "/")}
-                        class="hover:text-foreground focus-visible:ring-ring/50 min-w-0 rounded-sm text-sm font-medium break-words underline-offset-2 outline-none hover:underline focus-visible:ring-[3px]"
+                        class="hover:text-foreground focus-visible:ring-ring/50 min-w-0 rounded-sm text-sm font-medium wrap-anywhere underline-offset-2 outline-none hover:underline focus-visible:ring-[3px]"
                       >
                         {link.ownerTitle ??
                           documentOwnerLabels[link.ownerType]()}

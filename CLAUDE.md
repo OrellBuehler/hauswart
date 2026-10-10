@@ -699,7 +699,15 @@ build` moves `sw.js` (runtime inlined, one file) to `build/server/sw.js` (`scrip
 - **Update flow.** `registerType: "prompt"` plus `clientsClaim`. A new worker waits until the person clicks "Reload"
   in the toast; only that tab reloads (`onNeedReload` is a no-op so the plugin does not reload every tab; `apply`
   listens for `controllerchange` itself, which also covers a page that no worker controlled when it loaded). The
-  offline page's `revision` is the build time. An update check runs hourly.
+  offline page's `revision` is the build time. An update check runs hourly and when the app becomes visible again
+  (at most once a minute).
+- **Absolute asset paths.** `kit.paths.relative` is `false` (pinned by `src/paths.test.ts`): the precached `/offline`
+  page is served as the fallback on any URL, and relative `./_app/…` links would miss the cache on nested paths.
+  `docker-smoke.sh` checks that the offline page links no relative assets and that every precache URL answers 200.
+- **Manifest extras and meta.** `shortcuts` (new task, record defect, emergency, search; names in the browser's
+  language), `color_scheme_dark`, `categories`; `format-detection: telephone=no`. No `viewport-fit=cover` and the
+  status bar stays `default` (iOS 26 draws an edge blur over `cover` pages), so safe-area insets are 0 except at the
+  bottom where the shell adds them explicitly.
 
 ### Authentication and the API spine
 
@@ -810,6 +818,34 @@ Runes only: `$state`, `$derived`, `$effect`, `$props`, `{@render children()}`. N
 no `$:`, no `<slot />`, no stores for component state. Tailwind classes with `cn()` from
 `$lib/utils`; no component CSS. Use shadcn-svelte components. Pages must work at 360 px width and
 in dark mode. Every list has an empty state, every async action a pending and an error state.
+
+**Phones and the installed app**:
+
+- **Shell** (`(app)/+layout.svelte`): below `md` a bottom tab bar (`components/app/bottom-nav.svelte`; tabs in
+  `nav.ts` `mobileTabs`, "More" opens the sidebar sheet) replaces the hamburger; it hides on `/new` and `/edit`
+  routes and while a field that opens the keyboard has focus. `--bottom-nav` (on `:root`, `0px` unless the bar is
+  shown) positions everything fixed at the bottom: always write `var(--bottom-nav, 0px)` in `calc()`. The content
+  wrapper already pads for the bar plus a floating button, so pages add no bottom padding; floating "new" buttons
+  use `components/app/fab.svelte`. The mobile header shows a back arrow on nested routes (`back-target.ts`, a link,
+  never `history.back()`), so in-page "back to …" links are `max-md:hidden`. A navigation progress bar and an
+  `invalidateAll()` after more than 60 s in the background are part of the shell.
+- **Touch sizes come from the primitives**: `ui/*` add `pointer-coarse:` heights (buttons, inputs, select and menu
+  items, tabs 40 px; lg 44 px; switch/checkbox hit areas). Do not hand-size plain buttons; avoid hard-coded `h-8` /
+  `size-7` on things people tap. Desktop (fine pointer) keeps the compact sizes.
+- **Overflow**: a long unbroken word must never widen the page. Grids get a base track (`grid-cols-1`), flex/grid
+  children `min-w-0`, label/value lists `minmax(0,1fr)`, titles and values `wrap-anywhere` (`break-words` does not
+  lower min-content). Inputs stay `text-base md:text-sm` (iOS zooms on focus below 16 px).
+- **Dialogs and sheets** anchor to the top on phones, scroll inside `max-h-[calc(100dvh-2rem)]`, and `FormDialog`
+  keeps its footer pinned. The system back gesture closes them (`lib/overlays/`, shallow routing with
+  `App.PageState.overlay`); opt out with `closeOnBack={false}` (e.g. a prompt opened from `beforeNavigate`). A dialog
+  that navigates afterwards uses `gotoFromOverlay` (`lib/overlays/use-overlay-history.svelte`): it pops the overlay's
+  entries first (`popAll`) and navigates from the page below, so Back leads to that page with its own content. Never
+  replace an overlay's entry (no `data-sveltekit-replacestate`, no `replaceState` after a pushState): a shallow entry
+  shares the router's navigation index with the page below, so Back would change only the address. A click on a link
+  inside an overlay gets the same treatment from the `beforeNavigate` in `useOverlayHistory` (cancel, pop, `goto`); a
+  plain `goto` from an open overlay leaves its entry behind. `FormDialog`/`ConfirmDialog` give up their entry while
+  their action runs. Long forms on pages get a sticky bottom save bar.
+- **Information is not hover-only**: anything in `title=` that matters (exact dates, amounts) is also visible on touch.
 
 ## Testing
 

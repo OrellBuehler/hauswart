@@ -20,7 +20,7 @@
       href={resolve("/costs")}
       variant="ghost"
       size="sm"
-      class="text-muted-foreground -ms-2 w-fit"
+      class="text-muted-foreground -ms-2 w-fit max-md:hidden"
     >
       <ArrowLeftIcon />{m.nav_costs()}
     </Button>

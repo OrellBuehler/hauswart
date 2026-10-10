@@ -103,13 +103,13 @@
     <Button
       variant="ghost"
       size="sm"
-      class="h-10 shrink-0"
+      class="h-10 shrink-0 max-sm:w-10 max-sm:px-0"
       disabled={pending}
       onclick={undo}
       aria-label={m.completion_undo_aria({ who })}
     >
       <Undo2Icon />
-      {m.toast_undo()}
+      <span class="max-sm:sr-only">{m.toast_undo()}</span>
     </Button>
   {/if}
 </div>

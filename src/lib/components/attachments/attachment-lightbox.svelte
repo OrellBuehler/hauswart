@@ -22,6 +22,8 @@
   const SWIPE_DISTANCE = 48;
 
   let swipeStart: { x: number; y: number; id: number } | null = null;
+  /** Fingers on the image: a second one means a pinch, which is never a swipe. */
+  let touching: number[] = [];
 
   const open = $derived(index !== null && images.length > 0);
   const current = $derived(
@@ -55,17 +57,32 @@
 
   function onpointerdown(event: PointerEvent) {
     if (event.pointerType === "mouse" && event.button !== 0) return;
-    swipeStart = { x: event.clientX, y: event.clientY, id: event.pointerId };
+    touching = [
+      ...touching.filter((id) => id !== event.pointerId),
+      event.pointerId,
+    ];
+    swipeStart =
+      touching.length === 1
+        ? { x: event.clientX, y: event.clientY, id: event.pointerId }
+        : null;
   }
 
   function onpointerup(event: PointerEvent) {
+    touching = touching.filter((id) => id !== event.pointerId);
     if (!swipeStart || swipeStart.id !== event.pointerId) return;
     const dx = event.clientX - swipeStart.x;
     const dy = event.clientY - swipeStart.y;
     swipeStart = null;
+    const zoomed = (window.visualViewport?.scale ?? 1) > 1.01;
+    if (zoomed) return;
     if (Math.abs(dx) >= SWIPE_DISTANCE && Math.abs(dx) > Math.abs(dy) * 1.5) {
       step(dx < 0 ? 1 : -1);
     }
+  }
+
+  function onpointercancel(event: PointerEvent) {
+    touching = touching.filter((id) => id !== event.pointerId);
+    swipeStart = null;
   }
 </script>
 
@@ -129,10 +146,10 @@
     </div>
 
     <div
-      class="relative flex min-h-0 touch-pan-y items-center justify-center px-2 select-none"
+      class="relative flex min-h-0 touch-pan-y touch-pinch-zoom items-center justify-center px-2 select-none"
       {onpointerdown}
       {onpointerup}
-      onpointercancel={() => (swipeStart = null)}
+      {onpointercancel}
       role="presentation"
     >
       {#if current}

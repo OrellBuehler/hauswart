@@ -33,6 +33,7 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
   import { m } from "$lib/paraglide/messages";
+  import { cn } from "$lib/utils";
 
   let {
     onaction,
@@ -41,6 +42,28 @@
     onaction: (action: ToolbarAction) => void;
     disabled?: boolean;
   } = $props();
+
+  let scroller = $state<HTMLDivElement | null>(null);
+  let more = $state({ before: false, after: false });
+
+  /** Which sides still have buttons out of sight: those edges fade out. */
+  function measure() {
+    const el = scroller;
+    if (!el) return;
+    more = {
+      before: el.scrollLeft > 1,
+      after: el.scrollLeft + el.clientWidth < el.scrollWidth - 1,
+    };
+  }
+
+  $effect(() => {
+    const el = scroller;
+    if (!el) return;
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  });
 
   const mod = $derived(
     typeof navigator !== "undefined" &&
@@ -76,10 +99,23 @@
 {/snippet}
 
 <div
+  bind:this={scroller}
   role="toolbar"
   aria-label={m.editor_toolbar()}
   aria-controls="doc-editor-text"
-  class="flex items-center gap-0.5 overflow-x-auto border-b p-1.5"
+  class={cn(
+    "flex snap-x scroll-px-1.5 items-center gap-0.5 overflow-x-auto border-b p-1.5 *:snap-start",
+    more.before &&
+      more.after &&
+      "mask-[linear-gradient(to_right,transparent,black_1.5rem,black_calc(100%-1.5rem),transparent)]",
+    more.before &&
+      !more.after &&
+      "mask-[linear-gradient(to_right,transparent,black_1.5rem)]",
+    !more.before &&
+      more.after &&
+      "mask-[linear-gradient(to_right,black_calc(100%-1.5rem),transparent)]",
+  )}
+  onscroll={measure}
 >
   {@render tool("bold", m.editor_bold(), `${mod}B`)}
   {@render tool("italic", m.editor_italic(), `${mod}I`)}

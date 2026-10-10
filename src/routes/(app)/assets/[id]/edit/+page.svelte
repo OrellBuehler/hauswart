@@ -21,11 +21,14 @@
       href={resolve(`/assets/${data.asset.id}`)}
       variant="ghost"
       size="sm"
-      class="text-muted-foreground -ms-2 w-fit"
+      class="text-muted-foreground -ms-2 w-fit max-w-full max-md:hidden"
     >
-      <ArrowLeftIcon />{data.asset.name}
+      <ArrowLeftIcon /><span class="truncate">{data.asset.name}</span>
     </Button>
-    <PageHeader title={m.asset_edit_title({ name: data.asset.name })} />
+    <PageHeader
+      class="wrap-anywhere"
+      title={m.asset_edit_title({ name: data.asset.name })}
+    />
   </div>
   {#key data.asset.id}
     <AssetForm rooms={data.rooms} asset={data.asset} today={data.today} />

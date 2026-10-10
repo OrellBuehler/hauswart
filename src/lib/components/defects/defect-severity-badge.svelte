@@ -1,7 +1,7 @@
 <script lang="ts">
-  import SignalHighIcon from "@lucide/svelte/icons/signal-high";
-  import SignalLowIcon from "@lucide/svelte/icons/signal-low";
-  import SignalMediumIcon from "@lucide/svelte/icons/signal-medium";
+  import ChevronDownIcon from "@lucide/svelte/icons/chevron-down";
+  import ChevronsUpIcon from "@lucide/svelte/icons/chevrons-up";
+  import EqualIcon from "@lucide/svelte/icons/equal";
   import type { DefectSeverity } from "$lib/api/enums";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { severityLabels, severityTones } from "$lib/defects/labels";
@@ -13,9 +13,9 @@
   }: { severity: DefectSeverity; class?: string } = $props();
 
   const icons = {
-    high: SignalHighIcon,
-    medium: SignalMediumIcon,
-    low: SignalLowIcon,
+    high: ChevronsUpIcon,
+    medium: EqualIcon,
+    low: ChevronDownIcon,
   };
   const Icon = $derived(icons[severity]);
 </script>

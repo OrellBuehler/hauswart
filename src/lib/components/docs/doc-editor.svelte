@@ -6,6 +6,7 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import SlidersHorizontalIcon from "@lucide/svelte/icons/sliders-horizontal";
   import UploadIcon from "@lucide/svelte/icons/upload";
+  import XIcon from "@lucide/svelte/icons/x";
   import { onDestroy, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
   import { toast } from "svelte-sonner";
@@ -44,6 +45,7 @@
     insertBlock,
     insertLink,
     insertText,
+    isLineBreakInput,
     setHeading,
     toggleBullet,
     toggleNumbered,
@@ -301,7 +303,13 @@
     applyEdit(insertText(el?.value ?? body, start, end, text));
   }
 
+  /** Whether the last key press was Enter with a modifier: the `beforeinput` that follows is not a list break. */
+  let modifiedEnter = false;
+
   function onkeydown(event: KeyboardEvent) {
+    modifiedEnter =
+      event.key === "Enter" &&
+      (event.shiftKey || event.altKey || event.metaKey || event.ctrlKey);
     if (event.isComposing) return;
     const mod = event.metaKey || event.ctrlKey;
     if (mod && !event.shiftKey && !event.altKey) {
@@ -322,6 +330,25 @@
         applyEdit(edit);
       }
     }
+  }
+
+  /**
+   * Many mobile keyboards send Enter as a composing or `Unidentified` key press, which `onkeydown`
+   * ignores; the line break still arrives as a `beforeinput` of its own, so lists continue there too.
+   * When `onkeydown` already continued the list the event never gets here.
+   */
+  function onbeforeinput(event: InputEvent) {
+    if (!isLineBreakInput(event.inputType)) return;
+    if (modifiedEnter) {
+      modifiedEnter = false;
+      return;
+    }
+    if (event.isComposing || !event.cancelable) return;
+    const el = event.currentTarget as HTMLTextAreaElement;
+    const edit = continueList(el.value, el.selectionStart, el.selectionEnd);
+    if (!edit) return;
+    event.preventDefault();
+    applyEdit(edit);
   }
 
   function onwindowkeydown(event: KeyboardEvent) {
@@ -613,15 +640,33 @@
   <div
     class="bg-background/90 sticky top-12 z-10 -mx-4 flex items-center justify-between gap-2 border-b px-4 py-2 backdrop-blur-md md:-mx-8 md:px-8"
   >
-    <Button type="button" variant="ghost" onclick={cancel}>
-      {m.common_cancel()}
+    <Button
+      type="button"
+      variant="ghost"
+      class="max-sm:size-10 max-sm:px-0"
+      aria-label={m.common_cancel()}
+      onclick={cancel}
+    >
+      <XIcon class="sm:hidden" aria-hidden="true" />
+      <span class="max-sm:hidden">{m.common_cancel()}</span>
     </Button>
-    <div class="flex items-center gap-3">
+    <Segmented
+      class="xl:hidden [&>button]:px-2 sm:[&>button]:px-3"
+      label={m.editor_view()}
+      options={[
+        { value: "write", label: m.editor_tab_write() },
+        { value: "preview", label: m.editor_tab_preview() },
+      ]}
+      bind:value={view}
+    />
+    <div class="relative flex items-center gap-3">
       {#if dirty}
         <span
-          class="text-warning flex items-center gap-1.5 text-xs font-medium"
+          class="text-warning flex items-center gap-1.5 text-xs font-medium max-sm:absolute max-sm:-end-1 max-sm:-top-1 max-sm:z-10"
         >
-          <span class="bg-warning size-1.5 rounded-full" aria-hidden="true"
+          <span
+            class="bg-warning max-sm:ring-background size-1.5 rounded-full max-sm:ring-2"
+            aria-hidden="true"
           ></span>
           <span class="max-sm:sr-only">{m.editor_unsaved()}</span>
         </span>
@@ -731,6 +776,7 @@
             link={{
               href: "/settings/guest-links",
               label: m.guest_links_manage(),
+              sameTab: true,
             }}
           />
         </div>
@@ -739,15 +785,6 @@
   </Card.Root>
 
   <div class="flex flex-col gap-2">
-    <Segmented
-      class="xl:hidden"
-      label={m.editor_view()}
-      options={[
-        { value: "write", label: m.editor_tab_write() },
-        { value: "preview", label: m.editor_tab_preview() },
-      ]}
-      bind:value={view}
-    />
     <div class="grid items-stretch gap-4 xl:grid-cols-2">
       <div
         class={cn(
@@ -766,11 +803,13 @@
           id="doc-editor-text"
           bind:ref={textarea}
           bind:value={body}
-          class="field-sizing-fixed h-[58svh] min-h-72 resize-none rounded-none border-0 bg-transparent p-4 font-mono text-sm leading-relaxed shadow-none focus-visible:ring-0 xl:h-auto xl:min-h-0 xl:flex-1 dark:bg-transparent"
+          class="field-sizing-fixed h-[58svh] min-h-72 resize-none rounded-none border-0 bg-transparent p-4 font-mono text-base leading-relaxed shadow-none focus-visible:ring-0 md:text-sm xl:h-auto xl:min-h-0 xl:flex-1 dark:bg-transparent"
           placeholder={m.editor_placeholder()}
           aria-label={m.editor_text()}
           spellcheck="false"
+          {@attach (node) => node.setAttribute("autocorrect", "off")}
           {onkeydown}
+          {onbeforeinput}
           {onpaste}
         />
         <div
@@ -918,6 +957,7 @@
 
 <ConfirmDialog
   bind:open={leaveOpen}
+  closeOnBack={false}
   title={m.editor_leave_title()}
   description={m.editor_leave_description()}
   confirmLabel={m.editor_leave_confirm()}

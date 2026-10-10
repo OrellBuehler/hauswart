@@ -101,6 +101,7 @@
   submitLabel={m.part_stock_submit()}
   pendingLabel={m.common_saving()}
   onsubmit={submit}
+  class="grid-cols-[minmax(0,1fr)] wrap-anywhere"
 >
   <div class="flex flex-col gap-2">
     <span class="text-sm leading-none font-medium">{m.part_stock_reason()}</span
@@ -109,7 +110,7 @@
       options={reasonOptions}
       bind:value={reason}
       label={m.part_stock_reason()}
-      class="w-full [&>button]:flex-1"
+      class="sm:w-full sm:[&>button]:flex-1"
     />
   </div>
   {#if reason === "correction"}
@@ -121,13 +122,13 @@
         options={directionOptions}
         bind:value={direction}
         label={m.part_stock_direction()}
-        class="w-full [&>button]:flex-1"
+        class="sm:w-full sm:[&>button]:flex-1"
       />
     </div>
   {/if}
   <Field id="stock-qty" label={m.part_stock_qty()} error={qtyError}>
     {#snippet children({ describedby, invalid })}
-      <div class="flex items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2">
         <Button
           type="button"
           variant="outline"
@@ -155,7 +156,7 @@
           <PlusIcon />
         </Button>
         <p
-          class="text-muted-foreground ms-auto text-end text-sm tabular-nums"
+          class="text-muted-foreground basis-full text-sm tabular-nums sm:ms-auto sm:basis-auto sm:text-end"
           aria-live="polite"
         >
           {m.part_stock_result({ count: result })}

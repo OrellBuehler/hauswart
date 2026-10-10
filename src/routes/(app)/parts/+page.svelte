@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
+  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import PuzzleIcon from "@lucide/svelte/icons/puzzle";
   import SearchIcon from "@lucide/svelte/icons/search";
@@ -18,7 +18,7 @@
   import { m } from "$lib/paraglide/messages";
   import { stockLevel } from "$lib/parts/stock";
   import { cn } from "$lib/utils";
-  import type { PageProps } from "./$types";
+  import type { PageProps, Snapshot } from "./$types";
 
   let { data }: PageProps = $props();
 
@@ -26,6 +26,20 @@
   let lowOnly = $state(false);
   let showArchived = $state(false);
   let createOpen = $state(false);
+
+  /** Coming back from a part keeps the search and filters. */
+  export const snapshot: Snapshot<{
+    q: string;
+    lowOnly: boolean;
+    showArchived: boolean;
+  }> = {
+    capture: () => ({ q, lowOnly, showArchived }),
+    restore: (value) => {
+      q = value.q;
+      lowOnly = value.lowOnly;
+      showArchived = value.showArchived;
+    },
+  };
 
   const query = $derived(q.trim().toLowerCase());
   const hasArchived = $derived(data.parts.some((part) => part.archivedAt));
@@ -185,5 +199,6 @@
 <PartFormDialog
   bind:open={createOpen}
   currency={data.currency}
-  onsaved={(part) => goto(partHref(part.id), { invalidateAll: true })}
+  onsaved={(part) =>
+    gotoFromOverlay(partHref(part.id), { invalidateAll: true })}
 />

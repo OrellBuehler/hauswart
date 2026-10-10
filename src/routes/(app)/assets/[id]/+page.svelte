@@ -32,6 +32,7 @@
   import LinkedDocsCard from "$lib/components/docs/linked-docs-card.svelte";
   import Comments from "$lib/components/comments/comments.svelte";
   import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
+  import HintCallout from "$lib/components/hints/hint-callout.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
@@ -50,6 +51,7 @@
   const asset = $derived(data.asset);
   const canWriteDocs = $derived(data.scopes.includes("docs:write"));
   const isPlant = $derived(asset.kind === "plant");
+  const pinnedHints = $derived(data.hints.filter((hint) => hint.pinned));
   const warranty = $derived(warrantyStatus(asset, data.today));
   const backHref = $derived(
     isPlant ? resolve("/plants") : resolve("/inventory"),
@@ -125,7 +127,7 @@
       href={backHref}
       variant="ghost"
       size="sm"
-      class="text-muted-foreground -ms-2 w-fit"
+      class="text-muted-foreground -ms-2 w-fit max-md:hidden"
     >
       <ArrowLeftIcon />{isPlant ? m.nav_plants() : m.nav_inventory()}
     </Button>
@@ -138,7 +140,7 @@
         />
         <div class="min-w-0">
           <h1
-            class="text-2xl font-semibold tracking-tight text-balance md:text-3xl"
+            class="text-2xl font-semibold tracking-tight text-balance wrap-anywhere md:text-3xl"
           >
             {asset.name}
           </h1>
@@ -150,7 +152,7 @@
               <span aria-hidden="true">·</span>
               <a
                 href={resolve(`/rooms/${asset.roomId}`)}
-                class="hover:text-foreground underline-offset-4 hover:underline"
+                class="hover:text-foreground min-w-0 wrap-anywhere underline-offset-4 hover:underline"
               >
                 {asset.roomName}
               </a>
@@ -209,7 +211,23 @@
     </header>
   </div>
 
-  <div class="grid items-start gap-6 lg:grid-cols-3 print:block">
+  {#if pinnedHints.length > 0}
+    <section
+      class="flex flex-col gap-3 print:hidden"
+      aria-labelledby="asset-pinned-hints"
+    >
+      <h2 id="asset-pinned-hints" class="text-sm font-semibold">
+        {m.qr_hints_title()}
+      </h2>
+      <ul class="flex flex-col gap-3">
+        {#each pinnedHints as hint (hint.id)}
+          <HintCallout {hint} prominent />
+        {/each}
+      </ul>
+    </section>
+  {/if}
+
+  <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-3 print:block">
     <div class="flex min-w-0 flex-col gap-6 lg:col-span-2 print:hidden">
       <Card.Root>
         <Card.Header>
@@ -217,7 +235,7 @@
         </Card.Header>
         <Card.Content class="flex flex-col gap-5">
           <dl
-            class="grid grid-cols-[minmax(6rem,auto)_1fr] gap-x-4 gap-y-3 text-sm sm:gap-x-6"
+            class="grid grid-cols-[minmax(6rem,auto)_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm sm:gap-x-6"
           >
             {#if !isPlant}
               <dt class="text-muted-foreground">{m.asset_warranty()}</dt>
@@ -243,7 +261,7 @@
             {/if}
             {#each facts as [label, value] (label)}
               <dt class="text-muted-foreground">{label}</dt>
-              <dd class="font-medium break-words whitespace-pre-line">
+              <dd class="font-medium wrap-anywhere whitespace-pre-line">
                 {value}
               </dd>
             {/each}
@@ -257,7 +275,9 @@
               <h3 class="text-muted-foreground mb-1.5 text-sm">
                 {m.asset_notes()}
               </h3>
-              <p class="text-sm whitespace-pre-line">{asset.notes}</p>
+              <p class="text-sm wrap-anywhere whitespace-pre-line">
+                {asset.notes}
+              </p>
             </div>
           {/if}
         </Card.Content>
@@ -333,7 +353,7 @@
       <Comments entityType="asset" entityId={asset.id} />
     </div>
 
-    <div class="lg:sticky lg:top-16">
+    <div class="min-w-0 lg:sticky lg:top-16">
       <QrCard {asset} origin={page.url.origin} />
     </div>
   </div>

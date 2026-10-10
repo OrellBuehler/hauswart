@@ -15,6 +15,12 @@ export const GET: RequestHandler = () =>
         name: m.app_name(),
         description: m.app_tagline(),
         lang: getLocale(),
+        shortcuts: {
+          newTask: m.task_new(),
+          newDefect: m.defect_new(),
+          emergency: m.nav_emergency(),
+          search: m.search_page_title(),
+        },
       }),
     ),
     {

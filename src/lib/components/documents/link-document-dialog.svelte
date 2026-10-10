@@ -56,6 +56,7 @@
   let loading = $state(false);
   let loadingMore = $state(false);
   let loadError = $state<string | undefined>();
+  let moreError = $state<string | undefined>();
   let selected = $state.raw<ExternalDocument | null>(null);
   let role = $state<string>("other");
   let label = $state("");
@@ -103,6 +104,7 @@
     const ticket = ++sequence;
     loading = true;
     loadError = undefined;
+    moreError = undefined;
     const handle = setTimeout(
       () => void search(text, ticket),
       text === "" ? 0 : 300,
@@ -114,6 +116,7 @@
     const ticket = ++sequence;
     loading = true;
     loadError = undefined;
+    moreError = undefined;
     void search(query, ticket);
   }
 
@@ -121,6 +124,7 @@
     if (!nextCursor || loadingMore) return;
     const ticket = sequence;
     loadingMore = true;
+    moreError = undefined;
     try {
       const page = await api.call(endpoints.documentsList, {
         query: {
@@ -134,7 +138,7 @@
       nextCursor = page.nextCursor;
     } catch (err) {
       if (ticket !== sequence) return;
-      loadError = pickerErrorMessage(err, provider);
+      moreError = pickerErrorMessage(err, provider);
     } finally {
       loadingMore = false;
     }
@@ -223,7 +227,7 @@
       role="radiogroup"
       aria-label={m.document_link_list()}
       aria-busy={loading}
-      class="max-h-72 overflow-y-auto rounded-lg border"
+      class="max-h-[min(18rem,35dvh)] overflow-y-auto rounded-lg border"
     >
       {#if loadError}
         <div
@@ -313,7 +317,26 @@
             </li>
           {/each}
         </ul>
-        {#if nextCursor}
+        {#if moreError}
+          <div
+            class="flex flex-col items-center gap-2 border-t p-3 text-center"
+            role="alert"
+          >
+            <p class="text-destructive text-sm text-pretty">{moreError}</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={loadingMore}
+              onclick={loadMore}
+            >
+              {#if loadingMore}
+                <LoaderCircleIcon class="animate-spin" />
+              {/if}
+              {m.common_retry()}
+            </Button>
+          </div>
+        {:else if nextCursor}
           <div class="border-t p-2 text-center">
             <Button
               type="button"

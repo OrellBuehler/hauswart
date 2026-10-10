@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { goto, invalidateAll } from "$app/navigation";
+  import { invalidateAll } from "$app/navigation";
+  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
   import { resolve } from "$app/paths";
   import ArchiveIcon from "@lucide/svelte/icons/archive";
   import ArchiveRestoreIcon from "@lucide/svelte/icons/archive-restore";
@@ -163,7 +164,7 @@
     const { id, name } = part;
     await api.call(endpoints.partsDelete, { params: { id } });
     toast.success(m.part_deleted_toast({ name }));
-    await goto(resolve("/parts"), { invalidateAll: true });
+    await gotoFromOverlay(resolve("/parts"), { invalidateAll: true });
   }
 
   async function unlinkAsset(assetId: string, name: string) {
@@ -225,7 +226,7 @@
       href={resolve("/parts")}
       variant="ghost"
       size="sm"
-      class="text-muted-foreground -ms-2 w-fit"
+      class="text-muted-foreground -ms-2 w-fit max-md:hidden"
     >
       <ArrowLeftIcon />{m.nav_parts()}
     </Button>
@@ -239,7 +240,7 @@
         </span>
         <div class="min-w-0">
           <h1
-            class="text-2xl font-semibold tracking-tight text-balance break-words md:text-3xl"
+            class="text-2xl font-semibold tracking-tight text-balance wrap-anywhere md:text-3xl"
           >
             {part.name}
           </h1>
@@ -302,7 +303,7 @@
   </div>
 
   <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
-    <div class="flex min-w-0 flex-col gap-6 lg:col-span-2">
+    <div class="flex min-w-0 flex-col gap-6 max-lg:contents lg:col-span-2">
       <Card.Root>
         <Card.Header>
           <Card.Title>{m.part_stock_title()}</Card.Title>
@@ -384,7 +385,7 @@
               <div class="flex flex-wrap gap-2">
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="lg"
                   disabled={busy !== null}
                   onclick={() => openStock("bought", part.orderedQty)}
                 >
@@ -392,7 +393,7 @@
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="lg"
                   disabled={busy !== null}
                   onclick={clearOrder}
                 >
@@ -403,7 +404,7 @@
               <p class="text-muted-foreground">{m.part_not_ordered()}</p>
               <Button
                 variant="outline"
-                size="sm"
+                size="lg"
                 onclick={() => (orderedOpen = true)}
               >
                 <TruckIcon />{m.part_mark_ordered()}
@@ -413,7 +414,7 @@
         </Card.Content>
       </Card.Root>
 
-      <Card.Root>
+      <Card.Root class="max-lg:order-last">
         <Card.Header>
           <Card.Title>{m.part_movements_title()}</Card.Title>
         </Card.Header>
@@ -442,7 +443,9 @@
                       {movementText(movement)} · {formatDateTime(movement.at)}
                     </p>
                     {#if movement.note}
-                      <p class="mt-0.5 text-sm break-words">{movement.note}</p>
+                      <p class="mt-0.5 text-sm wrap-anywhere">
+                        {movement.note}
+                      </p>
                     {/if}
                   </div>
                 </li>
@@ -468,19 +471,19 @@
       </Card.Root>
     </div>
 
-    <div class="flex flex-col gap-6">
+    <div class="flex flex-col gap-6 max-lg:contents">
       <Card.Root>
         <Card.Header>
           <Card.Title>{m.part_facts_title()}</Card.Title>
         </Card.Header>
         <Card.Content class="flex flex-col gap-4">
           <dl
-            class="grid grid-cols-[minmax(5rem,auto)_1fr] gap-x-4 gap-y-3 text-sm"
+            class="grid grid-cols-[minmax(5rem,auto)_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm"
           >
             <dt class="text-muted-foreground">{m.part_number()}</dt>
-            <dd class="font-medium break-words">{part.partNumber ?? "–"}</dd>
+            <dd class="font-medium wrap-anywhere">{part.partNumber ?? "–"}</dd>
             <dt class="text-muted-foreground">{m.part_supplier()}</dt>
-            <dd class="font-medium break-words">{part.supplier ?? "–"}</dd>
+            <dd class="font-medium wrap-anywhere">{part.supplier ?? "–"}</dd>
             <dt class="text-muted-foreground">{m.part_unit_price()}</dt>
             <dd class="font-medium tabular-nums">
               {part.unitPriceMinor === null
@@ -504,7 +507,7 @@
               <h3 class="text-muted-foreground mb-1.5 text-sm">
                 {m.part_notes()}
               </h3>
-              <p class="text-sm break-words whitespace-pre-line">
+              <p class="text-sm wrap-anywhere whitespace-pre-line">
                 {part.notes}
               </p>
             </div>
@@ -583,7 +586,7 @@
           {:else}
             <ul class="divide-y">
               {#each part.tasks as task (task.id)}
-                <li class="flex items-center justify-between gap-1">
+                <li class="flex items-center justify-between gap-2">
                   <a
                     href={taskHref(task.id)}
                     class="hover:bg-accent/50 focus-visible:ring-ring/50 -mx-2 flex min-h-12 min-w-0 flex-1 items-center rounded-md px-2 text-sm font-medium transition-colors outline-none focus-visible:ring-[3px]"

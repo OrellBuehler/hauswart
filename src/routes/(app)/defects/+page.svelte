@@ -10,6 +10,7 @@
   import { endpointUrl } from "$lib/api/client";
   import { endpoints } from "$lib/api/registry";
   import EmptyState from "$lib/components/app/empty-state.svelte";
+  import Fab from "$lib/components/app/fab.svelte";
   import PageHeader from "$lib/components/app/page-header.svelte";
   import CommentCount from "$lib/components/comments/comment-count.svelte";
   import DefectDeadline from "$lib/components/defects/defect-deadline.svelte";
@@ -49,9 +50,14 @@
     endpointUrl(endpoints.defectsExport, { query: exportQuery(filters) }),
   );
   const pdfHint = $derived(
-    filters.statuses.length === 1
-      ? statusLabels[filters.statuses[0]]()
-      : m.defects_pdf_all_statuses(),
+    [
+      filters.statuses.length === 1
+        ? statusLabels[filters.statuses[0]]()
+        : m.defects_pdf_all_statuses(),
+      data.rooms.find((r) => r.id === filters.roomId)?.name,
+    ]
+      .filter(Boolean)
+      .join(", "),
   );
 
   let filtersOpen = $state(false);
@@ -134,18 +140,27 @@
 <div class="flex flex-col gap-6">
   <PageHeader title={m.defects_title()} description={m.defects_description()}>
     {#snippet actions()}
+      <div class="flex flex-col items-start gap-1">
+        <Button
+          href={pdfHref}
+          download
+          data-sveltekit-reload
+          variant="outline"
+          size="lg"
+          title={m.defects_pdf_hint({ filter: pdfHint })}
+        >
+          <FileDownIcon />
+          {m.defects_pdf()}
+        </Button>
+        <p class="text-muted-foreground max-w-60 text-xs text-pretty">
+          {m.defects_pdf_scope({ filter: pdfHint })}
+        </p>
+      </div>
       <Button
-        href={pdfHref}
-        download
-        data-sveltekit-reload
-        variant="outline"
+        href={resolve("/defects/new")}
         size="lg"
-        title={m.defects_pdf_hint({ filter: pdfHint })}
+        class="max-md:hidden md:self-start"
       >
-        <FileDownIcon />
-        {m.defects_pdf()}
-      </Button>
-      <Button href={resolve("/defects/new")} size="lg" class="max-md:hidden">
         <PlusIcon />
         {m.defect_new()}
       </Button>
@@ -310,7 +325,7 @@
       </EmptyState>
     {/if}
   {:else}
-    <Card.Root class="gap-0 py-0 md:hidden">
+    <Card.Root class="gap-0 py-0 lg:hidden">
       <ul class="divide-y">
         {#each shown as defect (defect.id)}
           <DefectRow {defect} today={data.today} />
@@ -318,7 +333,7 @@
       </ul>
     </Card.Root>
 
-    <Card.Root class="gap-0 py-0 max-md:hidden">
+    <Card.Root class="gap-0 py-0 max-lg:hidden">
       <Table.Root>
         <Table.Header>
           <Table.Row>
@@ -342,12 +357,12 @@
               <Table.Cell class="max-w-sm whitespace-normal">
                 <a
                   href={resolve(`/defects/${defect.id}` as "/")}
-                  class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 rounded-sm font-medium break-words outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
+                  class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 rounded-sm font-medium wrap-anywhere outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
                   >{defect.title}</a
                 >
                 {#if place}
                   <span
-                    class="text-muted-foreground mt-0.5 block text-xs break-words"
+                    class="text-muted-foreground mt-0.5 block text-xs wrap-anywhere"
                     >{place}</span
                   >
                 {/if}
@@ -376,11 +391,4 @@
   {/if}
 </div>
 
-<Button
-  href={resolve("/defects/new")}
-  size="icon-lg"
-  class="shadow-raised fixed end-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-20 size-14 rounded-full md:hidden"
-  aria-label={m.defect_new()}
->
-  <PlusIcon class="size-6" />
-</Button>
+<Fab href={resolve("/defects/new")} label={m.defect_new()} />

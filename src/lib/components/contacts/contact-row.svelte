@@ -38,7 +38,7 @@
       <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
         <a
           href={contactHref(contact.id)}
-          class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 rounded-sm font-medium break-words underline-offset-4 outline-none after:absolute after:inset-0 hover:underline focus-visible:after:ring-[3px]"
+          class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 min-w-0 rounded-sm font-medium wrap-anywhere underline-offset-4 outline-none after:absolute after:inset-0 hover:underline focus-visible:after:ring-[3px]"
         >
           {contact.name}
         </a>

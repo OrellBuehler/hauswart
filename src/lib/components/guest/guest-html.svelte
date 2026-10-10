@@ -13,7 +13,7 @@
 </script>
 
 <div
-  class={cn("prose-hw", className)}
+  class={cn("prose-hw [&_summary]:py-2.5", className)}
   style:--hw-secret-label={label(m.docs_secret_label({}, { locale }))}
   style:--hw-info-label={label(m.docs_callout_info({}, { locale }))}
   style:--hw-warning-label={label(m.docs_callout_warning({}, { locale }))}

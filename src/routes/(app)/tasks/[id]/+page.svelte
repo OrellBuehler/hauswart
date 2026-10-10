@@ -13,7 +13,8 @@
   import PencilIcon from "@lucide/svelte/icons/pencil";
   import SkipForwardIcon from "@lucide/svelte/icons/skip-forward";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
-  import { goto, invalidateAll } from "$app/navigation";
+  import { invalidateAll } from "$app/navigation";
+  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
   import { api } from "$lib/api/browser";
@@ -119,7 +120,7 @@
   async function remove() {
     await api.call(endpoints.tasksDelete, { params: { id: task.id } });
     toast.success(m.task_deleted_toast({ title: task.title }));
-    await goto(resolve("/tasks"), { invalidateAll: true });
+    await gotoFromOverlay(resolve("/tasks"), { invalidateAll: true });
   }
 
   async function completePreparation(prepId: string, title: string) {
@@ -190,7 +191,7 @@
 </svelte:head>
 
 <div class="flex flex-col gap-6">
-  <div>
+  <div class="max-md:hidden">
     <a
       href={resolve("/tasks")}
       class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -ms-1 inline-flex min-h-10 items-center gap-1.5 rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
@@ -203,7 +204,7 @@
   <header class="flex flex-col gap-4">
     <div class="flex flex-col gap-2">
       <h1
-        class="text-2xl font-semibold tracking-tight text-balance break-words md:text-3xl"
+        class="text-2xl font-semibold tracking-tight text-balance wrap-anywhere md:text-3xl"
       >
         {task.title}
       </h1>
@@ -232,19 +233,25 @@
       </div>
     </div>
 
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex items-center gap-2 sm:flex-wrap">
       {#if !archived}
-        <CompleteButton {task} variant="default" />
+        <CompleteButton {task} variant="default" class="max-sm:flex-1" />
         <Button
           size="lg"
           variant="outline"
+          class="max-sm:hidden"
           onclick={() => openDialog("complete")}
         >
           <MessageSquarePlusIcon />
           {m.task_complete_with_note()}
         </Button>
       {/if}
-      <Button size="lg" variant="outline" href={taskEditHref(task.id)}>
+      <Button
+        size="lg"
+        variant="outline"
+        class="max-sm:hidden"
+        href={taskEditHref(task.id)}
+      >
         <PencilIcon />
         {m.common_edit()}
       </Button>
@@ -261,7 +268,25 @@
             </Button>
           {/snippet}
         </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="start" class="min-w-52">
+        <DropdownMenu.Content align="end" class="min-w-52">
+          {#if !archived}
+            <DropdownMenu.Item
+              class="min-h-10 sm:hidden"
+              onSelect={() => openDialog("complete")}
+            >
+              <MessageSquarePlusIcon />
+              {m.task_complete_with_note()}
+            </DropdownMenu.Item>
+          {/if}
+          <DropdownMenu.Item class="min-h-10 sm:hidden">
+            {#snippet child({ props })}
+              <a href={taskEditHref(task.id)} {...props}>
+                <PencilIcon />
+                {m.common_edit()}
+              </a>
+            {/snippet}
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator class="sm:hidden" />
           {#if !archived}
             <DropdownMenu.Item
               class="min-h-10"
@@ -311,15 +336,19 @@
     </div>
   </header>
 
-  <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-    <div class="flex flex-col gap-6">
+  <div
+    class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
+  >
+    <div class="flex min-w-0 flex-col gap-6">
       <Card.Root>
         <Card.Header>
           <Card.Title class="text-base">{m.task_description()}</Card.Title>
         </Card.Header>
         <Card.Content>
           {#if task.descriptionMd.trim()}
-            <p class="text-sm leading-relaxed break-words whitespace-pre-wrap">
+            <p
+              class="text-sm leading-relaxed wrap-anywhere whitespace-pre-wrap"
+            >
               {task.descriptionMd}
             </p>
           {:else}
@@ -347,7 +376,7 @@
                   <div class="min-w-0 flex-1">
                     <p
                       class={cn(
-                        "text-sm font-medium break-words",
+                        "text-sm font-medium wrap-anywhere",
                         !open && "text-muted-foreground line-through",
                       )}
                     >
@@ -451,7 +480,7 @@
       <Comments entityType="task" entityId={task.id} timeZone={data.timeZone} />
     </div>
 
-    <div class="flex flex-col gap-6">
+    <div class="flex min-w-0 flex-col gap-6 max-lg:order-first">
       <Card.Root>
         <Card.Header>
           <Card.Title class="text-base">{m.task_schedule()}</Card.Title>
@@ -578,7 +607,7 @@
                 <dt class="text-muted-foreground text-xs">
                   {m.task_location()}
                 </dt>
-                <dd class="mt-0.5">
+                <dd class="mt-0.5 wrap-anywhere">
                   {#if place.roomName && place.roomId}
                     <a
                       href={roomHref(place.roomId)}
@@ -610,7 +639,7 @@
                     href={billUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="h-auto min-h-8 gap-1.5 p-0 text-sm text-inherit"
+                    class="h-auto min-h-10 gap-1.5 p-0 text-sm text-inherit"
                   >
                     <ExternalLinkIcon aria-hidden="true" />
                     {m.finance_open_in_app()}

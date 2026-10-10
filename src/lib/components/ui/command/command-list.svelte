@@ -13,7 +13,7 @@
   bind:ref
   data-slot="command-list"
   class={cn(
-    "max-h-[min(24rem,60svh)] scroll-py-1 overflow-x-hidden overflow-y-auto outline-none",
+    "max-h-[min(24rem,60svh)] scroll-py-1 overflow-x-hidden overflow-y-auto overscroll-contain outline-none",
     className,
   )}
   {...restProps}

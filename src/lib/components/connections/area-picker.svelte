@@ -135,7 +135,9 @@
           <Command.Input
             placeholder={m.rooms_ha_area_search()}
             aria-label={m.rooms_ha_area_search()}
+            autocapitalize="none"
             autocomplete="off"
+            enterkeyhint="search"
             spellcheck={false}
           />
           <Command.List>

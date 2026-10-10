@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { goto } from "$app/navigation";
+  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
   import CheckIcon from "@lucide/svelte/icons/check";
   import ContactIcon from "@lucide/svelte/icons/contact";
   import EyeOffIcon from "@lucide/svelte/icons/eye-off";
@@ -149,7 +149,7 @@
     toast.success(m.document_suggestion_asset_created({ name: asset.name }), {
       action: {
         label: m.document_suggestion_open(),
-        onClick: () => void goto(assetHref(asset.id)),
+        onClick: () => void gotoFromOverlay(assetHref(asset.id)),
       },
     });
     await onadded();
@@ -170,7 +170,7 @@
       {
         action: {
           label: m.document_suggestion_open(),
-          onClick: () => void goto(contactHref(contact.id)),
+          onClick: () => void gotoFromOverlay(contactHref(contact.id)),
         },
       },
     );

@@ -65,6 +65,11 @@
   let fieldErrors = $state<Record<string, string>>({});
   let testResult = $state<TestResult | undefined>();
   let disconnectOpen = $state(false);
+  /* svelte-ignore state_referenced_locally */
+  let formOpen = $state(integration.enabled && integration.status === "error");
+  $effect(() => {
+    if (integration.enabled && integration.status === "error") formOpen = true;
+  });
 
   const urlChanged = $derived(
     integration.configured && baseUrl.trim() !== (integration.baseUrl ?? ""),
@@ -122,6 +127,7 @@
     if (!canEdit || saving || testing) return;
     error = undefined;
     if (!validate()) return;
+    formOpen = true;
     saving = true;
     try {
       const saved = await api.call(endpoints.integrationsSave, {
@@ -187,7 +193,9 @@
 
 <Card.Root>
   <Card.Header>
-    <div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+    <div
+      class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-x-3"
+    >
       <div class="flex min-w-0 items-center gap-3">
         <span
           class="bg-brand/10 text-brand flex size-10 shrink-0 items-center justify-center rounded-lg"
@@ -197,7 +205,7 @@
         </span>
         <Card.Title class="min-w-0 text-base">{meta.name()}</Card.Title>
       </div>
-      <StatusBadge {integration} />
+      <StatusBadge class="self-start" {integration} />
     </div>
     <Card.Description class="text-pretty">
       {meta.description()}
@@ -305,176 +313,198 @@
     {/if}
 
     {#if canEdit}
-      <form
-        class="flex flex-col gap-5 border-t pt-5"
-        onsubmit={submit}
-        novalidate
-      >
-        <FormAlert message={error} />
-
-        <Field
-          id="pl-url"
-          label={m.integration_ha_url()}
-          hint={isAdmin
-            ? m.integration_paperless_url_hint()
-            : `${m.integration_paperless_url_hint()} ${m.integration_paperless_url_hint_member()}`}
-          error={fieldErrors.baseUrl}
+      {#snippet connectionForm()}
+        <form
+          method="post"
+          class="flex flex-col gap-5"
+          onsubmit={submit}
+          novalidate
         >
-          {#snippet children({ describedby, invalid })}
-            <Input
-              id="pl-url"
-              type="url"
-              inputmode="url"
-              class="h-10"
-              autocomplete="off"
-              autocapitalize="none"
-              spellcheck={false}
-              placeholder="https://paperless.example.org"
-              bind:value={baseUrl}
-              aria-invalid={invalid || undefined}
-              aria-describedby={describedby}
-            />
-          {/snippet}
-        </Field>
+          <FormAlert message={error} />
 
-        {#if showTokenInput}
           <Field
-            id="pl-token"
-            label={m.integration_paperless_token()}
-            hint={urlChanged
-              ? m.integration_ha_token_hint_url()
-              : m.integration_paperless_token_hint()}
-            error={fieldErrors.token}
+            id="pl-url"
+            label={m.integration_ha_url()}
+            hint={isAdmin
+              ? m.integration_paperless_url_hint()
+              : `${m.integration_paperless_url_hint()} ${m.integration_paperless_url_hint_member()}`}
+            error={fieldErrors.baseUrl}
           >
             {#snippet children({ describedby, invalid })}
               <Input
-                id="pl-token"
-                type="password"
-                class="h-10 font-mono"
-                autocomplete="new-password"
+                id="pl-url"
+                type="url"
+                inputmode="url"
+                class="h-10"
+                autocomplete="off"
                 autocapitalize="none"
                 spellcheck={false}
-                maxlength={4096}
-                placeholder={m.integration_ha_token_placeholder()}
-                bind:value={token}
+                placeholder="https://paperless.example.org"
+                bind:value={baseUrl}
                 aria-invalid={invalid || undefined}
                 aria-describedby={describedby}
               />
             {/snippet}
           </Field>
-        {:else}
-          <div class="flex flex-col gap-2">
-            <span class="text-sm leading-none font-medium"
-              >{m.integration_paperless_token()}</span
+
+          {#if showTokenInput}
+            <Field
+              id="pl-token"
+              label={m.integration_paperless_token()}
+              hint={urlChanged
+                ? m.integration_ha_token_hint_url()
+                : m.integration_paperless_token_hint()}
+              error={fieldErrors.token}
             >
-            <div
-              class="bg-muted/50 flex items-center justify-between gap-3 rounded-md border px-3 py-2"
-            >
-              <span class="flex min-w-0 items-center gap-2 text-sm">
-                <ShieldCheckIcon
-                  class="text-success size-4 shrink-0"
-                  aria-hidden="true"
+              {#snippet children({ describedby, invalid })}
+                <Input
+                  id="pl-token"
+                  type="password"
+                  class="h-10 font-mono"
+                  autocomplete="new-password"
+                  autocapitalize="none"
+                  spellcheck={false}
+                  data-1p-ignore
+                  data-lpignore="true"
+                  data-bwignore
+                  maxlength={4096}
+                  placeholder={m.integration_ha_token_placeholder()}
+                  bind:value={token}
+                  aria-invalid={invalid || undefined}
+                  aria-describedby={describedby}
                 />
-                <span class="font-medium"
-                  >{m.integration_ha_token_stored()}</span
+              {/snippet}
+            </Field>
+          {:else}
+            <div class="flex flex-col gap-2">
+              <span class="text-sm leading-none font-medium"
+                >{m.integration_paperless_token()}</span
+              >
+              <div
+                class="bg-muted/50 flex items-center justify-between gap-3 rounded-md border px-3 py-2"
+              >
+                <span class="flex min-w-0 items-center gap-2 text-sm">
+                  <ShieldCheckIcon
+                    class="text-success size-4 shrink-0"
+                    aria-hidden="true"
+                  />
+                  <span class="font-medium"
+                    >{m.integration_ha_token_stored()}</span
+                  >
+                  <span class="text-muted-foreground hidden text-xs sm:inline"
+                    >{m.integration_ha_token_stored_hint()}</span
+                  >
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  class="shrink-0"
+                  onclick={() => (replaceToken = true)}
                 >
-                <span class="text-muted-foreground hidden text-xs sm:inline"
-                  >{m.integration_ha_token_stored_hint()}</span
-                >
-              </span>
+                  {m.integration_ha_token_replace()}
+                </Button>
+              </div>
+            </div>
+          {/if}
+
+          <div class="flex flex-col gap-3">
+            <SwitchField
+              id="pl-insecure"
+              bind:checked={allowInsecureTls}
+              label={m.integration_ha_insecure()}
+              hint={m.integration_paperless_insecure_hint()}
+            />
+            {#if allowInsecureTls}
+              <Alert.Root class="border-warning/50">
+                <LockKeyholeIcon class="text-warning" />
+                <Alert.Description class="text-pretty">
+                  {m.integration_paperless_insecure_warning()}
+                </Alert.Description>
+              </Alert.Root>
+            {/if}
+          </div>
+
+          {#if integration.configured}
+            <SwitchField
+              id="pl-enabled"
+              bind:checked={enabled}
+              label={m.integration_ha_enabled()}
+              hint={m.integration_paperless_enabled_hint()}
+            />
+          {/if}
+
+          <div class="flex flex-wrap items-center gap-2">
+            <Button type="submit" disabled={saving || testing || !dirty}>
+              {#if saving}
+                <LoaderCircleIcon class="animate-spin" />{m.common_saving()}
+              {:else if integration.configured}
+                {m.common_save()}
+              {:else}
+                {m.integration_connect()}
+              {/if}
+            </Button>
+            {#if integration.configured}
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
-                class="h-9 shrink-0"
-                onclick={() => (replaceToken = true)}
+                disabled={saving || testing || dirty}
+                onclick={runTest}
               >
-                {m.integration_ha_token_replace()}
+                {#if testing}
+                  <LoaderCircleIcon
+                    class="animate-spin"
+                  />{m.integration_testing()}
+                {:else}
+                  {m.integration_test()}
+                {/if}
               </Button>
-            </div>
-          </div>
-        {/if}
-
-        <div class="flex flex-col gap-3">
-          <SwitchField
-            id="pl-insecure"
-            bind:checked={allowInsecureTls}
-            label={m.integration_ha_insecure()}
-            hint={m.integration_paperless_insecure_hint()}
-          />
-          {#if allowInsecureTls}
-            <Alert.Root class="border-warning/50">
-              <LockKeyholeIcon class="text-warning" />
-              <Alert.Description class="text-pretty">
-                {m.integration_paperless_insecure_warning()}
-              </Alert.Description>
-            </Alert.Root>
-          {/if}
-        </div>
-
-        {#if integration.configured}
-          <SwitchField
-            id="pl-enabled"
-            bind:checked={enabled}
-            label={m.integration_ha_enabled()}
-            hint={m.integration_paperless_enabled_hint()}
-          />
-        {/if}
-
-        <div class="flex flex-wrap items-center gap-2">
-          <Button type="submit" disabled={saving || testing || !dirty}>
-            {#if saving}
-              <LoaderCircleIcon class="animate-spin" />{m.common_saving()}
-            {:else if integration.configured}
-              {m.common_save()}
-            {:else}
-              {m.integration_connect()}
+              <Button
+                type="button"
+                variant="ghost"
+                class="text-destructive hover:text-destructive ms-auto"
+                disabled={saving || testing}
+                onclick={() => (disconnectOpen = true)}
+              >
+                <UnplugIcon />{m.integration_disconnect()}
+              </Button>
             {/if}
-          </Button>
-          {#if integration.configured}
-            <Button
-              type="button"
-              variant="outline"
-              disabled={saving || testing || dirty}
-              onclick={runTest}
-            >
-              {#if testing}
-                <LoaderCircleIcon
-                  class="animate-spin"
-                />{m.integration_testing()}
-              {:else}
-                {m.integration_test()}
-              {/if}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              class="text-destructive hover:text-destructive ms-auto"
-              disabled={saving || testing}
-              onclick={() => (disconnectOpen = true)}
-            >
-              <UnplugIcon />{m.integration_disconnect()}
-            </Button>
+          </div>
+          {#if integration.configured && dirty}
+            <p class="text-muted-foreground -mt-3 text-xs">
+              {m.integration_test_save_first()}
+            </p>
           {/if}
-        </div>
-        {#if integration.configured && dirty}
-          <p class="text-muted-foreground -mt-3 text-xs">
-            {m.integration_test_save_first()}
-          </p>
-        {/if}
-      </form>
+        </form>
+      {/snippet}
+      {#if integration.configured}
+        <details class="rounded-lg border text-sm" bind:open={formOpen}>
+          <summary
+            class="focus-visible:ring-ring/50 cursor-pointer rounded-lg px-4 py-3 font-medium outline-none select-none focus-visible:ring-[3px]"
+          >
+            {m.integration_edit_connection()}
+          </summary>
+          <div class="border-t p-4">
+            {@render connectionForm()}
+          </div>
+        </details>
+      {:else}
+        {@render connectionForm()}
+      {/if}
 
       {#if integration.configured}
         <PaperlessSettings {integration} {onchanged} />
       {/if}
 
-      <details class="group rounded-lg border px-4 py-3 text-sm">
+      <details class="group rounded-lg border text-sm">
         <summary
-          class="focus-visible:ring-ring/50 min-h-8 cursor-pointer rounded font-medium outline-none select-none focus-visible:ring-[3px]"
+          class="focus-visible:ring-ring/50 cursor-pointer rounded-lg px-4 py-3 font-medium outline-none select-none focus-visible:ring-[3px]"
         >
           {m.integration_paperless_help_title()}
         </summary>
-        <div class="text-muted-foreground mt-3 flex flex-col gap-3 text-pretty">
+        <div
+          class="text-muted-foreground flex flex-col gap-3 px-4 pb-4 text-pretty"
+        >
           <ol class="flex list-decimal flex-col gap-1.5 ps-5">
             <li>{m.integration_paperless_help_step1()}</li>
             <li>{m.integration_paperless_help_step2()}</li>

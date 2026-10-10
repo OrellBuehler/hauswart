@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto, invalidateAll } from "$app/navigation";
+  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
   import { resolve } from "$app/paths";
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
   import BoxesIcon from "@lucide/svelte/icons/boxes";
@@ -46,7 +47,7 @@
     const { id, name } = data.room;
     await api.call(endpoints.roomsDelete, { params: { id } });
     toast.success(m.rooms_deleted_toast({ name }));
-    await goto(resolve("/rooms"));
+    await gotoFromOverlay(resolve("/rooms"));
   }
 </script>
 
@@ -60,7 +61,7 @@
       href={resolve("/rooms")}
       variant="ghost"
       size="sm"
-      class="text-muted-foreground -ms-2 w-fit"
+      class="text-muted-foreground -ms-2 w-fit max-md:hidden"
     >
       <ArrowLeftIcon />{m.nav_rooms()}
     </Button>
@@ -73,7 +74,7 @@
           <Icon class="size-6" />
         </span>
         <h1
-          class="min-w-0 text-2xl font-semibold tracking-tight text-balance md:text-3xl"
+          class="min-w-0 text-2xl font-semibold tracking-tight text-balance wrap-anywhere md:text-3xl"
         >
           {data.room.name}
         </h1>
@@ -123,7 +124,9 @@
       </div>
     </header>
     {#if data.room.notes}
-      <p class="text-muted-foreground max-w-prose text-sm whitespace-pre-line">
+      <p
+        class="text-muted-foreground max-w-prose text-sm wrap-anywhere whitespace-pre-line"
+      >
         {data.room.notes}
       </p>
     {/if}

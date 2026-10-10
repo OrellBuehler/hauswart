@@ -4,6 +4,7 @@ import {
   insertBlock,
   insertLink,
   insertText,
+  isLineBreakInput,
   setHeading,
   toggleBullet,
   toggleNumbered,
@@ -145,5 +146,39 @@ describe("continueList", () => {
   it("leaves other lines alone", () => {
     expect(continueList("text", 4, 4)).toBeNull();
     expect(continueList("- a", 0, 3)).toBeNull();
+  });
+
+  it("keeps the indent and the marker style", () => {
+    expect(apply("  * a", continueList("  * a", 5, 5)!).text).toBe(
+      "  * a\n  * ",
+    );
+    expect(apply("1) a", continueList("1) a", 4, 4)!).text).toBe("1) a\n2) ");
+  });
+
+  it("splits an item at the caret", () => {
+    const result = apply("- ab", continueList("- ab", 3, 3)!);
+    expect(result.text).toBe("- a\n- b");
+  });
+
+  it("does nothing while the caret is inside the marker", () => {
+    expect(continueList("- a", 1, 1)).toBeNull();
+    expect(continueList("1. a", 2, 2)).toBeNull();
+  });
+
+  it("continues the last line of a longer text", () => {
+    const value = "intro\n\n- a\n- b";
+    expect(
+      apply(value, continueList(value, value.length, value.length)!).text,
+    ).toBe("intro\n\n- a\n- b\n- ");
+  });
+});
+
+describe("isLineBreakInput", () => {
+  it("recognises the Enter input types", () => {
+    expect(isLineBreakInput("insertLineBreak")).toBe(true);
+    expect(isLineBreakInput("insertParagraph")).toBe(true);
+    expect(isLineBreakInput("insertText")).toBe(false);
+    expect(isLineBreakInput("insertCompositionText")).toBe(false);
+    expect(isLineBreakInput("deleteContentBackward")).toBe(false);
   });
 });

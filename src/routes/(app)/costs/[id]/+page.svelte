@@ -3,7 +3,7 @@
   import ExternalLinkIcon from "@lucide/svelte/icons/external-link";
   import PencilIcon from "@lucide/svelte/icons/pencil";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
-  import { goto } from "$app/navigation";
+  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
   import { api } from "$lib/api/browser";
@@ -48,7 +48,7 @@
   async function remove() {
     await api.call(endpoints.costsDelete, { params: { id: cost.id } });
     toast.success(m.cost_deleted_toast({ title: cost.title }));
-    await goto(resolve("/costs"), { invalidateAll: true });
+    await gotoFromOverlay(resolve("/costs"), { invalidateAll: true });
   }
 
   const linkClass =
@@ -60,7 +60,7 @@
 </svelte:head>
 
 <div class="flex flex-col gap-6">
-  <div>
+  <div class="max-md:hidden">
     <a
       href={resolve("/costs")}
       class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -ms-1 inline-flex min-h-10 items-center gap-1.5 rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
@@ -79,7 +79,7 @@
         <span class="tabular-nums">{formatDay(cost.date)}</span>
       </p>
       <h1
-        class="text-2xl font-semibold tracking-tight text-balance break-words md:text-3xl"
+        class="text-2xl font-semibold tracking-tight text-balance wrap-anywhere md:text-3xl"
       >
         {cost.title}
       </h1>
@@ -119,25 +119,25 @@
   <div
     class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
   >
-    <Card.Root class="lg:col-start-1">
+    <Card.Root class="min-w-0 lg:col-start-1">
       <Card.Header>
         <Card.Title class="text-base">{m.cost_facts()}</Card.Title>
       </Card.Header>
       <Card.Content>
-        <dl class="grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
-          <div>
+        <dl class="grid grid-cols-2 gap-x-4 gap-y-4 text-sm sm:gap-x-6">
+          <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">{m.cost_paid_by()}</dt>
-            <dd class="mt-0.5 break-words">
+            <dd class="mt-0.5 wrap-anywhere">
               {cost.paidByName ?? m.cost_payer_open()}
             </dd>
           </div>
-          <div>
+          <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">{m.cost_payee()}</dt>
-            <dd class="mt-0.5 break-words">{cost.payee ?? "–"}</dd>
+            <dd class="mt-0.5 wrap-anywhere">{cost.payee ?? "–"}</dd>
           </div>
-          <div>
+          <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">{m.cost_asset()}</dt>
-            <dd class="mt-0.5 break-words">
+            <dd class="mt-0.5 wrap-anywhere">
               {#if cost.assetId && cost.assetName}
                 <a href={assetHref(cost.assetId)} class={linkClass}
                   >{cost.assetName}</a
@@ -147,9 +147,9 @@
               {/if}
             </dd>
           </div>
-          <div>
+          <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">{m.cost_room()}</dt>
-            <dd class="mt-0.5 break-words">
+            <dd class="mt-0.5 wrap-anywhere">
               {#if cost.roomId && cost.roomName}
                 <a href={roomHref(cost.roomId)} class={linkClass}
                   >{cost.roomName}</a
@@ -159,9 +159,9 @@
               {/if}
             </dd>
           </div>
-          <div>
+          <div class="col-span-2 min-w-0 sm:col-span-1">
             <dt class="text-muted-foreground text-xs">{m.cost_defect()}</dt>
-            <dd class="mt-0.5 break-words">
+            <dd class="mt-0.5 wrap-anywhere">
               {#if cost.defectId}
                 <a
                   href={resolve(`/defects/${cost.defectId}` as "/")}
@@ -172,11 +172,11 @@
               {/if}
             </dd>
           </div>
-          <div>
+          <div class="col-span-2 min-w-0 sm:col-span-1">
             <dt class="text-muted-foreground text-xs">
               {m.cost_service_entry()}
             </dt>
-            <dd class="mt-0.5 break-words">
+            <dd class="mt-0.5 wrap-anywhere">
               {#if cost.serviceLogId && cost.assetId}
                 <a href={assetHref(cost.assetId)} class={linkClass}
                   >{cost.serviceLogTitle}</a
@@ -186,11 +186,11 @@
               {/if}
             </dd>
           </div>
-          <div>
+          <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">{m.cost_deductible()}</dt>
             <dd class="mt-0.5">{deductibleLabels[cost.deductible]()}</dd>
           </div>
-          <div>
+          <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">
               {m.cost_counts_as_expense()}
             </dt>
@@ -198,13 +198,13 @@
               {cost.countsAsExpense ? m.common_yes() : m.common_no()}
             </dd>
           </div>
-          <div>
+          <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">{m.cost_source()}</dt>
             <dd class="mt-0.5">{sourceLabels[cost.source]()}</dd>
           </div>
-          <div>
+          <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">{m.cost_created()}</dt>
-            <dd class="mt-0.5 break-words tabular-nums">
+            <dd class="mt-0.5 wrap-anywhere tabular-nums">
               {formatDateTime(cost.createdAt, { timeZone: data.timeZone })}
               {#if createdBy}
                 <span class="text-muted-foreground block text-xs"
@@ -232,7 +232,7 @@
     </Card.Root>
 
     <aside
-      class="flex flex-col gap-6 lg:col-start-2 lg:row-span-4 lg:row-start-1"
+      class="flex min-w-0 flex-col gap-6 lg:col-start-2 lg:row-span-4 lg:row-start-1"
     >
       <Card.Root>
         <Card.Header>
@@ -252,7 +252,7 @@
                 <li
                   class="flex items-baseline justify-between gap-3 py-2 first:pt-0 last:pb-0"
                 >
-                  <span class="min-w-0 break-words">
+                  <span class="min-w-0 wrap-anywhere">
                     {share.userName ?? m.cost_person_unknown()}
                     <span
                       class="text-muted-foreground ms-1 text-xs tabular-nums"
@@ -277,18 +277,18 @@
     </aside>
 
     {#if cost.notes}
-      <Card.Root class="lg:col-start-1">
+      <Card.Root class="min-w-0 lg:col-start-1">
         <Card.Header>
           <Card.Title class="text-base">{m.cost_notes()}</Card.Title>
         </Card.Header>
         <Card.Content>
-          <p class="text-sm break-words whitespace-pre-line">{cost.notes}</p>
+          <p class="text-sm wrap-anywhere whitespace-pre-line">{cost.notes}</p>
         </Card.Content>
       </Card.Root>
     {/if}
 
     <Attachments
-      class="lg:col-start-1"
+      class="min-w-0 lg:col-start-1"
       ownerType="cost"
       ownerId={cost.id}
       editable={canWrite}
@@ -297,12 +297,12 @@
     />
 
     <LinkedDocuments
-      class="lg:col-start-1"
+      class="min-w-0 lg:col-start-1"
       ownerType="cost"
       ownerId={cost.id}
     />
 
-    <div class="lg:col-start-1">
+    <div class="min-w-0 lg:col-start-1">
       <Comments entityType="cost" entityId={cost.id} timeZone={data.timeZone} />
     </div>
   </div>

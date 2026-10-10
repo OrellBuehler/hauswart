@@ -69,16 +69,18 @@
       <Card.Description>{m.auth_setup_description()}</Card.Description>
     </Card.Header>
     <Card.Content>
-      <form class="flex flex-col gap-4" onsubmit={submit}>
+      <form method="post" class="flex flex-col gap-4" onsubmit={submit}>
         <FormAlert message={error} />
         {#if data.tokenRequired}
           <div class="flex flex-col gap-2">
             <Label for="setupToken">{m.auth_setup_token()}</Label>
             <Input
+              class="h-10"
               id="setupToken"
               name="setupToken"
               type="password"
               autocomplete="off"
+              enterkeyhint="next"
               spellcheck={false}
               required
               maxlength={256}
@@ -92,10 +94,13 @@
         <div class="flex flex-col gap-2">
           <Label for="username">{m.auth_username()}</Label>
           <Input
+            class="h-10"
             id="username"
             name="username"
             autocomplete="username"
             autocapitalize="none"
+            autocorrect="off"
+            enterkeyhint="next"
             spellcheck={false}
             required
             minlength={3}
@@ -107,9 +112,11 @@
         <div class="flex flex-col gap-2">
           <Label for="displayName">{m.auth_display_name()}</Label>
           <Input
+            class="h-10"
             id="displayName"
             name="displayName"
             autocomplete="name"
+            enterkeyhint="next"
             required
             maxlength={64}
             bind:value={displayName}
@@ -118,10 +125,12 @@
         <div class="flex flex-col gap-2">
           <Label for="password">{m.auth_password()}</Label>
           <Input
+            class="h-10"
             id="password"
             name="password"
             type="password"
             autocomplete="new-password"
+            enterkeyhint="next"
             required
             minlength={10}
             maxlength={256}
@@ -132,9 +141,12 @@
         <div class="flex flex-col gap-2">
           <Label for="confirm">{m.auth_password_confirm()}</Label>
           <Input
+            class="h-10"
             id="confirm"
+            name="confirm"
             type="password"
             autocomplete="new-password"
+            enterkeyhint="go"
             required
             aria-invalid={mismatch}
             bind:value={confirm}
@@ -152,6 +164,7 @@
               <Button
                 type="button"
                 size="sm"
+                class="h-10 px-4"
                 variant={locale === option ? "default" : "outline"}
                 aria-pressed={locale === option}
                 onclick={() => (locale = option)}
@@ -161,7 +174,12 @@
             {/each}
           </div>
         </fieldset>
-        <Button type="submit" disabled={pending || mismatch} class="w-full">
+        <Button
+          type="submit"
+          size="lg"
+          disabled={pending || mismatch}
+          class="w-full"
+        >
           {#if pending}
             <LoaderCircleIcon class="animate-spin" />{m.auth_setup_pending()}
           {:else}

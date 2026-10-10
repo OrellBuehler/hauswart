@@ -43,7 +43,7 @@
   }
 </script>
 
-<ol class="grid grid-cols-4 gap-1" aria-label={m.defect_status()}>
+<ol class="grid grid-cols-4 gap-0.5 sm:gap-1" aria-label={m.defect_status()}>
   {#each steps as step, index (step)}
     {@const state =
       index < current ? "done" : index === current ? "current" : "todo"}
@@ -63,7 +63,7 @@
       {/if}
       <span
         class={cn(
-          "relative flex size-8 items-center justify-center rounded-full border-2 text-xs font-semibold",
+          "relative z-10 flex size-8 items-center justify-center rounded-full border-2 text-xs font-semibold",
           state === "current" && statusTones[step].step,
           state === "done" && "border-foreground/30 bg-muted",
           state === "todo" &&
@@ -80,7 +80,7 @@
       </span>
       <span
         class={cn(
-          "text-xs leading-tight font-medium text-balance break-words",
+          "text-[11px] leading-tight font-medium text-balance break-words hyphens-auto sm:text-xs",
           state === "todo" && "text-muted-foreground",
         )}
       >

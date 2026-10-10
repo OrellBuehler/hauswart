@@ -69,6 +69,7 @@
         placeholder={m.search_placeholder()}
         aria-label={m.search_placeholder()}
         autocomplete="off"
+        enterkeyhint="search"
         maxlength={100}
         bind:value={input}
       />
@@ -92,7 +93,7 @@
     <div class="flex flex-col gap-3">
       <nav
         aria-label={m.search_filter_type()}
-        class="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0"
+        class="-mx-4 overflow-x-auto px-4 max-md:[mask-image:linear-gradient(to_right,transparent,#000_1rem,#000_calc(100%-1rem),transparent)] md:mx-0 md:px-0"
       >
         <ul class="flex w-max gap-2 md:w-auto md:flex-wrap">
           {#each [null, ...HIT_TYPES.filter((type) => counts[type] > 0)] as type (type ?? "all")}
@@ -102,7 +103,7 @@
                 href={searchHref(data.q, type)}
                 aria-current={selected ? "true" : undefined}
                 class={cn(
-                  "focus-visible:ring-ring/50 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-sm whitespace-nowrap outline-none focus-visible:ring-[3px]",
+                  "focus-visible:ring-ring/50 inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3 text-sm whitespace-nowrap outline-none focus-visible:ring-[3px]",
                   selected
                     ? "bg-primary text-primary-foreground border-transparent"
                     : "hover:bg-accent",
@@ -144,7 +145,8 @@
                     href={resolve(href as "/")}
                     class="hover:bg-accent/50 focus-visible:ring-ring/50 flex flex-col gap-0.5 px-4 py-3 outline-none first:rounded-t-lg last:rounded-b-lg focus-visible:ring-[3px]"
                   >
-                    <span class="truncate text-sm font-medium">{hit.title}</span
+                    <span class="line-clamp-2 text-sm font-medium break-words"
+                      >{hit.title}</span
                     >
                     {#if hit.snippet}
                       <span

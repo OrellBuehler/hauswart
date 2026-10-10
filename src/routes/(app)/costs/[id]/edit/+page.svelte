@@ -20,7 +20,7 @@
       href={resolve(`/costs/${data.cost.id}` as "/")}
       variant="ghost"
       size="sm"
-      class="text-muted-foreground -ms-2 w-fit"
+      class="text-muted-foreground -ms-2 w-fit max-w-full min-w-0 max-md:hidden"
     >
       <ArrowLeftIcon />
       <span class="truncate">{data.cost.title}</span>

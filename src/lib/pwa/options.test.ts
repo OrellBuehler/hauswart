@@ -71,7 +71,7 @@ describe("service worker configuration", () => {
   const workbox = options.workbox!;
 
   it("registers /sw.js with the scope /, whatever page the app is on", () => {
-    // SvelteKit's relative base ("./") would otherwise make it "sw.js" next to the current page.
+    // A relative base ("./") would otherwise make it "sw.js" next to the current page.
     expect(options.base).toBe("/");
     expect(options.scope).toBe("/");
     expect(options.filename).toBeUndefined();

@@ -36,11 +36,11 @@
 
 <DropdownMenu.Root>
   <DropdownMenu.Trigger
-    class="hover:bg-accent focus-visible:ring-ring/50 data-[state=open]:bg-accent flex h-9 items-center gap-2 rounded-full ps-1 pe-1 text-sm outline-hidden transition-colors focus-visible:ring-[3px] md:rounded-md md:pe-2"
+    class="hover:bg-accent focus-visible:ring-ring/50 data-[state=open]:bg-accent flex h-10 min-w-10 items-center justify-center gap-2 rounded-full ps-1 pe-1 text-sm outline-hidden transition-colors focus-visible:ring-[3px] md:justify-start md:rounded-md md:pe-2"
     aria-label={m.user_menu_open()}
   >
     <span
-      class="bg-brand text-brand-foreground flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+      class="bg-brand text-brand-foreground flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
       aria-hidden="true">{initial}</span
     >
     <span class="hidden max-w-32 truncate font-medium md:inline">{name}</span>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
+  import ShareIcon from "@lucide/svelte/icons/share-2";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import { toast } from "svelte-sonner";
   import { SCOPES, type Scope } from "$lib/api/scopes";
@@ -47,6 +48,10 @@
   let error = $state<string | undefined>();
   let created = $state<{ name: string; token: string } | undefined>();
   let revealOpen = $state(false);
+
+  const canShare = $derived(
+    typeof navigator !== "undefined" && typeof navigator.share === "function",
+  );
 
   const today = new Date();
   const minExpiry = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
@@ -106,6 +111,17 @@
     }
   }
 
+  async function share() {
+    if (!created) return;
+    try {
+      await navigator.share({ text: created.token });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      console.error("share failed", err);
+      toast.error(m.tokens_share_failed());
+    }
+  }
+
   function done() {
     revealOpen = false;
     created = undefined;
@@ -146,23 +162,22 @@
       <fieldset class="flex flex-col gap-3">
         <legend class="mb-1 text-sm font-medium">{m.tokens_scopes()}</legend>
         {#each available as scope (scope)}
-          <div class="flex items-start gap-3">
+          <label class="flex min-h-11 cursor-pointer items-start gap-3 py-1">
             <Checkbox
               id={`scope-${scope}`}
               class="mt-0.5"
               checked={selected.includes(scope)}
               onCheckedChange={(checked) => toggle(scope, checked)}
             />
-            <Label
-              for={`scope-${scope}`}
-              class="flex flex-col items-start gap-0.5"
+            <span
+              class="flex flex-col items-start gap-0.5 text-sm leading-none font-medium"
             >
               <span>{scopeLabel(scope)}</span>
               <span class="text-muted-foreground text-xs font-normal">
                 {scopeHint(scope)}
               </span>
-            </Label>
-          </div>
+            </span>
+          </label>
         {/each}
       </fieldset>
       <div class="flex flex-col gap-2">
@@ -233,6 +248,17 @@
           iconOnly
           label={m.common_copy()}
         />
+        {#if canShare}
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label={m.tokens_share()}
+            onclick={share}
+          >
+            <ShareIcon />
+          </Button>
+        {/if}
       </div>
     </div>
     <Dialog.Footer>

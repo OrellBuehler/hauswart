@@ -10,6 +10,7 @@
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import UndoIcon from "@lucide/svelte/icons/undo-2";
   import { goto } from "$app/navigation";
+  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
   import { api } from "$lib/api/browser";
@@ -87,7 +88,7 @@
   async function remove() {
     await api.call(endpoints.defectsDelete, { params: { id: defect.id } });
     toast.success(m.defect_deleted_toast({ number: defect.number }));
-    await goto(resolve("/defects"), { invalidateAll: true });
+    await gotoFromOverlay(resolve("/defects"), { invalidateAll: true });
   }
 </script>
 
@@ -96,7 +97,7 @@
 </svelte:head>
 
 <div class="flex flex-col gap-6">
-  <div>
+  <div class="max-md:hidden">
     <a
       href={resolve("/defects")}
       class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -ms-1 inline-flex min-h-10 items-center gap-1.5 rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
@@ -112,7 +113,7 @@
         {m.defect_number_label({ number: defect.number })}
       </p>
       <h1
-        class="text-2xl font-semibold tracking-tight text-balance break-words md:text-3xl"
+        class="text-2xl font-semibold tracking-tight text-balance wrap-anywhere md:text-3xl"
       >
         {defect.title}
       </h1>
@@ -129,21 +130,23 @@
       </div>
     </div>
 
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex items-center gap-2 sm:flex-wrap">
       {#each primary as status, index (status)}
         {@const Icon = actionIcons[status]}
         <Button
           size="lg"
           variant={index === 0 && !closed ? "default" : "outline"}
+          class={index === 0 ? "max-sm:min-w-0 max-sm:flex-1" : "max-sm:hidden"}
           onclick={() => change(status)}
         >
           <Icon />
-          {actionLabels[status]}
+          <span class="truncate">{actionLabels[status]}</span>
         </Button>
       {/each}
       <Button
         size="lg"
         variant="outline"
+        class="max-sm:hidden"
         href={resolve(`/defects/${defect.id}/edit` as "/")}
       >
         <PencilIcon />
@@ -162,7 +165,24 @@
             </Button>
           {/snippet}
         </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="start" class="min-w-52">
+        <DropdownMenu.Content align="end" class="min-w-52">
+          {#each primary.slice(1) as status (status)}
+            {@const Icon = actionIcons[status]}
+            <DropdownMenu.Item
+              class="min-h-10 sm:hidden"
+              onSelect={() => change(status)}
+            >
+              <Icon />
+              {actionLabels[status]}
+            </DropdownMenu.Item>
+          {/each}
+          <DropdownMenu.Item
+            class="min-h-10 sm:hidden"
+            onSelect={() => goto(resolve(`/defects/${defect.id}/edit` as "/"))}
+          >
+            <PencilIcon />
+            {m.common_edit()}
+          </DropdownMenu.Item>
           {#each more as status (status)}
             {@const Icon = status === "open" ? UndoIcon : actionIcons[status]}
             <DropdownMenu.Item class="min-h-10" onSelect={() => change(status)}>
@@ -170,9 +190,9 @@
               {actionLabels[status]}
             </DropdownMenu.Item>
           {/each}
-          {#if more.length > 0}
-            <DropdownMenu.Separator />
-          {/if}
+          <DropdownMenu.Separator
+            class={more.length === 0 ? "sm:hidden" : ""}
+          />
           <DropdownMenu.Item
             class="text-destructive focus:text-destructive min-h-10"
             onSelect={() => (deleteOpen = true)}
@@ -186,10 +206,10 @@
   </header>
 
   <div
-    class="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
+    class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
   >
-    <Card.Root class="lg:col-start-1">
-      <Card.Content>
+    <Card.Root class="min-w-0 lg:col-start-1">
+      <Card.Content class="px-3 sm:px-6">
         <DefectStepper
           status={defect.status}
           discoveredOn={defect.discoveredOn}
@@ -201,20 +221,20 @@
     </Card.Root>
 
     <aside
-      class="flex flex-col gap-6 lg:col-start-2 lg:row-span-4 lg:row-start-1"
+      class="flex min-w-0 flex-col gap-6 lg:col-start-2 lg:row-span-4 lg:row-start-1"
     >
       <Card.Root>
         <Card.Header>
           <Card.Title class="text-base">{m.defect_facts()}</Card.Title>
         </Card.Header>
         <Card.Content>
-          <dl class="grid gap-3 text-sm">
+          <dl class="grid grid-cols-1 gap-3 text-sm">
             {#if defect.roomName || defect.assetName}
               <div>
                 <dt class="text-muted-foreground text-xs">
                   {m.defect_place()}
                 </dt>
-                <dd class="mt-0.5 break-words">
+                <dd class="mt-0.5 wrap-anywhere">
                   {#if defect.roomName && defect.roomId}
                     <a
                       href={roomHref(defect.roomId)}
@@ -240,7 +260,7 @@
                 <dt class="text-muted-foreground text-xs">
                   {m.defect_location_detail()}
                 </dt>
-                <dd class="mt-0.5 break-words">{defect.locationDetail}</dd>
+                <dd class="mt-0.5 wrap-anywhere">{defect.locationDetail}</dd>
               </div>
             {/if}
             <div>
@@ -265,7 +285,7 @@
               <dt class="text-muted-foreground text-xs">
                 {m.defect_responsible()}
               </dt>
-              <dd class="mt-0.5 break-words">
+              <dd class="mt-0.5 wrap-anywhere">
                 {defect.responsibleContactName ?? m.defect_responsible_none()}
               </dd>
             </div>
@@ -333,7 +353,7 @@
       {/if}
     </aside>
 
-    <Card.Root class="lg:col-start-1">
+    <Card.Root class="min-w-0 lg:col-start-1">
       <Card.Header>
         <Card.Title class="text-base">{m.defect_description()}</Card.Title>
       </Card.Header>
@@ -349,7 +369,7 @@
     </Card.Root>
 
     {#if defect.resolutionMd.trim()}
-      <Card.Root class="lg:col-start-1">
+      <Card.Root class="min-w-0 lg:col-start-1">
         <Card.Header>
           <Card.Title class="text-base">{m.defect_resolution()}</Card.Title>
         </Card.Header>
@@ -359,7 +379,7 @@
       </Card.Root>
     {/if}
 
-    <div class="lg:col-start-1">
+    <div class="min-w-0 lg:col-start-1">
       <DefectTimeline
         defectId={defect.id}
         items={data.timeline}
@@ -369,7 +389,7 @@
     </div>
 
     <Attachments
-      class="lg:col-start-1"
+      class="min-w-0 lg:col-start-1"
       ownerType="defect"
       ownerId={defect.id}
       accept={IMAGE_ACCEPT}
@@ -377,7 +397,7 @@
     />
 
     <LinkedDocuments
-      class="lg:col-start-1"
+      class="min-w-0 lg:col-start-1"
       ownerType="defect"
       ownerId={defect.id}
     />

@@ -43,7 +43,7 @@
   }
 </script>
 
-<div class="flex flex-col gap-4">
+<div class="@container flex flex-col gap-4">
   {#if preparations.length === 0}
     <p class="text-muted-foreground text-sm text-pretty">
       {m.prep_editor_empty()}
@@ -51,23 +51,38 @@
   {/if}
   {#each preparations as prep, index (prep.key)}
     <div
-      class="bg-muted/40 grid gap-3 rounded-lg border p-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-start"
+      class="bg-muted/40 grid grid-cols-2 items-start gap-3 rounded-lg border p-3 max-sm:border-0 max-sm:p-2 @lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]"
     >
       <Field
         id={`prep-${prep.key}-title`}
         label={m.prep_editor_title()}
         error={errors[`prep.${prep.key}.title`]}
+        class="col-span-2 @lg:col-span-1"
       >
         {#snippet children({ describedby, invalid })}
-          <Input
-            id={`prep-${prep.key}-title`}
-            class="h-10"
-            maxlength={200}
-            placeholder={m.prep_editor_title_placeholder()}
-            bind:value={prep.title}
-            aria-invalid={invalid || undefined}
-            aria-describedby={describedby}
-          />
+          <div class="flex items-center gap-1">
+            <Input
+              id={`prep-${prep.key}-title`}
+              class="h-10 min-w-0 flex-1"
+              maxlength={200}
+              placeholder={m.prep_editor_title_placeholder()}
+              bind:value={prep.title}
+              aria-invalid={invalid || undefined}
+              aria-describedby={describedby}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-lg"
+              class="shrink-0"
+              aria-label={m.prep_editor_remove({
+                title: prep.title || String(index + 1),
+              })}
+              onclick={() => remove(prep.key)}
+            >
+              <Trash2Icon />
+            </Button>
+          </div>
         {/snippet}
       </Field>
       <Field id={`prep-${prep.key}-kind`} label={m.prep_editor_kind()}>
@@ -96,19 +111,6 @@
           />
         {/snippet}
       </Field>
-      <div class="sm:pt-[1.625rem]">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-lg"
-          aria-label={m.prep_editor_remove({
-            title: prep.title || String(index + 1),
-          })}
-          onclick={() => remove(prep.key)}
-        >
-          <Trash2Icon />
-        </Button>
-      </div>
     </div>
   {/each}
   <div>

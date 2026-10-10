@@ -157,6 +157,8 @@
             id="user-username"
             autocomplete="off"
             autocapitalize="none"
+            autocorrect="off"
+            enterkeyhint="next"
             spellcheck={false}
             required
             minlength={3}
@@ -171,6 +173,7 @@
         <Input
           id="user-display-name"
           autocomplete="off"
+          enterkeyhint="next"
           required
           maxlength={DISPLAY_NAME_MAX}
           bind:value={displayName}
@@ -214,6 +217,8 @@
             type="text"
             autocomplete="off"
             autocapitalize="none"
+            autocorrect="off"
+            enterkeyhint="next"
             spellcheck={false}
             required
             minlength={PASSWORD_MIN}
@@ -228,6 +233,7 @@
         <Input
           id="user-share"
           inputmode="decimal"
+          enterkeyhint="done"
           autocomplete="off"
           placeholder="50"
           bind:value={share}

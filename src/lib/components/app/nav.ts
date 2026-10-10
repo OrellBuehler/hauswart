@@ -40,6 +40,8 @@ export type NavItem = {
   /** More path prefixes that belong to the same section (e.g. detail pages). */
   alsoMatch?: string[];
   label: () => string;
+  /** A shorter name for the cramped bottom bar on phones; defaults to `label`. */
+  shortLabel?: () => string;
   /** The entry is only offered to people who have this feature (an optional integration). */
   requires?: "documentSystem";
   /** One sentence for the placeholder page of a section that is not built yet. */
@@ -87,6 +89,7 @@ export const navGroups: NavGroup[] = [
       {
         href: "/docs",
         label: () => m.nav_docs(),
+        shortLabel: () => m.nav_docs_short(),
         icon: BookOpenIcon,
       },
       {
@@ -195,4 +198,41 @@ export function navItemFor(href: NavHref): NavItem {
   const item = allItems.find((i) => i.href === href);
   if (!item) throw new Error(`Unknown nav entry ${href}`);
   return item;
+}
+
+/** The tabs of the bottom bar on phones. Everything else sits behind its "More" tab (the sidebar sheet). */
+export const mobileTabs: NavItem[] = [
+  navItemFor("/"),
+  navItemFor("/tasks"),
+  navItemFor("/inventory"),
+  navItemFor("/docs"),
+];
+
+/** The "More" tab stands for every page that has no tab of its own. */
+export function isMoreActive(pathname: string): boolean {
+  return !mobileTabs.some((item) => isNavActive(item, pathname));
+}
+
+/**
+ * Whether the bottom bar is shown on this page. Forms (`/new`, `/edit`) keep their save bar at the
+ * bottom of the screen.
+ */
+export function showsBottomNav(pathname: string): boolean {
+  return !/\/(?:new|edit)\/?$/.test(pathname);
+}
+
+/** Pages reached from the header, not from the navigation. */
+const extraTitles: { match: string; label: () => string }[] = [
+  { match: "/notifications", label: () => m.notifications_title() },
+  { match: "/search", label: () => m.search_page_title() },
+];
+
+/** The title the header shows for a page: its navigation entry, else the page's own name. */
+export function headerTitleFor(pathname: string): string {
+  const item = findNavItem(pathname);
+  if (item) return item.label();
+  const extra = extraTitles.find(
+    ({ match }) => pathname === match || pathname.startsWith(`${match}/`),
+  );
+  return extra ? extra.label() : m.app_name();
 }

@@ -192,7 +192,7 @@
       options={kindOptions}
       bind:value={kind}
       label={m.hint_kind()}
-      class="w-full [&>button]:flex-1"
+      class="sm:w-full sm:[&>button]:flex-1"
     />
   </div>
   <Field id="hint-title" label={m.hint_title()} error={fieldErrors.title}>
@@ -244,13 +244,13 @@
       }}
     />
   </div>
-  <details class="group rounded-lg border px-3 py-2" bind:open={reactionOpen}>
+  <details class="group rounded-lg border px-3" bind:open={reactionOpen}>
     <summary
-      class="text-muted-foreground focus-visible:ring-ring/50 min-h-8 cursor-pointer rounded text-sm font-medium outline-none select-none focus-visible:ring-[3px]"
+      class="text-muted-foreground focus-visible:ring-ring/50 min-h-11 cursor-pointer rounded py-3 text-sm font-medium outline-none select-none focus-visible:ring-[3px]"
     >
       {m.hint_reaction_title()}
     </summary>
-    <div class="mt-3 flex flex-col gap-4 pb-1">
+    <div class="mt-1 flex flex-col gap-4 pb-3">
       <p
         class="bg-muted text-muted-foreground rounded-md px-3 py-2 text-xs text-pretty"
       >
@@ -304,7 +304,7 @@
                     type="button"
                     variant="outline"
                     size="sm"
-                    class="h-8 font-mono text-xs"
+                    class="h-10 font-mono text-xs"
                     onclick={() => (fromState = chip)}
                   >
                     {chip}
@@ -343,7 +343,7 @@
                     type="button"
                     variant="outline"
                     size="sm"
-                    class="h-8 font-mono text-xs"
+                    class="h-10 font-mono text-xs"
                     onclick={() => (toState = chip)}
                   >
                     {chip}

@@ -12,7 +12,9 @@
 
 <Card.Root>
   <Card.Header>
-    <div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+    <div
+      class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-x-3"
+    >
       <div class="flex min-w-0 items-center gap-3">
         <span
           class="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-lg"
@@ -22,7 +24,7 @@
         </span>
         <Card.Title class="min-w-0 text-base">{meta.name()}</Card.Title>
       </div>
-      <StatusBadge {integration} />
+      <StatusBadge class="self-start" {integration} />
     </div>
     <Card.Description class="text-pretty">
       {meta.description()}

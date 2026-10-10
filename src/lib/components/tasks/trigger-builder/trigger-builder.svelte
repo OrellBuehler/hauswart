@@ -98,7 +98,7 @@
             onchange={setType}
           />
           {#if ADVANCED_TYPES.includes(trigger.type)}
-            <Badge variant="secondary" class="shrink-0"
+            <Badge variant="secondary" class="shrink-0 max-sm:hidden"
               >{m.trigger_advanced_badge()}</Badge
             >
           {/if}
@@ -107,7 +107,7 @@
     </Field>
 
     {#if trigger.type === "interval"}
-      <IntervalForm bind:trigger {errors} />
+      <IntervalForm bind:trigger {errors} {today} />
     {:else if trigger.type === "calendar"}
       <CalendarForm bind:trigger {errors} />
     {:else if trigger.type === "min_per_period"}

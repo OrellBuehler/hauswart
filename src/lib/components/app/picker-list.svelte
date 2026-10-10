@@ -58,7 +58,7 @@
     {id}
     role="radiogroup"
     aria-label={label}
-    class="max-h-56 overflow-y-auto rounded-lg border"
+    class="max-h-[min(14rem,35dvh)] overflow-y-auto rounded-lg border"
   >
     {#if shown.length === 0}
       <p class="text-muted-foreground px-3 py-6 text-center text-sm">

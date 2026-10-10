@@ -176,6 +176,11 @@
             when: formatRelativeInstant(link.lastViewedAt),
           })
         : m.glinks_never_viewed()}
+      {#if link.lastViewedAt}
+        <span class="pointer-fine:hidden">
+          ({formatDateTime(link.lastViewedAt, { timeZone })})
+        </span>
+      {/if}
     </span>
     {#if link.createdByName}
       <span aria-hidden="true">·</span>

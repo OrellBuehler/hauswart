@@ -37,11 +37,17 @@
   import { DocumentSystem } from "$lib/documents/system.svelte";
   import { formatDay } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
-  import type { PageProps } from "./$types";
+  import type { PageProps, Snapshot } from "./$types";
 
   let { data }: PageProps = $props();
 
   let filter = $state<AssetFilter>({ ...emptyFilter });
+
+  /** Coming back from a device keeps the search and filters. */
+  export const snapshot: Snapshot<AssetFilter> = {
+    capture: () => $state.snapshot(filter),
+    restore: (value) => (filter = { ...emptyFilter, ...value }),
+  };
   let suggestionsOpen = $state(false);
   let receiptsOpen = $state(false);
 
@@ -98,7 +104,11 @@
           <FileSearchIcon />{m.inventory_receipts()}
         </Button>
       {/if}
-      <Button href={resolve("/inventory/qr")} variant="outline">
+      <Button
+        href={resolve("/inventory/qr")}
+        variant="outline"
+        class="max-sm:hidden"
+      >
         <QrCodeIcon />{m.inventory_qr_sheet()}
       </Button>
       <Button href={newAssetHref("device")}>
@@ -138,7 +148,7 @@
         />
         <Input
           type="search"
-          class="ps-9"
+          class="h-10 ps-9"
           placeholder={m.inventory_search_placeholder()}
           aria-label={m.inventory_search()}
           autocomplete="off"
@@ -163,7 +173,7 @@
           noneLabel={m.inventory_filter_all_warranties()}
         />
         {#if hasArchived}
-          <div class="flex h-9 items-center gap-2 max-md:col-span-2">
+          <div class="flex h-10 items-center gap-2 max-md:col-span-2">
             <Switch id="inventory-archived" bind:checked={filter.archived} />
             <Label for="inventory-archived" class="font-normal">
               {m.inventory_show_archived()}

@@ -22,10 +22,10 @@
       href={resolve(`/defects/${data.defect.id}` as "/")}
       variant="ghost"
       size="sm"
-      class="text-muted-foreground -ms-2 w-fit"
+      class="text-muted-foreground -ms-2 w-fit max-w-full min-w-0 max-md:hidden"
     >
-      <ArrowLeftIcon />#{data.defect.number}
-      {data.defect.title}
+      <ArrowLeftIcon />
+      <span class="truncate">#{data.defect.number} {data.defect.title}</span>
     </Button>
     <PageHeader title={m.defect_edit_title({ number: data.defect.number })} />
   </div>

@@ -19,6 +19,12 @@
 
   type Freq = "weekly" | "monthly" | "yearly";
 
+  /** Below `sm` the chips share the row evenly instead of wrapping raggedly. */
+  const weekdayGrid =
+    "max-sm:grid max-sm:grid-cols-7 max-sm:[&>button]:min-w-0 max-sm:[&>button]:px-0";
+  const monthGrid =
+    "max-sm:grid max-sm:grid-cols-6 max-sm:[&>button]:min-w-0 max-sm:[&>button]:px-0";
+
   const freq = $derived(trigger.freq ?? "weekly");
   const dayMode = $derived(trigger.nth !== undefined ? "nth" : "day");
   const start = $derived(
@@ -128,6 +134,7 @@
       <span class="text-sm font-medium">{m.trigger_form_weekdays()}</span>
       <ChipGroup
         label={m.trigger_form_weekdays()}
+        class={weekdayGrid}
         options={weekdayChips()}
         bind:selected={
           () => trigger.byWeekday ?? [],
@@ -187,6 +194,7 @@
           <ChipGroup
             single
             label={m.trigger_form_weekday()}
+            class={weekdayGrid}
             options={weekdayChips()}
             bind:selected={
               () => trigger.byWeekday ?? [],
@@ -208,6 +216,7 @@
         </span>
         <ChipGroup
           label={m.trigger_form_months_only()}
+          class={monthGrid}
           options={monthChips()}
           bind:selected={
             () => trigger.byMonth ?? [],
