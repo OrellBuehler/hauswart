@@ -17893,7 +17893,7 @@
       "delete": {
         "operationId": "odometerDelete",
         "summary": "Delete an odometer reading",
-        "description": "The vehicle's newest remaining reading becomes its current one. Readings written by a completion or a service log entry go with them.",
+        "description": "Deletes a reading a person typed in; the vehicle's newest remaining reading becomes its current one. A reading written for a completion, a service log entry, a fuel log entry or a tire change belongs to that record and goes when the record is changed or deleted: deleting it here is a 409 `conflict` that names the owner (`details.source`, `details.sourceId`). A reading whose record no longer exists is free and can be deleted.",
         "tags": [
           "vehicles"
         ],
@@ -17958,6 +17958,16 @@
           },
           "404": {
             "description": "Error: `not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error: `conflict`",
             "content": {
               "application/json": {
                 "schema": {

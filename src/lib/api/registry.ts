@@ -1976,14 +1976,14 @@ export const endpoints = {
     path: "/api/v1/odometer-readings/{id}",
     summary: "Delete an odometer reading",
     description:
-      "The vehicle's newest remaining reading becomes its current one. Readings written by a completion or a service log entry go with them.",
+      "Deletes a reading a person typed in; the vehicle's newest remaining reading becomes its current one. A reading written for a completion, a service log entry, a fuel log entry or a tire change belongs to that record and goes when the record is changed or deleted: deleting it here is a 409 `conflict` that names the owner (`details.source`, `details.sourceId`). A reading whose record no longer exists is free and can be deleted.",
     tags: ["vehicles"],
     auth: "both",
     scopes: ["write"],
     params: idParamsSchema,
     response: emptySchema,
     status: 204,
-    errors: ["not_found"],
+    errors: ["not_found", "conflict"],
   }),
 
   costsList: defineEndpoint({

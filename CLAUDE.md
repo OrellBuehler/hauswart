@@ -603,7 +603,9 @@ of the owner>` is added to the document unless an identical note exists (writes 
   each is also an odometer reading.
 - **Odometer readings** (`odometer_readings`, never pruned): `POST /assets/{id}/odometer` (`date`
   defaults to today and is never in the future), `GET` newest first (keyset), `DELETE
-/odometer-readings/{id}`. A value lower than the reading before it (the newest on or before the date)
+/odometer-readings/{id}` (a reading written for a completion, service log entry, fuel log entry or tire change belongs to
+  that record and is a 409 `conflict` naming the owner, `details.source`/`sourceId`; one whose record is gone, say a deleted
+  task's completion, is free again). A value lower than the reading before it (the newest on or before the date)
   is a 400 on `value`, and so is a value higher than the reading after it (the first one on a later
   date; the same rule for every writer, completions, service log, fuel log and tire changes included), unless
   `force: true` (replaced instrument cluster). `recordOdometer(ctx, {assetId, date, value, source, sourceId?, note?,

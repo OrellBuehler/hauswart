@@ -1,11 +1,30 @@
-import { and, eq, gt, lt, lte, ne, or, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  eq,
+  gt,
+  isNull,
+  lt,
+  lte,
+  ne,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import { z } from "zod";
 import { ApiError } from "$lib/api/errors";
 import type { OdometerSource } from "$lib/api/enums";
 import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
 import { isValidDate } from "$lib/dates";
 import { dateInZone, householdTimeZone } from "$lib/server/config";
-import { assets, odometerReadings, type DB } from "$lib/server/db";
+import {
+  assets,
+  fuelLogs,
+  odometerReadings,
+  serviceLog,
+  taskCompletions,
+  tireSetEvents,
+  type DB,
+} from "$lib/server/db";
 import { generateNotifications } from "$lib/server/notifications/generate";
 import { decodeCursor, pageOf } from "$lib/server/pagination";
 import {
@@ -288,10 +307,93 @@ export function removeReading(
   });
 }
 
+/** What a reading written on behalf of another record is called in a message. */
+const OWNER_WORDS: Partial<Record<OdometerSource, string>> = {
+  completion: "a task completion",
+  service_log: "a service log entry",
+  fuel_log: "a fuel log entry",
+  tire_change: "a tire change",
+};
+
+/** Whether the record a reading was written for still exists (a deleted task takes its completions, not their readings). */
+function ownerExists(
+  db: Pick<DB, "select">,
+  source: OdometerSource,
+  sourceId: string,
+): boolean {
+  switch (source) {
+    case "completion":
+      return (
+        db
+          .select({ id: taskCompletions.id })
+          .from(taskCompletions)
+          .where(
+            and(
+              eq(taskCompletions.id, sourceId),
+              isNull(taskCompletions.revokedAt),
+            ),
+          )
+          .get() !== undefined
+      );
+    case "service_log":
+      return (
+        db
+          .select({ id: serviceLog.id })
+          .from(serviceLog)
+          .where(eq(serviceLog.id, sourceId))
+          .get() !== undefined
+      );
+    case "fuel_log":
+      return (
+        db
+          .select({ id: fuelLogs.id })
+          .from(fuelLogs)
+          .where(eq(fuelLogs.id, sourceId))
+          .get() !== undefined
+      );
+    case "tire_change":
+      return (
+        db
+          .select({ id: tireSetEvents.id })
+          .from(tireSetEvents)
+          .where(eq(tireSetEvents.id, sourceId))
+          .get() !== undefined
+      );
+    default:
+      return false;
+  }
+}
+
+/**
+ * Deletes a reading a person typed in. One written for a completion, a service log entry, a fuel
+ * log entry or a tire change belongs to that record and follows it (change or delete the record
+ * instead): 409. A reading whose record is gone belongs to nobody and may go.
+ */
 export async function deleteOdometerReading(
   ctx: ServiceContext,
   id: string,
 ): Promise<void> {
+  const reading = ctx.db
+    .select({
+      source: odometerReadings.source,
+      sourceId: odometerReadings.sourceId,
+    })
+    .from(odometerReadings)
+    .where(eq(odometerReadings.id, id))
+    .get();
+  if (!reading) throw notFound("Odometer reading");
+  const owner = OWNER_WORDS[reading.source];
+  if (
+    owner &&
+    reading.sourceId !== null &&
+    ownerExists(ctx.db, reading.source, reading.sourceId)
+  ) {
+    throw new ApiError(
+      "conflict",
+      `This reading belongs to ${owner}; change or delete that record instead`,
+      { details: { source: reading.source, sourceId: reading.sourceId } },
+    );
+  }
   const { assetId, changes } = removeReading(ctx, id);
   await settleOdometer(ctx, assetId, changes);
 }

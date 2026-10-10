@@ -428,6 +428,48 @@ describe("vehicles API", () => {
       ).toBe("not_found");
     });
 
+    it("a reading that a service log entry wrote is a 409 that names the entry; a free one deletes", async () => {
+      const { call, create } = await setup();
+      const car = await create();
+      const entry = (
+        await call("POST", `/api/v1/assets/${car.id}/service-log`, {
+          json: { title: "Ölwechsel", odometer: 84_200, date: today(-2) },
+        })
+      ).body as { id: string };
+      const free = (
+        await call("POST", `/api/v1/assets/${car.id}/odometer`, {
+          json: { value: 90_000, date: today(-1) },
+        })
+      ).body as Reading;
+      const readings = async () =>
+        (
+          (await call("GET", `/api/v1/assets/${car.id}/odometer`))
+            .body as Page<Reading>
+        ).items;
+      const owned = (await readings()).find((r) => r.source === "service_log")!;
+
+      const refused = await call(
+        "DELETE",
+        `/api/v1/odometer-readings/${owned.id}`,
+      );
+      expect(refused.res.status).toBe(409);
+      expect(errorCode(refused)).toBe("conflict");
+      expect(
+        (refused.body as { error: { message: string } }).error.message,
+      ).toMatch(/service log entry/);
+      expect(
+        (refused.body as { error: { details: unknown } }).error.details,
+      ).toEqual({ source: "service_log", sourceId: entry.id });
+      expect(await readings()).toHaveLength(2);
+
+      expect(
+        (await call("DELETE", `/api/v1/odometer-readings/${free.id}`)).res
+          .status,
+      ).toBe(204);
+      await call("DELETE", `/api/v1/assets/${car.id}/service-log/${entry.id}`);
+      expect(await readings()).toEqual([]);
+    });
+
     it("a reading can be taken from every household member's token with write", async () => {
       const { user, create } = await setup();
       const car = await create();
