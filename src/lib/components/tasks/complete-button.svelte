@@ -18,7 +18,7 @@
     ...rest
   }: {
     task: { id: string; title: string };
-    /** Below `sm` only the check icon (44px), from `sm` up the labelled button. */
+    /** Below `sm` only the check icon (a 44px square), from `sm` up the labelled button. */
     compact?: boolean;
     /** Runs before the request: the optimistic update. */
     onstart?: () => void;
@@ -47,12 +47,15 @@
 </script>
 
 <Button
-  size={compact ? "icon-lg" : "lg"}
+  size="lg"
   variant="outline"
   disabled={pending}
   aria-label={m.task_complete_aria({ title: task.title })}
   onclick={run}
-  class={cn(compact && "size-11 sm:h-10 sm:w-auto sm:px-4", className)}
+  class={cn(
+    compact && "max-sm:size-11 max-sm:min-w-11 max-sm:has-[>svg]:px-0",
+    className,
+  )}
   {...rest}
 >
   {#if pending}

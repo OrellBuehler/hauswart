@@ -24,12 +24,12 @@
       },
       size: {
         default:
-          "h-9 px-4 py-2 has-[>svg]:px-3 pointer-coarse:h-10",
-        sm: "h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5 pointer-coarse:h-10",
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4 pointer-coarse:h-11",
-        icon: "size-9 pointer-coarse:size-10",
-        "icon-sm": "size-8 pointer-coarse:size-10",
-        "icon-lg": "size-10 pointer-coarse:size-11",
+          "h-9 px-4 py-2 has-[>svg]:px-3 pointer-coarse:min-h-10",
+        sm: "h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5 pointer-coarse:min-h-10",
+        lg: "h-10 rounded-md px-6 has-[>svg]:px-4 pointer-coarse:min-h-11",
+        icon: "size-9 pointer-coarse:min-h-10 pointer-coarse:min-w-10",
+        "icon-sm": "size-8 pointer-coarse:min-h-10 pointer-coarse:min-w-10",
+        "icon-lg": "size-10 pointer-coarse:min-h-11 pointer-coarse:min-w-11",
       },
     },
     defaultVariants: {
