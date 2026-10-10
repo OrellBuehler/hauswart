@@ -14,6 +14,7 @@
     pendingLabel,
     destructive = false,
     onconfirm,
+    closeOnBack,
   }: {
     open?: boolean;
     title: string;
@@ -23,6 +24,8 @@
     destructive?: boolean;
     /** Runs the action. A thrown error is shown in the dialog, which stays open. */
     onconfirm: () => Promise<void>;
+    /** The back gesture closes the dialog (default); `false` leaves it to the page. */
+    closeOnBack?: boolean;
   } = $props();
 
   let pending = $state(false);
@@ -46,7 +49,10 @@
   }
 </script>
 
-<Dialog.Root bind:open={() => open, (value) => (open = pending ? true : value)}>
+<Dialog.Root
+  bind:open={() => open, (value) => (open = pending ? true : value)}
+  {closeOnBack}
+>
   <Dialog.Content showCloseButton={false}>
     <Dialog.Header>
       <Dialog.Title>{title}</Dialog.Title>

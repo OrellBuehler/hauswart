@@ -28,6 +28,7 @@
   import SheetPortal from "./sheet-portal.svelte";
   import SheetOverlay from "./sheet-overlay.svelte";
   import { cn, type WithoutChildrenOrChild } from "$lib/utils.js";
+  import { getOverlayHistory } from "$lib/overlays/use-overlay-history.svelte";
   import type { ComponentProps } from "svelte";
 
   let {
@@ -42,6 +43,8 @@
     side?: Side;
     children: Snippet;
   } = $props();
+
+  const overlay = getOverlayHistory();
 </script>
 
 <SheetPortal {...portalProps}>
@@ -49,6 +52,7 @@
   <SheetPrimitive.Content
     bind:ref
     data-slot="sheet-content"
+    data-sveltekit-replacestate={overlay?.owned ? "" : undefined}
     class={cn(sheetVariants({ side }), className)}
     {...restProps}
   >

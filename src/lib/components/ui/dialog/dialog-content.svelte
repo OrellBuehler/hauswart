@@ -6,6 +6,7 @@
   import type { Snippet } from "svelte";
   import * as Dialog from "./index.js";
   import { cn, type WithoutChildrenOrChild } from "$lib/utils.js";
+  import { getOverlayHistory } from "$lib/overlays/use-overlay-history.svelte";
   import type { ComponentProps } from "svelte";
 
   let {
@@ -20,6 +21,8 @@
     children: Snippet;
     showCloseButton?: boolean;
   } = $props();
+
+  const overlay = getOverlayHistory();
 </script>
 
 <DialogPortal {...portalProps}>
@@ -27,6 +30,7 @@
   <DialogPrimitive.Content
     bind:ref
     data-slot="dialog-content"
+    data-sveltekit-replacestate={overlay?.owned ? "" : undefined}
     class={cn(
       "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-(--dialog-top) left-[50%] z-50 grid max-h-[calc(100dvh-2rem)] w-full grid-cols-[minmax(0,1fr)] max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-(--dialog-shift) gap-4 overflow-y-auto overscroll-contain rounded-lg border p-(--dialog-p) shadow-lg wrap-anywhere duration-200 [--dialog-p:--spacing(4)] [--dialog-shift:0px] [--dialog-top:--spacing(4)] sm:max-w-lg sm:[--dialog-p:--spacing(6)] sm:[--dialog-shift:-50%] sm:[--dialog-top:50%]",
       showCloseButton &&

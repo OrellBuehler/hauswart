@@ -17,6 +17,7 @@
     onsubmit,
     children,
     class: className,
+    closeOnBack,
   }: {
     open?: boolean;
     title: string;
@@ -27,6 +28,8 @@
     onsubmit: () => Promise<string | void>;
     children: Snippet;
     class?: string;
+    /** The back gesture closes the dialog (default); `false` leaves it to the page. */
+    closeOnBack?: boolean;
   } = $props();
 
   let pending = $state(false);
@@ -53,7 +56,10 @@
   }
 </script>
 
-<Dialog.Root bind:open={() => open, (value) => (open = pending ? true : value)}>
+<Dialog.Root
+  bind:open={() => open, (value) => (open = pending ? true : value)}
+  {closeOnBack}
+>
   <Dialog.Content
     class={cn("flex flex-col gap-0 overflow-hidden p-0", className)}
   >
