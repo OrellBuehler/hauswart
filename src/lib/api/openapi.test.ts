@@ -155,6 +155,7 @@ describe("openapi document", () => {
       "Trigger",
       "User",
       "Vehicle",
+      "VehicleStats",
       "VehicleSummary",
       "Warranty",
     ]);

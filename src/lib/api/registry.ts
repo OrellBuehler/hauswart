@@ -179,6 +179,10 @@ import {
   updateServiceLogRequestSchema,
 } from "./schemas/service-log";
 import {
+  vehicleStatsQuerySchema,
+  vehicleStatsSchema,
+} from "./schemas/vehicle-stats";
+import {
   createFuelLogRequestSchema,
   fuelLogSchema,
   listFuelLogsQuerySchema,
@@ -1711,6 +1715,22 @@ export const endpoints = {
     errors: ["not_found"],
   }),
 
+  vehicleStats: defineEndpoint({
+    id: "vehicleStats",
+    method: "GET",
+    path: "/api/v1/assets/{id}/vehicle/stats",
+    summary: "A vehicle in numbers",
+    description:
+      "For a year (year=) or for all time: distance driven (from the odometer readings, per month too), the cost entries of the vehicle that count as an expense in the household currency by category and per distance unit, the average and the last ten consumption values (full-to-full) per unit, the price per unit of the fuel, the mounted tire set and the next tasks of the vehicle. 404 for an asset that is no vehicle.",
+    tags: ["vehicles", "assets"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    query: vehicleStatsQuerySchema,
+    response: vehicleStatsSchema,
+    errors: ["not_found"],
+  }),
+
   vehiclesPut: defineEndpoint({
     id: "vehiclesPut",
     method: "PUT",
@@ -2000,7 +2020,7 @@ export const endpoints = {
     path: "/api/v1/costs/summary",
     summary: "Costs of a year: totals and settlement",
     description:
-      "Totals per category, month and asset (top ten) and per tax class count entries in the household currency that count as an expense; mortgage repayments are reported as `equityTotalMinor`. `people` and `settlement` cover every split entry with a payer: `balanceMinor` = paid - share, and `settlement` lists who pays whom to square the balances.",
+      "Totals per category, month and asset (top ten) and per tax class count entries in the household currency that count as an expense; mortgage repayments are reported as `equityTotalMinor`. `people` and `settlement` cover every split entry with a payer: `balanceMinor` = paid - share, and `settlement` lists who pays whom to square the balances. With assetId only the entries of that asset are counted.",
     tags: ["costs"],
     auth: "both",
     scopes: ["read"],

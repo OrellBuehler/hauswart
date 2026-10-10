@@ -184,6 +184,7 @@ describe("registry", () => {
         "PATCH /api/v1/tire-sets/{id} both",
         "DELETE /api/v1/tire-sets/{id} both",
         "POST /api/v1/tire-sets/{id}/tread both",
+        "GET /api/v1/assets/{id}/vehicle/stats both",
         "GET /api/v1/assets/{id}/fuel-logs both",
         "POST /api/v1/assets/{id}/fuel-logs both",
         "GET /api/v1/fuel-logs/{id} both",

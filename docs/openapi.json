@@ -15437,6 +15437,124 @@
         }
       }
     },
+    "/api/v1/assets/{id}/vehicle/stats": {
+      "get": {
+        "operationId": "vehicleStats",
+        "summary": "A vehicle in numbers",
+        "description": "For a year (year=) or for all time: distance driven (from the odometer readings, per month too), the cost entries of the vehicle that count as an expense in the household currency by category and per distance unit, the average and the last ten consumption values (full-to-full) per unit, the price per unit of the fuel, the mounted tire set and the next tasks of the vehicle. 404 for an asset that is no vehicle.",
+        "tags": [
+          "vehicles",
+          "assets"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "x-required-scopes": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1990,
+              "maximum": 2200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleStats"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error: `invalid_request`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error: `unauthenticated`, `setup_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error: `forbidden`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: `not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error: `rate_limited`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: `internal`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/assets/{id}/fuel-logs": {
       "get": {
         "operationId": "fuelLogsList",
@@ -18388,7 +18506,7 @@
       "get": {
         "operationId": "costsSummary",
         "summary": "Costs of a year: totals and settlement",
-        "description": "Totals per category, month and asset (top ten) and per tax class count entries in the household currency that count as an expense; mortgage repayments are reported as `equityTotalMinor`. `people` and `settlement` cover every split entry with a payer: `balanceMinor` = paid - share, and `settlement` lists who pays whom to square the balances.",
+        "description": "Totals per category, month and asset (top ten) and per tax class count entries in the household currency that count as an expense; mortgage repayments are reported as `equityTotalMinor`. `people` and `settlement` cover every split entry with a payer: `balanceMinor` = paid - share, and `settlement` lists who pays whom to square the balances. With assetId only the entries of that asset are counted.",
         "tags": [
           "costs"
         ],
@@ -18414,6 +18532,16 @@
               "type": "integer",
               "minimum": 1990,
               "maximum": 2200
+            }
+          },
+          {
+            "name": "assetId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
             }
           }
         ],
@@ -37228,21 +37356,45 @@
         ],
         "additionalProperties": false
       },
-      "FuelLog": {
+      "VehicleStats": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string"
-          },
           "assetId": {
             "type": "string"
           },
-          "date": {
-            "type": "string",
-            "format": "date"
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
-          "odometer": {
-            "type": "number"
+          "from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "odometerUnit": {
             "type": "string",
@@ -37251,71 +37403,99 @@
               "mi"
             ]
           },
-          "quantity": {
+          "distance": {
             "type": "number"
           },
-          "unit": {
-            "type": "string",
-            "enum": [
-              "l",
-              "kWh"
-            ]
+          "distanceByMonth": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "month": {
+                  "type": "string"
+                },
+                "distance": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "month",
+                "distance"
+              ],
+              "additionalProperties": false
+            }
           },
-          "amountMinor": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "currency": {
-            "type": "string"
-          },
-          "fullTank": {
-            "type": "boolean"
-          },
-          "missedPrevious": {
-            "type": "boolean"
-          },
-          "station": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "notes": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "costEntryId": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "paidByUserId": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "pricePerUnitMinor": {
-            "type": [
-              "number",
-              "null"
-            ]
-          },
-          "distance": {
-            "type": [
-              "number",
-              "null"
-            ]
-          },
-          "consumptionPer100": {
-            "type": [
-              "number",
-              "null"
-            ]
+          "costs": {
+            "type": "object",
+            "properties": {
+              "currency": {
+                "type": "string"
+              },
+              "totalMinor": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "count": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "otherCurrencyCount": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "byCategory": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "repair",
+                        "utilities",
+                        "renewal_fund",
+                        "purchase",
+                        "mortgage_interest",
+                        "mortgage_principal",
+                        "insurance",
+                        "renovation",
+                        "maintenance",
+                        "fuel",
+                        "taxes_fees",
+                        "other"
+                      ]
+                    },
+                    "totalMinor": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "category",
+                    "totalMinor",
+                    "count"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "currency",
+              "totalMinor",
+              "count",
+              "otherCurrencyCount",
+              "byCategory"
+            ],
+            "additionalProperties": false
           },
           "costPerDistanceMinor": {
             "type": [
@@ -37323,44 +37503,134 @@
               "null"
             ]
           },
-          "createdBy": {
-            "type": [
-              "string",
-              "null"
+          "consumption": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "unit": {
+                  "type": "string",
+                  "enum": [
+                    "l",
+                    "kWh"
+                  ]
+                },
+                "averagePer100": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "stretchCount": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "last": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "fillId": {
+                        "type": "string"
+                      },
+                      "date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "distance": {
+                        "type": "number"
+                      },
+                      "quantity": {
+                        "type": "number"
+                      },
+                      "consumptionPer100": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "fillId",
+                      "date",
+                      "distance",
+                      "quantity",
+                      "consumptionPer100"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "unit",
+                "averagePer100",
+                "stretchCount",
+                "last"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "priceTrend": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fillId": {
+                  "type": "string"
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "unit": {
+                  "type": "string",
+                  "enum": [
+                    "l",
+                    "kWh"
+                  ]
+                },
+                "pricePerUnitMinor": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "fillId",
+                "date",
+                "unit",
+                "pricePerUnitMinor"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "tireSet": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TireSet"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time"
+          "nextTasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardTask"
+            }
           }
         },
         "required": [
-          "id",
           "assetId",
-          "date",
-          "odometer",
+          "year",
+          "from",
+          "to",
           "odometerUnit",
-          "quantity",
-          "unit",
-          "amountMinor",
-          "currency",
-          "fullTank",
-          "missedPrevious",
-          "station",
-          "notes",
-          "costEntryId",
-          "paidByUserId",
-          "pricePerUnitMinor",
           "distance",
-          "consumptionPer100",
+          "distanceByMonth",
+          "costs",
           "costPerDistanceMinor",
-          "createdBy",
-          "createdAt",
-          "updatedAt"
+          "consumption",
+          "priceTrend",
+          "tireSet",
+          "nextTasks"
         ],
         "additionalProperties": false
       },
@@ -37535,6 +37805,142 @@
           "notes",
           "distance",
           "odometerUnit",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "FuelLog": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "assetId": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "odometer": {
+            "type": "number"
+          },
+          "odometerUnit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ]
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "l",
+              "kWh"
+            ]
+          },
+          "amountMinor": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "currency": {
+            "type": "string"
+          },
+          "fullTank": {
+            "type": "boolean"
+          },
+          "missedPrevious": {
+            "type": "boolean"
+          },
+          "station": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "costEntryId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "paidByUserId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pricePerUnitMinor": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "distance": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "consumptionPer100": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "costPerDistanceMinor": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "createdBy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "assetId",
+          "date",
+          "odometer",
+          "odometerUnit",
+          "quantity",
+          "unit",
+          "amountMinor",
+          "currency",
+          "fullTank",
+          "missedPrevious",
+          "station",
+          "notes",
+          "costEntryId",
+          "paidByUserId",
+          "pricePerUnitMinor",
+          "distance",
+          "consumptionPer100",
+          "costPerDistanceMinor",
+          "createdBy",
           "createdAt",
           "updatedAt"
         ],

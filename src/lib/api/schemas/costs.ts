@@ -180,7 +180,11 @@ export const updateCostRequestSchema = atLeastOne(
 );
 export type UpdateCostRequest = z.output<typeof updateCostRequestSchema>;
 
-export const costsSummaryQuerySchema = z.object({ year: year.optional() });
+export const costsSummaryQuerySchema = z.object({
+  year: year.optional(),
+  /** Only the cost entries of this asset: totals, months, categories and settlement are then those of the asset. */
+  assetId: idSchema.optional(),
+});
 export type CostsSummaryQuery = z.output<typeof costsSummaryQuerySchema>;
 
 const totalByCategory = z.object({
