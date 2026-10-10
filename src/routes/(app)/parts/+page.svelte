@@ -18,7 +18,7 @@
   import { m } from "$lib/paraglide/messages";
   import { stockLevel } from "$lib/parts/stock";
   import { cn } from "$lib/utils";
-  import type { PageProps } from "./$types";
+  import type { PageProps, Snapshot } from "./$types";
 
   let { data }: PageProps = $props();
 
@@ -26,6 +26,20 @@
   let lowOnly = $state(false);
   let showArchived = $state(false);
   let createOpen = $state(false);
+
+  /** Coming back from a part keeps the search and filters. */
+  export const snapshot: Snapshot<{
+    q: string;
+    lowOnly: boolean;
+    showArchived: boolean;
+  }> = {
+    capture: () => ({ q, lowOnly, showArchived }),
+    restore: (value) => {
+      q = value.q;
+      lowOnly = value.lowOnly;
+      showArchived = value.showArchived;
+    },
+  };
 
   const query = $derived(q.trim().toLowerCase());
   const hasArchived = $derived(data.parts.some((part) => part.archivedAt));
