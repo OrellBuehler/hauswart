@@ -21,6 +21,7 @@
   const subtitle = $derived(
     [
       showRoom ? asset.roomName : null,
+      asset.vehicle?.plate,
       asset.manufacturer,
       asset.model,
       asset.species,

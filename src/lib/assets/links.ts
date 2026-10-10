@@ -20,12 +20,17 @@ export function roomTasksHref(roomId: string): string {
 }
 
 export function newAssetHref(
-  kind: "device" | "plant",
+  kind: "device" | "plant" | "vehicle",
   roomId?: string,
 ): string {
   const query = new URLSearchParams({ kind });
   if (roomId) query.set("roomId", roomId);
   return `${resolve("/assets/new")}?${query}`;
+}
+
+/** A vehicle's page with the dialog for its recurring tasks open (a vehicle that was just created). */
+export function vehicleSetupHref(assetId: string): string {
+  return `${resolve(`/assets/${encodeURIComponent(assetId)}` as "/")}?termine=1`;
 }
 
 /** The deep link a printed QR code carries. */

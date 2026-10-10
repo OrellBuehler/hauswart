@@ -68,8 +68,23 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
     ]),
     url.pathname,
   );
+  // A vehicle also shows its details and the odometer readings.
+  const vehicle =
+    asset.kind === "vehicle"
+      ? await orFail(
+          Promise.all([
+            api.call(endpoints.vehiclesGet, { params: { id: params.id } }),
+            api.call(endpoints.odometerList, {
+              params: { id: params.id },
+              query: { limit: 20 },
+            }),
+          ]),
+          url.pathname,
+        )
+      : null;
   return {
     asset,
+    vehicle: vehicle ? { details: vehicle[0], readings: vehicle[1] } : null,
     tasks: sortTasks(tasks),
     today,
     currency: household.currency,

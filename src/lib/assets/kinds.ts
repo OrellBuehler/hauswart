@@ -24,4 +24,9 @@ export const kindLabels: Record<AssetKind, () => string> = {
 };
 
 /** Kinds that belong in the inventory; plants have their own page. */
-export const INVENTORY_KINDS = ["device", "fixture", "other"] as const;
+export const INVENTORY_KINDS = [
+  "device",
+  "fixture",
+  "vehicle",
+  "other",
+] as const;

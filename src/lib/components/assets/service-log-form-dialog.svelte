@@ -1,7 +1,9 @@
 <script lang="ts">
   import { toast } from "svelte-sonner";
   import { api } from "$lib/api/browser";
-  import type { ServiceLogKind } from "$lib/api/enums";
+  import type { OdometerUnit, ServiceLogKind } from "$lib/api/enums";
+  import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
+  import { parseOdometerValue } from "$lib/vehicles/format";
   import { endpoints } from "$lib/api/registry";
   import type { ServiceLogEntry } from "$lib/api/schemas/service-log";
   import NoteChoices from "$lib/components/asset-notes/note-choices.svelte";
@@ -19,6 +21,7 @@
     entry,
     today,
     currency,
+    odometerUnit = null,
     onsaved,
   }: {
     open?: boolean;
@@ -27,6 +30,8 @@
     entry?: ServiceLogEntry | undefined;
     today: string;
     currency: string;
+    /** The unit of the vehicle's odometer; set for a vehicle only, which asks for the odometer. */
+    odometerUnit?: OdometerUnit | null;
     onsaved: () => void | Promise<void>;
   } = $props();
 
@@ -36,6 +41,7 @@
   let description = $state("");
   let contactId = $state<string | null>(null);
   let cost = $state("");
+  let odometer = $state("");
   let resolvedNoteIds = $state<string[]>([]);
   let errors = $state<Record<string, string>>({});
 
@@ -53,6 +59,7 @@
       entry?.costMinor == null
         ? ""
         : toDecimalString(minor(entry.costMinor), 2);
+    odometer = entry?.odometer == null ? "" : String(entry.odometer);
     resolvedNoteIds = [];
     errors = {};
   });
@@ -63,6 +70,10 @@
     if (!date) found.date = m.field_required();
     const costMinor = readMoney(cost, entryCurrency);
     if (costMinor === undefined) found.costMinor = m.field_number();
+    const reading = odometerUnit
+      ? parseOdometerValue(odometer, MAX_ODOMETER_VALUE)
+      : null;
+    if (reading === undefined) found.odometer = m.field_number();
     errors = found;
     if (Object.keys(found).length > 0) return m.form_check_fields();
 
@@ -76,6 +87,9 @@
       ...(costMinor === null || costMinor === undefined
         ? { currency: null }
         : { currency: entryCurrency }),
+      ...(odometerUnit && (reading !== null || entry)
+        ? { odometer: reading ?? null }
+        : {}),
       ...(resolvedNoteIds.length > 0
         ? { resolvedNoteIds: [...resolvedNoteIds] }
         : {}),
@@ -120,6 +134,8 @@
     bind:description
     bind:contactId
     bind:cost
+    bind:odometer
+    {odometerUnit}
     currency={entryCurrency}
     {errors}
     {today}

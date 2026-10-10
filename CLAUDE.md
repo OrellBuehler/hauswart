@@ -995,6 +995,19 @@ in dark mode. Every list has an empty state, every async action a pending and an
   plain `goto` from an open overlay leaves its entry behind. `FormDialog`/`ConfirmDialog` give up their entry while
   their action runs. Long forms on pages get a sticky bottom save bar.
 - **Information is not hover-only**: anything in `title=` that matters (exact dates, amounts) is also visible on touch.
+- **Vehicles, insurance and asset notes in the web app**: `/insurance` (list with a yearly total, detail, form; the form shows the
+  cancellation deadline live from `lib/insurance/policy.ts`, request mapping in `lib/insurance/form.ts`) sits in the finance group
+  of the sidebar, so behind "More" on phones. `assets/[id]` for kind `vehicle` shows `components/vehicles/` first (plate chip,
+  odometer with the "record" dialog, history, details; a comment marks where the tire, fuel log and cost sections go) and the
+  asset form takes the vehicle details (`PUT /assets/{id}/vehicle` after the asset; vehicles have no room picker). A refused reading
+  that is lower than the one before is recognised by `lowerThanReading` (`lib/vehicles/odometer-error.ts`), and only then does the
+  dialog offer "save anyway" (`force`). "Termine einrichten" (`lib/vehicles/setup.ts`, `vehicle-setup-dialog.svelte`) creates the
+  templates of `lib/vehicles/templates.ts` through the API, task first, then its preparations, each template with its own progress
+  and error; the templates leave no mark on their tasks, so what a vehicle has already is found by likeness (title in either
+  language, odometer counter, an inspection on a date) and not offered twice. A new vehicle opens that dialog once through `?termine=1`.
+  Asset notes live in the card with the anchor `#notes` (`components/asset-notes/`); `NoteChoices` is the picker for the
+  completion and service log dialogs and `OpenNotesBadge` the count on task rows and the task page. After `bun run check` or `bun run
+i18n` restart a running `bun dev`: regenerated route nodes and message modules leave the dev client with a stale manifest.
 
 ## Testing
 

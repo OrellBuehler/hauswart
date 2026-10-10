@@ -1,10 +1,16 @@
 <script lang="ts">
-  import { goto, invalidateAll } from "$app/navigation";
+  import {
+    afterNavigate,
+    goto,
+    invalidateAll,
+    replaceState,
+  } from "$app/navigation";
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
   import ArchiveIcon from "@lucide/svelte/icons/archive";
   import ArchiveRestoreIcon from "@lucide/svelte/icons/archive-restore";
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
+  import CalendarCheckIcon from "@lucide/svelte/icons/calendar-check";
   import EllipsisVerticalIcon from "@lucide/svelte/icons/ellipsis-vertical";
   import FileCheckIcon from "@lucide/svelte/icons/file-check";
   import ListChecksIcon from "@lucide/svelte/icons/list-checks";
@@ -25,6 +31,10 @@
   import AssetPartsCard from "$lib/components/assets/asset-parts-card.svelte";
   import AssetServiceLogCard from "$lib/components/assets/asset-service-log-card.svelte";
   import QrCard from "$lib/components/assets/qr-card.svelte";
+  import OdometerHistoryCard from "$lib/components/vehicles/odometer-history-card.svelte";
+  import PlateBadge from "$lib/components/vehicles/plate-badge.svelte";
+  import VehicleCard from "$lib/components/vehicles/vehicle-card.svelte";
+  import VehicleSetupDialog from "$lib/components/vehicles/vehicle-setup-dialog.svelte";
   import TaskRows from "$lib/components/assets/task-rows.svelte";
   import WarrantyBadge from "$lib/components/assets/warranty-badge.svelte";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
@@ -54,6 +64,16 @@
   const canWriteDocs = $derived(data.scopes.includes("docs:write"));
   const canWrite = $derived(data.scopes.includes("write"));
   const isPlant = $derived(asset.kind === "plant");
+  const isVehicle = $derived(asset.kind === "vehicle");
+  let setupOpen = $state(false);
+
+  /** A new vehicle comes here with `?termine=1`: the dialog for its recurring tasks opens once, the address is cleaned first. */
+  afterNavigate(() => {
+    if (!isVehicle || !canWrite) return;
+    if (page.url.searchParams.get("termine") !== "1") return;
+    replaceState(resolve(`/assets/${asset.id}` as "/"), page.state);
+    setupOpen = true;
+  });
   const pinnedHints = $derived(data.hints.filter((hint) => hint.pinned));
   const warranty = $derived(warrantyStatus(asset, data.today));
   const backHref = $derived(
@@ -151,6 +171,9 @@
             class="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2 text-sm"
           >
             <span>{kindLabels[asset.kind]()}</span>
+            {#if isVehicle && asset.vehicle?.plate}
+              <PlateBadge plate={asset.vehicle.plate} />
+            {/if}
             {#if asset.roomId && asset.roomName}
               <span aria-hidden="true">·</span>
               <a
@@ -232,6 +255,29 @@
 
   <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-3 print:block">
     <div class="flex min-w-0 flex-col gap-6 lg:col-span-2 print:hidden">
+      {#if data.vehicle}
+        <VehicleCard
+          assetId={asset.id}
+          vehicle={data.vehicle.details}
+          today={data.today}
+          {canWrite}
+        />
+
+        <OdometerHistoryCard
+          assetId={asset.id}
+          unit={data.vehicle.details.odometerUnit}
+          readings={data.vehicle.readings.items}
+          nextCursor={data.vehicle.readings.nextCursor}
+          {canWrite}
+        />
+
+        <!--
+          Sections that follow the vehicle's own card: "Reifen", "Tankbuch" and "Kosten" (tire sets,
+          fuel log and cost statistics). Each one is a Card of its own, placed here, before the
+          generic cards below, and only for vehicles.
+        -->
+      {/if}
+
       <Card.Root>
         <Card.Header>
           <Card.Title>{m.asset_facts_title()}</Card.Title>
@@ -307,10 +353,22 @@
                 <Button href={newTaskHref(asset.id)}>
                   <PlusIcon />{m.asset_add_task()}
                 </Button>
+                {#if isVehicle && canWrite}
+                  <Button variant="outline" onclick={() => (setupOpen = true)}>
+                    <CalendarCheckIcon />{m.vehicle_setup_open()}
+                  </Button>
+                {/if}
               {/snippet}
             </EmptyState>
           {:else}
             <TaskRows tasks={data.tasks} />
+            {#if isVehicle && canWrite}
+              <div class="mt-3">
+                <Button variant="outline" onclick={() => (setupOpen = true)}>
+                  <CalendarCheckIcon />{m.vehicle_setup_open()}
+                </Button>
+              </div>
+            {/if}
           {/if}
         </Card.Content>
       </Card.Root>
@@ -366,6 +424,7 @@
         nextCursor={data.serviceLog.nextCursor}
         today={data.today}
         currency={data.currency}
+        odometerUnit={data.vehicle?.details.odometerUnit ?? null}
       />
 
       <Comments entityType="asset" entityId={asset.id} />
@@ -376,6 +435,19 @@
     </div>
   </div>
 </div>
+
+{#if data.vehicle}
+  <VehicleSetupDialog
+    bind:open={setupOpen}
+    assetId={asset.id}
+    assetName={asset.name}
+    firstRegistration={data.vehicle.details.firstRegistration}
+    unit={data.vehicle.details.odometerUnit}
+    today={data.today}
+    tasks={data.tasks}
+    onfinished={() => invalidateAll()}
+  />
+{/if}
 
 <ConfirmDialog
   bind:open={deleteOpen}
