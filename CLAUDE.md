@@ -135,7 +135,7 @@ src/lib/server/share/            guest links: tokens.ts, guest-links.ts (CRUD, w
 src/lib/server/emergency/        emergency page data (members) and the "Notfall- & Vertretungsblatt" PDF
 src/lib/server/vehicles/         vehicle details (`vehicle_details`), odometer readings and the signal they feed: odometer.ts
                                  (`writeOdometer` sync, `recordOdometer` async), signal.ts (readings -> signal + samples),
-                                 summary.ts (plate + newest reading on assets), events.ts (completions), vehicles.ts (see "Vehicles")
+                                 summary.ts (plate + newest reading on assets), events.ts (completions), vehicles.ts, tires.ts (see "Vehicles")
 src/lib/vehicles/                client-safe: odometer.ts (`odometer:<asset id>` key helpers), templates.ts (task bodies for a vehicle)
 src/lib/server/pdf/render.ts     shared pdfmake wrapper (A4, Roboto from node_modules, no network or file access)
 src/lib/pwa/                     client-safe PWA parts: colors.ts (theme colours, tested against app.css), manifest.ts, options.ts
@@ -615,6 +615,21 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   scheduler tick. A service log entry's `odometer` (vehicles only, 400 on `odometer` for anything else)
   keeps one reading in step with the entry through create, update (value or date) and delete, in the
   entry's transaction; the handlers re-evaluate the readers at once (`refreshOdometerReaders`).
+- **Tire sets** (`tire_sets`, `tire_set_events`, migration `0020`; `vehicles/tires.ts`, rules in `lib/vehicles/tires.ts`):
+  `GET|POST /assets/{id}/tire-sets`, `GET|PATCH|DELETE /tire-sets/{id}`, `POST /assets/{id}/tire-sets/{setId}/mount`,
+  `POST /tire-sets/{id}/tread`. A set has season (`summer|winter|all_season`), brand, model, size, `dot` (week and
+  year, `"2423"`, validated as week 01-53 plus two digits), tread depth and the day it was measured, storage location
+  and contact (a tire hotel), purchase date and `retiredAt`. At most one set per vehicle is `mounted` (partial unique
+  index and the mount code). **Mounting** (`mountTireSet`) takes the mounted set off (an `unmounted` event of the same
+  day and odometer), writes the `mounted` event and, with an `odometer`, a reading of the vehicle (source `tire_change`,
+  the mount event as `sourceId`; lower than the reading before is a 400 on `odometer`), in one transaction; 409 for a
+  retired or already mounted set. Whether a set is mounted and its tread change only through mount and tread (each
+  measurement is a `tread_measured` event, the newest is the set's depth); `retired: true` takes a mounted set off.
+  The DTO carries `treadWarning` (below 3 mm summer, 4 mm winter and all-season, `TREAD_WARNING_MM`), `ageYears` (from
+  the DOT, one decimal), `mountedOn` and `distance` (`tireSetDistance`: odometer at the unmount, or the newest reading
+  while mounted, minus at the mount; events without an odometer use the newest reading on or before their date).
+  Completing a tire-change task does not mount anything: the frontend completes the task, then calls mount. Photos are
+  attachments of the owner type `tire_set` (comments and document links are not offered).
 - **Task templates** (`lib/vehicles/templates.ts`, pure, titles are Paraglide messages in the given
   locale): winter and summer tires (yearly calendar, October/April 15th, `earlyDays` 14, preparation
   "Garagentermin buchen" 28 days ahead), service (`counter_delta` on the odometer, 15000 km / 10000 mi,

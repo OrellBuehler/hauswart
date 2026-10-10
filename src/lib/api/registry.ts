@@ -179,6 +179,16 @@ import {
   updateServiceLogRequestSchema,
 } from "./schemas/service-log";
 import {
+  createTireSetRequestSchema,
+  listTireSetsQuerySchema,
+  listTireSetsResponseSchema,
+  measureTreadRequestSchema,
+  mountTireSetRequestSchema,
+  tireSetDetailSchema,
+  tireSetMountParamsSchema,
+  updateTireSetRequestSchema,
+} from "./schemas/tire-sets";
+import {
   listOdometerQuerySchema,
   listOdometerResponseSchema,
   odometerReadingSchema,
@@ -1707,6 +1717,117 @@ export const endpoints = {
     params: idParamsSchema,
     body: putVehicleRequestSchema,
     response: vehicleSchema,
+    errors: ["not_found"],
+  }),
+
+  tireSetsList: defineEndpoint({
+    id: "tireSetsList",
+    method: "GET",
+    path: "/api/v1/assets/{id}/tire-sets",
+    summary: "Tire sets of a vehicle",
+    description:
+      "The mounted set first, then by season; retired sets only with includeRetired=true. Each set carries the distance driven on it, a treadWarning (below 3 mm for summer, 4 mm for winter and all-season) and its age from the DOT code.",
+    tags: ["vehicles", "assets"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    query: listTireSetsQuerySchema,
+    response: listTireSetsResponseSchema,
+    errors: ["not_found"],
+  }),
+
+  tireSetsCreate: defineEndpoint({
+    id: "tireSetsCreate",
+    method: "POST",
+    path: "/api/v1/assets/{id}/tire-sets",
+    summary: "Add a tire set to a vehicle",
+    description:
+      "The set is not mounted; mount it with the mount endpoint. 400 for an asset that is no vehicle.",
+    tags: ["vehicles", "assets"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: createTireSetRequestSchema,
+    response: tireSetDetailSchema,
+    status: 201,
+    errors: ["not_found"],
+  }),
+
+  tireSetsGet: defineEndpoint({
+    id: "tireSetsGet",
+    method: "GET",
+    path: "/api/v1/tire-sets/{id}",
+    summary: "A tire set with its mount and measurement history",
+    tags: ["vehicles"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: tireSetDetailSchema,
+    errors: ["not_found"],
+  }),
+
+  tireSetsUpdate: defineEndpoint({
+    id: "tireSetsUpdate",
+    method: "PATCH",
+    path: "/api/v1/tire-sets/{id}",
+    summary: "Change or retire a tire set",
+    description:
+      "Whether the set is mounted and its tread depth change through the mount and tread endpoints only. retired: true takes a mounted set off first.",
+    tags: ["vehicles"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: updateTireSetRequestSchema,
+    response: tireSetDetailSchema,
+    errors: ["not_found"],
+  }),
+
+  tireSetsDelete: defineEndpoint({
+    id: "tireSetsDelete",
+    method: "DELETE",
+    path: "/api/v1/tire-sets/{id}",
+    summary: "Delete a tire set",
+    description:
+      "Its events, the odometer readings they wrote and its attachments go with it. Retire the set instead to keep its history.",
+    tags: ["vehicles"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
+  tireSetsMount: defineEndpoint({
+    id: "tireSetsMount",
+    method: "POST",
+    path: "/api/v1/assets/{id}/tire-sets/{setId}/mount",
+    summary: "Mount a tire set",
+    description:
+      "Takes the mounted set off (an unmounted event of the same day) and mounts this one. With an odometer value the vehicle gets that reading (source tire_change); a value lower than the reading before is a 400 on odometer and nothing is changed. 409 for a retired set and for one that is already mounted.",
+    tags: ["vehicles", "assets"],
+    auth: "both",
+    scopes: ["write"],
+    params: tireSetMountParamsSchema,
+    body: mountTireSetRequestSchema,
+    response: tireSetDetailSchema,
+    errors: ["not_found", "conflict"],
+  }),
+
+  tireSetsTread: defineEndpoint({
+    id: "tireSetsTread",
+    method: "POST",
+    path: "/api/v1/tire-sets/{id}/tread",
+    summary: "Record a tread depth measurement",
+    description:
+      "Adds a measurement event; the newest measurement is the set's current depth. With an odometer value the vehicle gets that reading as well.",
+    tags: ["vehicles"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: measureTreadRequestSchema,
+    response: tireSetDetailSchema,
+    status: 201,
     errors: ["not_found"],
   }),
 

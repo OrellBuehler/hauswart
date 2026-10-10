@@ -58,7 +58,18 @@ import type {
   odometerReadingSchema,
   vehicleSchema,
 } from "$lib/api/schemas/vehicles";
+import type {
+  tireEventSchema,
+  tireSetDetailSchema,
+  tireSetSchema,
+} from "$lib/api/schemas/tire-sets";
 import type { OdometerRow } from "$lib/server/vehicles/odometer";
+import type {
+  TireEventRow,
+  TireSetDetailRecord,
+  TireSetRecord,
+} from "$lib/server/vehicles/tires";
+import { tireAgeYears, treadWarning } from "$lib/vehicles/tires";
 import type { VehicleRecord } from "$lib/server/vehicles/vehicles";
 import type {
   defectDetailSchema,
@@ -195,6 +206,58 @@ export function wireVehicle(v: VehicleRecord): z.input<typeof vehicleSchema> {
     odometer: v.odometer,
     updatedAt: iso(v.updatedAt),
   };
+}
+
+export function wireTireEvent(
+  e: TireEventRow,
+): z.input<typeof tireEventSchema> {
+  return {
+    id: e.id,
+    kind: e.kind,
+    date: e.date,
+    odometer: e.odometer,
+    treadDepthMm: e.treadDepthMm,
+    createdAt: toIso(e.createdAt),
+  };
+}
+
+/** `today` is the household's date, which the age of the tires counts to. */
+export function wireTireSet(
+  s: TireSetRecord,
+  today: string,
+): z.input<typeof tireSetSchema> {
+  return {
+    id: s.id,
+    assetId: s.assetId,
+    season: s.season,
+    brand: s.brand,
+    model: s.model,
+    size: s.size,
+    dot: s.dot,
+    treadDepthMm: s.treadDepthMm,
+    treadMeasuredOn: s.treadMeasuredOn,
+    treadWarning: treadWarning(s.season, s.treadDepthMm),
+    ageYears: tireAgeYears(s.dot, today),
+    storageLocation: s.storageLocation,
+    storageContactId: s.storageContactId,
+    storageContactName: s.storageContactName,
+    mounted: s.mounted,
+    mountedOn: s.mountedOn,
+    purchasedOn: s.purchasedOn,
+    retiredAt: iso(s.retiredAt),
+    notes: s.notes,
+    distance: s.distance,
+    odometerUnit: s.odometerUnit,
+    createdAt: toIso(s.createdAt),
+    updatedAt: toIso(s.updatedAt),
+  };
+}
+
+export function wireTireSetDetail(
+  s: TireSetDetailRecord,
+  today: string,
+): z.input<typeof tireSetDetailSchema> {
+  return { ...wireTireSet(s, today), events: s.events.map(wireTireEvent) };
 }
 
 export function wireOdometerReading(

@@ -38,11 +38,12 @@ describe("isLinkableOwner", () => {
     }
   });
 
-  it("refuses the care hints and the notes of an asset, which the server refuses too", () => {
+  it("refuses the care hints, the notes of an asset and the tire sets, which the server refuses too", () => {
     expect(isLinkableOwner("asset_hint")).toBe(false);
     expect(isLinkableOwner("asset_note")).toBe(false);
+    expect(isLinkableOwner("tire_set")).toBe(false);
     const refused = ATTACHMENT_OWNER_TYPES.filter((o) => !isLinkableOwner(o));
-    expect(refused).toEqual(["asset_hint", "asset_note"]);
+    expect(refused).toEqual(["asset_hint", "asset_note", "tire_set"]);
   });
 });
 

@@ -13,6 +13,7 @@ import {
   assets,
   rooms,
   serviceLog,
+  tireSets,
   vehicleDetails,
 } from "$lib/server/db";
 import { paginateArray } from "$lib/server/pagination";
@@ -291,9 +292,9 @@ export function updateAsset(
 }
 
 /**
- * Tasks that referenced the asset stay and lose the link. Its service log, hints, notes, comments and
- * attachments go with it, including the attachments of the service log entries, hints and notes
- * (their rows are removed by cascade, the attachments have no foreign key to follow).
+ * Tasks that referenced the asset stay and lose the link. Its service log, hints, notes, tire sets,
+ * comments and attachments go with it, including the attachments of the service log entries, hints,
+ * notes and tire sets (their rows are removed by cascade, the attachments have no foreign key to follow).
  */
 export function deleteAsset(ctx: Now, id: string): void {
   const entryIds = ctx.db
@@ -314,6 +315,12 @@ export function deleteAsset(ctx: Now, id: string): void {
     .where(eq(assetNotes.assetId, id))
     .all()
     .map((row) => row.id);
+  const tireSetIds = ctx.db
+    .select({ id: tireSets.id })
+    .from(tireSets)
+    .where(eq(tireSets.assetId, id))
+    .all()
+    .map((row) => row.id);
   const result = ctx.db
     .delete(assets)
     .where(eq(assets.id, id))
@@ -325,6 +332,9 @@ export function deleteAsset(ctx: Now, id: string): void {
   removeOwnedAttachments(ctx, "asset", id);
   for (const noteId of noteIds) {
     removeOwnedAttachments(ctx, "asset_note", noteId);
+  }
+  for (const setId of tireSetIds) {
+    removeOwnedAttachments(ctx, "tire_set", setId);
   }
   for (const entryId of entryIds) {
     removeOwnedAttachments(ctx, "service_log", entryId);
