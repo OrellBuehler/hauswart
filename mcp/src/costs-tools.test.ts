@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { useMcp } from "./test-harness";
+import { ToolError } from "./errors";
+import { createVehicle, useMcp } from "./test-harness";
+import { rate, toMinor } from "./tools/costs";
 
 const ALL = ["read", "write", "costs:write"] as const;
 
@@ -194,6 +196,51 @@ describe("cost tools", () => {
     expect(none.summary).toContain("nothing to settle");
   });
 
+  it("summarises the costs of one asset, given by name or plate", async () => {
+    const session = await mcp.connect({ scopes: [...ALL] });
+    const { ok, call } = session;
+    await ok("create_asset", { name: "Dishwasher" });
+    await createVehicle(session, "Familienauto", "ZH 000000");
+    const book = (extra: Record<string, unknown>) =>
+      ok("create_cost", { category: "repair", ...extra });
+    await book({
+      title: "Pump",
+      amount: "100.00",
+      asset: "Dishwasher",
+      date: "2026-02-01",
+    });
+    await book({
+      title: "Brakes",
+      amount: "40.00",
+      asset: "Familienauto",
+      date: "2026-03-01",
+    });
+    await book({
+      title: "Heating",
+      amount: "60.00",
+      category: "utilities",
+      date: "2026-03-05",
+    });
+
+    expect((await ok("cost_summary", { year: 2026 })).expenseTotal).toBe(
+      "200.00 CHF",
+    );
+    const car = await call("cost_summary", { year: 2026, asset: "zh000000" });
+    expect(car.summary).toContain("2026 (Familienauto): 40.00 CHF in expenses");
+    expect(car.json).toMatchObject({
+      expenseTotal: "40.00 CHF",
+      byCategory: [{ category: "repair", total: "40.00 CHF", count: 1 }],
+      topAssets: [{ asset: "Familienauto", total: "40.00 CHF", count: 1 }],
+    });
+    expect(
+      (await ok("cost_summary", { year: 2026, asset: "Dishwasher" }))
+        .expenseTotal,
+    ).toBe("100.00 CHF");
+    const missing = await call("cost_summary", { asset: "Traktor" });
+    expect(missing.isError).toBe(true);
+    expect(missing.text).toContain("Error [not_found]");
+  });
+
   it("shows write tools only with costs:write, and reading needs no more than read", async () => {
     const reader = await mcp.connect({ scopes: ["read"] });
     expect((await reader.ok("list_costs")).costs).toEqual([]);
@@ -205,5 +252,36 @@ describe("cost tools", () => {
     expect(
       (await writer.client.listTools()).tools.map((t) => t.name),
     ).not.toContain("create_cost");
+  });
+});
+
+describe("amounts in the cost tools", () => {
+  it.each([
+    [184.7, "CHF", "l", "1.847 CHF/l"],
+    [12.3, "CHF", "km", "0.123 CHF/km"],
+    [0, "CHF", "kWh", "0.000 CHF/kWh"],
+    [175.4, "JPY", "l", "175.4 JPY/l"],
+    [1847, "KWD", "l", "1.8470 KWD/l"],
+  ])("writes the rate %s %s per %s as %s", (value, currency, per, text) => {
+    expect(rate(value, currency, per)).toBe(text);
+  });
+
+  it.each([
+    ["12.5", "CHF", 1250],
+    ["1'234,50", "CHF", 123_450],
+    ["1500", "JPY", 1500],
+    ["0", "CHF", 0],
+    ["-20.05", "CHF", -2005],
+  ])("reads %s %s as %s minor units", (amount, currency, expected) => {
+    expect(toMinor(amount, currency)).toBe(expected);
+  });
+
+  it.each(["cheap", "1.234", ""])("refuses the amount '%s'", (amount) => {
+    expect(() => toMinor(amount, "CHF")).toThrow(ToolError);
+    try {
+      toMinor(amount, "CHF");
+    } catch (err) {
+      expect((err as ToolError).code).toBe("invalid_request");
+    }
   });
 });

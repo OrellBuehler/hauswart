@@ -12,7 +12,7 @@ const HORIZONS = {
   all: ["overdue", "today", "thisWeek", "later", "signalBased"],
 } as const;
 
-const row = (t: DashboardTask) => ({
+export const dashboardTaskRow = (t: DashboardTask) => ({
   id: t.taskId,
   title: t.title,
   category: t.category,
@@ -42,7 +42,10 @@ export const listUpcoming = defineTool({
     const keep = (t: DashboardTask) => !mine || t.assigneeUserId === ctx.me.id;
     const buckets = HORIZONS[horizon];
     const upcoming = Object.fromEntries(
-      buckets.map((b) => [b, dash.upcoming[b].filter(keep).map(row)]),
+      buckets.map((b) => [
+        b,
+        dash.upcoming[b].filter(keep).map(dashboardTaskRow),
+      ]),
     );
     const total = Object.values(upcoming).reduce((n, a) => n + a.length, 0);
     const mineIds = new Set(

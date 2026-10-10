@@ -179,6 +179,12 @@ export function renderNotification(n: Notification): string {
   return NOTIFICATION_TEXT[n.titleKey](n.params);
 }
 
+/** A number rounded to `digits` decimals, still a number: 6.8342 -> 6.83. */
+export const round = (value: number, digits = 2): number => {
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
+};
+
 /** `1 task`, `2 tasks`. */
 export const plural = (n: number, one: string, many = `${one}s`) =>
   `${n} ${n === 1 ? one : many}`;

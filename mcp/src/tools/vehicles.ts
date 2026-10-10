@@ -11,13 +11,13 @@ import { plural, taskRow } from "../format";
 import { defineTool } from "../tool";
 
 const date = z.iso.date();
-const vehicleRef = z
+export const vehicleRef = z
   .string()
   .min(1)
   .max(120)
   .describe("Vehicle: its id, its name or its plate (spaces do not matter)");
 
-const label = (v: Asset) =>
+export const vehicleLabel = (v: Asset) =>
   v.vehicle?.plate ? `${v.name}, ${v.vehicle.plate}` : v.name;
 
 async function allVehicles(ctx: ToolContext): Promise<Asset[]> {
@@ -74,7 +74,7 @@ export async function resolveVehicle(
   if (hits.length > 1) {
     throw new ToolError(
       "invalid_request",
-      `Vehicle "${ref}" is ambiguous; use the id. Candidates: ${hits.map((v) => `${label(v)} (${v.id})`).join(", ")}`,
+      `Vehicle "${ref}" is ambiguous; use the id. Candidates: ${hits.map((v) => `${vehicleLabel(v)} (${v.id})`).join(", ")}`,
     );
   }
   const other = (
@@ -88,7 +88,7 @@ export async function resolveVehicle(
   }
   throw new ToolError(
     "not_found",
-    `No vehicle matches "${ref}". Known vehicles: ${vehicles.map(label).join("; ") || "none"}.`,
+    `No vehicle matches "${ref}". Known vehicles: ${vehicles.map(vehicleLabel).join("; ") || "none"}.`,
   );
 }
 
@@ -118,7 +118,7 @@ export const getVehicle = defineTool({
     ]);
     const attention = tasks.items.filter(needsAttention).length;
     return {
-      summary: `${label(asset)}: ${odometerText(details.odometer)}; ${plural(tasks.items.length, "open task")}${attention > 0 ? `, ${attention} need attention` : ""}.`,
+      summary: `${vehicleLabel(asset)}: ${odometerText(details.odometer)}; ${plural(tasks.items.length, "open task")}${attention > 0 ? `, ${attention} need attention` : ""}.`,
       data: {
         id: asset.id,
         name: asset.name,
@@ -171,7 +171,7 @@ export const recordOdometer = defineTool({
     ]);
     const unit = details.odometerUnit;
     return {
-      summary: `Recorded ${reading.value} ${unit} for ${label(asset)} on ${reading.date}.`,
+      summary: `Recorded ${reading.value} ${unit} for ${vehicleLabel(asset)} on ${reading.date}.`,
       data: {
         id: reading.id,
         vehicle: asset.name,

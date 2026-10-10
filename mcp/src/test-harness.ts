@@ -3,10 +3,13 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterEach } from "vitest";
 import type { FetchLike } from "../../src/lib/api/client";
 import type { Scope } from "../../src/lib/api/scopes";
+import { putVehicleRequestSchema } from "../../src/lib/api/schemas/vehicles";
 import { addDays } from "../../src/lib/dates";
 import { createInProcessFetch } from "../../src/lib/testing/api";
 import { createTestToken, createTestUser } from "../../src/lib/testing/auth";
 import { useTestDB } from "../../src/lib/testing/db";
+import type { ServiceContext } from "../../src/lib/server/service";
+import { putVehicle } from "../../src/lib/server/vehicles/vehicles";
 import { createHauswartServer, type ConnectOptions } from "./server";
 
 export interface Reply {
@@ -113,3 +116,27 @@ export const everyDays = (every: number, startDate: string) => ({
 });
 
 export const oneOff = (date: string) => ({ type: "one_off", date });
+
+/**
+ * A vehicle (an asset of kind `vehicle`) with the given plate and details, for the tools that need
+ * one. Returns its id.
+ */
+export async function createVehicle(
+  session: {
+    ok: (name: string, args?: Record<string, unknown>) => Promise<Json>;
+    db: { db: ServiceContext["db"] };
+  },
+  name: string,
+  plate: string | null = null,
+  details: Record<string, unknown> = {},
+): Promise<string> {
+  const asset = await session.ok("create_asset", { name, kind: "vehicle" });
+  if (plate !== null || Object.keys(details).length > 0) {
+    putVehicle(
+      { db: session.db.db, now: Date.now() },
+      asset.id,
+      putVehicleRequestSchema.parse({ plate, ...details }),
+    );
+  }
+  return asset.id as string;
+}

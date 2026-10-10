@@ -6,6 +6,7 @@ import {
   describeTrigger,
   describeWhen,
   renderNotification,
+  round,
 } from "./format";
 import { TRIGGER_DOCS, TRIGGER_TYPES } from "./tools/trigger-docs";
 
@@ -146,5 +147,22 @@ describe("renderNotification", () => {
       expect(text).not.toContain("undefined");
       expect(text.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("round", () => {
+  it.each([
+    [6.8333, 2, 6.83],
+    [6.8351, 2, 6.84],
+    [5, 2, 5],
+    [599.96, 1, 600],
+    [0, 2, 0],
+    [12.3456, 0, 12],
+  ])("rounds %s to %s decimals as %s", (value, digits, expected) => {
+    expect(round(value, digits)).toBe(expected);
+  });
+
+  it("rounds to two decimals by default", () => {
+    expect(round(1.005 + 0.0001)).toBe(1.01);
   });
 });
