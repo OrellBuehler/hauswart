@@ -22,6 +22,7 @@ const row = (t: DashboardTask) => ({
   estimated: t.estimated ? true : null,
   progress: t.progress,
   asset: t.assetName,
+  openNotes: t.openNoteCount || null,
   room: t.roomName,
   assignee: t.assigneeName,
 });

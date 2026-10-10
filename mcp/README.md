@@ -153,13 +153,16 @@ Results are a one-line summary followed by compact JSON (empty fields left out).
 | `list_warranties`            | read        | Warranty status per asset, soonest to expire first                                                                                                         |
 | `list_insurance_policies`    | read        | Insurance policies by cancellation deadline; filter by asset, type, text, archived; premium normalised to a year                                           |
 | `get_insurance_policy`       | read        | One policy in full, by id, title or policy number: insurer, term, deductible, assistance line, covered assets, attached files                              |
+| `list_asset_notes`           | read        | The issues noted on an asset to mention at its next appointment (open, resolved or all)                                                                    |
 | `list_costs`                 | read        | Cost entries (repairs, utilities, purchases, mortgage ...); filter by year, category, asset, room, payer, text; paged                                      |
 | `cost_summary`               | read        | A year's costs: total, per category and month, top assets, tax classes, and who owes whom                                                                  |
 | `create_defect`              | write       | Report a defect (room, asset and responsible contact by name)                                                                                              |
 | `set_defect_status`          | write       | Move a defect to reported, in progress, fixed, rejected or back to open, with a note                                                                       |
 | `adjust_stock`               | write       | Book a stock movement for a part: used, bought or a correction                                                                                             |
 | `add_comment`                | write       | Comment on a task, defect, asset, room, part, contact, log entry, hint or page                                                                             |
-| `add_service_log`            | write       | Log maintenance, repair or other work on an asset, with contact and cost                                                                                   |
+| `add_service_log`            | write       | Log maintenance, repair or other work on an asset, with contact, cost and the notes it addressed                                                           |
+| `add_asset_note`             | write       | Note a small issue on an asset ("brakes squeak") for the next appointment; the asset by name                                                               |
+| `resolve_asset_note`         | write       | Mark a note as resolved                                                                                                                                    |
 | `link_document`              | write       | Link an archived document to an asset, room, page, task, defect, part, contact or cost entry, with a role (manual, receipt, ...)                           |
 | `unlink_document`            | write       | Remove one document link (the document itself stays in the document system)                                                                                |
 | `create_cost`                | costs:write | Book an expense or refund (decimal amount, category, asset and payer by name; split by ownership, equal or none)                                           |
@@ -176,7 +179,7 @@ Rooms, assets and people can be given by name (`asset: "Dishwasher"`, `assignee:
 instead of an id, and so can contacts and parts; an ambiguous name is reported with the candidates. Tools are annotated with the
 MCP `readOnlyHint`, `destructiveHint` and `idempotentHint`: only `undo_completion`,
 `unlink_document` and `dismiss_finance_suggestion` (which cannot be undone) are marked destructive, and only those
-three, the `update_*`, `set_defect_status`, `snooze_task`, `sync_finance` and the read tools are idempotent.
+three, the `update_*`, `set_defect_status`, `snooze_task`, `resolve_asset_note`, `sync_finance` and the read tools are idempotent.
 Nothing here deletes data except a document link (never the document); files can be listed by name but not uploaded or downloaded. The finance inbox tools
 only ever see the token user's own suggestions (the inbox is private to each person) and need a Kept
 connection of that person; `accept_finance_suggestion` takes the same overrides as the REST endpoint, for the kind

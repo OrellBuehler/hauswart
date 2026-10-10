@@ -97,6 +97,7 @@ export function taskRow(task: Task, users: UserNames) {
     schedule: describeTrigger(task.trigger),
     asset: task.assetName,
     assetId: task.assetId,
+    openNotes: task.openNoteCount || null,
     room: task.roomName,
     assignee: nameOf(users, state?.currentAssigneeUserId ?? null),
     effortMinutes: task.effortMinutes,

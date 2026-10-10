@@ -72,7 +72,7 @@ export const addServiceLog = defineTool({
   name: "add_service_log",
   title: "Log service work on an asset",
   description:
-    "Adds an entry to an asset's service log: maintenance, repair, installation, inspection, replacement or other. title is required; date defaults to today. contact (id or name from list_contacts) is who did it, performedBy a free-text name, costMinor the cost in minor units of the household currency (cents/Rappen; 12900 = 129.00). For work done as part of a recurring task prefer complete_task, which can log it too.",
+    "Adds an entry to an asset's service log: maintenance, repair, installation, inspection, replacement or other. title is required; date defaults to today. contact (id or name from list_contacts) is who did it, performedBy a free-text name, costMinor the cost in minor units of the household currency (cents/Rappen; 12900 = 129.00). resolvedNoteIds are notes of this asset (ids from list_asset_notes) that the work addressed: they become resolved. For work done as part of a recurring task prefer complete_task, which can log it too.",
   mode: "create",
   input: {
     asset: z.string().min(1).max(120).describe("Asset id or name"),
@@ -83,6 +83,11 @@ export const addServiceLog = defineTool({
     contact: z.string().min(1).max(160).optional(),
     performedBy: z.string().trim().min(1).max(160).optional(),
     costMinor: z.number().int().min(0).optional(),
+    resolvedNoteIds: z
+      .array(z.string().min(1).max(64))
+      .max(50)
+      .optional()
+      .describe("Ids of the asset's open notes this work addressed"),
   },
   async handler({ asset: assetRef, contact: contactRef, ...rest }, ctx) {
     const [asset, contact] = await Promise.all([
