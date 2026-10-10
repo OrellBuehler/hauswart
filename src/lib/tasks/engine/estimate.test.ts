@@ -275,8 +275,8 @@ describe("estimateCrossing", () => {
 
   it("falls back to 90 days when the last 28 have too little data", () => {
     const samples = series(-60, -40, (o) => 2 * (o + 60));
-    expect(cross(samples, 100, "up")).toEqual({
-      date: "2026-11-05",
+    expect(cross(samples, 300, "up")).toEqual({
+      date: "2027-01-04",
       confidence: "medium",
     });
   });
@@ -308,7 +308,69 @@ describe("estimateCrossing", () => {
     expect(estimateCrossing(sparse, target, TODAY, TZ)).toBeNull();
     expect(
       estimateCrossing(sparse, target, TODAY, TZ, SPARSE_WINDOWS_DAYS),
-    ).toEqual({ date: "2027-04-24", confidence: "medium" });
+    ).toEqual({ date: "2027-01-14", confidence: "medium" });
+  });
+
+  describe("anchored at the newest sample, not at today", () => {
+    const sparse = [
+      { at: at(addDays(TODAY, -200)), value: 1000 },
+      { at: at(addDays(TODAY, -100)), value: 2000 },
+    ];
+    const reach = (target: number, today = TODAY) =>
+      estimateCrossing(
+        sparse,
+        { target, direction: "up", current: 2000 },
+        today,
+        TZ,
+        SPARSE_WINDOWS_DAYS,
+      );
+
+    it("counts the days from the day of the newest reading", () => {
+      expect(reach(4000)).toEqual({ date: "2027-01-14", confidence: "medium" });
+    });
+
+    it("says the same on every day until a new reading arrives", () => {
+      for (const offset of [0, 1, 7, 30, 60]) {
+        expect(reach(4000, addDays(TODAY, offset))).toEqual({
+          date: "2027-01-14",
+          confidence: "medium",
+        });
+      }
+    });
+
+    it("answers tomorrow with low confidence once the date has passed", () => {
+      // 500 left at 10 a day: 50 days after the newest reading, which is long gone.
+      expect(reach(2500)).toEqual({ date: "2026-10-07", confidence: "low" });
+      expect(reach(2500, "2026-12-01")).toEqual({
+        date: "2026-12-02",
+        confidence: "low",
+      });
+      // The day itself is not after today either.
+      expect(reach(2500, "2026-08-17")).toEqual({
+        date: "2026-08-18",
+        confidence: "low",
+      });
+      expect(reach(2500, "2026-08-16")).toEqual({
+        date: "2026-08-17",
+        confidence: "medium",
+      });
+    });
+
+    it("is unchanged for readings that come in daily", () => {
+      const daily = series(-27, 0, (o) => 2 * (o + 27));
+      expect(cross(daily, 100, "up")).toEqual({
+        date: "2026-10-29",
+        confidence: "medium",
+      });
+    });
+
+    it("counts from yesterday when the newest reading is from yesterday", () => {
+      const quiet = series(-28, -1, (o) => 2 * (o + 28));
+      expect(cross(quiet, 100, "up")).toEqual({
+        date: "2026-10-28",
+        confidence: "medium",
+      });
+    });
   });
 
   it("still prefers the nearest window with enough data", () => {
@@ -334,8 +396,8 @@ describe("estimateCrossing", () => {
       { at: at(addDays(TODAY, -28), "00:30"), value: 0 },
       { at: at(addDays(TODAY, -21), "00:30"), value: 7 },
     ];
-    expect(cross(inside, 20, "up")).toEqual({
-      date: "2026-10-19",
+    expect(cross(inside, 120, "up")).toEqual({
+      date: "2027-01-06",
       confidence: "low",
     });
   });
