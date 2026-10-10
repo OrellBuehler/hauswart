@@ -14,6 +14,7 @@
 
 <div class="flex flex-col gap-6">
   <PageHeader
+    class="wrap-anywhere"
     title={m.task_edit_title({ title: data.task.title })}
     description={m.task_edit_description()}
   />

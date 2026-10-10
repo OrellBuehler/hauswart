@@ -186,7 +186,7 @@
     <Card.Header>
       <Card.Title>{m.asset_form_general()}</Card.Title>
     </Card.Header>
-    <Card.Content class="grid gap-5 sm:grid-cols-2">
+    <Card.Content class="grid grid-cols-1 gap-5 sm:grid-cols-2">
       <div class="flex flex-col gap-2 sm:col-span-2">
         <Label for="asset-name">{m.asset_name()}</Label>
         <Input
@@ -244,7 +244,7 @@
       <Card.Header>
         <Card.Title>{m.asset_form_care()}</Card.Title>
       </Card.Header>
-      <Card.Content class="grid gap-5 sm:grid-cols-2">
+      <Card.Content class="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div class="flex flex-col gap-2">
           <Label for="asset-species">{m.asset_species()}</Label>
           <Input
@@ -290,7 +290,7 @@
             </Label>
           </div>
           {#if makePlan}
-            <div class="grid gap-5 sm:grid-cols-2">
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div class="flex flex-col gap-2">
                 <Label for="plan-every">{m.asset_form_plan_every()}</Label>
                 <Input
@@ -343,7 +343,7 @@
       <Card.Header>
         <Card.Title>{m.asset_form_device()}</Card.Title>
       </Card.Header>
-      <Card.Content class="grid gap-5 sm:grid-cols-2">
+      <Card.Content class="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div class="flex flex-col gap-2">
           <Label for="asset-manufacturer">{m.asset_manufacturer()}</Label>
           <Input
@@ -380,7 +380,7 @@
       <Card.Header>
         <Card.Title>{m.asset_form_purchase()}</Card.Title>
       </Card.Header>
-      <Card.Content class="grid gap-5 sm:grid-cols-2">
+      <Card.Content class="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div class="flex flex-col gap-2">
           <Label for="asset-purchase">{m.asset_purchase_date()}</Label>
           <Input id="asset-purchase" type="date" bind:value={purchaseDate} />

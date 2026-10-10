@@ -239,7 +239,7 @@
         </span>
         <div class="min-w-0">
           <h1
-            class="text-2xl font-semibold tracking-tight text-balance break-words md:text-3xl"
+            class="text-2xl font-semibold tracking-tight text-balance wrap-anywhere md:text-3xl"
           >
             {part.name}
           </h1>
@@ -442,7 +442,9 @@
                       {movementText(movement)} · {formatDateTime(movement.at)}
                     </p>
                     {#if movement.note}
-                      <p class="mt-0.5 text-sm break-words">{movement.note}</p>
+                      <p class="mt-0.5 text-sm wrap-anywhere">
+                        {movement.note}
+                      </p>
                     {/if}
                   </div>
                 </li>
@@ -475,12 +477,12 @@
         </Card.Header>
         <Card.Content class="flex flex-col gap-4">
           <dl
-            class="grid grid-cols-[minmax(5rem,auto)_1fr] gap-x-4 gap-y-3 text-sm"
+            class="grid grid-cols-[minmax(5rem,auto)_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm"
           >
             <dt class="text-muted-foreground">{m.part_number()}</dt>
-            <dd class="font-medium break-words">{part.partNumber ?? "–"}</dd>
+            <dd class="font-medium wrap-anywhere">{part.partNumber ?? "–"}</dd>
             <dt class="text-muted-foreground">{m.part_supplier()}</dt>
-            <dd class="font-medium break-words">{part.supplier ?? "–"}</dd>
+            <dd class="font-medium wrap-anywhere">{part.supplier ?? "–"}</dd>
             <dt class="text-muted-foreground">{m.part_unit_price()}</dt>
             <dd class="font-medium tabular-nums">
               {part.unitPriceMinor === null
@@ -504,7 +506,7 @@
               <h3 class="text-muted-foreground mb-1.5 text-sm">
                 {m.part_notes()}
               </h3>
-              <p class="text-sm break-words whitespace-pre-line">
+              <p class="text-sm wrap-anywhere whitespace-pre-line">
                 {part.notes}
               </p>
             </div>

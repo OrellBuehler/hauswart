@@ -73,7 +73,7 @@
           <Icon class="size-6" />
         </span>
         <h1
-          class="min-w-0 text-2xl font-semibold tracking-tight text-balance md:text-3xl"
+          class="min-w-0 text-2xl font-semibold tracking-tight text-balance wrap-anywhere md:text-3xl"
         >
           {data.room.name}
         </h1>
@@ -123,7 +123,9 @@
       </div>
     </header>
     {#if data.room.notes}
-      <p class="text-muted-foreground max-w-prose text-sm whitespace-pre-line">
+      <p
+        class="text-muted-foreground max-w-prose text-sm wrap-anywhere whitespace-pre-line"
+      >
         {data.room.notes}
       </p>
     {/if}

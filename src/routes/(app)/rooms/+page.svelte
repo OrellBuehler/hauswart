@@ -131,12 +131,12 @@
       {/snippet}
     </EmptyState>
   {:else}
-    <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {#each rooms as room, index (room.id)}
         {@const Icon = roomIconFor(room.icon)}
         {@const count = stats.get(room.id)}
         <li
-          class="bg-card hover:border-foreground/20 shadow-card relative flex items-center gap-3 rounded-xl border p-3 transition-colors"
+          class="bg-card hover:border-foreground/20 shadow-card relative flex min-w-0 items-center gap-3 rounded-xl border p-3 transition-colors"
         >
           <span
             class="bg-muted text-muted-foreground flex size-11 shrink-0 items-center justify-center rounded-lg"

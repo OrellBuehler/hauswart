@@ -138,7 +138,7 @@
         />
         <div class="min-w-0">
           <h1
-            class="text-2xl font-semibold tracking-tight text-balance md:text-3xl"
+            class="text-2xl font-semibold tracking-tight text-balance wrap-anywhere md:text-3xl"
           >
             {asset.name}
           </h1>
@@ -150,7 +150,7 @@
               <span aria-hidden="true">·</span>
               <a
                 href={resolve(`/rooms/${asset.roomId}`)}
-                class="hover:text-foreground underline-offset-4 hover:underline"
+                class="hover:text-foreground min-w-0 wrap-anywhere underline-offset-4 hover:underline"
               >
                 {asset.roomName}
               </a>
@@ -209,7 +209,7 @@
     </header>
   </div>
 
-  <div class="grid items-start gap-6 lg:grid-cols-3 print:block">
+  <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-3 print:block">
     <div class="flex min-w-0 flex-col gap-6 lg:col-span-2 print:hidden">
       <Card.Root>
         <Card.Header>
@@ -217,7 +217,7 @@
         </Card.Header>
         <Card.Content class="flex flex-col gap-5">
           <dl
-            class="grid grid-cols-[minmax(6rem,auto)_1fr] gap-x-4 gap-y-3 text-sm sm:gap-x-6"
+            class="grid grid-cols-[minmax(6rem,auto)_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm sm:gap-x-6"
           >
             {#if !isPlant}
               <dt class="text-muted-foreground">{m.asset_warranty()}</dt>
@@ -243,7 +243,7 @@
             {/if}
             {#each facts as [label, value] (label)}
               <dt class="text-muted-foreground">{label}</dt>
-              <dd class="font-medium break-words whitespace-pre-line">
+              <dd class="font-medium wrap-anywhere whitespace-pre-line">
                 {value}
               </dd>
             {/each}
@@ -257,7 +257,9 @@
               <h3 class="text-muted-foreground mb-1.5 text-sm">
                 {m.asset_notes()}
               </h3>
-              <p class="text-sm whitespace-pre-line">{asset.notes}</p>
+              <p class="text-sm wrap-anywhere whitespace-pre-line">
+                {asset.notes}
+              </p>
             </div>
           {/if}
         </Card.Content>
@@ -333,7 +335,7 @@
       <Comments entityType="asset" entityId={asset.id} />
     </div>
 
-    <div class="lg:sticky lg:top-16">
+    <div class="min-w-0 lg:sticky lg:top-16">
       <QrCard {asset} origin={page.url.origin} />
     </div>
   </div>

@@ -203,7 +203,7 @@
   <header class="flex flex-col gap-4">
     <div class="flex flex-col gap-2">
       <h1
-        class="text-2xl font-semibold tracking-tight text-balance break-words md:text-3xl"
+        class="text-2xl font-semibold tracking-tight text-balance wrap-anywhere md:text-3xl"
       >
         {task.title}
       </h1>
@@ -311,15 +311,19 @@
     </div>
   </header>
 
-  <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-    <div class="flex flex-col gap-6">
+  <div
+    class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
+  >
+    <div class="flex min-w-0 flex-col gap-6">
       <Card.Root>
         <Card.Header>
           <Card.Title class="text-base">{m.task_description()}</Card.Title>
         </Card.Header>
         <Card.Content>
           {#if task.descriptionMd.trim()}
-            <p class="text-sm leading-relaxed break-words whitespace-pre-wrap">
+            <p
+              class="text-sm leading-relaxed wrap-anywhere whitespace-pre-wrap"
+            >
               {task.descriptionMd}
             </p>
           {:else}
@@ -347,7 +351,7 @@
                   <div class="min-w-0 flex-1">
                     <p
                       class={cn(
-                        "text-sm font-medium break-words",
+                        "text-sm font-medium wrap-anywhere",
                         !open && "text-muted-foreground line-through",
                       )}
                     >
@@ -451,7 +455,7 @@
       <Comments entityType="task" entityId={task.id} timeZone={data.timeZone} />
     </div>
 
-    <div class="flex flex-col gap-6">
+    <div class="flex min-w-0 flex-col gap-6">
       <Card.Root>
         <Card.Header>
           <Card.Title class="text-base">{m.task_schedule()}</Card.Title>
@@ -578,7 +582,7 @@
                 <dt class="text-muted-foreground text-xs">
                   {m.task_location()}
                 </dt>
-                <dd class="mt-0.5">
+                <dd class="mt-0.5 wrap-anywhere">
                   {#if place.roomName && place.roomId}
                     <a
                       href={roomHref(place.roomId)}

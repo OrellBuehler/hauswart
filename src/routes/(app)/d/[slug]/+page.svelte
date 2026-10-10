@@ -72,11 +72,15 @@
           <QrCodeIcon class="size-3.5" aria-hidden="true" />
           {kindLabels[found.asset.kind]()}
         </p>
-        <h1 class="text-2xl font-semibold tracking-tight text-balance">
+        <h1
+          class="text-2xl font-semibold tracking-tight text-balance wrap-anywhere"
+        >
           {found.asset.name}
         </h1>
         {#if found.asset.roomName}
-          <p class="text-muted-foreground text-sm">{found.asset.roomName}</p>
+          <p class="text-muted-foreground text-sm wrap-anywhere">
+            {found.asset.roomName}
+          </p>
         {/if}
       </div>
     </header>
@@ -115,7 +119,7 @@
               <div class="flex flex-col gap-1.5">
                 <a
                   href={resolve(`/tasks/${task.id}` as "/tasks")}
-                  class="font-medium underline-offset-4 hover:underline"
+                  class="font-medium wrap-anywhere underline-offset-4 hover:underline"
                 >
                   {task.title}
                 </a>

@@ -34,14 +34,14 @@
       href={backHref}
       variant="ghost"
       size="sm"
-      class="text-muted-foreground -ms-2 w-fit"
+      class="text-muted-foreground -ms-2 w-fit max-w-full"
     >
-      <ArrowLeftIcon />{backLabel}
+      <ArrowLeftIcon /><span class="truncate">{backLabel}</span>
     </Button>
     <header class="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
       <div class="min-w-0">
         <h1
-          class="text-2xl font-semibold tracking-tight text-balance md:text-3xl"
+          class="text-2xl font-semibold tracking-tight text-balance wrap-anywhere md:text-3xl"
         >
           {title}
         </h1>

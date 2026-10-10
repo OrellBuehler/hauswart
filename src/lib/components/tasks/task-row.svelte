@@ -82,12 +82,12 @@
     <div class="min-w-0 flex-1">
       <a
         href={taskHref(task.id)}
-        class="focus-visible:ring-ring/50 -mx-1 rounded px-1 font-medium text-pretty break-words outline-none hover:underline focus-visible:ring-[3px]"
+        class="focus-visible:ring-ring/50 -mx-1 rounded px-1 font-medium text-pretty wrap-anywhere outline-none hover:underline focus-visible:ring-[3px]"
       >
         {task.title}
       </a>
       {#if place.length > 0}
-        <p class="text-muted-foreground mt-0.5 text-xs">
+        <p class="text-muted-foreground mt-0.5 text-xs wrap-anywhere">
           {#each place as p, i (p.name)}
             {#if i > 0}<span class="mx-1" aria-hidden="true">·</span>{/if}
             {#if p.href}
