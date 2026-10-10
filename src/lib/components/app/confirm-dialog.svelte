@@ -24,7 +24,7 @@
     destructive?: boolean;
     /** Runs the action. A thrown error is shown in the dialog, which stays open. */
     onconfirm: () => Promise<void>;
-    /** The back gesture closes the dialog (default); `false` leaves it to the page. */
+    /** The back gesture closes the dialog (default, but not while the action runs); `false` leaves it to the page. */
     closeOnBack?: boolean;
   } = $props();
 
@@ -51,7 +51,7 @@
 
 <Dialog.Root
   bind:open={() => open, (value) => (open = pending ? true : value)}
-  {closeOnBack}
+  closeOnBack={(closeOnBack ?? true) && !pending}
 >
   <Dialog.Content showCloseButton={false}>
     <Dialog.Header>

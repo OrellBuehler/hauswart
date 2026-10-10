@@ -28,7 +28,7 @@
     onsubmit: () => Promise<string | void>;
     children: Snippet;
     class?: string;
-    /** The back gesture closes the dialog (default); `false` leaves it to the page. */
+    /** The back gesture closes the dialog (default, but not while the action runs); `false` leaves it to the page. */
     closeOnBack?: boolean;
   } = $props();
 
@@ -58,7 +58,7 @@
 
 <Dialog.Root
   bind:open={() => open, (value) => (open = pending ? true : value)}
-  {closeOnBack}
+  closeOnBack={(closeOnBack ?? true) && !pending}
 >
   <Dialog.Content
     class={cn("flex flex-col gap-0 overflow-hidden p-0", className)}

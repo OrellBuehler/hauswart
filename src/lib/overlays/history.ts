@@ -7,6 +7,11 @@
  * after every traversal the browser makes (popstate) and `navigated` after every navigation:
  * `page.state` is no help in between, SvelteKit resets it on `invalidateAll()`.
  *
+ * A navigation that follows from an open overlay pops the entries first (`popAll`) and navigates
+ * afterwards. Replacing the overlay's entry with the new page does not work: a shallow entry carries
+ * the router's navigation index of the page below, so going back from the replaced entry would only
+ * change the address and leave the new page's content in place.
+ *
  * Everything the browser or SvelteKit does is behind `OverlayEnv`, so the rules can be tested without
  * a browser.
  */
@@ -34,7 +39,7 @@ export type OverlayEnv = {
 type Entry = {
   id: string;
   close: () => void;
-  owned: (owned: boolean) => void;
+  owned?: (owned: boolean) => void;
   /** The overlay is closed; its entry is popped as soon as it is the newest one. */
   released: boolean;
 };
@@ -51,6 +56,7 @@ export class OverlayHistory {
   /** Overlays that opened while the history was moving; they get their entry afterwards. */
   #queue: Entry[] = [];
   #draining = false;
+  #drainWaiters: Array<() => void> = [];
   #traversal: Promise<void> | null = null;
   #flushScheduled = false;
 
@@ -58,8 +64,8 @@ export class OverlayHistory {
     this.#env = env;
   }
 
-  /** Called when an overlay opens. `owned` tells whether it has a history entry. */
-  open(id: string, close: () => void, owned: (owned: boolean) => void): void {
+  /** Called when an overlay opens. `owned`, if given, hears whether it has a history entry. */
+  open(id: string, close: () => void, owned?: (owned: boolean) => void): void {
     if (this.#find(id) || this.#queue.some((entry) => entry.id === id)) return;
     const entry: Entry = { id, close, owned, released: false };
     if (this.#traversal || this.#draining || !this.#env.stable()) {
@@ -89,7 +95,7 @@ export class OverlayHistory {
     const current = this.#env.current();
     const keep = current === undefined ? -1 : this.#lastIndex(current);
     for (const entry of this.#stack.splice(keep + 1)) {
-      entry.owned(false);
+      entry.owned?.(false);
       if (!entry.released) entry.close();
     }
     if (this.#stack.at(-1)?.released) this.#scheduleFlush();
@@ -102,7 +108,28 @@ export class OverlayHistory {
 
   /** Called after a navigation: the entries we added are behind the new page, not ours to pop. */
   navigated(): void {
-    for (const entry of this.#stack.splice(0)) entry.owned(false);
+    for (const entry of this.#stack.splice(0)) entry.owned?.(false);
+  }
+
+  /**
+   * Closes every overlay and pops all the entries we added, so the history is as it was before the
+   * first overlay opened. Resolves once the browser has moved (or did not answer in time), which is
+   * when a navigation may start without leaving a shallow entry behind it.
+   */
+  async popAll(): Promise<void> {
+    await this.#quiet();
+    const entries = this.#stack.splice(0);
+    if (entries.length === 0) return;
+    for (const entry of entries) entry.owned?.(false);
+    const traversal = this.#env.traversed().then(() => {
+      this.#traversal = null;
+      this.sync();
+    });
+    this.#traversal = traversal;
+    this.#env.go(-entries.length);
+    // the entries are gone from the model, so closing the overlays does not pop anything
+    for (const entry of entries) if (!entry.released) entry.close();
+    await traversal;
   }
 
   #find(id: string): Entry | undefined {
@@ -111,6 +138,14 @@ export class OverlayHistory {
 
   #lastIndex(id: string): number {
     return this.#stack.findLastIndex((entry) => entry.id === id);
+  }
+
+  /** Resolves once no pop is under way and no overlay waits for its entry. */
+  async #quiet(): Promise<void> {
+    while (this.#traversal || this.#draining) {
+      await (this.#traversal ??
+        new Promise<void>((resolve) => this.#drainWaiters.push(resolve)));
+    }
   }
 
   /** Waits until the history has stopped moving, then gives the queued overlays their entries. */
@@ -130,6 +165,7 @@ export class OverlayHistory {
       }
       this.#draining = false;
       for (const entry of this.#queue.splice(0)) this.#attach(entry);
+      for (const resolve of this.#drainWaiters.splice(0)) resolve();
     };
     step();
   }
@@ -138,14 +174,14 @@ export class OverlayHistory {
     const top = this.#stack.at(-1);
     if (top?.released) {
       // an overlay closed in the same breath: it hands its entry over instead of popping it
-      top.owned(false);
+      top.owned?.(false);
       this.#stack[this.#stack.length - 1] = entry;
       this.#env.replace(entry.id);
     } else {
       this.#stack.push(entry);
       this.#env.push(entry.id);
     }
-    entry.owned(true);
+    entry.owned?.(true);
   }
 
   #scheduleFlush(delayMs = 0): void {
@@ -166,7 +202,7 @@ export class OverlayHistory {
     }
     let count = 0;
     while (this.#stack.at(-1)?.released) {
-      this.#stack.pop()?.owned(false);
+      this.#stack.pop()?.owned?.(false);
       count += 1;
     }
     if (navigating) return;

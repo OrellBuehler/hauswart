@@ -838,8 +838,13 @@ in dark mode. Every list has an empty state, every async action a pending and an
 - **Dialogs and sheets** anchor to the top on phones, scroll inside `max-h-[calc(100dvh-2rem)]`, and `FormDialog`
   keeps its footer pinned. The system back gesture closes them (`lib/overlays/`, shallow routing with
   `App.PageState.overlay`); opt out with `closeOnBack={false}` (e.g. a prompt opened from `beforeNavigate`). A dialog
-  that navigates afterwards uses `gotoFromOverlay` (`lib/overlays/use-overlay-history.svelte`) so no dead history
-  entry stays behind. Long forms on pages get a sticky bottom save bar.
+  that navigates afterwards uses `gotoFromOverlay` (`lib/overlays/use-overlay-history.svelte`): it pops the overlay's
+  entries first (`popAll`) and navigates from the page below, so Back leads to that page with its own content. Never
+  replace an overlay's entry (no `data-sveltekit-replacestate`, no `replaceState` after a pushState): a shallow entry
+  shares the router's navigation index with the page below, so Back would change only the address. A click on a link
+  inside an overlay gets the same treatment from the `beforeNavigate` in `useOverlayHistory` (cancel, pop, `goto`); a
+  plain `goto` from an open overlay leaves its entry behind. `FormDialog`/`ConfirmDialog` give up their entry while
+  their action runs. Long forms on pages get a sticky bottom save bar.
 - **Information is not hover-only**: anything in `title=` that matters (exact dates, amounts) is also visible on touch.
 
 ## Testing

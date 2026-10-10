@@ -384,6 +384,132 @@ describe("overlay history", () => {
     expect(state().at).toBe(0);
   });
 
+  describe("popAll", () => {
+    /** Starts `popAll` and reports whether it has resolved. */
+    const popAll = () => {
+      const result = { done: false };
+      void history.popAll().then(() => (result.done = true));
+      return result;
+    };
+
+    it("resolves at once when it owns no entry", async () => {
+      const result = popAll();
+      await browser.settle();
+      expect(result.done).toBe(true);
+      expect(browser.goCalls).toEqual([]);
+    });
+
+    it("pops the entry and closes the overlay, resolving after the browser moved", async () => {
+      const a = open("a");
+      await browser.settle();
+      const result = popAll();
+      // the pop is issued, the browser has not moved yet
+      for (let i = 0; i < 5; i++) await Promise.resolve();
+      expect(browser.goCalls).toEqual([-1]);
+      expect(result.done).toBe(false);
+      expect(state().at).toBe(1);
+
+      await browser.settle();
+      expect(result.done).toBe(true);
+      expect(state()).toEqual({ at: 0, overlay: undefined, entries: 2 });
+      expect(a.owned).toBe(false);
+      expect(a.open).toBe(false);
+      expect(a.closed).toBe(1);
+      expect(history.hasEntry()).toBe(false);
+    });
+
+    it("pops nested entries in one step", async () => {
+      const sheet = open("sheet");
+      const confirm = open("confirm");
+      await browser.settle();
+      popAll();
+      await browser.settle();
+      expect(browser.goCalls).toEqual([-2]);
+      expect(state().at).toBe(0);
+      expect(sheet.open).toBe(false);
+      expect(confirm.open).toBe(false);
+    });
+
+    it("pops an overlay that closed but has not been popped yet, and only once", async () => {
+      open("a");
+      await browser.settle();
+      close("a");
+      const result = popAll();
+      await browser.settle();
+      expect(result.done).toBe(true);
+      expect(browser.goCalls).toEqual([-1]);
+      expect(state().at).toBe(0);
+    });
+
+    it("waits for a pop that is already under way instead of popping twice", async () => {
+      open("a");
+      await browser.settle();
+      close("a");
+      // the flush issued its pop, the browser has not moved yet
+      await browser.step();
+      expect(browser.goCalls).toEqual([-1]);
+      const result = popAll();
+      await browser.step();
+      expect(result.done).toBe(false);
+      await browser.settle();
+      expect(result.done).toBe(true);
+      expect(browser.goCalls).toEqual([-1]);
+      expect(state().at).toBe(0);
+    });
+
+    it("waits for an overlay that is still waiting for its entry, then pops it", async () => {
+      browser.stableNow = false;
+      const a = open("a");
+      await browser.step();
+      expect(a.owned).toBe(false);
+      const result = popAll();
+      browser.stableNow = true;
+      browser.popstate();
+      await browser.settle();
+      expect(result.done).toBe(true);
+      expect(browser.goCalls).toEqual([-1]);
+      expect(state().at).toBe(0);
+      expect(a.open).toBe(false);
+    });
+
+    it("resolves when the browser never answers, and forgets the entries", async () => {
+      open("a");
+      await browser.settle();
+      browser.go = (delta) => void browser.goCalls.push(delta);
+      const result = popAll();
+      await browser.settle();
+      expect(result.done).toBe(true);
+      expect(browser.goCalls).toEqual([-1]);
+      expect(history.hasEntry()).toBe(false);
+    });
+
+    it("lets an overlay that opens meanwhile get its entry afterwards", async () => {
+      open("a");
+      await browser.settle();
+      popAll();
+      await browser.step();
+      const b = open("b");
+      await browser.settle();
+      expect(browser.goCalls).toEqual([-1]);
+      expect(state()).toEqual({ at: 1, overlay: "b", entries: 2 });
+      expect(b.owned).toBe(true);
+    });
+
+    it("does not touch the history of a navigation that follows", async () => {
+      open("sheet");
+      await browser.settle();
+      popAll();
+      await browser.settle();
+      // the page below is current again: a navigation from here pushes onto it
+      browser.entries.splice(browser.index + 1);
+      browser.entries.push({});
+      browser.index += 1;
+      history.navigated();
+      expect(state()).toEqual({ at: 1, overlay: undefined, entries: 2 });
+      expect(browser.goCalls).toEqual([-1]);
+    });
+  });
+
   it("ignores overlays it does not know and repeated calls", async () => {
     history.release("unknown");
     const a = open("a");
