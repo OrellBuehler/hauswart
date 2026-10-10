@@ -519,6 +519,71 @@ describe("vehicles API", () => {
     });
   });
 
+  describe("other tasks on the same odometer", () => {
+    it("follow a completion with a reading and its undo at once, not at the next tick", async () => {
+      const { call, create } = await setup();
+      const car = await create();
+      const make = async (title: string, threshold: number) =>
+        (
+          await call("POST", "/api/v1/tasks", {
+            json: {
+              title,
+              assetId: car.id,
+              trigger: {
+                v: 1,
+                type: "counter_delta",
+                entityId: `odometer:${car.id}`,
+                threshold,
+                unit: "km",
+              },
+            },
+          })
+        ).body as { id: string };
+      const service = await make("Service", 15_000);
+      const tires = await make("Reifen prüfen", 5_000);
+      await call("POST", `/api/v1/assets/${car.id}/odometer`, {
+        json: { value: 80_000, date: today(-30) },
+      });
+      await call("POST", `/api/v1/assets/${car.id}/odometer`, {
+        json: { value: 82_000, date: today(-5) },
+      });
+      const stateOf = async (id: string) =>
+        (
+          (await call("GET", `/api/v1/tasks/${id}`)).body as {
+            state: { status: string; progress: { current: number } };
+          }
+        ).state;
+      const notified = async () =>
+        (
+          (await call("GET", "/api/v1/notifications")).body as {
+            items: { taskId: string | null; kind: string }[];
+          }
+        ).items.filter((n) => n.taskId === tires.id && n.kind === "due");
+      expect(await stateOf(tires.id)).toMatchObject({
+        status: "ok",
+        progress: { current: 2_000 },
+      });
+
+      const done = await call("POST", `/api/v1/tasks/${service.id}/complete`, {
+        json: { counterValue: 90_000 },
+      });
+      expect(done.res.status).toBe(201);
+      expect(await stateOf(tires.id)).toMatchObject({
+        status: "due",
+        progress: { current: 10_000 },
+      });
+      expect(await notified()).toHaveLength(1);
+
+      const completion = (done.body as { completion: { id: string } })
+        .completion;
+      await call("DELETE", `/api/v1/completions/${completion.id}`);
+      expect(await stateOf(tires.id)).toMatchObject({
+        status: "ok",
+        progress: { current: 2_000 },
+      });
+    });
+  });
+
   describe("service log", () => {
     it("an entry with an odometer value is a reading, and follows the entry", async () => {
       const { call, create } = await setup();
