@@ -75,6 +75,7 @@
           <div class="flex flex-col gap-2">
             <Label for="setupToken">{m.auth_setup_token()}</Label>
             <Input
+              class="h-10"
               id="setupToken"
               name="setupToken"
               type="password"
@@ -93,6 +94,7 @@
         <div class="flex flex-col gap-2">
           <Label for="username">{m.auth_username()}</Label>
           <Input
+            class="h-10"
             id="username"
             name="username"
             autocomplete="username"
@@ -110,6 +112,7 @@
         <div class="flex flex-col gap-2">
           <Label for="displayName">{m.auth_display_name()}</Label>
           <Input
+            class="h-10"
             id="displayName"
             name="displayName"
             autocomplete="name"
@@ -122,6 +125,7 @@
         <div class="flex flex-col gap-2">
           <Label for="password">{m.auth_password()}</Label>
           <Input
+            class="h-10"
             id="password"
             name="password"
             type="password"
@@ -137,6 +141,7 @@
         <div class="flex flex-col gap-2">
           <Label for="confirm">{m.auth_password_confirm()}</Label>
           <Input
+            class="h-10"
             id="confirm"
             name="confirm"
             type="password"
@@ -159,7 +164,7 @@
               <Button
                 type="button"
                 size="sm"
-                class="pointer-coarse:h-10 pointer-coarse:px-4"
+                class="h-10 px-4"
                 variant={locale === option ? "default" : "outline"}
                 aria-pressed={locale === option}
                 onclick={() => (locale = option)}

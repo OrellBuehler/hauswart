@@ -50,6 +50,7 @@
         <div class="flex flex-col gap-2">
           <Label for="username">{m.auth_username()}</Label>
           <Input
+            class="h-10"
             id="username"
             name="username"
             autocomplete="username"
@@ -64,6 +65,7 @@
         <div class="flex flex-col gap-2">
           <Label for="password">{m.auth_password()}</Label>
           <Input
+            class="h-10"
             id="password"
             name="password"
             type="password"

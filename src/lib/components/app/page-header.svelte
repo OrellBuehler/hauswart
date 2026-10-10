@@ -22,7 +22,9 @@
   )}
 >
   <div class="min-w-0">
-    <h1 class="text-2xl font-semibold tracking-tight text-balance md:text-3xl">
+    <h1
+      class="text-2xl font-semibold tracking-tight text-balance break-words md:text-3xl"
+    >
       {title}
     </h1>
     {#if description}

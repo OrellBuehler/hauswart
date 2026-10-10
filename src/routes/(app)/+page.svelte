@@ -131,8 +131,10 @@
 
   <dl class="grid grid-cols-2 gap-3 lg:grid-cols-4">
     {#each tiles as tile (tile.key)}
-      <div class="bg-card shadow-card rounded-xl border px-4 py-3">
-        <dt class="text-muted-foreground text-xs font-medium">{tile.label}</dt>
+      <div class="bg-card shadow-card min-w-0 rounded-xl border px-4 py-3">
+        <dt class="text-muted-foreground text-xs font-medium break-words">
+          {tile.label}
+        </dt>
         <dd class={cn("mt-1 text-2xl font-semibold tabular-nums", tile.tone)}>
           {tile.value}
         </dd>
@@ -140,8 +142,10 @@
     {/each}
   </dl>
 
-  <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-    <Card.Root>
+  <div
+    class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
+  >
+    <Card.Root class="min-w-0">
       <Card.Header>
         <Card.Title>{m.dashboard_soon_title()}</Card.Title>
         <Card.Description>{m.dashboard_soon_description()}</Card.Description>
@@ -261,8 +265,9 @@
       </Card.Content>
     </Card.Root>
 
-    <div class="flex flex-col gap-6">
-      <Card.Root>
+    <div class="flex min-w-0 flex-col gap-6">
+      <!-- On phones the cards that ask for something come first; the history is the last thing. -->
+      <Card.Root class="max-lg:order-last">
         <Card.Header>
           <Card.Title class="flex items-center gap-2 text-base">
             <HistoryIcon

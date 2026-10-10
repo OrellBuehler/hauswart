@@ -43,7 +43,7 @@
         <Button
           type="button"
           size="sm"
-          class="pointer-coarse:h-10 pointer-coarse:px-4"
+          class="h-10 px-4"
           variant={locale === getLocale() ? "secondary" : "ghost"}
           aria-pressed={locale === getLocale()}
           onclick={() => setLocale(locale)}
