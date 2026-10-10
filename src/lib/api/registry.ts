@@ -819,7 +819,7 @@ export const endpoints = {
     path: "/api/v1/assets",
     summary: "List assets (devices, plants, fixtures)",
     description:
-      "Filter by kind, room or a search text. Archived assets are left out unless includeArchived=true.",
+      "Filter by kind, room or a search text (name, manufacturer, model, category, species and, for a vehicle, its plate: case, spaces, dots and dashes do not matter, so `zh 000.000` finds `ZH 000000`). Archived assets are left out unless includeArchived=true.",
     tags: ["assets"],
     auth: "both",
     scopes: ["read"],

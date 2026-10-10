@@ -590,7 +590,9 @@ of the owner>` is added to the document unless an identical note exists (writes 
 ### Vehicles
 
 - **A vehicle is an asset of kind `vehicle`** (no room; `GET /assets?kind=vehicle`, and `q` also matches
-  the plate). `vehicle_details` (1:1, created by the first save) holds plate, VIN, Stammnummer
+  the plate, both sides compared through `plateKey`: case, spaces, dots and dashes do not matter, so `zh 000.000` finds
+  `ZH 000000`; `vehiclesWithPlateLike` in `vehicles/summary.ts`, in code and not in SQL, which could only strip the
+  characters it was told about). `vehicle_details` (1:1, created by the first save) holds plate, VIN, Stammnummer
   (`registrationNumber`), `firstRegistration`, `fuelType`, tire sizes, `location`, `odometerUnit`
   (`km|mi`) and notes. `GET|PUT /assets/{id}/vehicle`: PUT replaces (a field left out is cleared; the
   unit relabels the readings, it does not convert them), 400 for an asset of another kind, 404 for a

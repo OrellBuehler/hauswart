@@ -1,4 +1,14 @@
-import { and, asc, eq, isNull, like, or, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  inArray,
+  isNull,
+  like,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import type { AssetKind } from "$lib/api/enums";
 import {
   QR_SLUG_LENGTH,
@@ -27,7 +37,10 @@ import {
 import { slugify, uniqueSlug } from "$lib/server/slug";
 import { storedVehicleData } from "$lib/server/vehicles/kind";
 import { forgetOdometerSignal } from "$lib/server/vehicles/signal";
-import { vehicleSummaries } from "$lib/server/vehicles/summary";
+import {
+  vehicleSummaries,
+  vehiclesWithPlateLike,
+} from "$lib/server/vehicles/summary";
 import {
   assertAssetPhoto,
   removeOwnedAttachments,
@@ -106,7 +119,7 @@ export function listAssets(
   if (filter.roomId) where.push(eq(assets.roomId, filter.roomId));
   if (filter.q) {
     const pattern = `%${escapeLike(filter.q.toLowerCase())}%`;
-    const compactPattern = pattern.replace(/\s+/g, "");
+    const plated = vehiclesWithPlateLike(ctx.db, filter.q);
     const match = (column: Parameters<typeof like>[0]) =>
       sql`lower(${column}) like ${pattern} escape '\\'`;
     where.push(
@@ -116,8 +129,8 @@ export function listAssets(
         match(assets.model),
         match(assets.category),
         match(assets.species),
-        // A vehicle is found by its plate as well, written with or without spaces.
-        sql`exists (select 1 from ${vehicleDetails} where ${vehicleDetails.assetId} = ${assets.id} and (lower(${vehicleDetails.plate}) like ${pattern} escape '\\' or replace(lower(${vehicleDetails.plate}), ' ', '') like ${compactPattern} escape '\\'))`,
+        // A vehicle is found by its plate as well, however the plate is written.
+        plated.length > 0 ? inArray(assets.id, plated) : undefined,
       ) as SQL,
     );
   }

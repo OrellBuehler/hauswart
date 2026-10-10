@@ -258,6 +258,80 @@ describe("vehicles among the assets", () => {
     expect(find("zh 0000 ")).toEqual(["Auto"]);
     expect(find("BE 1")).toEqual([]);
   });
+
+  it.each([
+    "zh 000.000",
+    "ZH-000-000",
+    "zh000.000",
+    "Zh.000000",
+    "ZH 000 000",
+    "  zh  0000 ",
+    "00.00",
+    "zh/000_000",
+  ])("is found by %j, whatever the case, spaces, dots and dashes", (q) => {
+    const car = makeVehicle(test, "Auto");
+    makeVehicle(test, "Roller");
+    putVehicle(
+      ctx(),
+      car.id,
+      putVehicleRequestSchema.parse({ plate: "ZH 000000" }),
+    );
+    expect(
+      listAssets(ctx(), { q }, { limit: 50 }).items.map((a) => a.name),
+    ).toEqual(["Auto"]);
+  });
+
+  it("finds a plate stored with dots and dashes by a plain one", () => {
+    const car = makeVehicle(test, "Auto");
+    putVehicle(
+      ctx(),
+      car.id,
+      putVehicleRequestSchema.parse({ plate: "ZH-123.456" }),
+    );
+    const find = (q: string) =>
+      listAssets(ctx(), { q }, { limit: 50 }).items.map((a) => a.name);
+    expect(find("zh 123456")).toEqual(["Auto"]);
+    expect(find("ZH123456")).toEqual(["Auto"]);
+    expect(find("123 456")).toEqual(["Auto"]);
+  });
+
+  it.each(["BE 000.000", "zh 000.001", "000000 zh", "ZH 0000000"])(
+    "is not found by %j",
+    (q) => {
+      const car = makeVehicle(test, "Auto");
+      putVehicle(
+        ctx(),
+        car.id,
+        putVehicleRequestSchema.parse({ plate: "ZH 000000" }),
+      );
+      expect(listAssets(ctx(), { q }, { limit: 50 }).items).toEqual([]);
+    },
+  );
+
+  it.each(["-", ".", " . - ", "//"])(
+    "a search for %j, with nothing but punctuation, does not match every plate",
+    (q) => {
+      const car = makeVehicle(test, "Auto");
+      putVehicle(
+        ctx(),
+        car.id,
+        putVehicleRequestSchema.parse({ plate: "ZH 000000" }),
+      );
+      expect(listAssets(ctx(), { q }, { limit: 50 }).items).toEqual([]);
+    },
+  );
+
+  it("still finds a vehicle by its name, and a device whose name looks like a plate", () => {
+    makeVehicle(test, "Auto");
+    createAsset(
+      ctx(),
+      createAssetRequestSchema.parse({ name: "ZH 000.000 Lampe" }),
+    );
+    const names = (q: string) =>
+      listAssets(ctx(), { q }, { limit: 50 }).items.map((a) => a.name);
+    expect(names("auto")).toEqual(["Auto"]);
+    expect(names("zh 000.000")).toEqual(["ZH 000.000 Lampe"]);
+  });
 });
 
 describe("the kind of a vehicle", () => {

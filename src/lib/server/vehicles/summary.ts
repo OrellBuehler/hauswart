@@ -1,10 +1,11 @@
-import { asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { asc, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import type { OdometerUnit } from "$lib/api/enums";
 import type {
   OdometerSummary,
   VehicleSummary,
 } from "$lib/api/schemas/vehicles";
 import { odometerReadings, vehicleDetails, type DB } from "$lib/server/db";
+import { plateKey } from "$lib/vehicles/plate";
 
 /** The order of readings in time: by date, then by when they were entered. Newest first when descending. */
 export const readingOrder = (direction: "asc" | "desc") => {
@@ -49,6 +50,27 @@ export function odometerSummary(
 ): OdometerSummary | null {
   const reading = latestReading(db, assetId);
   return reading ? { value: reading.value, date: reading.date, unit } : null;
+}
+
+/**
+ * The vehicles whose plate contains `text`, by asset id. Both sides go through `plateKey`, so case,
+ * spaces, dots, dashes and any other punctuation do not matter ("zh 000.000" finds "ZH 000000").
+ * Compared here and not in SQL, which could only strip the characters it was told about; there are few
+ * plates. Text with nothing in it but punctuation matches nothing.
+ */
+export function vehiclesWithPlateLike(
+  db: Pick<DB, "select">,
+  text: string,
+): string[] {
+  const wanted = plateKey(text);
+  if (wanted === "") return [];
+  return db
+    .select({ assetId: vehicleDetails.assetId, plate: vehicleDetails.plate })
+    .from(vehicleDetails)
+    .where(isNotNull(vehicleDetails.plate))
+    .all()
+    .filter((row) => plateKey(row.plate ?? "").includes(wanted))
+    .map((row) => row.assetId);
 }
 
 /** Plate and newest reading of the given vehicles, by asset id; one small query per vehicle (there are few). */
