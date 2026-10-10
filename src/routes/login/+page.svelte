@@ -45,7 +45,7 @@
       <Card.Description>{m.auth_login_description()}</Card.Description>
     </Card.Header>
     <Card.Content>
-      <form class="flex flex-col gap-4" onsubmit={submit}>
+      <form method="post" class="flex flex-col gap-4" onsubmit={submit}>
         <FormAlert message={error} />
         <div class="flex flex-col gap-2">
           <Label for="username">{m.auth_username()}</Label>
@@ -54,6 +54,8 @@
             name="username"
             autocomplete="username"
             autocapitalize="none"
+            autocorrect="off"
+            enterkeyhint="next"
             spellcheck={false}
             required
             bind:value={username}
@@ -66,11 +68,12 @@
             name="password"
             type="password"
             autocomplete="current-password"
+            enterkeyhint="go"
             required
             bind:value={password}
           />
         </div>
-        <Button type="submit" disabled={pending} class="w-full">
+        <Button type="submit" size="lg" disabled={pending} class="w-full">
           {#if pending}
             <LoaderCircleIcon class="animate-spin" />{m.auth_login_pending()}
           {:else}

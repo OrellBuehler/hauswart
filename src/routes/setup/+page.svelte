@@ -69,7 +69,7 @@
       <Card.Description>{m.auth_setup_description()}</Card.Description>
     </Card.Header>
     <Card.Content>
-      <form class="flex flex-col gap-4" onsubmit={submit}>
+      <form method="post" class="flex flex-col gap-4" onsubmit={submit}>
         <FormAlert message={error} />
         {#if data.tokenRequired}
           <div class="flex flex-col gap-2">
@@ -79,6 +79,7 @@
               name="setupToken"
               type="password"
               autocomplete="off"
+              enterkeyhint="next"
               spellcheck={false}
               required
               maxlength={256}
@@ -96,6 +97,8 @@
             name="username"
             autocomplete="username"
             autocapitalize="none"
+            autocorrect="off"
+            enterkeyhint="next"
             spellcheck={false}
             required
             minlength={3}
@@ -110,6 +113,7 @@
             id="displayName"
             name="displayName"
             autocomplete="name"
+            enterkeyhint="next"
             required
             maxlength={64}
             bind:value={displayName}
@@ -122,6 +126,7 @@
             name="password"
             type="password"
             autocomplete="new-password"
+            enterkeyhint="next"
             required
             minlength={10}
             maxlength={256}
@@ -133,8 +138,10 @@
           <Label for="confirm">{m.auth_password_confirm()}</Label>
           <Input
             id="confirm"
+            name="confirm"
             type="password"
             autocomplete="new-password"
+            enterkeyhint="go"
             required
             aria-invalid={mismatch}
             bind:value={confirm}
@@ -152,6 +159,7 @@
               <Button
                 type="button"
                 size="sm"
+                class="pointer-coarse:h-10 pointer-coarse:px-4"
                 variant={locale === option ? "default" : "outline"}
                 aria-pressed={locale === option}
                 onclick={() => (locale = option)}
@@ -161,7 +169,12 @@
             {/each}
           </div>
         </fieldset>
-        <Button type="submit" disabled={pending || mismatch} class="w-full">
+        <Button
+          type="submit"
+          size="lg"
+          disabled={pending || mismatch}
+          class="w-full"
+        >
           {#if pending}
             <LoaderCircleIcon class="animate-spin" />{m.auth_setup_pending()}
           {:else}
