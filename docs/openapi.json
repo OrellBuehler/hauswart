@@ -2888,6 +2888,7 @@
                 "device",
                 "plant",
                 "fixture",
+                "vehicle",
                 "other"
               ]
             }
@@ -3133,6 +3134,7 @@
                       "device",
                       "plant",
                       "fixture",
+                      "vehicle",
                       "other"
                     ]
                   },
@@ -3699,6 +3701,7 @@
                       "device",
                       "plant",
                       "fixture",
+                      "vehicle",
                       "other"
                     ]
                   },
@@ -16678,6 +16681,7 @@
                       "device",
                       "plant",
                       "fixture",
+                      "vehicle",
                       "other"
                     ]
                   }
@@ -28488,6 +28492,7 @@
               "device",
               "plant",
               "fixture",
+              "vehicle",
               "other"
             ]
           },

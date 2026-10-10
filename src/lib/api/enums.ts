@@ -7,8 +7,41 @@ export type UserLocale = (typeof USER_LOCALES)[number];
 export const TOKEN_KINDS = ["mobile", "integration", "ha", "mcp"] as const;
 export type TokenKind = (typeof TOKEN_KINDS)[number];
 
-export const ASSET_KINDS = ["device", "plant", "fixture", "other"] as const;
+export const ASSET_KINDS = [
+  "device",
+  "plant",
+  "fixture",
+  "vehicle",
+  "other",
+] as const;
 export type AssetKind = (typeof ASSET_KINDS)[number];
+
+export const VEHICLE_FUEL_TYPES = [
+  "petrol",
+  "diesel",
+  "electric",
+  "hybrid",
+  "plugin_hybrid",
+  "other",
+] as const;
+export type VehicleFuelType = (typeof VEHICLE_FUEL_TYPES)[number];
+
+export const ODOMETER_UNITS = ["km", "mi"] as const;
+export type OdometerUnit = (typeof ODOMETER_UNITS)[number];
+
+/**
+ * Where an odometer reading came from. `fuel_log`, `tire_change` and `signal` are written by
+ * features that build on `recordOdometer`; the first three exist today.
+ */
+export const ODOMETER_SOURCES = [
+  "manual",
+  "completion",
+  "service_log",
+  "fuel_log",
+  "tire_change",
+  "signal",
+] as const;
+export type OdometerSource = (typeof ODOMETER_SOURCES)[number];
 
 export const TASK_CATEGORIES = [
   "cleaning",

@@ -1,5 +1,6 @@
 import type { Component } from "svelte";
 import BoxIcon from "@lucide/svelte/icons/box";
+import CarIcon from "@lucide/svelte/icons/car";
 import CpuIcon from "@lucide/svelte/icons/cpu";
 import DoorClosedIcon from "@lucide/svelte/icons/door-closed";
 import SproutIcon from "@lucide/svelte/icons/sprout";
@@ -10,6 +11,7 @@ export const kindIcons: Record<AssetKind, Component> = {
   device: CpuIcon,
   plant: SproutIcon,
   fixture: DoorClosedIcon,
+  vehicle: CarIcon,
   other: BoxIcon,
 };
 
@@ -17,6 +19,7 @@ export const kindLabels: Record<AssetKind, () => string> = {
   device: () => m.asset_kind_device(),
   plant: () => m.asset_kind_plant(),
   fixture: () => m.asset_kind_fixture(),
+  vehicle: () => m.asset_kind_vehicle(),
   other: () => m.asset_kind_other(),
 };
 
