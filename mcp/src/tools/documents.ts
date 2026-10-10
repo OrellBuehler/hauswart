@@ -15,7 +15,7 @@ import type { ToolContext } from "../context";
 import { ToolError } from "../errors";
 import { moreHint, plural } from "../format";
 import { defineTool } from "../tool";
-import { resolveContact, resolvePart } from "./resolve";
+import { resolveContact, resolvePart, resolvePolicy } from "./resolve";
 
 const PROVIDER = DOCUMENT_PROVIDERS[0];
 
@@ -37,14 +37,14 @@ const ownerTarget = {
   ownerType: z
     .enum(DOCUMENT_LINK_OWNER_TYPES)
     .describe(
-      "What the document is linked to: asset, room, page, task, defect, service_log, part, contact or cost",
+      "What the document is linked to: asset, room, page, task, defect, service_log, part, contact, cost or insurance_policy",
     ),
   owner: z
     .string()
     .min(1)
     .max(160)
     .describe(
-      "Its id. For an asset, room, part or contact the name works too, for a page its slug",
+      "Its id. For an asset, room, part, contact or insurance policy the name works too (a policy also by its policy number), for a page its slug",
     ),
 };
 
@@ -66,6 +66,8 @@ async function resolveOwner(
       return (await resolvePart(ctx, ref)).id;
     case "contact":
       return (await resolveContact(ctx, ref)).id;
+    case "insurance_policy":
+      return (await resolvePolicy(ctx, ref)).id;
     case "page": {
       const page = await ctx.api.call(endpoints.pagesGet, {
         params: { slug: ref },
@@ -254,7 +256,7 @@ export const listDocumentLinks = defineTool({
   name: "list_document_links",
   title: "List document links",
   description:
-    "The links between archived documents and things in hauswart. Pass ownerType and owner to see the documents of one asset, room, page, task, defect, service log entry, part, contact or cost entry (manuals, receipts, invoices, correspondence), or documentId to see where one document is used. Without any of them all links are listed, newest first. A document the token user's own account cannot read shows as notShared, without a title. Each link has the role (manual, receipt, warranty, datasheet, correspondence, invoice, other) and an optional label.",
+    "The links between archived documents and things in hauswart. Pass ownerType and owner to see the documents of one asset, room, page, task, defect, service log entry, part, contact, cost entry or insurance policy (manuals, receipts, invoices, correspondence, policies), or documentId to see where one document is used. Without any of them all links are listed, newest first. A document the token user's own account cannot read shows as notShared, without a title. Each link has the role (manual, receipt, warranty, datasheet, correspondence, invoice, policy, registration, other) and an optional label.",
   mode: "read",
   input: {
     ownerType: ownerTarget.ownerType.optional(),

@@ -9,6 +9,7 @@ import { docTools } from "./docs";
 import { documentTools } from "./documents";
 import { financeTools } from "./finance";
 import { getStats, listNotifications } from "./insights";
+import { insuranceTools } from "./insurance";
 import { partTools } from "./parts";
 import { taskTools } from "./tasks";
 import { listUpcoming } from "./upcoming";
@@ -47,6 +48,7 @@ export const tools: readonly Tool[] = [
   ...commentTools,
   ...costTools,
   ...assetCareTools,
+  ...insuranceTools,
   ...financeTools,
   ...vehicleTools,
 ];

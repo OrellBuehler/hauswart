@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { docPages } from "../../src/lib/server/db";
+import { minor } from "../../src/lib/money";
+import { docPages, insurancePolicies } from "../../src/lib/server/db";
 import {
   TEST_CONFIG,
   seedTaxonomy,
@@ -327,6 +328,54 @@ describe("document tools", () => {
         owner: "house-rules",
       });
       expect(listed.links).toHaveLength(1);
+    });
+
+    it("links to an insurance policy by its title or policy number, as the policy or the registration", async () => {
+      const { ok } = await setup();
+      fake.addDoc({ id: 62, title: "Policy PDF", tags: [1] });
+      fake.addDoc({ id: 63, title: "Registration", tags: [1] });
+      const created = await mcp.db.db
+        .insert(insurancePolicies)
+        .values({
+          title: "Kasko Kombi",
+          policyNumber: "POL-2026-0042",
+          premiumMinor: minor(12_500),
+          currency: "CHF",
+          startDate: "2026-01-01",
+        })
+        .returning()
+        .get();
+      const byTitle = await ok("link_document", {
+        documentId: 62,
+        ownerType: "insurance_policy",
+        owner: "Kasko Kombi",
+        role: "policy",
+      });
+      expect(byTitle).toMatchObject({
+        ownerType: "insurance_policy",
+        ownerId: created.id,
+        ownerTitle: "Kasko Kombi",
+        ownerUrl: `/insurance/${created.id}`,
+        role: "policy",
+      });
+      const byNumber = await ok("link_document", {
+        documentId: 63,
+        ownerType: "insurance_policy",
+        owner: "pol-2026-0042",
+        role: "registration",
+      });
+      expect(byNumber).toMatchObject({
+        ownerId: created.id,
+        role: "registration",
+      });
+      const listed = await ok("list_document_links", {
+        ownerType: "insurance_policy",
+        owner: created.id,
+      });
+      expect(listed.links.map((l: Json) => l.role).sort()).toEqual([
+        "policy",
+        "registration",
+      ]);
     });
 
     it("links to a page only with docs:write, and not to something that does not exist", async () => {

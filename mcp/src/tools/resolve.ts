@@ -1,6 +1,7 @@
 import { isApiError } from "../../../src/lib/api/errors";
 import { endpoints } from "../../../src/lib/api/registry";
 import type { Contact } from "../../../src/lib/api/schemas/contacts";
+import type { InsurancePolicy } from "../../../src/lib/api/schemas/insurance";
 import type { Part } from "../../../src/lib/api/schemas/parts";
 import type { ToolContext } from "../context";
 import { ToolError } from "../errors";
@@ -82,5 +83,31 @@ export async function resolvePart(
     items,
     (p) => same(p.name, ref) || same(p.partNumber, ref),
     (p) => p.name,
+  );
+}
+
+/** An insurance policy by id, title or policy number; archived policies are looked at when no active one matches. */
+export async function resolvePolicy(
+  ctx: ToolContext,
+  ref: string,
+): Promise<InsurancePolicy> {
+  const found = await byIdFirst(ref, (id) =>
+    ctx.api.call(endpoints.insurancePoliciesGet, { params: { id } }),
+  );
+  if (found) return found;
+  let { items } = await ctx.api.call(endpoints.insurancePoliciesList, {
+    query: { q: ref, limit: 50 },
+  });
+  if (items.length === 0) {
+    ({ items } = await ctx.api.call(endpoints.insurancePoliciesList, {
+      query: { q: ref, archived: "true", limit: 50 },
+    }));
+  }
+  return pick(
+    "Insurance policy",
+    ref,
+    items,
+    (p) => same(p.title, ref) || same(p.policyNumber, ref),
+    (p) => p.title,
   );
 }

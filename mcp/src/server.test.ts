@@ -28,6 +28,8 @@ const READ_TOOLS = [
   "list_comments",
   "list_hints",
   "list_warranties",
+  "list_insurance_policies",
+  "get_insurance_policy",
   "list_costs",
   "cost_summary",
   "search_documents",

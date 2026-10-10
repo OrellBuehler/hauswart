@@ -151,6 +151,8 @@ Results are a one-line summary followed by compact JSON (empty fields left out).
 | `list_document_links`        | read        | The documents linked to an asset, room, page, task, defect, part, contact or cost entry, or where one document is used                                     |
 | `list_hints`                 | read        | Care hints (tips, rules, warnings) of assets                                                                                                               |
 | `list_warranties`            | read        | Warranty status per asset, soonest to expire first                                                                                                         |
+| `list_insurance_policies`    | read        | Insurance policies by cancellation deadline; filter by asset, type, text, archived; premium normalised to a year                                           |
+| `get_insurance_policy`       | read        | One policy in full, by id, title or policy number: insurer, term, deductible, assistance line, covered assets, attached files                              |
 | `list_costs`                 | read        | Cost entries (repairs, utilities, purchases, mortgage ...); filter by year, category, asset, room, payer, text; paged                                      |
 | `cost_summary`               | read        | A year's costs: total, per category and month, top assets, tax classes, and who owes whom                                                                  |
 | `create_defect`              | write       | Report a defect (room, asset and responsible contact by name)                                                                                              |
