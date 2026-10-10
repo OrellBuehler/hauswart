@@ -1,5 +1,4 @@
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
-import { ApiError } from "$lib/api/errors";
 import type { OdometerUnit } from "$lib/api/enums";
 import type {
   CreateTireSetRequest,
@@ -10,7 +9,6 @@ import type {
 import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
 import { dateInZone, householdTimeZone } from "$lib/server/config";
 import {
-  assets,
   contacts,
   odometerReadings,
   tireSetEvents,
@@ -25,6 +23,7 @@ import {
   type ServiceContext,
 } from "$lib/server/service";
 import { tireSetDistance } from "$lib/vehicles/tires";
+import { assertVehicleForRead, assertVehicleForWrite } from "./kind";
 import { removeReadingsOfSource, writeOdometer } from "./odometer";
 import { odometerUnitOf } from "./summary";
 
@@ -47,19 +46,6 @@ export interface TireSetDetailRecord extends TireSetRecord {
 
 const todayOf = (ctx: Pick<ServiceContext, "now">) =>
   dateInZone(ctx.now, householdTimeZone());
-
-/** The vehicle must exist; an asset of another kind has no tire sets (400). */
-function assertVehicle(ctx: Pick<ServiceContext, "db">, assetId: string) {
-  const asset = ctx.db
-    .select({ kind: assets.kind })
-    .from(assets)
-    .where(eq(assets.id, assetId))
-    .get();
-  if (!asset) throw notFound("Asset");
-  if (asset.kind !== "vehicle") {
-    throw new ApiError("invalid_request", "Only vehicles have tire sets");
-  }
-}
 
 function assertContact(
   ctx: Pick<ServiceContext, "db">,
@@ -169,12 +155,7 @@ export function listTireSets(
   filter: { includeRetired?: boolean },
   page: { cursor?: string; limit: number },
 ) {
-  const asset = ctx.db
-    .select({ id: assets.id })
-    .from(assets)
-    .where(eq(assets.id, assetId))
-    .get();
-  if (!asset) throw notFound("Asset");
+  assertVehicleForRead(ctx.db, assetId);
   const rows = ctx.db
     .select()
     .from(tireSets)
@@ -225,7 +206,7 @@ export function createTireSet(
   assetId: string,
   input: CreateTireSetRequest,
 ): TireSetDetailRecord {
-  assertVehicle(ctx, assetId);
+  assertVehicleForWrite(ctx.db, assetId, "tire sets");
   assertContact(ctx, input.storageContactId);
   if (input.treadMeasuredOn !== undefined && input.treadDepthMm === undefined) {
     throw invalidField("treadDepthMm", "Required with treadMeasuredOn");
@@ -355,6 +336,7 @@ export function mountTireSet(
   input: MountTireSetRequest,
   userId: string | null,
 ): TireSetDetailRecord {
+  assertVehicleForWrite(ctx.db, assetId, "tire sets");
   const date = input.date ?? todayOf(ctx);
   assertNotFuture(ctx, date);
   ctx.db.transaction((tx) => {

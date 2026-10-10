@@ -34,6 +34,7 @@ import {
   type FuelFill,
   type Stretch,
 } from "$lib/vehicles/fuel";
+import { assertVehicleForRead } from "./kind";
 import { removeReadingsOfSource, writeOdometer } from "./odometer";
 import { odometerUnitOf } from "./summary";
 
@@ -185,12 +186,7 @@ export function listFuelLogs(
   filter: { year?: number },
   page: { cursor?: string; limit: number },
 ) {
-  const asset = ctx.db
-    .select({ id: assets.id })
-    .from(assets)
-    .where(eq(assets.id, assetId))
-    .get();
-  if (!asset) throw notFound("Asset");
+  assertVehicleForRead(ctx.db, assetId);
   const where: SQL[] = [eq(fuelLogs.assetId, assetId)];
   if (filter.year !== undefined) {
     const y = String(filter.year).padStart(4, "0");

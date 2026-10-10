@@ -1,11 +1,11 @@
 import { eq } from "drizzle-orm";
-import { ApiError } from "$lib/api/errors";
 import type {
   OdometerSummary,
   PutVehicleRequest,
 } from "$lib/api/schemas/vehicles";
-import { assets, vehicleDetails } from "$lib/server/db";
-import { notFound, type ServiceContext } from "$lib/server/service";
+import { vehicleDetails } from "$lib/server/db";
+import type { ServiceContext } from "$lib/server/service";
+import { assertVehicleForRead, assertVehicleForWrite } from "./kind";
 import { syncOdometerSignal } from "./signal";
 import { odometerSummary } from "./summary";
 
@@ -20,17 +20,6 @@ export interface VehicleRecord extends Omit<
   odometer: OdometerSummary | null;
   /** Null while the details were never saved. */
   updatedAt: Date | null;
-}
-
-/** The asset, which must exist; what its kind means for the request is up to the caller. */
-function vehicleAsset(ctx: Pick<ServiceContext, "db">, assetId: string) {
-  const asset = ctx.db
-    .select({ id: assets.id, kind: assets.kind })
-    .from(assets)
-    .where(eq(assets.id, assetId))
-    .get();
-  if (!asset) throw notFound("Asset");
-  return asset;
 }
 
 function toRecord(
@@ -64,8 +53,7 @@ export function getVehicle(
   ctx: Pick<ServiceContext, "db">,
   assetId: string,
 ): VehicleRecord {
-  const asset = vehicleAsset(ctx, assetId);
-  if (asset.kind !== "vehicle") throw notFound("Vehicle");
+  assertVehicleForRead(ctx.db, assetId);
   return toRecord(
     ctx,
     assetId,
@@ -87,10 +75,7 @@ export function putVehicle(
   assetId: string,
   body: PutVehicleRequest,
 ): VehicleRecord {
-  const asset = vehicleAsset(ctx, assetId);
-  if (asset.kind !== "vehicle") {
-    throw new ApiError("invalid_request", "Only vehicles have these details");
-  }
+  assertVehicleForWrite(ctx.db, assetId, "these details");
   const values = {
     plate: body.plate ?? null,
     vin: body.vin ?? null,

@@ -601,6 +601,14 @@ of the owner>` is added to the document unless an identical note exists (writes 
   with nothing in it does not count and goes with the change), odometer readings or tire sets: 400 field error on
   `kind` naming what is left (`vehicles/kind.ts`, `storedVehicleData`). Fuel log entries need no check of their own,
   each is also an odometer reading.
+- **One rule for what only a vehicle has.** Everything under `/assets/{id}` that belongs to vehicles (`/vehicle`,
+  `/vehicle/stats`, `/odometer`, `/fuel-logs`, `/tire-sets`, `/tire-sets/{setId}/mount`) treats an asset of another kind
+  alike: a **read** is a 404 `not_found` (there is nothing of the sort to show, as for a missing asset), a **write** is a
+  400 `invalid_request` (well formed, but that asset cannot have it); a missing asset is a 404 for both. It lives in
+  `vehicles/kind.ts` (`assertVehicleForRead` / `assertVehicleForWrite`) and every registry description repeats it, so it
+  reaches OpenAPI; `src/routes/api/v1/assets/vehicle-only.test.ts` runs the table. Endpoints addressed by the id of a
+  tire set, fuel log entry or odometer reading (`/tire-sets/{id}`, `/tread`, `/fuel-logs/{id}`, `/odometer-readings/{id}`)
+  look at no asset kind: those records can only exist for vehicles (see the kind rule above).
 - **Odometer readings** (`odometer_readings`, never pruned): `POST /assets/{id}/odometer` (`date`
   defaults to today and is never in the future), `GET` newest first (keyset), `DELETE
 /odometer-readings/{id}` (a reading written for a completion, service log entry, fuel log entry or tire change belongs to

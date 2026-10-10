@@ -37,6 +37,7 @@ import type { SignalChange } from "$lib/server/signals/service";
 import { tasksReading } from "$lib/server/signals/watch";
 import { evaluateTasks } from "$lib/server/tasks/evaluator";
 import { odometerSignalKey } from "$lib/vehicles/odometer";
+import { assertVehicleForRead } from "./kind";
 import { syncOdometerSignal } from "./signal";
 import { readingOrder } from "./summary";
 
@@ -432,12 +433,7 @@ export function listReadings(
   assetId: string,
   page: { cursor?: string; limit: number },
 ) {
-  const asset = ctx.db
-    .select({ id: assets.id })
-    .from(assets)
-    .where(eq(assets.id, assetId))
-    .get();
-  if (!asset) throw notFound("Asset");
+  assertVehicleForRead(ctx.db, assetId);
   const where: SQL[] = [eq(odometerReadings.assetId, assetId)];
   if (page.cursor) {
     const at = decodeCursor(page.cursor, cursorSchema);

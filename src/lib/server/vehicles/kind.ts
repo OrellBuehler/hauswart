@@ -1,10 +1,13 @@
 import { count, eq } from "drizzle-orm";
+import { ApiError } from "$lib/api/errors";
 import {
+  assets,
   odometerReadings,
   tireSets,
   vehicleDetails,
   type DB,
 } from "$lib/server/db";
+import { notFound } from "$lib/server/service";
 
 type Db = Pick<DB, "select">;
 
@@ -51,4 +54,36 @@ export function storedVehicleData(db: Db, assetId: string): string[] {
     .get();
   if (sets && sets.n > 0) held.push("tire sets");
   return held;
+}
+
+function kindOf(db: Db, assetId: string) {
+  const asset = db
+    .select({ kind: assets.kind })
+    .from(assets)
+    .where(eq(assets.id, assetId))
+    .get();
+  if (!asset) throw notFound("Asset");
+  return asset.kind;
+}
+
+/**
+ * The rule for everything under `/assets/{id}` that only a vehicle has. A read of an asset that is
+ * no vehicle is a 404, like a missing asset: there is nothing of the sort to show.
+ */
+export function assertVehicleForRead(db: Db, assetId: string): void {
+  if (kindOf(db, assetId) !== "vehicle") throw notFound("Vehicle");
+}
+
+/**
+ * A write to an asset that is no vehicle is a 400 `invalid_request`: the request is well formed
+ * but asks that asset for something it cannot have. A missing asset is a 404 for both.
+ */
+export function assertVehicleForWrite(
+  db: Db,
+  assetId: string,
+  what: string,
+): void {
+  if (kindOf(db, assetId) !== "vehicle") {
+    throw new ApiError("invalid_request", `Only vehicles have ${what}`);
+  }
 }

@@ -470,6 +470,15 @@ export function defineEndpoint<
   };
 }
 
+/**
+ * The rule for everything under `/assets/{id}` that only a vehicle has (details, statistics, odometer
+ * readings, fuel log, tire sets), stated in each description so it reaches the OpenAPI document.
+ */
+const VEHICLE_ONLY_READ =
+  "Only a vehicle has this: 404 `not_found` for an asset of another kind, as for a missing asset.";
+const VEHICLE_ONLY_WRITE =
+  "Only a vehicle can take this: 400 `invalid_request` for an asset of another kind, 404 `not_found` for a missing asset.";
+
 export const endpoints = {
   health: defineEndpoint({
     id: "health",
@@ -1706,8 +1715,7 @@ export const endpoints = {
     method: "GET",
     path: "/api/v1/assets/{id}/vehicle",
     summary: "Details of a vehicle",
-    description:
-      "Plate, VIN, registration data, tire sizes, where it is kept and the newest odometer reading. A vehicle whose details were never saved answers with empty ones (and kilometres). 404 for a missing asset and for an asset that is no vehicle.",
+    description: `Plate, VIN, registration data, tire sizes, where it is kept and the newest odometer reading. A vehicle whose details were never saved answers with empty ones (and kilometres). ${VEHICLE_ONLY_READ}`,
     tags: ["vehicles", "assets"],
     auth: "both",
     scopes: ["read"],
@@ -1721,8 +1729,7 @@ export const endpoints = {
     method: "GET",
     path: "/api/v1/assets/{id}/vehicle/stats",
     summary: "A vehicle in numbers",
-    description:
-      "For a year (year=) or for all time: distance driven (from the odometer readings, per month too), the cost entries of the vehicle that count as an expense in the household currency by category and per distance unit, the average and the last ten consumption values (full-to-full) per unit, the price per unit of the fuel, the mounted tire set and the next tasks of the vehicle. 404 for an asset that is no vehicle.",
+    description: `For a year (year=) or for all time: distance driven (from the odometer readings, per month too), the cost entries of the vehicle that count as an expense in the household currency by category and per distance unit, the average and the last ten consumption values (full-to-full) per unit, the price per unit of the fuel, the mounted tire set and the next tasks of the vehicle. ${VEHICLE_ONLY_READ}`,
     tags: ["vehicles", "assets"],
     auth: "both",
     scopes: ["read"],
@@ -1737,8 +1744,7 @@ export const endpoints = {
     method: "PUT",
     path: "/api/v1/assets/{id}/vehicle",
     summary: "Save the details of a vehicle",
-    description:
-      "Replaces the details: a field left out is cleared and the odometer unit goes back to km. Changing the unit relabels the readings, it does not convert them. 400 unless the asset has kind `vehicle`, 404 for a missing asset.",
+    description: `Replaces the details: a field left out is cleared and the odometer unit goes back to km. Changing the unit relabels the readings, it does not convert them. ${VEHICLE_ONLY_WRITE}`,
     tags: ["vehicles", "assets"],
     auth: "both",
     scopes: ["write"],
@@ -1753,8 +1759,7 @@ export const endpoints = {
     method: "GET",
     path: "/api/v1/assets/{id}/fuel-logs",
     summary: "Fuel log (Tankbuch) of a vehicle, newest first",
-    description:
-      "Every fill-up or charge with its price per unit and, on a full fill that closes a stretch, the distance since the previous full fill, the consumption per 100 and the cost per distance (full-to-full method: partial fills in between are added up, a fill flagged missedPrevious starts the chain again, litres and kWh are counted apart). Filter by year.",
+    description: `Every fill-up or charge with its price per unit and, on a full fill that closes a stretch, the distance since the previous full fill, the consumption per 100 and the cost per distance (full-to-full method: partial fills in between are added up, a fill flagged missedPrevious starts the chain again, litres and kWh are counted apart). Filter by year. ${VEHICLE_ONLY_READ}`,
     tags: ["vehicles", "assets"],
     auth: "both",
     scopes: ["read"],
@@ -1769,8 +1774,7 @@ export const endpoints = {
     method: "POST",
     path: "/api/v1/assets/{id}/fuel-logs",
     summary: "Log a fill-up or charge",
-    description:
-      'In one transaction: the odometer becomes a reading of the vehicle (source fuel_log; a value lower than the reading before is a 400 on odometer) and, unless amountMinor is 0, a cost entry of the category fuel is booked for the vehicle (title like "Tanken <station>", paid by paidByUserId, default the caller, split by splitMode, default ownership). It needs costs:write because it books money. 400 for an asset that is no vehicle.',
+    description: `In one transaction: the odometer becomes a reading of the vehicle (source fuel_log; a value lower than the reading before is a 400 on odometer) and, unless amountMinor is 0, a cost entry of the category fuel is booked for the vehicle (title like "Tanken <station>", paid by paidByUserId, default the caller, split by splitMode, default ownership). It needs costs:write because it books money. ${VEHICLE_ONLY_WRITE}`,
     tags: ["vehicles", "assets"],
     auth: "both",
     scopes: ["costs:write"],
@@ -1831,8 +1835,7 @@ export const endpoints = {
     method: "GET",
     path: "/api/v1/assets/{id}/tire-sets",
     summary: "Tire sets of a vehicle",
-    description:
-      "The mounted set first, then by season; retired sets only with includeRetired=true. Each set carries the distance driven on it, a treadWarning (below 3 mm for summer, 4 mm for winter and all-season) and its age from the DOT code.",
+    description: `The mounted set first, then by season; retired sets only with includeRetired=true. Each set carries the distance driven on it, a treadWarning (below 3 mm for summer, 4 mm for winter and all-season) and its age from the DOT code. ${VEHICLE_ONLY_READ}`,
     tags: ["vehicles", "assets"],
     auth: "both",
     scopes: ["read"],
@@ -1847,8 +1850,7 @@ export const endpoints = {
     method: "POST",
     path: "/api/v1/assets/{id}/tire-sets",
     summary: "Add a tire set to a vehicle",
-    description:
-      "The set is not mounted; mount it with the mount endpoint. 400 for an asset that is no vehicle.",
+    description: `The set is not mounted; mount it with the mount endpoint. ${VEHICLE_ONLY_WRITE}`,
     tags: ["vehicles", "assets"],
     auth: "both",
     scopes: ["write"],
@@ -1909,8 +1911,7 @@ export const endpoints = {
     method: "POST",
     path: "/api/v1/assets/{id}/tire-sets/{setId}/mount",
     summary: "Mount a tire set",
-    description:
-      "Takes the mounted set off (an unmounted event of the same day) and mounts this one. With an odometer value the vehicle gets that reading (source tire_change); a value lower than the reading before is a 400 on odometer and nothing is changed. 409 for a retired set and for one that is already mounted.",
+    description: `Takes the mounted set off (an unmounted event of the same day) and mounts this one. With an odometer value the vehicle gets that reading (source tire_change); a value lower than the reading before is a 400 on odometer and nothing is changed. 409 for a retired set and for one that is already mounted. ${VEHICLE_ONLY_WRITE}`,
     tags: ["vehicles", "assets"],
     auth: "both",
     scopes: ["write"],
@@ -1942,8 +1943,7 @@ export const endpoints = {
     method: "GET",
     path: "/api/v1/assets/{id}/odometer",
     summary: "Odometer readings of a vehicle, newest first",
-    description:
-      "Every reading ever recorded, by date and then by when it was entered. Readings are never pruned.",
+    description: `Every reading ever recorded, by date and then by when it was entered. Readings are never pruned. ${VEHICLE_ONLY_READ}`,
     tags: ["vehicles", "assets"],
     auth: "both",
     scopes: ["read"],
@@ -1958,8 +1958,7 @@ export const endpoints = {
     method: "POST",
     path: "/api/v1/assets/{id}/odometer",
     summary: "Record an odometer reading",
-    description:
-      "The date defaults to today and must not be in the future. A value lower than the reading before it or higher than the reading after it (by date) is a 400 on `value`, unless `force` is true (a replaced instrument cluster). The newest reading becomes the signal `odometer:<asset id>` that tasks with a counter trigger read, so due dates, estimates and notifications follow at once. 400 for an asset that is no vehicle.",
+    description: `The date defaults to today and must not be in the future. A value lower than the reading before it or higher than the reading after it (by date) is a 400 on \`value\`, unless \`force\` is true (a replaced instrument cluster). The newest reading becomes the signal \`odometer:<asset id>\` that tasks with a counter trigger read, so due dates, estimates and notifications follow at once. ${VEHICLE_ONLY_WRITE}`,
     tags: ["vehicles", "assets"],
     auth: "both",
     scopes: ["write"],

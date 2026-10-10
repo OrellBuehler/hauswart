@@ -2,14 +2,9 @@ import { and, eq, sql } from "drizzle-orm";
 import type { CostCategory, FuelUnit } from "$lib/api/enums";
 import { yearRange } from "$lib/server/costs/costs";
 import { dateInZone, householdTimeZone } from "$lib/server/config";
-import {
-  assets,
-  costEntries,
-  fuelLogs,
-  odometerReadings,
-} from "$lib/server/db";
+import { costEntries, fuelLogs, odometerReadings } from "$lib/server/db";
 import { getHousehold } from "$lib/server/household/household";
-import { notFound, type ServiceContext } from "$lib/server/service";
+import type { ServiceContext } from "$lib/server/service";
 import {
   getUpcomingTasks,
   type DashboardTaskRecord,
@@ -26,6 +21,7 @@ import {
   round1,
 } from "$lib/vehicles/stats";
 import { stretchesOf } from "./fuel-logs";
+import { assertVehicleForRead } from "./kind";
 import { odometerUnitOf } from "./summary";
 import { mountedTireSet, type TireSetDetailRecord } from "./tires";
 
@@ -84,13 +80,7 @@ export async function vehicleStats(
   assetId: string,
   year: number | undefined,
 ): Promise<VehicleStatsRecord> {
-  const asset = ctx.db
-    .select({ kind: assets.kind })
-    .from(assets)
-    .where(eq(assets.id, assetId))
-    .get();
-  if (!asset) throw notFound("Asset");
-  if (asset.kind !== "vehicle") throw notFound("Vehicle");
+  assertVehicleForRead(ctx.db, assetId);
 
   const { currency } = getHousehold(ctx);
   const readings = ctx.db
