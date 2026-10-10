@@ -18,6 +18,7 @@
   import { kindLabels } from "$lib/assets/kinds";
   import { newTaskHref } from "$lib/assets/links";
   import { warrantyStatus } from "$lib/assets/warranty";
+  import AssetNotesCard from "$lib/components/asset-notes/asset-notes-card.svelte";
   import AssetPhoto from "$lib/components/assets/asset-photo.svelte";
   import AssetContactsCard from "$lib/components/assets/asset-contacts-card.svelte";
   import AssetHintsCard from "$lib/components/assets/asset-hints-card.svelte";
@@ -51,6 +52,7 @@
 
   const asset = $derived(data.asset);
   const canWriteDocs = $derived(data.scopes.includes("docs:write"));
+  const canWrite = $derived(data.scopes.includes("write"));
   const isPlant = $derived(asset.kind === "plant");
   const pinnedHints = $derived(data.hints.filter((hint) => hint.pinned));
   const warranty = $derived(warrantyStatus(asset, data.today));
@@ -312,6 +314,13 @@
           {/if}
         </Card.Content>
       </Card.Root>
+
+      <AssetNotesCard
+        assetId={asset.id}
+        assetName={asset.name}
+        notes={data.notes}
+        {canWrite}
+      />
 
       {#if asset.kind === "vehicle" || data.insurance.length > 0}
         <AssetInsuranceCard

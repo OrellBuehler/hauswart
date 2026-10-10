@@ -26,6 +26,8 @@ export type TaskRowData = {
   archived: boolean;
   snoozedUntil: string | null;
   commentCount?: number;
+  /** Open notes on the task's asset, to mention at this appointment. */
+  openNoteCount?: number;
 };
 
 export function rowFromDashboard(task: DashboardTask): TaskRowData {
@@ -44,6 +46,7 @@ export function rowFromDashboard(task: DashboardTask): TaskRowData {
     progress: task.progress,
     archived: false,
     snoozedUntil: null,
+    openNoteCount: task.openNoteCount,
   };
 }
 
@@ -77,6 +80,7 @@ export function rowFromTask(
     archived: task.archivedAt !== null,
     snoozedUntil: task.snoozedUntil,
     commentCount: task.commentCount,
+    openNoteCount: task.openNoteCount,
   };
 }
 

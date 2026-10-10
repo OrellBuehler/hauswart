@@ -2,6 +2,7 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import FormAlert from "$lib/components/app/form-alert.svelte";
   import SwitchField from "$lib/components/app/switch-field.svelte";
+  import NoteChoices from "$lib/components/asset-notes/note-choices.svelte";
   import ServiceLogFields from "$lib/components/assets/service-log-fields.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
@@ -41,6 +42,8 @@
       title: string;
       snoozedUntil?: string | null;
       assetId?: string | null;
+      /** Open notes on the task's asset; they can be ticked off with the service log entry. */
+      openNoteCount?: number;
     };
     today: string;
     /** The household's zone; needed to backdate a completion. */
@@ -58,6 +61,7 @@
   let logDescription = $state("");
   let logContactId = $state<string | null>(null);
   let logCost = $state("");
+  let logNoteIds = $state<string[]>([]);
   let logErrors = $state<Record<string, string>>({});
   let currency = $state("CHF");
 
@@ -80,6 +84,7 @@
     logDescription = "";
     logContactId = null;
     logCost = "";
+    logNoteIds = [];
     logErrors = {};
   });
 
@@ -147,6 +152,7 @@
         ...(logDescription.trim() ? { descriptionMd: logDescription } : {}),
         ...(logContactId ? { contactId: logContactId } : {}),
         ...(cost ? { costMinor: cost } : {}),
+        ...(logNoteIds.length > 0 ? { resolvedNoteIds: [...logNoteIds] } : {}),
       };
     }
     pending = true;
@@ -268,7 +274,9 @@
                 id="action-log"
                 bind:checked={logWork}
                 label={m.task_service_log_toggle()}
-                hint={m.task_service_log_hint()}
+                hint={(task.openNoteCount ?? 0) > 0
+                  ? `${m.task_service_log_hint()} ${m.task_service_log_notes_hint({ count: task.openNoteCount ?? 0 })}`
+                  : m.task_service_log_hint()}
               />
               {#if logWork}
                 <ServiceLogFields
@@ -281,6 +289,13 @@
                   {currency}
                   errors={logErrors}
                 />
+                {#if task.assetId && (task.openNoteCount ?? 0) > 0}
+                  <NoteChoices
+                    assetId={task.assetId}
+                    bind:selected={logNoteIds}
+                    idPrefix="action-notes"
+                  />
+                {/if}
               {/if}
             </div>
           {/if}

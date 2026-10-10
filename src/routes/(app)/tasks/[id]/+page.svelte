@@ -22,6 +22,7 @@
   import { endpoints } from "$lib/api/registry";
   import type { Completion } from "$lib/api/schemas/tasks";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
+  import OpenNotesBadge from "$lib/components/asset-notes/open-notes-badge.svelte";
   import Comments from "$lib/components/comments/comments.svelte";
   import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
   import AssigneeAvatar from "$lib/components/tasks/assignee-avatar.svelte";
@@ -221,6 +222,14 @@
           <Badge variant={task.priority === "high" ? "default" : "secondary"}>
             {priorityLabels[task.priority]()}
           </Badge>
+        {/if}
+        {#if task.assetId && task.openNoteCount > 0}
+          <OpenNotesBadge
+            count={task.openNoteCount}
+            assetId={task.assetId}
+            assetName={task.assetName ?? ""}
+            class="text-sm"
+          />
         {/if}
         {#if archived}
           <Badge variant="secondary">{m.task_archived()}</Badge>

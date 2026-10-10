@@ -4,6 +4,7 @@
   import type { ServiceLogKind } from "$lib/api/enums";
   import { endpoints } from "$lib/api/registry";
   import type { ServiceLogEntry } from "$lib/api/schemas/service-log";
+  import NoteChoices from "$lib/components/asset-notes/note-choices.svelte";
   import FormDialog from "$lib/components/app/form-dialog.svelte";
   import { apiErrorMessage } from "$lib/error-message";
   import { readMoney } from "$lib/format-money";
@@ -35,6 +36,7 @@
   let description = $state("");
   let contactId = $state<string | null>(null);
   let cost = $state("");
+  let resolvedNoteIds = $state<string[]>([]);
   let errors = $state<Record<string, string>>({});
 
   const editing = $derived(entry !== undefined);
@@ -51,6 +53,7 @@
       entry?.costMinor == null
         ? ""
         : toDecimalString(minor(entry.costMinor), 2);
+    resolvedNoteIds = [];
     errors = {};
   });
 
@@ -73,6 +76,9 @@
       ...(costMinor === null || costMinor === undefined
         ? { currency: null }
         : { currency: entryCurrency }),
+      ...(resolvedNoteIds.length > 0
+        ? { resolvedNoteIds: [...resolvedNoteIds] }
+        : {}),
     };
     try {
       const saved = entry
@@ -117,5 +123,10 @@
     currency={entryCurrency}
     {errors}
     {today}
+  />
+  <NoteChoices
+    {assetId}
+    bind:selected={resolvedNoteIds}
+    idPrefix="service-notes"
   />
 </FormDialog>

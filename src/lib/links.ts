@@ -21,6 +21,10 @@ export function contactHref(id: string) {
   return resolve(`/contacts/${encodeURIComponent(id)}` as "/");
 }
 
+export function defectHref(id: string) {
+  return resolve(`/defects/${encodeURIComponent(id)}` as "/");
+}
+
 export function partHref(id: string) {
   return resolve(`/parts/${encodeURIComponent(id)}` as "/");
 }
