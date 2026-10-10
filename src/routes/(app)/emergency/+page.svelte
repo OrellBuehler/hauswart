@@ -58,7 +58,7 @@
         type="button"
         variant="outline"
         size="lg"
-        class="print:hidden"
+        class="max-sm:hidden print:hidden"
         onclick={() => window.print()}
       >
         <PrinterIcon />{m.emergency_print()}

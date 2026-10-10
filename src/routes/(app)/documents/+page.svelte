@@ -56,6 +56,7 @@
   let loading = $state(true);
   let loadingMore = $state(false);
   let loadError = $state<string | undefined>();
+  let moreError = $state<string | undefined>();
   let sequence = 0;
 
   let detailOpen = $state(false);
@@ -120,6 +121,7 @@
     const ticket = ++sequence;
     loading = true;
     loadError = undefined;
+    moreError = undefined;
     const handle = setTimeout(
       () => void untrack(() => search(ticket)),
       text === "" ? 0 : 300,
@@ -131,6 +133,7 @@
     const ticket = ++sequence;
     loading = true;
     loadError = undefined;
+    moreError = undefined;
     void search(ticket);
   }
 
@@ -138,6 +141,7 @@
     if (!nextCursor || loadingMore) return;
     const ticket = sequence;
     loadingMore = true;
+    moreError = undefined;
     try {
       const page = await api.call(endpoints.documentsList, {
         query: filterQuery(nextCursor),
@@ -147,7 +151,7 @@
       nextCursor = page.nextCursor;
     } catch (err) {
       if (ticket !== sequence) return;
-      loadError = pickerErrorMessage(err, provider ?? "paperless");
+      moreError = pickerErrorMessage(err, provider ?? "paperless");
     } finally {
       loadingMore = false;
     }
@@ -488,7 +492,22 @@
           </li>
         {/each}
       </ul>
-      {#if nextCursor}
+      {#if moreError}
+        <div class="flex flex-col items-center gap-3 text-center" role="alert">
+          <p class="text-destructive text-sm text-pretty">{moreError}</p>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={loadingMore}
+            onclick={loadMore}
+          >
+            {#if loadingMore}
+              <LoaderCircleIcon class="animate-spin" />
+            {/if}
+            {m.common_retry()}
+          </Button>
+        </div>
+      {:else if nextCursor}
         <div class="text-center">
           <Button
             type="button"
