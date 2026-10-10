@@ -73,7 +73,7 @@
     <Card.Description>{m.account_password_description()}</Card.Description>
   </Card.Header>
   <Card.Content>
-    <form class="flex flex-col gap-5" onsubmit={submit}>
+    <form method="post" class="flex flex-col gap-5" onsubmit={submit}>
       <FormAlert message={error} />
       <input
         type="text"

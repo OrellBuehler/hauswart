@@ -314,7 +314,12 @@
 
     {#if canEdit}
       {#snippet connectionForm()}
-        <form class="flex flex-col gap-5" onsubmit={submit} novalidate>
+        <form
+          method="post"
+          class="flex flex-col gap-5"
+          onsubmit={submit}
+          novalidate
+        >
           <FormAlert message={error} />
 
           <Field
