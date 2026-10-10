@@ -10,11 +10,11 @@ attachments, search, file backup), contacts, spare parts, the service log, care 
 a PDF export), the warranty overview, generic comments, iCal feeds, the emergency page data and guest
 links, costs (with the settlement between the people and a CSV export), the per-person finance
 connection (Kept), insurance policies (with a cancellation reminder), asset notes and vehicles (details, odometer
-readings, task templates; see "Vehicles") exist; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
+readings, tire sets, a fuel log with consumption, statistics, task templates; see "Vehicles") exist; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
 push notifications with a "done" button, areas taken over as rooms; see "Signals, integrations and delivery"); Paperless-ngx is wired as
 a per-person document provider (links, previews, warranty dates, pushing attachments; see "Documents and the
 document provider"); the MCP server covers the task core, documentation, defects, parts, contacts,
-comments, hints, service log, warranties, costs, the finance inbox, archived documents, insurance policies and asset notes, and hauswart serves it over HTTP at
+comments, hints, service log, warranties, costs, the finance inbox, archived documents, insurance policies, asset notes and vehicles (odometer, fuel log, tire sets, statistics), and hauswart serves it over HTTP at
 `/api/v1/mcp` (see "MCP server" and `mcp/README.md`); the web app is installable as a PWA (see "Installable app").
 
 There is one household, not many: all domain data is shared by every user. Only sessions, API
@@ -136,7 +136,8 @@ src/lib/server/emergency/        emergency page data (members) and the "Notfall-
 src/lib/server/vehicles/         vehicle details (`vehicle_details`), odometer readings and the signal they feed: odometer.ts
                                  (`writeOdometer` sync, `recordOdometer` async), signal.ts (readings -> signal + samples),
                                  summary.ts (plate + newest reading on assets), events.ts (completions), vehicles.ts, tires.ts, fuel-logs.ts, stats.ts (see "Vehicles")
-src/lib/vehicles/                client-safe: odometer.ts (`odometer:<asset id>` key helpers), templates.ts (task bodies for a vehicle)
+src/lib/vehicles/                client-safe: odometer.ts (`odometer:<asset id>` key helpers), plate.ts (plate matching), tires.ts (tread limits,
+                                 DOT age, distance per set), fuel.ts (full-to-full consumption), stats.ts (distance per month), templates.ts (task bodies)
 src/lib/server/pdf/render.ts     shared pdfmake wrapper (A4, Roboto from node_modules, no network or file access)
 src/lib/pwa/                     client-safe PWA parts: colors.ts (theme colours, tested against app.css), manifest.ts, options.ts
                                  (the service worker's whole behaviour; see "Installable app")
@@ -220,7 +221,8 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   Existing entries are left alone unless `--update`. Changing the household needs the admin scope.
   An asset of kind `vehicle` may carry a `vehicle` block (the body of `PUT /assets/{id}/vehicle`):
   saved when the vehicle has no saved details yet, overwritten (and what the file leaves out cleared)
-  only with `--update`.
+  only with `--update`. Tire sets and fuel logs are not seeded: a set has no key to find it again by, and a fill books
+  a cost entry (`costs:write`).
 
 ### Signals, integrations and delivery
 
@@ -328,7 +330,8 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   Swiss tax distinction between value-preserving and value-increasing work), `source`
   (`manual|finance_transaction|finance_bill`). `countsAsExpense` defaults to false for
   `mortgage_principal` (equity, not a cost) and follows a category change unless the person overrode it.
-  Entries can be commented on and carry receipts (attachments, owner `cost`).
+  Entries can be commented on and carry receipts (attachments, owner `cost`). The fuel log of a vehicle books its
+  fills as `fuel` entries (see "Vehicles").
 - **Split math** (`money.ts` `allocate`, `costs/split.ts`): shares are frozen per entry in
   `cost_entry_shares` (basis points, sum exactly 10000), so a later ownership change never rewrites
   history. `ownership` weighs people by `users.ownership_bps` (normalised, 0% pays nothing, all zero
@@ -340,8 +343,9 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
 - **Currency**: entries may be in any currency, but every total, the settlement and the dashboard
   count the household currency only; `otherCurrencyCount` says how many entries were left out (the CSV
   has them all).
-- **Summary** (`GET /costs/summary?year=`): `expenseTotalMinor` and the per category / month (always 12) /
-  asset (top 10) / tax class breakdowns count entries with `countsAsExpense`; `equityTotalMinor` is the rest.
+- **Summary** (`GET /costs/summary?year=&assetId=`): `expenseTotalMinor` and the per category / month (always 12) /
+  asset (top 10) / tax class breakdowns count entries with `countsAsExpense`; `equityTotalMinor` is the rest. With an
+  `assetId` every number in it, the settlement included, is that asset's alone.
   **Settlement** covers every split entry with a payer, equity included (it is about who paid cash):
   `balanceMinor` = paid - share (positive = the others owe this person), `settlement` = greedy payments
   from the largest debtor to the largest creditor ("A owes B CHF x"). Split entries without a payer are
@@ -511,16 +515,16 @@ of the owner>` is added to the document unless an identical note exists (writes 
   flipping `guestVisible` re-renders the pages that embed it (`onAttachmentsChanged` listener,
   started in `init()` by `startAttachmentRerender`; only the two HTML caches change, guarded by `rev`).
 - **Attachments** (`attachments`): one row per upload, generic owner `ownerType` + `ownerId` without
-  foreign keys (`asset|room|page|task|defect|service_log|part|asset_hint|contact|cost|insurance_policy|asset_note`), files stored
+  foreign keys (`asset|room|page|task|defect|service_log|part|asset_hint|contact|cost|insurance_policy|asset_note|tire_set`), files stored
   once by sha256 in `HAUSWART_FILES_DIR` (`files/store.ts`: images re-encoded, metadata stripped,
   thumbnail; PDFs as uploaded; HEIC/SVG/HTML/GIF refused). Owner existence is checked through the
   registry in `attachments/owners.ts`: asset, room, page and task are built in; defect, service_log,
-  part, asset_hint, contact, cost, insurance_policy and asset_note are registered by `registerDomainAttachmentOwners()`
+  part, asset_hint, contact, cost, insurance_policy, asset_note and tire_set are registered by `registerDomainAttachmentOwners()`
   (`attachments/domain-owners.ts`, called from `registerDomainEventHandlers()`, so from `init()` and
   `useTestDB()`). A new owner type registers with `registerAttachmentOwner(type, existsFn)` **from
   `init()`** (never from a module that is only loaded with its routes) and calls
-  `removeOwnedAttachments(ctx, type, id)` from its delete service (done for all twelve; deleting an
-  asset also removes the attachments of its service log entries, hints and notes, whose rows go by cascade
+  `removeOwnedAttachments(ctx, type, id)` from its delete service (done for all thirteen; deleting an
+  asset also removes the attachments of its service log entries, hints, notes and tire sets, whose rows go by cascade
   without a foreign key to follow). A type nobody registered is a 400 field error on `ownerType`. Uploading, patching or deleting an attachment of a page needs `docs:write`,
   others `write`. `deleteIfUnreferenced` keeps files younger than a minute, so a daily orphan sweep
   (`startFileSweeper`) removes what deletions left behind. `assets.photoAttachmentId` must be an
@@ -634,7 +638,8 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   day and odometer), writes the `mounted` event and, with an `odometer`, a reading of the vehicle (source `tire_change`,
   the mount event as `sourceId`; lower than the reading before is a 400 on `odometer`), in one transaction; 409 for a
   retired or already mounted set. Whether a set is mounted and its tread change only through mount and tread (each
-  measurement is a `tread_measured` event, the newest is the set's depth); `retired: true` takes a mounted set off.
+  measurement is a `tread_measured` event, the newest is the set's depth, and an `odometer` with it is a reading of the
+  same kind and rule as for mounting); `retired: true` takes a mounted set off.
   The DTO carries `treadWarning` (below 3 mm summer, 4 mm winter and all-season, `TREAD_WARNING_MM`), `ageYears` (from
   the DOT, one decimal), `mountedOn` and `distance` (`tireSetDistance`: odometer at the unmount, or the newest reading
   while mounted, minus at the mount; events without an odometer use the newest reading on or before their date).
@@ -648,9 +653,10 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   `fuel_log`, same monotonic rule, 400 on `odometer`) and, unless the amount is 0 (a free charge), a cost entry of the new
   category `fuel` for the vehicle (title "Tanken <station>" or "Laden ..." in the base language, payee = station, paid by
   `paidByUserId`, default the caller, `splitMode` default ownership). **PATCH** moves the reading with date and
-  odometer and keeps the cost entry in step for amount, currency, date, station, payer and split (made free it loses the
-  entry; costing again gets a new one; an entry somebody deleted is not brought back by other changes). **DELETE** removes the
-  reading and the cost entry with its receipts. Consumption is the full-to-full method (`fuelStretches`): a full fill
+  odometer and keeps the cost entry in step for amount, currency, date, station (title and payee, the unit decides the
+  title too), payer and split (made free it loses the entry; costing again gets a new one; an entry somebody deleted is
+  not brought back by other changes). **DELETE** removes the reading and the cost entry with its receipts. A fill itself
+  takes no attachments, comments or document links: receipts go on its cost entry. Consumption is the full-to-full method (`fuelStretches`): a full fill
   closes a stretch from the previous full fill, partial fills in between are added up, a fill flagged `missedPrevious`
   starts the chain again, litres and kWh are separate chains; the DTO carries `pricePerUnitMinor` (a rate in minor
   units, not an amount), and on a closing fill `distance`, `consumptionPer100` and `costPerDistanceMinor` (unknown when an
@@ -850,7 +856,7 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
 - **Insurance and asset notes** (`tools/insurance.ts`, `tools/notes.ts`): `list_insurance_policies` and
   `get_insurance_policy` (read; a policy by id, title or policy number), `add_asset_note`, `list_asset_notes` and
   `resolve_asset_note` (the asset by id or name; resolving is idempotent). `add_service_log` takes `resolvedNoteIds`, task
-  rows carry `openNotes`, and documents can be linked to a policy by its title. 55 tools when the token holds every scope.
+  rows carry `openNotes`, and documents can be linked to a policy by its title. 62 tools when the token holds every scope.
 - **New tool**: add the endpoint to the registry first, then a ~15-line `defineTool` in
   `mcp/src/tools/` and an entry in `tools/index.ts` (which lists the planned extension points).
   Triggers go through `parseTrigger` (engine schema, per-type docs in `trigger-docs.ts`, a `Record`
@@ -868,6 +874,16 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
   vehicle is given by id, name or plate (spaces, dashes and case do not matter; parts of a name or plate
   work when unambiguous); a device given by name is told apart from "no such vehicle".
   Every tool that takes an asset (`ctx.resolveAsset`) accepts a vehicle's plate as well (`lib/vehicles/plate.ts`).
+  Fuel, tires and numbers: `list_fuel_logs` and `add_fuel_log` (`tools/fuel.ts`; **`costs:write`**, because a fill books a
+  cost entry, so it is offered with the cost tools, not with `write`), `get_vehicle_stats` (`tools/vehicle-stats.ts`),
+  `list_tire_sets`, `add_tire_set`, `mount_tire_set` and `record_tire_tread` (`tools/tires.ts`). A tire set is given by
+  its id or by words from its season, brand, model, size or DOT (`winter`; `findTireSets` searches the vehicle's own
+  sets only, so another vehicle's set is never found; an id also finds a retired set, words only active ones; several
+  hits are reported with their ids).
+  `record_tire_tread` without a set measures the mounted one; mounting the set that already is mounted answers normally
+  and changes nothing (the tool is `update`, annotated idempotent). Amounts are decimals in the currency (`toMinor`,
+  `money` and `rate` in `tools/costs.ts`; a price per litre or distance unit is a rate, `1.847 CHF/l`) and consumption
+  is rounded to two decimals. `cost_summary` takes an `asset` (id, name or plate).
 - **Tests** (`mcp/src/*.test.ts`, vitest) connect the real server to an in-process hauswart
   (`createInProcessFetch`) via the SDK's in-memory transport: `useMcp().connect({scopes})` returns
   `call`/`ok` helpers. Document tests also use the fake Paperless of `integrations/paperless/testing.ts`

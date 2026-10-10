@@ -12,13 +12,14 @@ here too.
 1. In hauswart open **Settings → API tokens**, create a token of kind **MCP server** and choose
    the scopes:
    - `read`: Claude can look things up (upcoming tasks, tasks, assets, documentation pages,
-     defects, spare parts, contacts, comments, warranties, statistics, notifications, the archived
-     documents of your own document system) and search across all of it.
+     defects, spare parts, contacts, comments, warranties, statistics, notifications, vehicles with
+     their fuel log, tire sets and statistics, the archived documents of your own document system)
+     and search across all of it.
    - `write` (in addition): Claude can also create and change tasks and assets, mark tasks done,
      skip, snooze and undo, report defects and change their status, book spare-part stock, comment,
      log service work and link archived documents to devices, rooms and more. Without it the write tools are not even offered.
    - `docs:write` (in addition): Claude can create and edit documentation pages.
-   - `costs:write` (in addition): Claude can book costs.
+   - `costs:write` (in addition): Claude can book costs and fill-ups (the fuel log books a cost entry).
 
    The token is shown once. Completions made through it are recorded as coming from `mcp`, under
    the token owner's name (a token of another kind works too, but its completions are recorded
@@ -155,7 +156,7 @@ Results are a one-line summary followed by compact JSON (empty fields left out).
 | `get_insurance_policy`       | read        | One policy in full, by id, title or policy number: insurer, term, deductible, assistance line, covered assets, attached files                              |
 | `list_asset_notes`           | read        | The issues noted on an asset to mention at its next appointment (open, resolved or all)                                                                    |
 | `list_costs`                 | read        | Cost entries (repairs, utilities, purchases, mortgage ...); filter by year, category, asset, room, payer, text; paged                                      |
-| `cost_summary`               | read        | A year's costs: total, per category and month, top assets, tax classes, and who owes whom                                                                  |
+| `cost_summary`               | read        | A year's costs, also of one asset: total, per category and month, top assets, tax classes, and who owes whom                                               |
 | `create_defect`              | write       | Report a defect (room, asset and responsible contact by name)                                                                                              |
 | `set_defect_status`          | write       | Move a defect to reported, in progress, fixed, rejected or back to open, with a note                                                                       |
 | `adjust_stock`               | write       | Book a stock movement for a part: used, bought or a correction                                                                                             |
@@ -172,6 +173,13 @@ Results are a one-line summary followed by compact JSON (empty fields left out).
 | `sync_finance`               | costs:write | Sync your finance connection now and report what changed                                                                                                   |
 | `get_vehicle`                | read        | A vehicle by id, name or plate: details, the latest odometer reading and its date, and its open tasks with their due state                                 |
 | `record_odometer`            | write       | Record a vehicle's odometer (value, optional date and note); a lower value than before is refused unless `force`; lists the tasks that now need attention  |
+| `list_fuel_logs`             | read        | A vehicle's fuel log, newest first: quantity, amount, price per unit and, on a full fill, the distance and consumption per 100; filter by year; paged      |
+| `get_vehicle_stats`          | read        | A vehicle in numbers for a year or all time: distance, costs by category and per distance unit, consumption, price trend, mounted tires, next tasks        |
+| `list_tire_sets`             | read        | A vehicle's tire sets: season, size, DOT age, tread depth with a warning below the limit of the season, storage, distance driven, which one is mounted     |
+| `add_fuel_log`               | costs:write | Log a fill-up or charge (odometer, quantity, amount, full or partial); records the odometer and books a cost entry of the category fuel                    |
+| `add_tire_set`               | write       | Add a set of tires to a vehicle (season, brand, model, size, DOT code, tread depth, storage); it is not mounted yet                                        |
+| `mount_tire_set`             | write       | Mount a set (by id or words like `winter`), taking the mounted one off, with optional date and odometer; repeating it changes nothing                      |
+| `record_tire_tread`          | write       | Record a tread depth in mm for a set (the mounted one by default); says when it is below the limit of the season                                           |
 | `create_page`                | docs:write  | New documentation page (needs `docs:write`)                                                                                                                |
 | `update_page`                | docs:write  | Edit a page; needs the `rev` from `get_page`, a concurrent edit is reported, not overwritten                                                               |
 
@@ -179,7 +187,7 @@ Rooms, assets and people can be given by name (`asset: "Dishwasher"`, `assignee:
 instead of an id, and so can contacts and parts; a vehicle can also be given by its plate (`asset: "ZH 123456"`, spaces and dashes do not matter). An ambiguous name is reported with the candidates. Tools are annotated with the
 MCP `readOnlyHint`, `destructiveHint` and `idempotentHint`: only `undo_completion`,
 `unlink_document` and `dismiss_finance_suggestion` (which cannot be undone) are marked destructive, and only those
-three, the `update_*`, `set_defect_status`, `snooze_task`, `resolve_asset_note`, `sync_finance` and the read tools are idempotent.
+three, the `update_*`, `set_defect_status`, `snooze_task`, `resolve_asset_note`, `mount_tire_set`, `sync_finance` and the read tools are idempotent.
 Nothing here deletes data except a document link (never the document); files can be listed by name but not uploaded or downloaded. The finance inbox tools
 only ever see the token user's own suggestions (the inbox is private to each person) and need a Kept
 connection of that person; `accept_finance_suggestion` takes the same overrides as the REST endpoint, for the kind
@@ -190,6 +198,12 @@ connects theirs under Settings, Integrations): without a connection they answer 
 document your account cannot see, and another person's private documents never appear. Linking to a
 documentation page needs `docs:write` in addition. The files themselves are not transferred, and sending
 a file to the document system is not offered.
+
+The vehicle tools take a vehicle by id, name or plate. `add_fuel_log` books money, so like `create_cost` it needs
+`costs:write`: one call records the odometer reading and a cost entry of the category `fuel` (none for a free charge),
+and the consumption per 100 is worked out between two full fills. `mount_tire_set` and `record_tire_tread` take a tire
+set by id or by words from its season, brand, model or size (`winter`) and list the candidates when more than one
+fits. Completing a tire-change task does not mount a set; ask for both.
 
 ## Adding a tool
 
