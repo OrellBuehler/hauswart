@@ -34,6 +34,7 @@
           name="pin"
           type="password"
           inputmode="numeric"
+          enterkeyhint="go"
           pattern="[0-9]*"
           minlength={4}
           maxlength={8}
@@ -41,7 +42,9 @@
           required
         />
       </div>
-      <Button type="submit">{m.guest_pin_submit({}, { locale })}</Button>
+      <Button type="submit" size="lg">
+        {m.guest_pin_submit({}, { locale })}
+      </Button>
     </form>
   </Card.Content>
 </Card.Root>
