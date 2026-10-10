@@ -28,3 +28,6 @@ project.inlang/README.md
 
 # coverage output
 coverage/
+
+# Browser automation snapshots (may capture tokens shown on screen)
+.playwright-mcp/
