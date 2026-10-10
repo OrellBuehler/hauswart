@@ -135,7 +135,7 @@ src/lib/server/share/            guest links: tokens.ts, guest-links.ts (CRUD, w
 src/lib/server/emergency/        emergency page data (members) and the "Notfall- & Vertretungsblatt" PDF
 src/lib/server/vehicles/         vehicle details (`vehicle_details`), odometer readings and the signal they feed: odometer.ts
                                  (`writeOdometer` sync, `recordOdometer` async), signal.ts (readings -> signal + samples),
-                                 summary.ts (plate + newest reading on assets), events.ts (completions), vehicles.ts, tires.ts, fuel-logs.ts (see "Vehicles")
+                                 summary.ts (plate + newest reading on assets), events.ts (completions), vehicles.ts, tires.ts, fuel-logs.ts, stats.ts (see "Vehicles")
 src/lib/vehicles/                client-safe: odometer.ts (`odometer:<asset id>` key helpers), templates.ts (task bodies for a vehicle)
 src/lib/server/pdf/render.ts     shared pdfmake wrapper (A4, Roboto from node_modules, no network or file access)
 src/lib/pwa/                     client-safe PWA parts: colors.ts (theme colours, tested against app.css), manifest.ts, options.ts
@@ -645,6 +645,15 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   starts the chain again, litres and kWh are separate chains; the DTO carries `pricePerUnitMinor` (a rate in minor
   units, not an amount), and on a closing fill `distance`, `consumptionPer100` and `costPerDistanceMinor` (unknown when an
   amount in the stretch is in another currency), worked out from the whole log whatever page is asked for.
+- **Statistics** (`GET /assets/{id}/vehicle/stats?year=`, all time without a year; `vehicles/stats.ts`, distance maths in
+  `lib/vehicles/stats.ts`): `distance` and `distanceByMonth` from the odometer readings (a stretch between two readings
+  counts evenly for the days after the first up to the second, so a mid-month reading splits the stretch; nothing before
+  the first or after the last reading; a reading lower than the one before adds nothing), `costs` (the vehicle's cost
+  entries that count as an expense, household currency only, by category, `otherCurrencyCount` for the rest),
+  `costPerDistanceMinor`, `consumption` per unit (average weighted by distance and the last ten, over the stretches closed
+  in the period), `priceTrend` (last 24 fills), the mounted `tireSet` and `nextTasks` (at most five, from
+  `getUpcomingTasks(ctx, {assetId})`, the dashboard's selector). `GET /costs/summary` takes `assetId` too: everything in
+  it is then that asset's alone.
 - **Task templates** (`lib/vehicles/templates.ts`, pure, titles are Paraglide messages in the given
   locale): winter and summer tires (yearly calendar, October/April 15th, `earlyDays` 14, preparation
   "Garagentermin buchen" 28 days ahead), service (`counter_delta` on the odometer, 15000 km / 10000 mi,

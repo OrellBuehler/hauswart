@@ -1,4 +1,4 @@
-import { eq, isNull } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import {
   buildUpcoming,
@@ -67,15 +67,22 @@ export interface DashboardRecord {
   recentCompletions: CompletionRecord[];
 }
 
+export interface UpcomingTasksRecord {
+  today: string;
+  counts: DashboardRecord["counts"];
+  upcoming: DashboardRecord["upcoming"];
+  preparations: DashboardPreparationRecord[];
+}
+
 /**
- * Everything the start page shows, from the cached verdicts: what is overdue,
- * due today, this week and later (60 days), signal-based tasks, preparations
- * that have become relevant, and the last completions. Defects, warranties
- * and parts to order are added by the dashboard handler from their own services.
+ * What is overdue, due today, this week and later (60 days), the signal-based tasks and the
+ * preparations that have become relevant, from the cached verdicts; limited to the tasks of one
+ * asset when asked to.
  */
-export async function getDashboard(
+export async function getUpcomingTasks(
   ctx: ServiceContext,
-): Promise<DashboardRecord> {
+  filter: { assetId?: string } = {},
+): Promise<UpcomingTasksRecord> {
   const { today } = clockAt(ctx.now);
   const assetRoom = alias(rooms, "asset_room");
   const rows = ctx.db
@@ -93,7 +100,12 @@ export async function getDashboard(
     .leftJoin(assets, eq(assets.id, tasks.assetId))
     .leftJoin(rooms, eq(rooms.id, tasks.roomId))
     .leftJoin(assetRoom, eq(assetRoom.id, assets.roomId))
-    .where(isNull(tasks.archivedAt))
+    .where(
+      and(
+        isNull(tasks.archivedAt),
+        filter.assetId ? eq(tasks.assetId, filter.assetId) : undefined,
+      ),
+    )
     .all();
 
   const people = new Map(
@@ -175,7 +187,6 @@ export async function getDashboard(
 
   return {
     today,
-    generatedAt: new Date(ctx.now),
     counts: {
       overdue: upcoming.overdue.length,
       today: upcoming.today.length,
@@ -190,6 +201,21 @@ export async function getDashboard(
       signalBased: upcoming.signalBased.map(enrich),
     },
     preparations,
+  };
+}
+
+/**
+ * Everything the start page shows, from the cached verdicts: what is overdue,
+ * due today, this week and later (60 days), signal-based tasks, preparations
+ * that have become relevant, and the last completions. Defects, warranties
+ * and parts to order are added by the dashboard handler from their own services.
+ */
+export async function getDashboard(
+  ctx: ServiceContext,
+): Promise<DashboardRecord> {
+  return {
+    ...(await getUpcomingTasks(ctx)),
+    generatedAt: new Date(ctx.now),
     recentCompletions: recentCompletions(ctx, DASHBOARD_RECENT_COMPLETIONS),
   };
 }

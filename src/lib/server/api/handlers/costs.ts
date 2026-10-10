@@ -86,7 +86,10 @@ export const remove: Handler<typeof endpoints.costsDelete> = ({
 export const summary: Handler<typeof endpoints.costsSummary> = ({
   ctx,
   query,
-}) => costsSummary(ctx, query.year ?? yearOf(ctx.today));
+}) =>
+  costsSummary(ctx, query.year ?? yearOf(ctx.today), {
+    assetId: query.assetId,
+  });
 
 export const exportCsv: Handler<typeof endpoints.costsExport> = ({
   ctx,

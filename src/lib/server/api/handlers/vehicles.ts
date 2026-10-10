@@ -4,9 +4,10 @@ import {
   listReadings,
   recordOdometer,
 } from "$lib/server/vehicles/odometer";
+import { vehicleStats } from "$lib/server/vehicles/stats";
 import { getVehicle, putVehicle } from "$lib/server/vehicles/vehicles";
 import type { Handler } from "../bind";
-import { wireOdometerReading, wireVehicle } from "../wire";
+import { wireOdometerReading, wireTireSet, wireVehicle } from "../wire";
 
 export const get: Handler<typeof endpoints.vehiclesGet> = ({ ctx, params }) =>
   wireVehicle(getVehicle(ctx, params.id));
@@ -49,4 +50,17 @@ export const removeOdometerReading: Handler<
 > = async ({ ctx, params }) => {
   await deleteOdometerReading(ctx, params.id);
   return null;
+};
+
+export const stats: Handler<typeof endpoints.vehicleStats> = async ({
+  ctx,
+  params,
+  query,
+}) => {
+  const { today, tireSet, ...rest } = await vehicleStats(
+    ctx,
+    params.id,
+    query.year,
+  );
+  return { ...rest, tireSet: tireSet ? wireTireSet(tireSet, today) : null };
 };
