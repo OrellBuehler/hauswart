@@ -57,6 +57,8 @@ import {
   TASK_CATEGORIES,
   TASK_PRIORITIES,
   TASK_SOURCES,
+  TIRE_EVENT_KINDS,
+  TIRE_SEASONS,
   TOKEN_KINDS,
   USER_LOCALES,
   USER_ROLES,
@@ -290,6 +292,64 @@ export const odometerReadings = sqliteTable(
       .on(t.source, t.sourceId)
       .where(sql`${t.sourceId} is not null`),
   ],
+);
+
+/**
+ * A set of tires of a vehicle. At most one set of a vehicle is mounted (the partial unique index);
+ * sets are mounted through the mount endpoint, which writes the events below. Photos are attachments
+ * of the owner type `tire_set`.
+ */
+export const tireSets = sqliteTable(
+  "tire_sets",
+  {
+    id: id(),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    season: text("season", { enum: TIRE_SEASONS }).notNull(),
+    brand: text("brand"),
+    model: text("model"),
+    /** For example "205/55 R16 91H". */
+    size: text("size"),
+    /** The DOT date code, week and year: "2423" is week 24 of 2023. */
+    dot: text("dot"),
+    treadDepthMm: real("tread_depth_mm"),
+    treadMeasuredOn: text("tread_measured_on"),
+    storageLocation: text("storage_location"),
+    /** A tire hotel, for example. */
+    storageContactId: text("storage_contact_id").references(() => contacts.id, {
+      onDelete: "set null",
+    }),
+    mounted: integer("mounted", { mode: "boolean" }).notNull().default(false),
+    purchasedOn: text("purchased_on"),
+    retiredAt: integer("retired_at", { mode: "timestamp_ms" }),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (t) => [
+    index("tire_sets_asset_idx").on(t.assetId),
+    index("tire_sets_storage_contact_idx").on(t.storageContactId),
+    uniqueIndex("tire_sets_mounted_idx")
+      .on(t.assetId)
+      .where(sql`${t.mounted} = 1`),
+  ],
+);
+
+/** What happened to a tire set: mounted, taken off, measured. The mount and unmount events give the distance driven on it. */
+export const tireSetEvents = sqliteTable(
+  "tire_set_events",
+  {
+    id: id(),
+    tireSetId: text("tire_set_id")
+      .notNull()
+      .references(() => tireSets.id, { onDelete: "cascade" }),
+    date: text("date").notNull(),
+    kind: text("kind", { enum: TIRE_EVENT_KINDS }).notNull(),
+    odometer: real("odometer"),
+    treadDepthMm: real("tread_depth_mm"),
+    ...timestamps,
+  },
+  (t) => [index("tire_set_events_set_idx").on(t.tireSetId, t.date)],
 );
 
 export const tasks = sqliteTable(

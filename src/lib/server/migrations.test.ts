@@ -99,6 +99,8 @@ describe("migrations", () => {
         "insurance_policies",
         "insurance_policy_assets",
         "asset_notes",
+        "tire_sets",
+        "tire_set_events",
       ]),
     );
     expect(

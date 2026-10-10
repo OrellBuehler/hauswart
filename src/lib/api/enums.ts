@@ -217,6 +217,7 @@ export const ATTACHMENT_OWNER_TYPES = [
   "cost",
   "insurance_policy",
   "asset_note",
+  "tire_set",
 ] as const;
 export type AttachmentOwnerType = (typeof ATTACHMENT_OWNER_TYPES)[number];
 
