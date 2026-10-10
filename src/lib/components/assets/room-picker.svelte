@@ -35,7 +35,7 @@
     () => value ?? NONE, (next) => (value = next === NONE ? null : next)
   }
 >
-  <Select.Trigger {id} class={cn("w-full", className)}>
+  <Select.Trigger {id} class={cn("w-full data-[size=default]:h-10", className)}>
     <span class="flex min-w-0 items-center gap-2">
       {#if SelectedIcon}
         <SelectedIcon class="text-muted-foreground" aria-hidden="true" />
@@ -44,10 +44,10 @@
     </span>
   </Select.Trigger>
   <Select.Content>
-    <Select.Item value={NONE} label={noneLabel} />
+    <Select.Item value={NONE} label={noneLabel} class="min-h-10" />
     {#each rooms as room (room.id)}
       {@const Icon = roomIconFor(room.icon)}
-      <Select.Item value={room.id} label={room.name}>
+      <Select.Item value={room.id} label={room.name} class="min-h-10">
         <Icon class="text-muted-foreground" aria-hidden="true" />
         {room.name}
       </Select.Item>

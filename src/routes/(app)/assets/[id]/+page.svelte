@@ -32,6 +32,7 @@
   import LinkedDocsCard from "$lib/components/docs/linked-docs-card.svelte";
   import Comments from "$lib/components/comments/comments.svelte";
   import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
+  import HintCallout from "$lib/components/hints/hint-callout.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
@@ -50,6 +51,7 @@
   const asset = $derived(data.asset);
   const canWriteDocs = $derived(data.scopes.includes("docs:write"));
   const isPlant = $derived(asset.kind === "plant");
+  const pinnedHints = $derived(data.hints.filter((hint) => hint.pinned));
   const warranty = $derived(warrantyStatus(asset, data.today));
   const backHref = $derived(
     isPlant ? resolve("/plants") : resolve("/inventory"),
@@ -208,6 +210,22 @@
       </div>
     </header>
   </div>
+
+  {#if pinnedHints.length > 0}
+    <section
+      class="flex flex-col gap-3 print:hidden"
+      aria-labelledby="asset-pinned-hints"
+    >
+      <h2 id="asset-pinned-hints" class="text-sm font-semibold">
+        {m.qr_hints_title()}
+      </h2>
+      <ul class="flex flex-col gap-3">
+        {#each pinnedHints as hint (hint.id)}
+          <HintCallout {hint} prominent />
+        {/each}
+      </ul>
+    </section>
+  {/if}
 
   <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-3 print:block">
     <div class="flex min-w-0 flex-col gap-6 lg:col-span-2 print:hidden">

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CameraIcon from "@lucide/svelte/icons/camera";
   import CornerDownLeftIcon from "@lucide/svelte/icons/corner-down-left";
   import DownloadIcon from "@lucide/svelte/icons/download";
   import EllipsisVerticalIcon from "@lucide/svelte/icons/ellipsis-vertical";
@@ -17,6 +18,7 @@
   import UploadIcon from "@lucide/svelte/icons/upload";
   import XIcon from "@lucide/svelte/icons/x";
   import { untrack } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
   import { toast } from "svelte-sonner";
   import type { AttachmentOwnerType } from "$lib/api/enums";
   import type { Attachment } from "$lib/api/schemas/attachments";
@@ -126,12 +128,19 @@
   const provider = $derived(system.provider);
   const canPush = $derived(editable && Boolean(provider) && linkableOwner);
 
+  /** On a touch screen the add button offers the camera as well as the file picker. */
+  const touch = new MediaQuery("pointer: coarse");
+  const canTakePhoto = $derived(
+    accept.split(",").some((type) => type.trim().startsWith("image/")),
+  );
+
   const compact = $derived(variant === "compact");
   const guestOwner = $derived(GUEST_OWNERS.includes(ownerType));
   const images = $derived(list.items.filter(isImage));
   const files = $derived(list.items.filter((a) => !isImage(a)));
 
   let input = $state<HTMLInputElement | null>(null);
+  let cameraInput = $state<HTMLInputElement | null>(null);
   let dragging = $state(false);
   let dragDepth = 0;
   let lightbox = $state<number | null>(null);
@@ -360,19 +369,44 @@
   </DropdownMenu.Root>
 {/snippet}
 
-{#snippet uploadButton()}
-  <Button
-    type="button"
-    size="sm"
-    variant="outline"
-    onclick={() => input?.click()}
-  >
+{#snippet addButton(size: "sm" | "default", variant: "outline" | "default")}
+  {#snippet label()}
     {#if compact}
       <ImagePlusIcon />{m.attach_add_compact()}
     {:else}
       <UploadIcon />{m.attach_add()}
     {/if}
-  </Button>
+  {/snippet}
+  {#if touch.current && canTakePhoto}
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger>
+        {#snippet child({ props })}
+          <Button {...props} type="button" {size} {variant}>
+            {@render label()}
+          </Button>
+        {/snippet}
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content align={compact ? "start" : "end"} class="min-w-48">
+        <DropdownMenu.Item
+          class="min-h-11"
+          onSelect={() => cameraInput?.click()}
+        >
+          <CameraIcon />{m.attach_take_photo()}
+        </DropdownMenu.Item>
+        <DropdownMenu.Item class="min-h-11" onSelect={() => input?.click()}>
+          <FileUpIcon />{m.attach_choose_file()}
+        </DropdownMenu.Item>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+  {:else}
+    <Button type="button" {size} {variant} onclick={() => input?.click()}>
+      {@render label()}
+    </Button>
+  {/if}
+{/snippet}
+
+{#snippet uploadButton()}
+  {@render addButton("sm", "outline")}
 {/snippet}
 
 {#snippet body()}
@@ -399,7 +433,7 @@
       >
         {#each [0, 1, 2].slice(0, compact ? 2 : 3) as n (n)}
           <Skeleton
-            class={compact ? "size-16 rounded-lg" : "aspect-square rounded-lg"}
+            class={compact ? "size-20 rounded-lg" : "aspect-square rounded-lg"}
           />
         {/each}
       </div>
@@ -504,9 +538,7 @@
           >
             {#snippet actions()}
               {#if editable}
-                <Button onclick={() => input?.click()}>
-                  <UploadIcon />{m.attach_add()}
-                </Button>
+                {@render addButton("default", "default")}
               {/if}
             {/snippet}
           </EmptyState>
@@ -526,7 +558,7 @@
             <li
               class={cn(
                 "bg-muted group relative overflow-hidden rounded-lg border",
-                compact ? "size-16" : "aspect-square",
+                compact ? "size-20" : "aspect-square",
               )}
             >
               <button
@@ -546,45 +578,53 @@
                 />
               </button>
               {#if !compact}
-                {#if attachment.caption}
+                {#if attachment.caption || primaryId === attachment.id || attachment.guestVisible}
                   <div
-                    class="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 pt-8"
+                    class={cn(
+                      "pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-start gap-1.5 p-1.5",
+                      attachment.caption &&
+                        "bg-gradient-to-t from-black/70 to-transparent pt-8",
+                    )}
                   >
-                    <span
-                      class="line-clamp-2 text-xs text-pretty break-words text-white"
-                    >
-                      {attachment.caption}
-                    </span>
+                    {#if attachment.caption}
+                      <span
+                        class="line-clamp-2 px-0.5 text-xs text-pretty break-words text-white"
+                      >
+                        {attachment.caption}
+                      </span>
+                    {/if}
+                    {#if primaryId === attachment.id || attachment.guestVisible}
+                      <div class="flex flex-wrap gap-1">
+                        {#if primaryId === attachment.id}
+                          <Badge
+                            class="bg-brand text-brand-foreground gap-1 shadow-sm"
+                          >
+                            <StarIcon
+                              class="fill-current"
+                              aria-hidden="true"
+                            />{m.attach_primary_badge()}
+                          </Badge>
+                        {/if}
+                        {#if attachment.guestVisible}
+                          <Badge
+                            variant="secondary"
+                            class="bg-background/85 gap-1 shadow-sm backdrop-blur-sm"
+                          >
+                            <EyeIcon
+                              aria-hidden="true"
+                            />{m.attach_guest_badge()}
+                          </Badge>
+                        {/if}
+                      </div>
+                    {/if}
                   </div>
                 {/if}
-                <div
-                  class="pointer-events-none absolute start-1.5 top-1.5 flex flex-col items-start gap-1"
-                >
-                  {#if primaryId === attachment.id}
-                    <Badge
-                      class="bg-brand text-brand-foreground gap-1 shadow-sm"
-                    >
-                      <StarIcon
-                        class="fill-current"
-                        aria-hidden="true"
-                      />{m.attach_primary_badge()}
-                    </Badge>
-                  {/if}
-                  {#if attachment.guestVisible}
-                    <Badge
-                      variant="secondary"
-                      class="bg-background/85 gap-1 shadow-sm backdrop-blur-sm"
-                    >
-                      <EyeIcon aria-hidden="true" />{m.attach_guest_badge()}
-                    </Badge>
-                  {/if}
-                </div>
                 <div class="absolute end-1.5 top-1.5">
                   {@render menu(attachment, true)}
                 </div>
               {:else}
                 <div
-                  class="absolute end-0.5 top-0.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 max-sm:opacity-100"
+                  class="absolute end-0.5 top-0.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"
                 >
                   {@render menu(attachment, true)}
                 </div>
@@ -704,6 +744,18 @@
   aria-hidden="true"
   onchange={onpick}
 />
+{#if canTakePhoto}
+  <input
+    bind:this={cameraInput}
+    type="file"
+    accept="image/*"
+    capture="environment"
+    class="sr-only"
+    tabindex="-1"
+    aria-hidden="true"
+    onchange={onpick}
+  />
+{/if}
 
 <AttachmentLightbox {images} bind:index={lightbox} />
 

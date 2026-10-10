@@ -20,6 +20,7 @@
   import { Textarea } from "$lib/components/ui/textarea/index.js";
   import { apiErrorMessage } from "$lib/error-message";
   import { m } from "$lib/paraglide/messages";
+  import { cn } from "$lib/utils";
   import OptionSelect from "./option-select.svelte";
   import RoomPicker from "./room-picker.svelte";
 
@@ -190,6 +191,7 @@
       <div class="flex flex-col gap-2 sm:col-span-2">
         <Label for="asset-name">{m.asset_name()}</Label>
         <Input
+          class="h-10"
           id="asset-name"
           autocomplete="off"
           required
@@ -201,6 +203,7 @@
         <Label for="asset-kind">{m.asset_kind()}</Label>
         <OptionSelect
           id="asset-kind"
+          class="data-[size=default]:h-10"
           options={kindOptions}
           bind:value={
             () => kind,
@@ -228,6 +231,7 @@
             >
           </Label>
           <Input
+            class="h-10"
             id="asset-category"
             autocomplete="off"
             maxlength={64}
@@ -248,6 +252,7 @@
         <div class="flex flex-col gap-2">
           <Label for="asset-species">{m.asset_species()}</Label>
           <Input
+            class="h-10"
             id="asset-species"
             autocomplete="off"
             maxlength={120}
@@ -257,6 +262,7 @@
         <div class="flex flex-col gap-2">
           <Label for="asset-light">{m.asset_light()}</Label>
           <Input
+            class="h-10"
             id="asset-light"
             autocomplete="off"
             maxlength={120}
@@ -294,6 +300,7 @@
               <div class="flex flex-col gap-2">
                 <Label for="plan-every">{m.asset_form_plan_every()}</Label>
                 <Input
+                  class="h-10"
                   id="plan-every"
                   type="number"
                   inputmode="numeric"
@@ -310,7 +317,11 @@
               </div>
               <div class="flex flex-col gap-2 sm:justify-end">
                 <div class="flex items-center gap-2 sm:h-9">
-                  <Checkbox id="plan-seasonal" bind:checked={seasonal} />
+                  <Checkbox
+                    id="plan-seasonal"
+                    class="size-5"
+                    bind:checked={seasonal}
+                  />
                   <Label for="plan-seasonal" class="font-normal">
                     {m.asset_form_plan_seasonal()}
                   </Label>
@@ -320,6 +331,7 @@
                 <div class="flex flex-col gap-2">
                   <Label for="plan-summer">{m.asset_form_plan_summer()}</Label>
                   <Input
+                    class="h-10"
                     id="plan-summer"
                     type="number"
                     inputmode="numeric"
@@ -347,6 +359,7 @@
         <div class="flex flex-col gap-2">
           <Label for="asset-manufacturer">{m.asset_manufacturer()}</Label>
           <Input
+            class="h-10"
             id="asset-manufacturer"
             autocomplete="off"
             maxlength={120}
@@ -356,6 +369,7 @@
         <div class="flex flex-col gap-2">
           <Label for="asset-model">{m.asset_model()}</Label>
           <Input
+            class="h-10"
             id="asset-model"
             autocomplete="off"
             maxlength={120}
@@ -365,6 +379,7 @@
         <div class="flex flex-col gap-2 sm:col-span-2">
           <Label for="asset-serial">{m.asset_serial()}</Label>
           <Input
+            class="h-10"
             id="asset-serial"
             autocomplete="off"
             autocapitalize="characters"
@@ -383,19 +398,35 @@
       <Card.Content class="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div class="flex flex-col gap-2">
           <Label for="asset-purchase">{m.asset_purchase_date()}</Label>
-          <Input id="asset-purchase" type="date" bind:value={purchaseDate} />
+          <Input
+            class="h-10"
+            id="asset-purchase"
+            type="date"
+            bind:value={purchaseDate}
+          />
         </div>
         <div class="flex flex-col gap-2">
           <Label for="asset-installed">{m.asset_installed_date()}</Label>
-          <Input id="asset-installed" type="date" bind:value={installedDate} />
+          <Input
+            class="h-10"
+            id="asset-installed"
+            type="date"
+            bind:value={installedDate}
+          />
         </div>
         <div class="flex flex-col gap-2">
           <Label for="asset-warranty">{m.asset_warranty_until()}</Label>
-          <Input id="asset-warranty" type="date" bind:value={warrantyUntil} />
+          <Input
+            class="h-10"
+            id="asset-warranty"
+            type="date"
+            bind:value={warrantyUntil}
+          />
         </div>
         <div class="flex flex-col gap-2">
           <Label for="asset-warranty-ext">{m.asset_warranty_extended()}</Label>
           <Input
+            class="h-10"
             id="asset-warranty-ext"
             type="date"
             bind:value={warrantyExtendedUntil}
@@ -456,24 +487,36 @@
     </Card.Content>
   </Card.Root>
 
-  <FormAlert message={error} />
-
-  <div class="flex flex-wrap justify-end gap-2">
-    <Button
-      href={backHref}
-      variant="outline"
-      class={pending ? "pointer-events-none opacity-50" : ""}
-    >
-      {m.common_cancel()}
-    </Button>
-    <Button type="submit" disabled={pending}>
-      {#if pending}
-        <LoaderCircleIcon class="animate-spin" />{m.common_saving()}
-      {:else if editing}
-        {m.common_save()}
-      {:else}
-        {m.common_create()}
-      {/if}
-    </Button>
+  <div
+    class="bg-background/90 sticky bottom-0 z-10 -mx-4 flex flex-col gap-3 border-t px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:-mx-8 md:px-8"
+  >
+    <FormAlert message={error} />
+    <div class="flex justify-end gap-2">
+      <Button
+        href={backHref}
+        variant="outline"
+        size="lg"
+        class={cn(
+          "flex-1 sm:flex-none",
+          pending && "pointer-events-none opacity-50",
+        )}
+      >
+        {m.common_cancel()}
+      </Button>
+      <Button
+        type="submit"
+        size="lg"
+        class="flex-1 sm:flex-none"
+        disabled={pending}
+      >
+        {#if pending}
+          <LoaderCircleIcon class="animate-spin" />{m.common_saving()}
+        {:else if editing}
+          {m.common_save()}
+        {:else}
+          {m.common_create()}
+        {/if}
+      </Button>
+    </div>
   </div>
 </form>

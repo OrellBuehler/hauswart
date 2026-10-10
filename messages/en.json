@@ -1469,6 +1469,8 @@
   "attach_title": "Photos & documents",
   "attach_add": "Upload",
   "attach_add_compact": "Add photo",
+  "attach_take_photo": "Take photo",
+  "attach_choose_file": "Choose file",
   "attach_images": "Images",
   "attach_documents": "Documents",
   "attach_uploads": "Uploads in progress",
