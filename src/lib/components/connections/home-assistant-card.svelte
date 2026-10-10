@@ -370,7 +370,7 @@
                   id="ha-token"
                   type="password"
                   class="h-10 font-mono"
-                  autocomplete="off"
+                  autocomplete="new-password"
                   autocapitalize="none"
                   spellcheck={false}
                   data-1p-ignore
