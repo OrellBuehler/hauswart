@@ -58,6 +58,7 @@ describe("openapi document", () => {
       "ApiToken",
       "Asset",
       "AssetContact",
+      "AssetNote",
       "AssetPart",
       "AssetSuggestion",
       "Attachment",

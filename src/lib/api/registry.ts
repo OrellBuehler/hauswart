@@ -279,6 +279,14 @@ import {
   listInsurancePoliciesResponseSchema,
   updateInsurancePolicyRequestSchema,
 } from "./schemas/insurance";
+import {
+  assetNoteSchema,
+  assetNoteToDefectResponseSchema,
+  createAssetNoteRequestSchema,
+  listAssetNotesQuerySchema,
+  listAssetNotesResponseSchema,
+  updateAssetNoteRequestSchema,
+} from "./schemas/asset-notes";
 
 const DOCUMENT_CONTENT_TYPES = [
   "application/pdf",
@@ -2132,6 +2140,86 @@ export const endpoints = {
     query: assetInsurancePoliciesQuerySchema,
     response: listInsurancePoliciesResponseSchema,
     errors: ["not_found"],
+  }),
+
+  assetNotesList: defineEndpoint({
+    id: "assetNotesList",
+    method: "GET",
+    path: "/api/v1/assets/{id}/notes",
+    summary: "Notes on an asset for the next appointment",
+    description:
+      'Small issues to mention at the next service appointment ("brakes squeak"), newest first. status: open (default), resolved or all.',
+    tags: ["asset-notes", "assets"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    query: listAssetNotesQuerySchema,
+    response: listAssetNotesResponseSchema,
+    errors: ["not_found"],
+  }),
+
+  assetNotesCreate: defineEndpoint({
+    id: "assetNotesCreate",
+    method: "POST",
+    path: "/api/v1/assets/{id}/notes",
+    summary: "Add a note to an asset",
+    description:
+      "A photo of the issue is an attachment of the owner type asset_note.",
+    tags: ["asset-notes", "assets"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: createAssetNoteRequestSchema,
+    response: assetNoteSchema,
+    status: 201,
+    errors: ["not_found"],
+  }),
+
+  assetNotesUpdate: defineEndpoint({
+    id: "assetNotesUpdate",
+    method: "PATCH",
+    path: "/api/v1/asset-notes/{id}",
+    summary: "Change the text of a note, resolve or reopen it",
+    description:
+      "status resolved records who resolved it and when; open reopens it and forgets the service log entry that had addressed it. A service log entry resolves notes itself (resolvedNoteIds).",
+    tags: ["asset-notes"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: updateAssetNoteRequestSchema,
+    response: assetNoteSchema,
+    errors: ["not_found"],
+  }),
+
+  assetNotesDelete: defineEndpoint({
+    id: "assetNotesDelete",
+    method: "DELETE",
+    path: "/api/v1/asset-notes/{id}",
+    summary: "Delete a note",
+    description: "Its attachments go with it. Resolve a note to keep it.",
+    tags: ["asset-notes"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
+  assetNotesToDefect: defineEndpoint({
+    id: "assetNotesToDefect",
+    method: "POST",
+    path: "/api/v1/asset-notes/{id}/to-defect",
+    summary: "Turn a note into a defect",
+    description:
+      "Creates a defect on the note's asset (title from the first line, description the whole text, discovered the day the note was written, no deadline) and marks the note resolved with a link to it, in one transaction. Answers with both. 409 when the note already is a defect.",
+    tags: ["asset-notes", "defects"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    response: assetNoteToDefectResponseSchema,
+    status: 201,
+    errors: ["not_found", "conflict"],
   }),
 
   warrantiesList: defineEndpoint({

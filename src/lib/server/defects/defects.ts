@@ -242,11 +242,15 @@ export function handoverDeadline(ctx: Db): string | null {
     : null;
 }
 
-export async function createDefect(
-  ctx: ServiceContext,
+/**
+ * Writes the defect and its "created" event in one transaction (a savepoint inside the caller's
+ * transaction, if it has one) and returns the id. No reminder task: `createDefect` adds that.
+ */
+export function insertDefect(
+  ctx: Pick<ServiceContext, "db" | "now">,
   input: CreateDefectRequest,
   createdBy: string | null,
-): Promise<DefectRecord> {
+): string {
   assertRefs(ctx, input);
   const handover =
     input.deadlineDate === undefined ? handoverDeadline(ctx) : null;
@@ -293,6 +297,15 @@ export async function createDefect(
       .run();
     return row.id;
   });
+  return id;
+}
+
+export async function createDefect(
+  ctx: ServiceContext,
+  input: CreateDefectRequest,
+  createdBy: string | null,
+): Promise<DefectRecord> {
+  const id = insertDefect(ctx, input, createdBy);
   await syncReminder(ctx, getDefect(ctx, id));
   return getDefect(ctx, id);
 }

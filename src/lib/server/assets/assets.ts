@@ -9,6 +9,7 @@ import type { VehicleSummary } from "$lib/api/schemas/vehicles";
 import { commentCountSql } from "$lib/server/comments/counts";
 import {
   assetHints,
+  assetNotes,
   assets,
   rooms,
   serviceLog,
@@ -290,9 +291,9 @@ export function updateAsset(
 }
 
 /**
- * Tasks that referenced the asset stay and lose the link. Its service log, hints, comments and
- * attachments go with it, including the attachments of the service log entries and hints (their
- * rows are removed by cascade, the attachments have no foreign key to follow).
+ * Tasks that referenced the asset stay and lose the link. Its service log, hints, notes, comments and
+ * attachments go with it, including the attachments of the service log entries, hints and notes
+ * (their rows are removed by cascade, the attachments have no foreign key to follow).
  */
 export function deleteAsset(ctx: Now, id: string): void {
   const entryIds = ctx.db
@@ -307,6 +308,12 @@ export function deleteAsset(ctx: Now, id: string): void {
     .where(eq(assetHints.assetId, id))
     .all()
     .map((row) => row.id);
+  const noteIds = ctx.db
+    .select({ id: assetNotes.id })
+    .from(assetNotes)
+    .where(eq(assetNotes.assetId, id))
+    .all()
+    .map((row) => row.id);
   const result = ctx.db
     .delete(assets)
     .where(eq(assets.id, id))
@@ -316,6 +323,9 @@ export function deleteAsset(ctx: Now, id: string): void {
   // The readings went with the asset; the signal the tasks read from them has no foreign key to follow.
   forgetOdometerSignal(ctx, id);
   removeOwnedAttachments(ctx, "asset", id);
+  for (const noteId of noteIds) {
+    removeOwnedAttachments(ctx, "asset_note", noteId);
+  }
   for (const entryId of entryIds) {
     removeOwnedAttachments(ctx, "service_log", entryId);
   }

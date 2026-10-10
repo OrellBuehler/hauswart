@@ -3,6 +3,7 @@ import type { SQLiteTable, AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 import type { AttachmentOwnerType } from "$lib/api/enums";
 import {
   assetHints,
+  assetNotes,
   contacts,
   costEntries,
   defects,
@@ -29,6 +30,7 @@ const DOMAIN_OWNERS: [AttachmentOwnerType, OwnerExists][] = [
   ["contact", existsIn(contacts)],
   ["cost", existsIn(costEntries)],
   ["insurance_policy", existsIn(insurancePolicies)],
+  ["asset_note", existsIn(assetNotes)],
 ];
 
 /** Makes the owner types of the domains on top of the core valid for uploads. Safe to call more than once. */

@@ -201,6 +201,7 @@ export const ATTACHMENT_OWNER_TYPES = [
   "contact",
   "cost",
   "insurance_policy",
+  "asset_note",
 ] as const;
 export type AttachmentOwnerType = (typeof ATTACHMENT_OWNER_TYPES)[number];
 
@@ -469,6 +470,8 @@ export type FinanceSuggestionStatus =
 /** `open`: to be mentioned at the next appointment. `resolved`: addressed, converted to a defect or dismissed. */
 export const ASSET_NOTE_STATUSES = ["open", "resolved"] as const;
 export type AssetNoteStatus = (typeof ASSET_NOTE_STATUSES)[number];
+/** What a list of notes can be asked for. */
+export const ASSET_NOTE_STATUS_FILTERS = ["open", "resolved", "all"] as const;
 
 export const INSURANCE_TYPES = [
   "motor_liability",
