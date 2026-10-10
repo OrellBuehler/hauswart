@@ -169,7 +169,7 @@
 {/snippet}
 
 <div class="flex flex-col gap-6">
-  <div>
+  <div class="max-md:hidden">
     <a
       href={resolve("/costs")}
       class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -ms-1 inline-flex min-h-10 items-center gap-1.5 rounded px-1 text-sm outline-none focus-visible:ring-[3px]"

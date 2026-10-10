@@ -57,7 +57,7 @@
       href={resolve("/contacts")}
       variant="ghost"
       size="sm"
-      class="text-muted-foreground -ms-2 w-fit"
+      class="text-muted-foreground -ms-2 w-fit max-md:hidden"
     >
       <ArrowLeftIcon />{m.nav_contacts()}
     </Button>
