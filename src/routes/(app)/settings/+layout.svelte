@@ -61,22 +61,58 @@
   const active = $derived(
     tabs.find((tab) => page.url.pathname.startsWith(tab.href))?.href,
   );
+
+  let list = $state<HTMLElement | null>(null);
+  let fade = $state<"none" | "start" | "end" | "both">("none");
+
+  function measure() {
+    if (!list) return;
+    const start = list.scrollLeft > 1;
+    const end = list.scrollLeft + list.clientWidth < list.scrollWidth - 1;
+    fade = start ? (end ? "both" : "start") : end ? "end" : "none";
+  }
+
+  $effect(() => {
+    if (!list) return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(list);
+    return () => observer.disconnect();
+  });
+
+  $effect(() => {
+    if (!list || !active) return;
+    const current = list.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!current) return;
+    const box = list.getBoundingClientRect();
+    const tab = current.getBoundingClientRect();
+    list.scrollLeft += tab.left - box.left - (box.width - tab.width) / 2;
+    measure();
+  });
 </script>
 
 <div class="flex flex-col gap-6">
-  <PageHeader
-    title={m.settings_title()}
-    description={m.settings_description()}
-  />
+  <div>
+    <PageHeader title={m.settings_title()} />
+    <p class="text-muted-foreground mt-1 hidden text-sm text-pretty sm:block">
+      {m.settings_description()}
+    </p>
+  </div>
   <Tabs.Root value={active} class="gap-6">
     <Tabs.List
+      bind:ref={list}
       aria-label={m.settings_tabs_label()}
-      class="h-auto w-full justify-start overflow-x-auto sm:w-fit"
+      data-fade={fade}
+      onscroll={measure}
+      class="h-auto w-full [scrollbar-width:none] justify-start overflow-x-auto data-[fade=both]:[mask-image:linear-gradient(to_right,transparent,#000_1.5rem,#000_calc(100%-1.5rem),transparent)] data-[fade=end]:[mask-image:linear-gradient(to_left,transparent,#000_1.5rem)] data-[fade=start]:[mask-image:linear-gradient(to_right,transparent,#000_1.5rem)] sm:w-fit sm:max-w-full [&::-webkit-scrollbar]:hidden"
     >
       {#each tabs as tab (tab.href)}
         <Tabs.Trigger value={tab.href} class="flex-none px-2.5 py-1.5">
           {#snippet child({ props })}
-            <a href={resolve(tab.href)} {...props}>
+            <a
+              href={resolve(tab.href)}
+              aria-current={active === tab.href ? "page" : undefined}
+              {...props}
+            >
               <tab.icon />
               {tab.label()}
             </a>
