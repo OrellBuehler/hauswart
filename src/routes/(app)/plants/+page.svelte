@@ -166,7 +166,7 @@
             {#if task}
               <DueBadge state={task.state} />
               <Button
-                size="sm"
+                size="lg"
                 disabled={watering !== null}
                 aria-label={m.plants_water_aria({ name: plant.name })}
                 onclick={() => water(plant.id, plant.name)}

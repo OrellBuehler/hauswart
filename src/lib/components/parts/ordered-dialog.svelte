@@ -59,6 +59,7 @@
   submitLabel={m.part_ordered_submit()}
   pendingLabel={m.common_saving()}
   onsubmit={submit}
+  class="grid-cols-[minmax(0,1fr)] wrap-anywhere"
 >
   <Field id="ordered-qty" label={m.part_ordered_qty()} error={qtyError}>
     {#snippet children({ describedby, invalid })}

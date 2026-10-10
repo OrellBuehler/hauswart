@@ -134,6 +134,7 @@
   submitLabel={editing ? m.common_save() : m.part_link_submit()}
   pendingLabel={m.common_saving()}
   onsubmit={submit}
+  class="grid-cols-[minmax(0,1fr)] wrap-anywhere"
 >
   {#if !editing}
     {#if loading}

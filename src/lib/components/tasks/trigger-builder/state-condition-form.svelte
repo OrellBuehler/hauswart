@@ -133,7 +133,7 @@
                 type="button"
                 variant="outline"
                 size="sm"
-                class="h-8 font-mono text-xs"
+                class="h-10 font-mono text-xs"
                 onclick={() => choose(chip)}
               >
                 {chip}

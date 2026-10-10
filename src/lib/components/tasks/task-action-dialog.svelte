@@ -47,6 +47,7 @@
     timeZone?: string | undefined;
   } = $props();
 
+  let contentEl = $state<HTMLElement | null>(null);
   let note = $state("");
   let date = $state("");
   let pending = $state(false);
@@ -112,6 +113,13 @@
         : m.task_snooze_submit(),
   );
 
+  /** On touch screens an autofocused field would raise the keyboard (or the date picker) over the form. */
+  function onOpenAutoFocus(event: Event) {
+    if (!window.matchMedia("(pointer: coarse)").matches) return;
+    event.preventDefault();
+    contentEl?.focus();
+  }
+
   async function submit(event: SubmitEvent) {
     event.preventDefault();
     if (pending) return;
@@ -172,123 +180,140 @@
 </script>
 
 <Dialog.Root bind:open={() => open, (value) => (open = pending ? true : value)}>
-  <Dialog.Content class="max-h-[calc(100svh-2rem)] overflow-y-auto">
-    <Dialog.Header>
+  <Dialog.Content
+    bind:ref={contentEl}
+    tabindex={-1}
+    class="max-h-[calc(100svh-2rem)] grid-cols-[minmax(0,1fr)] gap-0 overflow-y-auto p-0! wrap-anywhere outline-none"
+    {onOpenAutoFocus}
+  >
+    <Dialog.Header class="px-6 pt-6 pb-4">
       <Dialog.Title>{title}</Dialog.Title>
       <Dialog.Description>{description}</Dialog.Description>
     </Dialog.Header>
-    <form class="flex flex-col gap-5" onsubmit={submit}>
-      {#if mode === "snooze"}
-        <div class="flex flex-col gap-2">
-          <span class="text-sm font-medium" id="snooze-presets"
-            >{m.task_snooze_quick()}</span
-          >
-          <div
-            class="flex flex-wrap gap-2"
-            role="group"
-            aria-labelledby="snooze-presets"
-          >
-            {#each presets as preset (preset.label)}
-              <Button
-                type="button"
-                size="lg"
-                variant={date === preset.date ? "default" : "outline"}
-                aria-pressed={date === preset.date}
-                onclick={() => (date = preset.date)}
-              >
-                {preset.label}
-              </Button>
-            {/each}
-          </div>
-        </div>
-        <div class="flex flex-col gap-2">
-          <Label for="action-date">{m.task_snooze_until()}</Label>
-          <Input
-            id="action-date"
-            type="date"
-            required
-            min={tomorrow}
-            bind:value={date}
-            class="h-10"
-          />
-          {#if date && date >= tomorrow}
-            <p class="text-muted-foreground text-xs">
-              {formatDateShort(date, { today })}
-            </p>
-          {/if}
-        </div>
-      {:else}
-        {#if mode === "complete"}
+    <form class="flex flex-col" onsubmit={submit}>
+      <div class="flex flex-col gap-5 px-6 pb-6">
+        {#if mode === "snooze"}
           <div class="flex flex-col gap-2">
-            <Label for="action-date">{m.task_complete_date()}</Label>
+            <span class="text-sm font-medium" id="snooze-presets"
+              >{m.task_snooze_quick()}</span
+            >
+            <div
+              class="flex flex-wrap gap-2"
+              role="group"
+              aria-labelledby="snooze-presets"
+            >
+              {#each presets as preset (preset.label)}
+                <Button
+                  type="button"
+                  size="lg"
+                  variant={date === preset.date ? "default" : "outline"}
+                  aria-pressed={date === preset.date}
+                  onclick={() => (date = preset.date)}
+                >
+                  {preset.label}
+                </Button>
+              {/each}
+            </div>
+          </div>
+          <div class="flex flex-col gap-2">
+            <Label for="action-date">{m.task_snooze_until()}</Label>
             <Input
               id="action-date"
               type="date"
               required
-              max={today}
+              min={tomorrow}
               bind:value={date}
               class="h-10"
             />
-            <p class="text-muted-foreground text-xs">
-              {m.task_complete_date_hint()}
-            </p>
-          </div>
-        {/if}
-        <div class="flex flex-col gap-2">
-          <Label for="action-note">
-            {m.task_note()}
-            <span class="text-muted-foreground font-normal"
-              >({m.common_optional()})</span
-            >
-          </Label>
-          <Textarea
-            id="action-note"
-            rows={3}
-            maxlength={2000}
-            bind:value={note}
-          />
-        </div>
-        {#if mode === "complete" && task.assetId}
-          <div class="flex flex-col gap-4 rounded-lg border p-3">
-            <SwitchField
-              id="action-log"
-              bind:checked={logWork}
-              label={m.task_service_log_toggle()}
-              hint={m.task_service_log_hint()}
-            />
-            {#if logWork}
-              <ServiceLogFields
-                idPrefix="action-log"
-                bind:kind={logKind}
-                bind:title={logTitle}
-                bind:description={logDescription}
-                bind:contactId={logContactId}
-                bind:cost={logCost}
-                {currency}
-                errors={logErrors}
-              />
+            {#if date && date >= tomorrow}
+              <p class="text-muted-foreground text-xs">
+                {formatDateShort(date, { today })}
+              </p>
             {/if}
           </div>
-        {/if}
-      {/if}
-      <FormAlert message={error} />
-      <Dialog.Footer class="gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          disabled={pending}
-          onclick={() => (open = false)}
-        >
-          {m.common_cancel()}
-        </Button>
-        <Button type="submit" size="lg" disabled={pending}>
-          {#if pending}
-            <LoaderCircleIcon class="animate-spin" />
+        {:else}
+          {#if mode === "complete"}
+            <div class="flex flex-col gap-2">
+              <Label for="action-date">{m.task_complete_date()}</Label>
+              <Input
+                id="action-date"
+                type="date"
+                required
+                max={today}
+                bind:value={date}
+                class="h-10"
+              />
+              <p class="text-muted-foreground text-xs">
+                {m.task_complete_date_hint()}
+              </p>
+            </div>
           {/if}
-          {submitLabel}
-        </Button>
-      </Dialog.Footer>
+          <div class="flex flex-col gap-2">
+            <Label for="action-note">
+              {m.task_note()}
+              <span class="text-muted-foreground font-normal"
+                >({m.common_optional()})</span
+              >
+            </Label>
+            <Textarea
+              id="action-note"
+              rows={3}
+              maxlength={2000}
+              bind:value={note}
+            />
+          </div>
+          {#if mode === "complete" && task.assetId}
+            <div class="flex flex-col gap-4 rounded-lg border p-3">
+              <SwitchField
+                id="action-log"
+                bind:checked={logWork}
+                label={m.task_service_log_toggle()}
+                hint={m.task_service_log_hint()}
+              />
+              {#if logWork}
+                <ServiceLogFields
+                  idPrefix="action-log"
+                  bind:kind={logKind}
+                  bind:title={logTitle}
+                  bind:description={logDescription}
+                  bind:contactId={logContactId}
+                  bind:cost={logCost}
+                  {currency}
+                  errors={logErrors}
+                />
+              {/if}
+            </div>
+          {/if}
+        {/if}
+      </div>
+      <div
+        class="bg-background sticky bottom-0 flex flex-col gap-3 border-t px-6 py-4"
+      >
+        <FormAlert message={error} />
+        <Dialog.Footer class="flex-row gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            class="max-sm:flex-1"
+            disabled={pending}
+            onclick={() => (open = false)}
+          >
+            {m.common_cancel()}
+          </Button>
+          <Button
+            type="submit"
+            size="lg"
+            class="max-sm:flex-1"
+            disabled={pending}
+          >
+            {#if pending}
+              <LoaderCircleIcon class="animate-spin" />
+            {/if}
+            {submitLabel}
+          </Button>
+        </Dialog.Footer>
+      </div>
     </form>
   </Dialog.Content>
 </Dialog.Root>

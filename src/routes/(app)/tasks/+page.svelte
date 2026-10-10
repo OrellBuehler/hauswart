@@ -227,7 +227,7 @@
           <button
             type="button"
             class={cn(
-              "focus-visible:ring-ring/50 h-9 rounded-md px-3 text-sm font-medium transition-colors outline-none focus-visible:ring-[3px]",
+              "focus-visible:ring-ring/50 h-10 rounded-md px-3 text-sm font-medium transition-colors outline-none focus-visible:ring-[3px]",
               filters.assignee === option.value
                 ? "bg-background shadow-xs"
                 : "text-muted-foreground hover:text-foreground",
@@ -260,7 +260,7 @@
     {#if filtersOpen}
       <div
         id="task-filters"
-        class="bg-card shadow-card grid gap-4 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-3"
+        class="bg-card shadow-card grid grid-cols-2 gap-4 rounded-xl border p-4 lg:grid-cols-3"
       >
         <div class="flex flex-col gap-2">
           <Label for="f-status">{m.tasks_filter_status()}</Label>
@@ -280,7 +280,7 @@
             onchange={(v) => apply({ category: v as TaskFilters["category"] })}
           />
         </div>
-        <div class="flex flex-col gap-2">
+        <div class="col-span-2 flex flex-col gap-2 sm:col-span-1">
           <Label for="f-room">{m.tasks_filter_room()}</Label>
           <OptionSelect
             id="f-room"
@@ -289,7 +289,7 @@
             onchange={(v) => apply({ roomId: v })}
           />
         </div>
-        <div class="flex flex-col gap-2">
+        <div class="col-span-2 flex flex-col gap-2 sm:col-span-1">
           <Label for="f-asset">{m.tasks_filter_asset()}</Label>
           <OptionSelect
             id="f-asset"
@@ -298,7 +298,7 @@
             onchange={(v) => apply({ assetId: v })}
           />
         </div>
-        <div class="flex flex-col gap-2">
+        <div class="col-span-2 flex flex-col gap-2 sm:col-span-1">
           <Label for="f-view">{m.tasks_view_label()}</Label>
           <OptionSelect
             id="f-view"
@@ -308,7 +308,7 @@
           />
         </div>
         <div
-          class="flex items-center justify-between gap-3 sm:self-end sm:pb-2"
+          class="col-span-2 flex items-center justify-between gap-3 sm:col-span-1 sm:self-end sm:pb-2"
         >
           <Label for="f-archived">{m.tasks_filter_archived()}</Label>
           <Switch
@@ -318,7 +318,7 @@
           />
         </div>
         {#if activeCount > 0 || filters.q}
-          <div class="sm:col-span-2 lg:col-span-3">
+          <div class="col-span-2 lg:col-span-3">
             <Button variant="ghost" size="lg" onclick={reset}>
               {m.tasks_filter_reset()}
             </Button>

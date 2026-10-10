@@ -232,19 +232,25 @@
       </div>
     </div>
 
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="flex items-center gap-2 sm:flex-wrap">
       {#if !archived}
-        <CompleteButton {task} variant="default" />
+        <CompleteButton {task} variant="default" class="max-sm:flex-1" />
         <Button
           size="lg"
           variant="outline"
+          class="max-sm:hidden"
           onclick={() => openDialog("complete")}
         >
           <MessageSquarePlusIcon />
           {m.task_complete_with_note()}
         </Button>
       {/if}
-      <Button size="lg" variant="outline" href={taskEditHref(task.id)}>
+      <Button
+        size="lg"
+        variant="outline"
+        class="max-sm:hidden"
+        href={taskEditHref(task.id)}
+      >
         <PencilIcon />
         {m.common_edit()}
       </Button>
@@ -261,7 +267,25 @@
             </Button>
           {/snippet}
         </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="start" class="min-w-52">
+        <DropdownMenu.Content align="end" class="min-w-52">
+          {#if !archived}
+            <DropdownMenu.Item
+              class="min-h-10 sm:hidden"
+              onSelect={() => openDialog("complete")}
+            >
+              <MessageSquarePlusIcon />
+              {m.task_complete_with_note()}
+            </DropdownMenu.Item>
+          {/if}
+          <DropdownMenu.Item class="min-h-10 sm:hidden">
+            {#snippet child({ props })}
+              <a href={taskEditHref(task.id)} {...props}>
+                <PencilIcon />
+                {m.common_edit()}
+              </a>
+            {/snippet}
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator class="sm:hidden" />
           {#if !archived}
             <DropdownMenu.Item
               class="min-h-10"
@@ -455,7 +479,7 @@
       <Comments entityType="task" entityId={task.id} timeZone={data.timeZone} />
     </div>
 
-    <div class="flex min-w-0 flex-col gap-6">
+    <div class="flex min-w-0 flex-col gap-6 max-lg:order-first">
       <Card.Root>
         <Card.Header>
           <Card.Title class="text-base">{m.task_schedule()}</Card.Title>
@@ -614,7 +638,7 @@
                     href={billUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="h-auto min-h-8 gap-1.5 p-0 text-sm text-inherit"
+                    class="h-auto min-h-10 gap-1.5 p-0 text-sm text-inherit"
                   >
                     <ExternalLinkIcon aria-hidden="true" />
                     {m.finance_open_in_app()}

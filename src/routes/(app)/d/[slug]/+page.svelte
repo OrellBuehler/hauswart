@@ -162,7 +162,7 @@
                 <DueBadge state={task.state} />
               </div>
               <Button
-                size="sm"
+                size="lg"
                 variant="outline"
                 disabled={busy !== null}
                 aria-label={m.qr_done_anyway_aria({ title: task.title })}

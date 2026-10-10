@@ -145,7 +145,7 @@
       />
     {/snippet}
   </Field>
-  <div class="grid gap-5 sm:grid-cols-2">
+  <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
     <Field
       id="part-number"
       label={m.part_number()}
@@ -205,7 +205,7 @@
       />
     {/snippet}
   </Field>
-  <div class="grid grid-cols-2 gap-5">
+  <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
     <Field
       id="part-price"
       label={m.part_price({ currency: partCurrency })}

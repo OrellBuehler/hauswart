@@ -262,6 +262,7 @@
           variant={overlay ? "secondary" : "ghost"}
           size="icon-sm"
           class={cn(
+            "pointer-coarse:size-10",
             overlay &&
               "bg-background/85 hover:bg-background size-8 rounded-full shadow-sm backdrop-blur-sm",
           )}
@@ -461,6 +462,7 @@
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      class="pointer-coarse:size-10"
                       aria-label={m.attach_retry_aria({ name: job.name })}
                       onclick={() => list.retry(job.id)}
                     >
@@ -470,6 +472,7 @@
                   <Button
                     variant="ghost"
                     size="icon-sm"
+                    class="pointer-coarse:size-10"
                     aria-label={m.attach_dismiss_aria({ name: job.name })}
                     onclick={() => list.dismiss(job.id)}
                   >

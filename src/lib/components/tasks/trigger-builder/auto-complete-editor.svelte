@@ -109,7 +109,7 @@
         type="button"
         variant="ghost"
         size="icon"
-        class="-my-1 size-9 shrink-0"
+        class="-my-1 size-10 shrink-0"
         aria-label={m.auto_complete_remove()}
         onclick={() => {
           if (trigger.type === "counter_delta")
@@ -236,7 +236,7 @@
                           type="button"
                           variant="outline"
                           size="sm"
-                          class="h-8 font-mono text-xs"
+                          class="h-10 font-mono text-xs"
                           onclick={() => (rule.to = chip)}
                         >
                           {chip}

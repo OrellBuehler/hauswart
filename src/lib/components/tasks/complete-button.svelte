@@ -6,15 +6,20 @@
   import { apiErrorMessage } from "$lib/error-message";
   import { m } from "$lib/paraglide/messages";
   import { completeTask } from "$lib/tasks/actions";
+  import { cn } from "$lib/utils";
 
   let {
     task,
     onstart,
     onfail,
     onsettled,
+    compact = false,
+    class: className,
     ...rest
   }: {
     task: { id: string; title: string };
+    /** Below `sm` only the check icon (44px), from `sm` up the labelled button. */
+    compact?: boolean;
     /** Runs before the request: the optimistic update. */
     onstart?: () => void;
     /** The request failed; take the optimistic update back. */
@@ -42,11 +47,12 @@
 </script>
 
 <Button
-  size="lg"
+  size={compact ? "icon-lg" : "lg"}
   variant="outline"
   disabled={pending}
   aria-label={m.task_complete_aria({ title: task.title })}
   onclick={run}
+  class={cn(compact && "size-11 sm:h-10 sm:w-auto sm:px-4", className)}
   {...rest}
 >
   {#if pending}
@@ -54,5 +60,5 @@
   {:else}
     <CheckIcon />
   {/if}
-  {m.task_complete()}
+  <span class={cn(compact && "max-sm:sr-only")}>{m.task_complete()}</span>
 </Button>

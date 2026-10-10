@@ -6,6 +6,8 @@ import type { Task } from "$lib/api/schemas/tasks";
 import { apiErrorMessage } from "$lib/error-message";
 import { m } from "$lib/paraglide/messages";
 
+const TOAST_MS = 8000;
+
 /**
  * Marks a task done from a list and offers an undo in the toast. Returns
  * whether it worked; failures are toasted here.
@@ -22,6 +24,7 @@ export async function completeWithUndo(
     });
     await invalidateAll();
     toast.success(message, {
+      duration: TOAST_MS,
       action: {
         label: m.common_undo(),
         onClick: async () => {

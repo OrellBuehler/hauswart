@@ -302,7 +302,7 @@
   </div>
 
   <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
-    <div class="flex min-w-0 flex-col gap-6 lg:col-span-2">
+    <div class="flex min-w-0 flex-col gap-6 max-lg:contents lg:col-span-2">
       <Card.Root>
         <Card.Header>
           <Card.Title>{m.part_stock_title()}</Card.Title>
@@ -384,7 +384,7 @@
               <div class="flex flex-wrap gap-2">
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="lg"
                   disabled={busy !== null}
                   onclick={() => openStock("bought", part.orderedQty)}
                 >
@@ -392,7 +392,7 @@
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="lg"
                   disabled={busy !== null}
                   onclick={clearOrder}
                 >
@@ -403,7 +403,7 @@
               <p class="text-muted-foreground">{m.part_not_ordered()}</p>
               <Button
                 variant="outline"
-                size="sm"
+                size="lg"
                 onclick={() => (orderedOpen = true)}
               >
                 <TruckIcon />{m.part_mark_ordered()}
@@ -413,7 +413,7 @@
         </Card.Content>
       </Card.Root>
 
-      <Card.Root>
+      <Card.Root class="max-lg:order-last">
         <Card.Header>
           <Card.Title>{m.part_movements_title()}</Card.Title>
         </Card.Header>
@@ -470,7 +470,7 @@
       </Card.Root>
     </div>
 
-    <div class="flex flex-col gap-6">
+    <div class="flex flex-col gap-6 max-lg:contents">
       <Card.Root>
         <Card.Header>
           <Card.Title>{m.part_facts_title()}</Card.Title>
@@ -585,7 +585,7 @@
           {:else}
             <ul class="divide-y">
               {#each part.tasks as task (task.id)}
-                <li class="flex items-center justify-between gap-1">
+                <li class="flex items-center justify-between gap-2">
                   <a
                     href={taskHref(task.id)}
                     class="hover:bg-accent/50 focus-visible:ring-ring/50 -mx-2 flex min-h-12 min-w-0 flex-1 items-center rounded-md px-2 text-sm font-medium transition-colors outline-none focus-visible:ring-[3px]"

@@ -72,9 +72,12 @@
   <FormAlert message={error} />
   <div class="flex items-center justify-between gap-3">
     <p id={`${id}-hint`} class="text-muted-foreground text-xs text-pretty">
-      {m.comments_composer_hint()}
+      <span class="pointer-coarse:hidden">{m.comments_composer_hint()}</span>
       {#if nearLimit}
-        <span class="tabular-nums">· {body.length} / {COMMENT_MAX_LENGTH}</span>
+        <span class="tabular-nums">
+          <span class="pointer-coarse:hidden" aria-hidden="true">·</span>
+          {body.length} / {COMMENT_MAX_LENGTH}
+        </span>
       {/if}
     </p>
     <Button type="submit" size="lg" disabled={pending || trimmed === ""}>

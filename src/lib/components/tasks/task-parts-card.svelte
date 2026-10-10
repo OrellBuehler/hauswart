@@ -73,7 +73,7 @@
     {:else}
       <ul class="divide-y">
         {#each parts as link (link.partId)}
-          <li class="flex items-center gap-1 py-2.5 first:pt-0 last:pb-0">
+          <li class="flex items-center gap-2 py-2.5 first:pt-0 last:pb-0">
             <div class="min-w-0 flex-1">
               <a
                 href={partHref(link.partId)}

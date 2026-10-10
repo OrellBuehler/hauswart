@@ -42,7 +42,7 @@
   role="radiogroup"
   aria-label={label}
   class={cn(
-    "bg-muted inline-flex max-w-full flex-wrap rounded-lg p-0.5",
+    "bg-muted flex w-full max-w-full flex-wrap rounded-lg p-0.5 sm:inline-flex sm:w-auto",
     className,
   )}
 >
@@ -54,7 +54,7 @@
       aria-checked={checked}
       tabindex={checked ? 0 : -1}
       class={cn(
-        "focus-visible:ring-ring/50 min-h-10 rounded-md px-3 text-sm font-medium transition-colors outline-none focus-visible:ring-[3px]",
+        "focus-visible:ring-ring/50 min-h-10 rounded-md px-3 py-2 text-center text-sm leading-tight font-medium whitespace-normal transition-colors outline-none focus-visible:ring-[3px] max-sm:flex-1",
         checked
           ? "bg-background shadow-xs"
           : "text-muted-foreground hover:text-foreground",
