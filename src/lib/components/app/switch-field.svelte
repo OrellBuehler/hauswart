@@ -18,8 +18,12 @@
     checked?: boolean;
     label: string;
     hint?: string;
-    /** Optional pointer to the place that explains or manages the setting, shown after the hint. */
-    link?: { href: "/settings/guest-links"; label: string };
+    /**
+     * Optional pointer to the place that explains or manages the setting, shown after the hint. It
+     * opens in a tab of its own, so the form keeps what was typed; `sameTab` is for a form that asks
+     * before it is left.
+     */
+    link?: { href: "/settings/guest-links"; label: string; sameTab?: boolean };
     disabled?: boolean;
     class?: string;
     onchange?: (checked: boolean) => void;
@@ -59,6 +63,8 @@
         {#if link}
           <a
             href={resolve(link.href)}
+            target={link.sameTab ? undefined : "_blank"}
+            rel={link.sameTab ? undefined : "noopener"}
             class="text-brand relative z-10 font-medium underline underline-offset-4"
           >
             {link.label}

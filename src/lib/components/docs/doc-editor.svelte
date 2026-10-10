@@ -777,6 +777,7 @@
             link={{
               href: "/settings/guest-links",
               label: m.guest_links_manage(),
+              sameTab: true,
             }}
           />
         </div>
