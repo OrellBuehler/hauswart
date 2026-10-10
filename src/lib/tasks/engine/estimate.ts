@@ -61,8 +61,14 @@ export function estimateCrossing(
       MAX_HORIZON_DAYS,
       Math.max(1, Math.ceil(Number((remaining / rate).toFixed(9)))),
     );
+    // The days are counted from the newest sample, which `remaining` is measured at. Counted
+    // from today, readings someone types in now and then would push the date back by a day
+    // every day. A date that has passed without the target being reached is a wrong guess:
+    // the best that can be said is "tomorrow", and not with confidence.
+    const date = addDays(localDateOf(tz, used[used.length - 1].at), days);
+    if (date <= today) return { date: addDays(today, 1), confidence: "low" };
     return {
-      date: addDays(today, days),
+      date,
       confidence: spanDays < MEDIUM_CONFIDENCE_SPAN_DAYS ? "low" : "medium",
     };
   }

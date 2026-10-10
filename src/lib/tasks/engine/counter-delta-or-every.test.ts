@@ -559,8 +559,9 @@ describe("counter_delta with orEvery, estimates", () => {
         signals: reading(85_950, HOUR, "manual"),
       });
       expect(result.estimate).toBeDefined();
-      // The 90 days leave out the oldest reading: about 50 km a day, 4,050 km to go.
-      expect(result.estimate?.date).toBe("2026-12-26");
+      // The 90 days leave out the oldest reading: about 50 km a day, 4,050 km to go, counted from
+      // the newest reading, which is a day old.
+      expect(result.estimate?.date).toBe("2026-12-25");
     });
   });
 });

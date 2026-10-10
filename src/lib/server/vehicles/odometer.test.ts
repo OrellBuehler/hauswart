@@ -589,7 +589,7 @@ describe("tasks that count on the odometer", () => {
       status: "ok",
       dueDate: null,
       dueKind: "estimated",
-      estimate: { date: "2027-02-17", confidence: "medium" },
+      estimate: { date: "2027-02-14", confidence: "medium" },
     });
   });
 
@@ -605,7 +605,39 @@ describe("tasks that count on the odometer", () => {
       dueKind: "estimated",
       estimate: { confidence: "medium" },
     });
-    expect(stateOf(task.id)?.estimate?.date).toMatch(/^2027-/);
+    // 11,350 km to go at about 51 a day, counted from the newest reading on 15 March.
+    expect(stateOf(task.id)?.estimate?.date).toBe("2026-10-25");
+  });
+
+  it("does not push the estimate back while no new reading comes in", async () => {
+    const car = makeVehicle(test);
+    const task = await makeTask(ctx(at("2026-04-01")), {
+      trigger: serviceOf(car.id),
+    });
+    await record(car.id, "2026-04-20", 80_000, at("2026-04-20"));
+    await record(car.id, "2026-05-20", 81_500, at("2026-05-20"));
+    await record(car.id, "2026-06-12", 82_650, at("2026-06-12"));
+    const dates: (string | undefined)[] = [];
+    for (const day of ["2026-06-15", "2026-06-22", "2026-07-20"]) {
+      await evaluateAll(ctx(at(day)));
+      dates.push(stateOf(task.id)?.estimate?.date);
+    }
+    expect(dates).toEqual(["2027-02-14", "2027-02-14", "2027-02-14"]);
+  });
+
+  it("tells tomorrow, with low confidence, once the estimated day has passed", async () => {
+    const car = makeVehicle(test);
+    const task = await makeTask(ctx(at("2026-04-01")), {
+      trigger: serviceOf(car.id, { threshold: 1_000 }),
+    });
+    await record(car.id, "2026-04-20", 80_000, at("2026-04-20"));
+    await record(car.id, "2026-05-20", 80_700, at("2026-05-20"));
+    // 300 km short at about 23 a day: reached around 2 June, but nobody typed in a reading since.
+    await evaluateAll(ctx(at("2026-06-15")));
+    expect(stateOf(task.id)).toMatchObject({
+      dueKind: "estimated",
+      estimate: { date: "2026-06-16", confidence: "low" },
+    });
   });
 
   it("keeps the readings the estimate rests on when old samples are pruned", async () => {

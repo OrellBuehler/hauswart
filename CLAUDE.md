@@ -607,7 +607,9 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   A task counts on it with `counter_delta` and `entityId: "odometer:<asset id>"` (optionally `orEvery`);
   the Home Assistant adapter never asks for such a key (not an entity id). A change of the newest value
   goes through `settleSignalChanges` (auto-complete, hint reactions, re-evaluation, notifications, as for
-  an adapter's readings). A counter task remembers the first value it saw (`task_state.counterBaseline`) until a
+  an adapter's readings). Readings come in now and then, so the estimate (`estimateCrossing`, windows of 28, 90 and
+  365 days for manual signals) counts its days from the day of the newest sample, not from today: without a new
+  reading it stays where it is, and once that day has passed it says tomorrow with low confidence. A counter task remembers the first value it saw (`task_state.counterBaseline`) until a
   completion snapshots one; the same sync forgets that value when no reading has it any more (the typo that was deleted
   or corrected), so the task starts again from what the vehicle shows instead of counting from a number it never had.
 - **Other writers.** A completion with a `counterValue` of a task that reads the odometer records a
