@@ -24,6 +24,7 @@
   import UserMenu from "$lib/components/app/user-menu.svelte";
   import { DocumentSystem } from "$lib/documents/system.svelte";
   import { m } from "$lib/paraglide/messages";
+  import { cn } from "$lib/utils";
   import type { LayoutProps } from "./$types";
 
   let { data, children }: LayoutProps = $props();
@@ -126,7 +127,13 @@
       </div>
     </header>
     <div
-      class="mx-auto w-full max-w-5xl min-w-0 flex-1 p-4 pb-[calc(var(--bottom-nav)+env(safe-area-inset-bottom)+6rem)] md:p-8 md:pb-8 print:max-w-none print:p-0 print:pb-0"
+      class={cn(
+        "mx-auto w-full max-w-5xl min-w-0 flex-1 p-4 md:p-8 print:max-w-none print:p-0",
+        // room for the bottom bar and the round action button; pages without them (/new, /edit) end
+        // under their own save bar
+        bottomNav &&
+          "pb-[calc(var(--bottom-nav,0px)+env(safe-area-inset-bottom)+6rem)] md:pb-8 print:pb-0",
+      )}
     >
       {#key pathname}
         <div
