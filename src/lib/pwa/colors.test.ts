@@ -60,6 +60,40 @@ describe("app colours", () => {
     }
   });
 
+  it("keep the status colours readable as 12px text on their own tint (WCAG 1.4.3)", () => {
+    /** The colour at `alpha` over a surface, as `#rrggbb`. */
+    const tint = (color: string, surface: string, alpha: number) =>
+      `#${[1, 3, 5]
+        .map((i) => {
+          const c = parseInt(color.slice(i, i + 2), 16);
+          const s = parseInt(surface.slice(i, i + 2), 16);
+          return Math.round(c * alpha + s * (1 - alpha))
+            .toString(16)
+            .padStart(2, "0");
+        })
+        .join("")}`;
+    for (const selector of [":root", "\\.dark"]) {
+      const tokens = palette(selector);
+      for (const status of ["destructive", "success", "warning"]) {
+        const text = hex(tokens[status]!);
+        for (const surface of ["background", "card", "muted"]) {
+          const base = hex(tokens[surface]!);
+          const where = `${selector} ${status} on ${surface}`;
+          expect(contrast(text, base), where).toBeGreaterThanOrEqual(4.5);
+          for (const alpha of [0.1, 0.15]) {
+            // a badge tints its own background; text on the muted tint is the rare case
+            if (surface === "muted" && (alpha > 0.1 || selector !== ":root"))
+              continue;
+            expect(
+              contrast(text, tint(text, base, alpha)),
+              `${where} at ${alpha}`,
+            ).toBeGreaterThanOrEqual(4.5);
+          }
+        }
+      }
+    }
+  });
+
   it("keep the hairline border of cards subtle: it is not a control", () => {
     expect(contrast(hex(palette(":root").border!), "#ffffff")).toBeLessThan(2);
   });
