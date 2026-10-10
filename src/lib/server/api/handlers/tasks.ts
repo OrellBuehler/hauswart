@@ -19,6 +19,10 @@ import {
   type TaskRecord,
 } from "$lib/server/tasks/tasks";
 import { billUrlVisibility } from "$lib/server/finance/bill-tasks";
+import {
+  odometerAssetOfCompletion,
+  refreshOdometerReaders,
+} from "$lib/server/vehicles/odometer";
 import { listPreparations } from "$lib/server/tasks/preparations";
 import {
   checkCompletionLog,
@@ -134,6 +138,11 @@ export const complete: Handler<typeof endpoints.tasksComplete> = async ({
     idempotencyKey: body.idempotencyKey,
     counterValue: body.counterValue,
   });
+  // The completion may have recorded an odometer reading: the other tasks on that odometer follow now.
+  const odometerOf = result.replayed
+    ? null
+    : odometerAssetOfCompletion(ctx, result.completion.id);
+  if (odometerOf) await refreshOdometerReaders(ctx, odometerOf);
   const entry =
     body.serviceLog && result.task.assetId && !result.replayed
       ? logCompletion(
@@ -200,6 +209,9 @@ export const undo: Handler<typeof endpoints.completionsUndo> = async ({
   ctx,
   params,
 }) => {
+  const odometerOf = odometerAssetOfCompletion(ctx, params.id);
   await undoCompletion(ctx, params.id, ctx.user.id);
+  // Its reading went with it: the other tasks on that odometer follow now.
+  if (odometerOf) await refreshOdometerReaders(ctx, odometerOf);
   return null;
 };

@@ -227,6 +227,25 @@ export async function refreshOdometerReaders(
   await generateNotifications(ctx);
 }
 
+/** The vehicle a completion recorded an odometer reading for, if it did. */
+export function odometerAssetOfCompletion(
+  ctx: Pick<ServiceContext, "db">,
+  completionId: string,
+): string | null {
+  return (
+    ctx.db
+      .select({ assetId: odometerReadings.assetId })
+      .from(odometerReadings)
+      .where(
+        and(
+          eq(odometerReadings.source, "completion"),
+          eq(odometerReadings.sourceId, completionId),
+        ),
+      )
+      .get()?.assetId ?? null
+  );
+}
+
 /**
  * Records an odometer reading of a vehicle and lets the tasks that count on it know. This is the
  * entry point for everything that learns the odometer on the side (fuel logs, tire changes, ...).

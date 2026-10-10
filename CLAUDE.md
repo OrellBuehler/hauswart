@@ -616,8 +616,8 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   reading dated the day of the completion (`vehicles/events.ts`, a listener on `completionRecorded`, so
   inside the completion's transaction): a value equal to the newest (including the counter snapshot a
   completion takes by itself) adds nothing, a lower one fails the completion with a 400 on
-  `counterValue`, undo removes the reading, other tasks reading the same odometer follow at the next
-  scheduler tick. A service log entry's `odometer` (vehicles only, 400 on `odometer` for anything else)
+  `counterValue`, undo removes the reading; the complete and undo handlers then re-evaluate the other tasks that read
+  the same odometer (`refreshOdometerReaders`), so they do not wait for the scheduler. A service log entry's `odometer` (vehicles only, 400 on `odometer` for anything else)
   keeps one reading in step with the entry through create, update (value or date) and delete, in the
   entry's transaction; the handlers re-evaluate the readers at once (`refreshOdometerReaders`).
 - **Tire sets** (`tire_sets`, `tire_set_events`, migration `0020`; `vehicles/tires.ts`, rules in `lib/vehicles/tires.ts`):
