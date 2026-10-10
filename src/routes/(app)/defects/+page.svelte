@@ -357,12 +357,12 @@
               <Table.Cell class="max-w-sm whitespace-normal">
                 <a
                   href={resolve(`/defects/${defect.id}` as "/")}
-                  class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 rounded-sm font-medium break-words outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
+                  class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 rounded-sm font-medium wrap-anywhere outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
                   >{defect.title}</a
                 >
                 {#if place}
                   <span
-                    class="text-muted-foreground mt-0.5 block text-xs break-words"
+                    class="text-muted-foreground mt-0.5 block text-xs wrap-anywhere"
                     >{place}</span
                   >
                 {/if}

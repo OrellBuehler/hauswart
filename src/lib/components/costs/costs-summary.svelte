@@ -90,7 +90,7 @@
   {/if}
 {/snippet}
 
-<Card.Root class="gap-3 py-4 md:hidden">
+<Card.Root class="gap-3 py-4 lg:hidden">
   <Card.Header class="gap-0.5">
     <Card.Description>
       {m.costs_expenses_title({ year: summary.year })}
@@ -112,7 +112,7 @@
   </Card.Content>
 </Card.Root>
 
-<div class="grid grid-cols-1 gap-4 max-md:hidden md:grid-cols-2">
+<div class="grid grid-cols-1 gap-4 max-lg:hidden lg:grid-cols-2">
   <Card.Root class="gap-4">
     <Card.Header>
       <Card.Description>

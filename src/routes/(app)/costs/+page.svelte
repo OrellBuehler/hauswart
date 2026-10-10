@@ -447,12 +447,12 @@
                   <Table.Cell class="max-w-sm whitespace-normal">
                     <a
                       href={resolve(`/costs/${cost.id}` as "/")}
-                      class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 rounded-sm font-medium break-words outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
+                      class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 rounded-sm font-medium wrap-anywhere outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
                       >{cost.title}</a
                     >
                     {#if cost.payee || place}
                       <span
-                        class="text-muted-foreground mt-0.5 block text-xs break-words"
+                        class="text-muted-foreground mt-0.5 block text-xs wrap-anywhere"
                         >{[cost.payee, place].filter(Boolean).join(" · ")}</span
                       >
                     {/if}
