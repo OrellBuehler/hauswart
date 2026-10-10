@@ -32,6 +32,8 @@ export type CompleteOptions = {
   serviceLog?: CompletionServiceLogRequest;
   /** ISO instant for a backdated completion; omit for "now". */
   completedAt?: string;
+  /** The counter's reading at completion; a task that counts a vehicle's odometer records it as a reading. */
+  counterValue?: number;
 };
 
 export async function completeTask(
@@ -44,6 +46,9 @@ export async function completeTask(
       idempotencyKey: newIdempotencyKey(),
       ...(options.note ? { note: options.note } : {}),
       ...(options.completedAt ? { completedAt: options.completedAt } : {}),
+      ...(options.counterValue === undefined
+        ? {}
+        : { counterValue: options.counterValue }),
       ...(options.serviceLog ? { serviceLog: options.serviceLog } : {}),
     },
   });

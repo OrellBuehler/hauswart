@@ -1,5 +1,8 @@
 <script lang="ts">
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
+  import { api } from "$lib/api/browser";
+  import { endpoints } from "$lib/api/registry";
+  import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
   import FormAlert from "$lib/components/app/form-alert.svelte";
   import SwitchField from "$lib/components/app/switch-field.svelte";
   import NoteChoices from "$lib/components/asset-notes/note-choices.svelte";
@@ -17,10 +20,14 @@
   } from "$lib/dates";
   import { apiErrorMessage } from "$lib/error-message";
   import { householdCurrency } from "$lib/api/household-currency";
-  import { formatDateShort } from "$lib/format";
+  import { formatDateShort, formatDay } from "$lib/format";
   import { readMoney } from "$lib/format-money";
   import { m } from "$lib/paraglide/messages";
-  import type { ServiceLogKind } from "$lib/api/enums";
+  import type { OdometerUnit, ServiceLogKind } from "$lib/api/enums";
+  import type { Trigger } from "$lib/tasks/engine/types";
+  import { formatOdometer, parseOdometerValue } from "$lib/vehicles/format";
+  import { lowerThanReading } from "$lib/vehicles/odometer-error";
+  import { assetIdOfOdometerKey } from "$lib/vehicles/odometer";
   import {
     completeTask,
     skipTask,
@@ -44,6 +51,8 @@
       assetId?: string | null;
       /** Open notes on the task's asset; they can be ticked off with the service log entry. */
       openNoteCount?: number;
+      /** A task that counts a vehicle's odometer asks for the reading when it is completed. */
+      trigger?: Trigger;
     };
     today: string;
     /** The household's zone; needed to backdate a completion. */
@@ -64,6 +73,25 @@
   let logNoteIds = $state<string[]>([]);
   let logErrors = $state<Record<string, string>>({});
   let currency = $state("CHF");
+  let odometer = $state("");
+  let odometerError = $state<string | undefined>();
+  /** What the vehicle's odometer shows now, to put the new reading in relation. */
+  let vehicleState = $state<
+    | { phase: "loading" }
+    | { phase: "error"; message: string }
+    | {
+        phase: "ready";
+        unit: OdometerUnit;
+        latest: { value: number; date: string } | null;
+      }
+  >({ phase: "loading" });
+
+  /** The vehicle whose odometer the task counts, if it does. */
+  const odometerAssetId = $derived(
+    task.trigger?.type === "counter_delta"
+      ? assetIdOfOdometerKey(task.trigger.entityId)
+      : null,
+  );
 
   const tomorrow = $derived(addDays(today, 1));
   const presets = $derived([
@@ -86,6 +114,34 @@
     logCost = "";
     logNoteIds = [];
     logErrors = {};
+    odometer = "";
+    odometerError = undefined;
+  });
+
+  $effect(() => {
+    const assetId = odometerAssetId;
+    if (!open || mode !== "complete" || !assetId) return;
+    let cancelled = false;
+    vehicleState = { phase: "loading" };
+    api.call(endpoints.vehiclesGet, { params: { id: assetId } }).then(
+      (vehicle) => {
+        if (cancelled) return;
+        vehicleState = {
+          phase: "ready",
+          unit: vehicle.odometerUnit,
+          latest: vehicle.odometer
+            ? { value: vehicle.odometer.value, date: vehicle.odometer.date }
+            : null,
+        };
+      },
+      (err) => {
+        if (!cancelled)
+          vehicleState = { phase: "error", message: apiErrorMessage(err) };
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
   });
 
   $effect(() => {
@@ -136,6 +192,19 @@
       error = m.task_complete_future();
       return;
     }
+    let counterValue: number | undefined;
+    if (mode === "complete" && odometerAssetId) {
+      const reading = parseOdometerValue(odometer, MAX_ODOMETER_VALUE);
+      if (reading === undefined) {
+        odometerError = m.task_odometer_invalid({
+          max: MAX_ODOMETER_VALUE.toLocaleString("en"),
+        });
+        error = m.form_check_fields();
+        return;
+      }
+      odometerError = undefined;
+      if (reading !== null) counterValue = reading;
+    }
     let serviceLog: CompleteOptions["serviceLog"];
     if (mode === "complete" && logWork && task.assetId) {
       logErrors = {};
@@ -163,6 +232,7 @@
         await completeTask(task, {
           note: note.trim() || null,
           ...(serviceLog ? { serviceLog } : {}),
+          ...(counterValue === undefined ? {} : { counterValue }),
           ...(backdated
             ? {
                 completedAt: new Date(
@@ -178,7 +248,21 @@
       }
       open = false;
     } catch (err) {
-      error = apiErrorMessage(err);
+      const lower = lowerThanReading(err, "counterValue");
+      if (lower) {
+        odometerError = m.task_odometer_lower({
+          value:
+            lower.value === null
+              ? ""
+              : formatOdometer(
+                  lower.value,
+                  vehicleState.phase === "ready" ? vehicleState.unit : "km",
+                ),
+        });
+        error = m.form_check_fields();
+      } else {
+        error = apiErrorMessage(err);
+      }
     } finally {
       pending = false;
     }
@@ -251,6 +335,53 @@
               />
               <p class="text-muted-foreground text-xs">
                 {m.task_complete_date_hint()}
+              </p>
+            </div>
+          {/if}
+          {#if mode === "complete" && odometerAssetId}
+            <div class="flex flex-col gap-2">
+              <Label for="action-odometer">
+                {m.task_odometer_label({
+                  unit:
+                    vehicleState.phase === "ready" ? vehicleState.unit : "km",
+                })}
+                <span class="text-muted-foreground font-normal"
+                  >({m.common_optional()})</span
+                >
+              </Label>
+              <Input
+                id="action-odometer"
+                type="text"
+                inputmode="decimal"
+                autocomplete="off"
+                class="h-10 tabular-nums"
+                aria-invalid={odometerError ? true : undefined}
+                aria-describedby="action-odometer-hint"
+                bind:value={odometer}
+              />
+              <p
+                id="action-odometer-hint"
+                class={odometerError
+                  ? "text-destructive text-xs text-pretty"
+                  : "text-muted-foreground text-xs text-pretty"}
+              >
+                {#if odometerError}
+                  {odometerError}
+                {:else if vehicleState.phase === "loading"}
+                  {m.common_loading()}
+                {:else if vehicleState.phase === "error"}
+                  {vehicleState.message}
+                {:else if vehicleState.latest}
+                  {m.task_odometer_hint({
+                    value: formatOdometer(
+                      vehicleState.latest.value,
+                      vehicleState.unit,
+                    ),
+                    date: formatDay(vehicleState.latest.date),
+                  })}
+                {:else}
+                  {m.task_odometer_none()}
+                {/if}
               </p>
             </div>
           {/if}

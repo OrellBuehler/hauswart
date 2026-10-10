@@ -27,10 +27,13 @@
     trigger = $bindable(),
     errors,
     today,
+    vehicle,
   }: {
     trigger: TriggerDraft;
     errors: Record<string, string>;
     today: string;
+    /** The vehicle the task belongs to: a counter can read its odometer. */
+    vehicle?: { id: string; name: string; unit: string } | undefined;
   } = $props();
 
   const typeLabels: Record<TriggerType, () => string> = {
@@ -117,7 +120,7 @@
     {:else if trigger.type === "warranty"}
       <WarrantyForm bind:trigger {errors} />
     {:else if trigger.type === "counter_delta"}
-      <CounterDeltaForm bind:trigger {errors} />
+      <CounterDeltaForm bind:trigger {errors} {vehicle} />
     {:else if trigger.type === "state_condition"}
       <StateConditionForm bind:trigger {errors} />
     {:else if trigger.type === "ha_calendar"}

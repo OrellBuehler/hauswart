@@ -11,6 +11,7 @@
   import { getLocale } from "$lib/paraglide/runtime";
   import { describeTrigger } from "$lib/tasks/describe";
   import { triggerSchema } from "$lib/tasks/engine/types";
+  import { isOdometerKey } from "$lib/vehicles/odometer";
   import { reasonLabels } from "$lib/tasks/labels";
   import DueBadge from "./due-badge.svelte";
   import ProgressBar from "./progress-bar.svelte";
@@ -37,7 +38,9 @@
   const readingIds = $derived.by(() => {
     if (!parsed.success) return [];
     const t = parsed.data;
-    if (t.type === "counter_delta") return [t.entityId];
+    if (t.type === "counter_delta") {
+      return isOdometerKey(t.entityId) ? [] : [t.entityId];
+    }
     if (t.type === "state_condition") {
       return [
         ...new Set(
@@ -100,6 +103,21 @@
     return () => clearTimeout(handle);
   });
 
+  /**
+   * The preview evaluates a trigger without any readings. For a vehicle's odometer that is no
+   * missing measurement (the readings are the vehicle's own), so the hint is left out.
+   */
+  const reasons = $derived(
+    (result?.reasons ?? []).filter(
+      (reason) =>
+        !(
+          reason === "signal_missing" &&
+          parsed.success &&
+          parsed.data.type === "counter_delta" &&
+          isOdometerKey(parsed.data.entityId)
+        ),
+    ),
+  );
   const date = $derived(result?.dueDate ?? result?.estimate?.date ?? null);
   const estimated = $derived(
     result !== null &&
@@ -150,9 +168,9 @@
               unit={result.progress.unit}
             />
           {/if}
-          {#if result.reasons.length > 0}
+          {#if reasons.length > 0}
             <ul class="text-muted-foreground list-disc ps-4 text-xs">
-              {#each result.reasons as reason (reason)}
+              {#each reasons as reason (reason)}
                 <li>{reasonLabels[reason]()}</li>
               {/each}
             </ul>
