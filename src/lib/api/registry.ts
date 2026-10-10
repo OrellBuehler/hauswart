@@ -271,6 +271,14 @@ import {
   listFinanceSuggestionsResponseSchema,
   financeSuggestionSchema,
 } from "./schemas/finance";
+import {
+  assetInsurancePoliciesQuerySchema,
+  createInsurancePolicyRequestSchema,
+  insurancePolicySchema,
+  listInsurancePoliciesQuerySchema,
+  listInsurancePoliciesResponseSchema,
+  updateInsurancePolicyRequestSchema,
+} from "./schemas/insurance";
 
 const DOCUMENT_CONTENT_TYPES = [
   "application/pdf",
@@ -2033,6 +2041,96 @@ export const endpoints = {
     scopes: ["read"],
     params: idParamsSchema,
     response: defectTimelineResponseSchema,
+    errors: ["not_found"],
+  }),
+
+  insurancePoliciesList: defineEndpoint({
+    id: "insurancePoliciesList",
+    method: "GET",
+    path: "/api/v1/insurance-policies",
+    summary: "List insurance policies",
+    description:
+      "Active policies by cancellation deadline (those without one last), then title. Filter by covered asset, type and a text (q: title, policy number or the insurer's name); archived=true lists the archived ones instead. Every policy carries the assets it covers, the insurer's name, the premium normalised to a year and the cancellation deadline derived from the end date and the notice period.",
+    tags: ["insurance"],
+    auth: "both",
+    scopes: ["read"],
+    query: listInsurancePoliciesQuerySchema,
+    response: listInsurancePoliciesResponseSchema,
+  }),
+
+  insurancePoliciesCreate: defineEndpoint({
+    id: "insurancePoliciesCreate",
+    method: "POST",
+    path: "/api/v1/insurance-policies",
+    summary: "Create an insurance policy",
+    description:
+      "currency defaults to the household's. A policy that renews by itself (renewal auto) with an end date and a notice period gets a cancellation deadline and keeps a reminder task due on that day. endDate is the last day of cover.",
+    tags: ["insurance"],
+    auth: "both",
+    scopes: ["write"],
+    body: createInsurancePolicyRequestSchema,
+    response: insurancePolicySchema,
+    status: 201,
+  }),
+
+  insurancePoliciesGet: defineEndpoint({
+    id: "insurancePoliciesGet",
+    method: "GET",
+    path: "/api/v1/insurance-policies/{id}",
+    summary: "Get an insurance policy",
+    tags: ["insurance"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: insurancePolicySchema,
+    errors: ["not_found"],
+  }),
+
+  insurancePoliciesUpdate: defineEndpoint({
+    id: "insurancePoliciesUpdate",
+    method: "PATCH",
+    path: "/api/v1/insurance-policies/{id}",
+    summary: "Update an insurance policy",
+    description:
+      "assetIds replaces the covered assets; archived archives or restores the policy (its reminder task follows). After an automatic renewal, move endDate to the end of the next term: the cancellation deadline and the reminder follow.",
+    tags: ["insurance"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: updateInsurancePolicyRequestSchema,
+    response: insurancePolicySchema,
+    errors: ["not_found"],
+  }),
+
+  insurancePoliciesDelete: defineEndpoint({
+    id: "insurancePoliciesDelete",
+    method: "DELETE",
+    path: "/api/v1/insurance-policies/{id}",
+    summary: "Delete an insurance policy",
+    description:
+      "Comments, attachments, document links and reminder tasks go with it. Archive the policy to keep it.",
+    tags: ["insurance"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
+  assetInsurancePoliciesList: defineEndpoint({
+    id: "assetInsurancePoliciesList",
+    method: "GET",
+    path: "/api/v1/assets/{id}/insurance-policies",
+    summary: "Insurance policies that cover an asset",
+    description:
+      "The same policies as GET /insurance-policies?assetId=, for the asset page; 404 for an unknown asset. Active policies unless archived=true.",
+    tags: ["insurance", "assets"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    query: assetInsurancePoliciesQuerySchema,
+    response: listInsurancePoliciesResponseSchema,
     errors: ["not_found"],
   }),
 

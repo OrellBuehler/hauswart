@@ -1387,6 +1387,8 @@
   "dashboard_order_late": "Jetzt bestellen",
   "defect_reminder_title": "Mangelfrist {number}: {title}",
   "defect_reminder_prep": "Mangel melden",
+  "insurance_reminder_title": "Kündigungsfrist: {title}",
+  "insurance_reminder_prep": "Prämie und Deckung vergleichen, Kündigung vorbereiten",
   "defect_pdf_title": "Mängelliste",
   "defect_pdf_filter": "Filter: {filter}",
   "defect_pdf_col_nr": "Nr.",

@@ -1387,6 +1387,8 @@
   "dashboard_order_late": "Order now",
   "defect_reminder_title": "Defect {number} deadline: {title}",
   "defect_reminder_prep": "Report the defect",
+  "insurance_reminder_title": "Cancellation deadline: {title}",
+  "insurance_reminder_prep": "Compare premium and cover, prepare the cancellation",
   "defect_pdf_title": "Defect list",
   "defect_pdf_filter": "Filter: {filter}",
   "defect_pdf_col_nr": "No.",

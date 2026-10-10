@@ -117,6 +117,8 @@ describe("openapi document", () => {
       "Hint",
       "Household",
       "HouseholdSettings",
+      "InsurancePolicy",
+      "InsurancePolicyAsset",
       "Integration",
       "IntegrationTest",
       "Notification",
