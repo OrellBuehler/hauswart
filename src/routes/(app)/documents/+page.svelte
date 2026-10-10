@@ -421,8 +421,8 @@
                   class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs"
                 >
                   {#each document.tagNames.slice(0, 3) as name, index (index)}
-                    <Badge variant="secondary" class="max-w-32 truncate">
-                      {name}
+                    <Badge variant="secondary" class="max-w-32">
+                      <span class="truncate">{name}</span>
                     </Badge>
                   {/each}
                   {#if document.tagNames.length > 3}
