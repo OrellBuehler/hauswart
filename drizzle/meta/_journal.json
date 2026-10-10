@@ -148,6 +148,13 @@
       "when": 1791659468266,
       "tag": "0020_tire_sets",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1791660757582,
+      "tag": "0021_fuel_logs",
+      "breakpoints": true
     }
   ]
 }

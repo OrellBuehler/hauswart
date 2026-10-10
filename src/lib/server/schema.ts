@@ -37,6 +37,7 @@ import {
   FEED_SCOPES,
   FINANCE_SUGGESTION_KINDS,
   FINANCE_SUGGESTION_STATUSES,
+  FUEL_UNITS,
   GUEST_SECTIONS,
   HINT_KINDS,
   INSURANCE_PREMIUM_PERIODS,
@@ -350,6 +351,45 @@ export const tireSetEvents = sqliteTable(
     ...timestamps,
   },
   (t) => [index("tire_set_events_set_idx").on(t.tireSetId, t.date)],
+);
+
+/**
+ * The fuel log (Tankbuch) of a vehicle: one row per fill-up or charge. Each one is also an odometer
+ * reading (source `fuel_log`) and, when it cost something, a cost entry of the category `fuel`.
+ */
+export const fuelLogs = sqliteTable(
+  "fuel_logs",
+  {
+    id: id(),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    date: text("date").notNull(),
+    odometer: real("odometer").notNull(),
+    quantity: real("quantity").notNull(),
+    unit: text("unit", { enum: FUEL_UNITS }).notNull().default("l"),
+    amountMinor: minor("amount_minor").notNull(),
+    currency: text("currency").notNull(),
+    /** The tank was filled up; only a full fill closes a stretch of consumption. */
+    fullTank: integer("full_tank", { mode: "boolean" }).notNull().default(true),
+    /** A fill-up before this one is missing from the log: no stretch reaches back past it. */
+    missedPrevious: integer("missed_previous", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    station: text("station"),
+    notes: text("notes"),
+    costEntryId: text("cost_entry_id").references(() => costEntries.id, {
+      onDelete: "set null",
+    }),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    ...timestamps,
+  },
+  (t) => [
+    index("fuel_logs_asset_idx").on(t.assetId, sql`${t.date} desc`),
+    index("fuel_logs_cost_entry_idx").on(t.costEntryId),
+  ],
 );
 
 export const tasks = sqliteTable(

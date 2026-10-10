@@ -179,6 +179,13 @@ import {
   updateServiceLogRequestSchema,
 } from "./schemas/service-log";
 import {
+  createFuelLogRequestSchema,
+  fuelLogSchema,
+  listFuelLogsQuerySchema,
+  listFuelLogsResponseSchema,
+  updateFuelLogRequestSchema,
+} from "./schemas/fuel-logs";
+import {
   createTireSetRequestSchema,
   listTireSetsQuerySchema,
   listTireSetsResponseSchema,
@@ -1717,6 +1724,84 @@ export const endpoints = {
     params: idParamsSchema,
     body: putVehicleRequestSchema,
     response: vehicleSchema,
+    errors: ["not_found"],
+  }),
+
+  fuelLogsList: defineEndpoint({
+    id: "fuelLogsList",
+    method: "GET",
+    path: "/api/v1/assets/{id}/fuel-logs",
+    summary: "Fuel log (Tankbuch) of a vehicle, newest first",
+    description:
+      "Every fill-up or charge with its price per unit and, on a full fill that closes a stretch, the distance since the previous full fill, the consumption per 100 and the cost per distance (full-to-full method: partial fills in between are added up, a fill flagged missedPrevious starts the chain again, litres and kWh are counted apart). Filter by year.",
+    tags: ["vehicles", "assets"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    query: listFuelLogsQuerySchema,
+    response: listFuelLogsResponseSchema,
+    errors: ["not_found"],
+  }),
+
+  fuelLogsCreate: defineEndpoint({
+    id: "fuelLogsCreate",
+    method: "POST",
+    path: "/api/v1/assets/{id}/fuel-logs",
+    summary: "Log a fill-up or charge",
+    description:
+      'In one transaction: the odometer becomes a reading of the vehicle (source fuel_log; a value lower than the reading before is a 400 on odometer) and, unless amountMinor is 0, a cost entry of the category fuel is booked for the vehicle (title like "Tanken <station>", paid by paidByUserId, default the caller, split by splitMode, default ownership). It needs costs:write because it books money. 400 for an asset that is no vehicle.',
+    tags: ["vehicles", "assets"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    body: createFuelLogRequestSchema,
+    response: fuelLogSchema,
+    status: 201,
+    errors: ["not_found"],
+  }),
+
+  fuelLogsGet: defineEndpoint({
+    id: "fuelLogsGet",
+    method: "GET",
+    path: "/api/v1/fuel-logs/{id}",
+    summary: "A fuel log entry",
+    tags: ["vehicles"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: fuelLogSchema,
+    errors: ["not_found"],
+  }),
+
+  fuelLogsUpdate: defineEndpoint({
+    id: "fuelLogsUpdate",
+    method: "PATCH",
+    path: "/api/v1/fuel-logs/{id}",
+    summary: "Change a fuel log entry",
+    description:
+      "The reading follows the date and the odometer; the cost entry follows the amount, currency, date, station, payer and split. An entry made free loses its cost entry, one that costs something now and has none gets one.",
+    tags: ["vehicles"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    body: updateFuelLogRequestSchema,
+    response: fuelLogSchema,
+    errors: ["not_found"],
+  }),
+
+  fuelLogsDelete: defineEndpoint({
+    id: "fuelLogsDelete",
+    method: "DELETE",
+    path: "/api/v1/fuel-logs/{id}",
+    summary: "Delete a fuel log entry",
+    description:
+      "The odometer reading it wrote and the cost entry it booked are deleted with it (receipts attached to that cost entry too).",
+    tags: ["vehicles"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
     errors: ["not_found"],
   }),
 

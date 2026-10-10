@@ -63,6 +63,8 @@ import type {
   tireSetDetailSchema,
   tireSetSchema,
 } from "$lib/api/schemas/tire-sets";
+import type { fuelLogSchema } from "$lib/api/schemas/fuel-logs";
+import type { FuelLogRecord } from "$lib/server/vehicles/fuel-logs";
 import type { OdometerRow } from "$lib/server/vehicles/odometer";
 import type {
   TireEventRow,
@@ -205,6 +207,33 @@ export function wireVehicle(v: VehicleRecord): z.input<typeof vehicleSchema> {
     notes: v.notes,
     odometer: v.odometer,
     updatedAt: iso(v.updatedAt),
+  };
+}
+
+export function wireFuelLog(f: FuelLogRecord): z.input<typeof fuelLogSchema> {
+  return {
+    id: f.id,
+    assetId: f.assetId,
+    date: f.date,
+    odometer: f.odometer,
+    odometerUnit: f.odometerUnit,
+    quantity: f.quantity,
+    unit: f.unit,
+    amountMinor: f.amountMinor,
+    currency: f.currency,
+    fullTank: f.fullTank,
+    missedPrevious: f.missedPrevious,
+    station: f.station,
+    notes: f.notes,
+    costEntryId: f.costEntryId,
+    paidByUserId: f.paidByUserId,
+    pricePerUnitMinor: f.pricePerUnitMinor,
+    distance: f.distance,
+    consumptionPer100: f.consumptionPer100,
+    costPerDistanceMinor: f.costPerDistanceMinor,
+    createdBy: f.createdBy,
+    createdAt: toIso(f.createdAt),
+    updatedAt: toIso(f.updatedAt),
   };
 }
 

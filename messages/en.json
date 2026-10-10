@@ -656,6 +656,8 @@
   "vehicle_task_tax_title": "Pay the vehicle tax",
   "vehicle_task_brake_fluid_title": "Change the brake fluid",
   "vehicle_task_ac_service_title": "Air-conditioning service",
+  "fuel_log_title_fuel": "Refuel",
+  "fuel_log_title_charge": "Charge",
   "icon_kitchen": "Kitchen",
   "icon_bath": "Bathtub",
   "icon_shower": "Shower",
