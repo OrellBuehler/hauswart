@@ -48,8 +48,10 @@
     {#each rooms as room (room.id)}
       {@const Icon = roomIconFor(room.icon)}
       <Select.Item value={room.id} label={room.name} class="min-h-10">
-        <Icon class="text-muted-foreground" aria-hidden="true" />
-        {room.name}
+        <span class="flex min-w-0 items-center gap-2">
+          <Icon class="text-muted-foreground" aria-hidden="true" />
+          <span class="min-w-0 truncate">{room.name}</span>
+        </span>
       </Select.Item>
     {/each}
   </Select.Content>
