@@ -125,7 +125,7 @@
       href={backHref}
       variant="ghost"
       size="sm"
-      class="text-muted-foreground -ms-2 w-fit"
+      class="text-muted-foreground -ms-2 w-fit max-md:hidden"
     >
       <ArrowLeftIcon />{isPlant ? m.nav_plants() : m.nav_inventory()}
     </Button>

@@ -34,7 +34,7 @@
       href={backHref}
       variant="ghost"
       size="sm"
-      class="text-muted-foreground -ms-2 w-fit max-w-full"
+      class="text-muted-foreground -ms-2 w-fit max-w-full max-md:hidden"
     >
       <ArrowLeftIcon /><span class="truncate">{backLabel}</span>
     </Button>

@@ -60,7 +60,7 @@
       href={resolve("/rooms")}
       variant="ghost"
       size="sm"
-      class="text-muted-foreground -ms-2 w-fit"
+      class="text-muted-foreground -ms-2 w-fit max-md:hidden"
     >
       <ArrowLeftIcon />{m.nav_rooms()}
     </Button>

@@ -21,7 +21,7 @@
       href={resolve(`/assets/${data.asset.id}`)}
       variant="ghost"
       size="sm"
-      class="text-muted-foreground -ms-2 w-fit max-w-full"
+      class="text-muted-foreground -ms-2 w-fit max-w-full max-md:hidden"
     >
       <ArrowLeftIcon /><span class="truncate">{data.asset.name}</span>
     </Button>
