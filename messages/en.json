@@ -2314,6 +2314,7 @@
   "cost_category": "Category",
   "cost_category_insurance": "Insurance",
   "cost_category_maintenance": "Maintenance",
+  "cost_category_fuel": "Fuel and charging",
   "cost_category_mortgage_interest": "Mortgage interest",
   "cost_category_mortgage_principal": "Mortgage repayment",
   "cost_category_other": "Other",

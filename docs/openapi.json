@@ -15937,6 +15937,7 @@
                 "insurance",
                 "renovation",
                 "maintenance",
+                "fuel",
                 "taxes_fees",
                 "other"
               ]
@@ -16214,6 +16215,7 @@
                       "insurance",
                       "renovation",
                       "maintenance",
+                      "fuel",
                       "taxes_fees",
                       "other"
                     ]
@@ -16834,6 +16836,7 @@
                       "insurance",
                       "renovation",
                       "maintenance",
+                      "fuel",
                       "taxes_fees",
                       "other"
                     ]
@@ -17385,6 +17388,7 @@
                       "insurance",
                       "renovation",
                       "maintenance",
+                      "fuel",
                       "taxes_fees",
                       "other"
                     ]
@@ -34030,6 +34034,7 @@
                     "insurance",
                     "renovation",
                     "maintenance",
+                    "fuel",
                     "taxes_fees",
                     "other"
                   ]
@@ -35301,6 +35306,7 @@
               "insurance",
               "renovation",
               "maintenance",
+              "fuel",
               "taxes_fees",
               "other"
             ]
@@ -35557,6 +35563,7 @@
                     "insurance",
                     "renovation",
                     "maintenance",
+                    "fuel",
                     "taxes_fees",
                     "other"
                   ]
@@ -35850,6 +35857,7 @@
                       "insurance",
                       "renovation",
                       "maintenance",
+                      "fuel",
                       "taxes_fees",
                       "other"
                     ]
