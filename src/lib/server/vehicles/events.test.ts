@@ -150,6 +150,27 @@ describe("a completion with an odometer reading", () => {
     ).toEqual([]);
   });
 
+  it("a backdated reading above a later one stops the completion, on counterValue", async () => {
+    const { car, task } = await setup();
+    await recordOdometer(ctx(), {
+      assetId: car.id,
+      date: "2026-06-12",
+      value: 84_000,
+      source: "manual",
+    });
+    const err = await failure(() =>
+      finish(task.id, { counterValue: 90_000, completedAt: at("2026-06-05") }),
+    );
+    expect(err.code).toBe("invalid_request");
+    expect(fieldErrors(err, "counterValue")).not.toEqual([]);
+    expect(readings(car.id).map((r) => r.value)).toEqual([84_000, 80_000]);
+    const ok = await finish(task.id, {
+      counterValue: 82_000,
+      completedAt: at("2026-06-05"),
+    });
+    expect(ok.completion.counterValue).toBe(82_000);
+  });
+
   it("a retried request does not record a second reading", async () => {
     const { car, task } = await setup();
     const key = "retry-key-12345";

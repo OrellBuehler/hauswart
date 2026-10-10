@@ -1,4 +1,4 @@
-import { and, eq, lt, lte, ne, or, sql, type SQL } from "drizzle-orm";
+import { and, eq, gt, lt, lte, ne, or, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { ApiError } from "$lib/api/errors";
 import type { OdometerSource } from "$lib/api/enums";
@@ -72,8 +72,8 @@ function notAVehicle(field: string | null): ApiError {
  * reading in their own transaction; the follow-up work (re-evaluating tasks, notifications) is
  * `settleOdometer`, which `recordOdometer` runs for you.
  *
- * A value lower than the reading before (the latest one on or before the date) is a 400 on the
- * value field, unless `force`. A reading with a `sourceId` that already has one updates it.
+ * A value lower than the reading before (the latest one on or before the date) or higher than the
+ * reading after (the first one on a later date) is a 400 on the value field, unless `force`. A reading with a `sourceId` that already has one updates it.
  */
 export function writeOdometer(
   ctx: Ctx,
@@ -137,6 +137,25 @@ export function writeOdometer(
         throw invalidField(
           fields.value,
           `Lower than the reading of ${before.value} on ${before.date}; send force to take it anyway`,
+        );
+      }
+      const after = inner.db
+        .select()
+        .from(odometerReadings)
+        .where(
+          and(
+            eq(odometerReadings.assetId, input.assetId),
+            gt(odometerReadings.date, input.date),
+            existing ? ne(odometerReadings.id, existing.id) : undefined,
+          ),
+        )
+        .orderBy(...readingOrder("asc"))
+        .limit(1)
+        .get();
+      if (after && input.value > after.value) {
+        throw invalidField(
+          fields.value,
+          `Higher than the later reading of ${after.value} on ${after.date}; send force to take it anyway`,
         );
       }
     }

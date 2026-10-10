@@ -188,6 +188,49 @@ describe("odometer readings", () => {
       expect(fieldErrors(err, "value")).not.toEqual([]);
     });
 
+    it("refuses a value above the reading after its date, unless forced", async () => {
+      const car = makeVehicle(test);
+      await record(car.id, "2026-01-01", 10_000);
+      await record(car.id, "2026-06-01", 20_000);
+      const err = await failure(() => record(car.id, "2026-03-01", 25_000));
+      expect(err.status).toBe(400);
+      expect(fieldErrors(err, "value")[0]).toContain("20000");
+      expect(fieldErrors(err, "value")[0]).toContain("2026-06-01");
+      expect(values(car.id)).toEqual(["2026-06-01 20000", "2026-01-01 10000"]);
+      // The signal and the samples stay as they were.
+      expect(getSignal(ctx(), odometerSignalKey(car.id))?.numeric).toBe(20_000);
+      expect(
+        listSamples(ctx(), odometerSignalKey(car.id)).map((s) => s.value),
+      ).toEqual([20_000, 10_000]);
+      // Equal is fine, and so is anything in between.
+      await record(car.id, "2026-03-01", 20_000);
+      await record(car.id, "2026-02-01", 12_000);
+      await record(car.id, "2026-04-01", 25_000, { force: true });
+      expect(values(car.id)).toContain("2026-04-01 25000");
+    });
+
+    it("compares a reading it changes with the one after it as well", async () => {
+      const car = makeVehicle(test);
+      await record(car.id, "2026-01-01", 10_000);
+      await record(car.id, "2026-03-01", 15_000, {
+        source: "fuel_log",
+        sourceId: "fill-1",
+      });
+      await record(car.id, "2026-06-01", 20_000);
+      const err = await failure(() =>
+        record(car.id, "2026-03-01", 25_000, {
+          source: "fuel_log",
+          sourceId: "fill-1",
+        }),
+      );
+      expect(fieldErrors(err, "value")).not.toEqual([]);
+      expect(values(car.id)).toContain("2026-03-01 15000");
+      await record(car.id, "2026-03-01", 19_000, {
+        source: "fuel_log",
+        sourceId: "fill-1",
+      });
+    });
+
     it("takes the same value again", async () => {
       const car = makeVehicle(test);
       await record(car.id, "2026-05-01", 80_000);
