@@ -8,6 +8,7 @@ import {
   defects,
   docPages,
   documentLinks,
+  insurancePolicies,
   parts,
   rooms,
   serviceLog,
@@ -165,6 +166,26 @@ describe("document links", () => {
           id: c.id,
           remove: () =>
             void test.db.delete(contacts).where(eq(contacts.id, c.id)).run(),
+        };
+      },
+      insurance_policy: () => {
+        const p = test.db
+          .insert(insurancePolicies)
+          .values({
+            title: "Hausrat",
+            premiumMinor: minor(48_000),
+            currency: "CHF",
+            startDate: "2026-01-01",
+          })
+          .returning()
+          .get();
+        return {
+          id: p.id,
+          remove: () =>
+            void test.db
+              .delete(insurancePolicies)
+              .where(eq(insurancePolicies.id, p.id))
+              .run(),
         };
       },
       cost: () => {

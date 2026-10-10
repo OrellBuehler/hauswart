@@ -6,6 +6,7 @@ import {
   contacts,
   costEntries,
   defects,
+  insurancePolicies,
   parts,
   serviceLog,
 } from "$lib/server/db";
@@ -27,6 +28,7 @@ const DOMAIN_OWNERS: [AttachmentOwnerType, OwnerExists][] = [
   ["asset_hint", existsIn(assetHints)],
   ["contact", existsIn(contacts)],
   ["cost", existsIn(costEntries)],
+  ["insurance_policy", existsIn(insurancePolicies)],
 ];
 
 /** Makes the owner types of the domains on top of the core valid for uploads. Safe to call more than once. */

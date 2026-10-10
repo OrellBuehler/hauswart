@@ -200,6 +200,7 @@ export const ATTACHMENT_OWNER_TYPES = [
   "asset_hint",
   "contact",
   "cost",
+  "insurance_policy",
 ] as const;
 export type AttachmentOwnerType = (typeof ATTACHMENT_OWNER_TYPES)[number];
 
@@ -277,6 +278,8 @@ export const DOCUMENT_LINK_ROLES = [
   "datasheet",
   "correspondence",
   "invoice",
+  "policy",
+  "registration",
   "other",
 ] as const;
 export type DocumentLinkRole = (typeof DOCUMENT_LINK_ROLES)[number];
@@ -292,6 +295,7 @@ export const DOCUMENT_LINK_OWNER_TYPES = [
   "part",
   "contact",
   "cost",
+  "insurance_policy",
 ] as const;
 export type DocumentLinkOwnerType = (typeof DOCUMENT_LINK_OWNER_TYPES)[number];
 
@@ -318,6 +322,7 @@ export const COMMENT_ENTITY_TYPES = [
   "asset_hint",
   "doc_page",
   "cost",
+  "insurance_policy",
 ] as const;
 export type CommentEntityType = (typeof COMMENT_ENTITY_TYPES)[number];
 

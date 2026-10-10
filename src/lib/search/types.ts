@@ -7,6 +7,7 @@ import FileTextIcon from "@lucide/svelte/icons/file-text";
 import LightbulbIcon from "@lucide/svelte/icons/lightbulb";
 import ListChecksIcon from "@lucide/svelte/icons/list-checks";
 import PuzzleIcon from "@lucide/svelte/icons/puzzle";
+import ShieldCheckIcon from "@lucide/svelte/icons/shield-check";
 import WrenchIcon from "@lucide/svelte/icons/wrench";
 import type { z } from "zod";
 import {
@@ -30,6 +31,7 @@ export const hitLabels: Record<SearchHitType, () => string> = {
   contact: () => m.search_type_contact(),
   part: () => m.search_type_part(),
   asset_hint: () => m.search_type_hint(),
+  insurance_policy: () => m.search_type_insurance_policy(),
   document: () => m.search_type_document(),
 };
 
@@ -42,6 +44,7 @@ export const hitIcons: Record<SearchHitType, Component> = {
   contact: ContactIcon,
   part: PuzzleIcon,
   asset_hint: LightbulbIcon,
+  insurance_policy: ShieldCheckIcon,
   document: FileSearchIcon,
 };
 

@@ -127,6 +127,13 @@
       "when": 1791656844542,
       "tag": "0017_insurance_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1791656955152,
+      "tag": "0018_insurance_policy_triggers",
+      "breakpoints": true
     }
   ]
 }

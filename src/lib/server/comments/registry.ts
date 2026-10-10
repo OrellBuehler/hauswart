@@ -7,6 +7,7 @@ import {
   costEntries,
   defects,
   docPages,
+  insurancePolicies,
   parts,
   rooms,
   serviceLog,
@@ -55,6 +56,7 @@ function simple(
     | typeof serviceLog
     | typeof defects
     | typeof costEntries
+    | typeof insurancePolicies
     | typeof docPages,
   titleOf: (row: Record<string, unknown>) => string,
   url: (db: DB, id: string) => string,
@@ -183,5 +185,13 @@ registerCommentable(
     costEntries,
     (r) => r.title as string,
     (_db, id) => `/costs/${id}`,
+  ),
+);
+registerCommentable(
+  "insurance_policy",
+  simple(
+    insurancePolicies,
+    (r) => r.title as string,
+    (_db, id) => `/insurance/${id}`,
   ),
 );

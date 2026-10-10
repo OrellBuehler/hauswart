@@ -19329,7 +19329,8 @@
                 "service_log",
                 "asset_hint",
                 "doc_page",
-                "cost"
+                "cost",
+                "insurance_policy"
               ]
             }
           },
@@ -19567,7 +19568,8 @@
                       "service_log",
                       "asset_hint",
                       "doc_page",
-                      "cost"
+                      "cost",
+                      "insurance_policy"
                     ]
                   },
                   "entityId": {
@@ -22100,6 +22102,7 @@
                 "contact",
                 "part",
                 "asset_hint",
+                "insurance_policy",
                 "document"
               ]
             }
@@ -22319,7 +22322,8 @@
                       "part",
                       "asset_hint",
                       "contact",
-                      "cost"
+                      "cost",
+                      "insurance_policy"
                     ]
                   },
                   "ownerId": {
@@ -22408,7 +22412,8 @@
                 "part",
                 "asset_hint",
                 "contact",
-                "cost"
+                "cost",
+                "insurance_policy"
               ]
             }
           },
@@ -26486,7 +26491,8 @@
                 "service_log",
                 "part",
                 "contact",
-                "cost"
+                "cost",
+                "insurance_policy"
               ]
             }
           },
@@ -26766,7 +26772,8 @@
                       "service_log",
                       "part",
                       "contact",
-                      "cost"
+                      "cost",
+                      "insurance_policy"
                     ]
                   },
                   "ownerId": {
@@ -26784,6 +26791,8 @@
                       "datasheet",
                       "correspondence",
                       "invoice",
+                      "policy",
+                      "registration",
                       "other"
                     ]
                   },
@@ -27065,6 +27074,8 @@
                       "datasheet",
                       "correspondence",
                       "invoice",
+                      "policy",
+                      "registration",
                       "other"
                     ]
                   },
@@ -35026,7 +35037,8 @@
               "service_log",
               "asset_hint",
               "doc_page",
-              "cost"
+              "cost",
+              "insurance_policy"
             ]
           },
           "entityId": {
@@ -35638,6 +35650,7 @@
               "contact",
               "part",
               "asset_hint",
+              "insurance_policy",
               "document"
             ]
           },
@@ -35681,7 +35694,8 @@
               "part",
               "asset_hint",
               "contact",
-              "cost"
+              "cost",
+              "insurance_policy"
             ]
           },
           "ownerId": {
@@ -36457,7 +36471,8 @@
               "service_log",
               "part",
               "contact",
-              "cost"
+              "cost",
+              "insurance_policy"
             ]
           },
           "ownerId": {
@@ -36484,6 +36499,8 @@
               "datasheet",
               "correspondence",
               "invoice",
+              "policy",
+              "registration",
               "other"
             ]
           }
@@ -36651,7 +36668,8 @@
               "service_log",
               "part",
               "contact",
-              "cost"
+              "cost",
+              "insurance_policy"
             ]
           },
           "ownerId": {
@@ -36666,6 +36684,8 @@
               "datasheet",
               "correspondence",
               "invoice",
+              "policy",
+              "registration",
               "other"
             ]
           },
@@ -36917,7 +36937,8 @@
               "service_log",
               "part",
               "contact",
-              "cost"
+              "cost",
+              "insurance_policy"
             ]
           },
           "ownerId": {
@@ -36944,6 +36965,8 @@
               "datasheet",
               "correspondence",
               "invoice",
+              "policy",
+              "registration",
               "other"
             ]
           },
