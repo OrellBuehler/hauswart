@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { triggerSchema } from "$lib/tasks/engine";
 import { assetIdOfOdometerKey } from "$lib/vehicles/odometer";
+import { dateInZone, householdTimeZone } from "$lib/server/config";
 import { assets, tasks } from "$lib/server/db";
 import { onEvent } from "$lib/server/events";
 import { writeOdometer, removeReadingsOfSource } from "./odometer";
@@ -37,7 +38,7 @@ function odometerVehicleOf(
 
 /**
  * Completing a task that counts a vehicle's odometer with a reading (the service done at 84,200 km)
- * records that reading for the vehicle, dated the day of the completion. A reading that merely
+ * records that reading for the vehicle, dated the day of the completion (today at the latest). A reading that merely
  * repeats the newest one (the counter snapshot a completion takes by itself) adds nothing. A
  * reading lower than the one before is refused like any other, which stops the completion too:
  * it is reported on `counterValue`.
@@ -50,11 +51,14 @@ export function onCompletionRecorded({
   const assetId = odometerVehicleOf(ctx, completion.taskId);
   if (!assetId) return;
   if (latestReading(ctx.db, assetId)?.value === completion.counterValue) return;
+  // A completion may be a few minutes ahead of the clock, which at midnight is already tomorrow;
+  // a reading is never dated in the future.
+  const today = dateInZone(ctx.now, householdTimeZone());
   writeOdometer(
     ctx,
     {
       assetId,
-      date: completion.completedDate,
+      date: completion.completedDate > today ? today : completion.completedDate,
       value: completion.counterValue,
       source: "completion",
       sourceId: completion.id,

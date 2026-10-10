@@ -135,6 +135,23 @@ describe("a completion with an odometer reading", () => {
     });
   });
 
+  it("a completion a few minutes ahead of midnight is dated today, not tomorrow", async () => {
+    const { car, task } = await setup();
+    // The completion tolerates a clock five minutes ahead, which can be the next day.
+    const justBeforeMidnight = at("2026-06-15", "23:58");
+    const { completion } = await finish(
+      task.id,
+      { counterValue: 84_000, completedAt: at("2026-06-16", "00:01") },
+      justBeforeMidnight,
+    );
+    expect(completion.completedDate).toBe("2026-06-16");
+    expect(readings(car.id)[0]).toMatchObject({
+      date: "2026-06-15",
+      value: 84_000,
+      source: "completion",
+    });
+  });
+
   it("a reading lower than the one before stops the completion, reported on counterValue", async () => {
     const { car, task } = await setup();
     const err = await failure(() => finish(task.id, { counterValue: 70_000 }));
