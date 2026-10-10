@@ -470,6 +470,55 @@ describe("tasks that count on the odometer", () => {
     expect(sent[0]).toMatchObject({ userId: anna.id, taskId: task.id });
   });
 
+  it("forgets a starting value that no reading shows any more", async () => {
+    const car = makeVehicle(test);
+    const task = await makeTask(ctx(), { trigger: serviceOf(car.id) });
+    const typo = await record(car.id, "2026-06-15", 960_000);
+    expect(stateOf(task.id)?.counterBaseline).toBe(960_000);
+    await deleteOdometerReading(ctx(), typo.id);
+    expect(stateOf(task.id)?.counterBaseline).toBeNull();
+    await record(car.id, "2026-06-15", 96_000);
+    expect(stateOf(task.id)).toMatchObject({
+      status: "ok",
+      progress: { current: 0, target: 15_000 },
+      counterBaseline: 96_000,
+    });
+    expect(stateOf(task.id)?.reasons).toEqual([]);
+    expect(test.db.select().from(notifications).all()).toEqual([]);
+  });
+
+  it("keeps a starting value that a reading still shows", async () => {
+    const car = makeVehicle(test);
+    const task = await makeTask(ctx(), { trigger: serviceOf(car.id) });
+    await record(car.id, "2026-06-10", 80_000);
+    const later = await record(car.id, "2026-06-15", 90_000);
+    await deleteOdometerReading(ctx(), later.id);
+    expect(stateOf(task.id)).toMatchObject({
+      counterBaseline: 80_000,
+      progress: { current: 0 },
+    });
+  });
+
+  it("forgets it when the reading it came from is corrected downwards", async () => {
+    const car = makeVehicle(test);
+    const task = await makeTask(ctx(), { trigger: serviceOf(car.id) });
+    const fill = (value: number) =>
+      recordOdometer(ctx(), {
+        assetId: car.id,
+        date: "2026-06-15",
+        value,
+        source: "fuel_log",
+        sourceId: "fill-1",
+      });
+    await fill(960_000);
+    expect(stateOf(task.id)?.counterBaseline).toBe(960_000);
+    await fill(96_000);
+    expect(stateOf(task.id)).toMatchObject({
+      counterBaseline: 96_000,
+      progress: { current: 0 },
+    });
+  });
+
   it("follows a deleted reading", async () => {
     const car = makeVehicle(test);
     const task = await makeTask(ctx(), { trigger: serviceOf(car.id) });
