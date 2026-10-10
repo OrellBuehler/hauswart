@@ -203,7 +203,6 @@
         <Label for="asset-kind">{m.asset_kind()}</Label>
         <OptionSelect
           id="asset-kind"
-          class="data-[size=default]:h-10"
           options={kindOptions}
           bind:value={
             () => kind,

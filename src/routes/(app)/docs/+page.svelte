@@ -204,7 +204,6 @@
           () => filter.roomId ?? null, (value) => apply({ roomId: value })
         }
         noneLabel={m.inventory_filter_all_rooms()}
-        class="data-[size=default]:h-10"
       />
       <div class="flex h-10 items-center gap-2">
         <Switch

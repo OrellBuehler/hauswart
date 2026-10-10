@@ -166,13 +166,11 @@
           options={kindOptions}
           bind:value={filter.kind}
           noneLabel={m.inventory_filter_all_kinds()}
-          class="data-[size=default]:h-10"
         />
         <OptionSelect
           options={warrantyOptions}
           bind:value={filter.warranty}
           noneLabel={m.inventory_filter_all_warranties()}
-          class="data-[size=default]:h-10"
         />
         {#if hasArchived}
           <div class="flex h-10 items-center gap-2 max-md:col-span-2">

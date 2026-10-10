@@ -35,7 +35,7 @@
     () => value ?? NONE, (next) => (value = next === NONE ? null : next)
   }
 >
-  <Select.Trigger {id} class={cn("w-full data-[size=default]:h-10", className)}>
+  <Select.Trigger {id} class={cn("w-full", className)}>
     <span class="flex min-w-0 items-center gap-2">
       {#if SelectedIcon}
         <SelectedIcon class="text-muted-foreground" aria-hidden="true" />

@@ -33,10 +33,7 @@
     () => value ?? NONE, (next) => (value = next === NONE ? null : (next as T))
   }
 >
-  <Select.Trigger
-    {id}
-    class={cn("w-full min-w-0 data-[size=default]:h-10", className)}
-  >
+  <Select.Trigger {id} class={cn("w-full min-w-0", className)}>
     <span class="truncate">{label}</span>
   </Select.Trigger>
   <Select.Content>

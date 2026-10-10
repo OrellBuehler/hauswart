@@ -758,7 +758,6 @@
               {rooms}
               bind:value={roomId}
               noneLabel={m.docs_field_none()}
-              class="data-[size=default]:h-10"
             />
           </Field>
         </div>
