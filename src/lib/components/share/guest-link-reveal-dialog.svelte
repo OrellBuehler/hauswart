@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ChevronDownIcon from "@lucide/svelte/icons/chevron-down";
   import ExternalLinkIcon from "@lucide/svelte/icons/external-link";
   import LockKeyholeIcon from "@lucide/svelte/icons/lock-keyhole";
   import ShareIcon from "@lucide/svelte/icons/share-2";
@@ -64,7 +65,7 @@
       <Alert.Title>{m.glinks_reveal_warning_title()}</Alert.Title>
       <Alert.Description>{m.glinks_reveal_warning()}</Alert.Description>
     </Alert.Root>
-    <div class="flex flex-col items-center gap-2">
+    <div class="hidden flex-col items-center gap-2 sm:flex">
       <div class="w-full max-w-48 rounded-xl border bg-white p-1">
         <QrCode
           value={url}
@@ -72,6 +73,25 @@
         />
       </div>
     </div>
+    <details class="group rounded-lg border sm:hidden">
+      <summary
+        class="focus-visible:ring-ring/50 flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm font-medium outline-none focus-visible:ring-[3px]"
+      >
+        {m.glinks_qr_toggle()}
+        <ChevronDownIcon
+          class="text-muted-foreground size-4 shrink-0 transition-transform group-open:rotate-180"
+          aria-hidden="true"
+        />
+      </summary>
+      <div class="flex justify-center border-t p-3">
+        <div class="w-full max-w-48 rounded-xl border bg-white p-1">
+          <QrCode
+            value={url}
+            label={m.glinks_qr_label({ label: link?.label ?? "" })}
+          />
+        </div>
+      </div>
+    </details>
     <div class="flex flex-col gap-2">
       <span class="text-sm font-medium">{m.glinks_url_label()}</span>
       <div class="flex items-stretch gap-2">

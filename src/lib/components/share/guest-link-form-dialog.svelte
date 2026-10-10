@@ -24,7 +24,6 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import { Checkbox } from "$lib/components/ui/checkbox/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
   import { localDateOf } from "$lib/dates";
   import { apiErrorMessage } from "$lib/error-message";
   import { m } from "$lib/paraglide/messages";
@@ -347,6 +346,7 @@
             <Input
               id="glink-pin"
               inputmode="numeric"
+              enterkeyhint="done"
               autocomplete="off"
               maxlength={8}
               aria-invalid={invalid || undefined}
@@ -376,29 +376,28 @@
     {/if}
   </fieldset>
 
-  <fieldset class="flex flex-col gap-3">
+  <fieldset class="flex flex-col gap-1">
     <legend class="mb-1 text-sm font-medium">{m.glinks_sections()}</legend>
-    <p class="text-muted-foreground -mt-1 text-xs text-pretty">
+    <p class="text-muted-foreground mb-2 text-xs text-pretty">
       {m.glinks_sections_hint()}
     </p>
     {#each GUEST_SECTIONS as section (section)}
-      <div class="flex items-start gap-3">
+      <label class="flex min-h-11 cursor-pointer items-start gap-3 py-1">
         <Checkbox
           id={`glink-section-${section}`}
           class="mt-0.5"
           checked={sections.includes(section)}
           onCheckedChange={(checked) => toggleSection(section, checked)}
         />
-        <Label
-          for={`glink-section-${section}`}
-          class="flex flex-col items-start gap-0.5"
+        <span
+          class="flex flex-col items-start gap-0.5 text-sm leading-none font-medium"
         >
           <span>{guestSectionLabels[section]()}</span>
           <span class="text-muted-foreground text-xs font-normal text-pretty">
             {guestSectionHints[section]()}
           </span>
-        </Label>
-      </div>
+        </span>
+      </label>
     {/each}
   </fieldset>
 
@@ -426,28 +425,31 @@
       {#if guestPages.length === 0}
         <p class="text-sm text-pretty">{m.glinks_pages_empty()}</p>
       {:else}
-        <ul class="flex flex-col gap-2.5">
+        <ul class="flex flex-col">
           {#each guestPages as page (page.id)}
             {@const viaSection = covered(page)}
-            <li class="flex items-start gap-3">
-              <Checkbox
-                id={`glink-page-${page.id}`}
-                class="mt-0.5"
-                checked={viaSection || pageIds.includes(page.id)}
-                disabled={viaSection}
-                onCheckedChange={(checked) => togglePage(page.id, checked)}
-              />
-              <Label
-                for={`glink-page-${page.id}`}
-                class="flex min-w-0 flex-col items-start gap-0.5"
+            <li>
+              <label
+                class="flex min-h-11 cursor-pointer items-start gap-3 py-1 has-[button:disabled]:cursor-not-allowed has-[button:disabled]:opacity-50"
               >
-                <span class="break-words">{page.title}</span>
-                <span class="text-muted-foreground text-xs font-normal">
-                  {sectionLabels[page.section]()}{viaSection
-                    ? ` · ${m.glinks_pages_via_section()}`
-                    : ""}
+                <Checkbox
+                  id={`glink-page-${page.id}`}
+                  class="mt-0.5"
+                  checked={viaSection || pageIds.includes(page.id)}
+                  disabled={viaSection}
+                  onCheckedChange={(checked) => togglePage(page.id, checked)}
+                />
+                <span
+                  class="flex min-w-0 flex-col items-start gap-0.5 text-sm leading-none font-medium"
+                >
+                  <span class="break-words">{page.title}</span>
+                  <span class="text-muted-foreground text-xs font-normal">
+                    {sectionLabels[page.section]()}{viaSection
+                      ? ` · ${m.glinks_pages_via_section()}`
+                      : ""}
+                  </span>
                 </span>
-              </Label>
+              </label>
             </li>
           {/each}
         </ul>

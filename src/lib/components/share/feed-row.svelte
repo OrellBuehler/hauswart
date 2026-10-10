@@ -128,17 +128,24 @@
       {alarm}
     </p>
     <p
-      class="flex items-center gap-1.5"
+      class="flex items-start gap-1.5"
       title={feed.lastFetchedAt
         ? formatDateTime(feed.lastFetchedAt, { timeZone })
         : undefined}
     >
-      <RefreshCwIcon class="size-3.5 shrink-0" aria-hidden="true" />
-      {feed.lastFetchedAt
-        ? m.feeds_last_fetched({
-            when: formatRelativeInstant(feed.lastFetchedAt),
-          })
-        : m.feeds_never_fetched()}
+      <RefreshCwIcon class="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+      <span class="min-w-0">
+        {feed.lastFetchedAt
+          ? m.feeds_last_fetched({
+              when: formatRelativeInstant(feed.lastFetchedAt),
+            })
+          : m.feeds_never_fetched()}
+        {#if feed.lastFetchedAt}
+          <span class="pointer-fine:hidden">
+            ({formatDateTime(feed.lastFetchedAt, { timeZone })})
+          </span>
+        {/if}
+      </span>
     </p>
   </div>
 
