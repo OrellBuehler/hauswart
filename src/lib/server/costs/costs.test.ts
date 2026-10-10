@@ -113,6 +113,13 @@ describe("costs service", () => {
       ).toBe(true);
     });
 
+    it("counts fuel as an expense", async () => {
+      await twoUsers();
+      expect(
+        createCost(ctx(), input({ category: "fuel" }), null).countsAsExpense,
+      ).toBe(true);
+    });
+
     it("stores a refund as a negative amount and splits it like the expense", async () => {
       const { a, b } = await twoUsers();
       const refund = createCost(ctx(), input({ amountMinor: -1001 }), a.id);

@@ -410,6 +410,7 @@ export const COST_CATEGORIES = [
   "insurance",
   "renovation",
   "maintenance",
+  "fuel",
   "taxes_fees",
   "other",
 ] as const;
@@ -426,6 +427,7 @@ export const COST_CATEGORY_COUNTS_AS_EXPENSE: Record<CostCategory, boolean> = {
   insurance: true,
   renovation: true,
   maintenance: true,
+  fuel: true,
   taxes_fees: true,
   other: true,
 };

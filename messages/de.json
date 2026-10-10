@@ -2314,6 +2314,7 @@
   "cost_category": "Kategorie",
   "cost_category_insurance": "Versicherung",
   "cost_category_maintenance": "Unterhalt",
+  "cost_category_fuel": "Treibstoff und Strom",
   "cost_category_mortgage_interest": "Hypothekarzins",
   "cost_category_mortgage_principal": "Amortisation",
   "cost_category_other": "Sonstiges",
