@@ -134,6 +134,13 @@
       "when": 1791656955152,
       "tag": "0018_insurance_policy_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1791657177986,
+      "tag": "0019_asset_notes",
+      "breakpoints": true
     }
   ]
 }

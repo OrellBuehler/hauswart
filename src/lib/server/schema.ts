@@ -11,6 +11,7 @@ import {
 import {
   ASSET_CONTACT_ROLES,
   ASSET_KINDS,
+  ASSET_NOTE_STATUSES,
   ASSIGN_MODES,
   ATTACHMENT_OWNER_TYPES,
   COMMENT_ENTITY_TYPES,
@@ -796,6 +797,47 @@ export const insurancePolicyAssets = sqliteTable(
   (t) => [
     primaryKey({ columns: [t.policyId, t.assetId] }),
     index("insurance_policy_assets_asset_id_idx").on(t.assetId),
+  ],
+);
+
+/**
+ * A small issue to mention at the next appointment ("brakes squeak"). Open until a service log
+ * entry addressed it (`serviceLogId`), it was turned into a defect (`defectId`) or somebody
+ * resolved it by hand. Domain data shared by everybody; the photos of the issue are attachments of
+ * the owner type `asset_note`.
+ */
+export const assetNotes = sqliteTable(
+  "asset_notes",
+  {
+    id: id(),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    status: text("status", { enum: ASSET_NOTE_STATUSES })
+      .notNull()
+      .default("open"),
+    resolvedAt: integer("resolved_at", { mode: "timestamp_ms" }),
+    resolvedBy: text("resolved_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    /** The service log entry that addressed the issue. */
+    serviceLogId: text("service_log_id").references(() => serviceLog.id, {
+      onDelete: "set null",
+    }),
+    /** The defect the note was turned into. */
+    defectId: text("defect_id").references(() => defects.id, {
+      onDelete: "set null",
+    }),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    ...timestamps,
+  },
+  (t) => [
+    index("asset_notes_asset_status_idx").on(t.assetId, t.status),
+    index("asset_notes_service_log_id_idx").on(t.serviceLogId),
+    index("asset_notes_defect_id_idx").on(t.defectId),
   ],
 );
 

@@ -466,6 +466,10 @@ export const FINANCE_SUGGESTION_STATUSES = [
 export type FinanceSuggestionStatus =
   (typeof FINANCE_SUGGESTION_STATUSES)[number];
 
+/** `open`: to be mentioned at the next appointment. `resolved`: addressed, converted to a defect or dismissed. */
+export const ASSET_NOTE_STATUSES = ["open", "resolved"] as const;
+export type AssetNoteStatus = (typeof ASSET_NOTE_STATUSES)[number];
+
 export const INSURANCE_TYPES = [
   "motor_liability",
   "motor_partial_casco",
