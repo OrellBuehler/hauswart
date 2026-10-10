@@ -29,6 +29,19 @@ export type VehicleFuelType = (typeof VEHICLE_FUEL_TYPES)[number];
 export const ODOMETER_UNITS = ["km", "mi"] as const;
 export type OdometerUnit = (typeof ODOMETER_UNITS)[number];
 
+export const TIRE_SEASONS = ["summer", "winter", "all_season"] as const;
+export type TireSeason = (typeof TIRE_SEASONS)[number];
+
+export const TIRE_EVENT_KINDS = [
+  "mounted",
+  "unmounted",
+  "tread_measured",
+] as const;
+export type TireEventKind = (typeof TIRE_EVENT_KINDS)[number];
+
+export const FUEL_UNITS = ["l", "kWh"] as const;
+export type FuelUnit = (typeof FUEL_UNITS)[number];
+
 /**
  * Where an odometer reading came from. `fuel_log`, `tire_change` and `signal` are written by
  * features that build on `recordOdometer`; the first three exist today.
