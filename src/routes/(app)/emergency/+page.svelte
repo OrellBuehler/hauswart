@@ -88,7 +88,7 @@
       <h2 id="emergency-contacts" class="text-lg font-semibold">
         {m.emergency_contacts()}
       </h2>
-      <ul class="grid gap-3 sm:grid-cols-2">
+      <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {#each emergency.contacts as contact (contact.id)}
           <li
             class="bg-card flex break-inside-avoid flex-col gap-3 rounded-xl border-2 p-4 print:rounded-lg print:border print:p-3"
@@ -96,18 +96,18 @@
             <div class="min-w-0">
               <a
                 href={contactHref(contact.id)}
-                class="font-semibold break-words underline-offset-4 hover:underline print:no-underline"
+                class="font-semibold wrap-anywhere underline-offset-4 hover:underline print:no-underline"
               >
                 {contact.name}
               </a>
               {#if contact.company && contact.company !== contact.name}
-                <p class="text-muted-foreground text-sm break-words">
+                <p class="text-muted-foreground text-sm wrap-anywhere">
                   {contact.company}
                 </p>
               {/if}
               {#if contact.notes}
                 <p
-                  class="text-muted-foreground mt-1 text-sm break-words whitespace-pre-line"
+                  class="text-muted-foreground mt-1 text-sm wrap-anywhere whitespace-pre-line"
                 >
                   {contact.notes}
                 </p>
@@ -132,12 +132,14 @@
                 href={`mailto:${contact.email}`}
                 variant="outline"
                 size="lg"
-                class="print:hidden"
+                class="max-w-full min-w-0 print:hidden"
                 aria-label={m.contact_mail_aria({ name: contact.name })}
               >
-                <MailIcon />{contact.email}
+                <MailIcon /><span class="truncate">{contact.email}</span>
               </Button>
-              <p class="hidden text-sm print:block">{contact.email}</p>
+              <p class="hidden text-sm wrap-anywhere print:block">
+                {contact.email}
+              </p>
             {/if}
           </li>
         {/each}
@@ -150,7 +152,7 @@
       <h2 id="emergency-assets" class="text-lg font-semibold">
         {m.emergency_assets()}
       </h2>
-      <ul class="grid gap-3 md:grid-cols-2">
+      <ul class="grid grid-cols-1 gap-3 md:grid-cols-2">
         {#each emergency.assets as asset (asset.id)}
           <li
             class="bg-card flex break-inside-avoid flex-col gap-3 rounded-xl border p-4"
@@ -165,12 +167,12 @@
               <div class="min-w-0">
                 <a
                   href={assetHref(asset.id)}
-                  class="font-semibold break-words underline-offset-4 hover:underline print:no-underline"
+                  class="font-semibold wrap-anywhere underline-offset-4 hover:underline print:no-underline"
                 >
                   {asset.name}
                 </a>
                 {#if asset.roomName}
-                  <p class="text-muted-foreground text-sm break-words">
+                  <p class="text-muted-foreground text-sm wrap-anywhere">
                     {m.emergency_room({ room: asset.roomName })}
                   </p>
                 {/if}
@@ -201,7 +203,10 @@
       <div
         class="flex break-after-avoid flex-wrap items-center justify-between gap-x-3 gap-y-1"
       >
-        <h2 id={`emergency-page-${page.id}`} class="text-lg font-semibold">
+        <h2
+          id={`emergency-page-${page.id}`}
+          class="min-w-0 text-lg font-semibold wrap-anywhere"
+        >
           {page.title}
         </h2>
         <div class="flex items-center gap-2 print:hidden">
@@ -223,7 +228,7 @@
   {/each}
 
   <section
-    class="grid items-start gap-4 md:grid-cols-2 print:hidden"
+    class="grid grid-cols-1 items-start gap-4 md:grid-cols-2 print:hidden"
     aria-label={m.emergency_share_title()}
   >
     <Card.Root>

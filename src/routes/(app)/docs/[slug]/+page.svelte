@@ -153,7 +153,7 @@
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
             <h1
-              class="text-2xl font-semibold tracking-tight text-balance break-words md:text-3xl"
+              class="text-2xl font-semibold tracking-tight text-balance wrap-anywhere md:text-3xl"
             >
               {page.title}
             </h1>

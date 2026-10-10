@@ -112,7 +112,7 @@
         {m.defect_number_label({ number: defect.number })}
       </p>
       <h1
-        class="text-2xl font-semibold tracking-tight text-balance break-words md:text-3xl"
+        class="text-2xl font-semibold tracking-tight text-balance wrap-anywhere md:text-3xl"
       >
         {defect.title}
       </h1>
@@ -186,9 +186,9 @@
   </header>
 
   <div
-    class="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
+    class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
   >
-    <Card.Root class="lg:col-start-1">
+    <Card.Root class="min-w-0 lg:col-start-1">
       <Card.Content>
         <DefectStepper
           status={defect.status}
@@ -201,20 +201,20 @@
     </Card.Root>
 
     <aside
-      class="flex flex-col gap-6 lg:col-start-2 lg:row-span-4 lg:row-start-1"
+      class="flex min-w-0 flex-col gap-6 lg:col-start-2 lg:row-span-4 lg:row-start-1"
     >
       <Card.Root>
         <Card.Header>
           <Card.Title class="text-base">{m.defect_facts()}</Card.Title>
         </Card.Header>
         <Card.Content>
-          <dl class="grid gap-3 text-sm">
+          <dl class="grid grid-cols-1 gap-3 text-sm">
             {#if defect.roomName || defect.assetName}
               <div>
                 <dt class="text-muted-foreground text-xs">
                   {m.defect_place()}
                 </dt>
-                <dd class="mt-0.5 break-words">
+                <dd class="mt-0.5 wrap-anywhere">
                   {#if defect.roomName && defect.roomId}
                     <a
                       href={roomHref(defect.roomId)}
@@ -240,7 +240,7 @@
                 <dt class="text-muted-foreground text-xs">
                   {m.defect_location_detail()}
                 </dt>
-                <dd class="mt-0.5 break-words">{defect.locationDetail}</dd>
+                <dd class="mt-0.5 wrap-anywhere">{defect.locationDetail}</dd>
               </div>
             {/if}
             <div>
@@ -265,7 +265,7 @@
               <dt class="text-muted-foreground text-xs">
                 {m.defect_responsible()}
               </dt>
-              <dd class="mt-0.5 break-words">
+              <dd class="mt-0.5 wrap-anywhere">
                 {defect.responsibleContactName ?? m.defect_responsible_none()}
               </dd>
             </div>
@@ -333,7 +333,7 @@
       {/if}
     </aside>
 
-    <Card.Root class="lg:col-start-1">
+    <Card.Root class="min-w-0 lg:col-start-1">
       <Card.Header>
         <Card.Title class="text-base">{m.defect_description()}</Card.Title>
       </Card.Header>
@@ -349,7 +349,7 @@
     </Card.Root>
 
     {#if defect.resolutionMd.trim()}
-      <Card.Root class="lg:col-start-1">
+      <Card.Root class="min-w-0 lg:col-start-1">
         <Card.Header>
           <Card.Title class="text-base">{m.defect_resolution()}</Card.Title>
         </Card.Header>
@@ -359,7 +359,7 @@
       </Card.Root>
     {/if}
 
-    <div class="lg:col-start-1">
+    <div class="min-w-0 lg:col-start-1">
       <DefectTimeline
         defectId={defect.id}
         items={data.timeline}
@@ -369,7 +369,7 @@
     </div>
 
     <Attachments
-      class="lg:col-start-1"
+      class="min-w-0 lg:col-start-1"
       ownerType="defect"
       ownerId={defect.id}
       accept={IMAGE_ACCEPT}
@@ -377,7 +377,7 @@
     />
 
     <LinkedDocuments
-      class="lg:col-start-1"
+      class="min-w-0 lg:col-start-1"
       ownerType="defect"
       ownerId={defect.id}
     />

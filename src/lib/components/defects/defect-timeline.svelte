@@ -113,7 +113,7 @@
             </span>
             <div class="min-w-0 flex-1">
               <p class="flex min-w-0 flex-wrap items-baseline gap-x-2 text-sm">
-                <span class="font-medium break-words">
+                <span class="font-medium wrap-anywhere">
                   {#if item.type === "correspondence"}
                     {m.defect_event_correspondence({
                       user: actor(item.userName),
@@ -153,7 +153,10 @@
                   class="text-muted-foreground mt-1.5 flex flex-wrap gap-x-1 text-xs"
                 >
                   <span>{m.defect_event_reference()}:</span>
-                  <CommentBody text={item.externalRef} class="text-xs" />
+                  <CommentBody
+                    text={item.externalRef}
+                    class="min-w-0 text-xs wrap-anywhere"
+                  />
                 </div>
               {/if}
             </div>

@@ -71,7 +71,7 @@
         </span>
         <div class="min-w-0">
           <h1
-            class="text-2xl font-semibold tracking-tight text-balance break-words md:text-3xl"
+            class="text-2xl font-semibold tracking-tight text-balance wrap-anywhere md:text-3xl"
           >
             {contact.name}
           </h1>
@@ -81,7 +81,7 @@
             <span>{contactKindLabels[contact.kind]()}</span>
             {#if contact.company}
               <span aria-hidden="true">·</span>
-              <span>{contact.company}</span>
+              <span class="min-w-0 wrap-anywhere">{contact.company}</span>
             {/if}
             {#if contact.emergency}
               <Badge
@@ -144,10 +144,10 @@
         </Card.Header>
         <Card.Content class="flex flex-col gap-5">
           <dl
-            class="grid grid-cols-[minmax(6rem,auto)_1fr] gap-x-4 gap-y-3 text-sm sm:gap-x-6"
+            class="grid grid-cols-[minmax(5rem,auto)_minmax(0,1fr)] gap-x-4 gap-y-3 text-sm sm:gap-x-6"
           >
             <dt class="text-muted-foreground">{m.contact_phone()}</dt>
-            <dd class="font-medium break-words tabular-nums">
+            <dd class="font-medium wrap-anywhere tabular-nums">
               {#if contact.phone}
                 <Button
                   href={telHref(contact.phone)}
@@ -161,12 +161,12 @@
               {/if}
             </dd>
             <dt class="text-muted-foreground">{m.contact_email()}</dt>
-            <dd class="font-medium break-all">
+            <dd class="font-medium wrap-anywhere">
               {#if contact.email}
                 <Button
                   href={`mailto:${contact.email}`}
                   variant="link"
-                  class="h-auto p-0 font-medium break-all whitespace-normal"
+                  class="h-auto p-0 text-start font-medium wrap-anywhere whitespace-normal"
                 >
                   {contact.email}
                 </Button>
@@ -175,14 +175,14 @@
               {/if}
             </dd>
             <dt class="text-muted-foreground">{m.contact_url()}</dt>
-            <dd class="font-medium break-all">
+            <dd class="font-medium wrap-anywhere">
               {#if contact.url}
                 <Button
                   href={contact.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   variant="link"
-                  class="h-auto p-0 text-start font-medium break-all whitespace-normal"
+                  class="h-auto p-0 text-start font-medium wrap-anywhere whitespace-normal"
                 >
                   {contact.url}
                 </Button>
@@ -191,7 +191,7 @@
               {/if}
             </dd>
             <dt class="text-muted-foreground">{m.contact_address()}</dt>
-            <dd class="font-medium break-words whitespace-pre-line">
+            <dd class="font-medium wrap-anywhere whitespace-pre-line">
               {#if contact.address}
                 {contact.address}
               {:else}
@@ -211,7 +211,7 @@
               <h3 class="text-muted-foreground mb-1.5 text-sm">
                 {m.contact_notes()}
               </h3>
-              <p class="text-sm break-words whitespace-pre-line">
+              <p class="text-sm wrap-anywhere whitespace-pre-line">
                 {contact.notes}
               </p>
             </div>
