@@ -3,7 +3,7 @@
   import ExternalLinkIcon from "@lucide/svelte/icons/external-link";
   import PencilIcon from "@lucide/svelte/icons/pencil";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
-  import { goto } from "$app/navigation";
+  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
   import { api } from "$lib/api/browser";
@@ -48,7 +48,7 @@
   async function remove() {
     await api.call(endpoints.costsDelete, { params: { id: cost.id } });
     toast.success(m.cost_deleted_toast({ title: cost.title }));
-    await goto(resolve("/costs"), { invalidateAll: true });
+    await gotoFromOverlay(resolve("/costs"), { invalidateAll: true });
   }
 
   const linkClass =

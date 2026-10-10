@@ -13,7 +13,8 @@
   import PencilIcon from "@lucide/svelte/icons/pencil";
   import SkipForwardIcon from "@lucide/svelte/icons/skip-forward";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
-  import { goto, invalidateAll } from "$app/navigation";
+  import { invalidateAll } from "$app/navigation";
+  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
   import { api } from "$lib/api/browser";
@@ -119,7 +120,7 @@
   async function remove() {
     await api.call(endpoints.tasksDelete, { params: { id: task.id } });
     toast.success(m.task_deleted_toast({ title: task.title }));
-    await goto(resolve("/tasks"), { invalidateAll: true });
+    await gotoFromOverlay(resolve("/tasks"), { invalidateAll: true });
   }
 
   async function completePreparation(prepId: string, title: string) {

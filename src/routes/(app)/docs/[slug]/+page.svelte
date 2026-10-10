@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto, invalidateAll } from "$app/navigation";
+  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
   import { resolve } from "$app/paths";
   import ArchiveIcon from "@lucide/svelte/icons/archive";
   import ArchiveRestoreIcon from "@lucide/svelte/icons/archive-restore";
@@ -105,7 +106,7 @@
     const { slug, title } = page;
     await api.call(endpoints.pagesDelete, { params: { slug } });
     toast.success(m.docs_deleted_toast({ title }));
-    await goto(resolve("/docs"), { invalidateAll: true });
+    await gotoFromOverlay(resolve("/docs"), { invalidateAll: true });
   }
 
   const missingTitle = $derived(

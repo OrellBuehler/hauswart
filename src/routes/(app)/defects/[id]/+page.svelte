@@ -10,6 +10,7 @@
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import UndoIcon from "@lucide/svelte/icons/undo-2";
   import { goto } from "$app/navigation";
+  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
   import { api } from "$lib/api/browser";
@@ -87,7 +88,7 @@
   async function remove() {
     await api.call(endpoints.defectsDelete, { params: { id: defect.id } });
     toast.success(m.defect_deleted_toast({ number: defect.number }));
-    await goto(resolve("/defects"), { invalidateAll: true });
+    await gotoFromOverlay(resolve("/defects"), { invalidateAll: true });
   }
 </script>
 

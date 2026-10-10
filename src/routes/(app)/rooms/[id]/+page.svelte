@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto, invalidateAll } from "$app/navigation";
+  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
   import { resolve } from "$app/paths";
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
   import BoxesIcon from "@lucide/svelte/icons/boxes";
@@ -46,7 +47,7 @@
     const { id, name } = data.room;
     await api.call(endpoints.roomsDelete, { params: { id } });
     toast.success(m.rooms_deleted_toast({ name }));
-    await goto(resolve("/rooms"));
+    await gotoFromOverlay(resolve("/rooms"));
   }
 </script>
 

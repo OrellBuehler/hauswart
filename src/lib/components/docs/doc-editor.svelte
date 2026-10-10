@@ -957,6 +957,7 @@
 
 <ConfirmDialog
   bind:open={leaveOpen}
+  closeOnBack={false}
   title={m.editor_leave_title()}
   description={m.editor_leave_description()}
   confirmLabel={m.editor_leave_confirm()}

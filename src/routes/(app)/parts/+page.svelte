@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
+  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import PuzzleIcon from "@lucide/svelte/icons/puzzle";
   import SearchIcon from "@lucide/svelte/icons/search";
@@ -199,5 +199,6 @@
 <PartFormDialog
   bind:open={createOpen}
   currency={data.currency}
-  onsaved={(part) => goto(partHref(part.id), { invalidateAll: true })}
+  onsaved={(part) =>
+    gotoFromOverlay(partHref(part.id), { invalidateAll: true })}
 />

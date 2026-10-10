@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { goto, invalidateAll } from "$app/navigation";
+  import { invalidateAll } from "$app/navigation";
+  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
   import { resolve } from "$app/paths";
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
   import BoxesIcon from "@lucide/svelte/icons/boxes";
@@ -43,7 +44,7 @@
     const { id, name } = contact;
     await api.call(endpoints.contactsDelete, { params: { id } });
     toast.success(m.contact_deleted_toast({ name }));
-    await goto(resolve("/contacts"), { invalidateAll: true });
+    await gotoFromOverlay(resolve("/contacts"), { invalidateAll: true });
   }
 </script>
 

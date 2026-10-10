@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { goto, invalidateAll } from "$app/navigation";
+  import { invalidateAll } from "$app/navigation";
+  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
   import { resolve } from "$app/paths";
   import ArchiveIcon from "@lucide/svelte/icons/archive";
   import ArchiveRestoreIcon from "@lucide/svelte/icons/archive-restore";
@@ -163,7 +164,7 @@
     const { id, name } = part;
     await api.call(endpoints.partsDelete, { params: { id } });
     toast.success(m.part_deleted_toast({ name }));
-    await goto(resolve("/parts"), { invalidateAll: true });
+    await gotoFromOverlay(resolve("/parts"), { invalidateAll: true });
   }
 
   async function unlinkAsset(assetId: string, name: string) {
