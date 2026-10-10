@@ -87,7 +87,7 @@
               >
               <div class="flex min-w-0 flex-col gap-1">
                 <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span class="min-w-0 truncate font-medium">{name}</span>
+                  <span class="min-w-0 font-medium break-words">{name}</span>
                   <Badge
                     variant={user.role === "admin" ? "default" : "secondary"}
                   >
@@ -97,7 +97,9 @@
                     <Badge variant="outline">{m.admin_users_you()}</Badge>
                   {/if}
                 </div>
-                <p class="text-muted-foreground text-xs text-pretty">
+                <p
+                  class="text-muted-foreground text-xs text-pretty break-words"
+                >
                   @{user.username} ·
                   {m.admin_users_share({
                     percent: formatPercent(user.ownershipBps),

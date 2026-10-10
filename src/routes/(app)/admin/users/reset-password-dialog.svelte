@@ -73,6 +73,8 @@
           type="text"
           autocomplete="off"
           autocapitalize="none"
+          autocorrect="off"
+          enterkeyhint="done"
           spellcheck={false}
           required
           minlength={PASSWORD_MIN}
