@@ -32,7 +32,7 @@
     {#if childrenProp}
       {@render childrenProp({ selected, highlighted })}
     {:else}
-      {label || value}
+      <div class="min-w-0 truncate">{label || value}</div>
     {/if}
   {/snippet}
 </SelectPrimitive.Item>
