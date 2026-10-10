@@ -6,9 +6,9 @@ import { endpoints } from "$lib/api/registry";
 import { sortTasks } from "$lib/assets/tasks";
 import type { PageLoad } from "./$types";
 
-/** Care hints, contacts, spare parts and the service log of an asset. */
+/** Care hints, contacts, spare parts, the service log and the insurance policies of an asset. */
 async function loadAssetExtras(api: ApiClient, id: string) {
-  const [hints, contacts, parts, serviceLog] = await Promise.all([
+  const [hints, contacts, parts, serviceLog, insurance] = await Promise.all([
     fetchAll((cursor) =>
       api.call(endpoints.assetHintsList, {
         params: { id },
@@ -31,8 +31,14 @@ async function loadAssetExtras(api: ApiClient, id: string) {
       params: { id },
       query: { limit: 20 },
     }),
+    fetchAll((cursor) =>
+      api.call(endpoints.assetInsurancePoliciesList, {
+        params: { id },
+        query: { cursor, limit: 200 },
+      }),
+    ),
   ]);
-  return { hints, contacts, parts, serviceLog };
+  return { hints, contacts, parts, serviceLog, insurance };
 }
 
 export const load: PageLoad = async ({ fetch, params, url }) => {

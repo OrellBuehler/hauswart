@@ -24,3 +24,7 @@ export function contactHref(id: string) {
 export function partHref(id: string) {
   return resolve(`/parts/${encodeURIComponent(id)}` as "/");
 }
+
+export function insuranceHref(id: string) {
+  return resolve(`/insurance/${encodeURIComponent(id)}` as "/");
+}

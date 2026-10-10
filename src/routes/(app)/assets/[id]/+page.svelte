@@ -33,6 +33,7 @@
   import Comments from "$lib/components/comments/comments.svelte";
   import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
   import HintCallout from "$lib/components/hints/hint-callout.svelte";
+  import AssetInsuranceCard from "$lib/components/insurance/asset-insurance-card.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
@@ -311,6 +312,14 @@
           {/if}
         </Card.Content>
       </Card.Root>
+
+      {#if asset.kind === "vehicle" || data.insurance.length > 0}
+        <AssetInsuranceCard
+          assetId={asset.id}
+          policies={data.insurance}
+          today={data.today}
+        />
+      {/if}
 
       <LinkedDocsCard
         title={m.asset_docs_title()}

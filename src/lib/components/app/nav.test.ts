@@ -39,6 +39,21 @@ describe("navigation", () => {
   });
 });
 
+describe("insurance", () => {
+  it("sits with the finances, reachable from the sidebar and the More sheet", () => {
+    const finance = navGroups.find((group) =>
+      group.items.some((item) => item.href === "/costs"),
+    );
+    expect(finance?.items.map((item) => item.href)).toContain("/insurance");
+    expect(mobileTabs.map((item) => item.href)).not.toContain("/insurance");
+  });
+
+  it("owns its detail and form pages and names them in the header", () => {
+    expect(findNavItem("/insurance/4/edit")?.href).toBe("/insurance");
+    expect(headerTitleFor("/insurance/new")).toBe(m.nav_insurance());
+  });
+});
+
 describe("bottom bar on phones", () => {
   it("has four tabs: dashboard, tasks, inventory and documentation", () => {
     expect(mobileTabs.map((item) => item.href)).toEqual([
@@ -79,6 +94,8 @@ describe("bottom bar on phones", () => {
   it("highlights More on every page that has no tab", () => {
     for (const pathname of [
       "/costs",
+      "/insurance",
+      "/insurance/4",
       "/rooms/5",
       "/documents",
       "/defects/3",

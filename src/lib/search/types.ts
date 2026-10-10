@@ -7,7 +7,7 @@ import FileTextIcon from "@lucide/svelte/icons/file-text";
 import LightbulbIcon from "@lucide/svelte/icons/lightbulb";
 import ListChecksIcon from "@lucide/svelte/icons/list-checks";
 import PuzzleIcon from "@lucide/svelte/icons/puzzle";
-import ShieldCheckIcon from "@lucide/svelte/icons/shield-check";
+import UmbrellaIcon from "@lucide/svelte/icons/umbrella";
 import WrenchIcon from "@lucide/svelte/icons/wrench";
 import type { z } from "zod";
 import {
@@ -44,7 +44,7 @@ export const hitIcons: Record<SearchHitType, Component> = {
   contact: ContactIcon,
   part: PuzzleIcon,
   asset_hint: LightbulbIcon,
-  insurance_policy: ShieldCheckIcon,
+  insurance_policy: UmbrellaIcon,
   document: FileSearchIcon,
 };
 

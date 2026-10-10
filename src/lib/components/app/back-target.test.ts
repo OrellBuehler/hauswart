@@ -22,6 +22,9 @@ describe("the back arrow in the header", () => {
     ["/contacts/3", "/contacts"],
     ["/rooms/5", "/rooms"],
     ["/rooms/5/qr", "/rooms/5"],
+    ["/insurance/4", "/insurance"],
+    ["/insurance/4/edit", "/insurance/4"],
+    ["/insurance/new", "/insurance"],
   ])("leads from %s to its parent %s", (from, to) => {
     expect(backTarget(from)).toBe(to);
   });
