@@ -157,6 +157,34 @@ export async function emergencyDocument(
         ),
   );
 
+  if (record.insurance.length > 0) {
+    content.push(section(m.emergency_pdf_insurance({}, o)));
+    content.push(
+      table(
+        [110, 130, 100, "*"],
+        [
+          [
+            headerCell(m.emergency_pdf_col_insurance({}, o)),
+            headerCell(m.emergency_pdf_col_insurer({}, o)),
+            headerCell(m.emergency_pdf_col_policy_number({}, o)),
+            headerCell(m.emergency_pdf_col_assistance({}, o)),
+          ],
+          ...record.insurance.map((p) => [
+            { text: p.title, bold: true },
+            {
+              text:
+                [p.insurerName, p.insurerPhone]
+                  .filter((part) => part !== null && part !== "")
+                  .join("\n") || "–",
+            },
+            { text: p.policyNumber ?? "–" },
+            { text: p.assistancePhone ?? "–" },
+          ]),
+        ],
+      ),
+    );
+  }
+
   content.push(section(m.emergency_pdf_places({}, o)));
   if (record.assets.length === 0) content.push(empty());
   for (const asset of record.assets) {

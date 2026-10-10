@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { createInsurancePolicyRequestSchema } from "$lib/api/schemas/insurance";
 import { createGuestLinkRequestSchema } from "$lib/api/schemas/share";
+import { createPolicy } from "$lib/server/insurance/policies";
 import { assets, docPages } from "$lib/server/db";
 import { shutdownMarkdownWorkers } from "$lib/server/docs/markdown-runner";
 import { createTestUser } from "$lib/testing/auth";
@@ -55,6 +57,32 @@ describe("guest view", () => {
   const slugs = (list: { slug: string }[]) => list.map((p) => p.slug);
 
   describe("home", () => {
+    it("never shows insurance policies, whatever sections the link has", async () => {
+      const { link } = await setup({
+        sections: ["emergency", "rules", "contacts", "devices", "howto"],
+        includeSecrets: true,
+      });
+      await createPolicy(
+        ctx(),
+        createInsurancePolicyRequestSchema.parse({
+          title: "Police-Titel-Unsichtbar",
+          policyNumber: "POL-UNSICHTBAR-1",
+          assistancePhone: "0800 000 UNSICHTBAR",
+          premiumMinor: 1000,
+          startDate: "2026-01-01",
+          showOnEmergency: true,
+        }),
+      );
+      const json = JSON.stringify(await getGuestHome(ctx(), link, TOKEN));
+      for (const hidden of [
+        "Police-Titel-Unsichtbar",
+        "POL-UNSICHTBAR-1",
+        "UNSICHTBAR",
+      ]) {
+        expect(json, hidden).not.toContain(hidden);
+      }
+    });
+
     it("shows the household and, per section, only what is flagged guest visible", async () => {
       const { link, fx } = await setup();
       const home = await getGuestHome(ctx(), link, TOKEN);

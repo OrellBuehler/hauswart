@@ -26,6 +26,14 @@ type Emergency = {
     roomName: string | null;
     pinnedHints: { title: string; bodyMd: string }[];
   }[];
+  insurance: {
+    title: string;
+    type: string;
+    insurerName: string | null;
+    insurerPhone: string | null;
+    policyNumber: string | null;
+    assistancePhone: string | null;
+  }[];
 };
 
 describe("emergency API", () => {
@@ -41,6 +49,49 @@ describe("emergency API", () => {
       call: createCaller({ session: loginTestUser(user).token }),
     };
   }
+
+  it("lists the insurance policies marked for the page, and nothing else about them", async () => {
+    const { call } = await setup();
+    const insurer = (
+      await call("POST", "/api/v1/contacts", {
+        json: {
+          name: "Muster Versicherungen",
+          kind: "insurance",
+          phone: "0800 100 200",
+        },
+      })
+    ).body as { id: string };
+    for (const json of [
+      {
+        title: "Kasko Kombi",
+        type: "motor_full_casco",
+        insurerContactId: insurer.id,
+        policyNumber: "POL-2026-0042",
+        assistancePhone: "0800 555 000",
+        showOnEmergency: true,
+        notes: "NOTIZ-POLICE",
+      },
+      { title: "Nicht markiert", showOnEmergency: false },
+    ]) {
+      await call("POST", "/api/v1/insurance-policies", {
+        json: { premiumMinor: 48_000, startDate: "2026-01-01", ...json },
+      });
+    }
+    const r = await call("GET", "/api/v1/emergency");
+    expect((r.body as Emergency).insurance).toEqual([
+      {
+        id: expect.any(String),
+        title: "Kasko Kombi",
+        type: "motor_full_casco",
+        insurerName: "Muster Versicherungen",
+        insurerPhone: "0800 100 200",
+        policyNumber: "POL-2026-0042",
+        assistancePhone: "0800 555 000",
+      },
+    ]);
+    const pdf = await call("GET", "/api/v1/emergency/export.pdf");
+    expect(pdf.res.status).toBe(200);
+  });
 
   it("gives members everything for the emergency page, secrets included", async () => {
     const { call } = await setup();

@@ -93,6 +93,7 @@ describe("openapi document", () => {
       "Emergency",
       "EmergencyAsset",
       "EmergencyHint",
+      "EmergencyInsurance",
       "EmergencyPage",
       "ErrorEnvelope",
       "ExternalArea",

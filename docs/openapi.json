@@ -38627,13 +38627,20 @@
             "items": {
               "$ref": "#/components/schemas/EmergencyAsset"
             }
+          },
+          "insurance": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmergencyInsurance"
+            }
           }
         },
         "required": [
           "household",
           "pages",
           "contacts",
-          "assets"
+          "assets",
+          "insurance"
         ],
         "additionalProperties": false
       },
@@ -38734,6 +38741,67 @@
           "title",
           "bodyMd",
           "kind"
+        ],
+        "additionalProperties": false
+      },
+      "EmergencyInsurance": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "motor_liability",
+              "motor_partial_casco",
+              "motor_full_casco",
+              "household",
+              "personal_liability",
+              "building",
+              "legal",
+              "travel",
+              "health",
+              "life",
+              "other"
+            ]
+          },
+          "insurerName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "insurerPhone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "policyNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "assistancePhone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "type",
+          "insurerName",
+          "insurerPhone",
+          "policyNumber",
+          "assistancePhone"
         ],
         "additionalProperties": false
       },

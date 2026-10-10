@@ -1,4 +1,8 @@
 import { eq } from "drizzle-orm";
+import { createContact } from "$lib/server/contacts/contacts";
+import { createContactRequestSchema } from "$lib/api/schemas/contacts";
+import { createInsurancePolicyRequestSchema } from "$lib/api/schemas/insurance";
+import { createPolicy, updatePolicy } from "$lib/server/insurance/policies";
 import { afterEach, describe, expect, it } from "vitest";
 import { assets, docPages } from "$lib/server/db";
 import { shutdownMarkdownWorkers } from "$lib/server/docs/markdown-runner";
@@ -65,12 +69,142 @@ describe("emergency", () => {
       expect(e.assets.map((a) => a.name)).toEqual(["Boiler"]);
     });
 
+    describe("insurance", () => {
+      const text = (blocks: unknown) => JSON.stringify(blocks);
+      const policy = (over: Record<string, unknown> = {}) =>
+        createPolicy(
+          ctx(),
+          createInsurancePolicyRequestSchema.parse({
+            title: "Hausrat Muster",
+            premiumMinor: 48_000,
+            startDate: "2026-01-01",
+            showOnEmergency: true,
+            ...over,
+          }),
+        );
+
+      it("lists the active policies marked for the page with insurer, number and assistance line", async () => {
+        const insurer = createContact(
+          ctx(),
+          createContactRequestSchema.parse({
+            name: "Muster Versicherungen",
+            kind: "insurance",
+            phone: "0800 100 200",
+          }),
+        );
+        const kasko = await policy({
+          title: "Kasko Kombi",
+          insurerContactId: insurer.id,
+          policyNumber: "POL-2026-0042",
+          assistancePhone: "0800 555 000",
+          notes: "NOTIZ-POLICE",
+        });
+        await policy({ title: "Alt", showOnEmergency: false });
+        const archived = await policy({ title: "Archiviert" });
+        await updatePolicy(ctx(), archived.id, { archived: true });
+        await policy({ title: "Allein" });
+        expect(getEmergency(ctx()).insurance).toEqual([
+          {
+            id: expect.any(String),
+            title: "Allein",
+            type: "other",
+            insurerName: null,
+            insurerPhone: null,
+            policyNumber: null,
+            assistancePhone: null,
+          },
+          {
+            id: kasko.id,
+            title: "Kasko Kombi",
+            type: "other",
+            insurerName: "Muster Versicherungen",
+            insurerPhone: "0800 100 200",
+            policyNumber: "POL-2026-0042",
+            assistancePhone: "0800 555 000",
+          },
+        ]);
+        expect(JSON.stringify(getEmergency(ctx()).insurance)).not.toContain(
+          "NOTIZ-POLICE",
+        );
+      });
+
+      it("prints them on the sheet in a section of their own, only when there are any", async () => {
+        const without = text(
+          (
+            await emergencyDocument(ctx(), {
+              locale: "de",
+              includeSecrets: false,
+            })
+          ).content,
+        );
+        expect(without).not.toContain("Versicherungen");
+        const insurer = createContact(
+          ctx(),
+          createContactRequestSchema.parse({
+            name: "Muster Versicherungen",
+            phone: "0800 100 200",
+          }),
+        );
+        await policy({
+          title: "Kasko Kombi",
+          insurerContactId: insurer.id,
+          policyNumber: "POL-2026-0042",
+          assistancePhone: "0800 555 000",
+          notes: "NOTIZ-POLICE",
+        });
+        await policy({ title: "Ohne Angaben" });
+        for (const includeSecrets of [false, true]) {
+          const { content } = await emergencyDocument(ctx(), {
+            locale: "de",
+            includeSecrets,
+          });
+          const json = text(content);
+          expect(json).toContain("Versicherungen");
+          expect(json).toContain("Kasko Kombi");
+          expect(json).toContain("Muster Versicherungen");
+          expect(json).toContain("0800 100 200");
+          expect(json).toContain("POL-2026-0042");
+          expect(json).toContain("0800 555 000");
+          expect(json).toContain("Ohne Angaben");
+          expect(json).not.toContain("NOTIZ-POLICE");
+          // The section comes after the contacts and before the places.
+          expect(json.indexOf("Notfallkontakte")).toBeLessThan(
+            json.indexOf("Versicherungen"),
+          );
+          expect(json.indexOf("Versicherungen")).toBeLessThan(
+            json.indexOf("Wichtige Orte"),
+          );
+        }
+        const en = text(
+          (
+            await emergencyDocument(ctx(), {
+              locale: "en",
+              includeSecrets: false,
+            })
+          ).content,
+        );
+        expect(en).toContain("Insurance");
+        expect(en).toContain("Policy number");
+        expect(en).toContain("Assistance line");
+      });
+
+      it("renders a valid pdf", async () => {
+        await policy({ policyNumber: "POL-2026-0042" });
+        const bytes = await exportEmergencyPdf(ctx(), {
+          locale: "de",
+          includeSecrets: false,
+        });
+        expect(pdfInfo(bytes).header).toBe("%PDF-");
+      });
+    });
+
     it("is empty on a fresh household", () => {
       expect(getEmergency(ctx())).toEqual({
         householdName: "Haushalt",
         pages: [],
         contacts: [],
         assets: [],
+        insurance: [],
       });
     });
   });
