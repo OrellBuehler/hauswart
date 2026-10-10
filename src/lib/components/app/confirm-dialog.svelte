@@ -57,6 +57,7 @@
       <Button
         type="button"
         variant="outline"
+        class="max-sm:w-full pointer-coarse:h-11"
         disabled={pending}
         onclick={() => (open = false)}
       >
@@ -65,6 +66,7 @@
       <Button
         type="button"
         variant={destructive ? "destructive" : "default"}
+        class="max-sm:w-full pointer-coarse:h-11"
         disabled={pending}
         onclick={confirm}
       >

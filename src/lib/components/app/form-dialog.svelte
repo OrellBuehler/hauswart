@@ -55,9 +55,9 @@
 
 <Dialog.Root bind:open={() => open, (value) => (open = pending ? true : value)}>
   <Dialog.Content
-    class={cn("max-h-[calc(100svh-2rem)] overflow-y-auto", className)}
+    class={cn("flex flex-col gap-0 overflow-hidden p-0", className)}
   >
-    <Dialog.Header>
+    <Dialog.Header class="border-b p-4 pe-12 sm:px-6 sm:py-5 sm:pe-12">
       <Dialog.Title>{title}</Dialog.Title>
       {#if description}
         <Dialog.Description>{description}</Dialog.Description>
@@ -65,28 +65,40 @@
         <Dialog.Description class="sr-only">{title}</Dialog.Description>
       {/if}
     </Dialog.Header>
-    <form class="flex min-w-0 flex-col gap-5" novalidate onsubmit={submit}>
-      {@render children()}
-      <FormAlert message={error} />
-      <Dialog.Footer class="gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          disabled={pending}
-          onclick={() => (open = false)}
-        >
-          {m.common_cancel()}
-        </Button>
-        <Button type="submit" size="lg" disabled={pending}>
-          {#if pending}
-            <LoaderCircleIcon class="animate-spin" />{pendingLabel ??
-              m.common_saving()}
-          {:else}
-            {submitLabel}
-          {/if}
-        </Button>
-      </Dialog.Footer>
+    <form
+      class="flex min-h-0 min-w-0 flex-1 flex-col"
+      novalidate
+      onsubmit={submit}
+    >
+      <div
+        class="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] content-start gap-5 overflow-y-auto overscroll-contain p-4 sm:px-6 sm:py-5"
+      >
+        {@render children()}
+      </div>
+      <div
+        class="bg-background flex flex-col gap-3 border-t px-4 py-3 sm:px-6 sm:py-4"
+      >
+        <FormAlert message={error} />
+        <Dialog.Footer class="flex-row flex-wrap-reverse gap-2 max-sm:*:flex-1">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            disabled={pending}
+            onclick={() => (open = false)}
+          >
+            {m.common_cancel()}
+          </Button>
+          <Button type="submit" size="lg" disabled={pending}>
+            {#if pending}
+              <LoaderCircleIcon class="animate-spin" />{pendingLabel ??
+                m.common_saving()}
+            {:else}
+              {submitLabel}
+            {/if}
+          </Button>
+        </Dialog.Footer>
+      </div>
     </form>
   </Dialog.Content>
 </Dialog.Root>
