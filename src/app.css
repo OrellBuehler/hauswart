@@ -117,7 +117,7 @@
     --destructive: 0 72% 48%;
     --destructive-foreground: 0 0% 98%;
     --border: 220 14% 90%;
-    --input: 220 13% 86%;
+    --input: 220 9% 56%;
     --ring: 170 78% 30%;
     --brand: 170 78% 28%;
     --brand-foreground: 0 0% 100%;
@@ -157,7 +157,7 @@
     --destructive: 0 80% 66%;
     --destructive-foreground: 225 16% 8%;
     --border: 225 10% 17%;
-    --input: 225 10% 22%;
+    --input: 225 8% 42%;
     --ring: 168 70% 52%;
     --brand: 168 70% 50%;
     --brand-foreground: 168 80% 8%;
@@ -187,6 +187,11 @@
   html {
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
+    /* Anchors and focused fields stay clear of the sticky header and the bottom bars. */
+    scroll-padding-top: 4rem;
+    scroll-padding-bottom: 6rem;
+    /* No double-tap zoom delay on controls; pinch zoom still works. */
+    touch-action: manipulation;
   }
   body {
     @apply bg-background text-foreground antialiased;
@@ -262,7 +267,7 @@
     --destructive: 0 72% 48%;
     --destructive-foreground: 0 0% 98%;
     --border: 220 14% 90%;
-    --input: 220 13% 86%;
+    --input: 220 9% 56%;
     --ring: 170 78% 30%;
     --brand: 170 78% 28%;
     --brand-foreground: 0 0% 100%;
@@ -467,6 +472,8 @@
     padding: 0.45em 0.75em;
     text-align: start;
     vertical-align: top;
+    /* Unlike "anywhere" (inherited), this keeps words whole in the column width: the table scrolls. */
+    overflow-wrap: break-word;
   }
   th {
     background: hsl(var(--muted));

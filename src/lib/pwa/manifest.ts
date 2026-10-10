@@ -7,6 +7,13 @@ export interface WebManifestIcon {
   purpose: "any" | "maskable";
 }
 
+export interface WebManifestShortcut {
+  name: string;
+  short_name: string;
+  url: string;
+  icons: WebManifestIcon[];
+}
+
 export interface WebManifest {
   id: string;
   name: string;
@@ -18,7 +25,19 @@ export interface WebManifest {
   display: "standalone";
   background_color: string;
   theme_color: string;
+  /** The palette for the dark colour scheme (Chromium; others ignore it). */
+  color_scheme_dark: { theme_color: string; background_color: string };
+  categories: string[];
   icons: WebManifestIcon[];
+  shortcuts: WebManifestShortcut[];
+}
+
+/** The names of the shortcuts, in the language of the visitor. */
+export interface ShortcutNames {
+  newTask: string;
+  newDefect: string;
+  emergency: string;
+  search: string;
 }
 
 /** The icons are rendered by `scripts/generate-pwa-icons.ts` into `static/icons`. */
@@ -43,14 +62,29 @@ export const MANIFEST_ICONS: WebManifestIcon[] = [
   },
 ];
 
+/** Long-press menu of the home screen icon: the places a person goes to straight away. */
+function shortcuts(names: ShortcutNames): WebManifestShortcut[] {
+  const icon = MANIFEST_ICONS.find(
+    (i) => i.sizes === "192x192" && i.purpose === "any",
+  )!;
+  return [
+    { name: names.newTask, url: "/tasks/new" },
+    { name: names.newDefect, url: "/defects/new" },
+    { name: names.emergency, url: "/emergency" },
+    { name: names.search, url: "/search" },
+  ].map(({ name, url }) => ({ name, short_name: name, url, icons: [icon] }));
+}
+
 /**
- * The web app manifest. A manifest holds a single colour pair, so it carries the light palette;
- * the `theme-color` meta tags of `app.html` follow the dark palette and the chosen colour mode.
+ * The web app manifest. A manifest holds a single colour pair, so it carries the light palette
+ * (plus the dark one as `color_scheme_dark` for the platforms that read it); the `theme-color`
+ * meta tags of `app.html` follow the chosen colour mode.
  */
 export function buildManifest(text: {
   name: string;
   description: string;
   lang: string;
+  shortcuts: ShortcutNames;
 }): WebManifest {
   return {
     id: "/",
@@ -63,6 +97,12 @@ export function buildManifest(text: {
     display: "standalone",
     background_color: THEME_COLORS.light,
     theme_color: THEME_COLORS.light,
+    color_scheme_dark: {
+      theme_color: THEME_COLORS.dark,
+      background_color: THEME_COLORS.dark,
+    },
+    categories: ["lifestyle", "productivity", "utilities"],
     icons: MANIFEST_ICONS,
+    shortcuts: shortcuts(text.shortcuts),
   };
 }

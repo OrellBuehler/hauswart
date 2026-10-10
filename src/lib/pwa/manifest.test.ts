@@ -8,6 +8,12 @@ const manifest = buildManifest({
   name: "hauswart",
   description: "Sample description",
   lang: "en",
+  shortcuts: {
+    newTask: "New task",
+    newDefect: "Record defect",
+    emergency: "Emergency",
+    search: "Search",
+  },
 });
 
 /** Width and height from the IHDR chunk of a PNG. */
@@ -48,6 +54,55 @@ describe("web app manifest", () => {
     expect(pngSize("static/icons/apple-touch-icon.png")).toBe("180x180");
   });
 
+  it("offers the dark palette to platforms that follow the colour scheme", () => {
+    expect(manifest.color_scheme_dark).toEqual({
+      theme_color: THEME_COLORS.dark,
+      background_color: THEME_COLORS.dark,
+    });
+  });
+
+  it("is filed under the app categories", () => {
+    expect(manifest.categories).toEqual([
+      "lifestyle",
+      "productivity",
+      "utilities",
+    ]);
+  });
+
+  describe("shortcuts", () => {
+    it("jump to the places used from the home screen, named in the given language", () => {
+      expect(manifest.shortcuts.map((s) => [s.name, s.url])).toEqual([
+        ["New task", "/tasks/new"],
+        ["Record defect", "/defects/new"],
+        ["Emergency", "/emergency"],
+        ["Search", "/search"],
+      ]);
+    });
+
+    it("stay inside the scope of the app and use an icon the manifest ships", () => {
+      const shipped = MANIFEST_ICONS.map((i) => i.src);
+      for (const shortcut of manifest.shortcuts) {
+        expect(shortcut.url.startsWith(manifest.scope), shortcut.url).toBe(
+          true,
+        );
+        expect(shortcut.url).not.toContain("//");
+        expect(shortcut.icons).toHaveLength(1);
+        expect(shortcut.icons[0]).toMatchObject({
+          sizes: "192x192",
+          type: "image/png",
+        });
+        expect(shipped).toContain(shortcut.icons[0]!.src);
+      }
+    });
+
+    it("name the shortcuts short enough for a long-press menu", () => {
+      for (const shortcut of manifest.shortcuts) {
+        expect(shortcut.name.length, shortcut.name).toBeGreaterThan(0);
+        expect(shortcut.name.length, shortcut.name).toBeLessThanOrEqual(24);
+      }
+    });
+  });
+
   it("is linked from app.html together with the Apple touch icon", () => {
     expect(html).toContain('<link rel="manifest" href="/manifest.webmanifest"');
     expect(html).toContain(
@@ -55,5 +110,16 @@ describe("web app manifest", () => {
     );
     expect(html).toContain('name="apple-mobile-web-app-capable"');
     expect(html).toContain('name="mobile-web-app-capable"');
+  });
+
+  it("keeps iOS from turning serial and part numbers into phone links", () => {
+    // Real telephone numbers are written as tel: links.
+    expect(html).toContain(
+      '<meta name="format-detection" content="telephone=no" />',
+    );
+  });
+
+  it("does not extend under the status bar (viewport-fit=cover brings iOS 26's edge blur back)", () => {
+    expect(html).not.toContain("viewport-fit");
   });
 });

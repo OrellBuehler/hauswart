@@ -5,6 +5,8 @@
   const TOAST_ID = "pwa-update";
   /** Installed apps stay open for days: ask for a new worker now and then. */
   const CHECK_EVERY_MS = 60 * 60 * 1000;
+  /** A suspended app gets no timer ticks: it also asks when it comes back to the front. */
+  const MIN_GAP_AFTER_RESUME_MS = 60 * 1000;
   /** The page reloads once the new worker took over; if it has not by then, say so. */
   const APPLY_TIMEOUT_MS = 10_000;
 
@@ -65,6 +67,7 @@
   $effect(() => {
     let cancelled = false;
     let timer: ReturnType<typeof setInterval> | undefined;
+    let stopListening: (() => void) | undefined;
     import("virtual:pwa-register")
       .then(({ registerSW }) => {
         if (cancelled) return;
@@ -75,11 +78,22 @@
           // `apply` reloads the one tab that asked for the update.
           onNeedReload: () => {},
           onRegisteredSW: (_url, registration) => {
-            if (!registration) return;
-            timer = setInterval(
-              () => checkForUpdate(registration),
-              CHECK_EVERY_MS,
-            );
+            if (!registration || cancelled) return;
+            let lastCheck = Date.now();
+            const check = () => {
+              lastCheck = Date.now();
+              checkForUpdate(registration);
+            };
+            timer = setInterval(check, CHECK_EVERY_MS);
+            // A standalone app is suspended in the background, so the timer does not tick there.
+            const onVisibility = () => {
+              if (document.visibilityState !== "visible") return;
+              if (Date.now() - lastCheck < MIN_GAP_AFTER_RESUME_MS) return;
+              check();
+            };
+            document.addEventListener("visibilitychange", onVisibility);
+            stopListening = () =>
+              document.removeEventListener("visibilitychange", onVisibility);
           },
           onRegisterError: (err) =>
             console.error("service worker registration failed", err),
@@ -89,6 +103,7 @@
     return () => {
       cancelled = true;
       clearInterval(timer);
+      stopListening?.();
     };
   });
 </script>
