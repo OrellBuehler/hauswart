@@ -101,6 +101,7 @@ describe("migrations", () => {
         "asset_notes",
         "tire_sets",
         "tire_set_events",
+        "fuel_logs",
       ]),
     );
     expect(

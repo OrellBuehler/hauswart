@@ -113,6 +113,7 @@ describe("openapi document", () => {
       "FinanceSuggestion",
       "FinanceSuggestionAccepted",
       "FinanceSync",
+      "FuelLog",
       "GroupStats",
       "GuestLink",
       "Heading",

@@ -15437,6 +15437,860 @@
         }
       }
     },
+    "/api/v1/assets/{id}/fuel-logs": {
+      "get": {
+        "operationId": "fuelLogsList",
+        "summary": "Fuel log (Tankbuch) of a vehicle, newest first",
+        "description": "Every fill-up or charge with its price per unit and, on a full fill that closes a stretch, the distance since the previous full fill, the consumption per 100 and the cost per distance (full-to-full method: partial fills in between are added up, a fill flagged missedPrevious starts the chain again, litres and kWh are counted apart). Filter by year.",
+        "tags": [
+          "vehicles",
+          "assets"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "x-required-scopes": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1900,
+              "maximum": 2999
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/FuelLog"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error: `invalid_request`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error: `unauthenticated`, `setup_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error: `forbidden`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: `not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error: `rate_limited`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: `internal`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "fuelLogsCreate",
+        "summary": "Log a fill-up or charge",
+        "description": "In one transaction: the odometer becomes a reading of the vehicle (source fuel_log; a value lower than the reading before is a 400 on odometer) and, unless amountMinor is 0, a cost entry of the category fuel is booked for the vehicle (title like \"Tanken <station>\", paid by paidByUserId, default the caller, split by splitMode, default ownership). It needs costs:write because it books money. 400 for an asset that is no vehicle.",
+        "tags": [
+          "vehicles",
+          "assets"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": [
+              "costs:write"
+            ]
+          }
+        ],
+        "x-required-scopes": [
+          "costs:write"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FuelLog"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error: `invalid_request`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error: `unauthenticated`, `setup_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error: `forbidden`, `csrf_failed`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: `not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Error: `invalid_request` (request body too large)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Error: `invalid_request` (unsupported content type)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error: `rate_limited`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: `internal`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "odometer": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 10000000
+                  },
+                  "quantity": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 10000
+                  },
+                  "unit": {
+                    "type": "string",
+                    "enum": [
+                      "l",
+                      "kWh"
+                    ]
+                  },
+                  "amountMinor": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000000000
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  },
+                  "fullTank": {
+                    "default": true,
+                    "type": "boolean"
+                  },
+                  "missedPrevious": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "station": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "notes": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "paidByUserId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "splitMode": {
+                    "type": "string",
+                    "enum": [
+                      "ownership",
+                      "equal",
+                      "custom",
+                      "none"
+                    ]
+                  },
+                  "shares": {
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "userId": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        },
+                        "shareBps": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000
+                        }
+                      },
+                      "required": [
+                        "userId",
+                        "shareBps"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "odometer",
+                  "quantity",
+                  "amountMinor"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fuel-logs/{id}": {
+      "get": {
+        "operationId": "fuelLogsGet",
+        "summary": "A fuel log entry",
+        "tags": [
+          "vehicles"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "x-required-scopes": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FuelLog"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error: `invalid_request`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error: `unauthenticated`, `setup_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error: `forbidden`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: `not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error: `rate_limited`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: `internal`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "fuelLogsUpdate",
+        "summary": "Change a fuel log entry",
+        "description": "The reading follows the date and the odometer; the cost entry follows the amount, currency, date, station, payer and split. An entry made free loses its cost entry, one that costs something now and has none gets one.",
+        "tags": [
+          "vehicles"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": [
+              "costs:write"
+            ]
+          }
+        ],
+        "x-required-scopes": [
+          "costs:write"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FuelLog"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error: `invalid_request`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error: `unauthenticated`, `setup_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error: `forbidden`, `csrf_failed`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: `not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Error: `invalid_request` (request body too large)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Error: `invalid_request` (unsupported content type)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error: `rate_limited`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: `internal`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "odometer": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 10000000
+                  },
+                  "quantity": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 10000
+                  },
+                  "unit": {
+                    "type": "string",
+                    "enum": [
+                      "l",
+                      "kWh"
+                    ]
+                  },
+                  "amountMinor": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000000000
+                  },
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  },
+                  "fullTank": {
+                    "type": "boolean"
+                  },
+                  "missedPrevious": {
+                    "type": "boolean"
+                  },
+                  "station": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "notes": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "paidByUserId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "splitMode": {
+                    "type": "string",
+                    "enum": [
+                      "ownership",
+                      "equal",
+                      "custom",
+                      "none"
+                    ]
+                  },
+                  "shares": {
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "userId": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        },
+                        "shareBps": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000
+                        }
+                      },
+                      "required": [
+                        "userId",
+                        "shareBps"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "fuelLogsDelete",
+        "summary": "Delete a fuel log entry",
+        "description": "The odometer reading it wrote and the cost entry it booked are deleted with it (receipts attached to that cost entry too).",
+        "tags": [
+          "vehicles"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": [
+              "costs:write"
+            ]
+          }
+        ],
+        "x-required-scopes": [
+          "costs:write"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "400": {
+            "description": "Error: `invalid_request`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error: `unauthenticated`, `setup_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error: `forbidden`, `csrf_failed`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: `not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error: `rate_limited`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: `internal`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/assets/{id}/tire-sets": {
       "get": {
         "operationId": "tireSetsList",
@@ -36370,6 +37224,142 @@
           "odometerUnit",
           "notes",
           "odometer",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "FuelLog": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "assetId": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "odometer": {
+            "type": "number"
+          },
+          "odometerUnit": {
+            "type": "string",
+            "enum": [
+              "km",
+              "mi"
+            ]
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "l",
+              "kWh"
+            ]
+          },
+          "amountMinor": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "currency": {
+            "type": "string"
+          },
+          "fullTank": {
+            "type": "boolean"
+          },
+          "missedPrevious": {
+            "type": "boolean"
+          },
+          "station": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "costEntryId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "paidByUserId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pricePerUnitMinor": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "distance": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "consumptionPer100": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "costPerDistanceMinor": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "createdBy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "assetId",
+          "date",
+          "odometer",
+          "odometerUnit",
+          "quantity",
+          "unit",
+          "amountMinor",
+          "currency",
+          "fullTank",
+          "missedPrevious",
+          "station",
+          "notes",
+          "costEntryId",
+          "paidByUserId",
+          "pricePerUnitMinor",
+          "distance",
+          "consumptionPer100",
+          "costPerDistanceMinor",
+          "createdBy",
+          "createdAt",
           "updatedAt"
         ],
         "additionalProperties": false

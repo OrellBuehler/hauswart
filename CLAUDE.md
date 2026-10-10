@@ -135,7 +135,7 @@ src/lib/server/share/            guest links: tokens.ts, guest-links.ts (CRUD, w
 src/lib/server/emergency/        emergency page data (members) and the "Notfall- & Vertretungsblatt" PDF
 src/lib/server/vehicles/         vehicle details (`vehicle_details`), odometer readings and the signal they feed: odometer.ts
                                  (`writeOdometer` sync, `recordOdometer` async), signal.ts (readings -> signal + samples),
-                                 summary.ts (plate + newest reading on assets), events.ts (completions), vehicles.ts, tires.ts (see "Vehicles")
+                                 summary.ts (plate + newest reading on assets), events.ts (completions), vehicles.ts, tires.ts, fuel-logs.ts (see "Vehicles")
 src/lib/vehicles/                client-safe: odometer.ts (`odometer:<asset id>` key helpers), templates.ts (task bodies for a vehicle)
 src/lib/server/pdf/render.ts     shared pdfmake wrapper (A4, Roboto from node_modules, no network or file access)
 src/lib/pwa/                     client-safe PWA parts: colors.ts (theme colours, tested against app.css), manifest.ts, options.ts
@@ -316,7 +316,7 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
 
 - **Cost entries** (`cost_entries`, domain data shared by the household): `date`, `title`,
   `amountMinor` (positive = expense, negative = refund, never 0) + `currency`, `category`
-  (`repair|utilities|renewal_fund|purchase|mortgage_interest|mortgage_principal|insurance|renovation|maintenance|taxes_fees|other`),
+  (`repair|utilities|renewal_fund|purchase|mortgage_interest|mortgage_principal|insurance|renovation|maintenance|fuel|taxes_fees|other`),
   optional asset, room, defect and service log entry (a service log entry or defect fills in
   asset/room when none is given; deleting the target only unlinks), `payee`, `notes`,
   `paidByUserId`, `splitMode`, `countsAsExpense`, `deductible` (`unknown|maintenance|investment|no`: the
@@ -630,6 +630,21 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   while mounted, minus at the mount; events without an odometer use the newest reading on or before their date).
   Completing a tire-change task does not mount anything: the frontend completes the task, then calls mount. Photos are
   attachments of the owner type `tire_set` (comments and document links are not offered).
+- **Fuel log** (`fuel_logs`, migration `0021`; `vehicles/fuel-logs.ts`, consumption in `lib/vehicles/fuel.ts`):
+  `GET|POST /assets/{id}/fuel-logs` (list takes `year`) and `GET|PATCH|DELETE /fuel-logs/{id}`; writing needs
+  `costs:write` (it books money, like accepting a finance suggestion), reading `read`. A fill has `date`, `odometer`,
+  `quantity` and `unit` (`l|kWh`, default by the vehicle's fuel type), `amountMinor` + `currency`, `fullTank`,
+  `missedPrevious`, `station`, `notes`. **Creating** is one transaction: the fill, an odometer reading (source
+  `fuel_log`, same monotonic rule, 400 on `odometer`) and, unless the amount is 0 (a free charge), a cost entry of the new
+  category `fuel` for the vehicle (title "Tanken <station>" or "Laden ..." in the base language, payee = station, paid by
+  `paidByUserId`, default the caller, `splitMode` default ownership). **PATCH** moves the reading with date and
+  odometer and keeps the cost entry in step for amount, currency, date, station, payer and split (made free it loses the
+  entry; costing again gets a new one; an entry somebody deleted is not brought back by other changes). **DELETE** removes the
+  reading and the cost entry with its receipts. Consumption is the full-to-full method (`fuelStretches`): a full fill
+  closes a stretch from the previous full fill, partial fills in between are added up, a fill flagged `missedPrevious`
+  starts the chain again, litres and kWh are separate chains; the DTO carries `pricePerUnitMinor` (a rate in minor
+  units, not an amount), and on a closing fill `distance`, `consumptionPer100` and `costPerDistanceMinor` (unknown when an
+  amount in the stretch is in another currency), worked out from the whole log whatever page is asked for.
 - **Task templates** (`lib/vehicles/templates.ts`, pure, titles are Paraglide messages in the given
   locale): winter and summer tires (yearly calendar, October/April 15th, `earlyDays` 14, preparation
   "Garagentermin buchen" 28 days ahead), service (`counter_delta` on the odometer, 15000 km / 10000 mi,

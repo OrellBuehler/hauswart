@@ -656,6 +656,8 @@
   "vehicle_task_tax_title": "Motorfahrzeugsteuer bezahlen",
   "vehicle_task_brake_fluid_title": "Bremsflüssigkeit wechseln",
   "vehicle_task_ac_service_title": "Klimaservice",
+  "fuel_log_title_fuel": "Tanken",
+  "fuel_log_title_charge": "Laden",
   "icon_kitchen": "Küche",
   "icon_bath": "Badewanne",
   "icon_shower": "Dusche",
