@@ -141,7 +141,7 @@
 <div class="flex flex-col gap-6">
   <PageHeader title={m.nav_docs()} description={m.docs_description()}>
     {#snippet actions()}
-      <Button href={createHref}>
+      <Button href={createHref} size="lg">
         <PlusIcon />{m.docs_new()}
       </Button>
     {/snippet}
@@ -155,7 +155,7 @@
       />
       <Input
         type="search"
-        class="px-9"
+        class="h-10 px-9"
         placeholder={m.docs_search_placeholder()}
         aria-label={m.docs_search()}
         autocomplete="off"
@@ -175,7 +175,7 @@
           type="button"
           variant="ghost"
           size="icon-sm"
-          class="absolute end-1 top-1/2 size-7 -translate-y-1/2"
+          class="absolute end-1 top-1/2 size-7 -translate-y-1/2 pointer-coarse:end-0 pointer-coarse:size-10"
           aria-label={m.docs_search_clear()}
           onclick={clearSearch}
         >
@@ -183,7 +183,7 @@
         </Button>
       {/if}
     </div>
-    <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <OptionSelect
         options={sectionOptions}
         bind:value={
@@ -204,9 +204,9 @@
           () => filter.roomId ?? null, (value) => apply({ roomId: value })
         }
         noneLabel={m.inventory_filter_all_rooms()}
-        class="max-md:col-span-2"
+        class="data-[size=default]:h-10"
       />
-      <div class="flex h-9 items-center gap-2 max-md:col-span-2">
+      <div class="flex h-10 items-center gap-2">
         <Switch
           id="docs-archived"
           bind:checked={

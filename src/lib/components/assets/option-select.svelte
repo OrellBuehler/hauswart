@@ -33,15 +33,18 @@
     () => value ?? NONE, (next) => (value = next === NONE ? null : (next as T))
   }
 >
-  <Select.Trigger {id} class={cn("w-full", className)}>
+  <Select.Trigger
+    {id}
+    class={cn("w-full min-w-0 data-[size=default]:h-10", className)}
+  >
     <span class="truncate">{label}</span>
   </Select.Trigger>
   <Select.Content>
     {#if noneLabel}
-      <Select.Item value={NONE} label={noneLabel} />
+      <Select.Item value={NONE} label={noneLabel} class="min-h-10" />
     {/if}
     {#each options as option (option.value)}
-      <Select.Item value={option.value} label={option.label} />
+      <Select.Item value={option.value} label={option.label} class="min-h-10" />
     {/each}
   </Select.Content>
 </Select.Root>

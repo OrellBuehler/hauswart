@@ -246,3 +246,12 @@ export function continueList(
   const insert = `\n${next}`;
   return edit(start, start, insert, start + insert.length);
 }
+
+/**
+ * The `beforeinput` types a plain Enter arrives as. Desktop keyboards also send a usable `keydown`;
+ * many mobile keyboards only send composing or `Unidentified` key events, so the editor listens for
+ * these as well. (Shift+Enter is the same type: the caller must tell the two apart by the key events.)
+ */
+export function isLineBreakInput(inputType: string): boolean {
+  return inputType === "insertLineBreak" || inputType === "insertParagraph";
+}
