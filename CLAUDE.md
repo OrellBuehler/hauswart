@@ -591,8 +591,9 @@ of the owner>` is added to the document unless an identical note exists (writes 
 - **Odometer readings** (`odometer_readings`, never pruned): `POST /assets/{id}/odometer` (`date`
   defaults to today and is never in the future), `GET` newest first (keyset), `DELETE
 /odometer-readings/{id}`. A value lower than the reading before it (the newest on or before the date)
-  is a 400 on `value`, unless `force: true` (replaced instrument cluster); a later reading is then
-  compared with the new, lower one. `recordOdometer(ctx, {assetId, date, value, source, sourceId?, note?,
+  is a 400 on `value`, and so is a value higher than the reading after it (the first one on a later
+  date; the same rule for every writer, completions, service log, fuel log and tire changes included), unless
+  `force: true` (replaced instrument cluster). `recordOdometer(ctx, {assetId, date, value, source, sourceId?, note?,
 createdBy?, force?})` is what other features call when they learn the odometer on the side (fuel log,
   tire change); `source` is `manual|completion|service_log|fuel_log|tire_change|signal` and one
   `(source, sourceId)` has one reading, so saving the record again updates it. `writeOdometer` is its

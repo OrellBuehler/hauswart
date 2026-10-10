@@ -102,8 +102,9 @@ export const listOdometerQuerySchema = paginationQuerySchema;
 export const listOdometerResponseSchema = paginated(odometerReadingSchema);
 
 /**
- * A reading lower than the one before it (by date) is a 400 on `value`, as a typo would be;
- * `force` takes it anyway (a replaced instrument cluster starts again from a lower number).
+ * A reading lower than the one before it or higher than the one after it (by date) is a 400 on
+ * `value`, as a typo would be; `force` takes it anyway (a replaced instrument cluster starts again
+ * from a lower number).
  */
 export const recordOdometerRequestSchema = z.strictObject({
   /** Defaults to today; never in the future. */

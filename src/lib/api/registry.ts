@@ -1958,7 +1958,7 @@ export const endpoints = {
     path: "/api/v1/assets/{id}/odometer",
     summary: "Record an odometer reading",
     description:
-      "The date defaults to today and must not be in the future. A value lower than the reading before it (by date) is a 400 on `value`, unless `force` is true (a replaced instrument cluster). The newest reading becomes the signal `odometer:<asset id>` that tasks with a counter trigger read, so due dates, estimates and notifications follow at once. 400 for an asset that is no vehicle.",
+      "The date defaults to today and must not be in the future. A value lower than the reading before it or higher than the reading after it (by date) is a 400 on `value`, unless `force` is true (a replaced instrument cluster). The newest reading becomes the signal `odometer:<asset id>` that tasks with a counter trigger read, so due dates, estimates and notifications follow at once. 400 for an asset that is no vehicle.",
     tags: ["vehicles", "assets"],
     auth: "both",
     scopes: ["write"],
