@@ -203,7 +203,7 @@
         title={m.costs_csv_hint({ year: filters.year })}
       >
         <DownloadIcon />
-        {m.costs_csv()}
+        {m.costs_csv({ year: filters.year })}
       </Button>
       {#if canWrite}
         <Button href={resolve("/costs/new")} size="lg" class="max-md:hidden">
@@ -412,7 +412,7 @@
           </EmptyState>
         {/if}
       {:else}
-        <Card.Root class="gap-0 py-0 md:hidden">
+        <Card.Root class="gap-0 py-0 lg:hidden">
           <ul class="divide-y">
             {#each data.costs as cost (cost.id)}
               <CostRow {cost} />
@@ -420,7 +420,7 @@
           </ul>
         </Card.Root>
 
-        <Card.Root class="gap-0 py-0 max-md:hidden">
+        <Card.Root class="gap-0 py-0 max-lg:hidden">
           <Table.Root>
             <Table.Header>
               <Table.Row>

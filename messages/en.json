@@ -2391,7 +2391,7 @@
   "costs_by_tax": "By tax treatment",
   "costs_by_tax_hint": "Expenses by deductibility. “Not decided yet” still needs a decision.",
   "costs_count": "{count, plural, one {1 entry} other {{count} entries}}",
-  "costs_csv": "CSV export",
+  "costs_csv": "CSV export {year}",
   "costs_csv_hint": "Download all {year} entries as CSV",
   "costs_description": "The household's expenses and refunds, divided between the people.",
   "costs_empty_body": "Record expenses such as repairs, utilities or insurance and split them by ownership share.",

@@ -124,18 +124,18 @@
         <Card.Title class="text-base">{m.cost_facts()}</Card.Title>
       </Card.Header>
       <Card.Content>
-        <dl class="grid grid-cols-1 gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
-          <div>
+        <dl class="grid grid-cols-2 gap-x-4 gap-y-4 text-sm sm:gap-x-6">
+          <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">{m.cost_paid_by()}</dt>
             <dd class="mt-0.5 wrap-anywhere">
               {cost.paidByName ?? m.cost_payer_open()}
             </dd>
           </div>
-          <div>
+          <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">{m.cost_payee()}</dt>
             <dd class="mt-0.5 wrap-anywhere">{cost.payee ?? "–"}</dd>
           </div>
-          <div>
+          <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">{m.cost_asset()}</dt>
             <dd class="mt-0.5 wrap-anywhere">
               {#if cost.assetId && cost.assetName}
@@ -147,7 +147,7 @@
               {/if}
             </dd>
           </div>
-          <div>
+          <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">{m.cost_room()}</dt>
             <dd class="mt-0.5 wrap-anywhere">
               {#if cost.roomId && cost.roomName}
@@ -159,7 +159,7 @@
               {/if}
             </dd>
           </div>
-          <div>
+          <div class="col-span-2 min-w-0 sm:col-span-1">
             <dt class="text-muted-foreground text-xs">{m.cost_defect()}</dt>
             <dd class="mt-0.5 wrap-anywhere">
               {#if cost.defectId}
@@ -172,7 +172,7 @@
               {/if}
             </dd>
           </div>
-          <div>
+          <div class="col-span-2 min-w-0 sm:col-span-1">
             <dt class="text-muted-foreground text-xs">
               {m.cost_service_entry()}
             </dt>
@@ -186,11 +186,11 @@
               {/if}
             </dd>
           </div>
-          <div>
+          <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">{m.cost_deductible()}</dt>
             <dd class="mt-0.5">{deductibleLabels[cost.deductible]()}</dd>
           </div>
-          <div>
+          <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">
               {m.cost_counts_as_expense()}
             </dt>
@@ -198,11 +198,11 @@
               {cost.countsAsExpense ? m.common_yes() : m.common_no()}
             </dd>
           </div>
-          <div>
+          <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">{m.cost_source()}</dt>
             <dd class="mt-0.5">{sourceLabels[cost.source]()}</dd>
           </div>
-          <div>
+          <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">{m.cost_created()}</dt>
             <dd class="mt-0.5 wrap-anywhere tabular-nums">
               {formatDateTime(cost.createdAt, { timeZone: data.timeZone })}

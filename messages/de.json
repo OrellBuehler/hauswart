@@ -2391,7 +2391,7 @@
   "costs_by_tax": "Steuerlich",
   "costs_by_tax_hint": "Ausgaben nach Abzugsfähigkeit. «Noch offen» ist noch nicht entschieden.",
   "costs_count": "{count, plural, one {1 Eintrag} other {{count} Einträge}}",
-  "costs_csv": "CSV-Export",
+  "costs_csv": "CSV-Export {year}",
   "costs_csv_hint": "Alle Einträge {year} als CSV herunterladen",
   "costs_description": "Ausgaben und Rückerstattungen des Haushalts, aufgeteilt auf die Personen.",
   "costs_empty_body": "Erfasse Ausgaben wie Reparaturen, Nebenkosten oder Versicherungen und teile sie nach Eigentumsanteil auf.",
