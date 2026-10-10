@@ -54,7 +54,7 @@
       aria-checked={checked}
       tabindex={checked ? 0 : -1}
       class={cn(
-        "focus-visible:ring-ring/50 min-h-10 rounded-md px-3 py-2 text-center text-sm leading-tight font-medium whitespace-normal transition-colors outline-none focus-visible:ring-[3px] max-sm:flex-1",
+        "focus-visible:ring-ring/50 min-h-10 rounded-md px-3 py-2 text-center text-sm leading-tight font-medium whitespace-normal transition-colors outline-none focus-visible:ring-[3px] max-sm:flex-1 max-sm:px-2",
         checked
           ? "bg-background shadow-xs"
           : "text-muted-foreground hover:text-foreground",

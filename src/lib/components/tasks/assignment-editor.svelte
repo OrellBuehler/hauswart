@@ -1,11 +1,13 @@
 <script lang="ts">
   import ArrowDownIcon from "@lucide/svelte/icons/arrow-down";
   import ArrowUpIcon from "@lucide/svelte/icons/arrow-up";
+  import EllipsisVerticalIcon from "@lucide/svelte/icons/ellipsis-vertical";
   import XIcon from "@lucide/svelte/icons/x";
   import type { AssignMode, RotationStrategy } from "$lib/api/enums";
   import { ROTATION_STRATEGIES } from "$lib/api/enums";
   import type { DirectoryUser } from "$lib/api/schemas/users";
   import { Button } from "$lib/components/ui/button/index.js";
+  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
   import { m } from "$lib/paraglide/messages";
   import {
     assignModeLabels,
@@ -124,6 +126,7 @@
                 type="button"
                 variant="ghost"
                 size="icon-lg"
+                class="max-sm:hidden"
                 disabled={index === 0}
                 aria-label={m.task_rotation_up({ name })}
                 onclick={() => move(index, -1)}
@@ -134,6 +137,7 @@
                 type="button"
                 variant="ghost"
                 size="icon-lg"
+                class="max-sm:hidden"
                 disabled={index === rotationOrder.length - 1}
                 aria-label={m.task_rotation_down({ name })}
                 onclick={() => move(index, 1)}
@@ -144,11 +148,53 @@
                 type="button"
                 variant="ghost"
                 size="icon-lg"
+                class="max-sm:hidden"
                 aria-label={m.task_rotation_remove({ name })}
                 onclick={() => remove(index)}
               >
                 <XIcon />
               </Button>
+              <div class="sm:hidden">
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger>
+                    {#snippet child({ props })}
+                      <Button
+                        {...props}
+                        type="button"
+                        variant="ghost"
+                        size="icon-lg"
+                        aria-label={m.task_rotation_actions({ name })}
+                      >
+                        <EllipsisVerticalIcon />
+                      </Button>
+                    {/snippet}
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Content align="end">
+                    <DropdownMenu.Item
+                      class="min-h-10"
+                      disabled={index === 0}
+                      onSelect={() => move(index, -1)}
+                    >
+                      <ArrowUpIcon />{m.task_rotation_up({ name })}
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item
+                      class="min-h-10"
+                      disabled={index === rotationOrder.length - 1}
+                      onSelect={() => move(index, 1)}
+                    >
+                      <ArrowDownIcon />{m.task_rotation_down({ name })}
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Separator />
+                    <DropdownMenu.Item
+                      class="min-h-10"
+                      variant="destructive"
+                      onSelect={() => remove(index)}
+                    >
+                      <XIcon />{m.task_rotation_remove({ name })}
+                    </DropdownMenu.Item>
+                  </DropdownMenu.Content>
+                </DropdownMenu.Root>
+              </div>
             </li>
           {/each}
         </ol>

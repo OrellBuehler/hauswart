@@ -131,7 +131,9 @@
     <ul class="flex flex-col gap-3">
       {#each rules as rule, index (keys[index] ?? index)}
         {@const key = keys[index] ?? String(index)}
-        <li class="bg-card flex flex-col gap-4 rounded-lg border p-3 sm:p-4">
+        <li
+          class="bg-card flex flex-col gap-4 rounded-lg border p-3 max-sm:rounded-none max-sm:border-0 max-sm:border-t max-sm:p-0 max-sm:pt-4 sm:p-4"
+        >
           <div class="flex items-end gap-2">
             <Field
               id={`auto-type-${key}`}
