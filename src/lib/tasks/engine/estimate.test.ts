@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { addDays } from "$lib/dates";
-import { estimateCrossing, estimateFromCompletions } from "./estimate";
+import {
+  SPARSE_WINDOWS_DAYS,
+  estimateCrossing,
+  estimateFromCompletions,
+} from "./estimate";
 import { at, done, skipped, TZ } from "./testing";
 import type { Sample } from "./types";
 
@@ -293,6 +297,31 @@ describe("estimateCrossing", () => {
         "up",
       ),
     ).toBeNull();
+  });
+
+  it("looks back a year for sparse readings when asked to", () => {
+    const sparse = [
+      { at: at(addDays(TODAY, -200)), value: 1000 },
+      { at: at(addDays(TODAY, -100)), value: 2000 },
+    ];
+    const target = { target: 4000, direction: "up", current: 2000 } as const;
+    expect(estimateCrossing(sparse, target, TODAY, TZ)).toBeNull();
+    expect(
+      estimateCrossing(sparse, target, TODAY, TZ, SPARSE_WINDOWS_DAYS),
+    ).toEqual({ date: "2027-04-24", confidence: "medium" });
+  });
+
+  it("still prefers the nearest window with enough data", () => {
+    const samples = series(-27, 0, (o) => 2 * (o + 27));
+    expect(
+      estimateCrossing(
+        samples,
+        { target: 100, direction: "up" },
+        TODAY,
+        TZ,
+        SPARSE_WINDOWS_DAYS,
+      ),
+    ).toEqual(cross(samples, 100, "up"));
   });
 
   it("assigns samples to local days of the time zone", () => {

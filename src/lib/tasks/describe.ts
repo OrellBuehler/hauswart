@@ -9,6 +9,7 @@ import {
   weekdayName,
 } from "$lib/format";
 import { m } from "$lib/paraglide/messages";
+import { isOdometerKey } from "$lib/vehicles/odometer";
 import type {
   CalendarTrigger,
   ConditionOp,
@@ -169,19 +170,34 @@ export function describeTrigger(trigger: Trigger, locale: UserLocale): string {
         },
         { locale },
       );
-    case "counter_delta":
-      return trigger.unit
-        ? m.trigger_counter_unit(
+    case "counter_delta": {
+      const threshold = formatNumber(trigger.threshold, locale);
+      const odometer = isOdometerKey(trigger.entityId);
+      const base = !trigger.unit
+        ? odometer
+          ? m.trigger_counter_odometer_plain({ threshold }, { locale })
+          : m.trigger_counter({ threshold }, { locale })
+        : odometer
+          ? m.trigger_counter_odometer(
+              { threshold, unit: trigger.unit },
+              { locale },
+            )
+          : m.trigger_counter_unit(
+              { threshold, unit: trigger.unit },
+              { locale },
+            );
+      return trigger.orEvery
+        ? m.trigger_counter_or_every(
             {
-              threshold: formatNumber(trigger.threshold, locale),
-              unit: trigger.unit,
+              base,
+              every: lowerFirst(
+                EVERY[trigger.orEvery.unit](trigger.orEvery.every, locale),
+              ),
             },
             { locale },
           )
-        : m.trigger_counter(
-            { threshold: formatNumber(trigger.threshold, locale) },
-            { locale },
-          );
+        : base;
+    }
     case "state_condition": {
       const base = m.trigger_state(
         {

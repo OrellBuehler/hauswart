@@ -414,6 +414,27 @@ describe("tasks", () => {
       });
       expect(result.status).toBe("unknown");
     });
+
+    it("previews the time half of a counter with a time limit, counted from today", () => {
+      const trigger = {
+        v: 1,
+        type: "counter_delta",
+        entityId: "odometer:example",
+        threshold: 15_000,
+        unit: "km",
+        orEvery: { every: 12, unit: "month" },
+      } as const;
+      const result = previewTrigger(ctx(), trigger);
+      expect(result).toMatchObject({
+        status: "ok",
+        dueDate: "2027-06-15",
+        dueKind: "exact",
+        reasons: ["signal_missing"],
+      });
+      expect(
+        previewTrigger(ctx(), trigger, { today: "2026-07-01" }).dueDate,
+      ).toBe("2027-07-01");
+    });
   });
 
   describe("delete", () => {

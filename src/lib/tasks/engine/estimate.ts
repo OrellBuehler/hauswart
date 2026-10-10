@@ -3,6 +3,8 @@ import type { Completion, Estimate, Sample } from "./types";
 
 const DAY_MS = 86_400_000;
 const WINDOWS_DAYS = [28, 90];
+/** For readings someone types in now and then (an odometer): a year back when nothing nearer is enough. */
+export const SPARSE_WINDOWS_DAYS = [28, 90, 365];
 const MIN_SPAN_DAYS = 7;
 const MAX_HORIZON_DAYS = 365;
 const MEDIUM_CONFIDENCE_SPAN_DAYS = 14;
@@ -33,6 +35,7 @@ export function estimateCrossing(
   { target, direction, current }: CrossingTarget,
   today: string,
   tz: string,
+  windowsDays: readonly number[] = WINDOWS_DAYS,
 ): Estimate | null {
   const todayN = dayNumber(today);
   const dated = samples
@@ -41,7 +44,7 @@ export function estimateCrossing(
     .filter((s) => s.day <= todayN)
     .sort((a, b) => a.at - b.at);
 
-  for (const windowDays of WINDOWS_DAYS) {
+  for (const windowDays of windowsDays) {
     const used = dated.filter((s) => s.day >= todayN - windowDays);
     if (used.length < 2) continue;
     const spanDays = (used[used.length - 1].at - used[0].at) / DAY_MS;

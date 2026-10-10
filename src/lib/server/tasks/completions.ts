@@ -1,7 +1,7 @@
 import { and, desc, eq, isNull, lt, or, sql, type SQL } from "drizzle-orm";
 import type { CompletionKind, CompletionSource } from "$lib/api/enums";
 import { UNDO_WINDOW_DAYS } from "$lib/api/schemas/tasks";
-import { SIGNAL_STALE_MS } from "$lib/tasks/engine";
+import { isSignalFresh } from "$lib/tasks/engine";
 import { taskCompletions, tasks, users, type DB } from "$lib/server/db";
 import { emitEvent, type CompletionFacts } from "$lib/server/events";
 import { decodeCursor, pageOf } from "$lib/server/pagination";
@@ -188,7 +188,7 @@ async function counterSnapshot(
     !signal ||
     typeof signal.numeric !== "number" ||
     !Number.isFinite(signal.numeric) ||
-    ctx.now - signal.seenAt > SIGNAL_STALE_MS
+    !isSignalFresh(signal, ctx.now)
   ) {
     return undefined;
   }

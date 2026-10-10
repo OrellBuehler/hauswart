@@ -1,5 +1,5 @@
-import { and, gte, inArray } from "drizzle-orm";
-import { haCalendarKey } from "$lib/tasks/engine";
+import { and, gte, inArray, or } from "drizzle-orm";
+import { MANUAL_SIGNAL_SOURCE, haCalendarKey } from "$lib/tasks/engine";
 import { externalDates, signalSamples, signals, type DB } from "$lib/server/db";
 import type {
   ExternalDates,
@@ -40,6 +40,8 @@ export function setSignalProvider(next: SignalProvider | null): void {
 }
 
 const SAMPLE_WINDOW_MS = 100 * 24 * 60 * 60 * 1000;
+/** Readings typed in by a person are sparse (an odometer), so their history reaches a year and a bit further back. */
+const MANUAL_SAMPLE_WINDOW_MS = 400 * 24 * 60 * 60 * 1000;
 const MAX_SAMPLES_PER_KEY = 2000;
 const CHUNK = 500;
 
@@ -73,15 +75,25 @@ export function loadSignalsFromDb(
         text: row.text,
         changedAt: row.changedAt.getTime(),
         seenAt: row.seenAt.getTime(),
+        source: row.source,
       };
     }
+    const manual = ids.filter(
+      (key) => result.signals[key]?.source === MANUAL_SIGNAL_SOURCE,
+    );
     for (const row of db
       .select()
       .from(signalSamples)
       .where(
-        and(
-          inArray(signalSamples.key, ids),
-          gte(signalSamples.at, new Date(now - SAMPLE_WINDOW_MS)),
+        or(
+          and(
+            inArray(signalSamples.key, ids),
+            gte(signalSamples.at, new Date(now - SAMPLE_WINDOW_MS)),
+          ),
+          and(
+            inArray(signalSamples.key, manual),
+            gte(signalSamples.at, new Date(now - MANUAL_SAMPLE_WINDOW_MS)),
+          ),
         ),
       )
       .orderBy(signalSamples.key, signalSamples.at)

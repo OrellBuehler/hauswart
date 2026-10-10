@@ -1,12 +1,24 @@
 import { addDays, compareDates, localDateOf } from "$lib/dates";
-import { latestByInstant, lookupSignal, noDateResult } from "./common";
-import { estimateCrossing, estimateFromCompletions } from "./estimate";
-import type {
-  CounterDeltaTrigger,
-  DueResult,
-  EvalContext,
-  Reason,
-  Sample,
+import {
+  datedResult,
+  latestByInstant,
+  lookupSignal,
+  noDateResult,
+  statusFor,
+} from "./common";
+import {
+  SPARSE_WINDOWS_DAYS,
+  estimateCrossing,
+  estimateFromCompletions,
+} from "./estimate";
+import { addInterval } from "./interval";
+import {
+  MANUAL_SIGNAL_SOURCE,
+  type CounterDeltaTrigger,
+  type DueResult,
+  type EvalContext,
+  type Reason,
+  type Sample,
 } from "./types";
 
 export function detectCounterReset(
@@ -27,14 +39,34 @@ function sinceLastReset(samples: Sample[]): Sample[] {
   return sorted.slice(start);
 }
 
+/**
+ * The date the time half of `orEvery` falls on: the interval after the last completion (done or
+ * skipped, the one the occurrence key names), or after the task started when there is none.
+ */
+function timeLimit(
+  trigger: CounterDeltaTrigger,
+  ctx: EvalContext,
+): string | null {
+  if (!trigger.orEvery) return null;
+  const base = latestByInstant(ctx.completions)?.completedDate ?? ctx.startedOn;
+  return addInterval(base, trigger.orEvery.every, trigger.orEvery.unit);
+}
+
 export function evaluateCounterDelta(
   trigger: CounterDeltaTrigger,
   ctx: EvalContext,
 ): DueResult {
   const key = `c:${latestByInstant(ctx.completions)?.id ?? "init"}`;
+  const limit = timeLimit(trigger, ctx);
+
+  // Without a usable counter the counter half says nothing; the time half still does.
+  const withoutCounter = (reason: Reason): DueResult =>
+    limit === null
+      ? noDateResult("unknown", key, [reason])
+      : datedResult(limit, "exact", key, ctx, { reasons: [reason] });
 
   const lookup = lookupSignal(ctx, trigger.entityId, "numeric");
-  if (!lookup.ok) return noDateResult("unknown", key, [lookup.reason]);
+  if (!lookup.ok) return withoutCounter(lookup.reason);
   const currentValue = lookup.signal.numeric as number;
 
   const baselineSource = latestByInstant(
@@ -45,7 +77,7 @@ export function evaluateCounterDelta(
   );
   const baseline = baselineSource?.counterValue ?? ctx.state.counterBaseline;
   if (baseline === undefined || baseline === null) {
-    return noDateResult("unknown", key, ["baseline_missing"]);
+    return withoutCounter("baseline_missing");
   }
 
   const reasons: Reason[] = [];
@@ -65,6 +97,10 @@ export function evaluateCounterDelta(
 
   if (delta >= trigger.threshold) {
     const dueDate = localDateOf(ctx.tz, ctx.state.dueSince ?? ctx.now);
+    // The time limit passed before the counter got there: it set the date.
+    if (limit !== null && limit < dueDate) {
+      return datedResult(limit, "exact", key, ctx, { progress, reasons });
+    }
     const overdue =
       compareDates(ctx.today, addDays(dueDate, ctx.graceDays)) > 0;
     return {
@@ -86,21 +122,32 @@ export function evaluateCounterDelta(
     },
     ctx.today,
     ctx.tz,
+    lookup.signal.source === MANUAL_SIGNAL_SOURCE
+      ? SPARSE_WINDOWS_DAYS
+      : undefined,
   );
+  let fromHistory = false;
   if (!estimate) {
-    const fromHistory = estimateFromCompletions(ctx.completions);
-    if (fromHistory) {
+    const history = estimateFromCompletions(ctx.completions);
+    if (history) {
       const earliest = addDays(ctx.today, 1);
       estimate = {
-        ...fromHistory,
-        date: fromHistory.date < earliest ? earliest : fromHistory.date,
+        ...history,
+        date: history.date < earliest ? earliest : history.date,
       };
-      reasons.push("estimate_from_history");
+      fromHistory = true;
     }
   }
+
+  // The earlier of the two dates is the one shown. The time limit is certain, the estimate only
+  // a guess, so it decides the date only when the counter is expected to get there first.
+  if (limit !== null && !(estimate && estimate.date < limit)) {
+    return datedResult(limit, "exact", key, ctx, { progress, reasons });
+  }
   if (estimate) {
+    if (fromHistory) reasons.push("estimate_from_history");
     return {
-      status: "ok",
+      status: limit === null ? "ok" : statusFor(limit, ctx),
       dueDate: null,
       dueKind: "estimated",
       occurrenceKey: key,

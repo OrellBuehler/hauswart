@@ -3,6 +3,7 @@ import type { Asset } from "../../src/lib/api/schemas/assets";
 import type { Notification } from "../../src/lib/api/schemas/notifications";
 import type { Completion, Task } from "../../src/lib/api/schemas/tasks";
 import type { Trigger } from "../../src/lib/tasks/engine/types";
+import { isOdometerKey } from "../../src/lib/vehicles/odometer";
 
 /** Drops `null` and `undefined` recursively: an absent field means "none", which saves tokens. */
 export function compact(value: unknown): unknown {
@@ -60,8 +61,13 @@ export function describeTrigger(t: Trigger): string {
     }
     case "min_per_period":
       return `at least ${t.count}x per ${t.period}`;
-    case "counter_delta":
-      return `every ${t.threshold}${t.unit ? ` ${t.unit}` : ""} on ${t.entityId}`;
+    case "counter_delta": {
+      const on = isOdometerKey(t.entityId) ? "the odometer" : t.entityId;
+      const base = `every ${t.threshold}${t.unit ? ` ${t.unit}` : ""} on ${on}`;
+      return t.orEvery
+        ? `${base}, or ${every(t.orEvery.every, t.orEvery.unit)}, whichever comes first`
+        : base;
+    }
     case "state_condition":
       return `when ${t.entityId} ${t.op} ${t.value}`;
     case "ha_calendar":

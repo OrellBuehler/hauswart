@@ -473,6 +473,125 @@ describe("evaluator", () => {
       expect(second?.status).toBe("overdue");
     });
 
+    describe("with a time limit (orEvery)", () => {
+      const limited = {
+        ...counter,
+        orEvery: { every: 3, unit: "month" },
+      } as const;
+
+      it("counts the time from the day the task was created, and is not unknown without a reading", async () => {
+        const task = await makeTask(ctx(), { trigger: limited });
+        expect(task.state).toMatchObject({
+          status: "ok",
+          dueDate: "2026-09-15",
+          dueKind: "exact",
+          reasons: ["signal_missing"],
+        });
+        const later = at("2026-09-16");
+        await evaluateAll(ctx(later));
+        expect(getTask(ctx(later), task.id).state).toMatchObject({
+          status: "overdue",
+          dueDate: "2026-09-15",
+        });
+      });
+
+      it("a completion starts the time again", async () => {
+        const task = await makeTask(ctx(), { trigger: limited });
+        const later = at("2026-09-16");
+        const { task: after } = await completeTask(ctx(later), task.id, {
+          kind: "done",
+          source: "manual",
+          userId: null,
+        });
+        expect(after.state).toMatchObject({
+          status: "ok",
+          dueDate: "2026-12-16",
+        });
+      });
+
+      it("the counter decides when it gets there first", async () => {
+        setSignalProvider(provider(160));
+        const task = await makeTask(ctx(), { trigger: limited });
+        const { task: after } = await completeTask(ctx(), task.id, {
+          kind: "done",
+          source: "manual",
+          userId: null,
+          counterValue: 100,
+        });
+        expect(after.state).toMatchObject({
+          status: "due",
+          dueDate: "2026-06-15",
+          dueKind: "condition",
+        });
+      });
+    });
+
+    describe("manual readings", () => {
+      const manual = (numeric: number, ageDays: number): SignalProvider => ({
+        load: () => ({
+          signals: {
+            [counter.entityId]: {
+              numeric,
+              changedAt: NOW - ageDays * 86_400_000,
+              seenAt: NOW - ageDays * 86_400_000,
+              source: "manual",
+            },
+          },
+        }),
+      });
+
+      it("do not go stale: the counter works and the first one is the baseline", async () => {
+        setSignalProvider(manual(100, 30));
+        const task = await makeTask(ctx(), { trigger: counter });
+        expect(task.state).toMatchObject({
+          status: "ok",
+          progress: { current: 0, target: 50 },
+        });
+        expect(task.state?.reasons).toEqual([]);
+        setSignalProvider(manual(160, 30));
+        await evaluateAll(ctx());
+        expect(getTask(ctx(), task.id).state).toMatchObject({
+          status: "due",
+          progress: { current: 60, target: 50, unit: "Zyklen" },
+        });
+      });
+
+      it("are snapshotted by a completion however old they are", async () => {
+        setSignalProvider(manual(160, 30));
+        const task = await makeTask(ctx(), { trigger: counter });
+        const { completion } = await completeTask(ctx(), task.id, {
+          kind: "done",
+          source: "manual",
+          userId: null,
+        });
+        expect(completion.counterValue).toBe(160);
+      });
+
+      it("other readings that old are stale, as before", async () => {
+        setSignalProvider({
+          load: () => ({
+            signals: {
+              [counter.entityId]: {
+                numeric: 160,
+                changedAt: NOW - 30 * 86_400_000,
+                seenAt: NOW - 30 * 86_400_000,
+                source: "ha",
+              },
+            },
+          }),
+        });
+        const task = await makeTask(ctx(), { trigger: counter });
+        expect(task.state).toMatchObject({ status: "unknown" });
+        expect(task.state?.reasons).toEqual(["signal_stale"]);
+        const { completion } = await completeTask(ctx(), task.id, {
+          kind: "done",
+          source: "manual",
+          userId: null,
+        });
+        expect(completion.counterValue).toBeNull();
+      });
+    });
+
     it("a failing provider is logged and treated as no signals", async () => {
       const error = vi.spyOn(console, "error").mockImplementation(() => {});
       setSignalProvider({

@@ -114,12 +114,20 @@ export const minPerPeriodTriggerSchema = z.object({
 });
 export type MinPerPeriodTrigger = z.infer<typeof minPerPeriodTriggerSchema>;
 
+/**
+ * Due when the counter has grown by `threshold` since the last completion, or, with `orEvery`,
+ * when that much time has passed since the last completion (since the task started when there
+ * is none), whichever comes first. A service every 15,000 km or every 12 months.
+ */
 export const counterDeltaTriggerSchema = z.object({
   v: z.literal(1),
   type: z.literal("counter_delta"),
   entityId: z.string().min(1),
   threshold: z.number().positive(),
   unit: z.string().optional(),
+  orEvery: z
+    .object({ every: positiveInt, unit: intervalUnitSchema })
+    .optional(),
   autoCompleteOnReset: z.object({ minDrop: z.number().positive() }).optional(),
   autoComplete,
 });
@@ -216,6 +224,8 @@ export type Signal = {
   text?: string | null;
   changedAt: number;
   seenAt: number;
+  /** Who stored the reading; `manual` readings (typed in by a person) never go stale. */
+  source?: string;
 };
 export type Signals = Record<string, Signal>;
 
@@ -283,6 +293,8 @@ export type EvaluateInput = {
   today: string;
   now: number;
   tz: string;
+  /** The day the task came into being (household zone); the time half of `orEvery` counts from here until the first completion. Defaults to `today`. */
+  startedOn?: string;
   graceDays?: number;
   dueSoonDays?: number;
   snoozedUntil?: string | null;
@@ -297,6 +309,7 @@ export type EvalContext = {
   today: string;
   now: number;
   tz: string;
+  startedOn: string;
   graceDays: number;
   dueSoonDays: number;
 };
@@ -304,3 +317,5 @@ export type EvalContext = {
 export const DEFAULT_GRACE_DAYS = 0;
 export const DEFAULT_DUE_SOON_DAYS = 7;
 export const SIGNAL_STALE_MS = 24 * 60 * 60 * 1000;
+/** The `source` of readings a person typed in. They are sparse by nature, so they do not go stale. */
+export const MANUAL_SIGNAL_SOURCE = "manual";

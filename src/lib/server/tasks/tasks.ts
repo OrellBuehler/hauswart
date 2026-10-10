@@ -275,6 +275,8 @@ export async function createTask(
         externalRef: input.externalRef ?? null,
         externalUrl: input.externalUrl ?? null,
         createdBy,
+        // The instant the request works as of, like every completion: the engine counts time from it.
+        createdAt: new Date(ctx.now),
       })
       .returning({ id: tasks.id })
       .get().id;

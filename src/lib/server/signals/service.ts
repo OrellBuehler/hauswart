@@ -1,4 +1,5 @@
-import { and, desc, eq, lt, max, notInArray } from "drizzle-orm";
+import { and, desc, eq, lt, max, ne, notInArray } from "drizzle-orm";
+import { MANUAL_SIGNAL_SOURCE } from "$lib/tasks/engine";
 import { externalDates, signalSamples, signals } from "$lib/server/db";
 import type { ServiceContext } from "$lib/server/service";
 
@@ -205,7 +206,9 @@ export function listSamples(ctx: Pick<ServiceContext, "db">, key: string) {
 
 /**
  * Housekeeping: samples older than a year, signals nobody has read for 90
- * days, and calendar dates of subscriptions no task uses any more.
+ * days, and calendar dates of subscriptions no task uses any more. Readings a
+ * person typed in (`manual`, an odometer) are sparse and the only record of
+ * their history, so neither they nor their samples are ever forgotten.
  */
 export function pruneSignals(
   ctx: Db,
@@ -213,12 +216,28 @@ export function pruneSignals(
 ): { samples: number; signals: number; dates: number } {
   const samples = ctx.db
     .delete(signalSamples)
-    .where(lt(signalSamples.at, new Date(ctx.now - SAMPLE_RETENTION_MS)))
+    .where(
+      and(
+        lt(signalSamples.at, new Date(ctx.now - SAMPLE_RETENTION_MS)),
+        notInArray(
+          signalSamples.key,
+          ctx.db
+            .select({ key: signals.key })
+            .from(signals)
+            .where(eq(signals.source, MANUAL_SIGNAL_SOURCE)),
+        ),
+      ),
+    )
     .returning({ key: signalSamples.key })
     .all().length;
   const stale = ctx.db
     .delete(signals)
-    .where(lt(signals.seenAt, new Date(ctx.now - SIGNAL_RETENTION_MS)))
+    .where(
+      and(
+        lt(signals.seenAt, new Date(ctx.now - SIGNAL_RETENTION_MS)),
+        ne(signals.source, MANUAL_SIGNAL_SOURCE),
+      ),
+    )
     .returning({ key: signals.key })
     .all().length;
   const dates = ctx.db

@@ -226,6 +226,56 @@ const cases: Case[] = [
     en: "At a meter increase of 250.5 (Home Assistant counter)",
   },
   {
+    name: "odometer counter",
+    trigger: {
+      v: 1,
+      type: "counter_delta",
+      entityId: "odometer:abc",
+      threshold: 15000,
+      unit: "km",
+    },
+    de: "Alle 15'000 km (Tachostand)",
+    en: "Every 15,000 km (odometer)",
+  },
+  {
+    name: "odometer counter with a time limit in months",
+    trigger: {
+      v: 1,
+      type: "counter_delta",
+      entityId: "odometer:abc",
+      threshold: 15000,
+      unit: "km",
+      orEvery: { every: 12, unit: "month" },
+    },
+    de: "Alle 15'000 km (Tachostand), oder alle 12 Monate, je nachdem, was zuerst eintritt",
+    en: "Every 15,000 km (odometer), or every 12 months, whichever comes first",
+  },
+  {
+    name: "counter with a time limit of one year",
+    trigger: {
+      v: 1,
+      type: "counter_delta",
+      entityId: "sensor.hours",
+      threshold: 250,
+      unit: "h",
+      orEvery: { every: 1, unit: "year" },
+    },
+    de: "Alle 250 h (Home-Assistant-Zähler), oder jedes Jahr, je nachdem, was zuerst eintritt",
+    en: "Every 250 h (Home Assistant counter), or every year, whichever comes first",
+  },
+  {
+    name: "counter without a unit and with a time limit",
+    trigger: {
+      v: 1,
+      type: "counter_delta",
+      entityId: "odometer:abc",
+      threshold: 500,
+      orEvery: { every: 6, unit: "week" },
+    },
+    de: "Bei einem Zuwachs des Tachostands von 500, oder alle 6 Wochen, je nachdem, was zuerst eintritt",
+    en: "At an odometer increase of 500, or every 6 weeks, whichever comes first",
+  },
+  {
     name: "state condition",
     trigger: {
       v: 1,

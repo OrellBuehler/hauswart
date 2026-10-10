@@ -157,6 +157,45 @@ describe("signals service", () => {
     });
   });
 
+  describe("manual readings", () => {
+    const MANUAL = "odometer:example-car";
+
+    it("are never pruned, neither the signal nor its samples", () => {
+      const old = at("2025-01-01");
+      upsertSignals(
+        ctxAt(test.db, old),
+        [reading({ key: MANUAL, numeric: 1000 })],
+        "manual",
+      );
+      upsertSignals(ctxAt(test.db, old), [reading()], "ha");
+      const result = pruneSignals(ctx(), []);
+      expect(result).toMatchObject({ samples: 1, signals: 1 });
+      expect(getSignal(ctx(), MANUAL)).toMatchObject({
+        numeric: 1000,
+        source: "manual",
+      });
+      expect(listSamples(ctx(), MANUAL)).toHaveLength(1);
+      expect(getSignal(ctx(), KEY)).toBeUndefined();
+    });
+
+    it("are loaded with their source, and with a sample history that reaches back over a year", () => {
+      const old = ctxAt(test.db, at("2025-09-01"));
+      upsertSignals(old, [reading({ key: MANUAL, numeric: 1000 })], "manual");
+      upsertSignals(old, [reading({ numeric: 7 })], "ha");
+      upsertSignals(ctx(), [reading({ key: MANUAL, numeric: 4000 })], "manual");
+      const loaded = loadSignalsFromDb(
+        test.db,
+        { entityIds: [KEY, MANUAL], calendars: [] },
+        ctx().now,
+      );
+      expect(loaded.signals[MANUAL]?.source).toBe("manual");
+      expect(loaded.signals[KEY]?.source).toBe("ha");
+      // 2025-09-01 is 287 days before: inside the window of manual readings, outside the other.
+      expect(loaded.samples[MANUAL]?.map((s) => s.value)).toEqual([1000, 4000]);
+      expect(loaded.samples[KEY]).toBeUndefined();
+    });
+  });
+
   describe("external dates", () => {
     const key = "calendar.example_waste#paper";
 

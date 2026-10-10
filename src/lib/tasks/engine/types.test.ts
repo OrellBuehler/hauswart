@@ -95,6 +95,17 @@ const valid: [string, Record<string, unknown>][] = [
     },
   ],
   [
+    "counter_delta with a time limit",
+    {
+      v: 1,
+      type: "counter_delta",
+      entityId: "odometer:abc",
+      threshold: 15000,
+      unit: "km",
+      orEvery: { every: 12, unit: "month" },
+    },
+  ],
+  [
     "state_condition",
     {
       v: 1,
@@ -335,6 +346,36 @@ const invalid: [string, unknown][] = [
       entityId: "x",
       threshold: 5,
       autoCompleteOnReset: { minDrop: 0 },
+    },
+  ],
+  [
+    "counter orEvery zero",
+    {
+      v: 1,
+      type: "counter_delta",
+      entityId: "x",
+      threshold: 5,
+      orEvery: { every: 0, unit: "month" },
+    },
+  ],
+  [
+    "counter orEvery bad unit",
+    {
+      v: 1,
+      type: "counter_delta",
+      entityId: "x",
+      threshold: 5,
+      orEvery: { every: 1, unit: "decade" },
+    },
+  ],
+  [
+    "counter orEvery without a unit",
+    {
+      v: 1,
+      type: "counter_delta",
+      entityId: "x",
+      threshold: 5,
+      orEvery: { every: 1 },
     },
   ],
   [

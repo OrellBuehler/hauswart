@@ -45,6 +45,33 @@ describe("describeTrigger", () => {
       "every month on Sat (occurrence 1)",
     );
     expect(t(TRIGGER_DOCS.min_per_period.example)).toBe("at least 2x per week");
+    expect(t(TRIGGER_DOCS.counter_delta.example)).toBe(
+      "every 500 h on sensor.example_runtime",
+    );
+  });
+
+  it("names the odometer and the time limit of a counter", () => {
+    const t = (o: object) =>
+      describeTrigger(
+        triggerSchema.parse({ v: 1, type: "counter_delta", ...o }),
+      );
+    expect(
+      t({
+        entityId: "odometer:abc",
+        threshold: 15000,
+        unit: "km",
+        orEvery: { every: 12, unit: "month" },
+      }),
+    ).toBe(
+      "every 15000 km on the odometer, or every 12 months, whichever comes first",
+    );
+    expect(
+      t({
+        entityId: "odometer:abc",
+        threshold: 10000,
+        orEvery: { every: 1, unit: "year" },
+      }),
+    ).toBe("every 10000 on the odometer, or every year, whichever comes first");
   });
 });
 

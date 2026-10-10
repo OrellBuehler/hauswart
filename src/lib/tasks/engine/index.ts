@@ -1,5 +1,5 @@
 export * from "./types";
-export { statusFor } from "./common";
+export { isSignalFresh, statusFor } from "./common";
 export { evaluateTask } from "./evaluate";
 export { evaluateInterval, nextFrom as nextIntervalDate } from "./interval";
 export { evaluateCalendar, calendarOccurrences } from "./calendar";
