@@ -1,5 +1,6 @@
 import type { Asset } from "$lib/api/schemas/assets";
 import type { Task } from "$lib/api/schemas/tasks";
+import { shownDate } from "$lib/tasks/engine/shown";
 
 const STATUS_RANK = {
   overdue: 0,
@@ -23,8 +24,8 @@ export function sortTasks(tasks: Task[]): Task[] {
       STATUS_RANK[a.state?.status ?? "unknown"] -
       STATUS_RANK[b.state?.status ?? "unknown"];
     if (byStatus !== 0) return byStatus;
-    const dateA = a.state?.dueDate ?? "9999-12-31";
-    const dateB = b.state?.dueDate ?? "9999-12-31";
+    const dateA = (a.state && shownDate(a.state)) ?? "9999-12-31";
+    const dateB = (b.state && shownDate(b.state)) ?? "9999-12-31";
     return dateA < dateB
       ? -1
       : dateA > dateB

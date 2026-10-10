@@ -301,6 +301,34 @@ describe("tasks", () => {
       expect(second.nextCursor).toBeNull();
     });
 
+    it("orders a task whose estimate comes before its hard limit by the estimate", async () => {
+      await makeTask(ctx(), {
+        title: "Mitte",
+        trigger: everyDays(30, "2026-08-01"),
+      });
+      const counted = await makeTask(ctx(), {
+        title: "Service",
+        trigger: everyDays(30, "2026-09-01"),
+      });
+      test.db
+        .update(taskState)
+        .set({
+          dueDate: "2027-03-01",
+          dueKind: "estimated",
+          estimateJson: { date: "2026-07-01", confidence: "medium" },
+        })
+        .where(eq(taskState.taskId, counted.id))
+        .run();
+      await makeTask(ctx(), {
+        title: "Früh",
+        trigger: everyDays(30, "2026-06-20"),
+      });
+      const all = listTasks(ctx(), {}, { limit: 50 }, "u").items.map(
+        (t) => t.title,
+      );
+      expect(all).toEqual(["Früh", "Service", "Mitte"]);
+    });
+
     it("filters by status, category, asset, room, text, archive and external ref", async () => {
       const room = createRoom(ctx(), { name: "Bad" });
       const asset = createAsset(

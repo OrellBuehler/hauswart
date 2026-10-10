@@ -52,6 +52,37 @@ describe("sortTasks", () => {
   });
 });
 
+describe("sortTasks, dates that are estimates", () => {
+  const estimated = (id: string, dueDate: string | null, guess: string) =>
+    ({
+      ...task(id, { status: "ok" }),
+      state: {
+        status: "ok",
+        dueDate,
+        dueKind: "estimated",
+        estimate: { date: guess, confidence: "medium" },
+      },
+    }) as unknown as Task;
+
+  it("sorts a task whose estimate comes before its hard limit by the estimate", () => {
+    const sorted = sortTasks([
+      task("middle", { dueDate: "2026-11-15" }),
+      estimated("limit", "2027-03-01", "2026-11-01"),
+      task("last", { dueDate: "2026-12-01" }),
+    ]);
+    expect(sorted.map((t) => t.id)).toEqual(["limit", "middle", "last"]);
+  });
+
+  it("an estimate alone sorts by its date, not behind everything", () => {
+    const sorted = sortTasks([
+      task("later", { dueDate: "2026-12-01" }),
+      estimated("guess", null, "2026-11-01"),
+      task("none"),
+    ]);
+    expect(sorted.map((t) => t.id)).toEqual(["guess", "later", "none"]);
+  });
+});
+
 describe("taskRoomId", () => {
   const rooms = new Map([["asset", "room-a"]]);
   it("prefers the task's own room, then the asset's", () => {

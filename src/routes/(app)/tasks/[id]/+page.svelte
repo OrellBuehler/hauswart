@@ -503,7 +503,21 @@
               <div>
                 <dt class="text-muted-foreground text-xs">{m.task_due()}</dt>
                 <dd class="mt-0.5 tabular-nums">
-                  {#if taskState.dueDate}
+                  {#if taskState.dueKind === "estimated" && taskState.estimate}
+                    ~ {formatDateShort(taskState.estimate.date, { today })}
+                    <span class="text-muted-foreground">
+                      ({taskState.estimate.confidence === "medium"
+                        ? m.task_estimate_medium()
+                        : m.task_estimate_low()})
+                    </span>
+                    {#if taskState.dueDate}
+                      <span class="text-muted-foreground block">
+                        {m.task_due_limit({
+                          date: formatDateShort(taskState.dueDate, { today }),
+                        })}
+                      </span>
+                    {/if}
+                  {:else if taskState.dueDate}
                     {formatDateShort(taskState.dueDate, { today })}
                   {:else if taskState.estimate}
                     ~ {formatDateShort(taskState.estimate.date, { today })}

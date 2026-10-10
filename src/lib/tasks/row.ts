@@ -1,6 +1,7 @@
 import type { Dashboard } from "$lib/api/schemas/dashboard";
 import type { Task } from "$lib/api/schemas/tasks";
 import { daysUntil, formatDateShort, formatRelativeDays } from "$lib/format";
+import { shownDate, shownDateIsEstimate } from "./engine/shown";
 import type { DueStatus } from "./engine/types";
 
 /** What a task row needs to render; built from a dashboard entry or a listed task. */
@@ -71,11 +72,8 @@ export function rowFromTask(
     assigneeUserId: assignee,
     assigneeName: assignee ? (people.get(assignee) ?? null) : null,
     status: state?.status ?? "unknown",
-    date: state?.dueDate ?? state?.estimate?.date ?? null,
-    estimated:
-      state !== null &&
-      (state.dueKind === "estimated" ||
-        (state.dueDate === null && state.estimate !== null)),
+    date: state ? shownDate(state) : null,
+    estimated: state !== null && shownDateIsEstimate(state),
     progress: state?.progress ?? null,
     archived: task.archivedAt !== null,
     snoozedUntil: task.snoozedUntil,

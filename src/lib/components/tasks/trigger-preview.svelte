@@ -10,6 +10,7 @@
   import { m } from "$lib/paraglide/messages";
   import { getLocale } from "$lib/paraglide/runtime";
   import { describeTrigger } from "$lib/tasks/describe";
+  import { shownDate, shownDateIsEstimate } from "$lib/tasks/engine/shown";
   import { triggerSchema } from "$lib/tasks/engine/types";
   import { isOdometerKey } from "$lib/vehicles/odometer";
   import { reasonLabels } from "$lib/tasks/labels";
@@ -118,11 +119,8 @@
         ),
     ),
   );
-  const date = $derived(result?.dueDate ?? result?.estimate?.date ?? null);
-  const estimated = $derived(
-    result !== null &&
-      (result.dueKind === "estimated" || result.dueDate === null),
-  );
+  const date = $derived(result ? shownDate(result) : null);
+  const estimated = $derived(result !== null && shownDateIsEstimate(result));
 </script>
 
 <Card.Root class="gap-3">

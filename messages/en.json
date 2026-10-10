@@ -338,6 +338,7 @@
   "task_due_none": "No due date",
   "task_estimate_low": "rough estimate",
   "task_estimate_medium": "estimate",
+  "task_due_limit": "at the latest {date}",
   "task_progress": "Progress",
   "task_grace_days": "Grace period (days)",
   "task_grace_days_hint": "For this many days after the due date the task does not count as overdue yet.",

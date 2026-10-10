@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addDays } from "$lib/dates";
+import { shownDate } from "./shown";
 import { at, done, evaluate, skipped, trigger } from "./testing";
 import type {
   Completion,
@@ -420,14 +421,36 @@ describe("counter_delta with orEvery, estimates", () => {
       samples: fast,
       completions: [done("2026-08-01")],
     });
+    // The time limit stays the due date; the estimate is the earlier guess that is shown.
     expect(result).toMatchObject({
       status: "ok",
-      dueDate: null,
+      dueDate: "2027-08-01",
       dueKind: "estimated",
       estimate: { date: "2026-10-07", confidence: "medium" },
     });
+    expect(shownDate(result)).toBe("2026-10-07");
     expect(result.progress).toEqual({ current: 1900, target: 2000 });
   });
+
+  it.each([
+    ["2026-01-15", "2027-01-15"],
+    ["2025-10-11", "2026-10-11"],
+    ["2025-12-01", "2026-12-01"],
+  ])(
+    "keeps the hard limit as the due date when the last completion was on %s",
+    (completed, limit) => {
+      const result = run(81_900, {
+        trig: fastCounter(),
+        samples: fast,
+        completions: [done(completed)],
+      });
+      expect(result).toMatchObject({
+        dueDate: limit,
+        dueKind: "estimated",
+        estimate: { date: "2026-10-07" },
+      });
+    },
+  );
 
   it("the time limit stays in charge of the status", () => {
     const result = run(81_900, {
@@ -437,7 +460,7 @@ describe("counter_delta with orEvery, estimates", () => {
     });
     expect(result).toMatchObject({
       status: "open",
-      dueDate: null,
+      dueDate: "2026-10-11",
       dueKind: "estimated",
       estimate: { date: "2026-10-07" },
     });
@@ -489,7 +512,7 @@ describe("counter_delta with orEvery, estimates", () => {
       completions: [done("2026-08-01"), done("2026-09-15")],
     });
     expect(result).toMatchObject({
-      dueDate: null,
+      dueDate: "2027-09-15",
       dueKind: "estimated",
       estimate: { date: "2026-10-30", confidence: "low" },
     });

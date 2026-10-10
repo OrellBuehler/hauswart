@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { NOTIFICATION_TITLE_KEYS } from "../../src/lib/api/enums";
 import { triggerSchema } from "../../src/lib/tasks/engine/types";
-import { compact, describeTrigger, renderNotification } from "./format";
+import {
+  compact,
+  describeTrigger,
+  describeWhen,
+  renderNotification,
+} from "./format";
 import { TRIGGER_DOCS, TRIGGER_TYPES } from "./tools/trigger-docs";
 
 describe("compact", () => {
@@ -72,6 +77,45 @@ describe("describeTrigger", () => {
         orEvery: { every: 1, unit: "year" },
       }),
     ).toBe("every 10000 on the odometer, or every year, whichever comes first");
+  });
+});
+
+describe("describeWhen", () => {
+  const medium = { date: "2026-11-03", confidence: "medium" } as const;
+  it.each([
+    ["nothing known", { status: "unknown", dueDate: null }, "unknown"],
+    [
+      "a due date",
+      { status: "ok", dueDate: "2026-12-01" },
+      "ok, due 2026-12-01",
+    ],
+    [
+      "an estimate alone",
+      { status: "ok", dueDate: null, dueKind: "estimated", estimate: medium },
+      "ok, estimated 2026-11-03",
+    ],
+    [
+      "an estimate before a hard limit says both",
+      {
+        status: "ok",
+        dueDate: "2027-01-15",
+        dueKind: "estimated",
+        estimate: medium,
+      },
+      "ok, estimated 2026-11-03, at the latest 2027-01-15",
+    ],
+    [
+      "an exact date wins over an estimate",
+      {
+        status: "open",
+        dueDate: "2026-12-01",
+        dueKind: "exact",
+        estimate: medium,
+      },
+      "open, due 2026-12-01",
+    ],
+  ] as const)("%s", (_name, state, expected) => {
+    expect(describeWhen(state)).toBe(expected);
   });
 });
 

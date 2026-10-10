@@ -1,6 +1,7 @@
 import { eq, isNull, sql } from "drizzle-orm";
 import { addDays, diffDays, zonedTimeToInstant } from "$lib/dates";
 import type { NotificationKind, NotificationTitleKey } from "$lib/api/enums";
+import { shownDate } from "$lib/tasks/engine";
 import { assetNotes, taskState, tasks, users } from "$lib/server/db";
 import { getHousehold } from "$lib/server/household/household";
 import type { ServiceContext } from "$lib/server/service";
@@ -57,15 +58,18 @@ function soonDaysOf(task: TaskRow, fallback: number): number {
 
 /**
  * `open` within the lead window; progress-based tasks (x per month) only speak up once due. A
- * counter task with a time limit has progress too, but its date is a fixed one (`exact`), so it
- * does announce that.
+ * counter task with a time limit has progress too, but its due date is a fixed one (`exact`, or
+ * `estimated` when the counter is expected to get there first: the limit stays the due date and
+ * the estimate only an earlier guess), so it does announce that.
  */
 function isDueSoon(c: Candidate, today: string, fallback: number): boolean {
   const { state } = c;
   return (
     state.status === "open" &&
     state.dueDate !== null &&
-    (state.progress === null || state.dueKind === "exact") &&
+    (state.progress === null ||
+      state.dueKind === "exact" ||
+      state.dueKind === "estimated") &&
     diffDays(state.dueDate, today) <= soonDaysOf(c.task, fallback)
   );
 }
@@ -162,7 +166,10 @@ export async function generateNotifications(
     const { task, state } = candidate;
     const recipients = recipientsFor(candidate, people);
     const base = `${task.id}:${state.occurrenceKey}`;
+    // The date of the stage texts is the due date (the hard limit, if there is one); a
+    // preparation is about the date the task is shown with, which may be the earlier guess.
     const date = state.dueDate ?? state.estimate?.date ?? "";
+    const shown = shownDate(state) ?? "";
     const url = `/tasks/${task.id}`;
     const notes = task.assetId ? (openNotes.get(task.assetId) ?? 0) : 0;
 
@@ -173,7 +180,7 @@ export async function generateNotifications(
         taskId: task.id,
         key: `${base}:prep-${prep.id}`,
         titleKey: "notification_prep",
-        params: { title: task.title, prep: prep.title, date },
+        params: { title: task.title, prep: prep.title, date: shown },
         url,
         occurrenceKey: state.occurrenceKey,
       });

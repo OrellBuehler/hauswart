@@ -188,9 +188,14 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
 - **`counter_delta.orEvery`** `{every, unit}` makes a counter task also fall due by time: when the
   counter threshold is reached or the interval since the last completion (the task's creation, the
   `startedOn` the evaluator passes, when there is none) has passed, whichever comes first. The date
-  shown is the earlier of the time limit and the counter estimate (`dueKind` `exact` for the time
-  limit, `condition` once the counter is there, `estimated` while the estimate comes first; the status
-  always follows the time limit). A missing, stale or baseline-less counter no longer makes the task
+  shown is the earlier of the time limit and the counter estimate: `dueKind` `exact` for the time
+  limit, `condition` once the counter is there (it decides the status from then on), `estimated`
+  while the estimate comes first. In that last case `dueDate` **stays the hard time limit** and
+  `estimate` carries the earlier guess, so the status, the "due soon" notification and the iCal feed
+  keep the limit; whoever shows a date takes `shownDate` / `shownDateIsEstimate`
+  (`lib/tasks/engine/shown.ts`: the estimate for kind `estimated`, else the due date) instead of
+  `dueDate ?? estimate`. Lists, the dashboard and preparations use the estimate, the detail page
+  shows both ("~ date" and "at the latest ..."). A missing, stale or baseline-less counter no longer makes the task
   `unknown`: the time half decides, the reason (`signal_missing`, `signal_stale`, `baseline_missing`)
   is still reported. The occurrence key stays `c:<last completion id>`. `createTask` stores
   `createdAt` from the injected clock.

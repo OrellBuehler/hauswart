@@ -1,6 +1,11 @@
 import { and, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { DueStatus } from "$lib/tasks/engine";
-import { evaluateTask, triggerSchema, type Trigger } from "$lib/tasks/engine";
+import {
+  evaluateTask,
+  shownDate,
+  triggerSchema,
+  type Trigger,
+} from "$lib/tasks/engine";
 import { zonedTimeToInstant } from "$lib/dates";
 import type { TaskCategory } from "$lib/api/enums";
 import type {
@@ -109,8 +114,8 @@ const STATUS_RANK: Record<DueStatus, number> = {
 };
 
 function compareTasks(a: TaskRecord, b: TaskRecord): number {
-  const dateA = a.state?.dueDate ?? a.state?.estimate?.date ?? "9999-12-31";
-  const dateB = b.state?.dueDate ?? b.state?.estimate?.date ?? "9999-12-31";
+  const dateA = (a.state && shownDate(a.state)) ?? "9999-12-31";
+  const dateB = (b.state && shownDate(b.state)) ?? "9999-12-31";
   return (
     STATUS_RANK[a.state?.status ?? "unknown"] -
       STATUS_RANK[b.state?.status ?? "unknown"] ||
