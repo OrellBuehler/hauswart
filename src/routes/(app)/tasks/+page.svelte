@@ -12,6 +12,7 @@
   import { endpoints } from "$lib/api/registry";
   import type { Task } from "$lib/api/schemas/tasks";
   import EmptyState from "$lib/components/app/empty-state.svelte";
+  import Fab from "$lib/components/app/fab.svelte";
   import PageHeader from "$lib/components/app/page-header.svelte";
   import OptionSelect from "$lib/components/tasks/option-select.svelte";
   import TaskRow from "$lib/components/tasks/task-row.svelte";
@@ -408,11 +409,4 @@
   {/if}
 </div>
 
-<Button
-  href={resolve("/tasks/new")}
-  size="icon-lg"
-  class="shadow-raised fixed end-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-20 size-14 rounded-full md:hidden"
-  aria-label={m.task_new()}
->
-  <PlusIcon class="size-6" />
-</Button>
+<Fab href={resolve("/tasks/new")} label={m.task_new()} />
