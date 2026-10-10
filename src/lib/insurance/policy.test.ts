@@ -46,9 +46,54 @@ describe("cancellationDeadline", () => {
     ],
     ["mid-month terms keep the day", { endDate: "2027-06-14" }, "2027-03-14"],
     [
-      "across the turn of the year",
+      "across the turn of the year, the end of February to the end of October",
       { endDate: "2027-02-28", cancellationNoticeMonths: 4 },
-      "2026-10-28",
+      "2026-10-31",
+    ],
+    [
+      "across the turn of the year, a day in the middle of the month",
+      { endDate: "2027-02-20", cancellationNoticeMonths: 4 },
+      "2026-10-20",
+    ],
+    [
+      "the end of a 30-day month is the end of a longer one (30 June, 3 months)",
+      { endDate: "2026-06-30" },
+      "2026-03-31",
+    ],
+    [
+      "30 September, 6 months",
+      { endDate: "2026-09-30", cancellationNoticeMonths: 6 },
+      "2026-03-31",
+    ],
+    [
+      "30 April, 1 month",
+      { endDate: "2026-04-30", cancellationNoticeMonths: 1 },
+      "2026-03-31",
+    ],
+    [
+      "29 February to the end of January",
+      { endDate: "2028-02-29", cancellationNoticeMonths: 1 },
+      "2028-01-31",
+    ],
+    [
+      "29 February a year back is the end of February",
+      { endDate: "2028-02-29", cancellationNoticeMonths: 12 },
+      "2027-02-28",
+    ],
+    [
+      "28 February in a year that is not a leap year, back into a leap year",
+      { endDate: "2027-02-28", cancellationNoticeMonths: 12 },
+      "2026-02-28",
+    ],
+    [
+      "the 30th is not the end of a long month",
+      { endDate: "2026-07-30", cancellationNoticeMonths: 1 },
+      "2026-06-30",
+    ],
+    [
+      "28 February two years on to a leap year's end of February",
+      { endDate: "2030-02-28", cancellationNoticeMonths: 24 },
+      "2028-02-29",
     ],
     [
       "a notice period of years",

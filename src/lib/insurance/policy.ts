@@ -1,5 +1,5 @@
 import type { InsurancePremiumPeriod, InsuranceRenewal } from "$lib/api/enums";
-import { addMonths } from "$lib/dates";
+import { addMonths, monthEnd } from "$lib/dates";
 
 /** How many premium payments make a year. */
 export const PERIODS_PER_YEAR: Record<InsurancePremiumPeriod, number> = {
@@ -26,8 +26,10 @@ export interface CancellationTerms {
 
 /**
  * The last day on which a cancellation still ends the contract at its end date: the end date minus
- * the notice period in months, clamped to the end of a shorter month (31 December and 3 months
- * give 30 September). The end date is the last day of cover, so a policy that insurers print as
+ * the notice period in months, clamped to the end of a shorter month (31 May and 3 months give
+ * 28 February). An end date that is the last day of its month stays at the end of the month:
+ * 30 June and 3 months give 31 March, not 30 March, because "three months before the end of June"
+ * is the end of March. The end date is the last day of cover, so a policy that insurers print as
  * "expires 1 January" has the end date 31 December.
  *
  * Only a policy that renews by itself (`auto`) has to be cancelled, and only when both the end date
@@ -43,5 +45,8 @@ export function cancellationDeadline(terms: CancellationTerms): string | null {
   ) {
     return null;
   }
-  return addMonths(terms.endDate, -terms.cancellationNoticeMonths);
+  const earlier = addMonths(terms.endDate, -terms.cancellationNoticeMonths);
+  return terms.endDate === monthEnd(terms.endDate)
+    ? monthEnd(earlier)
+    : earlier;
 }
