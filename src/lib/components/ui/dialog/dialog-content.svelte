@@ -28,7 +28,7 @@
     bind:ref
     data-slot="dialog-content"
     class={cn(
-      "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-(--dialog-top) left-[50%] z-50 grid max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-(--dialog-shift) gap-4 overflow-y-auto overscroll-contain rounded-lg border p-(--dialog-p) shadow-lg duration-200 [--dialog-p:--spacing(4)] [--dialog-shift:0px] [--dialog-top:--spacing(4)] sm:max-w-lg sm:[--dialog-p:--spacing(6)] sm:[--dialog-shift:-50%] sm:[--dialog-top:50%]",
+      "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-(--dialog-top) left-[50%] z-50 grid max-h-[calc(100dvh-2rem)] w-full grid-cols-[minmax(0,1fr)] max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-(--dialog-shift) gap-4 overflow-y-auto overscroll-contain rounded-lg border p-(--dialog-p) shadow-lg wrap-anywhere duration-200 [--dialog-p:--spacing(4)] [--dialog-shift:0px] [--dialog-top:--spacing(4)] sm:max-w-lg sm:[--dialog-p:--spacing(6)] sm:[--dialog-shift:-50%] sm:[--dialog-top:50%]",
       showCloseButton &&
         "[--dialog-header-pe:--spacing(8)] sm:[--dialog-header-pe:--spacing(6)]",
       className,

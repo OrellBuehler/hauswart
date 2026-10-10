@@ -6,7 +6,7 @@ const source = readFileSync(
   new URL("./dialog-content.svelte", import.meta.url),
   "utf8",
 );
-const base = /data-slot="dialog-content"\s+class=\{cn\(\s*"([^"]+)"/.exec(
+const base = /data-slot="dialog-content"[^]*?class=\{cn\(\s*"([^"]+)"/.exec(
   source,
 )?.[1];
 
@@ -28,6 +28,12 @@ describe("dialog content", () => {
     expect(classes).toContain("max-h-[calc(100dvh-2rem)]");
     expect(classes).toContain("overflow-y-auto");
     expect(classes).toContain("overscroll-contain");
+  });
+
+  it("does not grow past the screen for a long unbroken word", () => {
+    const classes = classesOf();
+    expect(classes).toContain("grid-cols-[minmax(0,1fr)]");
+    expect(classes).toContain("wrap-anywhere");
   });
 
   it("lets a caller replace position, padding and overflow at every width", () => {
