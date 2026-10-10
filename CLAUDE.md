@@ -695,8 +695,9 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   `one_off` task with `externalSource: "insurance"`, `externalRef` = the policy id, category `payment`, text in the base
   language, `externalUrl` `/insurance/<id>`, **due on the deadline itself** (so every date shown anywhere is the real
   one), `dueSoonDays` 14 and a preparation 30 days ahead. It exists while the policy is active and the deadline is
-  today or later; it is archived when the policy is archived or the deadline goes away or lies in the past (an
-  overdue reminder that nobody finished stays until the dates change) and the same task comes back. A one-off task
+  today or later; it is archived when the policy is archived or the deadline goes away or moves into the past (an
+  overdue reminder that nobody finished stays, whatever else of the policy is edited, until the dates change) and the
+  same task comes back. A one-off task
   stays done once completed, so when the deadline moves and the reminder was completed or skipped, that task is kept
   archived with its history under `externalRef` `<policyId>@<taskId>` and a new one is created for the new deadline;
   an unfinished one moves in place. Deleting the policy deletes all of them.

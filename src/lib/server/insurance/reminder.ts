@@ -54,7 +54,8 @@ function isSettled(ctx: Pick<ServiceContext, "db">, taskId: string): boolean {
  * cancellation deadline itself (so every date anywhere is the real one), turns "due soon" two
  * weeks before and has a preparation a month ahead. It exists while the policy is active and its
  * deadline is today or later; it is archived when the policy is archived, the deadline goes away
- * or has passed, and comes back when they return.
+ * or moves into the past, and comes back when they return. A reminder nobody has dealt with stays
+ * (overdue) when its deadline passes, as long as the deadline is the one it was made for.
  *
  * A one-off task stays done once it was completed, so when the deadline moves (the contract was
  * renewed and the end date pushed out) a finished task is archived with its history and the policy
@@ -82,7 +83,14 @@ export async function syncReminder(
 
   if (wanted === null) {
     if (current && !current.archivedAt) {
-      await updateTask(ctx, current.id, { archived: true });
+      // A reminder nobody has dealt with whose deadline has passed is overdue, which is what it
+      // is for. An edit that does not touch the deadline (notes, premium) must not hide it.
+      const overdue =
+        deadline !== null &&
+        current.trigger.type === "one_off" &&
+        current.trigger.date === deadline &&
+        !isSettled(ctx, current.id);
+      if (!overdue) await updateTask(ctx, current.id, { archived: true });
     }
     return;
   }

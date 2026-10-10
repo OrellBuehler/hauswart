@@ -6,6 +6,7 @@ import { createTestUser } from "$lib/testing/auth";
 import { useTestDB } from "$lib/testing/db";
 import { at, ctxAt } from "$lib/testing/domain";
 import { completeTask, undoCompletion } from "$lib/server/tasks/completions";
+import { evaluateAll } from "$lib/server/tasks/evaluator";
 import { listPreparations } from "$lib/server/tasks/preparations";
 import { getTask } from "$lib/server/tasks/tasks";
 import {
@@ -129,6 +130,46 @@ describe("insurance reminder task", () => {
     await updatePolicy(ctx(), p.id, { premiumMinor: 1 });
     expect(reminders()).toHaveLength(1);
     expect(await listPreparations(ctx(), p.reminderTaskId!)).toHaveLength(1);
+  });
+
+  describe("once the deadline has passed", () => {
+    const AFTER = at("2026-10-05");
+
+    it("stays, overdue, when an unrelated edit comes after an unfinished deadline", async () => {
+      const p = await make();
+      const edited = await updatePolicy(ctx(AFTER), p.id, { notes: "x" });
+      expect(edited.reminderTaskId).toBe(p.reminderTaskId);
+      await evaluateAll(ctx(AFTER));
+      expect(getTask(ctx(AFTER), p.reminderTaskId!)).toMatchObject({
+        archivedAt: null,
+        trigger: { date: "2026-09-30" },
+        state: { status: "overdue" },
+      });
+      await updatePolicy(ctx(AFTER), p.id, { premiumMinor: 1 });
+      expect(active()).toHaveLength(1);
+      expect(await listPreparations(ctx(), p.reminderTaskId!)).toHaveLength(1);
+    });
+
+    it("is archived all the same when the policy is archived, or the deadline goes away or moves", async () => {
+      const gone = await make();
+      await updatePolicy(ctx(AFTER), gone.id, { archived: true });
+      expect(getTask(ctx(), gone.reminderTaskId!).archivedAt).not.toBeNull();
+
+      const removed = await make({ title: "Ohne Ende" });
+      await updatePolicy(ctx(AFTER), removed.id, { endDate: null });
+      expect(getTask(ctx(), removed.reminderTaskId!).archivedAt).not.toBeNull();
+
+      const moved = await make({ title: "Verschoben" });
+      await updatePolicy(ctx(AFTER), moved.id, { endDate: "2026-11-30" });
+      expect(getTask(ctx(), moved.reminderTaskId!).archivedAt).not.toBeNull();
+    });
+
+    it("is not brought back for a deadline that passed without a task", async () => {
+      const p = await make({}, AFTER);
+      expect(p.reminderTaskId).toBeNull();
+      await updatePolicy(ctx(AFTER), p.id, { notes: "x" });
+      expect(reminders()).toEqual([]);
+    });
   });
 
   it("is archived when the policy is archived and comes back when it is restored", async () => {
