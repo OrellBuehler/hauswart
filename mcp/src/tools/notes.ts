@@ -31,7 +31,11 @@ export const addAssetNote = defineTool({
     "Writes down a small issue to mention at the next service appointment, such as 'brakes squeak' or 'dishwasher leaves film on glasses'. asset is the id or name of the device, plant or vehicle; text is the issue in a sentence or two (at most 2000 characters). The note stays open until a service log entry addresses it or somebody resolves it. For a problem that needs a deadline or a claim report a defect instead.",
   mode: "create",
   input: {
-    asset: z.string().min(1).max(120).describe("Asset id or name"),
+    asset: z
+      .string()
+      .min(1)
+      .max(120)
+      .describe("Asset id, name or (vehicles) plate"),
     text: z.string().trim().min(1).max(2000),
   },
   async handler({ asset: assetRef, text }, ctx) {
@@ -54,7 +58,11 @@ export const listAssetNotes = defineTool({
     "The issues noted on one asset to mention at its next appointment, newest first. status: open (default), resolved or all. A resolved note says who resolved it and, if a service log entry addressed it or it became a defect, which. The open count of the asset of a task shows as openNotes in list_tasks, get_task and list_upcoming.",
   mode: "read",
   input: {
-    asset: z.string().min(1).max(120).describe("Asset id or name"),
+    asset: z
+      .string()
+      .min(1)
+      .max(120)
+      .describe("Asset id, name or (vehicles) plate"),
     status: z.enum(ASSET_NOTE_STATUS_FILTERS).default("open"),
     limit: z.number().int().min(1).max(100).default(50),
     cursor: z.string().min(1).max(512).optional(),

@@ -4,6 +4,7 @@ import { endpoints } from "../../../src/lib/api/registry";
 import type { Asset } from "../../../src/lib/api/schemas/assets";
 import type { Task } from "../../../src/lib/api/schemas/tasks";
 import type { OdometerSummary } from "../../../src/lib/api/schemas/vehicles";
+import { plateKey } from "../../../src/lib/vehicles/plate";
 import type { ToolContext } from "../context";
 import { ToolError } from "../errors";
 import { plural, taskRow } from "../format";
@@ -15,10 +16,6 @@ const vehicleRef = z
   .min(1)
   .max(120)
   .describe("Vehicle: its id, its name or its plate (spaces do not matter)");
-
-/** Plates are compared without spaces, dashes or case: "ZH 123 456" is "zh-123456". */
-const plateKey = (value: string) =>
-  value.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
 
 const label = (v: Asset) =>
   v.vehicle?.plate ? `${v.name}, ${v.vehicle.plate}` : v.name;

@@ -6,6 +6,7 @@ import type { Asset } from "../../src/lib/api/schemas/assets";
 import type { Household } from "../../src/lib/api/schemas/household";
 import type { Room } from "../../src/lib/api/schemas/rooms";
 import { todayIn } from "../../src/lib/dates";
+import { plateKey } from "../../src/lib/vehicles/plate";
 import { ToolError } from "./errors";
 
 export interface Me {
@@ -28,7 +29,7 @@ export interface ToolContext {
   users(): Promise<Map<string, string>>;
   /** A room by id, slug or name. */
   resolveRoom(ref: string): Promise<Room>;
-  /** An asset by id or name (the API searches names, models and manufacturers, not slugs). */
+  /** An asset by id, name or, for a vehicle, plate (the API searches names, models, manufacturers and plates, not slugs). */
   resolveAsset(ref: string): Promise<Asset>;
   /** A household member by `me`, id, display name or username. */
   resolveUser(ref: string): Promise<string>;
@@ -56,6 +57,19 @@ function ambiguous(kind: string, ref: string, names: string[]): ToolError {
 export function createContext(options: ContextOptions): ToolContext {
   const { api, me, scopes, household } = options;
   const now = options.now ?? (() => Date.now());
+
+  /** The vehicle whose plate is `ref` (spaces, dashes and case do not matter), else the loose matches of the search. */
+  async function byPlate(ref: string, loose: Asset[]): Promise<Asset[]> {
+    const plate = plateKey(ref);
+    if (plate === "") return loose;
+    const { items } = await api.call(endpoints.assetsList, {
+      query: { kind: "vehicle", limit: 200 },
+    });
+    const hits = items.filter(
+      (v) => v.vehicle?.plate && plateKey(v.vehicle.plate) === plate,
+    );
+    return hits.length > 0 ? hits : loose;
+  }
 
   const ctx: ToolContext = {
     api,
@@ -110,7 +124,7 @@ export function createContext(options: ContextOptions): ToolContext {
         query: { q: ref, limit: 50 },
       });
       const exact = items.filter((a) => same(a.name, ref) || same(a.slug, ref));
-      const hits = exact.length > 0 ? exact : items;
+      const hits = exact.length > 0 ? exact : await byPlate(ref, items);
       if (hits.length === 1) return hits[0];
       if (hits.length > 1) {
         throw ambiguous(

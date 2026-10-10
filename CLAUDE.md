@@ -816,6 +816,7 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
   `record_odometer` (write: value, date, note, `force`; answers with the tasks that now need attention). A
   vehicle is given by id, name or plate (spaces, dashes and case do not matter; parts of a name or plate
   work when unambiguous); a device given by name is told apart from "no such vehicle".
+  Every tool that takes an asset (`ctx.resolveAsset`) accepts a vehicle's plate as well (`lib/vehicles/plate.ts`).
 - **Tests** (`mcp/src/*.test.ts`, vitest) connect the real server to an in-process hauswart
   (`createInProcessFetch`) via the SDK's in-memory transport: `useMcp().connect({scopes})` returns
   `call`/`ok` helpers. Document tests also use the fake Paperless of `integrations/paperless/testing.ts`

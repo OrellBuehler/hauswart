@@ -75,7 +75,11 @@ export const addServiceLog = defineTool({
     "Adds an entry to an asset's service log: maintenance, repair, installation, inspection, replacement or other. title is required; date defaults to today. contact (id or name from list_contacts) is who did it, performedBy a free-text name, costMinor the cost in minor units of the household currency (cents/Rappen; 12900 = 129.00). resolvedNoteIds are notes of this asset (ids from list_asset_notes) that the work addressed: they become resolved. For work done as part of a recurring task prefer complete_task, which can log it too.",
   mode: "create",
   input: {
-    asset: z.string().min(1).max(120).describe("Asset id or name"),
+    asset: z
+      .string()
+      .min(1)
+      .max(120)
+      .describe("Asset id, name or (vehicles) plate"),
     title: z.string().trim().min(1).max(200),
     kind: z.enum(SERVICE_LOG_KINDS).default("maintenance"),
     date: date.optional(),

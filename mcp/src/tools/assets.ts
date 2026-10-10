@@ -11,7 +11,7 @@ const assetRef = z
   .string()
   .min(1)
   .max(120)
-  .describe("Asset id or name, from list_assets");
+  .describe("Asset id, name or (vehicles) plate, from list_assets");
 
 const fields = {
   kind: z

@@ -176,7 +176,7 @@ Results are a one-line summary followed by compact JSON (empty fields left out).
 | `update_page`                | docs:write  | Edit a page; needs the `rev` from `get_page`, a concurrent edit is reported, not overwritten                                                               |
 
 Rooms, assets and people can be given by name (`asset: "Dishwasher"`, `assignee: "Ben"`, `me`)
-instead of an id, and so can contacts and parts; an ambiguous name is reported with the candidates. Tools are annotated with the
+instead of an id, and so can contacts and parts; a vehicle can also be given by its plate (`asset: "ZH 123456"`, spaces and dashes do not matter). An ambiguous name is reported with the candidates. Tools are annotated with the
 MCP `readOnlyHint`, `destructiveHint` and `idempotentHint`: only `undo_completion`,
 `unlink_document` and `dismiss_finance_suggestion` (which cannot be undone) are marked destructive, and only those
 three, the `update_*`, `set_defect_status`, `snooze_task`, `resolve_asset_note`, `sync_finance` and the read tools are idempotent.
