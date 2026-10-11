@@ -24,6 +24,8 @@
       id: string;
       title: string;
       assetId?: string | null | undefined;
+      /** The vehicle whose odometer the task counts on, if the caller knows (the dashboard does). */
+      odometerAssetId?: string | null | undefined;
       trigger?: Trigger | undefined;
     };
     /** Below `sm` only the check icon (a 44px square), from `sm` up the labelled button. */
@@ -44,13 +46,7 @@
     if (pending) return;
     pending = true;
     try {
-      let vehicleId: string | null;
-      try {
-        vehicleId = await odometerAssetOf(task);
-      } catch (err) {
-        toast.error(apiErrorMessage(err));
-        return;
-      }
+      const vehicleId = await odometerAssetOf(task);
       if (vehicleId) {
         odometerAssetId = vehicleId;
         dialogOpen = true;

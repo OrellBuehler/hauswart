@@ -48,6 +48,53 @@ describe("the open notes of a task's asset on its row", () => {
   });
 });
 
+describe("the vehicle whose odometer a task counts on", () => {
+  const entry = (odometerAssetId: string | null) =>
+    ({
+      taskId: "t1",
+      title: "Service",
+      assetId: "a1",
+      assetName: "Familienauto",
+      roomId: null,
+      roomName: null,
+      assigneeUserId: null,
+      assigneeName: null,
+      status: "open",
+      date: null,
+      estimated: false,
+      progress: null,
+      openNoteCount: 0,
+      odometerAssetId,
+    }) as unknown as Dashboard["upcoming"]["today"][number];
+
+  it("comes along from a dashboard entry", () => {
+    expect(rowFromDashboard(entry("a1")).odometerAssetId).toBe("a1");
+    expect(rowFromDashboard(entry(null)).odometerAssetId).toBeNull();
+  });
+
+  it("is read from the trigger of a listed task", () => {
+    const counting = {
+      v: 1,
+      type: "counter_delta",
+      entityId: "odometer:a1",
+      threshold: 15000,
+    };
+    expect(
+      rowFromTask({ ...task, trigger: counting } as unknown as Task, new Map())
+        .odometerAssetId,
+    ).toBe("a1");
+    expect(
+      rowFromTask(
+        {
+          ...task,
+          trigger: { v: 1, type: "one_off", date: "2026-10-10" },
+        } as unknown as Task,
+        new Map(),
+      ).odometerAssetId,
+    ).toBeNull();
+  });
+});
+
 const taskWith = (state: object | null): Task =>
   ({
     id: "t1",

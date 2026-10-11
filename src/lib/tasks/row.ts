@@ -1,6 +1,7 @@
 import type { Dashboard } from "$lib/api/schemas/dashboard";
 import type { Task } from "$lib/api/schemas/tasks";
 import { daysUntil, formatDateShort, formatRelativeDays } from "$lib/format";
+import { odometerAssetOfTrigger } from "$lib/vehicles/odometer";
 import { shownDate, shownDateIsEstimate } from "./engine/shown";
 import type { DueStatus, Trigger } from "./engine/types";
 
@@ -29,6 +30,8 @@ export type TaskRowData = {
   commentCount?: number;
   /** Open notes on the task's asset, to mention at this appointment. */
   openNoteCount?: number;
+  /** The vehicle whose odometer the task counts on, else null: completing it asks for the reading first. */
+  odometerAssetId?: string | null;
   trigger?: Trigger;
 };
 
@@ -49,6 +52,7 @@ export function rowFromDashboard(task: DashboardTask): TaskRowData {
     archived: false,
     snoozedUntil: null,
     openNoteCount: task.openNoteCount,
+    odometerAssetId: task.odometerAssetId,
   };
 }
 
@@ -80,6 +84,7 @@ export function rowFromTask(
     snoozedUntil: task.snoozedUntil,
     commentCount: task.commentCount,
     openNoteCount: task.openNoteCount,
+    odometerAssetId: odometerAssetOfTrigger(task.trigger),
     trigger: task.trigger,
   };
 }

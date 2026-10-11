@@ -25,7 +25,7 @@
   import OdometerReadingField from "$lib/components/vehicles/odometer-reading-field.svelte";
   import type { Trigger } from "$lib/tasks/engine/types";
   import { refusedMessage, refusedReading } from "$lib/vehicles/odometer-error";
-  import { odometerAssetOfTrigger } from "$lib/vehicles/odometer";
+  import { knownOdometerAsset } from "$lib/vehicles/odometer";
   import { readingToSend } from "$lib/vehicles/odometer-input";
   import { VehicleReading } from "$lib/vehicles/odometer-state.svelte";
   import {
@@ -51,7 +51,8 @@
       assetId?: string | null;
       /** Open notes on the task's asset; they can be ticked off with the service log entry. */
       openNoteCount?: number;
-      /** A task that counts a vehicle's odometer asks for the reading when it is completed. */
+      /** A task that counts a vehicle's odometer asks for the reading when it is completed: named here, else read from its trigger. */
+      odometerAssetId?: string | null;
       trigger?: Trigger;
     };
     today: string;
@@ -78,7 +79,7 @@
   const vehicle = new VehicleReading();
 
   /** The vehicle whose odometer the task counts, if it does. */
-  const odometerAssetId = $derived(odometerAssetOfTrigger(task.trigger));
+  const odometerAssetId = $derived(knownOdometerAsset(task) ?? null);
 
   const tomorrow = $derived(addDays(today, 1));
   const presets = $derived([
