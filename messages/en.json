@@ -1438,6 +1438,8 @@
   "cal_defect_status_line": "Status: {status}",
   "cal_warranty_summary": "Warranty ends: {name}",
   "cal_warranty_line": "Warranty until {date}",
+  "cal_insurance_summary": "Cancellation deadline: {title}",
+  "cal_insurance_line": "The contract runs until {date}",
   "emergency_pdf_title": "Emergency & cover sheet",
   "emergency_pdf_contacts": "Emergency contacts",
   "emergency_pdf_places": "Important places and devices",

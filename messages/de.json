@@ -1438,6 +1438,8 @@
   "cal_defect_status_line": "Status: {status}",
   "cal_warranty_summary": "Garantie läuft ab: {name}",
   "cal_warranty_line": "Garantie bis {date}",
+  "cal_insurance_summary": "Kündigungsfrist: {title}",
+  "cal_insurance_line": "Der Vertrag läuft bis {date}",
   "emergency_pdf_title": "Notfall- & Vertretungsblatt",
   "emergency_pdf_contacts": "Notfallkontakte",
   "emergency_pdf_places": "Wichtige Orte und Geräte",
