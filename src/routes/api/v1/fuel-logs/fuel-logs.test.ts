@@ -187,6 +187,95 @@ describe("fuel log API", () => {
     ).toMatchObject({ paidByUserId: other.id, splitMode: "equal" });
   });
 
+  it("owns the amount, currency and date of its cost entry, and the cost entry points back", async () => {
+    const { call, fill } = await setup();
+    const log = (
+      await fill({
+        date: today(-2),
+        odometer: 80_000,
+        quantity: 40,
+        amountMinor: 7_200,
+      })
+    ).body as FuelLog;
+    const cost = `/api/v1/costs/${log.costEntryId}`;
+    expect((await call("GET", cost)).body).toMatchObject({ fuelLogId: log.id });
+
+    for (const json of [
+      { amountMinor: 9_000 },
+      { currency: "EUR" },
+      { date: today(-1) },
+    ]) {
+      const r = await call("PATCH", cost, { json });
+      expect(r.res.status).toBe(409);
+      expect(errorCode(r)).toBe("conflict");
+      expect((r.body as { error: { details: unknown } }).error.details).toEqual(
+        { fuelLogId: log.id },
+      );
+    }
+    const gone = await call("DELETE", cost);
+    expect(gone.res.status).toBe(409);
+    expect(
+      (gone.body as { error: { details: unknown } }).error.details,
+    ).toEqual({ fuelLogId: log.id });
+
+    const edited = await call("PATCH", cost, {
+      json: {
+        amountMinor: 7_200,
+        title: "Benzin",
+        notes: "Bar",
+        category: "other",
+      },
+    });
+    expect(edited.res.status).toBe(200);
+    expect(edited.body).toMatchObject({
+      amountMinor: 7_200,
+      date: today(-2),
+      title: "Benzin",
+      notes: "Bar",
+      category: "other",
+      fuelLogId: log.id,
+    });
+
+    await call("PATCH", `/api/v1/fuel-logs/${log.id}`, {
+      json: { amountMinor: 8_000, station: "Neu" },
+    });
+    expect((await call("GET", cost)).body).toMatchObject({
+      amountMinor: 8_000,
+      title: "Benzin",
+      payee: "Neu",
+    });
+    const list = (await call("GET", "/api/v1/costs")).body as Page<{
+      id: string;
+      fuelLogId: string | null;
+    }>;
+    expect(list.items.map((c) => c.fuelLogId)).toEqual([log.id]);
+
+    expect(
+      (await call("DELETE", `/api/v1/fuel-logs/${log.id}`)).res.status,
+    ).toBe(204);
+    expect(errorCode(await call("GET", cost))).toBe("not_found");
+  });
+
+  it("a cost entry nobody booked from a fill has no fuelLogId and stays free", async () => {
+    const { call } = await setup();
+    const made = (
+      await call("POST", "/api/v1/costs", {
+        json: { title: "Wäsche", amountMinor: 1_500, category: "other" },
+      })
+    ).body as { id: string; fuelLogId: string | null };
+    expect(made.fuelLogId).toBeNull();
+    expect(
+      (
+        await call("PATCH", `/api/v1/costs/${made.id}`, {
+          json: { amountMinor: 1_600, date: today(-1) },
+        })
+      ).res.status,
+    ).toBe(200);
+    expect((await call("DELETE", `/api/v1/costs/${made.id}`)).res.status).toBe(
+      204,
+    );
+  });
+
   it("deletes an entry with its reading and its cost entry", async () => {
     const { call, car, fill } = await setup();
     const log = (

@@ -1774,7 +1774,7 @@ export const endpoints = {
     method: "POST",
     path: "/api/v1/assets/{id}/fuel-logs",
     summary: "Log a fill-up or charge",
-    description: `In one transaction: the odometer becomes a reading of the vehicle (source fuel_log; a value lower than the reading before is a 400 on odometer) and, unless amountMinor is 0, a cost entry of the category fuel is booked for the vehicle (title like "Tanken <station>", paid by paidByUserId, default the caller, split by splitMode, default ownership). It needs costs:write because it books money. ${VEHICLE_ONLY_WRITE}`,
+    description: `In one transaction: the odometer becomes a reading of the vehicle (source fuel_log; a value lower than the reading before is a 400 on odometer) and, unless amountMinor is 0, a cost entry of the category fuel is booked for the vehicle (title like "Tanken <station>", paid by paidByUserId, default the caller, split by splitMode, default ownership). The cost entry is the fuel log entry's own: its amount, currency and date change through PATCH /fuel-logs/{id} only. It needs costs:write because it books money. ${VEHICLE_ONLY_WRITE}`,
     tags: ["vehicles", "assets"],
     auth: "both",
     scopes: ["costs:write"],
@@ -1804,7 +1804,7 @@ export const endpoints = {
     path: "/api/v1/fuel-logs/{id}",
     summary: "Change a fuel log entry",
     description:
-      "The reading follows the date and the odometer; the cost entry follows the amount, currency, date, station, payer and split. An entry made free loses its cost entry, one that costs something now and has none gets one.",
+      "The reading follows the date and the odometer; the cost entry follows the amount, currency, date, station, payer and split. The fuel log entry owns the amount, currency and date of its cost entry: they change here only (`PATCH /costs/{id}` refuses other values with 409 `conflict`, `details.fuelLogId`; the cost entry's `fuelLogId` points back). A change of station or unit rewrites the cost entry's title and payee only while each still is what this entry wrote there last time, so a title or payee edited on the cost entry stays. An entry made free loses its cost entry, one that costs something now and has none gets one.",
     tags: ["vehicles"],
     auth: "both",
     scopes: ["costs:write"],
@@ -1820,7 +1820,7 @@ export const endpoints = {
     path: "/api/v1/fuel-logs/{id}",
     summary: "Delete a fuel log entry",
     description:
-      "The odometer reading it wrote and the cost entry it booked are deleted with it (receipts attached to that cost entry too).",
+      "The odometer reading it wrote and the cost entry it booked are deleted with it (receipts attached to that cost entry too); the cost entry cannot be deleted on its own (`DELETE /costs/{id}` is a 409 `conflict`, `details.fuelLogId`).",
     tags: ["vehicles"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2063,14 +2063,14 @@ export const endpoints = {
     path: "/api/v1/costs/{id}",
     summary: "Change a cost entry",
     description:
-      "Setting `splitMode` to `ownership` or `equal` splits again by the people's current shares; `shares` need `custom`. Changing only the amount keeps the frozen shares. An entry booked from a finance provider keeps its source; its back-link in the provider is refreshed.",
+      "Setting `splitMode` to `ownership` or `equal` splits again by the people's current shares; `shares` need `custom`. Changing only the amount keeps the frozen shares. An entry booked from a finance provider keeps its source; its back-link in the provider is refreshed. An entry a fuel log entry booked (`fuelLogId` is set) keeps its amount, currency and date as that entry has them: asking for other values is a 409 `conflict` with `details.fuelLogId` (change them with `PATCH /fuel-logs/{id}`); sending the current values is fine, and category, title, notes, payee, payer, split, deductibility and the links stay editable here.",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
     params: idParamsSchema,
     body: updateCostRequestSchema,
     response: costEntrySchema,
-    errors: ["not_found"],
+    errors: ["not_found", "conflict"],
   }),
 
   costsDelete: defineEndpoint({
@@ -2079,14 +2079,14 @@ export const endpoints = {
     path: "/api/v1/costs/{id}",
     summary: "Delete a cost entry",
     description:
-      "Removes the entry with its comments and attachments, and its back-link in the finance provider. A transaction booked from a provider is not offered again.",
+      "Removes the entry with its comments and attachments, and its back-link in the finance provider. A transaction booked from a provider is not offered again. An entry a fuel log entry booked (`fuelLogId` is set) goes with that entry: 409 `conflict` with `details.fuelLogId`, delete it with `DELETE /fuel-logs/{id}`.",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
     params: idParamsSchema,
     response: emptySchema,
     status: 204,
-    errors: ["not_found"],
+    errors: ["not_found", "conflict"],
   }),
 
   financeSuggestionsList: defineEndpoint({

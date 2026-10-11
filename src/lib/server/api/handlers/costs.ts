@@ -47,6 +47,7 @@ export function wireCost(
     source: c.source,
     // The address of the item in the person's own finance app is theirs alone.
     providerUrl: c.createdBy === viewerId ? c.providerUrl : null,
+    fuelLogId: c.fuelLogId,
     commentCount: c.commentCount,
     createdBy: c.createdBy,
     createdAt: toIso(c.createdAt),

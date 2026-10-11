@@ -8,7 +8,16 @@ import { putVehicleRequestSchema } from "$lib/api/schemas/vehicles";
 import { createAssetRequestSchema } from "$lib/api/schemas/assets";
 import { createAsset, deleteAsset } from "$lib/server/assets/assets";
 import { createAttachment } from "$lib/server/attachments/attachments";
-import { getCost } from "$lib/server/costs/costs";
+import {
+  createCostRequestSchema,
+  updateCostRequestSchema,
+} from "$lib/api/schemas/costs";
+import {
+  createCost,
+  deleteCost,
+  getCost,
+  updateCost,
+} from "$lib/server/costs/costs";
 import {
   attachments,
   costEntries,
@@ -456,6 +465,245 @@ describe("fuel log", () => {
       expect((await failure(() => getFuelLog(ctx(), "nope"))).code).toBe(
         "not_found",
       );
+    });
+  });
+
+  describe("the cost entry a fill booked", () => {
+    const patchCost = (id: string, patch: Record<string, unknown>) =>
+      updateCost(ctx(), id, updateCostRequestSchema.parse(patch));
+
+    it("says which fill booked it", async () => {
+      const { car, fill } = await world();
+      const log = fill();
+      expect(getCost(ctx(), log.costEntryId!).fuelLogId).toBe(log.id);
+      const manual = createCost(
+        ctx(),
+        createCostRequestSchema.parse({
+          title: "Wäsche",
+          amountMinor: 1_500,
+          category: "other",
+          assetId: car.id,
+        }),
+        null,
+      );
+      expect(manual.fuelLogId).toBeNull();
+    });
+
+    it.each([
+      ["amount", { amountMinor: 9_999 }],
+      ["currency", { currency: "EUR" }],
+      ["date", { date: "2026-06-02" }],
+      ["amount and date", { amountMinor: 1, date: "2026-06-03" }],
+    ])(
+      "keeps its %s: a change there is refused, naming the fill",
+      async (_name, patch) => {
+        const { fill } = await world();
+        const log = fill();
+        const err = await failure(() => patchCost(log.costEntryId!, patch));
+        expect(err).toMatchObject({
+          code: "conflict",
+          status: 409,
+          details: { fuelLogId: log.id },
+        });
+        expect(err.message).toMatch(/fuel log/i);
+        expect(getCost(ctx(), log.costEntryId!)).toMatchObject({
+          amountMinor: 7_200,
+          currency: "CHF",
+          date: "2026-06-01",
+        });
+      },
+    );
+
+    it("accepts what repeats the amount, the currency and the date as they are", async () => {
+      const { fill } = await world();
+      const log = fill();
+      expect(
+        patchCost(log.costEntryId!, {
+          amountMinor: 7_200,
+          currency: "CHF",
+          date: "2026-06-01",
+          notes: "Beleg liegt bei",
+        }).notes,
+      ).toBe("Beleg liegt bei");
+    });
+
+    it("stays editable in everything else", async () => {
+      const { anna, ben, car, fill } = await world();
+      const log = fill();
+      const other = createAsset(
+        ctx(),
+        createAssetRequestSchema.parse({ name: "Zweitwagen", kind: "vehicle" }),
+      );
+      const changed = patchCost(log.costEntryId!, {
+        title: "Benzin",
+        category: "other",
+        notes: "Geschäftsreise",
+        payee: "Andere Tankstelle",
+        deductible: "maintenance",
+        paidByUserId: ben.id,
+        splitMode: "custom",
+        shares: [
+          { userId: anna.id, shareBps: 2_000 },
+          { userId: ben.id, shareBps: 8_000 },
+        ],
+        assetId: other.id,
+      });
+      expect(changed).toMatchObject({
+        title: "Benzin",
+        category: "other",
+        notes: "Geschäftsreise",
+        payee: "Andere Tankstelle",
+        deductible: "maintenance",
+        paidByUserId: ben.id,
+        splitMode: "custom",
+        assetId: other.id,
+        fuelLogId: log.id,
+      });
+      expect(changed.assetId).not.toBe(car.id);
+      expect(getFuelLog(ctx(), log.id).paidByUserId).toBe(ben.id);
+    });
+
+    it("cannot be deleted while the fill exists", async () => {
+      const { fill } = await world();
+      const log = fill();
+      const err = await failure(() => deleteCost(ctx(), log.costEntryId!));
+      expect(err).toMatchObject({
+        code: "conflict",
+        details: { fuelLogId: log.id },
+      });
+      expect(err.message).toMatch(/fuel log/i);
+      expect(getCost(ctx(), log.costEntryId!).id).toBe(log.costEntryId);
+      expect(getFuelLog(ctx(), log.id).costEntryId).toBe(log.costEntryId);
+    });
+
+    it("is the fill's to change and to delete", async () => {
+      const { fill, change } = await world();
+      const log = fill();
+      change(log.id, {
+        amountMinor: 8_000,
+        date: "2026-06-04",
+        currency: "EUR",
+      });
+      expect(getCost(ctx(), log.costEntryId!)).toMatchObject({
+        amountMinor: 8_000,
+        date: "2026-06-04",
+        currency: "EUR",
+      });
+      change(log.id, { amountMinor: 0 });
+      expect(test.db.select().from(costEntries).all()).toEqual([]);
+      const again = change(log.id, { amountMinor: 5_000 });
+      deleteFuelLog(ctx(), log.id);
+      expect(
+        test.db
+          .select()
+          .from(costEntries)
+          .where(eq(costEntries.id, again.costEntryId!))
+          .all(),
+      ).toEqual([]);
+    });
+
+    it("is free again once the vehicle, and with it the fill, is gone", async () => {
+      const { car, fill } = await world();
+      const log = fill();
+      deleteAsset(ctx(), car.id);
+      expect(getCost(ctx(), log.costEntryId!).fuelLogId).toBeNull();
+      expect(
+        patchCost(log.costEntryId!, { amountMinor: 100 }).amountMinor,
+      ).toBe(100);
+      deleteCost(ctx(), log.costEntryId!);
+      expect(test.db.select().from(costEntries).all()).toEqual([]);
+    });
+
+    it("is free again when the fill lets go of it", async () => {
+      const { fill } = await world();
+      const log = fill();
+      test.db
+        .update(fuelLogs)
+        .set({ costEntryId: null })
+        .where(eq(fuelLogs.id, log.id))
+        .run();
+      expect(patchCost(log.costEntryId!, { amountMinor: 1 }).amountMinor).toBe(
+        1,
+      );
+    });
+
+    describe("title and payee", () => {
+      const rename = (
+        id: string,
+        fields: { title?: string; payee?: string | null },
+      ) =>
+        test.db
+          .update(costEntries)
+          .set(fields)
+          .where(eq(costEntries.id, id))
+          .run();
+
+      it("follow the station while they are what the fill wrote", async () => {
+        const { fill, change } = await world();
+        const log = fill();
+        change(log.id, { station: "Andere Tankstelle" });
+        expect(getCost(ctx(), log.costEntryId!)).toMatchObject({
+          title: "Tanken Andere Tankstelle",
+          payee: "Andere Tankstelle",
+        });
+        change(log.id, { station: null });
+        expect(getCost(ctx(), log.costEntryId!)).toMatchObject({
+          title: "Tanken",
+          payee: null,
+        });
+      });
+
+      it("keep a title somebody changed on the cost entry, and the payee still follows", async () => {
+        const { fill, change } = await world();
+        const log = fill();
+        rename(log.costEntryId!, { title: "Wocheneinkauf Benzin" });
+        change(log.id, { station: "Andere Tankstelle" });
+        expect(getCost(ctx(), log.costEntryId!)).toMatchObject({
+          title: "Wocheneinkauf Benzin",
+          payee: "Andere Tankstelle",
+        });
+      });
+
+      it("keep a payee somebody changed, and the title still follows", async () => {
+        const { fill, change } = await world();
+        const log = fill();
+        rename(log.costEntryId!, { payee: "Firmenkarte" });
+        change(log.id, { station: "Andere Tankstelle" });
+        expect(getCost(ctx(), log.costEntryId!)).toMatchObject({
+          title: "Tanken Andere Tankstelle",
+          payee: "Firmenkarte",
+        });
+      });
+
+      it("keep both when both were changed, whatever else the patch moves", async () => {
+        const { ben, fill, change } = await world();
+        const log = fill();
+        rename(log.costEntryId!, { title: "Eigener Titel", payee: null });
+        change(log.id, {
+          station: "Andere Tankstelle",
+          unit: "kWh",
+          amountMinor: 8_000,
+          paidByUserId: ben.id,
+        });
+        expect(getCost(ctx(), log.costEntryId!)).toMatchObject({
+          title: "Eigener Titel",
+          payee: null,
+          amountMinor: 8_000,
+          paidByUserId: ben.id,
+        });
+      });
+
+      it("follow a change of the unit while the title is the generated one", async () => {
+        const { fill, change } = await world();
+        const log = fill();
+        change(log.id, { unit: "kWh" });
+        expect(getCost(ctx(), log.costEntryId!).title).toBe(
+          "Laden Muster Tankstelle",
+        );
+        rename(log.costEntryId!, { title: "Strom" });
+        change(log.id, { unit: "l" });
+        expect(getCost(ctx(), log.costEntryId!).title).toBe("Strom");
+      });
     });
   });
 

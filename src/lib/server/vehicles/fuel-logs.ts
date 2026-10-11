@@ -265,6 +265,30 @@ function costBody(
 }
 
 /**
+ * The title and the payee the fill now writes on its cost entry, each only if the entry still has
+ * what the fill wrote there last time: a name somebody changed on the cost entry is theirs and stays.
+ */
+function writtenNames(
+  ctx: Pick<ServiceContext, "db">,
+  before: Pick<FuelLogRow, "unit" | "station">,
+  after: Pick<FuelLogRow, "unit" | "station">,
+  costEntryId: string,
+): Pick<UpdateCostRequest, "title" | "payee"> {
+  const entry = ctx.db
+    .select({ title: costEntries.title, payee: costEntries.payee })
+    .from(costEntries)
+    .where(eq(costEntries.id, costEntryId))
+    .get();
+  if (!entry) return {};
+  return {
+    ...(entry.title === costTitle(before.unit, before.station)
+      ? { title: costTitle(after.unit, after.station) }
+      : {}),
+    ...(entry.payee === before.station ? { payee: after.station } : {}),
+  };
+}
+
+/**
  * Logs a fill-up. In one transaction it records the odometer (a reading of the vehicle, source
  * `fuel_log`; lower than the reading before is a 400 on `odometer`) and books a cost entry of the
  * category `fuel` for the vehicle, unless the fill was free. Nothing is kept if any part fails.
@@ -336,8 +360,10 @@ export function createFuelLog(
 
 /**
  * Changes a fill. The reading follows the date and the odometer; the cost entry follows the amount,
- * the currency, the date, the station and the payer or split. A fill that becomes free loses its
- * cost entry; one that costs something now and has none gets one (unless only other things changed).
+ * the currency, the date, the station (its title and payee, unless somebody changed those on the
+ * cost entry since) and the payer or split. The fill owns the amount, currency and date of its cost
+ * entry: they change here and nowhere else. A fill that becomes free loses its cost entry; one that
+ * costs something now and has none gets one (unless only other things changed).
  */
 export function updateFuelLog(
   ctx: Ctx,
@@ -401,7 +427,7 @@ export function updateFuelLog(
         const costPatch: UpdateCostRequest = {
           ...(patch.date === undefined ? {} : { date: next.date }),
           ...(titleChanged
-            ? { title: costTitle(next.unit, next.station), payee: next.station }
+            ? writtenNames(inner, current, next, current.costEntryId)
             : {}),
           ...(patch.amountMinor === undefined
             ? {}
@@ -412,7 +438,7 @@ export function updateFuelLog(
           ...(shares === undefined ? {} : { shares }),
         };
         if (Object.keys(costPatch).length > 0) {
-          updateCost(inner, current.costEntryId, costPatch);
+          updateCost(inner, current.costEntryId, costPatch, { fuelLogId: id });
         }
       }
     } else if (moneyChanged && next.amountMinor > 0) {
