@@ -356,6 +356,7 @@ export function updateFuelLog(
         ...(amountMinor === undefined
           ? {}
           : { amountMinor: minor(amountMinor) }),
+        updatedAt: new Date(ctx.now),
       })
       .where(eq(fuelLogs.id, id))
       .run();

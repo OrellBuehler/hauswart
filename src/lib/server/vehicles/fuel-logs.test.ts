@@ -330,6 +330,62 @@ describe("fuel log", () => {
       expect(cost.shares.map((s) => s.amountMinor)).toEqual([4_000, 4_000]);
     });
 
+    it("a patch of the booking alone changes the payer or the split of the cost entry", async () => {
+      const { ben, fill, change } = await world();
+      const log = fill();
+      const byBen = change(log.id, { paidByUserId: ben.id });
+      expect(byBen.paidByUserId).toBe(ben.id);
+      expect(getCost(ctx(), log.costEntryId!)).toMatchObject({
+        paidByUserId: ben.id,
+        splitMode: "ownership",
+        amountMinor: 7_200,
+      });
+      const nobody = change(log.id, { paidByUserId: null });
+      expect(nobody.paidByUserId).toBeNull();
+      change(log.id, { splitMode: "none" });
+      expect(getCost(ctx(), log.costEntryId!)).toMatchObject({
+        paidByUserId: null,
+        splitMode: "none",
+        shares: [],
+      });
+      change(log.id, { splitMode: "equal" });
+      const cost = getCost(ctx(), log.costEntryId!);
+      expect(cost.splitMode).toBe("equal");
+      expect(cost.shares.map((s) => s.amountMinor)).toEqual([3_600, 3_600]);
+    });
+
+    it("a patch of a custom split alone is booked on the cost entry", async () => {
+      const { anna, ben, fill, change } = await world();
+      const log = fill();
+      change(log.id, {
+        splitMode: "custom",
+        shares: [
+          { userId: anna.id, shareBps: 7_000 },
+          { userId: ben.id, shareBps: 3_000 },
+        ],
+      });
+      const parts = Object.fromEntries(
+        getCost(ctx(), log.costEntryId!).shares.map((s) => [
+          s.userName,
+          s.amountMinor,
+        ]),
+      );
+      expect(parts).toEqual({ Anna: 5_040, Ben: 2_160 });
+    });
+
+    it("a patch of the booking alone touches the fill's updated time", async () => {
+      const { ben, fill } = await world();
+      const log = fill();
+      const later = ctx(NOW + 60_000);
+      const changed = updateFuelLog(
+        later,
+        log.id,
+        updateFuelLogRequestSchema.parse({ paidByUserId: ben.id }),
+        ben.id,
+      );
+      expect(changed.updatedAt.getTime()).toBe(NOW + 60_000);
+    });
+
     it("moves the reading with the date and the odometer", async () => {
       const { fill, change, readings } = await world();
       const log = fill();

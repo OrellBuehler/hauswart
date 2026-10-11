@@ -39,7 +39,7 @@ describe("fuel log API", () => {
   useTestDB();
   async function setup() {
     const user = await createTestUser();
-    await createTestUser();
+    const other = await createTestUser();
     const call = createCaller({ session: loginTestUser(user).token });
     const car = (
       await call("POST", "/api/v1/assets", {
@@ -48,7 +48,7 @@ describe("fuel log API", () => {
     ).body as { id: string };
     const fill = async (json: object) =>
       call("POST", `/api/v1/assets/${car.id}/fuel-logs`, { json });
-    return { user, call, car, fill };
+    return { user, other, call, car, fill };
   }
 
   it("logs a fill-up: the log, the reading and the cost entry", async () => {
@@ -166,6 +166,25 @@ describe("fuel log API", () => {
         await call("PATCH", `/api/v1/fuel-logs/${log.id}`, { json: {} }),
       ),
     ).toBe("invalid_request");
+  });
+
+  it("changes only the payer or the split of an entry", async () => {
+    const { other, call, fill } = await setup();
+    const log = (
+      await fill({ odometer: 80_000, quantity: 40, amountMinor: 7_200 })
+    ).body as FuelLog;
+    const byOther = await call("PATCH", `/api/v1/fuel-logs/${log.id}`, {
+      json: { paidByUserId: other.id },
+    });
+    expect(byOther.res.status).toBe(200);
+    expect(byOther.body).toMatchObject({ paidByUserId: other.id });
+    const split = await call("PATCH", `/api/v1/fuel-logs/${log.id}`, {
+      json: { splitMode: "equal" },
+    });
+    expect(split.res.status).toBe(200);
+    expect(
+      (await call("GET", `/api/v1/costs/${log.costEntryId}`)).body,
+    ).toMatchObject({ paidByUserId: other.id, splitMode: "equal" });
   });
 
   it("deletes an entry with its reading and its cost entry", async () => {
