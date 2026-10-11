@@ -33145,6 +33145,841 @@
         }
       }
     },
+    "/api/v1/calendar-targets": {
+      "get": {
+        "operationId": "calendarTargetsList",
+        "summary": "The calendars hauswart pushes items into",
+        "description": "The household's targets and the caller's own (another person's are not visible). A target pushes appointments, due dates, preparations and deadlines into one calendar of a connected system (`direction` is `push`: the calendar is never read back, edits there are not noticed until the item changes in hauswart). Every target has its health (`status`, `lastError`, `consecutiveFailures`, `lastCheckedAt`), what the last run did (`lastStats`), what the calendar allows (`capabilities`) and whether the caller may change it (`canManage`).",
+        "tags": [
+          "calendar"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "x-required-scopes": [
+          "read"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CalendarTarget"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error: `unauthenticated`, `setup_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error: `forbidden`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error: `rate_limited`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: `internal`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "calendarTargetsCreate",
+        "summary": "Add a calendar to push items into",
+        "description": "`provider` is the connected system, `remoteCalendarId` a calendar from `GET /integrations/{provider}/calendars` (one that allows creating events). Calendars of the household's connection are administrators' business and always carry everything (`scope` `all`); a person's own connection gives targets of that person. `config.kinds` says what goes in (`appointments`, `task_due`, `preparations`, `defect_deadlines`, `insurance_deadlines`, `warranty_ends`); items that only have a date become all-day events or, with `timedMode` `timed`, events of `dueDurationMinutes` from `dueTime`. The first sync follows at once. 404 without a working connection or adapter, 400 on `remoteCalendarId` for a calendar that does not exist or cannot take events, 409 for a calendar that already has a target, 502 `upstream_error` when the system does not answer.",
+        "tags": [
+          "calendar"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": [
+              "write"
+            ]
+          }
+        ],
+        "x-required-scopes": [
+          "write"
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarTarget"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error: `invalid_request`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error: `unauthenticated`, `setup_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error: `forbidden`, `csrf_failed`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: `not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error: `conflict`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Error: `invalid_request` (request body too large)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Error: `invalid_request` (unsupported content type)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error: `rate_limited`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: `internal`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Error: `upstream_error`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "provider": {
+                    "type": "string",
+                    "enum": [
+                      "homeassistant"
+                    ]
+                  },
+                  "remoteCalendarId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "enabled": {
+                    "default": true,
+                    "type": "boolean"
+                  },
+                  "config": {
+                    "type": "object",
+                    "properties": {
+                      "kinds": {
+                        "minItems": 1,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "appointments",
+                            "task_due",
+                            "preparations",
+                            "defect_deadlines",
+                            "insurance_deadlines",
+                            "warranty_ends"
+                          ]
+                        }
+                      },
+                      "direction": {
+                        "default": "push",
+                        "type": "string",
+                        "enum": [
+                          "push"
+                        ]
+                      },
+                      "scope": {
+                        "default": "all",
+                        "type": "string",
+                        "enum": [
+                          "mine",
+                          "all"
+                        ]
+                      },
+                      "timedMode": {
+                        "default": "all_day",
+                        "type": "string",
+                        "enum": [
+                          "all_day",
+                          "timed"
+                        ]
+                      },
+                      "dueTime": {
+                        "default": "08:00",
+                        "type": "string",
+                        "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                      },
+                      "dueDurationMinutes": {
+                        "default": 30,
+                        "type": "integer",
+                        "minimum": 5,
+                        "maximum": 480
+                      },
+                      "alarmMinutes": {
+                        "default": null,
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 40320
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "titlePrefix": {
+                        "default": "",
+                        "type": "string",
+                        "maxLength": 30
+                      },
+                      "onRemoteDelete": {
+                        "default": "recreate",
+                        "type": "string",
+                        "enum": [
+                          "recreate",
+                          "forget"
+                        ]
+                      },
+                      "conflictPolicy": {
+                        "default": "hauswart_wins",
+                        "type": "string",
+                        "enum": [
+                          "hauswart_wins"
+                        ]
+                      },
+                      "locale": {
+                        "default": "de",
+                        "type": "string",
+                        "enum": [
+                          "de",
+                          "en"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "kinds"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "provider",
+                  "remoteCalendarId",
+                  "config"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/calendar-targets/{id}": {
+      "patch": {
+        "operationId": "calendarTargetsUpdate",
+        "summary": "Change a calendar target",
+        "description": "`config` is merged over the stored settings (send the fields that change). The next sync applies it: events of kinds that are no longer carried are removed from the calendar when it allows deleting. Household targets need an administrator; another person's target is a 404.",
+        "tags": [
+          "calendar"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": [
+              "write"
+            ]
+          }
+        ],
+        "x-required-scopes": [
+          "write"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarTarget"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error: `invalid_request`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error: `unauthenticated`, `setup_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error: `forbidden`, `csrf_failed`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: `not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Error: `invalid_request` (request body too large)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Error: `invalid_request` (unsupported content type)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error: `rate_limited`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: `internal`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "config": {
+                    "type": "object",
+                    "properties": {
+                      "kinds": {
+                        "minItems": 1,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "appointments",
+                            "task_due",
+                            "preparations",
+                            "defect_deadlines",
+                            "insurance_deadlines",
+                            "warranty_ends"
+                          ]
+                        }
+                      },
+                      "direction": {
+                        "type": "string",
+                        "enum": [
+                          "push"
+                        ]
+                      },
+                      "scope": {
+                        "type": "string",
+                        "enum": [
+                          "mine",
+                          "all"
+                        ]
+                      },
+                      "timedMode": {
+                        "type": "string",
+                        "enum": [
+                          "all_day",
+                          "timed"
+                        ]
+                      },
+                      "dueTime": {
+                        "type": "string",
+                        "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                      },
+                      "dueDurationMinutes": {
+                        "type": "integer",
+                        "minimum": 5,
+                        "maximum": 480
+                      },
+                      "alarmMinutes": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 40320
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "titlePrefix": {
+                        "type": "string",
+                        "maxLength": 30
+                      },
+                      "onRemoteDelete": {
+                        "type": "string",
+                        "enum": [
+                          "recreate",
+                          "forget"
+                        ]
+                      },
+                      "conflictPolicy": {
+                        "type": "string",
+                        "enum": [
+                          "hauswart_wins"
+                        ]
+                      },
+                      "locale": {
+                        "type": "string",
+                        "enum": [
+                          "de",
+                          "en"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "calendarTargetsDelete",
+        "summary": "Remove a calendar target",
+        "description": "The events hauswart wrote stay in the calendar, and a new target for the same calendar takes them over, unless `removeRemote=true`: then the events carrying hauswart's marker are deleted first (400 on `removeRemote` for a calendar that cannot delete events, 409 when the connection is switched off, 502 `upstream_error` when the system fails; the target stays then, and a second try continues). Household targets need an administrator.",
+        "tags": [
+          "calendar"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": [
+              "write"
+            ]
+          }
+        ],
+        "x-required-scopes": [
+          "write"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "removeRemote",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "400": {
+            "description": "Error: `invalid_request`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error: `unauthenticated`, `setup_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error: `forbidden`, `csrf_failed`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: `not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error: `conflict`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error: `rate_limited`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: `internal`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Error: `upstream_error`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/calendar-targets/{id}/sync": {
+      "post": {
+        "operationId": "calendarTargetsSync",
+        "summary": "Sync a calendar target now",
+        "description": "Runs the sync of the target at once, whatever the back-off says, and answers with what it did (`counts`) and the fresh target. A run is limited in size: `counts.remaining` is the work left for the next run. A failed run is a normal answer (`ok: false` with an error `code`, also on the target as `lastError`): `unauthorized`, `forbidden`, `timeout`, `network`, `tls`, `server`, `blocked_host` and other codes of the connection, `calendar_missing`, `unsupported` (the calendar cannot take events), `unconfirmed` (the calendar did not show events just written), `config_invalid`, `busy` (a run is going on), `disabled` and `no_connection`. Household targets need an administrator.",
+        "tags": [
+          "calendar"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": [
+              "write"
+            ]
+          }
+        ],
+        "x-required-scopes": [
+          "write"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarSync"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error: `invalid_request`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error: `unauthenticated`, `setup_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error: `forbidden`, `csrf_failed`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: `not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error: `rate_limited`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: `internal`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/emergency": {
       "get": {
         "operationId": "emergencyGet",
@@ -43749,6 +44584,391 @@
           "lastFetchedAt",
           "createdAt",
           "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "CalendarTarget": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "homeassistant"
+            ]
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "household",
+              "user"
+            ]
+          },
+          "ownerId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "remoteCalendarId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "config": {
+            "$ref": "#/components/schemas/CalendarTargetConfig"
+          },
+          "capabilities": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CalendarCapabilities"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "error",
+              "unknown"
+            ]
+          },
+          "lastError": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lastOkAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastCheckedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "consecutiveFailures": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "lastStats": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CalendarSyncCounts"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "eventCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "canManage": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "level",
+          "ownerId",
+          "remoteCalendarId",
+          "name",
+          "enabled",
+          "config",
+          "capabilities",
+          "status",
+          "lastError",
+          "lastOkAt",
+          "lastCheckedAt",
+          "consecutiveFailures",
+          "lastStats",
+          "eventCount",
+          "canManage",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "CalendarTargetConfig": {
+        "type": "object",
+        "properties": {
+          "kinds": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "appointments",
+                "task_due",
+                "preparations",
+                "defect_deadlines",
+                "insurance_deadlines",
+                "warranty_ends"
+              ]
+            }
+          },
+          "direction": {
+            "default": "push",
+            "type": "string",
+            "enum": [
+              "push"
+            ]
+          },
+          "scope": {
+            "default": "all",
+            "type": "string",
+            "enum": [
+              "mine",
+              "all"
+            ]
+          },
+          "timedMode": {
+            "default": "all_day",
+            "type": "string",
+            "enum": [
+              "all_day",
+              "timed"
+            ]
+          },
+          "dueTime": {
+            "default": "08:00",
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "dueDurationMinutes": {
+            "default": 30,
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 480
+          },
+          "alarmMinutes": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 40320
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "titlePrefix": {
+            "default": "",
+            "type": "string",
+            "maxLength": 30
+          },
+          "onRemoteDelete": {
+            "default": "recreate",
+            "type": "string",
+            "enum": [
+              "recreate",
+              "forget"
+            ]
+          },
+          "conflictPolicy": {
+            "default": "hauswart_wins",
+            "type": "string",
+            "enum": [
+              "hauswart_wins"
+            ]
+          },
+          "locale": {
+            "default": "de",
+            "type": "string",
+            "enum": [
+              "de",
+              "en"
+            ]
+          }
+        },
+        "required": [
+          "kinds",
+          "direction",
+          "scope",
+          "timedMode",
+          "dueTime",
+          "dueDurationMinutes",
+          "alarmMinutes",
+          "titlePrefix",
+          "onRemoteDelete",
+          "conflictPolicy",
+          "locale"
+        ],
+        "additionalProperties": false
+      },
+      "CalendarCapabilities": {
+        "type": "object",
+        "properties": {
+          "create": {
+            "type": "boolean"
+          },
+          "update": {
+            "type": "boolean"
+          },
+          "delete": {
+            "type": "boolean"
+          },
+          "alarms": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "create",
+          "update",
+          "delete",
+          "alarms"
+        ],
+        "additionalProperties": false
+      },
+      "CalendarSyncCounts": {
+        "type": "object",
+        "properties": {
+          "created": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "updated": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "replaced": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "deleted": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "adopted": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "forgotten": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "unconfirmed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "remaining": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "created",
+          "updated",
+          "replaced",
+          "deleted",
+          "adopted",
+          "forgotten",
+          "skipped",
+          "failed",
+          "unconfirmed",
+          "remaining"
+        ],
+        "additionalProperties": false
+      },
+      "CalendarSync": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code",
+                  "message"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "counts": {
+            "$ref": "#/components/schemas/CalendarSyncCounts"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CalendarTarget"
+          }
+        },
+        "required": [
+          "ok",
+          "error",
+          "counts",
+          "target"
         ],
         "additionalProperties": false
       },
