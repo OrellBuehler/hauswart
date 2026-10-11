@@ -9,6 +9,7 @@ import {
   normalizeBaseUrl,
   readCapped,
   readJson,
+  retryTransient,
   toSearch,
   withDetail,
   type Fail,
@@ -283,5 +284,101 @@ describe("fetchOnce host policy", () => {
       await codeOf(fetchOnce(url, init({ allowLoopback: true }), fail)),
     ).toBe("blocked_host");
     expect(spy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("retryTransient", () => {
+  const sleeps: number[] = [];
+  const sleep = async (ms: number) => {
+    sleeps.push(ms);
+  };
+  beforeEach(() => {
+    sleeps.length = 0;
+  });
+
+  it("returns the first success without waiting", async () => {
+    expect(await retryTransient(async () => 7, { sleep })).toBe(7);
+    expect(sleeps).toEqual([]);
+  });
+
+  it("repeats a timeout, a network failure or a server error, at most twice, with growing pauses", async () => {
+    const codes = ["timeout", "network"];
+    let calls = 0;
+    const result = await retryTransient(
+      async () => {
+        const code = codes[calls++];
+        if (code) throw fail(code as HttpErrorCode);
+        return "ok";
+      },
+      { sleep, baseDelayMs: 100 },
+    );
+    expect(result).toBe("ok");
+    expect(calls).toBe(3);
+    expect(sleeps).toEqual([100, 200]);
+  });
+
+  it("throws the last error when it keeps failing", async () => {
+    let calls = 0;
+    expect(
+      await codeOf(
+        retryTransient(
+          async () => {
+            calls++;
+            throw fail("server");
+          },
+          { sleep },
+        ),
+      ),
+    ).toBe("server");
+    expect(calls).toBe(3);
+  });
+
+  it("does not repeat what repeating cannot fix", async () => {
+    for (const code of [
+      "unauthorized",
+      "forbidden",
+      "not_found",
+      "bad_request",
+      "invalid_response",
+      "blocked_host",
+      "tls",
+    ] as const) {
+      let calls = 0;
+      expect(
+        await codeOf(
+          retryTransient(
+            async () => {
+              calls++;
+              throw fail(code);
+            },
+            { sleep },
+          ),
+        ),
+      ).toBe(code);
+      expect(calls, code).toBe(1);
+    }
+    expect(sleeps).toEqual([]);
+  });
+
+  it("honours maxRetries, and an error without a code is not transient", async () => {
+    let calls = 0;
+    await codeOf(
+      retryTransient(
+        async () => {
+          calls++;
+          throw fail("timeout");
+        },
+        { sleep, maxRetries: 0 },
+      ),
+    );
+    expect(calls).toBe(1);
+    await expect(
+      retryTransient(
+        async () => {
+          throw new TypeError("bug");
+        },
+        { sleep },
+      ),
+    ).rejects.toThrow("bug");
   });
 });

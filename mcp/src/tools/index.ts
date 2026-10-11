@@ -2,6 +2,7 @@ import type { Tool } from "../tool";
 import { appointmentTools } from "./appointments";
 import { assetTools } from "./assets";
 import { assetCareTools } from "./asset-care";
+import { listCalendarTargets } from "./calendar-targets";
 import { commentTools } from "./comments";
 import { contactTools } from "./contacts";
 import { costTools } from "./costs";
@@ -61,4 +62,5 @@ export const tools: readonly Tool[] = [
   ...fuelTools,
   ...tireTools,
   ...appointmentTools,
+  listCalendarTargets,
 ];

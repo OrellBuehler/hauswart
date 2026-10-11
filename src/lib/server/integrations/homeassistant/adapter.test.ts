@@ -13,6 +13,7 @@ import {
   homeAssistantIntegration,
   validateInput,
 } from "./adapter";
+import { CREATE_DELETE_CALENDAR, FULL_CALENDAR } from "./fake-server";
 import { useFakeHomeAssistant } from "./testing";
 
 describe("Home Assistant integration (settings API against the fake server)", () => {
@@ -314,6 +315,18 @@ describe("Home Assistant integration (settings API against the fake server)", ()
       const admin = await session();
       await save(admin);
       fake.addCalendar("calendar.example_waste", [], "Waste");
+      fake.addCalendar(
+        "calendar.example_household",
+        [],
+        "Household",
+        FULL_CALENDAR,
+      );
+      fake.addCalendar(
+        "calendar.example_google",
+        [],
+        "Google",
+        CREATE_DELETE_CALENDAR,
+      );
       expect(
         (
           await admin(
@@ -332,7 +345,38 @@ describe("Home Assistant integration (settings API against the fake server)", ()
         (await admin("GET", "/api/v1/integrations/homeassistant/calendars"))
           .body,
       ).toEqual({
-        items: [{ id: "calendar.example_waste", name: "Waste" }],
+        items: [
+          {
+            id: "calendar.example_waste",
+            name: "Waste",
+            capabilities: {
+              create: false,
+              update: false,
+              delete: false,
+              alarms: false,
+            },
+          },
+          {
+            id: "calendar.example_household",
+            name: "Household",
+            capabilities: {
+              create: true,
+              update: true,
+              delete: true,
+              alarms: false,
+            },
+          },
+          {
+            id: "calendar.example_google",
+            name: "Google",
+            capabilities: {
+              create: true,
+              update: false,
+              delete: true,
+              alarms: false,
+            },
+          },
+        ],
       });
     });
   });

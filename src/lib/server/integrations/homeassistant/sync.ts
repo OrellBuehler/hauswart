@@ -5,6 +5,7 @@ import {
   recordConnectionOk,
   resolveConnection,
 } from "$lib/server/connections/connections";
+import { parseMarker } from "$lib/server/calendar-sync/ref";
 import { ingestSignals, afterCalendarSync } from "$lib/server/signals/ingest";
 import {
   hasExternalDates,
@@ -161,12 +162,14 @@ export interface CalendarSyncResult {
 }
 
 function entriesOf(
-  events: Awaited<
+  allEvents: Awaited<
     ReturnType<ReturnType<typeof clientFor>["getCalendarEvents"]>
   >,
   tz: string,
   summaryMatch: string | undefined,
 ): ExternalDateEntry[] {
+  // What hauswart wrote into the calendar itself (calendar targets) is not a date somebody planned.
+  const events = allEvents.filter((e) => parseMarker(e.description) === null);
   const titles = new Map<string, string>();
   const matches = compileSummaryMatcher(summaryMatch);
   for (const event of events) {

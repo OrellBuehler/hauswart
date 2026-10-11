@@ -59,6 +59,11 @@ const envelopeSchema = z.object({
   error: z.object({ code: z.string().optional() }).nullish(),
 });
 
+/** A command of Home Assistant's WebSocket API with its own fields, e.g. `calendar/event/delete`. */
+export type WsCommandPayload = { type: string } & Record<string, unknown>;
+
+const ANY_RESULT = z.unknown();
+
 /**
  * Runs one registry command over Home Assistant's WebSocket API: connect,
  * `auth_required`, send `{type: "auth", access_token}`, `auth_ok`, send the
@@ -80,6 +85,33 @@ export async function haWsCommand<T extends WsRegistryCommand["type"]>(
       }),
     );
   }
+  return runWs(baseUrl, token, command, schema, options) as Promise<
+    WsResultMap[T]
+  >;
+}
+
+/**
+ * Runs any command with fields of its own (the calendar commands) the same way and returns the
+ * raw result, which is `null` for commands that answer nothing. A refusal is `not_found` (unknown
+ * entity), `forbidden` (the token may not) or `bad_request` (anything else; only the command's
+ * error code is kept as detail, never its message).
+ */
+export function haWsCall(
+  baseUrl: string,
+  token: string,
+  command: WsCommandPayload,
+  options: WsOptions = {},
+): Promise<unknown> {
+  return runWs(baseUrl, token, command, ANY_RESULT, options);
+}
+
+async function runWs(
+  baseUrl: string,
+  token: string,
+  command: WsCommandPayload,
+  schema: z.ZodType,
+  options: WsOptions,
+): Promise<unknown> {
   const base = normalizeUrl(baseUrl, haFail);
   assertToken(token, haFail);
   await guardHost(base, options.allowLoopback, haFail);
@@ -87,12 +119,12 @@ export async function haWsCommand<T extends WsRegistryCommand["type"]>(
   const maxBytes = options.maxMessageBytes ?? WS_MAX_MESSAGE_BYTES;
   const COMMAND_ID = 1;
 
-  return new Promise<WsResultMap[T]>((resolve, reject) => {
+  return new Promise<unknown>((resolve, reject) => {
     let settled = false;
     let authenticated = false;
     let socket: WebSocket | undefined;
 
-    const finish = (outcome: { error: Error } | { value: WsResultMap[T] }) => {
+    const finish = (outcome: { error: Error } | { value: unknown }) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
@@ -165,20 +197,24 @@ export async function haWsCommand<T extends WsRegistryCommand["type"]>(
           return fail("unauthorized");
         case "auth_ok":
           authenticated = true;
-          ws.send(JSON.stringify({ id: COMMAND_ID, type: command.type }));
+          ws.send(JSON.stringify({ ...command, id: COMMAND_ID }));
           return;
         case "result": {
           if (parsed.id !== COMMAND_ID) return;
           if (!parsed.success) {
             const code = parsed.error?.code;
             return fail(
-              code === "unauthorized" ? "forbidden" : "bad_request",
+              code === "unauthorized"
+                ? "forbidden"
+                : code === "not_found"
+                  ? "not_found"
+                  : "bad_request",
               code ? `command failed: ${code}` : undefined,
             );
           }
           try {
             finish({
-              value: parseWith(schema, parsed.result, haFail) as WsResultMap[T],
+              value: parseWith(schema, parsed.result ?? null, haFail),
             });
           } catch (err) {
             finish({ error: err as Error });

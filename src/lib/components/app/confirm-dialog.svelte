@@ -1,5 +1,6 @@
 <script lang="ts">
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
+  import type { Snippet } from "svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
   import { apiErrorMessage } from "$lib/error-message";
@@ -16,6 +17,7 @@
     onconfirm,
     errorMessage,
     closeOnBack,
+    children,
   }: {
     open?: boolean;
     title: string;
@@ -28,6 +30,8 @@
     errorMessage?: (err: unknown) => string;
     /** The back gesture closes the dialog (default, but not while the action runs); `false` leaves it to the page. */
     closeOnBack?: boolean;
+    /** Extra content between the description and the buttons, e.g. an option the action reads. */
+    children?: Snippet;
   } = $props();
 
   let pending = $state(false);
@@ -60,6 +64,7 @@
       <Dialog.Title>{title}</Dialog.Title>
       <Dialog.Description>{description}</Dialog.Description>
     </Dialog.Header>
+    {@render children?.()}
     <FormAlert message={error} />
     <Dialog.Footer class="gap-2">
       <Button

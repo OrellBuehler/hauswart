@@ -42,6 +42,7 @@ const READ_TOOLS = [
   "list_fuel_logs",
   "list_tire_sets",
   "list_appointments",
+  "list_calendar_targets",
 ];
 const WRITE_TOOLS = [
   "create_task",

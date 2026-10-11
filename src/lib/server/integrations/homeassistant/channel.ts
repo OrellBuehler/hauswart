@@ -5,7 +5,7 @@ import type {
 } from "$lib/server/notifications/channels";
 import { enabledTargets } from "$lib/server/notifications/settings";
 import { resolveConnection } from "$lib/server/connections/connections";
-import { appUrlOf } from "./adapter";
+import { appUrlOf } from "./app-url";
 import { clientFor, householdConnection } from "./connection";
 import { errorCode } from "./errors";
 import { renderPush } from "./render";

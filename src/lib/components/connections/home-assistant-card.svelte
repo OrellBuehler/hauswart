@@ -67,6 +67,8 @@
     if (integration.enabled && integration.status === "error") formOpen = true;
   });
 
+  const calendarSyncHref = `${resolve("/settings/calendar")}#calendar-targets`;
+
   const storedAppUrl = $derived(
     typeof integration.config.appUrl === "string"
       ? integration.config.appUrl
@@ -282,6 +284,17 @@
           </dd>
         {/if}
       </dl>
+      <p class="text-muted-foreground text-sm text-pretty">
+        {m.caltargets_ha_card_hint()}
+        <!-- eslint-disable svelte/no-navigation-without-resolve -- the path is resolved, only the fragment is appended -->
+        <a
+          href={calendarSyncHref}
+          class="text-foreground underline underline-offset-2 pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center"
+        >
+          {m.caltargets_ha_card_link()}
+        </a>
+        <!-- eslint-enable svelte/no-navigation-without-resolve -->
+      </p>
     {:else if !canEdit}
       <p class="text-muted-foreground text-sm text-pretty">
         {m.integration_ha_not_connected_member()}

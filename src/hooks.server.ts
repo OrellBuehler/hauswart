@@ -25,6 +25,7 @@ import {
 import { startFileSweeper } from "$lib/server/attachments/sweeper";
 import { withGuestHeaders } from "$lib/server/share/guest-http";
 import { registerBackups } from "$lib/server/backup";
+import { registerCalendarSync } from "$lib/server/calendar-sync";
 import { startAttachmentRerender } from "$lib/server/docs/pages";
 import { registerHomeAssistant } from "$lib/server/integrations/homeassistant";
 import { registerKept } from "$lib/server/integrations/kept";
@@ -44,6 +45,7 @@ export async function init() {
   registerHomeAssistant();
   registerKept();
   registerPaperless();
+  registerCalendarSync();
   startCredentialPurge();
   startAttachmentRerender();
   startFileSweeper();

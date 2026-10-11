@@ -1,3 +1,5 @@
+import { localDateOf, localTimeOf, zonedTimeToInstant } from "$lib/dates";
+
 /**
  * A small fake Home Assistant for tests (local `Bun.serve`, port 0): REST
  * states, calendars, services and notify capture, plus the WebSocket API for
@@ -19,6 +21,23 @@ export interface FakeCalendarEvent {
   description?: string;
   location?: string;
   uid?: string;
+}
+
+/** `supported_features` bits of a calendar entity, as Home Assistant defines them. */
+export const CALENDAR_FEATURES = { create: 1, delete: 2, update: 4 } as const;
+/** A calendar like the Local Calendar: creates, updates and deletes. */
+export const FULL_CALENDAR = 7;
+/** A calendar that only takes new events (the CalDAV integration). */
+export const CREATE_ONLY_CALENDAR = CALENDAR_FEATURES.create;
+/** A calendar that creates and deletes but cannot change an event (Google Calendar). */
+export const CREATE_DELETE_CALENDAR =
+  CALENDAR_FEATURES.create | CALENDAR_FEATURES.delete;
+
+interface FakeCalendarStore {
+  name: string;
+  events: FakeCalendarEvent[];
+  /** `supported_features` of the entity. */
+  features: number;
 }
 
 export interface RecordedRequest {
@@ -60,6 +79,14 @@ interface Injection {
 const sleep = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
 
+interface WsCalendarMessage {
+  type: string;
+  id?: number;
+  entity_id?: unknown;
+  uid?: unknown;
+  event?: unknown;
+}
+
 interface SocketData {
   authenticated: boolean;
 }
@@ -70,7 +97,9 @@ export class FakeHomeAssistant {
   timeZone = "Europe/Zurich";
   locationName = "Example Home";
   states = new Map<string, FakeState>();
-  calendars = new Map<string, { name: string; events: FakeCalendarEvent[] }>();
+  calendars = new Map<string, FakeCalendarStore>();
+  private nextEventId = 1;
+  private wsFailures: { type: string; code: string; remaining: number }[] = [];
   /** domain → service names. */
   services = new Map<string, string[]>([
     [
@@ -163,6 +192,8 @@ export class FakeHomeAssistant {
     this.timeZone = "Europe/Zurich";
     this.states.clear();
     this.calendars.clear();
+    this.nextEventId = 1;
+    this.wsFailures = [];
     this.services = new Map([
       [
         "notify",
@@ -214,12 +245,30 @@ export class FakeHomeAssistant {
     return next;
   }
 
+  /**
+   * A calendar entity. `features` is its `supported_features` (0: it can only be read, like most of
+   * them); the fake then also answers the entity's state and takes `calendar.create_event` and the
+   * `calendar/event/*` commands as far as the bits allow.
+   */
   addCalendar(
     entityId: string,
     events: FakeCalendarEvent[],
     name = entityId,
+    features = 0,
   ): void {
-    this.calendars.set(entityId, { name, events });
+    this.calendars.set(entityId, { name, events, features });
+  }
+
+  /** The events of a calendar as stored (ours and foreign ones). */
+  calendarEvents(entityId: string): FakeCalendarEvent[] {
+    const calendar = this.calendars.get(entityId);
+    if (!calendar) throw new Error(`no fake calendar ${entityId}`);
+    return calendar.events;
+  }
+
+  /** The next `times` commands of this type fail with this error code. */
+  failWsCommand(type: string, code: string, times = 1): void {
+    this.wsFailures.push({ type, code, remaining: times });
   }
 
   failNext(pathPart: string, status: number, times = 1): void {
@@ -270,6 +319,10 @@ export class FakeHomeAssistant {
         });
         return;
     }
+    if (msg.type.startsWith("calendar/event/")) {
+      this.wsCalendarEvent(msg as WsCalendarMessage, reply);
+      return;
+    }
     const registry: Record<string, unknown[] | undefined> = {
       "config/device_registry/list": this.devices,
       "config/area_registry/list": this.areas,
@@ -284,6 +337,235 @@ export class FakeHomeAssistant {
       return;
     }
     reply(true, { result: list });
+  }
+
+  /** The calendar entities as Home Assistant lists them among the states. */
+  private calendarStates(): FakeState[] {
+    const now = new Date().toISOString();
+    return [...this.calendars]
+      .filter(([id]) => !this.states.has(id))
+      .map(([entity_id, c]) => ({
+        entity_id,
+        state: "off",
+        attributes: { friendly_name: c.name, supported_features: c.features },
+        last_changed: now,
+        last_updated: now,
+      }));
+  }
+
+  /**
+   * A time as Home Assistant reads it: with an offset it is that instant, without one it is wall-clock
+   * time in the configured zone. `null` for text that is no date or datetime.
+   */
+  private parseTime(
+    value: unknown,
+  ): { date: string } | { dateTime: string; aware: boolean } | null {
+    if (typeof value !== "string") return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return { date: value };
+    const match =
+      /^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?(Z|[+-]\d{2}:?\d{2})?$/.exec(
+        value,
+      );
+    if (!match) return null;
+    const aware = match[5] !== undefined;
+    if (aware) return { dateTime: new Date(value).toISOString(), aware: true };
+    const [, day, hour, minute, second] = match;
+    const instant =
+      zonedTimeToInstant(day!, `${hour}:${minute}`, this.timeZone) +
+      Number(second ?? 0) * 1000;
+    return { dateTime: this.localIso(instant), aware: false };
+  }
+
+  /** An instant as Home Assistant answers it: local time of the configured zone with its offset. */
+  private localIso(instant: number): string {
+    const offsetMin = Math.round(
+      (Date.parse(
+        `${localDateOf(this.timeZone, instant)}T${localTimeOf(this.timeZone, instant)}:00Z`,
+      ) -
+        Math.floor(instant / 60_000) * 60_000) /
+        60_000,
+    );
+    const sign = offsetMin < 0 ? "-" : "+";
+    const abs = Math.abs(offsetMin);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const seconds = pad(Math.floor(instant / 1000) % 60);
+    return `${localDateOf(this.timeZone, instant)}T${localTimeOf(this.timeZone, instant)}:${seconds}${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`;
+  }
+
+  /**
+   * Checks and stores an event the way the calendar component does: both ends of one type, a datetime
+   * pair with the same kind of offset, at least a second (a day for dates) between them.
+   */
+  private storeEvent(
+    calendar: FakeCalendarStore,
+    fields: {
+      summary: unknown;
+      description: unknown;
+      location: unknown;
+      start: unknown;
+      end: unknown;
+    },
+    uid: string,
+  ): string | null {
+    if (typeof fields.summary !== "string") return "summary is required";
+    const start = this.parseTime(fields.start);
+    const end = this.parseTime(fields.end);
+    if (!start || !end) return "start and end must be a date or a datetime";
+    if ("date" in start !== "date" in end) {
+      return "Expected all values to be the same type";
+    }
+    if ("aware" in start && "aware" in end && start.aware !== end.aware) {
+      return "Expected all values to have the same timezone";
+    }
+    const startMs =
+      "date" in start
+        ? Date.parse(`${start.date}T00:00:00Z`)
+        : Date.parse(start.dateTime);
+    const endMs =
+      "date" in end
+        ? Date.parse(`${end.date}T00:00:00Z`)
+        : Date.parse(end.dateTime);
+    if (endMs - startMs < ("date" in start ? 86_400_000 : 1000)) {
+      return "Expected the end to be after the start";
+    }
+    const event: FakeCalendarEvent = {
+      summary: fields.summary,
+      start:
+        "date" in start ? { date: start.date } : { dateTime: start.dateTime },
+      end: "date" in end ? { date: end.date } : { dateTime: end.dateTime },
+      ...(typeof fields.description === "string"
+        ? { description: fields.description }
+        : {}),
+      ...(typeof fields.location === "string" && fields.location !== ""
+        ? { location: fields.location }
+        : {}),
+      uid,
+    };
+    const index = calendar.events.findIndex((e) => e.uid === uid);
+    if (index >= 0) calendar.events[index] = event;
+    else calendar.events.push(event);
+    return null;
+  }
+
+  /** `calendar.create_event`: an entity service for calendars that can create events. */
+  private calendarService(service: string, data: unknown): Response {
+    if (service !== "create_event") {
+      return this.json({ message: "Service not found." }, 400);
+    }
+    const body = (data ?? {}) as Record<string, unknown>;
+    this.serviceCalls.push({ domain: "calendar", service, data });
+    const allowed = new Set([
+      "entity_id",
+      "summary",
+      "description",
+      "location",
+      "start_date",
+      "end_date",
+      "start_date_time",
+      "end_date_time",
+      "in",
+    ]);
+    const extra = Object.keys(body).filter((k) => !allowed.has(k));
+    if (extra.length > 0) {
+      return this.json({ message: `extra keys not allowed: ${extra}` }, 400);
+    }
+    const calendar =
+      typeof body.entity_id === "string"
+        ? this.calendars.get(body.entity_id)
+        : undefined;
+    if (!calendar) {
+      return this.json({ message: "Entity not found." }, 400);
+    }
+    if ((calendar.features & CALENDAR_FEATURES.create) === 0) {
+      return this.json(
+        { message: "Entity does not support this service." },
+        400,
+      );
+    }
+    const dates = "start_date" in body || "end_date" in body;
+    const times = "start_date_time" in body || "end_date_time" in body;
+    if (dates === times) {
+      return this.json(
+        { message: "Provide either dates or datetimes, both ends." },
+        400,
+      );
+    }
+    const problem = this.storeEvent(
+      calendar,
+      {
+        summary: body.summary,
+        description: body.description ?? "",
+        location: body.location,
+        start: dates ? body.start_date : body.start_date_time,
+        end: dates ? body.end_date : body.end_date_time,
+      },
+      `uid-${this.nextEventId++}`,
+    );
+    return problem ? this.json({ message: problem }, 400) : this.json([]);
+  }
+
+  /** `calendar/event/create|update|delete`: the commands the calendar editor uses. */
+  private wsCalendarEvent(
+    msg: WsCalendarMessage,
+    reply: (success: boolean, body: Record<string, unknown>) => void,
+  ) {
+    const error = (code: string, message: string) =>
+      reply(false, { error: { code, message } });
+    const injected = this.wsFailures.find(
+      (f) => f.type === msg.type && f.remaining > 0,
+    );
+    if (injected) {
+      injected.remaining--;
+      return error(injected.code, "Injected failure.");
+    }
+    const calendar =
+      typeof msg.entity_id === "string"
+        ? this.calendars.get(msg.entity_id)
+        : undefined;
+    if (!calendar) return error("not_found", "Entity not found");
+    const needs = {
+      "calendar/event/create": CALENDAR_FEATURES.create,
+      "calendar/event/update": CALENDAR_FEATURES.update,
+      "calendar/event/delete": CALENDAR_FEATURES.delete,
+    }[msg.type];
+    if (needs === undefined)
+      return error("unknown_command", "Unknown command.");
+    if ((calendar.features & needs) === 0) {
+      return error("not_supported", "Calendar does not support this feature");
+    }
+    if (msg.type === "calendar/event/delete") {
+      const index = calendar.events.findIndex((e) => e.uid === msg.uid);
+      if (typeof msg.uid !== "string" || index < 0) {
+        return error("failed", "Unknown event");
+      }
+      calendar.events.splice(index, 1);
+      return reply(true, { result: null });
+    }
+    const event = (msg.event ?? {}) as Record<string, unknown>;
+    const uid =
+      msg.type === "calendar/event/update"
+        ? msg.uid
+        : `uid-${this.nextEventId++}`;
+    if (
+      typeof uid !== "string" ||
+      (msg.type === "calendar/event/update" &&
+        !calendar.events.some((e) => e.uid === uid))
+    ) {
+      return error("failed", "Unknown event");
+    }
+    const problem = this.storeEvent(
+      calendar,
+      {
+        summary: event.summary,
+        description: event.description,
+        location: event.location,
+        start: event.dtstart,
+        end: event.dtend,
+      },
+      uid,
+    );
+    if (problem) return error("invalid_format", problem);
+    reply(true, { result: null });
   }
 
   private json(body: unknown, status = 200) {
@@ -347,8 +629,12 @@ export class FakeHomeAssistant {
       });
     }
     if (root === "states") {
-      if (!second) return this.json([...this.states.values()]);
-      const state = this.states.get(second);
+      if (!second) {
+        return this.json([...this.states.values(), ...this.calendarStates()]);
+      }
+      const state =
+        this.states.get(second) ??
+        this.calendarStates().find((c) => c.entity_id === second);
       return state
         ? this.json(state)
         : this.json({ message: "Entity not found." }, 404);
@@ -389,6 +675,9 @@ export class FakeHomeAssistant {
             ),
           })),
         );
+      }
+      if (req.method === "POST" && second === "calendar" && third) {
+        return this.calendarService(third, json);
       }
       if (req.method === "POST" && second && third) {
         if (!this.services.get(second)?.includes(third)) {

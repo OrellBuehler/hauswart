@@ -64,7 +64,9 @@ describe("integrations API", () => {
           items: ["mobile_app_example_phone"],
         }),
         calendars: async () => ({
-          items: [{ id: "calendar.example", name: "Example" }],
+          items: [
+            { id: "calendar.example", name: "Example", capabilities: null },
+          ],
         }),
         devices: async () => {
           throw new IntegrationError("timeout", "Home did not answer in time.");
@@ -404,7 +406,9 @@ describe("integrations API", () => {
         (await asMember("GET", "/api/v1/integrations/homeassistant/calendars"))
           .body,
       ).toEqual({
-        items: [{ id: "calendar.example", name: "Example" }],
+        items: [
+          { id: "calendar.example", name: "Example", capabilities: null },
+        ],
       });
     });
 

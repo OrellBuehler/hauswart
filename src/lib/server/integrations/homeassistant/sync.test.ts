@@ -512,6 +512,32 @@ describe("Home Assistant polling and calendar sync", () => {
       });
     });
 
+    it("does not take the events hauswart wrote into the calendar itself for dates somebody planned", async () => {
+      connect();
+      fake.addCalendar(CAL, [
+        {
+          summary: "Paper collection",
+          start: { date: addDays(today(), 2) },
+          end: { date: addDays(today(), 3) },
+          description:
+            "Gerät: Altpapier\n\nhw-ref: appointment-example-1@sync.hauswart",
+          uid: "ours-1",
+        },
+        {
+          summary: "Paper collection",
+          start: { date: addDays(today(), 6) },
+          end: { date: addDays(today(), 7) },
+          description: "Bundle it up",
+          uid: "foreign-1",
+        },
+      ]);
+      const task = await calTask("paper");
+      await syncCalendars(ctx());
+      expect(getTask(ctx(), task.id).state?.occurrenceKey).toBe(
+        addDays(today(), 6),
+      );
+    });
+
     it("keeps the dates of different filters apart", async () => {
       connect();
       fake.addCalendar(CAL, [

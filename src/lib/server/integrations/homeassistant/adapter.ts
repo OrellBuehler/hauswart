@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { and, isNull } from "drizzle-orm";
 import { assets } from "$lib/server/db";
 import { IntegrationError } from "$lib/server/connections/errors";
@@ -7,6 +6,8 @@ import type {
   IntegrationOperation,
   ResolvedConnection,
 } from "$lib/server/connections/registry";
+import { configSchema, normalizeAppUrl } from "./app-url";
+import { createCalendarProvider } from "./calendar-provider";
 import { normalizeBaseUrl } from "./client";
 import {
   EXTERNAL_SOURCE,
@@ -22,35 +23,6 @@ import type {
   HaFloor,
   HaState,
 } from "./schemas";
-
-/** The settings of this kind: the public address of this app as phones reach it (links in notifications). */
-const configSchema = z.object({
-  appUrl: z.string().trim().max(500).optional(),
-});
-
-function normalizeAppUrl(value: string): string {
-  let url: URL;
-  try {
-    url = new URL(value);
-  } catch (cause) {
-    throw new IntegrationError(
-      "invalid_input",
-      "The app address must be a valid http:// or https:// address.",
-      { cause },
-    );
-  }
-  if (
-    (url.protocol !== "http:" && url.protocol !== "https:") ||
-    url.username ||
-    url.password
-  ) {
-    throw new IntegrationError(
-      "invalid_input",
-      "The app address must be a valid http:// or https:// address without credentials.",
-    );
-  }
-  return `${url.origin}${url.pathname.replace(/\/+$/, "")}`;
-}
 
 /** Normalises the address and keeps only the known settings. */
 export function validateInput(input: {
@@ -74,20 +46,10 @@ export function validateInput(input: {
   };
 }
 
-/** The public address of this app for links in notifications: the setting, else `ORIGIN`, else none. */
-export function appUrlOf(config: Record<string, unknown>): string | null {
-  const parsed = configSchema.safeParse(config);
-  const configured = parsed.success ? parsed.data.appUrl : undefined;
-  const fallback = process.env.ORIGIN?.trim();
-  const value = configured || fallback;
-  if (!value) return null;
-  try {
-    return normalizeAppUrl(value);
-  } catch (err) {
-    if (err instanceof IntegrationError) return null;
-    throw err;
-  }
-}
+export { appUrlOf } from "./app-url";
+
+/** Reads the calendars for the picker; the registered provider has its own, with the same behaviour. */
+const calendarProvider = createCalendarProvider();
 
 export interface ExternalEntity {
   id: string;
@@ -210,10 +172,17 @@ const notifyServices: IntegrationOperation = async (connection) => {
   }
 };
 
+/** The calendars with what each allows (the provider's list); the same answer a calendar target is made from. */
 const calendars: IntegrationOperation = async (connection) => {
   try {
-    const list = await clientFor(connection).listCalendars();
-    return { items: list.map((c) => ({ id: c.entityId, name: c.name })) };
+    const list = await calendarProvider.listCalendars(connection);
+    return {
+      items: list.map((c) => ({
+        id: c.id,
+        name: c.name,
+        capabilities: c.capabilities,
+      })),
+    };
   } catch (err) {
     throw toIntegrationError(err);
   }

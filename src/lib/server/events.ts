@@ -28,6 +28,11 @@ export interface DomainEvents {
     ctx: Pick<ServiceContext, "db">;
     connectionId: string;
   };
+  /** A calendar target was created, changed or switched on: it is synced soon. */
+  calendarTargetChanged: {
+    ctx: Pick<ServiceContext, "db">;
+    targetId: string;
+  };
   /** A completion was undone. */
   completionRevoked: {
     ctx: ServiceContext;
@@ -47,6 +52,7 @@ const listeners: { [K in keyof DomainEvents]: Set<Listener<K>> } = {
   completionRecorded: new Set(),
   completionRevoked: new Set(),
   financeLinksPending: new Set(),
+  calendarTargetChanged: new Set(),
 };
 
 /**

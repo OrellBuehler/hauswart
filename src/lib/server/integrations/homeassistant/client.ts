@@ -19,10 +19,16 @@ import {
   stateSchema,
   type HaCalendar,
   type HaCalendarEvent,
+  type HaCalendarEventWrite,
   type HaConfig,
   type HaState,
 } from "./schemas";
-import { haWsCommand, type WsRegistryCommand, type WsResultMap } from "./ws";
+import {
+  haWsCall,
+  haWsCommand,
+  type WsRegistryCommand,
+  type WsResultMap,
+} from "./ws";
 
 /**
  * http/https only, no credentials. The URL is entered by an administrator;
@@ -68,6 +74,18 @@ function assertSlug(value: string, what: string): string {
   }
   return value;
 }
+
+/** The id Home Assistant gave an event: any text, but not empty, not huge and without control characters. */
+function assertEventUid(uid: string): string {
+  // eslint-disable-next-line no-control-regex
+  if (uid === "" || uid.length > 255 || /[\u0000-\u001f\u007f]/.test(uid)) {
+    throw invalid("event id is not valid");
+  }
+  return uid;
+}
+
+const eventValue = (time: { date: string } | { dateTime: string }): string =>
+  "date" in time ? time.date : time.dateTime;
 
 function isoInstant(value: Date | string, what: string): string {
   const ms = value instanceof Date ? value.getTime() : Date.parse(value);
@@ -190,6 +208,83 @@ export class HomeAssistantClient {
     });
   }
 
+  /**
+   * Adds an event with the `calendar.create_event` service. It answers nothing: Home Assistant does
+   * not say which id the event got, so it is found again in the list of events.
+   */
+  async createCalendarEvent(
+    entityId: string,
+    event: HaCalendarEventWrite,
+  ): Promise<void> {
+    const id = assertEntityId(entityId, "calendar");
+    const timed = "dateTime" in event.start;
+    await this.callService("calendar", "create_event", {
+      entity_id: id,
+      summary: event.summary,
+      description: event.description,
+      ...(event.location === null ? {} : { location: event.location }),
+      ...(timed
+        ? {
+            start_date_time: eventValue(event.start),
+            end_date_time: eventValue(event.end),
+          }
+        : {
+            start_date: eventValue(event.start),
+            end_date: eventValue(event.end),
+          }),
+    });
+  }
+
+  /**
+   * Replaces an event (`calendar/event/update`, a WebSocket command: there is no service for it).
+   * Only a calendar that allows updates takes it; others refuse with `bad_request`.
+   */
+  async updateCalendarEvent(
+    entityId: string,
+    uid: string,
+    event: HaCalendarEventWrite,
+  ): Promise<void> {
+    await haWsCall(
+      this.baseUrl,
+      this.token,
+      {
+        type: "calendar/event/update",
+        entity_id: assertEntityId(entityId, "calendar"),
+        uid: assertEventUid(uid),
+        event: {
+          dtstart: eventValue(event.start),
+          dtend: eventValue(event.end),
+          summary: event.summary,
+          description: event.description,
+          location: event.location ?? "",
+        },
+      },
+      this.wsOptions(),
+    );
+  }
+
+  /** Removes an event (`calendar/event/delete`, a WebSocket command). */
+  async deleteCalendarEvent(entityId: string, uid: string): Promise<void> {
+    await haWsCall(
+      this.baseUrl,
+      this.token,
+      {
+        type: "calendar/event/delete",
+        entity_id: assertEntityId(entityId, "calendar"),
+        uid: assertEventUid(uid),
+      },
+      this.wsOptions(),
+    );
+  }
+
+  private wsOptions() {
+    return {
+      timeoutMs: this.timeoutMs,
+      allowInsecureTls: this.allowInsecureTls,
+      allowLoopback: this.allowLoopback,
+    };
+  }
+
   /** Calls `domain.service`; `data` is the service data. */
   async callService(
     domain: string,
@@ -225,15 +320,6 @@ export class HomeAssistantClient {
   registry<T extends WsRegistryCommand["type"]>(
     type: T,
   ): Promise<WsResultMap[T]> {
-    return haWsCommand(
-      this.baseUrl,
-      this.token,
-      { type },
-      {
-        timeoutMs: this.timeoutMs,
-        allowInsecureTls: this.allowInsecureTls,
-        allowLoopback: this.allowLoopback,
-      },
-    );
+    return haWsCommand(this.baseUrl, this.token, { type }, this.wsOptions());
   }
 }

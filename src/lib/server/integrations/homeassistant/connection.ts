@@ -5,7 +5,7 @@ import {
 } from "$lib/server/connections/connections";
 import { IntegrationError } from "$lib/server/connections/errors";
 import type { ResolvedConnection } from "$lib/server/connections/registry";
-import { HomeAssistantClient } from "./client";
+import { HomeAssistantClient, type ClientOptions } from "./client";
 import { HomeAssistantError, describeError, errorCode } from "./errors";
 
 /** The kind name under which this adapter's connection and external references are stored. */
@@ -15,8 +15,12 @@ export const EXTERNAL_SOURCE = "homeassistant";
 /** `signals.source` of the readings this adapter stores. */
 export const SIGNAL_SOURCE = "ha";
 
-export function clientFor(connection: ResolvedConnection): HomeAssistantClient {
+export function clientFor(
+  connection: ResolvedConnection,
+  over: Pick<ClientOptions, "timeoutMs"> = {},
+): HomeAssistantClient {
   return new HomeAssistantClient({
+    ...over,
     baseUrl: connection.baseUrl,
     token: connection.token,
     allowInsecureTls: connection.allowInsecureTls,

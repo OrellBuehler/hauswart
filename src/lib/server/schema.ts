@@ -16,6 +16,9 @@ import {
   ASSIGN_MODES,
   APPOINTMENT_STATUSES,
   ATTACHMENT_OWNER_TYPES,
+  CALENDAR_ITEM_KINDS,
+  CALENDAR_LINK_STATUSES,
+  CALENDAR_PROVIDERS,
   COMMENT_ENTITY_TYPES,
   COMPLETION_KINDS,
   COMPLETION_SOURCES,
@@ -1194,6 +1197,104 @@ export const connections = sqliteTable(
     uniqueIndex("connections_household_kind_idx")
       .on(t.kind)
       .where(sql`${t.userId} is null`),
+  ],
+);
+
+/**
+ * A calendar hauswart pushes items into (an events calendar of a connected system). One target per
+ * remote calendar (the provider makes its id unique across connections); a connection of a household kind has household targets, one of a
+ * per-person kind has targets of that person (`level` and `userId` agree, see the check).
+ * `configJson` is validated by `calendarTargetConfigSchema`; `capabilitiesJson` is what the calendar
+ * allowed when it was last opened; the health columns are the connection's, for the target.
+ */
+export const calendarTargets = sqliteTable(
+  "calendar_targets",
+  {
+    id: id(),
+    connectionId: text("connection_id")
+      .notNull()
+      .references(() => connections.id, { onDelete: "cascade" }),
+    provider: text("provider", { enum: CALENDAR_PROVIDERS }).notNull(),
+    /** The calendar in the connected system, opaque to the core (an entity id, a collection address). */
+    remoteCalendarId: text("remote_calendar_id").notNull(),
+    /** The calendar's own display name as its system last reported it (every run updates it); null before the first contact. */
+    remoteName: text("remote_name"),
+    name: text("name").notNull(),
+    level: text("level", { enum: ["household", "user"] }).notNull(),
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+    enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+    configJson: text("config_json", { mode: "json" })
+      .$type<Record<string, unknown>>()
+      .notNull(),
+    capabilitiesJson: text("capabilities_json", { mode: "json" }).$type<{
+      create: boolean;
+      update: boolean;
+      delete: boolean;
+      alarms: boolean;
+    } | null>(),
+    status: text("status", { enum: INTEGRATION_STATUSES })
+      .notNull()
+      .default("unknown"),
+    /** Short machine-readable code of the last failure, never a message. */
+    lastError: text("last_error"),
+    lastOkAt: integer("last_ok_at", { mode: "timestamp_ms" }),
+    /** The last attempt, successful or not; the 15-minute rhythm and the back-off count from it. */
+    lastCheckedAt: integer("last_checked_at", { mode: "timestamp_ms" }),
+    consecutiveFailures: integer("consecutive_failures").notNull().default(0),
+    /** What the last run did, by name (`created`, `updated`, ...). */
+    lastStatsJson: text("last_stats_json", { mode: "json" }).$type<Record<
+      string,
+      number
+    > | null>(),
+    ...timestamps,
+  },
+  (t) => [
+    // One target per calendar, whoever's connection reaches it: a second one would delete the events of the first.
+    uniqueIndex("calendar_targets_calendar_idx").on(
+      t.provider,
+      t.remoteCalendarId,
+    ),
+    index("calendar_targets_user_idx").on(t.userId),
+    check(
+      "calendar_targets_level_check",
+      sql`(${t.level} = 'household' AND ${t.userId} IS NULL) OR (${t.level} = 'user' AND ${t.userId} IS NOT NULL)`,
+    ),
+  ],
+);
+
+/**
+ * The event hauswart wrote (or decided not to write again) for one item in one target. The item is
+ * the source `kind` plus its id and, for things that come round, the occurrence (`instanceKey`, ""
+ * for the others). `ref` is the stable name the event carries in the calendar (its marker),
+ * `remoteUid` the calendar's own id of it (null until it is known), `contentHash` what was pushed.
+ */
+export const calendarLinks = sqliteTable(
+  "calendar_links",
+  {
+    id: id(),
+    targetId: text("target_id")
+      .notNull()
+      .references(() => calendarTargets.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: CALENDAR_ITEM_KINDS }).notNull(),
+    itemId: text("item_id").notNull(),
+    instanceKey: text("instance_key").notNull().default(""),
+    ref: text("ref").notNull(),
+    remoteUid: text("remote_uid"),
+    status: text("status", { enum: CALENDAR_LINK_STATUSES })
+      .notNull()
+      .default("synced"),
+    contentHash: text("content_hash").notNull(),
+    lastPushedAt: integer("last_pushed_at", { mode: "timestamp_ms" }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("calendar_links_item_idx").on(
+      t.targetId,
+      t.kind,
+      t.itemId,
+      t.instanceKey,
+    ),
+    index("calendar_links_ref_idx").on(t.targetId, t.ref),
   ],
 );
 
