@@ -2,7 +2,7 @@ import type { Dashboard } from "$lib/api/schemas/dashboard";
 import type { Task } from "$lib/api/schemas/tasks";
 import { daysUntil, formatDateShort, formatRelativeDays } from "$lib/format";
 import { shownDate, shownDateIsEstimate } from "./engine/shown";
-import type { DueStatus } from "./engine/types";
+import type { DueStatus, Trigger } from "./engine/types";
 
 /** What a task row needs to render; built from a dashboard entry or a listed task. */
 type DashboardTask = Dashboard["upcoming"]["today"][number];
@@ -29,6 +29,7 @@ export type TaskRowData = {
   commentCount?: number;
   /** Open notes on the task's asset, to mention at this appointment. */
   openNoteCount?: number;
+  trigger?: Trigger;
 };
 
 export function rowFromDashboard(task: DashboardTask): TaskRowData {
@@ -79,6 +80,7 @@ export function rowFromTask(
     snoozedUntil: task.snoozedUntil,
     commentCount: task.commentCount,
     openNoteCount: task.openNoteCount,
+    trigger: task.trigger,
   };
 }
 

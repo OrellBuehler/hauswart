@@ -3017,10 +3017,6 @@
   "vehicle_setup_partial_error": "Not every task could be created. Check the messages and try again.",
   "vehicle_setup_done_toast": "{count, plural, one {1 task created.} other {{count} tasks created.}}",
   "vehicle_setup_nothing_left": "This vehicle already has everything the templates offer.",
-  "task_odometer_label": "Odometer ({unit})",
-  "task_odometer_hint": "Last reading: {value} on {date}. Leave empty to keep it.",
-  "task_odometer_none": "There is no reading yet. Enter it so the next due point counts from here.",
-  "task_odometer_lower": "The reading is lower than the last one ({value}). Correct the number or delete the wrong reading on the vehicle.",
   "task_odometer_invalid": "Enter a reading from 0 to {max}.",
   "trigger_form_counter_source": "Where does the counter come from?",
   "trigger_form_counter_odometer": "Odometer of this vehicle",
@@ -3060,5 +3056,7 @@
   "asset_error_kind_held": "Remove the vehicle's {what} before changing its kind.",
   "asset_error_kind_generic": "The kind cannot be changed while the vehicle holds vehicle data.",
   "vehicle_history_owned_error": "This reading belongs to {owner}. Change or delete that record and the reading goes with it.",
-  "vehicle_history_owned_error_unknown": "This reading belongs to another record. Change or delete that record and the reading goes with it."
+  "vehicle_history_owned_error_unknown": "This reading belongs to another record. Change or delete that record and the reading goes with it.",
+  "task_complete_odometer_description": "«{title}» counts the odometer. Enter the current reading so the next due date counts from here.",
+  "task_completing": "Completing …"
 }

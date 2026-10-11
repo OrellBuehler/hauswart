@@ -3017,10 +3017,6 @@
   "vehicle_setup_partial_error": "Nicht alle Aufgaben konnten angelegt werden. Prüfe die Meldungen und versuche es erneut.",
   "vehicle_setup_done_toast": "{count, plural, one {1 Aufgabe angelegt.} other {{count} Aufgaben angelegt.}}",
   "vehicle_setup_nothing_left": "Für dieses Fahrzeug gibt es schon alles, was die Vorlagen anbieten.",
-  "task_odometer_label": "Kilometerstand ({unit})",
-  "task_odometer_hint": "Letzter Stand: {value} am {date}. Leer lassen, um ihn zu übernehmen.",
-  "task_odometer_none": "Es gibt noch keinen Stand. Trage ihn ein, damit die nächste Frist ab hier rechnet.",
-  "task_odometer_lower": "Der Stand ist tiefer als der letzte Stand ({value}). Korrigiere die Zahl oder lösche beim Fahrzeug den falschen Stand.",
   "task_odometer_invalid": "Bitte einen Stand von 0 bis {max} angeben.",
   "trigger_form_counter_source": "Woher kommt der Zähler?",
   "trigger_form_counter_odometer": "Kilometerstand dieses Fahrzeugs",
@@ -3060,5 +3056,7 @@
   "asset_error_kind_held": "Entferne zuerst die {what} dieses Fahrzeugs, bevor du die Art änderst.",
   "asset_error_kind_generic": "Die Art lässt sich nicht ändern, solange das Fahrzeug Fahrzeugdaten enthält.",
   "vehicle_history_owned_error": "Dieser Stand gehört zu {owner}. Ändere oder lösche dort den Eintrag, dann verschwindet der Stand mit.",
-  "vehicle_history_owned_error_unknown": "Dieser Stand gehört zu einem anderen Eintrag. Ändere oder lösche dort den Eintrag, dann verschwindet der Stand mit."
+  "vehicle_history_owned_error_unknown": "Dieser Stand gehört zu einem anderen Eintrag. Ändere oder lösche dort den Eintrag, dann verschwindet der Stand mit.",
+  "task_complete_odometer_description": "«{title}» zählt den Kilometerstand. Trage den aktuellen Stand ein, damit die nächste Frist ab hier rechnet.",
+  "task_completing": "Wird erledigt …"
 }
