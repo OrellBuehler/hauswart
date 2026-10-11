@@ -263,7 +263,7 @@
     {#if target.nextAttemptAt && health !== "paused" && health !== "offline"}
       <dt class="text-muted-foreground">{m.caltargets_next_attempt()}</dt>
       <dd class="min-w-0 font-medium">
-        {#if Date.parse(target.nextAttemptAt) <= Date.now()}
+        {#if Date.parse(target.nextAttemptAt) - Date.now() < 60_000}
           {m.caltargets_next_attempt_soon()}
         {:else}
           {@const t = when(target.nextAttemptAt)}
