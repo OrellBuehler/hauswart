@@ -43,17 +43,18 @@ export function formatDay(date: string): string {
 
 /**
  * A calendar date with its weekday, e.g. "Sa., 10. Okt." The year is added
- * when it differs from `today`'s year (or when there is no `today`).
+ * when it differs from `today`'s year (or when there is no `today`). With
+ * `weekday: false` it is only "10. Okt.".
  */
 export function formatDateShort(
   date: string,
-  options: { today?: string; locale?: UserLocale } = {},
+  options: { today?: string; locale?: UserLocale; weekday?: boolean } = {},
 ): string {
   const sameYear =
     options.today !== undefined &&
     parseDate(date).year === parseDate(options.today).year;
   return new Intl.DateTimeFormat(intlLocale(options.locale), {
-    weekday: "short",
+    ...(options.weekday === false ? {} : { weekday: "short" }),
     day: "numeric",
     month: "short",
     ...(sameYear ? {} : { year: "numeric" }),

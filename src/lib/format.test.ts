@@ -23,6 +23,23 @@ describe("format", () => {
     ).toBe("Mon, 4 Oct 2027");
   });
 
+  it("can leave the weekday out", () => {
+    expect(
+      formatDateShort("2026-10-10", {
+        today: "2026-10-06",
+        locale: "en",
+        weekday: false,
+      }),
+    ).toBe("10 Oct");
+    expect(
+      formatDateShort("2027-10-04", {
+        today: "2026-10-06",
+        locale: "de",
+        weekday: false,
+      }),
+    ).toMatch(/^4\. Okt\.? 2027$/);
+  });
+
   it("words day differences", () => {
     expect(formatRelativeDays(0, "en")).toBe("today");
     expect(formatRelativeDays(1, "en")).toBe("tomorrow");
