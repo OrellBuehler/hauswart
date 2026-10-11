@@ -18,7 +18,7 @@
   } from "$lib/dates";
   import { apiErrorMessage } from "$lib/error-message";
   import { householdCurrency } from "$lib/api/household-currency";
-  import { formatDateShort } from "$lib/format";
+  import { formatDateShort, formatNumber } from "$lib/format";
   import { readMoney } from "$lib/format-money";
   import { m } from "$lib/paraglide/messages";
   import type { ServiceLogKind } from "$lib/api/enums";
@@ -169,7 +169,7 @@
       );
       if (!reading.ok) {
         odometerError = m.task_odometer_invalid({
-          max: MAX_ODOMETER_VALUE.toLocaleString("en"),
+          max: formatNumber(MAX_ODOMETER_VALUE),
         });
         error = m.form_check_fields();
         return;

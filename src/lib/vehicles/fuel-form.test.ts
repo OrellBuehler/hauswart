@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { FuelLog } from "$lib/api/schemas/fuel-logs";
+import { MAX_FUEL_QUANTITY, type FuelLog } from "$lib/api/schemas/fuel-logs";
+import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
+import { formatNumber } from "$lib/format";
 import {
   buildCreateFuelLog,
   buildUpdateFuelLog,
@@ -149,6 +151,17 @@ describe("buildCreateFuelLog", () => {
     expect(errors.quantity).toBeTruthy();
     expect(errors.amountMinor).toBeTruthy();
     expect(errors.odometer).toBeTruthy();
+  });
+
+  it("names the limits of the odometer and the quantity in the language of the app, not in English", () => {
+    const { errors } = buildCreateFuelLog(
+      draft({ odometer: "99999999", quantity: "999999" }),
+      { today: TODAY, userIds: USERS },
+    );
+    expect(errors.odometer).toContain(formatNumber(MAX_ODOMETER_VALUE));
+    expect(errors.odometer).not.toContain("10,000,000");
+    expect(errors.quantity).toContain(formatNumber(MAX_FUEL_QUANTITY));
+    expect(errors.quantity).not.toContain("10,000");
   });
 
   it("refuses more decimals than the currency has", () => {

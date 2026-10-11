@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { TireSet } from "$lib/api/schemas/tire-sets";
+import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
+import { formatNumber } from "$lib/format";
 import {
   buildCreateTireSet,
   buildMount,
@@ -208,6 +210,17 @@ describe("buildMount", () => {
       buildMount({ date: TODAY, odometer: "x", known: null, today: TODAY })
         .errors.odometer,
     ).toBeTruthy();
+  });
+
+  it("names the limit of the odometer in the language of the app, not in English", () => {
+    const { errors } = buildMount({
+      date: TODAY,
+      odometer: "99999999",
+      known: null,
+      today: TODAY,
+    });
+    expect(errors.odometer).toContain(formatNumber(MAX_ODOMETER_VALUE));
+    expect(errors.odometer).not.toContain("10,000,000");
   });
 });
 

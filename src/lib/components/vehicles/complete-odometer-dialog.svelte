@@ -2,6 +2,7 @@
   import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
   import FormDialog from "$lib/components/app/form-dialog.svelte";
   import { apiErrorMessage } from "$lib/error-message";
+  import { formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
   import { apiFieldErrors } from "$lib/tasks/field-errors";
   import { completeTask } from "$lib/tasks/actions";
@@ -37,7 +38,7 @@
     const reading = readingToSend(odometer, vehicle.known, MAX_ODOMETER_VALUE);
     if (!reading.ok) {
       error = m.vehicle_odometer_invalid({
-        max: MAX_ODOMETER_VALUE.toLocaleString("en"),
+        max: formatNumber(MAX_ODOMETER_VALUE),
       });
       return m.form_check_fields();
     }

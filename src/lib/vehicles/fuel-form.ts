@@ -12,6 +12,7 @@ import { currencySchema } from "$lib/api/schemas/household";
 import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
 import { equalShares, validateShares } from "$lib/costs/form";
 import { isValidDate } from "$lib/dates";
+import { formatNumber } from "$lib/format";
 import { formatMoney, readMoney } from "$lib/format-money";
 import { currencyExponent, minor, toDecimalString } from "$lib/money";
 import { m } from "$lib/paraglide/messages";
@@ -113,7 +114,7 @@ function check(draft: FuelDraft, today: string): Checked {
   if (odometer === null) errors.odometer = m.field_required();
   else if (odometer === undefined) {
     errors.odometer = m.vehicle_odometer_invalid({
-      max: MAX_ODOMETER_VALUE.toLocaleString("en"),
+      max: formatNumber(MAX_ODOMETER_VALUE),
     });
   }
 
@@ -121,7 +122,7 @@ function check(draft: FuelDraft, today: string): Checked {
   if (quantity === null) errors.quantity = m.field_required();
   else if (quantity === undefined || quantity <= 0) {
     errors.quantity = m.fuel_error_quantity({
-      max: MAX_FUEL_QUANTITY.toLocaleString("en"),
+      max: formatNumber(MAX_FUEL_QUANTITY),
     });
   }
 

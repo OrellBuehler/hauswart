@@ -13,6 +13,7 @@ import {
 } from "$lib/api/schemas/tire-sets";
 import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
 import { isValidDate } from "$lib/dates";
+import { formatNumber } from "$lib/format";
 import { m } from "$lib/paraglide/messages";
 import { issuesToErrors } from "$lib/tasks/field-errors";
 import { parseDecimalInput } from "./format";
@@ -162,7 +163,7 @@ function readOdometer(
   const reading = readingToSend(text, known, MAX_ODOMETER_VALUE);
   if (!reading.ok) {
     errors.odometer = m.vehicle_odometer_invalid({
-      max: MAX_ODOMETER_VALUE.toLocaleString("en"),
+      max: formatNumber(MAX_ODOMETER_VALUE),
     });
     return undefined;
   }

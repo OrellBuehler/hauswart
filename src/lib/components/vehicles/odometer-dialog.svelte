@@ -12,7 +12,7 @@
   import { Input } from "$lib/components/ui/input/index.js";
   import { isValidDate } from "$lib/dates";
   import { apiErrorMessage } from "$lib/error-message";
-  import { formatDay } from "$lib/format";
+  import { formatDay, formatNumber } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
   import { apiFieldErrors } from "$lib/tasks/field-errors";
   import { formatOdometer, parseOdometerValue } from "$lib/vehicles/format";
@@ -70,7 +70,7 @@
     if (reading === null) found.value = m.field_required();
     else if (reading === undefined) {
       found.value = m.vehicle_odometer_invalid({
-        max: MAX_ODOMETER_VALUE.toLocaleString("en"),
+        max: formatNumber(MAX_ODOMETER_VALUE),
       });
     }
     if (!date) found.date = m.field_required();
