@@ -3,10 +3,12 @@ import {
   type OdometerUnit,
   type UserLocale,
 } from "$lib/api/enums";
+import { isApiError } from "$lib/api/errors";
 import type { Task } from "$lib/api/schemas/tasks";
 import { isValidDate } from "$lib/dates";
 import { m } from "$lib/paraglide/messages";
 import { odometerSignalKey } from "./odometer";
+import { templateMark, templateOfMark } from "./template-mark";
 import {
   DEFAULT_SERVICE_DISTANCE,
   DEFAULT_SERVICE_MONTHS,
@@ -183,7 +185,8 @@ export function templateTitles(id: VehicleTemplateId): string[] {
 type TaskLike = Pick<
   Task,
   "id" | "title" | "category" | "assetId" | "trigger" | "state" | "archivedAt"
->;
+> &
+  Partial<Pick<Task, "externalSource" | "externalRef">>;
 
 /** A one-off task that was completed or skipped is over: the next one has to be made new. */
 function isFinishedOneOff(task: TaskLike): boolean {
@@ -206,6 +209,9 @@ function followsTemplate(
   task: TaskLike,
   assetId: string,
 ): boolean {
+  // A task a template made carries its mark: that decides, whatever the task is called now.
+  const marked = templateOfMark(task);
+  if (marked !== null) return marked === id;
   if (templateTitles(id).some((title) => sameTitle(title, task.title))) {
     return true;
   }
@@ -261,6 +267,32 @@ export type TemplateClient = {
   ) => Promise<unknown>;
 };
 
+/** How many numbered marks are tried for one task before the refusal is reported. */
+const MAX_MARK_TRIES = 50;
+
+/**
+ * Creates the task of a template. The server keeps the mark unique, and a vehicle that had the template
+ * before (its inspection done, its task archived) has the plain mark taken: the next number is tried.
+ */
+async function createMarked(
+  template: VehicleTaskTemplate,
+  client: TemplateClient,
+): Promise<{ id: string }> {
+  const { assetId } = template.task;
+  for (let n = 1; ; n += 1) {
+    const body =
+      n === 1 || !assetId
+        ? template.task
+        : { ...template.task, ...templateMark(assetId, template.id, n) };
+    try {
+      return await client.createTask(body);
+    } catch (err) {
+      const taken = isApiError(err) && err.code === "conflict";
+      if (!taken || !assetId || n >= MAX_MARK_TRIES) throw err;
+    }
+  }
+}
+
 /**
  * Creates the tasks one after the other, then each one's preparations. A task that fails does not
  * stop the others and gets no preparations; a preparation that fails leaves its task in place and is
@@ -281,7 +313,7 @@ export async function createTemplates(
     };
     report({ ...run });
     try {
-      const task = await client.createTask(template.task);
+      const task = await createMarked(template, client);
       run.taskId = task.id;
       for (const [index, preparation] of template.preparations.entries()) {
         try {

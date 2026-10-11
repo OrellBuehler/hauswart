@@ -41,7 +41,7 @@ export async function completeTask(
   task: { id: string; title: string; assetId?: string | null | undefined },
   options: CompleteOptions = {},
 ): Promise<void> {
-  const { completion } = await api.call(endpoints.tasksComplete, {
+  const { completion, task: done } = await api.call(endpoints.tasksComplete, {
     params: { id: task.id },
     body: {
       idempotencyKey: newIdempotencyKey(),
@@ -66,7 +66,8 @@ export async function completeTask(
     },
   );
   await invalidateAll();
-  tireOffers.offer(task);
+  // The answer carries the whole task, so its mark is known even when the caller's row has none (the dashboard).
+  tireOffers.offer(done);
 }
 
 export async function skipTask(

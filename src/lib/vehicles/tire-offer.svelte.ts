@@ -13,9 +13,14 @@ export class TireOffers {
   current = $state.raw<TireOffer | null>(null);
   #timer: ReturnType<typeof setTimeout> | undefined;
 
-  offer(task: { title: string; assetId?: string | null | undefined }): void {
+  offer(task: {
+    title: string;
+    assetId?: string | null | undefined;
+    externalSource?: string | null | undefined;
+    externalRef?: string | null | undefined;
+  }): void {
     if (!task.assetId) return;
-    const change = tireChange(task.title);
+    const change = tireChange(task);
     if (!change) return;
     const offer: TireOffer = {
       assetId: task.assetId,

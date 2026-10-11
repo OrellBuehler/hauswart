@@ -8,6 +8,7 @@ import { addYears, daysInMonth, formatDate, parseDate } from "$lib/dates";
 import { m } from "$lib/paraglide/messages";
 import type { CalendarTrigger } from "$lib/tasks/engine/types";
 import { odometerSignalKey } from "./odometer";
+import { templateMark } from "./template-mark";
 
 /**
  * Tasks a vehicle usually needs, ready to send to `POST /tasks` (and, for the preparations,
@@ -34,7 +35,7 @@ export type VehiclePreparationBody = z.input<
 
 export interface VehicleTaskTemplate {
   id: VehicleTemplateId;
-  /** The body of `POST /tasks`; linked to the vehicle. */
+  /** The body of `POST /tasks`; linked to the vehicle and marked as the template's (`template-mark.ts`). */
   task: VehicleTaskBody;
   /** Bodies of `POST /tasks/{id}/preparations`, to send once the task exists. */
   preparations: VehiclePreparationBody[];
@@ -110,6 +111,7 @@ function tireChange(
       title,
       category: "maintenance",
       assetId: ctx.assetId,
+      ...templateMark(ctx.assetId, id),
       trigger: yearly(ctx, { ...defaults, earlyDays: 14 }, options),
     },
     preparations: [
@@ -179,6 +181,7 @@ export function service(
       title: m.vehicle_task_service_title({}, messageOptions(ctx)),
       category: "maintenance",
       assetId: ctx.assetId,
+      ...templateMark(ctx.assetId, "service"),
       trigger: {
         v: 1,
         type: "counter_delta",
@@ -237,6 +240,7 @@ export function mfk(
       category: "inspection",
       priority: "high",
       assetId: ctx.assetId,
+      ...templateMark(ctx.assetId, "mfk"),
       trigger: { v: 1, type: "one_off", date },
     },
     preparations: [],
@@ -254,6 +258,7 @@ export function vignette(
       title: m.vehicle_task_vignette_title({}, messageOptions(ctx)),
       category: "payment",
       assetId: ctx.assetId,
+      ...templateMark(ctx.assetId, "vignette"),
       trigger: yearly(ctx, { month: 1, day: 31, earlyDays: 45 }, options),
     },
     preparations: [],
@@ -271,6 +276,7 @@ export function vehicleTax(
       title: m.vehicle_task_tax_title({}, messageOptions(ctx)),
       category: "payment",
       assetId: ctx.assetId,
+      ...templateMark(ctx.assetId, "vehicle_tax"),
       trigger: yearly(ctx, { month: 3, day: 31, earlyDays: 30 }, options),
     },
     preparations: [],
@@ -294,6 +300,7 @@ function everyTwoYears(
       title,
       category: "maintenance",
       assetId: ctx.assetId,
+      ...templateMark(ctx.assetId, id),
       trigger: {
         v: 1,
         type: "interval",

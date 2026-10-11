@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { ApiError } from "$lib/api/errors";
 import {
   createPreparationRequestSchema,
   createTaskRequestSchema,
@@ -233,7 +234,8 @@ describe("findExistingTask", () => {
   type T = Pick<
     Task,
     "id" | "title" | "category" | "assetId" | "trigger" | "state" | "archivedAt"
-  >;
+  > &
+    Partial<Pick<Task, "externalSource" | "externalRef">>;
 
   const yearly: T["trigger"] = {
     v: 1,
@@ -345,6 +347,93 @@ describe("findExistingTask", () => {
     expect(
       find("tires_winter", [task({ title, assetId: null })]),
     ).toBeUndefined();
+  });
+
+  describe("by the mark the templates leave on their tasks", () => {
+    const marked = (id: string, over: Partial<T> = {}): T =>
+      task({
+        title: "Etwas anderes",
+        externalSource: "vehicle_template",
+        externalRef: `${ASSET}:${id}`,
+        ...over,
+      });
+
+    it("finds the task of a template whatever it is called now", () => {
+      for (const id of SETUP_TEMPLATE_IDS) {
+        expect(find(id, [marked(id)])).toBe("t1");
+      }
+    });
+
+    it("takes a marked task for its own template only, whatever its title says", () => {
+      expect(
+        find("tires_winter", [
+          marked("vignette", { title: "Winterreifen aufziehen" }),
+        ]),
+      ).toBeUndefined();
+      expect(find("tires_summer", [marked("tires_winter")])).toBeUndefined();
+    });
+
+    it("counts the later tasks of a template too", () => {
+      expect(
+        find("mfk", [marked("mfk", { externalRef: `${ASSET}:mfk:2` })]),
+      ).toBe("t1");
+    });
+
+    it("lets a mark on a service task decide, not its counter", () => {
+      const counting: T["trigger"] = {
+        v: 1,
+        type: "counter_delta",
+        entityId: odometerSignalKey(ASSET),
+        threshold: 15000,
+      };
+      expect(
+        find("service", [marked("brake_fluid", { trigger: counting })]),
+      ).toBeUndefined();
+      expect(find("brake_fluid", [marked("brake_fluid")])).toBe("t1");
+    });
+
+    it("still ignores archived tasks, other vehicles' tasks and finished one-off tasks", () => {
+      expect(
+        find("tires_winter", [
+          marked("tires_winter", { archivedAt: "2026-01-01T00:00:00.000Z" }),
+        ]),
+      ).toBeUndefined();
+      expect(
+        find("tires_winter", [
+          marked("tires_winter", { assetId: OTHER_ASSET }),
+        ]),
+      ).toBeUndefined();
+      expect(
+        find("mfk", [
+          marked("mfk", {
+            trigger: { v: 1, type: "one_off", date: "2026-03-10" },
+            state: {
+              status: "ok",
+              dueDate: null,
+              reasons: ["completed"],
+            } as unknown as T["state"],
+          }),
+        ]),
+      ).toBeUndefined();
+    });
+
+    it("falls back on the likeness for a task with another mark or an unreadable one", () => {
+      const title = "Winterreifen aufziehen";
+      expect(
+        find("tires_winter", [
+          task({ title, externalSource: "seed", externalRef: "winter" }),
+        ]),
+      ).toBe("t1");
+      expect(
+        find("tires_winter", [
+          task({
+            title,
+            externalSource: "vehicle_template",
+            externalRef: "garbled",
+          }),
+        ]),
+      ).toBe("t1");
+    });
   });
 
   it("returns the first match", () => {
@@ -463,6 +552,87 @@ describe("createTemplates", () => {
       preparationErrors: [
         { title: "Garagentermin buchen", error: "prep boom" },
       ],
+    });
+  });
+
+  describe("when the mark is taken", () => {
+    const taken = (refs: string[]) => {
+      const sent: string[] = [];
+      const c = {
+        createTask: vi.fn(async (body: { externalRef?: string | null }) => {
+          sent.push(body.externalRef ?? "");
+          if (refs.includes(body.externalRef ?? "")) {
+            throw new ApiError(
+              "conflict",
+              "A task with this external reference already exists",
+            );
+          }
+          return { id: `id${sent.length}` };
+        }),
+        createPreparation: vi.fn(async () => undefined),
+      };
+      return { sent, client: c };
+    };
+
+    it("tries the next number, since the server keeps the pair unique", async () => {
+      const { sent, client: c } = taken([`${ASSET}:mfk`, `${ASSET}:mfk:2`]);
+      const runs = await createTemplates(
+        templates(["mfk"]),
+        c,
+        () => undefined,
+        message,
+      );
+      expect(sent).toEqual([
+        `${ASSET}:mfk`,
+        `${ASSET}:mfk:2`,
+        `${ASSET}:mfk:3`,
+      ]);
+      expect(runs[0]).toMatchObject({ state: "created", taskId: "id3" });
+    });
+
+    it("keeps the first mark when it is free", async () => {
+      const { sent, client: c } = taken([]);
+      await createTemplates(
+        templates(["tires_winter"]),
+        c,
+        () => undefined,
+        message,
+      );
+      expect(sent).toEqual([`${ASSET}:tires_winter`]);
+    });
+
+    it("gives up after a number of tries and reports the refusal", async () => {
+      const everything = {
+        createTask: vi.fn(async () => {
+          throw new ApiError("conflict", "taken");
+        }),
+        createPreparation: vi.fn(async () => undefined),
+      };
+      const runs = await createTemplates(
+        templates(["service"]),
+        everything,
+        () => undefined,
+        (err) => (err instanceof ApiError ? err.message : "?"),
+      );
+      expect(runs[0]).toMatchObject({ state: "failed", error: "taken" });
+      expect(everything.createTask.mock.calls.length).toBeGreaterThan(1);
+      expect(everything.createTask.mock.calls.length).toBeLessThanOrEqual(50);
+    });
+
+    it("does not try again after any other refusal", async () => {
+      const c = {
+        createTask: vi.fn(async () => {
+          throw new ApiError("invalid_request", "bad");
+        }),
+        createPreparation: vi.fn(async () => undefined),
+      };
+      await createTemplates(
+        templates(["vignette"]),
+        c,
+        () => undefined,
+        message,
+      );
+      expect(c.createTask).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -20,6 +20,7 @@ import {
   vignette,
   type VehicleTemplateContext,
 } from "./templates";
+import { templateOfMark } from "./template-mark";
 
 const TZ = "Europe/Zurich";
 const ASSET = "6f1c2d3e-0000-4000-8000-000000000001";
@@ -86,6 +87,16 @@ describe("every template", () => {
         const parsed = createPreparationRequestSchema.safeParse(prep);
         expect(parsed.error?.issues).toBeUndefined();
       }
+    },
+  );
+
+  it.each(VEHICLE_TEMPLATE_IDS)(
+    "%s marks its task with the vehicle and the template",
+    (id) => {
+      const template = templates.find((t) => t.id === id)!;
+      expect(template.task.externalSource).toBe("vehicle_template");
+      expect(template.task.externalRef).toBe(`${ASSET}:${id}`);
+      expect(templateOfMark(template.task)).toBe(id);
     },
   );
 

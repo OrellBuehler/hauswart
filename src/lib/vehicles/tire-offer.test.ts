@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { templateMark } from "./template-mark";
 import { TireOffers } from "./tire-offer.svelte";
 
 beforeEach(() => vi.useFakeTimers());
@@ -15,6 +16,32 @@ describe("TireOffers", () => {
       taskTitle: "Winterreifen aufziehen",
       season: "winter",
     });
+  });
+
+  it("offers to mount a set for a task a tire template made, whatever it is called", () => {
+    const offers = new TireOffers();
+    offers.offer({
+      title: "Garage",
+      assetId: "a1",
+      ...templateMark("a1", "tires_summer", 2),
+    });
+    vi.advanceTimersByTime(1000);
+    expect(offers.current).toEqual({
+      assetId: "a1",
+      taskTitle: "Garage",
+      season: "summer",
+    });
+  });
+
+  it("offers nothing for another template's task, even with a title that sounds like a tire change", () => {
+    const offers = new TireOffers();
+    offers.offer({
+      title: "Reifenwechsel",
+      assetId: "a1",
+      ...templateMark("a1", "service"),
+    });
+    vi.advanceTimersByTime(1000);
+    expect(offers.current).toBeNull();
   });
 
   it("offers nothing for any other task or a task without an asset", () => {
