@@ -104,6 +104,8 @@ export class FakeCalendars {
   dropsMarker = false;
   /** Events are listed without their ids, like a calendar that has none. */
   hidesIds = false;
+  /** What the provider adds on top of the items it writes (the fingerprint of the seam). */
+  fingerprint = "";
   /** Every call takes this long. */
   delayMs = 0;
   /** How many calls were going on at once, at most. */
@@ -131,6 +133,7 @@ export class FakeCalendars {
         }));
       },
       open: async (_connection, calendarId) => this.open(calendarId),
+      fingerprint: () => this.fingerprint,
     };
   }
 
@@ -143,6 +146,7 @@ export class FakeCalendars {
     this.reportsIds = true;
     this.dropsMarker = false;
     this.hidesIds = false;
+    this.fingerprint = "";
     this.delayMs = 0;
     this.maxActive = 0;
     this.onCall = null;

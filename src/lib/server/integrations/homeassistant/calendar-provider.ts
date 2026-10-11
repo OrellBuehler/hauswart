@@ -98,6 +98,9 @@ export function createCalendarProvider(
   return {
     kind: KIND,
 
+    // The address the link in a description points to: when it changes, the events are written again.
+    fingerprint: (config) => appUrlOf(config) ?? "",
+
     async listCalendars(connection) {
       const ha = client(connection);
       return run(async () => {

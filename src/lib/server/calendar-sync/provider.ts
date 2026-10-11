@@ -86,6 +86,13 @@ export interface CalendarProvider {
     connection: ResolvedConnection,
     calendarId: string,
   ): Promise<CalendarSession>;
+  /**
+   * What the provider adds to an item when it writes it, from the connection's settings and
+   * without calling the calendar (the address the link in the description points to). It goes into
+   * the fingerprint of every item, so a change of it writes the events again once. Empty when the
+   * provider adds nothing.
+   */
+  fingerprint?(config: Record<string, unknown>): string;
 }
 
 const providers = new Map<CalendarProviderKind, CalendarProvider>();

@@ -170,6 +170,19 @@ describe("calendar sync scheduler", () => {
     await waitFor(() => getTargetRow(ctx(), target.id)!.status === "ok");
   });
 
+  it("writes the events again soon when what the provider adds changed", async () => {
+    fake.fingerprint = "https://a.example.org";
+    await setup();
+    book("Kaminfeger");
+    start({ checkIntervalMs: 15, intervalMs: 1_000_000 });
+    await waitFor(() => titles().length === 1);
+    expect(fake.callsOf("update")).toEqual([]);
+    fake.fingerprint = "https://b.example.org";
+    await waitFor(() => fake.callsOf("update").length === 1);
+    await pause(80);
+    expect(fake.callsOf("update")).toHaveLength(1);
+  });
+
   it("does not run a target that is switched off by a change", async () => {
     const target = await setup();
     start({ firstRunDelayMs: 1_000_000 });

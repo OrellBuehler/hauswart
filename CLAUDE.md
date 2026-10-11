@@ -934,7 +934,7 @@ same-origin` to everything under `/g/` (the token in the path never leaves the s
 Pushes appointments, due dates, preparations and deadlines into a calendar of a connected system, so they show up next to everything else
 people plan. Optional like every adapter: without a target nothing happens, and the core knows no calendar system by name.
 
-- **The seam** (`calendar-sync/provider.ts`): an adapter calls `registerCalendarProvider({kind, listCalendars, open})` (`kind` is in
+- **The seam** (`calendar-sync/provider.ts`): an adapter calls `registerCalendarProvider({kind, listCalendars, open, fingerprint?})` (`kind` is in
   `CALENDAR_PROVIDERS` in `enums.ts`, and is also an integration kind). `open(connection, calendarId)` resolves the calendar once per run
   and returns a `CalendarSession`: `name`, `capabilities` `{create, update, delete, alarms}`, `listEvents(range)` (every event, ours with
   a `ref`, foreign ones with `ref: null`), `create(item)` (answers `{uid}`, or `uid: null` when the system does not tell),
@@ -967,8 +967,11 @@ people plan. Optional like every adapter: without a target nothing happens, and 
   `insurance_deadlines` is the cancellation deadline of an active policy (`insurance-<id>-cancel`), from today on. UIDs are `task-<id>-<occurrence>`,
   `prep-...`, `appointment-<id>`, `defect-<id>-deadline`, `warranty-<id>`: a completed occurrence is another item than the next one.
 - **Items** (`items.ts` `buildDesiredItems`): the entries inside the horizon (31 days back to 400 ahead; estimates are never carried), with the
-  prefix, timing and reminder of the target, sorted by start. `hash` = sha256 (32 hex) of ref, summary, description, location, when, path and
-  alarm; it does not depend on `updatedAt`.
+  prefix, timing and reminder of the target, sorted by start. `hash` = sha256 (32 hex) of ref, summary, description, location, when, path,
+  alarm and the provider's fingerprint; it does not depend on `updatedAt`. The reminder is only part of an item for a calendar with
+  `capabilities.alarms` (a provider that keeps none never has its events rewritten for it), and the fingerprint is what the provider adds on top
+  of the item (`CalendarProvider.fingerprint(connection.config)`, no calendar call; for Home Assistant the app address its links are built
+  from), so a changed `appUrl` or `ORIGIN` writes the events again once. `itemSettingsOf` gives the scheduler the same settings a run builds.
 - **The marker** (`ref.ts`): an event is ours only if its description (or the provider's own field) carries `hw-ref: <ref>@sync.hauswart`.
   The engine never names an event without it, whatever its id says. Text that merely mentions it does not count (the whole line must match).
 - **Reconcile** (`reconcile.ts`, pure, table-tested including a simulated calendar that must settle in at most three passes): per ref,

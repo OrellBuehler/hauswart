@@ -231,7 +231,12 @@ async function run(
   let plan: ReturnType<typeof reconcile>;
   const range = readRange(ctx.now);
   try {
-    desired = await buildDesiredItems(ctx, { config, userId: row.userId });
+    desired = await buildDesiredItems(ctx, {
+      config,
+      userId: row.userId,
+      alarms: session.capabilities.alarms,
+      fingerprint: provider.fingerprint?.(connection.configJson) ?? "",
+    });
     const remote = await session.listEvents(range);
     plan = reconcile({
       desired,

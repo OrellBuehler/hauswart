@@ -3,16 +3,11 @@ import { ApiError } from "$lib/api/errors";
 import { dueForAttempt } from "$lib/server/connections/connections";
 import { getDB } from "$lib/server/db";
 import { onEvent } from "$lib/server/events";
-import { buildDesiredItems } from "./items";
+import { buildDesiredItems, itemSettingsOf } from "./items";
 import { listLinks } from "./links";
 import { hasPendingChanges } from "./reconcile";
 import { SYNC_INTERVAL_MS } from "./schedule";
-import {
-  configOf,
-  getTargetRow,
-  listRunnableTargets,
-  type TargetRow,
-} from "./store";
+import { getTargetRow, listRunnableTargets, type TargetRow } from "./store";
 import { syncTarget } from "./sync";
 
 export { SYNC_INTERVAL_MS };
@@ -64,17 +59,14 @@ export function startCalendarSyncScheduler(
     if (!row.lastCheckedAt || now - row.lastCheckedAt.getTime() >= interval) {
       return "sync";
     }
-    let config;
+    let settings;
     try {
-      config = configOf(row);
+      settings = itemSettingsOf(ctx, row);
     } catch {
       // The run records `config_invalid` and the back-off; looking at it here would only log every tick.
       return "sync";
     }
-    const desired = await buildDesiredItems(ctx, {
-      config,
-      userId: row.userId,
-    });
+    const desired = await buildDesiredItems(ctx, settings);
     return hasPendingChanges(desired, listLinks(ctx, row.id)) ? "sync" : "skip";
   };
 

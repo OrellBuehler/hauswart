@@ -604,6 +604,46 @@ describe("buildDesiredItems", () => {
       expect(after!.hash).toBe(before!.hash);
     });
 
+    it("brings no reminder to a calendar that keeps none, so asking for one changes nothing there", async () => {
+      await makeTask(ctx(), {
+        title: "Aufgabe",
+        trigger: everyDays(30, "2026-06-20"),
+      });
+      const list = (alarmMinutes: number | null, alarms: boolean) =>
+        buildDesiredItems(ctx(), {
+          config: config(["task_due"], { alarmMinutes }),
+          userId: null,
+          alarms,
+        });
+      const [without] = await list(null, false);
+      const [asked] = await list(30, false);
+      expect(asked!.alarmMinutes).toBeNull();
+      expect(asked!.hash).toBe(without!.hash);
+      const [kept] = await list(30, true);
+      expect(kept!.alarmMinutes).toBe(30);
+      expect(kept!.hash).not.toBe(without!.hash);
+    });
+
+    it("includes what the provider adds on top of the item, so a change of it writes the events again", async () => {
+      await makeTask(ctx(), {
+        title: "Aufgabe",
+        trigger: everyDays(30, "2026-06-20"),
+      });
+      const withPrint = (fingerprint?: string) =>
+        buildDesiredItems(ctx(), {
+          config: config(["task_due"]),
+          userId: null,
+          fingerprint,
+        });
+      const [plain] = await withPrint();
+      const [a] = await withPrint("https://a.example.org");
+      const [again] = await withPrint("https://a.example.org");
+      const [b] = await withPrint("https://b.example.org");
+      expect(a!.hash).toBe(again!.hash);
+      expect(new Set([plain!.hash, a!.hash, b!.hash]).size).toBe(3);
+      expect(a).toMatchObject({ summary: plain!.summary });
+    });
+
     it("tells all-day from timed and a moved end from a moved start", () => {
       const base = {
         ref: "task-x",

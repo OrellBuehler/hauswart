@@ -179,6 +179,44 @@ describe("pushing items into a Home Assistant calendar", () => {
       );
     });
 
+    it("writes the events again once when the address of the app changes, because the link in them does", async () => {
+      const target = await setup();
+      connect({ config: { appUrl: "https://a.example.org" } });
+      book();
+      await sync(target.id);
+      expect(ours()[0]!.description).toContain("https://a.example.org/");
+      const before = writes();
+      expect((await sync(target.id)).counts.updated).toBe(0);
+      expect(writes()).toBe(before);
+
+      connect({ config: { appUrl: "https://b.example.org" } });
+      const result = await sync(target.id);
+      expect(result).toMatchObject({ ok: true, counts: { updated: 1 } });
+      expect(ours()).toHaveLength(1);
+      expect(ours()[0]!.description).toContain("https://b.example.org/");
+      expect(ours()[0]!.description).not.toContain("https://a.example.org");
+      const after = writes();
+      expect((await sync(target.id)).counts.updated).toBe(0);
+      expect(writes()).toBe(after);
+    });
+
+    it("does the same when the address comes from ORIGIN", async () => {
+      const origin = process.env.ORIGIN;
+      try {
+        process.env.ORIGIN = "https://a.example.org";
+        const target = await setup();
+        book();
+        await sync(target.id);
+        expect(ours()[0]!.description).toContain("https://a.example.org/");
+        process.env.ORIGIN = "https://b.example.org";
+        expect((await sync(target.id)).counts.updated).toBe(1);
+        expect(ours()[0]!.description).toContain("https://b.example.org/");
+      } finally {
+        if (origin === undefined) delete process.env.ORIGIN;
+        else process.env.ORIGIN = origin;
+      }
+    });
+
     it("writes an appointment that starts and ends in the hour the clocks repeat, which Home Assistant accepts", async () => {
       const target = await setup();
       // Zurich, 2026-10-25: 02:30 summer time to 02:10 winter time, 40 minutes in all.

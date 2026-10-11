@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { eq } from "drizzle-orm";
 import type { CalendarItemKind } from "$lib/api/enums";
 import type { CalendarTargetConfig } from "$lib/api/schemas/calendar-sync";
 import { addDays, zonedTimeToInstant } from "$lib/dates";
@@ -7,9 +8,16 @@ import {
   type CalendarEntry,
 } from "$lib/server/calendar/entries";
 import { householdTimeZone } from "$lib/server/config";
+import { connections } from "$lib/server/db";
 import type { ServiceContext } from "$lib/server/service";
 import { clockAt } from "$lib/server/tasks/evaluator";
-import type { CalendarItem, ItemWhen, TimeRange } from "./provider";
+import {
+  getCalendarProvider,
+  type CalendarItem,
+  type ItemWhen,
+  type TimeRange,
+} from "./provider";
+import { configOf, type TargetRow } from "./store";
 
 /** Calendar sync looks this far back (days before today) ... */
 export const HORIZON_PAST_DAYS = 31;
@@ -35,6 +43,39 @@ export interface ItemSettings {
   config: CalendarTargetConfig;
   /** Whose `mine` it is; null for household targets, which see everything. */
   userId: string | null;
+  /**
+   * Whether the calendar keeps reminders (`capabilities.alarms`). Without, items carry none, so a
+   * reminder the target asks for changes nothing that is written. Default: it does.
+   */
+  alarms?: boolean;
+  /** What the provider adds to an item (`CalendarProvider.fingerprint`); part of every item's hash. */
+  fingerprint?: string;
+}
+
+/**
+ * The settings of a stored target: its config, whether its calendar kept reminders when it was last
+ * opened, and what its provider adds. Throws when the stored config is invalid. A run opens the
+ * calendar first and passes what it found instead.
+ */
+export function itemSettingsOf(
+  ctx: Pick<ServiceContext, "db">,
+  row: TargetRow,
+  alarms: boolean = row.capabilitiesJson?.alarms ?? false,
+): ItemSettings {
+  const connection = ctx.db
+    .select({ configJson: connections.configJson })
+    .from(connections)
+    .where(eq(connections.id, row.connectionId))
+    .get();
+  return {
+    config: configOf(row),
+    userId: row.userId,
+    alarms,
+    fingerprint:
+      getCalendarProvider(row.provider)?.fingerprint?.(
+        connection?.configJson ?? {},
+      ) ?? "",
+  };
 }
 
 /** The first instant of a date in the household zone. */
@@ -89,8 +130,11 @@ function whenOf(
   return { allDay: true, startDate: date, endDate: addDays(date, 1) };
 }
 
-/** A fingerprint of what is written for an item; equal fingerprints mean there is nothing to push. */
-export function itemHash(item: CalendarItem): string {
+/**
+ * A fingerprint of what is written for an item; equal fingerprints mean there is nothing to push.
+ * `fingerprint` is what the provider adds on top of the item.
+ */
+export function itemHash(item: CalendarItem, fingerprint = ""): string {
   const canonical = JSON.stringify([
     item.ref,
     item.summary,
@@ -101,6 +145,7 @@ export function itemHash(item: CalendarItem): string {
       : ["t", item.when.startsAt, item.when.endsAt],
     item.path,
     item.alarmMinutes,
+    fingerprint,
   ]);
   return createHash("sha256").update(canonical).digest("hex").slice(0, 32);
 }
@@ -150,7 +195,10 @@ export async function buildDesiredItems(
       location: entry.location ?? null,
       when,
       path: entry.path,
-      alarmMinutes: entry.alarmable ? config.alarmMinutes : null,
+      alarmMinutes:
+        settings.alarms !== false && entry.alarmable
+          ? config.alarmMinutes
+          : null,
     };
     items.set(entry.uid, {
       item: {
@@ -158,7 +206,7 @@ export async function buildDesiredItems(
         kind: entry.kind,
         itemId: entry.itemId,
         instanceKey: entry.instance,
-        hash: itemHash(base),
+        hash: itemHash(base, settings.fingerprint),
       },
       start: span.from,
     });

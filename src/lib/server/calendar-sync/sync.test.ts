@@ -12,13 +12,15 @@ import { completeTask } from "$lib/server/tasks/completions";
 import { updateTask } from "$lib/server/tasks/tasks";
 import { useTestDB } from "$lib/testing/db";
 import { at, ctxAt, everyDays, makeTask, NOW } from "$lib/testing/domain";
-import { buildDesiredItems } from "./items";
+import { buildDesiredItems, itemSettingsOf } from "./items";
 import { listLinks } from "./links";
 import type { CalendarCapabilities } from "./provider";
 import { hasPendingChanges } from "./reconcile";
 import { configOf, getTargetRow } from "./store";
 import { syncTarget } from "./sync";
+import { updateTarget } from "./targets";
 import {
+  ADMIN,
   addTarget,
   CALENDAR_ID,
   connectCalendarSystem,
@@ -69,10 +71,7 @@ describe("syncTarget", () => {
   const pending = async (id: string) => {
     const target = row(id);
     return hasPendingChanges(
-      await buildDesiredItems(ctx(), {
-        config: configOf(target),
-        userId: target.userId,
-      }),
+      await buildDesiredItems(ctx(), itemSettingsOf(ctx(), target)),
       listLinks(ctx(), id),
     );
   };
@@ -203,6 +202,7 @@ describe("syncTarget", () => {
 
     it("writes the prefix, the time of day and the reminder the target asks for", async () => {
       const target = await setup({
+        capabilities: { ...FULL_CAPABILITIES, alarms: true },
         kinds: ["task_due"],
         config: {
           titlePrefix: "[H] ",
@@ -227,6 +227,64 @@ describe("syncTarget", () => {
           endsAt: at("2026-06-20", "07:50"),
         },
       });
+    });
+  });
+
+  describe("what the provider adds and what it cannot keep", () => {
+    it("writes the events again once when what the provider adds changes, and not before", async () => {
+      fake.fingerprint = "https://a.example.org";
+      const target = await setup();
+      book();
+      book({
+        title: "Maler",
+        startsAt: at("2026-06-21", "08:00"),
+        endsAt: at("2026-06-21", "09:00"),
+      });
+      await sync(target.id);
+      expect(await pending(target.id)).toBe(false);
+      fake.calls = [];
+      expect((await sync(target.id)).counts.updated).toBe(0);
+      expect(writes()).toEqual([]);
+
+      fake.fingerprint = "https://b.example.org";
+      expect(await pending(target.id)).toBe(true);
+      const result = await sync(target.id);
+      expect(result).toMatchObject({ ok: true, counts: { updated: 2 } });
+      expect(await pending(target.id)).toBe(false);
+      fake.calls = [];
+      expect((await sync(target.id)).counts.updated).toBe(0);
+      expect(writes()).toEqual([]);
+    });
+
+    it("does not write events again for a reminder the calendar cannot keep", async () => {
+      const target = await setup();
+      book();
+      await sync(target.id);
+      updateTarget(ctx(), ADMIN, target.id, { config: { alarmMinutes: 30 } });
+      expect(await pending(target.id)).toBe(false);
+      fake.calls = [];
+      const result = await sync(target.id);
+      expect(result.counts.updated).toBe(0);
+      expect(writes()).toEqual([]);
+      expect([...fake.ours(CALENDAR_ID).values()][0]!.item!.alarmMinutes).toBe(
+        null,
+      );
+    });
+
+    it("writes the reminder where the calendar keeps reminders, and again when it changes", async () => {
+      const target = await setup({
+        capabilities: { ...FULL_CAPABILITIES, alarms: true },
+      });
+      book();
+      await sync(target.id);
+      updateTarget(ctx(), ADMIN, target.id, { config: { alarmMinutes: 30 } });
+      expect(await pending(target.id)).toBe(true);
+      expect((await sync(target.id)).counts.updated).toBe(1);
+      expect([...fake.ours(CALENDAR_ID).values()][0]!.item!.alarmMinutes).toBe(
+        30,
+      );
+      updateTarget(ctx(), ADMIN, target.id, { config: { alarmMinutes: 60 } });
+      expect((await sync(target.id)).counts.updated).toBe(1);
     });
   });
 
