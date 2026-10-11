@@ -138,6 +138,8 @@ src/lib/server/calendar/         ical.ts (pure RFC 5545 builder), feeds.ts (ical
 src/lib/server/calendar-sync/    push of items into a calendar of a connected system: provider.ts (the seam), ref.ts (the marker), items.ts (what a
                                  target wants), reconcile.ts (pure engine), links.ts, store.ts, sync.ts (one run), targets.ts (service),
                                  scheduler.ts, testing.ts (in-memory fake calendars); see "Calendar sync"
+src/lib/calendar-sync/           client-safe UI logic for calendar targets: form.ts (draft -> request bodies, PATCH diff), stats.ts, health.ts,
+                                 labels.ts, errors.ts, providers.ts; see "Calendar sync in the web app"
 src/lib/server/share/            guest links: tokens.ts, guest-links.ts (CRUD, window, PIN counter), guest-access.ts (token ->
                                  state, PIN attempts, signed unlock cookie), guest-view.ts (what a link shows), guest-http.ts
                                  (gate + PIN action for the /g routes, response headers), purge.ts
@@ -1011,7 +1013,7 @@ people plan. Optional like every adapter: without a target nothing happens, and 
   the commands and the zone; tests in `calendar-provider.test.ts` (calls, zones, failures, timeouts, malformed bodies) and `calendar-sync.test.ts` (the core runner against
   full, create-only and create-and-delete calendars). A core test must not import the adapter: `calendar-sync/testing.ts` has in-memory fake calendars.
 - **Not built yet**: CalDAV/iCloud (the seam is meant for it), the pull direction (`pull`, `both`, `remote_wins`), `.ics` URL subscriptions as
-  triggers, detecting edits made in the calendar, a frontend. One hauswart per calendar: another install writing the same marker into a calendar would
+  triggers, detecting edits made in the calendar. One hauswart per calendar: another install writing the same marker into a calendar would
   delete the events of the first.
 
 ### MCP server
@@ -1304,6 +1306,19 @@ in dark mode. Every list has an empty state, every async action a pending and an
   price trends as `Sparkline`, a small SVG without a chart library) and `VehicleCostsCard` (`/assets/{id}/vehicle/stats` per year,
   links to `/costs?asset=`). The asset form takes the vehicle details (`PUT /assets/{id}/vehicle` after the asset; vehicles have no
   room picker).
+- **Calendar sync in the web app**: the card `components/calendar-sync/targets-card.svelte` sits on `/settings/calendar` (tab "Kalender", below the
+  iCal subscriptions; the Home Assistant card links to `#calendar-targets`). The load reads `GET /calendar-targets` and `GET /integrations`. Everybody
+  sees the household's targets; only `canManage` ones get the switch, "Jetzt synchronisieren", edit and delete, and "add" needs a working connection of a
+  system the person may add calendars of (`creatableProviders`: the household's connection means administrators). A target's state is
+  `targetState` (paused, offline = its connection is not active, error, waiting, ok); codes go through `integrationErrorMessage(code, provider)`, which
+  words the calendar codes too (`calendar_missing`, `unsupported`, `unconfirmed`, `config_invalid`, and the run-only `busy`, `disabled`, `no_connection`,
+  `provider_unavailable`). A sync that ends `ok: false` is shown inline as a result, never as a crash; counts (`statLines`) after a failure that name no
+  problem are hidden, because a run that failed before counting leaves the counts of the run before it. A new target is looked at again every 3 s
+  (ten times) so its first run shows. The dialog never shows or sends `direction` and `conflictPolicy`, lists the calendars of
+  `GET /integrations/{provider}/calendars` with their capabilities (calendars that cannot create or already have a target are disabled, the 400 on
+  `remoteCalendarId` and the 409 are worded on that field), sends only the fields that differ on PATCH (`updateBody`) and offers a reminder only when
+  `capabilities.alarms`. Deleting offers "Termine im Kalender ebenfalls entfernen" (`?removeRemote=true`) only with `capabilities.delete`; a 409 (connection
+  off) or 502 (`details.code`, `too_many` with counts) is worded by `deleteFailure` and the target stays. `ConfirmDialog` takes optional content (`children`).
 - **Odometer readings in forms**: `VehicleReading` (`lib/vehicles/odometer-state.svelte.ts`) loads a vehicle's unit and newest
   reading for a dialog and `OdometerReadingField` prefills it; an unchanged or empty field sends no reading. A task that counts on the
   odometer asks for it when completed: `CompleteButton` asks `odometerAssetOf(task)` (the dashboard's `odometerAssetId`, else the
