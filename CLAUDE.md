@@ -1196,7 +1196,8 @@ in dark mode. Every list has an empty state, every async action a pending and an
   has an undo toast, "reopen" says it does not undo the task's completion. `AppointmentFormDialog` creates, edits and prefills (`defaults`: task
   with its `occurrenceKey` (never the placeholders `none`/`s:none`), device, contact; another task sends none and the server pins what it shows); its times are wall-clock in the household zone (`zonedTimeToInstant`, never the browser's), an empty
   end sends none on create (the server's hour) and is made explicit on edit, a changed start or end sends both, and `buildUpdateBody` compares the
-  wall-clock fields with `draftFromAppointment`, so an end that falls in the repeated autumn hour is not moved by a title edit. `LinkSelect` is a
+  wall-clock fields of each side with `draftFromAppointment` and sends a side that was not edited with its stored instant (`untouchedInstants`), so a
+  start or end that falls in the repeated autumn hour (a wall-clock time cannot tell the two 02:30 apart) is not moved by editing the other side or the title. `LinkSelect` is a
   searchable combobox (task, device; contacts keep `ContactSelect`). `AppointmentsCard` (planned ones plus "create") sits on the task, device and
   contact pages; `AppointmentBadge` shows `nextAppointment` on task rows (`TaskRow` and `TaskRows` take `timeZone`; the badge is a link except
   inside `TaskRows`, whose row is one) and on the task page.

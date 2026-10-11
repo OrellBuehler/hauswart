@@ -526,6 +526,111 @@ describe("buildUpdateBody", () => {
     });
   });
 
+  describe("in the hour the clocks repeat", () => {
+    // 25 October 2026: 02:00-02:59 happens twice, 00:00Z-00:59Z (UTC+2), then 01:00Z-01:59Z (UTC+1).
+    // A wall-clock time says nothing about which one is meant, so a side that was not edited keeps its instant.
+
+    it("keeps an end at the second 02:30 when only the start is edited", () => {
+      const fold = appointmentDto({
+        startsAt: "2026-10-25T00:00:00.000Z",
+        endsAt: "2026-10-25T01:30:00.000Z",
+      });
+      const base = draftFromAppointment(fold, timeZone);
+      expect(base).toMatchObject({ startTime: "02:00", endTime: "02:30" });
+      expect(
+        buildUpdateBody({ ...base, startTime: "01:30" }, fold, timeZone),
+      ).toEqual({
+        body: {
+          startsAt: "2026-10-24T23:30:00.000Z",
+          endsAt: "2026-10-25T01:30:00.000Z",
+        },
+        errors: {},
+      });
+    });
+
+    it("keeps a start at the second 02:30 when only the end is edited", () => {
+      const fold = appointmentDto({
+        startsAt: "2026-10-25T01:30:00.000Z",
+        endsAt: "2026-10-25T02:30:00.000Z",
+      });
+      const base = draftFromAppointment(fold, timeZone);
+      expect(base).toMatchObject({ startTime: "02:30", endTime: "03:30" });
+      expect(
+        buildUpdateBody({ ...base, endTime: "04:00" }, fold, timeZone),
+      ).toEqual({
+        body: {
+          startsAt: "2026-10-25T01:30:00.000Z",
+          endsAt: "2026-10-25T03:00:00.000Z",
+        },
+        errors: {},
+      });
+    });
+
+    it("checks the span with the kept instants, not with the wall-clock reading of them", () => {
+      // The start moves to the first 02:45 (00:45Z), which is before this end at the second 02:30 (01:30Z).
+      const fold = appointmentDto({
+        startsAt: "2026-10-25T00:00:00.000Z",
+        endsAt: "2026-10-25T01:30:00.000Z",
+      });
+      const base = draftFromAppointment(fold, timeZone);
+      expect(
+        buildUpdateBody({ ...base, startTime: "02:45" }, fold, timeZone),
+      ).toEqual({
+        body: {
+          startsAt: "2026-10-25T00:45:00.000Z",
+          endsAt: "2026-10-25T01:30:00.000Z",
+        },
+        errors: {},
+      });
+    });
+
+    it("reads both sides from the form once both are edited", () => {
+      const fold = appointmentDto({
+        startsAt: "2026-10-25T01:30:00.000Z",
+        endsAt: "2026-10-25T02:30:00.000Z",
+      });
+      const base = draftFromAppointment(fold, timeZone);
+      expect(
+        buildUpdateBody(
+          { ...base, startTime: "09:00", endTime: "10:00" },
+          fold,
+          timeZone,
+        ).body,
+      ).toEqual({
+        startsAt: "2026-10-25T08:00:00.000Z",
+        endsAt: "2026-10-25T09:00:00.000Z",
+      });
+    });
+
+    it("moves an end that follows the start to another day", () => {
+      const fold = appointmentDto({
+        startsAt: "2026-10-25T00:00:00.000Z",
+        endsAt: "2026-10-25T01:30:00.000Z",
+      });
+      const base = draftFromAppointment(fold, timeZone);
+      expect(base.endDate).toBe("");
+      expect(
+        buildUpdateBody({ ...base, startDate: "2026-10-26" }, fold, timeZone)
+          .body,
+      ).toEqual({
+        startsAt: "2026-10-26T01:00:00.000Z",
+        endsAt: "2026-10-26T01:30:00.000Z",
+      });
+    });
+
+    it("counts an end day typed in as the start day as no change", () => {
+      const fold = appointmentDto({
+        startsAt: "2026-10-25T00:00:00.000Z",
+        endsAt: "2026-10-25T01:30:00.000Z",
+      });
+      const base = draftFromAppointment(fold, timeZone);
+      expect(
+        buildUpdateBody({ ...base, endDate: "2026-10-25" }, fold, timeZone)
+          .body,
+      ).toEqual({});
+    });
+  });
+
   it("reports an end before the start and sends nothing", () => {
     const result = buildUpdateBody(
       { ...same(), startTime: "11:00" },

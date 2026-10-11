@@ -135,14 +135,19 @@ function checkTime(value: string): string | undefined {
   return TIME_RE.test(value) ? undefined : m.appointment_error_time_invalid();
 }
 
+/** Instants to use as they are, instead of reading them off the form's wall-clock fields. */
+export type KeptInstants = { startsAt?: number; endsAt?: number };
+
 /**
  * The span the form describes, in the household zone. The end defaults as the API does: an hour after
  * the start of a timed appointment, the same day for an all-day one. The same rules as the server
- * (`whenProblem`), worded for the form.
+ * (`whenProblem`), worded for the form. `keep` replaces the instant of a side whose wall-clock
+ * fields were not touched (see `buildUpdateBody`).
  */
 export function draftWhen(
   draft: AppointmentDraft,
   timeZone: string,
+  keep: KeptInstants = {},
 ): DraftWhen {
   const errors: Record<string, string> = {};
   const startDateError = checkDate(draft.startDate);
@@ -180,18 +185,17 @@ export function draftWhen(
   if (Object.keys(errors).length > 0) {
     return { when: null, errors, endIsDefault };
   }
-  const startsAt = zonedTimeToInstant(
-    draft.startDate,
-    draft.startTime,
-    timeZone,
-  );
+  const startsAt =
+    keep.startsAt ??
+    zonedTimeToInstant(draft.startDate, draft.startTime, timeZone);
   const endsAt = endIsDefault
     ? defaultEnd(startsAt)
-    : zonedTimeToInstant(
+    : (keep.endsAt ??
+      zonedTimeToInstant(
         draft.endDate || draft.startDate,
         draft.endTime,
         timeZone,
-      );
+      ));
   const when: AppointmentWhen = { allDay: false, startsAt, endsAt };
   if (whenProblem(when)) {
     return {
@@ -313,10 +317,16 @@ export function buildCreateBody(
   return { body: candidate, errors };
 }
 
+/** The day an appointment ends on in the form: the start day while the end day is left empty. */
+const endDayOf = (d: AppointmentDraft) => d.endDate || d.startDate;
+
 /** Whether the form changed what says when: the kind, the days and the times that apply to it. */
 function whenChanged(draft: AppointmentDraft, base: AppointmentDraft): boolean {
   if (draft.allDay !== base.allDay) return true;
-  if (draft.startDate !== base.startDate || draft.endDate !== base.endDate) {
+  if (
+    draft.startDate !== base.startDate ||
+    endDayOf(draft) !== endDayOf(base)
+  ) {
     return true;
   }
   return (
@@ -326,9 +336,41 @@ function whenChanged(draft: AppointmentDraft, base: AppointmentDraft): boolean {
 }
 
 /**
+ * The stored instants of the sides of a timed appointment the form left alone. A wall-clock time
+ * cannot say which of the two 02:30 of the night the clocks go back is meant, so a side that was not
+ * edited must not be worked out from its fields again: it would move to the first one.
+ */
+function untouchedInstants(
+  draft: AppointmentDraft,
+  base: AppointmentDraft,
+  original: Appointment,
+): KeptInstants {
+  if (
+    draft.allDay ||
+    base.allDay ||
+    original.startsAt === null ||
+    original.endsAt === null
+  ) {
+    return {};
+  }
+  const kept: KeptInstants = {};
+  if (
+    draft.startDate === base.startDate &&
+    draft.startTime === base.startTime
+  ) {
+    kept.startsAt = Date.parse(original.startsAt);
+  }
+  if (endDayOf(draft) === endDayOf(base) && draft.endTime === base.endTime) {
+    kept.endsAt = Date.parse(original.endsAt);
+  }
+  return kept;
+}
+
+/**
  * The request that changes `original` into the draft, with only what differs; an empty body means
  * nothing changed. A changed start or end sends both ends, as the server keeps the stored end
- * otherwise and refuses a start behind it. A new task forgets the occurrence on the server.
+ * otherwise and refuses a start behind it; the side that was not edited keeps its stored instant. A
+ * new task is pinned to the occurrence it shows by the server.
  */
 export function buildUpdateBody(
   draft: AppointmentDraft,
@@ -336,7 +378,11 @@ export function buildUpdateBody(
   timeZone: string,
 ): BuiltBody<UpdateBody> {
   const base = draftFromAppointment(original, timeZone);
-  const { when, errors: whenErrors } = draftWhen(draft, timeZone);
+  const { when, errors: whenErrors } = draftWhen(
+    draft,
+    timeZone,
+    untouchedInstants(draft, base, original),
+  );
   const changesWhen = whenChanged(draft, base);
   const errors = {
     ...checkTexts(draft),
