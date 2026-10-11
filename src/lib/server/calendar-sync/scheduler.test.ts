@@ -288,6 +288,35 @@ describe("calendar sync scheduler", () => {
     expect(logged).not.toContain("Kaminfeger");
   });
 
+  it("marks a target whose settings became unreadable once and backs off, instead of logging every minute", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const target = await setup();
+    book("Kaminfeger");
+    let now = NOW;
+    start({ checkIntervalMs: 10, clock: () => now });
+    await waitFor(() => titles().length === 1);
+    test.db
+      .update(calendarTargets)
+      .set({ configJson: { kinds: [] } })
+      .where(eq(calendarTargets.id, target.id))
+      .run();
+    now += 2 * MINUTE;
+    await waitFor(() => getTargetRow(ctx(), target.id)!.status === "error");
+    expect(getTargetRow(ctx(), target.id)).toMatchObject({
+      lastError: "config_invalid",
+      consecutiveFailures: 1,
+    });
+    const lines = () => spy.mock.calls.map((c) => String(c[0]));
+    const failures = lines().length;
+    await pause(150);
+    expect(lines()).toHaveLength(failures);
+    expect(lines().join("\n")).not.toContain("target_failed");
+    now += 61_000;
+    await waitFor(
+      () => getTargetRow(ctx(), target.id)!.consecutiveFailures === 2,
+    );
+  });
+
   it("stops: nothing runs after the returned function was called", async () => {
     await setup();
     const stop = start({ firstRunDelayMs: 50 });

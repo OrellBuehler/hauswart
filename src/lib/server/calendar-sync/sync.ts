@@ -164,6 +164,19 @@ async function run(
     return { ok: false, error, counts: counts ?? emptyCounts() };
   };
 
+  let config: CalendarTargetConfig;
+  try {
+    config = configOf(row);
+  } catch (err) {
+    console.error(
+      JSON.stringify({
+        event: "calendar_sync.config_invalid",
+        name: err instanceof Error ? err.name : "NonError",
+      }),
+    );
+    return fail(failure("config_invalid"));
+  }
+
   let session: CalendarSession;
   try {
     session = await provider.open(
@@ -179,18 +192,6 @@ async function run(
   saveCapabilities(ctx, row, session.capabilities);
   if (!session.capabilities.create) return fail(failure("unsupported"));
 
-  let config: CalendarTargetConfig;
-  try {
-    config = configOf(row);
-  } catch (err) {
-    console.error(
-      JSON.stringify({
-        event: "calendar_sync.config_invalid",
-        name: err instanceof Error ? err.name : "NonError",
-      }),
-    );
-    return fail(failure("config_invalid"));
-  }
   let desired: DesiredItem[];
   let plan: ReturnType<typeof reconcile>;
   const range = readRange(ctx.now);

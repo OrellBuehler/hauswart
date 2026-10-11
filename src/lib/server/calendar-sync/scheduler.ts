@@ -63,8 +63,15 @@ export function startCalendarSyncScheduler(
     if (!row.lastCheckedAt || now - row.lastCheckedAt.getTime() >= interval) {
       return "sync";
     }
+    let config;
+    try {
+      config = configOf(row);
+    } catch {
+      // The run records `config_invalid` and the back-off; looking at it here would only log every tick.
+      return "sync";
+    }
     const desired = await buildDesiredItems(ctx, {
-      config: configOf(row),
+      config,
       userId: row.userId,
     });
     return hasPendingChanges(desired, listLinks(ctx, row.id)) ? "sync" : "skip";
