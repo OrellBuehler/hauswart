@@ -612,6 +612,31 @@ describe("calendar feed content", () => {
       );
     });
 
+    it("asks the database for the appointments that ended within the lookback only", async () => {
+      const user = await createTestUser();
+      book({
+        title: "Vor Monaten",
+        startsAt: at("2026-01-10", "09:00"),
+        endsAt: at("2026-01-10", "10:00"),
+      });
+      bookAllDay({ title: "Ganztags vor Monaten", startDate: "2026-01-12" });
+      book({ title: "Bald" });
+      const asked: { sql: string; params: unknown[] }[] = [];
+      (test.db as unknown as { session: { logger: unknown } }).session.logger =
+        {
+          logQuery: (sql: string, params: unknown[]) =>
+            asked.push({ sql, params }),
+        };
+      const { parsed } = await feedFor(user.id);
+      expect(titles(parsed.events)).toEqual(["Bald"]);
+      const query = asked.find((q) => /from "appointments"/i.test(q.sql));
+      expect(query?.sql).toMatch(/"ends_at" >= \?/);
+      expect(query?.sql).toMatch(/"end_date" >= \?/);
+      expect(query?.params).toContain(
+        NOW - APPOINTMENT_LOOKBACK_DAYS * 86_400_000,
+      );
+    });
+
     it("keeps one that is far ahead", async () => {
       const user = await createTestUser();
       bookAllDay({ title: "Weit weg", startDate: "2028-02-29" });

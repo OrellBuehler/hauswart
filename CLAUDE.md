@@ -845,7 +845,7 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   (`removeOwnedAttachments` on delete), search (`search_fts` kind `appointment`: title, place and notes cut at a secret block, all
   statuses; `/appointments/<id>`). Document links are not offered.
 - **iCal feed** (`calendar/feed.ts`, no switch of its own): every appointment that is not cancelled and ended less than 30 days
-  ago (`APPOINTMENT_LOOKBACK_DAYS`; planned ones that were never closed and done ones) as `appointment-<id>@hauswart`; scope `mine` =
+  ago (`APPOINTMENT_LOOKBACK_DAYS`, also the SQL lower bound on `ends_at` / `end_date`, so history is never loaded; planned ones that were never closed and done ones) as `appointment-<id>@hauswart`; scope `mine` =
   appointments without a task, of an unassigned task or of a task whose current assignee is the owner, `all` = every one.
   A timed one is `DTSTART:20260615T070000Z` / `DTEND` in UTC (no VTIMEZONE needed, no guessing on the nights the clocks change), TRANSP
   OPAQUE; an all-day one is `VALUE=DATE` with an exclusive `DTEND`, TRANSPARENT. `SUMMARY` the title, `LOCATION`, `DESCRIPTION` the

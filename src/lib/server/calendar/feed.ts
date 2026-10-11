@@ -1,4 +1,13 @@
-import { and, eq, isNotNull, isNull, ne, notInArray, or } from "drizzle-orm";
+import {
+  and,
+  eq,
+  gte,
+  isNotNull,
+  isNull,
+  ne,
+  notInArray,
+  or,
+} from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import type { TaskCategory, UserLocale } from "$lib/api/enums";
 import { endInstant } from "$lib/appointments/when";
@@ -305,7 +314,23 @@ export async function buildFeedCalendar(
     .leftJoin(tasks, eq(tasks.id, appointments.taskId))
     .leftJoin(taskState, eq(taskState.taskId, appointments.taskId))
     .leftJoin(assets, eq(assets.id, appointments.assetId))
-    .where(ne(appointments.status, "cancelled"))
+    .where(
+      and(
+        ne(appointments.status, "cancelled"),
+        or(
+          and(
+            eq(appointments.allDay, false),
+            gte(appointments.endsAt, new Date(lookback)),
+          ),
+          // A day wider than needed (the day after the last one is the instant that counts): the
+          // exact check below does the rest, this only keeps the history out of memory.
+          and(
+            eq(appointments.allDay, true),
+            gte(appointments.endDate, addDays(localDateOf(tz, lookback), -1)),
+          ),
+        ),
+      ),
+    )
     .all();
   for (const r of booked) {
     const a = r.appointment;
