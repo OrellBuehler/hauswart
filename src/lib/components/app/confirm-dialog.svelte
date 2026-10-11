@@ -14,6 +14,7 @@
     pendingLabel,
     destructive = false,
     onconfirm,
+    errorMessage,
     closeOnBack,
   }: {
     open?: boolean;
@@ -24,6 +25,7 @@
     destructive?: boolean;
     /** Runs the action. A thrown error is shown in the dialog, which stays open. */
     onconfirm: () => Promise<void>;
+    errorMessage?: (err: unknown) => string;
     /** The back gesture closes the dialog (default, but not while the action runs); `false` leaves it to the page. */
     closeOnBack?: boolean;
   } = $props();
@@ -42,7 +44,7 @@
       await onconfirm();
       open = false;
     } catch (err) {
-      error = apiErrorMessage(err);
+      error = errorMessage ? errorMessage(err) : apiErrorMessage(err);
     } finally {
       pending = false;
     }

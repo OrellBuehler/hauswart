@@ -5,7 +5,7 @@
   import { invalidateAll } from "$app/navigation";
   import { toast } from "svelte-sonner";
   import { api } from "$lib/api/browser";
-  import type { OdometerUnit } from "$lib/api/enums";
+  import type { OdometerSource, OdometerUnit } from "$lib/api/enums";
   import { endpoints } from "$lib/api/registry";
   import type { OdometerReading } from "$lib/api/schemas/vehicles";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
@@ -17,7 +17,11 @@
   import { formatDay } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
   import { formatOdometer } from "$lib/vehicles/format";
-  import { odometerSourceLabels } from "$lib/vehicles/labels";
+  import {
+    odometerOwnerLabels,
+    odometerSourceLabels,
+  } from "$lib/vehicles/labels";
+  import { canDeleteReading, readingOwner } from "$lib/vehicles/odometer-error";
 
   let {
     assetId,
@@ -79,6 +83,15 @@
     more = null;
     await invalidateAll();
   }
+
+  function deleteError(err: unknown): string {
+    const owner = readingOwner(err);
+    if (!owner) return apiErrorMessage(err);
+    const label = odometerOwnerLabels[owner.source as OdometerSource];
+    return label
+      ? m.vehicle_history_owned_error({ owner: label() })
+      : m.vehicle_history_owned_error_unknown();
+  }
 </script>
 
 <Card.Root>
@@ -118,7 +131,7 @@
             <span class="text-sm font-medium whitespace-nowrap tabular-nums">
               {formatOdometer(reading.value, unit)}
             </span>
-            {#if canWrite}
+            {#if canWrite && canDeleteReading(reading)}
               <Button
                 variant="ghost"
                 size="icon"
@@ -167,4 +180,5 @@
   pendingLabel={m.common_deleting()}
   destructive
   onconfirm={remove}
+  errorMessage={deleteError}
 />

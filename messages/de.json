@@ -3053,5 +3053,12 @@
   "fuel_unit_kwh": "Kilowattstunden (kWh)",
   "tire_season_option_summer": "Sommer",
   "tire_season_option_winter": "Winter",
-  "tire_season_option_all_season": "Ganzjahr"
+  "tire_season_option_all_season": "Ganzjahr",
+  "asset_kind_held_details": "Fahrzeugangaben",
+  "asset_kind_held_readings": "Kilometerstände",
+  "asset_kind_held_tire_sets": "Reifensätze",
+  "asset_error_kind_held": "Entferne zuerst die {what} dieses Fahrzeugs, bevor du die Art änderst.",
+  "asset_error_kind_generic": "Die Art lässt sich nicht ändern, solange das Fahrzeug Fahrzeugdaten enthält.",
+  "vehicle_history_owned_error": "Dieser Stand gehört zu {owner}. Ändere oder lösche dort den Eintrag, dann verschwindet der Stand mit.",
+  "vehicle_history_owned_error_unknown": "Dieser Stand gehört zu einem anderen Eintrag. Ändere oder lösche dort den Eintrag, dann verschwindet der Stand mit."
 }

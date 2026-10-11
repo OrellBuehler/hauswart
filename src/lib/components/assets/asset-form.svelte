@@ -35,8 +35,8 @@
     draftFromVehicle,
     type VehicleDraft,
   } from "$lib/vehicles/form";
+  import { vehicleKindError } from "$lib/vehicles/kind-error";
   import { fuelLabels, unitLabels } from "$lib/vehicles/labels";
-  import OptionSelect from "./option-select.svelte";
   import RoomPicker from "./room-picker.svelte";
 
   let {
@@ -82,6 +82,7 @@
   /* svelte-ignore state_referenced_locally */
   let vehicleDraft = $state<VehicleDraft>(draftFromVehicle(vehicle));
   let vehicleErrors = $state<Record<string, string>>({});
+  let kindError = $state<string | undefined>();
   /** An asset this form created: a retry after a failed second step updates it instead of making another. */
   let created = $state<Asset | undefined>();
 
@@ -147,6 +148,7 @@
     }
     pending = true;
     error = undefined;
+    kindError = undefined;
     let saved: Asset | undefined;
     try {
       const body = {
@@ -240,7 +242,10 @@
         await goto(resolve(`/assets/${saved.id}`));
       }
     } catch (err) {
-      error = apiErrorMessage(err, { conflict: m.asset_error_name_taken() });
+      kindError = vehicleKindError(err) ?? undefined;
+      error = kindError
+        ? m.form_check_fields()
+        : apiErrorMessage(err, { conflict: m.asset_error_name_taken() });
     } finally {
       pending = false;
     }
@@ -264,19 +269,22 @@
           bind:value={name}
         />
       </div>
-      <div class="flex flex-col gap-2">
-        <Label for="asset-kind">{m.asset_kind()}</Label>
-        <OptionSelect
-          id="asset-kind"
-          options={kindOptions}
-          bind:value={
-            () => kind,
-            (next) => {
-              if (next) kind = next;
-            }
-          }
-        />
-      </div>
+      <Field id="asset-kind" label={m.asset_kind()} error={kindError}>
+        {#snippet children({ describedby, invalid })}
+          <FieldSelect
+            id="asset-kind"
+            options={kindOptions}
+            value={kind}
+            {invalid}
+            {describedby}
+            onchange={(next) => {
+              const found = ASSET_KINDS.find((value) => value === next);
+              if (found) kind = found;
+              kindError = undefined;
+            }}
+          />
+        {/snippet}
+      </Field>
       {#if showRoom}
         <div class="flex flex-col gap-2">
           <Label for="asset-room">{m.asset_room()}</Label>

@@ -3053,5 +3053,12 @@
   "fuel_unit_kwh": "Kilowatt hours (kWh)",
   "tire_season_option_summer": "Summer",
   "tire_season_option_winter": "Winter",
-  "tire_season_option_all_season": "All-season"
+  "tire_season_option_all_season": "All-season",
+  "asset_kind_held_details": "saved details",
+  "asset_kind_held_readings": "odometer readings",
+  "asset_kind_held_tire_sets": "tire sets",
+  "asset_error_kind_held": "Remove the vehicle's {what} before changing its kind.",
+  "asset_error_kind_generic": "The kind cannot be changed while the vehicle holds vehicle data.",
+  "vehicle_history_owned_error": "This reading belongs to {owner}. Change or delete that record and the reading goes with it.",
+  "vehicle_history_owned_error_unknown": "This reading belongs to another record. Change or delete that record and the reading goes with it."
 }
