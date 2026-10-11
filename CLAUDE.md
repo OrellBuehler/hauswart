@@ -1188,7 +1188,8 @@ in dark mode. Every list has an empty state, every async action a pending and an
   dev client with a stale manifest.
 - **Appointments in the web app**: `/appointments` (entry "Termine" in the overview group, behind "More" on phones; creating is a dialog, no
   `/new` route) shows `?view=upcoming|past` and `?status=planned,done,cancelled`; the load reads only `view` (it fetches `from`/`to` ranges,
-  `viewRange`), the status chips filter in the page from `page.url`. "Over" is day-based and in the household zone (`isOver`: last day before
+  `viewRange`; the address for the sign-in redirect is read inside `untrack`, `page-load.test.ts` pins this), the status chips filter in the page from `page.url`
+  without fetching again. "Over" is day-based and in the household zone (`isOver`: last day before
   today; a timed one that ends at midnight does not touch the next day). Upcoming = the last 30 days on, split by `sectionsFor` into "Noch offen"
   (planned and over: someone still has to close it, its task keeps waiting) and day groups by start day (a longer one that already started sits
   under today); past = the last 12 months, newest first, "older" loads the rest (merged by id with `appendById`: an appointment that spans the boundary is in both ranges). The detail page completes with `POST .../complete {}` and keeps

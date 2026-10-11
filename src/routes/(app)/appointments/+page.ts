@@ -6,10 +6,10 @@ import { endpoints } from "$lib/api/registry";
 import { parseView, viewRange } from "$lib/appointments/list";
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = async ({ fetch, url }) => {
+export const load: PageLoad = async ({ fetch, url, untrack }) => {
   const client = createApiClient(fetch);
   const view = parseView(url.searchParams.get("view"));
-  const redirectTo = url.pathname + url.search;
+  const redirectTo = untrack(() => url.pathname + url.search);
   const { household, today } = await orFail(loadHousehold(client), redirectTo);
   const range = viewRange(view, today);
   const appointments = await orFail(
