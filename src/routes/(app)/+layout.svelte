@@ -12,6 +12,7 @@
   import Logo from "$lib/components/app/logo.svelte";
   import NavProgress from "$lib/components/app/nav-progress.svelte";
   import SearchTrigger from "$lib/components/search/search-trigger.svelte";
+  import TireMountOffer from "$lib/components/vehicles/tire-mount-offer.svelte";
   import NotificationBell from "$lib/components/notifications/notification-bell.svelte";
   import {
     adminNavItems,
@@ -148,3 +149,5 @@
     <BottomNav {pathname} />
   {/if}
 </Sidebar.Provider>
+
+<TireMountOffer />

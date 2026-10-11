@@ -6,6 +6,7 @@ import type { CompletionServiceLogRequest } from "$lib/api/schemas/service-log";
 import { formatDate } from "$lib/format";
 import { m } from "$lib/paraglide/messages";
 import { apiErrorMessage } from "$lib/error-message";
+import { tireOffers } from "$lib/vehicles/tire-offer.svelte";
 
 const TOAST_MS = 8000;
 
@@ -37,7 +38,7 @@ export type CompleteOptions = {
 };
 
 export async function completeTask(
-  task: { id: string; title: string },
+  task: { id: string; title: string; assetId?: string | null | undefined },
   options: CompleteOptions = {},
 ): Promise<void> {
   const { completion } = await api.call(endpoints.tasksComplete, {
@@ -65,6 +66,7 @@ export async function completeTask(
     },
   );
   await invalidateAll();
+  tireOffers.offer(task);
 }
 
 export async function skipTask(
