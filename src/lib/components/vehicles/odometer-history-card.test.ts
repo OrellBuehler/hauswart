@@ -33,7 +33,7 @@ function html(readings: OdometerReading[], canWrite = true): string {
 }
 
 describe("OdometerHistoryCard", () => {
-  it("offers deleting only the readings a person typed in", () => {
+  it("offers deleting every reading: one that belongs to a record says so when it is refused", () => {
     const body = html([
       reading("1", "manual", 45000),
       reading("2", "completion", 44900),
@@ -43,6 +43,10 @@ describe("OdometerHistoryCard", () => {
     ]);
     expect(body.match(/aria-label="Stand [^"]* vom [^"]* löschen"/g)).toEqual([
       expect.stringContaining("45"),
+      expect.stringContaining("44"),
+      expect.stringContaining("44"),
+      expect.stringContaining("44"),
+      expect.stringContaining("44"),
     ]);
   });
 

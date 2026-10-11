@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "$lib/api/errors";
-import {
-  canDeleteReading,
-  readingOwner,
-  refusedMessage,
-  refusedReading,
-} from "./odometer-error";
+import { readingOwner, refusedMessage, refusedReading } from "./odometer-error";
 
 const refusal = (
   code: string,
@@ -173,19 +168,5 @@ describe("readingOwner", () => {
     expect(readingOwner(new ApiError("conflict", "taken"))).toBeNull();
     expect(readingOwner(new ApiError("not_found", "nope"))).toBeNull();
     expect(readingOwner(new Error("boom"))).toBeNull();
-  });
-});
-
-describe("canDeleteReading", () => {
-  it("allows the readings a person typed in and nothing else", () => {
-    expect(canDeleteReading({ source: "manual" })).toBe(true);
-    for (const source of [
-      "completion",
-      "service_log",
-      "fuel_log",
-      "tire_change",
-    ]) {
-      expect(canDeleteReading({ source })).toBe(false);
-    }
   });
 });

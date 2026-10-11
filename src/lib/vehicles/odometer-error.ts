@@ -43,10 +43,6 @@ export function readingOwner(
   };
 }
 
-export function canDeleteReading(reading: { source: string }): boolean {
-  return reading.source === "manual";
-}
-
 /** The refusal in words, with the reading in the way; `canForce` adds that the form can save it anyway. */
 export function refusedMessage(
   refused: RefusedReading,

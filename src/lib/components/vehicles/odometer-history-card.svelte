@@ -21,7 +21,7 @@
     odometerOwnerLabels,
     odometerSourceLabels,
   } from "$lib/vehicles/labels";
-  import { canDeleteReading, readingOwner } from "$lib/vehicles/odometer-error";
+  import { readingOwner } from "$lib/vehicles/odometer-error";
 
   let {
     assetId,
@@ -131,7 +131,7 @@
             <span class="text-sm font-medium whitespace-nowrap tabular-nums">
               {formatOdometer(reading.value, unit)}
             </span>
-            {#if canWrite && canDeleteReading(reading)}
+            {#if canWrite}
               <Button
                 variant="ghost"
                 size="icon"
