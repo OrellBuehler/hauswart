@@ -984,7 +984,7 @@ people plan. Optional like every adapter: without a target nothing happens, and 
   ours that nothing remembers when their kind is carried; duplicates of one ref keep the one the link names. The result is a mirror of the
   horizon: an occurrence that was completed disappears from the calendar. Steps are ordered delete, change, create, each by date.
 - **A run** (`sync.ts` `syncTarget`): open, read the events of the horizon plus two days, reconcile, apply with at most 100 calendar calls
-  (`counts.remaining` says how many are left; the scheduler goes on at once), save the link after every step, then look the ids of new events up
+  (a replace is two; `counts.remaining` says how many steps are left; the scheduler goes on at once), save the link after every step, then look the ids of new events up
   by their marker (`uid: null` creates): the first such create of a run is looked up at once, and when the marker did not survive (a
   calendar that drops the description) the run stops with `unconfirmed`, so such a calendar gets one stray event per run and not one per
   item; the ids of the others are looked up together at the end. A refusal of the system (`unauthorized`, `forbidden`, `network`, `timeout`, `tls`, `server`, ...)

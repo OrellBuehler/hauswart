@@ -750,6 +750,51 @@ describe("syncTarget", () => {
       expect(fake.ours(CALENDAR_ID).size).toBe(5);
     });
 
+    describe("with a calendar that can only delete and create", () => {
+      async function three() {
+        const target = await setup({ capabilities: CREATE_DELETE });
+        const items = [0, 1, 2].map((i) =>
+          book({
+            title: `T${i}`,
+            startsAt: at("2026-06-20", `0${i + 1}:00`),
+            endsAt: at("2026-06-20", `0${i + 1}:30`),
+          }),
+        );
+        await sync(target.id);
+        for (const item of items) {
+          updateAppointment(ctx(), item.id, { title: `Neu ${item.title}` });
+        }
+        fake.calls = [];
+        return target;
+      }
+
+      it("counts a replace as the two calls it makes", async () => {
+        const target = await three();
+        const result = await sync(target.id, { maxOperations: 4 });
+        expect(result.counts).toMatchObject({ replaced: 2, remaining: 1 });
+        expect(writes()).toHaveLength(4);
+        const rest = await sync(target.id, { maxOperations: 4 });
+        expect(rest.counts).toMatchObject({ replaced: 1, remaining: 0 });
+      });
+
+      it("does one replace even when the limit is smaller than that", async () => {
+        const target = await three();
+        const result = await sync(target.id, { maxOperations: 1 });
+        expect(result.counts).toMatchObject({ replaced: 1, remaining: 2 });
+      });
+
+      it("goes on to write the event when the old one is gone already", async () => {
+        const target = await three();
+        fake.failNext("delete", "not_found", 1);
+        const result = await sync(target.id);
+        expect(result).toMatchObject({
+          ok: true,
+          counts: { replaced: 3, failed: 0 },
+        });
+        expect(fake.ours(CALENDAR_ID).size).toBe(3);
+      });
+    });
+
     it("writes the nearest items first", async () => {
       const target = await setup();
       book({

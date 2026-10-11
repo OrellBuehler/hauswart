@@ -255,10 +255,10 @@ export interface Applied {
 }
 
 /**
- * Applies the steps of a plan. Steps that call the calendar are limited to `maxOperations`
- * (`counts.remaining` says how many are left) and stop altogether once the calendar system is out
- * of reach; the steps that only change what hauswart remembers always run. A failed step is counted
- * and the first failure kept; the others go on.
+ * Applies the steps of a plan. Steps that call the calendar are limited to `maxOperations` calls (a
+ * replace makes two; `counts.remaining` says how many steps are left) and stop altogether once the
+ * calendar system is out of reach; the steps that only change what hauswart remembers always run. A
+ * failed step is counted and the first failure kept; the others go on.
  */
 export async function applyOperations(
   ctx: ServiceContext,
@@ -314,11 +314,17 @@ export async function applyOperations(
 
   for (const op of operations) {
     if (isRemote(op)) {
-      if (aborted || calls >= options.maxOperations) {
+      // A replace is a delete and a create; the first call of a run is made whatever it costs.
+      const cost = op.type === "replace" ? 2 : 1;
+      const fits =
+        calls === 0
+          ? options.maxOperations > 0
+          : calls + cost <= options.maxOperations;
+      if (aborted || !fits) {
         counts.remaining++;
         continue;
       }
-      calls++;
+      calls += cost;
     }
     try {
       switch (op.type) {
@@ -334,7 +340,7 @@ export async function applyOperations(
           counts.updated++;
           break;
         case "replace": {
-          await session.delete(op.uid);
+          await deleteEvent(session, op.uid);
           if (op.link) deleteLink(ctx, op.link.id);
           const uid = await create(op.item);
           counts.replaced++;
