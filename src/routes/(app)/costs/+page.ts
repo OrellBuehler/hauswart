@@ -2,7 +2,11 @@ import { createApiClient } from "$lib/api/client";
 import { fetchAll } from "$lib/api/fetch-all";
 import { orFail } from "$lib/api/load";
 import { endpoints } from "$lib/api/registry";
-import { costsQuery, parseCostFilters } from "$lib/costs/filters";
+import {
+  costsQuery,
+  costsSummaryQuery,
+  parseCostFilters,
+} from "$lib/costs/filters";
 import {
   hasFinanceConnection,
   loadCostContext,
@@ -28,7 +32,9 @@ export const load: PageLoad = async ({ fetch, url }) => {
         redirectTo,
       ),
       orFail(
-        client.call(endpoints.costsSummary, { query: { year: filters.year } }),
+        client.call(endpoints.costsSummary, {
+          query: costsSummaryQuery(filters),
+        }),
         redirectTo,
       ),
       orFail(

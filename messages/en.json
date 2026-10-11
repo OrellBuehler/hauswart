@@ -2454,6 +2454,8 @@
   "costs_settlement_title": "Settlement {year}",
   "costs_settlement_who": "{from} owes {to}",
   "costs_share": "Share",
+  "costs_summary_asset": "Totals and settlement cover “{name}” only.",
+  "costs_summary_asset_unknown": "Totals and settlement cover the selected device only.",
   "costs_tab_list": "Entries",
   "costs_tab_report": "Report",
   "costs_title": "Costs",

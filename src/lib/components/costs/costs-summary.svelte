@@ -1,13 +1,21 @@
 <script lang="ts">
   import CircleCheckIcon from "@lucide/svelte/icons/circle-check";
   import InfoIcon from "@lucide/svelte/icons/info";
+  import FilterIcon from "@lucide/svelte/icons/list-filter";
   import type { CostsSummary } from "$lib/api/schemas/costs";
   import * as Card from "$lib/components/ui/card/index.js";
   import { hasSettlementData } from "$lib/costs/summary";
   import { formatMoney } from "$lib/format-money";
   import { m } from "$lib/paraglide/messages";
 
-  let { summary }: { summary: CostsSummary } = $props();
+  let {
+    summary,
+    asset,
+  }: {
+    summary: CostsSummary;
+    /** Set when the summary was asked for one device only; `name` is null when that device is not known here. */
+    asset?: { name: string | null } | undefined;
+  } = $props();
 
   const entryCount = $derived(
     summary.byMonth.reduce((sum, month) => sum + month.count, 0),
@@ -90,55 +98,72 @@
   {/if}
 {/snippet}
 
-<Card.Root class="gap-3 py-4 lg:hidden">
-  <Card.Header class="gap-0.5">
-    <Card.Description>
-      {m.costs_expenses_title({ year: summary.year })}
-      <span aria-hidden="true">·</span>
-      {m.costs_expenses_count({ count: entryCount })}
-    </Card.Description>
-    <Card.Title class="text-3xl font-semibold tabular-nums">
-      {money(summary.expenseTotalMinor)}
-    </Card.Title>
-  </Card.Header>
-  <Card.Content class="flex flex-col gap-3 text-sm">
-    {@render extras()}
-    <section class="flex flex-col gap-2.5 border-t pt-3">
-      <h3 class="text-sm font-medium">
-        {m.costs_settlement_title({ year: summary.year })}
-      </h3>
-      {@render settlement()}
-    </section>
-  </Card.Content>
-</Card.Root>
+<div class="flex flex-col gap-3">
+  {#if asset}
+    <p
+      class="bg-muted/50 text-muted-foreground flex items-start gap-2 rounded-lg border px-3 py-2 text-sm text-pretty"
+    >
+      <FilterIcon class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      <span class="min-w-0 wrap-anywhere">
+        {asset.name
+          ? m.costs_summary_asset({ name: asset.name })
+          : m.costs_summary_asset_unknown()}
+      </span>
+    </p>
+  {/if}
 
-<div class="grid grid-cols-1 gap-4 max-lg:hidden lg:grid-cols-2">
-  <Card.Root class="gap-4">
-    <Card.Header>
+  <Card.Root class="gap-3 py-4 lg:hidden">
+    <Card.Header class="gap-0.5">
       <Card.Description>
         {m.costs_expenses_title({ year: summary.year })}
+        <span aria-hidden="true">·</span>
+        {m.costs_expenses_count({ count: entryCount })}
       </Card.Description>
       <Card.Title class="text-3xl font-semibold tabular-nums">
         {money(summary.expenseTotalMinor)}
       </Card.Title>
     </Card.Header>
     <Card.Content class="flex flex-col gap-3 text-sm">
-      <p class="text-muted-foreground">
-        {m.costs_expenses_count({ count: entryCount })}
-      </p>
       {@render extras()}
+      <section class="flex flex-col gap-2.5 border-t pt-3">
+        <h3 class="text-sm font-medium">
+          {m.costs_settlement_title({ year: summary.year })}
+        </h3>
+        {@render settlement()}
+      </section>
     </Card.Content>
   </Card.Root>
 
-  <Card.Root class="gap-4">
-    <Card.Header>
-      <Card.Description>
-        {m.costs_settlement_title({ year: summary.year })}
-      </Card.Description>
-      <Card.Title class="text-base">{m.costs_settlement_subtitle()}</Card.Title>
-    </Card.Header>
-    <Card.Content class="flex flex-col gap-3 text-sm">
-      {@render settlement()}
-    </Card.Content>
-  </Card.Root>
+  <div class="grid grid-cols-1 gap-4 max-lg:hidden lg:grid-cols-2">
+    <Card.Root class="gap-4">
+      <Card.Header>
+        <Card.Description>
+          {m.costs_expenses_title({ year: summary.year })}
+        </Card.Description>
+        <Card.Title class="text-3xl font-semibold tabular-nums">
+          {money(summary.expenseTotalMinor)}
+        </Card.Title>
+      </Card.Header>
+      <Card.Content class="flex flex-col gap-3 text-sm">
+        <p class="text-muted-foreground">
+          {m.costs_expenses_count({ count: entryCount })}
+        </p>
+        {@render extras()}
+      </Card.Content>
+    </Card.Root>
+
+    <Card.Root class="gap-4">
+      <Card.Header>
+        <Card.Description>
+          {m.costs_settlement_title({ year: summary.year })}
+        </Card.Description>
+        <Card.Title class="text-base"
+          >{m.costs_settlement_subtitle()}</Card.Title
+        >
+      </Card.Header>
+      <Card.Content class="flex flex-col gap-3 text-sm">
+        {@render settlement()}
+      </Card.Content>
+    </Card.Root>
+  </div>
 </div>

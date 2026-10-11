@@ -2454,6 +2454,8 @@
   "costs_settlement_title": "Ausgleich {year}",
   "costs_settlement_who": "{from} schuldet {to}",
   "costs_share": "Anteil",
+  "costs_summary_asset": "Summen und Ausgleich gelten nur für «{name}».",
+  "costs_summary_asset_unknown": "Summen und Ausgleich gelten nur für das gewählte Gerät.",
   "costs_tab_list": "Einträge",
   "costs_tab_report": "Auswertung",
   "costs_title": "Kosten",
