@@ -119,6 +119,37 @@ describe("syncTarget", () => {
       expect(await pending(target.id)).toBe(false);
     });
 
+    it("stamps the links with the clock it was given", async () => {
+      const target = await setup();
+      const a = book();
+      await sync(target.id);
+      const stamps = () =>
+        test.db
+          .select({
+            createdAt: calendarLinks.createdAt,
+            updatedAt: calendarLinks.updatedAt,
+            lastPushedAt: calendarLinks.lastPushedAt,
+          })
+          .from(calendarLinks)
+          .all();
+      expect(stamps()).toEqual([
+        {
+          createdAt: new Date(NOW),
+          updatedAt: new Date(NOW),
+          lastPushedAt: new Date(NOW),
+        },
+      ]);
+      updateAppointment(ctx(), a.id, { title: "Neu" });
+      await sync(target.id, {}, NOW + 60_000);
+      expect(stamps()).toEqual([
+        {
+          createdAt: new Date(NOW),
+          updatedAt: new Date(NOW + 60_000),
+          lastPushedAt: new Date(NOW + 60_000),
+        },
+      ]);
+    });
+
     it("records the outcome on the target: health, counts and what the calendar allows", async () => {
       const target = await setup();
       book();

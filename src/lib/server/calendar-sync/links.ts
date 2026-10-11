@@ -6,6 +6,7 @@ import type { DesiredItem } from "./items";
 import type { LinkRecord } from "./reconcile";
 
 type Db = Pick<ServiceContext, "db">;
+type Clocked = Pick<ServiceContext, "db" | "now">;
 
 export function listLinks(ctx: Db, targetId: string): LinkRecord[] {
   return ctx.db
@@ -52,7 +53,7 @@ export interface LinkValues {
 
 /** Creates the link of an item or replaces what it remembers; one row per target, kind, item and occurrence. */
 export function saveLink(
-  ctx: Db,
+  ctx: Clocked,
   targetId: string,
   item: Pick<DesiredItem, "kind" | "itemId" | "instanceKey" | "ref">,
   values: LinkValues,
@@ -67,6 +68,8 @@ export function saveLink(
     status: values.status,
     contentHash: values.contentHash,
     lastPushedAt: values.pushedAt === null ? null : new Date(values.pushedAt),
+    createdAt: new Date(ctx.now),
+    updatedAt: new Date(ctx.now),
   };
   ctx.db
     .insert(calendarLinks)
@@ -84,7 +87,7 @@ export function saveLink(
         status: row.status,
         contentHash: row.contentHash,
         lastPushedAt: row.lastPushedAt,
-        updatedAt: new Date(),
+        updatedAt: row.updatedAt,
       },
     })
     .run();
@@ -92,14 +95,14 @@ export function saveLink(
 
 /** Only the id the calendar gave the event. */
 export function setLinkUid(
-  ctx: Db,
+  ctx: Clocked,
   targetId: string,
   ref: string,
   uid: string,
 ): void {
   ctx.db
     .update(calendarLinks)
-    .set({ remoteUid: uid })
+    .set({ remoteUid: uid, updatedAt: new Date(ctx.now) })
     .where(
       and(eq(calendarLinks.targetId, targetId), eq(calendarLinks.ref, ref)),
     )

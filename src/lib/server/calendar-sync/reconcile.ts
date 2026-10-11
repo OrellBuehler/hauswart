@@ -279,7 +279,8 @@ function startOf(item: DesiredItem): number {
 /** Events that can be named first, then by id: the choice among duplicates does not depend on the order the calendar listed them in. */
 function compareEvents(a: RemoteEvent, b: RemoteEvent): number {
   if ((a.uid === null) !== (b.uid === null)) return a.uid === null ? 1 : -1;
-  return (a.uid ?? "").localeCompare(b.uid ?? "");
+  const [x, y] = [a.uid ?? "", b.uid ?? ""];
+  return x < y ? -1 : x > y ? 1 : 0;
 }
 
 /**

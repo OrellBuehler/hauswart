@@ -212,6 +212,10 @@ export async function buildDesiredItems(
     });
   }
   return [...items.values()]
-    .sort((a, b) => a.start - b.start || a.item.ref.localeCompare(b.item.ref))
+    .sort(
+      (a, b) =>
+        a.start - b.start ||
+        (a.item.ref < b.item.ref ? -1 : a.item.ref > b.item.ref ? 1 : 0),
+    )
     .map((entry) => entry.item);
 }

@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { INTEGRATION_LEVELS } from "$lib/api/enums";
 import { calendarTargetConfigSchema } from "$lib/api/schemas/calendar-sync";
@@ -362,6 +363,22 @@ describe("calendar targets", () => {
         const off = updateTarget(ctx(), ADMIN, target.id, { enabled: false });
         expect(off.nextAttemptAt).toBeNull();
       });
+    });
+
+    it("shows no counts that cannot be read, and logs why by code only", async () => {
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      connectCalendarSystem(ctx());
+      const target = await addTarget(ctx(), fake);
+      test.db
+        .update(calendarTargets)
+        .set({ lastStatsJson: { created: "GEHEIM-4711" } as never })
+        .where(eq(calendarTargets.id, target.id))
+        .run();
+      expect(listTargets(ctx(), ADMIN)[0]!.lastStats).toBeNull();
+      const logged = error.mock.calls.map((c) => String(c[0])).join("\n");
+      expect(logged).toContain("calendar_sync.stats_invalid");
+      expect(logged).toContain("invalid_type");
+      expect(logged).not.toContain("GEHEIM-4711");
     });
 
     it("does not count notes about events somebody deleted", async () => {

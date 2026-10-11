@@ -42,7 +42,14 @@ export function statsOf(
 ): CalendarSyncCounts | null {
   if (row.lastStatsJson === null) return null;
   const parsed = calendarSyncCountsSchema.safeParse(row.lastStatsJson);
-  return parsed.success ? parsed.data : null;
+  if (parsed.success) return parsed.data;
+  console.error(
+    JSON.stringify({
+      event: "calendar_sync.stats_invalid",
+      codes: [...new Set(parsed.error.issues.map((issue) => issue.code))],
+    }),
+  );
+  return null;
 }
 
 /** Targets that are switched on and whose connection is switched on, oldest first. */
