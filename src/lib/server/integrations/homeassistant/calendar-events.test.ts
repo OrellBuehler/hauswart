@@ -137,6 +137,54 @@ describe("toHaEvent", () => {
     ]);
   });
 
+  describe("in the night the clocks go back (Zurich, 2026-10-25, 03:00 becomes 02:00)", () => {
+    // 02:00 to 03:00 exists twice. 02:30 summer time is 00:30 UTC, 02:10 winter time is 01:10 UTC.
+    const timed = (startsAt: number, endsAt: number) =>
+      toHaEvent(
+        item({ when: { allDay: false, startsAt, endsAt } }),
+        ZURICH,
+        null,
+      );
+    const utc = (hour: number, minute: number) =>
+      Date.UTC(2026, 9, 25, hour, minute);
+
+    it("keeps the end after the start when an event begins in the first pass of the hour and ends in the second", () => {
+      const event = timed(utc(0, 30), utc(1, 10));
+      expect([event.start, event.end]).toEqual([
+        { dateTime: "2026-10-25T02:30:00" },
+        { dateTime: "2026-10-25T03:10:00" },
+      ]);
+    });
+
+    it("does the same where both ends read alike on the clock", () => {
+      const event = timed(utc(0, 30), utc(1, 30));
+      expect([event.start, event.end]).toEqual([
+        { dateTime: "2026-10-25T02:30:00" },
+        { dateTime: "2026-10-25T03:30:00" },
+      ]);
+    });
+
+    it("leaves an event alone whose clock times are in order already", () => {
+      const across = timed(utc(0, 10), utc(1, 40));
+      expect([across.start, across.end]).toEqual([
+        { dateTime: "2026-10-25T02:10:00" },
+        { dateTime: "2026-10-25T02:40:00" },
+      ]);
+      const before = timed(utc(21, 30) - 86_400_000, utc(1, 30));
+      expect([before.start, before.end]).toEqual([
+        { dateTime: "2026-10-24T23:30:00" },
+        { dateTime: "2026-10-25T02:30:00" },
+      ]);
+    });
+
+    it("keeps a short event at least a second long on the clock", () => {
+      const event = timed(utc(0, 30), utc(1, 30) + 1);
+      expect(event.end).toEqual({ dateTime: "2026-10-25T03:30:00" });
+      const tiny = timed(utc(0, 30), utc(0, 30) + 400);
+      expect(tiny.end).toEqual({ dateTime: "2026-10-25T02:30:01" });
+    });
+  });
+
   it("never writes an event shorter than a second, which Home Assistant refuses", () => {
     const startsAt = at("2026-06-20", "09:00");
     const event = toHaEvent(

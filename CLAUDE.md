@@ -1015,7 +1015,9 @@ people plan. Optional like every adapter: without a target nothing happens, and 
   (`haWsCall`), and the id of a new event is found again in `GET /api/calendars/<entity>` through the marker (the Local Calendar supports all
   three, Google create and delete, CalDAV create only; `alarms` is always false, Home Assistant keeps no reminders). Times are naive wall-clock
   strings in the zone of `GET /api/config` (`2026-06-20T09:00:00`; the household zone is converted by instant, and both ends need no common offset across
-  the night the clocks change), all-day items `start_date`/`end_date` with the exclusive end. The description is the item's text, a link when `appUrl`
+  the night the clocks change; in the night the clocks go back a time between 02:00 and 03:00 exists twice and Home Assistant reads it as the first
+  one, so an event there can sit an hour off, and an event that starts in the first pass and ends in the second, which would end before it starts on the
+  clock, gets its end as start plus its length so that Home Assistant accepts it), all-day items `start_date`/`end_date` with the exclusive end. The description is the item's text, a link when `appUrl`
   or `ORIGIN` is known, an empty line and the marker. Reads and `update` are retried twice (`retryTransient`, 300 and 600 ms) on `timeout`, `network`,
   `server`; `create` and `delete` never (a second event, or a delete of a deleted event). Home Assistant refuses a change or delete of an event it
   does not know with the same bare code `failed` as every other refusal (`not_found` is only the entity), so after such a refusal the adapter reads

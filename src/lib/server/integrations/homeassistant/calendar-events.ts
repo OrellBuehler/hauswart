@@ -41,7 +41,8 @@ export function eventDescription(
 /**
  * The event as Home Assistant takes it. All-day items keep their dates (the end is exclusive here
  * as it is for the item); timed items become the wall-clock time in Home Assistant's own zone, which
- * is where it reads a time without an offset, and may differ from the household's.
+ * is where it reads a time without an offset, and may differ from the household's. Both ends are
+ * written without an offset, so they always agree on the type of time Home Assistant demands.
  */
 export function toHaEvent(
   item: CalendarItem,
@@ -62,11 +63,30 @@ export function toHaEvent(
   }
   const start = item.when.startsAt;
   const end = Math.max(item.when.endsAt, start + MIN_EVENT_MS);
+  const startWall = localDateTime(timeZone, start);
   return {
     ...common,
-    start: { dateTime: localDateTime(timeZone, start) },
-    end: { dateTime: localDateTime(timeZone, end) },
+    start: { dateTime: startWall },
+    end: { dateTime: endWall(timeZone, startWall, start, end) },
   };
+}
+
+/**
+ * The end as wall-clock time. Home Assistant reads a time without an offset in its own zone, takes
+ * the first of two readings when the clocks go back (a time between 02:00 and 03:00 occurs twice in
+ * that night, so an event there may sit an hour off), and measures how long an event lasts on the
+ * clock. An event that starts in the first pass of that hour and ends in the second would read as
+ * ending at or before its start and be refused: its end is then the start plus its length, on the clock.
+ */
+function endWall(
+  timeZone: string,
+  startWall: string,
+  start: number,
+  end: number,
+): string {
+  const wall = localDateTime(timeZone, end);
+  if (wall > startWall) return wall;
+  return localDateTime("UTC", Date.parse(`${startWall}Z`) + (end - start));
 }
 
 /** What the core needs of an event in the calendar: its id and our marker, if it has one. */
