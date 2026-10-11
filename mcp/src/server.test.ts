@@ -41,6 +41,7 @@ const READ_TOOLS = [
   "get_vehicle_stats",
   "list_fuel_logs",
   "list_tire_sets",
+  "list_appointments",
 ];
 const WRITE_TOOLS = [
   "create_task",
@@ -64,6 +65,9 @@ const WRITE_TOOLS = [
   "add_tire_set",
   "mount_tire_set",
   "record_tire_tread",
+  "create_appointment",
+  "update_appointment",
+  "complete_appointment",
 ];
 const DOCS_WRITE_TOOLS = ["create_page", "update_page"];
 const COSTS_WRITE_TOOLS = [

@@ -3,9 +3,11 @@ import { createHash } from "node:crypto";
 /**
  * RFC 5545 iCalendar feed builder (pure: no clock except an optional DTSTAMP fallback, no I/O).
  *
- * All events are all-day events (`DTSTART;VALUE=DATE`); `DTEND` is exclusive. Invalid input
- * (bad dates, empty uid/summary, end before start, ...) throws `IcsError` — callers feed this
- * from validated database rows, so a throw is a bug, not user input.
+ * Events are all-day events (`DTSTART;VALUE=DATE`, `DTEND` exclusive) or, for appointments, timed
+ * events in UTC (`DTSTART:20260315T080000Z`): an instant needs no VTIMEZONE block and no client has
+ * to guess what a local time meant on the night the clocks change. Invalid input (bad dates, empty
+ * uid/summary, end before start, ...) throws `IcsError` — callers feed this from validated
+ * database rows, so a throw is a bug, not user input.
  *
  * Alarm approach (VALARM): all-day events have no clock time, so clients resolve a relative
  * trigger from local midnight of the event's first day.
@@ -20,6 +22,11 @@ import { createHash } from "node:crypto";
  * event is edited elsewhere and is ignored by some clients for all-day events; relative
  * triggers are the form every client handles. The result is only exact when the viewer's time
  * zone is `tz` (midnight of an all-day event is resolved by the client in its own zone).
+ *
+ * A timed event has an exact start, so its trigger is relative to that: the same wall-clock rule
+ * (`time` in `tz`, `daysBefore` days before the day of the start in `tz`), measured on real
+ * instants from DTSTART, e.g. `-PT37H` for 18:00 on the Saturday before a Monday 08:00 start across
+ * the spring-forward Sunday. An alarm that would ring after the event has started is left out.
  */
 
 export class IcsError extends Error {
@@ -32,12 +39,21 @@ export class IcsError extends Error {
 export type IcsAlarm =
   { time: string; tz: string; daysBefore?: number } | { daysBefore: number };
 
+/** A timed event: instants in ms since epoch, the end after the start. */
+export interface IcsTimes {
+  startsAt: number;
+  endsAt: number;
+}
+
 export interface IcsEvent {
   uid: string;
-  /** `YYYY-MM-DD` for a single all-day event, or a span with an exclusive `end`. */
-  date: string | { start: string; end: string };
+  /** `YYYY-MM-DD` for a single all-day event, a span with an exclusive `end`, or a timed event. */
+  date: string | { start: string; end: string } | IcsTimes;
   summary: string;
   description?: string;
+  location?: string;
+  /** Shows as busy (TRANSP:OPAQUE); the default is free, which suits all-day reminders. */
+  busy?: boolean;
   url?: string;
   status?: "CONFIRMED" | "TENTATIVE";
   sequence?: number;
@@ -239,6 +255,51 @@ function alarmTrigger(alarm: IcsAlarm, start: Ymd): string {
   return durationFromMinutes(Math.round((alarmAt - midnight) / 60_000));
 }
 
+/** The local date in `tz` of an instant. */
+function localYmd(tz: string, utcMs: number): Ymd {
+  const local = new Date(utcMs + zoneOffsetMinutes(tz, utcMs) * 60_000);
+  return {
+    y: local.getUTCFullYear(),
+    m: local.getUTCMonth() + 1,
+    d: local.getUTCDate(),
+  };
+}
+
+/** The trigger of an alarm on a timed event, relative to its start; null when it would ring after the start. */
+function timedAlarmTrigger(alarm: IcsAlarm, startsAt: number): string | null {
+  const daysBefore = alarm.daysBefore ?? 0;
+  if (
+    !Number.isInteger(daysBefore) ||
+    daysBefore < 0 ||
+    daysBefore > MAX_DAYS_BEFORE
+  ) {
+    throw new IcsError(
+      `alarm.daysBefore must be an integer 0..${MAX_DAYS_BEFORE}`,
+    );
+  }
+  if (!("time" in alarm)) {
+    return daysBefore === 0 ? "PT0S" : `-P${daysBefore}D`;
+  }
+  const match = TIME_RE.exec(alarm.time);
+  if (!match)
+    throw new IcsError(`alarm.time: expected HH:MM, got "${alarm.time}"`);
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: alarm.tz });
+  } catch {
+    throw new IcsError(`alarm.tz: unknown time zone "${alarm.tz}"`);
+  }
+  const startDay = localYmd(alarm.tz, startsAt);
+  const alarmDay = ymdFromDayNumber(dayNumber(startDay) - daysBefore);
+  const alarmAt = zonedToUtc(
+    alarm.tz,
+    alarmDay,
+    Number(match[1]),
+    Number(match[2]),
+  );
+  if (alarmAt > startsAt) return null;
+  return durationFromMinutes(Math.round((alarmAt - startsAt) / 60_000));
+}
+
 function assertPlain(value: string, label: string): void {
   if (value.length === 0) throw new IcsError(`${label} must not be empty`);
   // eslint-disable-next-line no-control-regex
@@ -247,33 +308,52 @@ function assertPlain(value: string, label: string): void {
   }
 }
 
+function isTimed(date: IcsEvent["date"]): date is IcsTimes {
+  return typeof date === "object" && "startsAt" in date;
+}
+
 function eventLines(event: IcsEvent, now: number): string[] {
   assertPlain(event.uid, "uid");
   if (event.summary.trim().length === 0)
     throw new IcsError("summary must not be empty");
-
-  const startStr =
-    typeof event.date === "string" ? event.date : event.date.start;
-  const start = parseDate(startStr, "date.start");
-  const startDay = dayNumber(start);
-  let endDay = startDay + 1;
-  if (typeof event.date !== "string") {
-    endDay = dayNumber(parseDate(event.date.end, "date.end"));
-    if (endDay <= startDay)
-      throw new IcsError("date.end must be after date.start (exclusive end)");
-  }
 
   const stamp = formatUtc(event.lastModified ?? now);
   const lines = [
     "BEGIN:VEVENT",
     `UID:${escapeText(event.uid)}`,
     `DTSTAMP:${stamp}`,
-    `DTSTART;VALUE=DATE:${formatDate(start)}`,
-    `DTEND;VALUE=DATE:${formatDate(ymdFromDayNumber(endDay))}`,
-    `SUMMARY:${escapeText(event.summary)}`,
   ];
+  let alarmTriggerOf: (alarm: IcsAlarm) => string | null;
+  if (isTimed(event.date)) {
+    const { startsAt, endsAt } = event.date;
+    if (!(endsAt > startsAt)) {
+      throw new IcsError("date.endsAt must be after date.startsAt");
+    }
+    lines.push(`DTSTART:${formatUtc(startsAt)}`, `DTEND:${formatUtc(endsAt)}`);
+    alarmTriggerOf = (alarm) => timedAlarmTrigger(alarm, startsAt);
+  } else {
+    const startStr =
+      typeof event.date === "string" ? event.date : event.date.start;
+    const start = parseDate(startStr, "date.start");
+    const startDay = dayNumber(start);
+    let endDay = startDay + 1;
+    if (typeof event.date !== "string") {
+      endDay = dayNumber(parseDate(event.date.end, "date.end"));
+      if (endDay <= startDay)
+        throw new IcsError("date.end must be after date.start (exclusive end)");
+    }
+    lines.push(
+      `DTSTART;VALUE=DATE:${formatDate(start)}`,
+      `DTEND;VALUE=DATE:${formatDate(ymdFromDayNumber(endDay))}`,
+    );
+    alarmTriggerOf = (alarm) => alarmTrigger(alarm, start);
+  }
+  lines.push(`SUMMARY:${escapeText(event.summary)}`);
   if (event.description !== undefined && event.description.length > 0) {
     lines.push(`DESCRIPTION:${escapeText(event.description)}`);
+  }
+  if (event.location !== undefined && event.location.length > 0) {
+    lines.push(`LOCATION:${escapeText(event.location)}`);
   }
   if (event.url !== undefined) {
     let href: string;
@@ -294,16 +374,17 @@ function eventLines(event: IcsEvent, now: number): string[] {
     }
     lines.push(`SEQUENCE:${event.sequence}`);
   }
-  lines.push("TRANSP:TRANSPARENT");
+  lines.push(`TRANSP:${event.busy ? "OPAQUE" : "TRANSPARENT"}`);
   if (event.lastModified !== undefined) {
     lines.push(`LAST-MODIFIED:${formatUtc(event.lastModified)}`);
   }
-  if (event.alarm) {
+  const trigger = event.alarm ? alarmTriggerOf(event.alarm) : null;
+  if (trigger !== null) {
     lines.push(
       "BEGIN:VALARM",
       "ACTION:DISPLAY",
       `DESCRIPTION:${escapeText(event.summary)}`,
-      `TRIGGER:${alarmTrigger(event.alarm, start)}`,
+      `TRIGGER:${trigger}`,
       "END:VALARM",
     );
   }

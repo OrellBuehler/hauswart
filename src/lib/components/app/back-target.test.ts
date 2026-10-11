@@ -25,6 +25,7 @@ describe("the back arrow in the header", () => {
     ["/insurance/4", "/insurance"],
     ["/insurance/4/edit", "/insurance/4"],
     ["/insurance/new", "/insurance"],
+    ["/appointments/4", "/appointments"],
   ])("leads from %s to its parent %s", (from, to) => {
     expect(backTarget(from)).toBe(to);
   });
@@ -96,6 +97,7 @@ describe("the back arrow in the header", () => {
       "/d/boiler-1",
       "/parts/3",
       "/contacts/3",
+      "/appointments/4",
     ]) {
       expect(exists(path), `${path} is a page`).toBe(true);
       expect(exists(backTarget(path)!), `${path} -> ${backTarget(path)}`).toBe(

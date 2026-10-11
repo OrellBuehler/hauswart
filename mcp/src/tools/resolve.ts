@@ -3,6 +3,7 @@ import { endpoints } from "../../../src/lib/api/registry";
 import type { Contact } from "../../../src/lib/api/schemas/contacts";
 import type { InsurancePolicy } from "../../../src/lib/api/schemas/insurance";
 import type { Part } from "../../../src/lib/api/schemas/parts";
+import type { Task } from "../../../src/lib/api/schemas/tasks";
 import type { ToolContext } from "../context";
 import { ToolError } from "../errors";
 import { searchText, type SearchText } from "../search-text";
@@ -130,4 +131,27 @@ export async function resolvePolicy(
   let items = await matches(false);
   if (items.length === 0) items = await matches(true);
   return pick("Insurance policy", ref, items, isExact, (p) => p.title);
+}
+
+/** A task by id or title; archived tasks are not looked at when searching by title. */
+export async function resolveTask(
+  ctx: ToolContext,
+  ref: string,
+): Promise<Task> {
+  const search = searchText("give the task's id or title", ref);
+  const found = await byIdFirst(search.text, (id) =>
+    ctx.api.call(endpoints.tasksGet, { params: { id } }),
+  );
+  if (found) return found;
+  const { items } = await ctx.api.call(endpoints.tasksList, {
+    query: { q: search.q, limit: 50 },
+  });
+  const isExact = (t: Task) => same(t.title, search.text);
+  return pick(
+    "Task",
+    ref,
+    narrowed(search, items, isExact),
+    isExact,
+    (t) => t.title,
+  );
 }

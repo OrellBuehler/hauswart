@@ -32,3 +32,7 @@ export function partHref(id: string) {
 export function insuranceHref(id: string) {
   return resolve(`/insurance/${encodeURIComponent(id)}` as "/");
 }
+
+export function appointmentHref(id: string) {
+  return resolve(`/appointments/${encodeURIComponent(id)}` as "/");
+}

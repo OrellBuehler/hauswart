@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { endpoints } from "../../../src/lib/api/registry";
 import type { Dashboard } from "../../../src/lib/api/schemas/dashboard";
-import { plural } from "../format";
+import { appointmentRef, plural } from "../format";
 import { defineTool } from "../tool";
 
 type DashboardTask = Dashboard["upcoming"]["overdue"][number];
@@ -23,6 +23,7 @@ export const dashboardTaskRow = (t: DashboardTask) => ({
   progress: t.progress,
   asset: t.assetName,
   openNotes: t.openNoteCount || null,
+  appointment: appointmentRef(t.nextAppointment),
   room: t.roomName,
   assignee: t.assigneeName,
 });

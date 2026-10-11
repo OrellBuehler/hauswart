@@ -6,6 +6,7 @@
   import SkipForwardIcon from "@lucide/svelte/icons/skip-forward";
   import { toast } from "svelte-sonner";
   import OpenNotesBadge from "$lib/components/asset-notes/open-notes-badge.svelte";
+  import AppointmentBadge from "$lib/components/appointments/appointment-badge.svelte";
   import CommentCount from "$lib/components/comments/comment-count.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
@@ -25,6 +26,7 @@
   let {
     task,
     today,
+    timeZone,
     onstart,
     onfail,
     onsettled,
@@ -32,6 +34,8 @@
   }: {
     task: TaskRowData;
     today: string;
+    /** The household's time zone, for the time of an appointment. */
+    timeZone: string;
     onstart?: () => void;
     onfail?: () => void;
     onsettled?: () => void;
@@ -114,6 +118,13 @@
             count={task.openNoteCount}
             assetId={task.assetId}
             assetName={task.assetName ?? ""}
+          />
+        {/if}
+        {#if task.nextAppointment}
+          <AppointmentBadge
+            appointment={task.nextAppointment}
+            {timeZone}
+            {today}
           />
         {/if}
         {#if task.assigneeUserId}

@@ -228,6 +228,7 @@ export const ATTACHMENT_OWNER_TYPES = [
   "insurance_policy",
   "asset_note",
   "tire_set",
+  "appointment",
 ] as const;
 export type AttachmentOwnerType = (typeof ATTACHMENT_OWNER_TYPES)[number];
 
@@ -350,6 +351,7 @@ export const COMMENT_ENTITY_TYPES = [
   "doc_page",
   "cost",
   "insurance_policy",
+  "appointment",
 ] as const;
 export type CommentEntityType = (typeof COMMENT_ENTITY_TYPES)[number];
 
@@ -500,6 +502,13 @@ export const ASSET_NOTE_STATUSES = ["open", "resolved"] as const;
 export type AssetNoteStatus = (typeof ASSET_NOTE_STATUSES)[number];
 /** What a list of notes can be asked for. */
 export const ASSET_NOTE_STATUS_FILTERS = ["open", "resolved", "all"] as const;
+
+/**
+ * `planned`: still to come (or not yet closed). `done`: it took place. `cancelled`: it will not take
+ * place. Any status can be set from any other; completing through the API also completes the task.
+ */
+export const APPOINTMENT_STATUSES = ["planned", "done", "cancelled"] as const;
+export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
 
 export const INSURANCE_TYPES = [
   "motor_liability",

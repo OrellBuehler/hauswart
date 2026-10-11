@@ -47,9 +47,9 @@ async function loadVehicleExtras(
   };
 }
 
-/** Care hints, contacts, spare parts, the service log, the insurance policies and the open notes of an asset. */
+/** Care hints, contacts, spare parts, the service log, the insurance policies, the open notes and the planned appointments of an asset. */
 async function loadAssetExtras(api: ApiClient, id: string) {
-  const [hints, contacts, parts, serviceLog, insurance, notes] =
+  const [hints, contacts, parts, serviceLog, insurance, notes, appointments] =
     await Promise.all([
       fetchAll((cursor) =>
         api.call(endpoints.assetHintsList, {
@@ -85,8 +85,18 @@ async function loadAssetExtras(api: ApiClient, id: string) {
           query: { status: "open", cursor, limit: 200 },
         }),
       ),
+      fetchAll((cursor) =>
+        api.call(endpoints.appointmentsList, {
+          query: {
+            assetId: id,
+            status: "planned",
+            limit: 200,
+            ...(cursor ? { cursor } : {}),
+          },
+        }),
+      ),
     ]);
-  return { hints, contacts, parts, serviceLog, insurance, notes };
+  return { hints, contacts, parts, serviceLog, insurance, notes, appointments };
 }
 
 export const load: PageLoad = async ({ fetch, params, url }) => {
@@ -121,6 +131,7 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
     vehicle,
     tasks: sortTasks(tasks),
     today,
+    timeZone: household.timezone,
     currency: household.currency,
     pages,
     ...m3,

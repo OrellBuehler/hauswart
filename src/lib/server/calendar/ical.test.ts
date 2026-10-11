@@ -371,6 +371,217 @@ describe("alarms", () => {
   });
 });
 
+describe("timed events", () => {
+  const at = (iso: string) => Date.parse(iso);
+  const timed = (
+    startsAt: string,
+    endsAt: string,
+    extra: Partial<IcsEvent> = {},
+  ): IcsEvent => ({
+    uid: "appointment-1@hauswart",
+    date: { startsAt: at(startsAt), endsAt: at(endsAt) },
+    summary: "Kaminfeger",
+    ...extra,
+  });
+
+  it("writes the start and end as UTC instants, not as dates", () => {
+    const out = build([timed("2026-06-15T07:00:00Z", "2026-06-15T08:30:00Z")]);
+    expect(propertyOf(out, "DTSTART")).toEqual(["DTSTART:20260615T070000Z"]);
+    expect(propertyOf(out, "DTEND")).toEqual(["DTEND:20260615T083000Z"]);
+    expect(out).not.toContain("VALUE=DATE");
+  });
+
+  it("keeps an event across the hour the clocks jump as the real instants", () => {
+    // 2026-03-29: 01:30 CET is 00:30Z, 03:30 CEST is 01:30Z - one real hour.
+    const out = build([timed("2026-03-29T00:30:00Z", "2026-03-29T01:30:00Z")]);
+    expect(propertyOf(out, "DTSTART")).toEqual(["DTSTART:20260329T003000Z"]);
+    expect(propertyOf(out, "DTEND")).toEqual(["DTEND:20260329T013000Z"]);
+  });
+
+  it("writes an event over midnight and over a year end", () => {
+    const out = build([timed("2026-12-31T22:30:00Z", "2027-01-01T01:15:30Z")]);
+    expect(propertyOf(out, "DTSTART")).toEqual(["DTSTART:20261231T223000Z"]);
+    expect(propertyOf(out, "DTEND")).toEqual(["DTEND:20270101T011530Z"]);
+  });
+
+  it("writes the location, escaped, and only when there is one", () => {
+    const out = build([
+      timed("2026-06-15T07:00:00Z", "2026-06-15T08:00:00Z", {
+        location: "Keller; Tür, hinten",
+      }),
+    ]);
+    expect(propertyOf(out, "LOCATION")).toEqual([
+      "LOCATION:Keller\\; Tür\\, hinten",
+    ]);
+    expect(
+      build([timed("2026-06-15T07:00:00Z", "2026-06-15T08:00:00Z")]),
+    ).not.toContain("LOCATION");
+    expect(
+      build([
+        timed("2026-06-15T07:00:00Z", "2026-06-15T08:00:00Z", { location: "" }),
+      ]),
+    ).not.toContain("LOCATION");
+  });
+
+  it("shows as free by default and as busy when asked", () => {
+    const free = timed("2026-06-15T07:00:00Z", "2026-06-15T08:00:00Z");
+    expect(propertyOf(build([free]), "TRANSP")).toEqual(["TRANSP:TRANSPARENT"]);
+    expect(propertyOf(build([{ ...free, busy: true }]), "TRANSP")).toEqual([
+      "TRANSP:OPAQUE",
+    ]);
+  });
+
+  it("can stand next to all-day events", () => {
+    const out = build([
+      { uid: "task-1@hauswart", date: "2026-06-15", summary: "Aufgabe" },
+      timed("2026-06-15T07:00:00Z", "2026-06-15T08:00:00Z"),
+    ]);
+    expect(propertyOf(out, "DTSTART")).toEqual([
+      "DTSTART;VALUE=DATE:20260615",
+      "DTSTART:20260615T070000Z",
+    ]);
+  });
+
+  describe("alarms", () => {
+    const trigger = (
+      alarm: IcsEvent["alarm"],
+      startsAt: string,
+      endsAt: string,
+    ) => {
+      const out = build([timed(startsAt, endsAt, { alarm })]);
+      return propertyOf(out, "TRIGGER")[0] ?? null;
+    };
+
+    it("ring relative to the start, at the wall-clock time of the zone", () => {
+      // Tuesday 2026-06-16 09:00 Zurich (07:00Z)
+      const start = "2026-06-16T07:00:00Z";
+      const end = "2026-06-16T08:00:00Z";
+      expect(trigger({ time: "08:00", tz: TZ }, start, end)).toBe(
+        "TRIGGER:-PT1H",
+      );
+      expect(trigger({ time: "08:30", tz: TZ }, start, end)).toBe(
+        "TRIGGER:-PT30M",
+      );
+      expect(trigger({ time: "09:00", tz: TZ }, start, end)).toBe(
+        "TRIGGER:PT0S",
+      );
+      expect(
+        trigger({ time: "18:00", tz: TZ, daysBefore: 1 }, start, end),
+      ).toBe("TRIGGER:-PT15H");
+      expect(trigger({ time: "07:00", tz: "UTC" }, start, end)).toBe(
+        "TRIGGER:PT0S",
+      );
+    });
+
+    it("count the day of the start in the household zone, not in UTC", () => {
+      // Wednesday 2026-06-17 00:30 Zurich is still Tuesday 22:30Z.
+      expect(
+        trigger(
+          { time: "18:00", tz: TZ, daysBefore: 1 },
+          "2026-06-16T22:30:00Z",
+          "2026-06-16T23:30:00Z",
+        ),
+      ).toBe("TRIGGER:-PT6H30M");
+    });
+
+    it("account for the clocks changing between the alarm and the start", () => {
+      // Monday 2026-03-30 08:00 CEST (06:00Z); the Saturday 18:00 CET alarm (17:00Z) is 37 real
+      // hours before, 38 on the wall clock.
+      expect(
+        trigger(
+          { time: "18:00", tz: TZ, daysBefore: 2 },
+          "2026-03-30T06:00:00Z",
+          "2026-03-30T07:00:00Z",
+        ),
+      ).toBe("TRIGGER:-PT37H");
+      // Monday 2026-10-26 08:00 CET (07:00Z); Saturday 18:00 CEST (16:00Z) is 39 real hours before.
+      expect(
+        trigger(
+          { time: "18:00", tz: TZ, daysBefore: 2 },
+          "2026-10-26T07:00:00Z",
+          "2026-10-26T08:00:00Z",
+        ),
+      ).toBe("TRIGGER:-PT39H");
+      // The event itself on the day of the change: 01:30 CET, alarm at 18:00 the evening before.
+      expect(
+        trigger(
+          { time: "18:00", tz: TZ, daysBefore: 1 },
+          "2026-03-29T00:30:00Z",
+          "2026-03-29T01:30:00Z",
+        ),
+      ).toBe("TRIGGER:-PT7H30M");
+    });
+
+    it("use a plain duration when there is no time of day", () => {
+      const start = "2026-06-16T07:00:00Z";
+      const end = "2026-06-16T08:00:00Z";
+      expect(trigger({ daysBefore: 1 }, start, end)).toBe("TRIGGER:-P1D");
+      expect(trigger({ daysBefore: 0 }, start, end)).toBe("TRIGGER:PT0S");
+    });
+
+    it("are left out when they would ring after the event started", () => {
+      expect(
+        trigger(
+          { time: "08:00", tz: TZ },
+          "2026-06-16T05:30:00Z",
+          "2026-06-16T06:30:00Z",
+        ),
+      ).toBeNull();
+      const out = build([
+        timed("2026-06-16T05:30:00Z", "2026-06-16T06:30:00Z", {
+          alarm: { time: "08:00", tz: TZ },
+        }),
+      ]);
+      expect(out).not.toContain("VALARM");
+    });
+
+    it("are validated like the alarms of all-day events", () => {
+      const bad: NonNullable<IcsEvent["alarm"]>[] = [
+        { daysBefore: -1 },
+        { daysBefore: 366 },
+        { time: "24:00", tz: TZ },
+        { time: "18:00", tz: "Mars/Olympus" },
+      ];
+      for (const alarm of bad) {
+        expect(
+          () =>
+            build([
+              timed("2026-06-16T07:00:00Z", "2026-06-16T08:00:00Z", { alarm }),
+            ]),
+          JSON.stringify(alarm),
+        ).toThrow(IcsError);
+      }
+    });
+  });
+
+  it("rejects an end that is not after the start and times that are not finite", () => {
+    expect(() =>
+      build([timed("2026-06-15T07:00:00Z", "2026-06-15T07:00:00Z")]),
+    ).toThrow(IcsError);
+    expect(() =>
+      build([timed("2026-06-15T07:00:00Z", "2026-06-15T06:00:00Z")]),
+    ).toThrow(IcsError);
+    expect(() =>
+      build([
+        {
+          uid: "a",
+          summary: "x",
+          date: { startsAt: Number.NaN, endsAt: Number.NaN },
+        },
+      ]),
+    ).toThrow(IcsError);
+    expect(() =>
+      build([
+        {
+          uid: "a",
+          summary: "x",
+          date: { startsAt: 0, endsAt: Number.POSITIVE_INFINITY },
+        },
+      ]),
+    ).toThrow(IcsError);
+  });
+});
+
 describe("text escaping", () => {
   it("escapes backslash, semicolon, comma and newlines", () => {
     expect(escapeText("a\\b;c,d\ne\r\nf\rg")).toBe(

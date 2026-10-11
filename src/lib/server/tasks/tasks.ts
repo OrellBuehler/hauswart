@@ -10,8 +10,13 @@ import { zonedTimeToInstant } from "$lib/dates";
 import type { TaskCategory } from "$lib/api/enums";
 import type {
   CreateTaskRequest,
+  NextAppointment,
   UpdateTaskRequest,
 } from "$lib/api/schemas/tasks";
+import {
+  nextAppointmentSql,
+  parseNextAppointment,
+} from "$lib/server/appointments/next";
 import { openNoteCountSql } from "$lib/server/asset-notes/counts";
 import { commentCountSql } from "$lib/server/comments/counts";
 import { assets, rooms, taskState, tasks, users } from "$lib/server/db";
@@ -40,6 +45,8 @@ export interface TaskRecord extends Omit<TaskRow, "trigger"> {
   commentCount: number;
   /** Open notes on the task's asset (0 without an asset). */
   openNoteCount: number;
+  /** The earliest planned appointment of the task, if any (see `appointments/next.ts`). */
+  nextAppointment: NextAppointment | null;
   state: TaskStateRecord | null;
 }
 
@@ -49,6 +56,7 @@ type Joined = {
   roomName: string | null;
   commentCount: number;
   openNoteCount: number;
+  nextAppointment: string | null;
   state: StateRow | null;
 };
 
@@ -60,6 +68,7 @@ const selectTasks = (db: ServiceContext["db"]) =>
       roomName: rooms.name,
       commentCount: commentCountSql("task", tasks.id),
       openNoteCount: openNoteCountSql(tasks.assetId),
+      nextAppointment: nextAppointmentSql(tasks.id),
       state: taskState,
     })
     .from(tasks)
@@ -73,6 +82,7 @@ function toRecord({
   roomName,
   commentCount,
   openNoteCount,
+  nextAppointment,
   state,
 }: Joined): TaskRecord {
   return {
@@ -82,6 +92,7 @@ function toRecord({
     roomName,
     commentCount: Number(commentCount),
     openNoteCount: Number(openNoteCount),
+    nextAppointment: parseNextAppointment(nextAppointment),
     state: state ? toStateRecord(state) : null,
   };
 }

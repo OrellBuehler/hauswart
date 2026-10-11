@@ -102,6 +102,17 @@ export function describeWhen(state: {
   return state.status;
 }
 
+/** The next appointment of a task: its id and when (the date of an all-day one, else the instant in UTC). */
+export function appointmentRef(
+  next: {
+    id: string;
+    startsAt: string | null;
+    startDate: string | null;
+  } | null,
+) {
+  return next ? { id: next.id, at: next.startsAt ?? next.startDate } : null;
+}
+
 export function taskRow(task: Task, users: UserNames) {
   const state = task.state;
   return {
@@ -119,6 +130,7 @@ export function taskRow(task: Task, users: UserNames) {
     asset: task.assetName,
     assetId: task.assetId,
     openNotes: task.openNoteCount || null,
+    appointment: appointmentRef(task.nextAppointment),
     room: task.roomName,
     assignee: nameOf(users, state?.currentAssigneeUserId ?? null),
     effortMinutes: task.effortMinutes,

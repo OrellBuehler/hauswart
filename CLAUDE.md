@@ -2,19 +2,19 @@
 
 hauswart is a self-hosted apartment-management app for a single household with a few users:
 recurring maintenance tasks with completion tracking, documentation (markdown, uploads,
-Paperless-ngx links), device inventory, defects, spare parts, contacts, costs, insurance policies, notifications, an
+Paperless-ngx links), device inventory, defects, spare parts, contacts, costs, insurance policies, appointments, notifications, an
 iCal feed, a guest link and an MCP server. Home Assistant, Paperless-ngx and Kept (finance) are
 optional adapters, never requirements. Status: early development — authentication, the API spine,
 the task core (rooms, assets, tasks, completions, notifications, dashboard), documentation (pages,
 attachments, search, file backup), contacts, spare parts, the service log, care hints, defects (with
 a PDF export), the warranty overview, generic comments, iCal feeds, the emergency page data and guest
 links, costs (with the settlement between the people and a CSV export), the per-person finance
-connection (Kept), insurance policies (with a cancellation reminder), asset notes and vehicles (details, odometer
+connection (Kept), insurance policies (with a cancellation reminder), appointments (see "Appointments"), asset notes and vehicles (details, odometer
 readings, tire sets, a fuel log with consumption, statistics, task templates; see "Vehicles") exist; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
 push notifications with a "done" button, areas taken over as rooms; see "Signals, integrations and delivery"); Paperless-ngx is wired as
 a per-person document provider (links, previews, warranty dates, pushing attachments; see "Documents and the
 document provider"); the MCP server covers the task core, documentation, defects, parts, contacts,
-comments, hints, service log, warranties, costs, the finance inbox, archived documents, insurance policies, asset notes and vehicles (odometer, fuel log, tire sets, statistics), and hauswart serves it over HTTP at
+comments, hints, service log, warranties, costs, the finance inbox, archived documents, insurance policies, appointments, asset notes and vehicles (odometer, fuel log, tire sets, statistics), and hauswart serves it over HTTP at
 `/api/v1/mcp` (see "MCP server" and `mcp/README.md`); the web app is installable as a PWA (see "Installable app").
 
 There is one household, not many: all domain data is shared by every user. Only sessions, API
@@ -127,6 +127,11 @@ src/lib/server/hints/            per-asset care hints (tip/rule/warning), pinned
 src/lib/server/defects/          defects (Mängel): status machine, events, handover deadline, reminder task, timeline, PDF export
 src/lib/server/warranties/       warranty overview + status (valid / expiring ≤ 90 days / expired); feeds the dashboard
 src/lib/server/comments/         generic comments on any entity: commentable registry, soft delete, notifications, counts
+src/lib/appointments/when.ts     when an appointment takes place (timed instants or all-day dates), the 14-day limit, start/end instants (pure, client-safe)
+src/lib/appointments/            client-safe UI logic next to it: format.ts (wording in the household zone), list.ts (views, filters, day groups),
+                                 form.ts (draft -> request bodies), labels.ts; see "Appointments in the web app"
+src/lib/server/appointments/     appointments ("Termine"): appointments.ts (CRUD, filters, merge rules), complete.ts (done + the task's
+                                 completion), next.ts (the next appointment of a task); see "Appointments"
 src/lib/server/calendar/         ical.ts (pure RFC 5545 builder), feeds.ts (ical_feeds CRUD, token), feed.ts (events of a feed),
                                  public.ts (the public .ics response: limits, ETag/304)
 src/lib/server/share/            guest links: tokens.ts, guest-links.ts (CRUD, window, PIN counter), guest-access.ts (token ->
@@ -521,15 +526,15 @@ of the owner>` is added to the document unless an identical note exists (writes 
   flipping `guestVisible` re-renders the pages that embed it (`onAttachmentsChanged` listener,
   started in `init()` by `startAttachmentRerender`; only the two HTML caches change, guarded by `rev`).
 - **Attachments** (`attachments`): one row per upload, generic owner `ownerType` + `ownerId` without
-  foreign keys (`asset|room|page|task|defect|service_log|part|asset_hint|contact|cost|insurance_policy|asset_note|tire_set`), files stored
+  foreign keys (`asset|room|page|task|defect|service_log|part|asset_hint|contact|cost|insurance_policy|asset_note|tire_set|appointment`), files stored
   once by sha256 in `HAUSWART_FILES_DIR` (`files/store.ts`: images re-encoded, metadata stripped,
   thumbnail; PDFs as uploaded; HEIC/SVG/HTML/GIF refused). Owner existence is checked through the
   registry in `attachments/owners.ts`: asset, room, page and task are built in; defect, service_log,
-  part, asset_hint, contact, cost, insurance_policy, asset_note and tire_set are registered by `registerDomainAttachmentOwners()`
+  part, asset_hint, contact, cost, insurance_policy, asset_note, tire_set and appointment are registered by `registerDomainAttachmentOwners()`
   (`attachments/domain-owners.ts`, called from `registerDomainEventHandlers()`, so from `init()` and
   `useTestDB()`). A new owner type registers with `registerAttachmentOwner(type, existsFn)` **from
   `init()`** (never from a module that is only loaded with its routes) and calls
-  `removeOwnedAttachments(ctx, type, id)` from its delete service (done for all thirteen; deleting an
+  `removeOwnedAttachments(ctx, type, id)` from its delete service (done for all fourteen; deleting an
   asset also removes the attachments of its service log entries, hints, notes and tire sets, whose rows go by cascade
   without a foreign key to follow). A type nobody registered is a 400 field error on `ownerType`. Uploading, patching or deleting an attachment of a page needs `docs:write`,
   others `write`. `deleteIfUnreferenced` keeps files younger than a minute, so a daily orphan sweep
@@ -550,12 +555,12 @@ of the owner>` is added to the document unless an identical note exists (writes 
 - **Search** (`search_fts`, FTS5, created in custom migration `0006_search_index`): triggers on pages,
   assets, rooms, tasks, defects (title, description, location), contacts (name, company, notes; never
   phone, e-mail or address), parts (name, part number, supplier, notes), asset hints (title, body) and insurance
-  policies (title, policy number, notes; custom migration `0018`) keep it current (archived assets, tasks, pages and
+  policies (title, policy number, notes; custom migration `0018`) and appointments (title, place, notes; custom migration `0023`) keep it current (archived assets, tasks, pages and
   parts are dropped). The plate of a vehicle is part of its asset's row (custom migration `0016_vehicle_search`:
   replaces `search_assets_au`, adds triggers on `vehicle_details`); nothing else of `vehicle_details` is indexed. No secret text enters the
   index: pages index `plain_text`; every other free text is cut off at the first `:::` when it
   mentions "secret" anywhere. Hit `url`s are the UI routes (`/docs/<slug>`, `/assets/<id>` also for
-  plants and hints, `/rooms/<id>`, `/tasks/<id>`, `/defects/<id>`, `/parts/<id>`, `/contacts/<id>`, `/insurance/<id>`).
+  plants and hints, `/rooms/<id>`, `/tasks/<id>`, `/defects/<id>`, `/parts/<id>`, `/contacts/<id>`, `/insurance/<id>`, `/appointments/<id>`).
   New searchable entities need their own triggers in a new migration and an entry in `URLS`
   (`search/search.ts`). Queries become quoted prefix terms (`ftsExpression`), so no FTS syntax reaches SQLite.
 - **Backup** (`backup/`): on by default (`HAUSWART_BACKUP_DIR` default `./data/backups`, set it empty
@@ -588,8 +593,8 @@ of the owner>` is added to the document unless an identical note exists (writes 
   `AFTER DELETE` triggers (migrations `0004` and `0007` for pages): add one per new commentable table. Delete is soft
   (empty body, `deleted: true`), edit is author-only (403 otherwise), delete is author or admin. A new
   comment notifies the other involved members (`notification_comment`). Tasks, assets, defects, hints,
-  service log entries, pages, cost entries and insurance policies carry `commentCount`; cost entries (trigger in
-  migration `0013`) and insurance policies (`/insurance/<id>`, trigger in `0018`) are commentable too.
+  service log entries, pages, cost entries, insurance policies and appointments carry `commentCount`; cost entries (trigger in
+  migration `0013`), insurance policies (`/insurance/<id>`, trigger in `0018`) and appointments (`/appointments/<id>`, trigger in `0023`) are commentable too.
 - **Hint reactions** (`signalReactionSchema`, type `signal_change`) are stored with the hint
   (`GET /hints?reactive=true`) and executed by `signals/reactions.ts`, see below.
 
@@ -791,6 +796,69 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   `notification_due_soon_notes` / `notification_due_notes` (the usual params plus `notes`, counted when the notice is
   written; the dedupe key is the same, so a stage is still announced once). Prep and overdue notices are unchanged.
 
+### Appointments
+
+- **Appointments** (`appointments`, migrations `0022` and, for the triggers, `0023`; `appointments/`, `lib/appointments/when.ts`):
+  the household's "Termine" (a service visit, an inspection, a delivery), shared by everybody. `title` (200), plain-text
+  `notes` (5000, no markup), `location` (300), `status` `planned|done|cancelled` (any status can be set from any other).
+  **Two kinds, one CHECK**: timed (`allDay` false, `startsAt` < `endsAt`, UTC instants) or all-day (`allDay` true,
+  `startDate` <= `endDate`, calendar dates in the household zone, the last day included, so it never moves with the zone); the
+  fields of the other kind are null. At most 14 days (`whenProblem`, one function for the request schema, the form and the service, which
+  re-checks the merged result; it has no time zone, so a timed one may be up to 14 days and an hour in real time,
+  `MAX_TIMED_SPAN_MS`: 14 calendar days across the night the clocks go back are an hour longer, forward an hour shorter). On create `endsAt` defaults to an hour after the start and `endDate` to `startDate`. Optional
+  `taskId` + `occurrenceKey` (the occurrence it is for: **pinned** when the appointment gets a task - on create, or in a PATCH that
+  changes the task - as the key the task shows then, unless the request names one; the engine's placeholders `none` and `s:none`
+  mean "no occurrence" and are never stored, so those stay null), `assetId` (defaults to the task's asset on create) and `contactId`, all
+  `set null` when the target is deleted (the DTO shows no `occurrenceKey` without a task); `createdByUserId`. **For a later sync**: `id`
+  is stable and `updatedAt` (from the injected clock) moves with every change, status included; a PATCH that changes nothing
+  leaves it alone.
+- **API**: `GET|POST /appointments` (scopes `read`/`write`; filters `from`/`to` = days in the household zone, both included, an
+  appointment is listed when it overlaps one of them - a timed one counts on every day it touches, at midnight it ends it does
+  not count on the next -, `assetId`, `taskId`, `contactId`, `status`; soonest first, an all-day one from midnight of its first
+  day, then longer, title, id; offset cursor), `GET|PATCH|DELETE /appointments/{id}`, `POST /appointments/{id}/complete`.
+  Instants are UTC ISO strings. **PATCH** changes what is given and refuses a result that breaks the rules (a start moved
+  behind the end is a 400 on `endsAt`; nothing is shifted implicitly); `allDay` switches the kind and then needs the new start
+  (`startDate` or `startsAt`); the fields of the other kind without `allDay` are a 400; a new `taskId` pins the occurrence that
+  task shows now (the old key means nothing for it), `occurrenceKey: null` for the same task removes the pin; `status: done`
+  records the status only. Create/PATCH 400s are field errors (`taskId`, `assetId`, `contactId`, `startsAt`, `endsAt`,
+  `startDate`, `endDate`, `occurrenceKey`), 404 for a missing appointment.
+- **Complete** (`complete.ts`): sets `done` and, with a task, completes the occurrence the appointment is for through
+  `completeTask` with the idempotency key `appointment:<id>` as the caller (a session is `manual`, a token by its kind, like any
+  completion; `note`, `completedAt` as for tasks). Always 200 with `{appointment, completion, task, replayed}`; a repeat answers with
+  the first completion (`replayed`). **Which occurrence** (`mayComplete`, built so that it can neither count the work twice nor skip a
+  cycle): a _pinned_ appointment completes only while the task still shows its pinned key (else somebody settled it, or it was missed,
+  and what is shown is a later cycle); an _unpinned_ one (the task showed none, an explicit `occurrenceKey: null`, an older row) names
+  nothing, so it completes the shown occurrence only if that is dated and fell due on or before the appointment's last day (`lastDay`
+  in the household zone, an end at midnight belongs to the day before) - a later one belongs to a cycle the visit came before, an
+  undated one has nothing to compare, a task that shows none has nothing to settle. Both also leave an occurrence the engine reports
+  as handled (`state.reasons` has `completed`, `skipped` or `acknowledged`: a one-off, warranty or bill task keeps its key when it is
+  done) - the engine's verdict, not a lookup of completions with that key, because a `min_per_period` task shows one key until its
+  last completion of the period. `completion` is then null, as it is when the task is archived; the appointment is done either way.
+  A cancelled appointment is a 409. A key is bound to its completion for good, so after the completion was undone and
+  the appointment completed again the next one is `appointment:<id>:2` (and so on). **Undoing the task's completion does not
+  reopen the appointment**, and reopening the appointment does not undo the completion: it took place either way.
+- **On tasks and the dashboard**: every task DTO (list, `GET /tasks/{id}`, the answers of complete/skip/snooze) and every
+  dashboard task carries `nextAppointment: {id, allDay, startsAt, startDate} | null`, the earliest _planned_ appointment of the
+  task (a correlated subquery, `appointments/next.ts`; timed and all-day ones are ordered with a date as midnight UTC). One whose time has
+  passed but that is still planned counts: the task stays what it is waiting for until somebody completes or cancels it. The
+  due-date engine is not involved.
+- **Owner type `appointment`**: comments (`/appointments/<id>`, trigger in `0023`; `commentCount` on the DTO), attachments
+  (`removeOwnedAttachments` on delete), search (`search_fts` kind `appointment`: title, place and notes cut at a secret block, all
+  statuses; `/appointments/<id>`). Document links are not offered.
+- **iCal feed** (`calendar/feed.ts`, no switch of its own): every appointment that is not cancelled and ended less than 30 days
+  ago (`APPOINTMENT_LOOKBACK_DAYS`, also the SQL lower bound on `ends_at` / `end_date`, so history is never loaded; planned ones that were never closed and done ones) as `appointment-<id>@hauswart`; scope `mine` =
+  appointments without a task, of an unassigned task or of a task whose current assignee is the owner, `all` = every one.
+  A timed one is `DTSTART:20260615T070000Z` / `DTEND` in UTC (no VTIMEZONE needed, no guessing on the nights the clocks change), TRANSP
+  OPAQUE; an all-day one is `VALUE=DATE` with an exclusive `DTEND`, TRANSPARENT. `SUMMARY` the title, `LOCATION`, `DESCRIPTION` the
+  asset and "Für: <task>", `URL` `/appointments/<id>`; never the notes. SEQUENCE/LAST-MODIFIED from `updatedAt`. The feed's alarm applies
+  to planned ones: for a timed one as a trigger relative to DTSTART worked out on real instants (`alarmTime` in the household zone on
+  the day `alarmDaysBefore` days before the start, e.g. `-PT37H` across the spring-forward Sunday), left out when it would ring after
+  the start. Events sort by their date in the household zone.
+- **MCP**: `list_appointments` (`from` defaults to today, for status planned to 30 days back, so a planned appointment that is over but was never
+  closed shows up with `overdue: true`), `create_appointment` (times as `date` + `startTime`/`endTime` in the household zone, without
+  `startTime` all-day), `update_appointment` (moving keeps the length, in real time, unless an end is given) and `complete_appointment`;
+  task rows carry `appointment`.
+
 ### iCal feeds, emergency page and guest links
 
 - **Tokens** (`share/tokens.ts`): 32 random bytes base64url; only the sha256 is stored and looked up
@@ -808,7 +876,7 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   `text/calendar`, strong ETag (sha256 of the body) with 304, `private, max-age=900`, `noindex`,
   `no-referrer`. Content (`calendar/feed.ts`): next occurrence of every active, not snoozed task
   with a date (scope `mine` = current assignee is the owner or `assignMode` none; `all` = every
-  task); a `min_per_period` window is a multi-day span; estimates only with `includeEstimated`
+  task; appointments are included too, see "Appointments"); a `min_per_period` window is a multi-day span; estimates only with `includeEstimated`
   (TENTATIVE, `~` prefix, medium confidence, within 45 days, no alarm); preparations as "Vorbereiten:
   ..." on due date minus `leadDays` (not done, not skipped by stock); defect deadlines of open defects
   (a defect's reminder task is skipped: the defect event stands for it); warranty ends within 365
@@ -902,7 +970,7 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
 - **Insurance and asset notes** (`tools/insurance.ts`, `tools/notes.ts`): `list_insurance_policies` and
   `get_insurance_policy` (read; a policy by id, title or policy number), `add_asset_note`, `list_asset_notes` and
   `resolve_asset_note` (the asset by id or name; resolving is idempotent). `add_service_log` takes `resolvedNoteIds`, task
-  rows carry `openNotes`, and documents can be linked to a policy by its title. 62 tools when the token holds every scope.
+  rows carry `openNotes`, and documents can be linked to a policy by its title. 66 tools when the token holds every scope (the appointment tools are `tools/appointments.ts`, see "Appointments").
 - **New tool**: add the endpoint to the registry first, then a ~15-line `defineTool` in
   `mcp/src/tools/` and an entry in `tools/index.ts` (which lists the planned extension points).
   Triggers go through `parseTrigger` (engine schema, per-type docs in `trigger-docs.ts`, a `Record`
@@ -1120,6 +1188,22 @@ in dark mode. Every list has an empty state, every async action a pending and an
   `NoteChoices` is the picker for the completion and service log dialogs and `OpenNotesBadge` the count on task rows and the task
   page. After `bun run check` or `bun run i18n` restart a running `bun dev`: regenerated route nodes and message modules leave the
   dev client with a stale manifest.
+- **Appointments in the web app**: `/appointments` (entry "Termine" in the overview group, behind "More" on phones; creating is a dialog, no
+  `/new` route) shows `?view=upcoming|past` and `?status=planned,done,cancelled`; the load reads only `view` (it fetches `from`/`to` ranges,
+  `viewRange`; the address for the sign-in redirect is read inside `untrack`, `page-load.test.ts` pins this), the status chips filter in the page from `page.url`
+  without fetching again. "Over" is day-based and in the household zone (`isOver`: last day before
+  today; a timed one that ends at midnight does not touch the next day). Upcoming = the last 30 days on, split by `sectionsFor` into "Noch offen"
+  (planned and over: someone still has to close it, its task keeps waiting) and day groups by start day (a longer one that already started sits
+  under today); past = the last 12 months, newest first, "older" loads the rest (merged by id with `appendById`: an appointment that spans the boundary is in both ranges). The detail page completes with `POST .../complete {}` and keeps
+  what it answered for that page only: the task was completed, or why not (`completion: null`: archived, or the occurrence is settled); cancel
+  has an undo toast, "reopen" says it does not undo the task's completion. `AppointmentFormDialog` creates, edits and prefills (`defaults`: task
+  with its `occurrenceKey` (never the placeholders `none`/`s:none`), device, contact; another task sends none and the server pins what it shows); its times are wall-clock in the household zone (`zonedTimeToInstant`, never the browser's), an empty
+  end sends none on create (the server's hour) and is made explicit on edit, a changed start or end sends both, and `buildUpdateBody` compares the
+  wall-clock fields of each side with `draftFromAppointment` and sends a side that was not edited with its stored instant (`untouchedInstants`), so a
+  start or end that falls in the repeated autumn hour (a wall-clock time cannot tell the two 02:30 apart) is not moved by editing the other side or the title. `LinkSelect` is a
+  searchable combobox (task, device; contacts keep `ContactSelect`). `AppointmentsCard` (planned ones plus "create") sits on the task, device and
+  contact pages; `AppointmentBadge` shows `nextAppointment` on task rows (`TaskRow` and `TaskRows` take `timeZone`; the badge is a link except
+  inside `TaskRows`, whose row is one) and on the task page.
 - **Vehicles in the web app**: `assets/[id]` for kind `vehicle` shows `components/vehicles/` first: `VehicleCard` (plate chip,
   odometer with the "record" dialog, details), `OdometerHistoryCard` (delete is offered for every reading; a reading that belongs to
   a completion, service log entry, fuel log entry or tire change is a 409 whose `details.source` is worded by `readingOwner`),

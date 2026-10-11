@@ -155,6 +155,7 @@ Results are a one-line summary followed by compact JSON (empty fields left out).
 | `list_insurance_policies`    | read        | Insurance policies by cancellation deadline; filter by asset, type, text, archived; premium normalised to a year                                           |
 | `get_insurance_policy`       | read        | One policy in full, by id, title or policy number: insurer, term, deductible, assistance line, covered assets, attached files                              |
 | `list_asset_notes`           | read        | The issues noted on an asset to mention at its next appointment (open, resolved or all)                                                                    |
+| `list_appointments`          | read        | Appointments from today on (planned ones from 30 days back, marked overdue), soonest first; filter by days, status, task, asset, contact; paged            |
 | `list_costs`                 | read        | Cost entries (repairs, utilities, purchases, mortgage ...); filter by year, category, asset, room, payer, text; paged                                      |
 | `cost_summary`               | read        | A year's costs, also of one asset: total, per category and month, top assets, tax classes, and who owes whom                                               |
 | `create_defect`              | write       | Report a defect (room, asset and responsible contact by name)                                                                                              |
@@ -164,6 +165,9 @@ Results are a one-line summary followed by compact JSON (empty fields left out).
 | `add_service_log`            | write       | Log maintenance, repair or other work on an asset, with contact, cost and the notes it addressed                                                           |
 | `add_asset_note`             | write       | Note a small issue on an asset ("brakes squeak") for the next appointment; the asset by name                                                               |
 | `resolve_asset_note`         | write       | Mark a note as resolved                                                                                                                                    |
+| `create_appointment`         | write       | Book an appointment: date with start/end time (household zone) or all-day, place, notes, task, asset, contact by name                                      |
+| `update_appointment`         | write       | Move (keeps the length), rename, switch timed / all-day, cancel or reopen, link or unlink task, asset, contact                                             |
+| `complete_appointment`       | write       | Mark an appointment done and complete its task with it (backdated, with a note); repeating changes nothing                                                 |
 | `link_document`              | write       | Link an archived document to an asset, room, page, task, defect, part, contact or cost entry, with a role (manual, receipt, ...)                           |
 | `unlink_document`            | write       | Remove one document link (the document itself stays in the document system)                                                                                |
 | `create_cost`                | costs:write | Book an expense or refund (decimal amount, category, asset and payer by name; split by ownership, equal or none)                                           |
@@ -184,10 +188,10 @@ Results are a one-line summary followed by compact JSON (empty fields left out).
 | `update_page`                | docs:write  | Edit a page; needs the `rev` from `get_page`, a concurrent edit is reported, not overwritten                                                               |
 
 Rooms, assets and people can be given by name (`asset: "Dishwasher"`, `assignee: "Ben"`, `me`)
-instead of an id, and so can contacts and parts; a vehicle can also be given by its plate (`asset: "ZH 000000"`, spaces and dashes do not matter). An ambiguous name is reported with the candidates. Tools are annotated with the
+instead of an id, and so can contacts and parts (and the task of an appointment, by title); a vehicle can also be given by its plate (`asset: "ZH 000000"`, spaces and dashes do not matter). An ambiguous name is reported with the candidates. Tools are annotated with the
 MCP `readOnlyHint`, `destructiveHint` and `idempotentHint`: only `undo_completion`,
 `unlink_document` and `dismiss_finance_suggestion` (which cannot be undone) are marked destructive, and only those
-three, the `update_*`, `set_defect_status`, `snooze_task`, `resolve_asset_note`, `mount_tire_set`, `sync_finance` and the read tools are idempotent.
+three, the `update_*`, `complete_appointment`, `set_defect_status`, `snooze_task`, `resolve_asset_note`, `mount_tire_set`, `sync_finance` and the read tools are idempotent.
 Nothing here deletes data except a document link (never the document); files can be listed by name but not uploaded or downloaded. The finance inbox tools
 only ever see the token user's own suggestions (the inbox is private to each person) and need a Kept
 connection of that person; `accept_finance_suggestion` takes the same overrides as the REST endpoint, for the kind

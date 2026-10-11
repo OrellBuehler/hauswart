@@ -308,6 +308,15 @@ import {
   listAssetNotesResponseSchema,
   updateAssetNoteRequestSchema,
 } from "./schemas/asset-notes";
+import {
+  appointmentSchema,
+  completeAppointmentRequestSchema,
+  completeAppointmentResponseSchema,
+  createAppointmentRequestSchema,
+  listAppointmentsQuerySchema,
+  listAppointmentsResponseSchema,
+  updateAppointmentRequestSchema,
+} from "./schemas/appointments";
 
 const DOCUMENT_CONTENT_TYPES = [
   "application/pdf",
@@ -2455,6 +2464,96 @@ export const endpoints = {
     params: idParamsSchema,
     response: assetNoteToDefectResponseSchema,
     status: 201,
+    errors: ["not_found", "conflict"],
+  }),
+
+  appointmentsList: defineEndpoint({
+    id: "appointmentsList",
+    method: "GET",
+    path: "/api/v1/appointments",
+    summary: "List appointments",
+    description:
+      "Appointments of the household (service visits, inspections, deliveries), soonest first. `from` and `to` are days in the household time zone, both included: an appointment is listed when it overlaps one of them (a timed one counts on every day it touches). Filter by asset, task, contact and status; without a status every status is listed. Dates are YYYY-MM-DD, instants UTC ISO strings. All-day appointments carry startDate/endDate (the last day included) and no instants, timed ones the reverse.",
+    tags: ["appointments"],
+    auth: "both",
+    scopes: ["read"],
+    query: listAppointmentsQuerySchema,
+    response: listAppointmentsResponseSchema,
+  }),
+
+  appointmentsCreate: defineEndpoint({
+    id: "appointmentsCreate",
+    method: "POST",
+    path: "/api/v1/appointments",
+    summary: "Create an appointment",
+    description:
+      "A timed appointment needs startsAt (endsAt defaults to an hour later); an all-day one needs allDay true and startDate (endDate defaults to the same day, the last day included). The fields of the other kind are refused, the end must come after the start and an appointment lasts at most 14 days (a timed one may run an hour over, which is what 14 calendar days have more when the clocks go back). It can belong to a task (taskId, optionally the occurrenceKey it is for; without one the occurrence the task shows now is recorded, none for a task that shows none), a device and a contact; the asset defaults to the task's asset. It starts as planned. 400 field errors name the offending field (`taskId`, `assetId`, `contactId` when they do not exist).",
+    tags: ["appointments"],
+    auth: "both",
+    scopes: ["write"],
+    body: createAppointmentRequestSchema,
+    response: appointmentSchema,
+    status: 201,
+  }),
+
+  appointmentsGet: defineEndpoint({
+    id: "appointmentsGet",
+    method: "GET",
+    path: "/api/v1/appointments/{id}",
+    summary: "Get an appointment",
+    tags: ["appointments"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: appointmentSchema,
+    errors: ["not_found"],
+  }),
+
+  appointmentsUpdate: defineEndpoint({
+    id: "appointmentsUpdate",
+    method: "PATCH",
+    path: "/api/v1/appointments/{id}",
+    summary: "Change an appointment",
+    description:
+      "Changes only the fields given. allDay switches between timed and all-day (then the new kind's start is required); otherwise the fields must fit the appointment as it is and the whole must stay valid, so moving only the start of a timed appointment to after its end is a 400 on endsAt. Changing the task records the occurrence the new task shows now as the occurrenceKey, unless one is sent; sending occurrenceKey null for the same task removes it. Cancel an appointment by setting status to cancelled, reopen it with planned. Setting status to done records the status only; POST /appointments/{id}/complete also completes the task. A request that changes nothing leaves updatedAt alone.",
+    tags: ["appointments"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: updateAppointmentRequestSchema,
+    response: appointmentSchema,
+    errors: ["not_found"],
+  }),
+
+  appointmentsDelete: defineEndpoint({
+    id: "appointmentsDelete",
+    method: "DELETE",
+    path: "/api/v1/appointments/{id}",
+    summary: "Delete an appointment",
+    description:
+      "Comments and attachments go with it. Cancel it instead to keep it.",
+    tags: ["appointments"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
+  appointmentsComplete: defineEndpoint({
+    id: "appointmentsComplete",
+    method: "POST",
+    path: "/api/v1/appointments/{id}/complete",
+    summary: "Mark an appointment done",
+    description:
+      "Sets the status to done and, when the appointment belongs to a task, completes the occurrence the appointment is for (its occurrenceKey, recorded when it got the task) as the caller, with the idempotency key `appointment:<id>`: repeating the request completes nothing twice and answers with the first completion and replayed true. Always answers 200; send `{}` when there is no note or date to give. Browser sessions are attributed as manual, API tokens by their kind. The task is left alone (completion null) when it is archived or when that occurrence has been settled meanwhile (the task shows another occurrence, or reports this one as completed, skipped or acknowledged), so the work is never counted twice and no cycle is skipped. An appointment without an occurrenceKey (its task showed none, or it was removed) completes the occurrence the task shows only if that is dated and fell due on or before the last day of the appointment. A cancelled appointment is a 409. Undoing the task's completion later (DELETE /completions/{id}) does not reopen the appointment, and reopening the appointment does not undo the completion.",
+    tags: ["appointments", "tasks"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: completeAppointmentRequestSchema,
+    response: completeAppointmentResponseSchema,
     errors: ["not_found", "conflict"],
   }),
 

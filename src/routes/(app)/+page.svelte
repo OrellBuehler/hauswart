@@ -107,6 +107,7 @@
         <TaskRow
           task={rowFromDashboard(task)}
           {today}
+          timeZone={data.timeZone}
           onstart={() => hidden.add(task.taskId)}
           onfail={() => hidden.delete(task.taskId)}
           onsettled={() => hidden.delete(task.taskId)}

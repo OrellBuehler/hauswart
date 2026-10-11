@@ -9,6 +9,7 @@ import {
   completionSchema,
   dueStatusSchema,
   estimateSchema,
+  nextAppointmentSchema,
   progressSchema,
   taskPrioritySchema,
 } from "./tasks";
@@ -39,6 +40,8 @@ export const dashboardTaskSchema = z
      * completion asks for the reading first, without fetching the task to find out.
      */
     odometerAssetId: z.string().nullable(),
+    /** The earliest planned appointment of the task (see `/appointments`); null when there is none. */
+    nextAppointment: nextAppointmentSchema.nullable(),
   })
   .meta({ id: "DashboardTask" });
 

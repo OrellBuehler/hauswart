@@ -96,6 +96,22 @@ export const taskStateSchema = z
   .meta({ id: "TaskState" });
 export type TaskState = z.infer<typeof taskStateSchema>;
 
+/**
+ * The earliest planned appointment of a task, as a pointer to `/appointments/{id}`: `startsAt` for a
+ * timed one, `startDate` (its first day, in the household time zone) for an all-day one. An
+ * appointment whose time has passed but that nobody closed (done or cancelled) still counts, so it
+ * stays visible until somebody does.
+ */
+export const nextAppointmentSchema = z
+  .object({
+    id: z.string(),
+    allDay: z.boolean(),
+    startsAt: isoTimestampSchema.nullable(),
+    startDate: dateSchema.nullable(),
+  })
+  .meta({ id: "NextAppointment" });
+export type NextAppointment = z.infer<typeof nextAppointmentSchema>;
+
 export const taskSchema = z
   .object({
     id: z.string(),
@@ -126,6 +142,8 @@ export const taskSchema = z
     commentCount: z.number().int(),
     /** Open notes on the task's asset ("brakes squeak"), to mention at this appointment; 0 without an asset. See `/assets/{id}/notes`. */
     openNoteCount: z.number().int(),
+    /** The earliest planned appointment of this task (see `/appointments`); null when there is none. */
+    nextAppointment: nextAppointmentSchema.nullable(),
     createdAt: isoTimestampSchema,
     updatedAt: isoTimestampSchema,
     state: taskStateSchema.nullable(),

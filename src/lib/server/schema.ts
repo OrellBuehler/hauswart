@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  check,
   index,
   integer,
   primaryKey,
@@ -13,6 +14,7 @@ import {
   ASSET_KINDS,
   ASSET_NOTE_STATUSES,
   ASSIGN_MODES,
+  APPOINTMENT_STATUSES,
   ATTACHMENT_OWNER_TYPES,
   COMMENT_ENTITY_TYPES,
   COMPLETION_KINDS,
@@ -938,6 +940,61 @@ export const assetNotes = sqliteTable(
     index("asset_notes_asset_status_idx").on(t.assetId, t.status),
     index("asset_notes_service_log_id_idx").on(t.serviceLogId),
     index("asset_notes_defect_id_idx").on(t.defectId),
+  ],
+);
+
+/**
+ * An appointment of the household ("Termin"): a service visit, an inspection, a delivery, with a
+ * place and a time. Domain data shared by everybody. It may belong to a task (and the occurrence of
+ * it that it is for), a device and a contact; deleting any of them only unlinks.
+ *
+ * A timed appointment has the instants `startsAt` < `endsAt`; an all-day one has the calendar dates
+ * `startDate` <= `endDate` in the household time zone (the last day included), so it does not move
+ * with the zone. The CHECK keeps the two shapes apart. `id` is stable and `updatedAt` moves with every
+ * change (also of the status), which is what a calendar sync compares.
+ */
+export const appointments = sqliteTable(
+  "appointments",
+  {
+    id: id(),
+    title: text("title").notNull(),
+    /** Plain text, no markup. */
+    notes: text("notes"),
+    location: text("location"),
+    allDay: integer("all_day", { mode: "boolean" }).notNull().default(false),
+    startsAt: integer("starts_at", { mode: "timestamp_ms" }),
+    endsAt: integer("ends_at", { mode: "timestamp_ms" }),
+    startDate: text("start_date"),
+    endDate: text("end_date"),
+    taskId: text("task_id").references(() => tasks.id, {
+      onDelete: "set null",
+    }),
+    /** The occurrence of `taskId` this is for; null = whichever the task shows when it is completed. */
+    occurrenceKey: text("occurrence_key"),
+    assetId: text("asset_id").references(() => assets.id, {
+      onDelete: "set null",
+    }),
+    contactId: text("contact_id").references(() => contacts.id, {
+      onDelete: "set null",
+    }),
+    status: text("status", { enum: APPOINTMENT_STATUSES })
+      .notNull()
+      .default("planned"),
+    createdByUserId: text("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    ...timestamps,
+  },
+  (t) => [
+    index("appointments_task_status_idx").on(t.taskId, t.status),
+    index("appointments_asset_idx").on(t.assetId),
+    index("appointments_contact_idx").on(t.contactId),
+    index("appointments_starts_at_idx").on(t.startsAt),
+    index("appointments_start_date_idx").on(t.startDate),
+    check(
+      "appointments_when_check",
+      sql`(${t.allDay} = 1 AND ${t.startDate} IS NOT NULL AND ${t.endDate} IS NOT NULL AND ${t.endDate} >= ${t.startDate} AND ${t.startsAt} IS NULL AND ${t.endsAt} IS NULL) OR (${t.allDay} = 0 AND ${t.startsAt} IS NOT NULL AND ${t.endsAt} IS NOT NULL AND ${t.endsAt} > ${t.startsAt} AND ${t.startDate} IS NULL AND ${t.endDate} IS NULL)`,
+    ),
   ],
 );
 

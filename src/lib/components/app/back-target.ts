@@ -1,6 +1,7 @@
 /** The first path segment of every page that lives in the app shell and has detail or form pages below it. */
 export const SECTIONS = [
   "tasks",
+  "appointments",
   "assets",
   "d",
   "inventory",

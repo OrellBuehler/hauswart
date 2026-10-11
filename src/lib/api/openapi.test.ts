@@ -56,6 +56,7 @@ describe("openapi document", () => {
     expect(Object.keys(doc.components.schemas).sort()).toEqual([
       "AdminUser",
       "ApiToken",
+      "Appointment",
       "Asset",
       "AssetContact",
       "AssetNote",
@@ -124,6 +125,7 @@ describe("openapi document", () => {
       "InsurancePolicyAsset",
       "Integration",
       "IntegrationTest",
+      "NextAppointment",
       "Notification",
       "NotificationActionResult",
       "NotificationParams",

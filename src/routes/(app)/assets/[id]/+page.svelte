@@ -47,6 +47,7 @@
   import Comments from "$lib/components/comments/comments.svelte";
   import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
   import HintCallout from "$lib/components/hints/hint-callout.svelte";
+  import AppointmentsCard from "$lib/components/appointments/appointments-card.svelte";
   import AssetInsuranceCard from "$lib/components/insurance/asset-insurance-card.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
@@ -393,7 +394,11 @@
               {/snippet}
             </EmptyState>
           {:else}
-            <TaskRows tasks={data.tasks} />
+            <TaskRows
+              tasks={data.tasks}
+              timeZone={data.timeZone}
+              today={data.today}
+            />
             {#if isVehicle && canWrite}
               <div class="mt-3">
                 <Button variant="outline" onclick={() => (setupOpen = true)}>
@@ -404,6 +409,15 @@
           {/if}
         </Card.Content>
       </Card.Root>
+
+      <AppointmentsCard
+        appointments={data.appointments}
+        timeZone={data.timeZone}
+        today={data.today}
+        {canWrite}
+        emptyBody={m.appointments_card_empty_asset()}
+        defaults={{ assetId: asset.id, assetName: asset.name }}
+      />
 
       <AssetNotesCard
         assetId={asset.id}

@@ -1,5 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
+import type { NextAppointment } from "$lib/api/schemas/tasks";
 import {
   buildUpcoming,
   type UpcomingInput,
@@ -9,6 +10,10 @@ import {
   DASHBOARD_HORIZON_DAYS,
   DASHBOARD_RECENT_COMPLETIONS,
 } from "$lib/api/schemas/dashboard";
+import {
+  nextAppointmentSql,
+  parseNextAppointment,
+} from "$lib/server/appointments/next";
 import { openNoteCountSql } from "$lib/server/asset-notes/counts";
 import { assets, rooms, taskState, tasks, users } from "$lib/server/db";
 import type { ServiceContext } from "$lib/server/service";
@@ -38,6 +43,7 @@ export interface DashboardTaskRecord {
   progress: TaskStateRecord["progress"];
   openNoteCount: number;
   odometerAssetId: string | null;
+  nextAppointment: NextAppointment | null;
 }
 
 export interface DashboardPreparationRecord {
@@ -96,6 +102,7 @@ export async function getUpcomingTasks(
       ownRoomName: rooms.name,
       assetRoomName: assetRoom.name,
       openNoteCount: openNoteCountSql(tasks.assetId),
+      nextAppointment: nextAppointmentSql(tasks.id),
     })
     .from(tasks)
     .innerJoin(taskState, eq(taskState.taskId, tasks.id))
@@ -174,6 +181,7 @@ export async function getUpcomingTasks(
       progress: item.due.progress ?? null,
       openNoteCount: Number(r.openNoteCount),
       odometerAssetId: odometerAssetOfTrigger(r.task.trigger),
+      nextAppointment: parseNextAppointment(r.nextAppointment),
     };
   };
 

@@ -384,7 +384,7 @@
         <ul class="divide-y px-4">
           {#each group.rows as row (row.id)}
             <li>
-              <TaskRow task={row} today={data.today} />
+              <TaskRow task={row} today={data.today} timeZone={data.timeZone} />
             </li>
           {/each}
         </ul>
