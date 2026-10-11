@@ -196,9 +196,10 @@ describe("appointment tools", () => {
       const { ok, book, day } = await world();
       const later = await book({ title: "Später", date: day(20) });
       const sooner = await book({ title: "Früher", date: day(2) });
-      await book({ title: "Vorbei", date: day(-3) });
       const cancelled = await book({ title: "Abgesagt", date: day(5) });
       await ok("update_appointment", { id: cancelled.id, status: "cancelled" });
+      const done = await book({ title: "Erledigt", date: day(3) });
+      await ok("update_appointment", { id: done.id, status: "done" });
       const titles = async (args: Record<string, unknown> = {}) =>
         (await ok("list_appointments", args)).appointments.map(
           (a: Json) => a.title,
@@ -208,24 +209,79 @@ describe("appointment tools", () => {
         sooner.id,
         later.id,
       ]);
-      expect(await titles({ from: day(-10), status: "all" })).toEqual([
-        "Vorbei",
+      expect(await titles({ status: "all" })).toEqual([
         "Früher",
+        "Erledigt",
         "Abgesagt",
         "Später",
       ]);
       expect(
         await titles({ from: day(3), to: day(10), status: "all" }),
-      ).toEqual(["Abgesagt"]);
+      ).toEqual(["Erledigt", "Abgesagt"]);
       expect(await titles({ from: day(2), to: day(5) })).toEqual(["Früher"]);
       expect(await titles({ status: "cancelled" })).toEqual(["Abgesagt"]);
-      expect(await titles({ from: day(-10), status: "done" })).toEqual([]);
-      const all = await ok("list_appointments", {
-        from: day(-10),
-        status: "all",
-      });
+      expect(await titles({ status: "done" })).toEqual(["Erledigt"]);
+      const all = await ok("list_appointments", { status: "all" });
       expect(all.appointments[2].status).toBe("cancelled");
       expect(all.appointments[0].status).toBeUndefined();
+    });
+
+    it("shows a planned appointment that is over but was never closed, up to 30 days back", async () => {
+      const { ok, book, day } = await world();
+      await book({ title: "Bald", date: day(2) });
+      await book({ title: "Gestern", date: day(-1) });
+      await book({ title: "Vor 30 Tagen", date: day(-30) });
+      await book({ title: "Vor 31 Tagen", date: day(-31) });
+      const closed = await book({
+        title: "Vor 5 Tagen, erledigt",
+        date: day(-5),
+      });
+      await ok("update_appointment", { id: closed.id, status: "done" });
+      const listed = async (args: Record<string, unknown> = {}) =>
+        (await ok("list_appointments", args)).appointments as Json[];
+
+      const planned = await listed();
+      expect(planned.map((a) => a.title)).toEqual([
+        "Vor 30 Tagen",
+        "Gestern",
+        "Bald",
+      ]);
+      expect(planned.map((a) => a.overdue)).toEqual([true, true, undefined]);
+
+      expect((await listed({ status: "done" })).map((a) => a.title)).toEqual(
+        [],
+      );
+      expect((await listed({ status: "all" })).map((a) => a.title)).toEqual([
+        "Bald",
+      ]);
+      expect(
+        (await listed({ from: day(-60), status: "all" })).map((a) => a.title),
+      ).toEqual([
+        "Vor 31 Tagen",
+        "Vor 30 Tagen",
+        "Vor 5 Tagen, erledigt",
+        "Gestern",
+        "Bald",
+      ]);
+      expect(
+        (await listed({ from: day(-60), status: "all" })).map((a) => a.overdue),
+      ).toEqual([true, true, undefined, true, undefined]);
+      expect((await listed({ from: day(0) })).map((a) => a.title)).toEqual([
+        "Bald",
+      ]);
+    });
+
+    it("says from which day it looked", async () => {
+      const { call, day } = await world();
+      expect((await call("list_appointments")).summary).toBe(
+        `0 appointments from ${day(-30)}.`,
+      );
+      expect((await call("list_appointments", { status: "all" })).summary).toBe(
+        `0 appointments from ${day(0)}.`,
+      );
+      expect(
+        (await call("list_appointments", { from: day(3), to: day(9) })).summary,
+      ).toBe(`0 appointments from ${day(3)} to ${day(9)}.`);
     });
 
     it("filters by task, device and contact given by name", async () => {

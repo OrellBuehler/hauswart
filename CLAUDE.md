@@ -854,7 +854,8 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   to planned ones: for a timed one as a trigger relative to DTSTART worked out on real instants (`alarmTime` in the household zone on
   the day `alarmDaysBefore` days before the start, e.g. `-PT37H` across the spring-forward Sunday), left out when it would ring after
   the start. Events sort by their date in the household zone.
-- **MCP**: `list_appointments`, `create_appointment` (times as `date` + `startTime`/`endTime` in the household zone, without
+- **MCP**: `list_appointments` (`from` defaults to today, for status planned to 30 days back, so a planned appointment that is over but was never
+  closed shows up with `overdue: true`), `create_appointment` (times as `date` + `startTime`/`endTime` in the household zone, without
   `startTime` all-day), `update_appointment` (moving keeps the length, in real time, unless an end is given) and `complete_appointment`;
   task rows carry `appointment`.
 

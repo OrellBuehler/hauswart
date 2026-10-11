@@ -155,7 +155,7 @@ Results are a one-line summary followed by compact JSON (empty fields left out).
 | `list_insurance_policies`    | read        | Insurance policies by cancellation deadline; filter by asset, type, text, archived; premium normalised to a year                                           |
 | `get_insurance_policy`       | read        | One policy in full, by id, title or policy number: insurer, term, deductible, assistance line, covered assets, attached files                              |
 | `list_asset_notes`           | read        | The issues noted on an asset to mention at its next appointment (open, resolved or all)                                                                    |
-| `list_appointments`          | read        | Appointments from today on, soonest first; filter by days, status, task, asset, contact; paged                                                             |
+| `list_appointments`          | read        | Appointments from today on (planned ones from 30 days back, marked overdue), soonest first; filter by days, status, task, asset, contact; paged            |
 | `list_costs`                 | read        | Cost entries (repairs, utilities, purchases, mortgage ...); filter by year, category, asset, room, payer, text; paged                                      |
 | `cost_summary`               | read        | A year's costs, also of one asset: total, per category and month, top assets, tax classes, and who owes whom                                               |
 | `create_defect`              | write       | Report a defect (room, asset and responsible contact by name)                                                                                              |

@@ -51,6 +51,18 @@ const appointmentRow = (a: Appointment, zone: string) => ({
   contact: a.contactName,
 });
 
+/** How far back a planned appointment is still listed by default: as far as the app's upcoming view looks. */
+const OPEN_LOOKBACK_DAYS = 30;
+
+/** Planned although its last day (in the household zone) is before today: nobody has closed it. */
+function isOverdue(a: Appointment, today: string, zone: string): boolean {
+  if (a.status !== "planned") return false;
+  const lastDay = a.allDay
+    ? a.endDate!
+    : localDateOf(zone, Date.parse(a.endsAt!) - 1);
+  return lastDay < today;
+}
+
 const instant = (day: string, at: string, zone: string) =>
   new Date(zonedTimeToInstant(day, at, zone)).toISOString();
 
@@ -84,10 +96,14 @@ export const listAppointments = defineTool({
   name: "list_appointments",
   title: "List appointments",
   description:
-    "The household's appointments (service visits, inspections, deliveries) soonest first, with when (in the household time zone), place, status and the task, device and contact they belong to. from (default today) and to are days, both included: a timed appointment counts on every day it touches. status: planned (default), done, cancelled or all. Filter by task (id or title), asset and contact. Book one with create_appointment, change it with update_appointment, finish it with complete_appointment.",
+    "The household's appointments (service visits, inspections, deliveries) soonest first, with when (in the household time zone), place, status and the task, device and contact they belong to. from and to are days, both included: a timed appointment counts on every day it touches. from defaults to today, except for status planned (the default), where it is 30 days back: a planned appointment that is over but was never closed then shows up marked overdue (close it with complete_appointment or call it off with update_appointment). status: planned (default), done, cancelled or all. Filter by task (id or title), asset and contact. Book one with create_appointment, change it with update_appointment, finish it with complete_appointment.",
   mode: "read",
   input: {
-    from: date.optional().describe("First day, default today."),
+    from: date
+      .optional()
+      .describe(
+        "First day. Default: 30 days back for status planned, today otherwise.",
+      ),
     to: date.optional().describe("Last day, default: no end."),
     status: z.enum([...APPOINTMENT_STATUSES, "all"]).default("planned"),
     task: refs.task.optional(),
@@ -98,7 +114,10 @@ export const listAppointments = defineTool({
   },
   async handler(args, ctx) {
     const { task, asset, contact } = await resolveRefs(ctx, args);
-    const from = args.from ?? ctx.today();
+    const today = ctx.today();
+    const from =
+      args.from ??
+      addDays(today, args.status === "planned" ? -OPEN_LOOKBACK_DAYS : 0);
     const page = await ctx.api.call(endpoints.appointmentsList, {
       query: {
         from,
@@ -115,7 +134,10 @@ export const listAppointments = defineTool({
     return {
       summary: `${plural(page.items.length, "appointment")} from ${from}${args.to ? ` to ${args.to}` : ""}.${moreHint(page.nextCursor)}`,
       data: {
-        appointments: page.items.map((a) => appointmentRow(a, zone)),
+        appointments: page.items.map((a) => ({
+          ...appointmentRow(a, zone),
+          overdue: isOverdue(a, today, zone) ? true : null,
+        })),
         nextCursor: page.nextCursor,
       },
     };
