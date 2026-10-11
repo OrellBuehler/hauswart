@@ -4,6 +4,7 @@
   import type { OdometerUnit, ServiceLogKind } from "$lib/api/enums";
   import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
   import { parseOdometerValue } from "$lib/vehicles/format";
+  import { refusedMessage, refusedReading } from "$lib/vehicles/odometer-error";
   import { endpoints } from "$lib/api/registry";
   import type { ServiceLogEntry } from "$lib/api/schemas/service-log";
   import NoteChoices from "$lib/components/asset-notes/note-choices.svelte";
@@ -111,6 +112,11 @@
       );
       await onsaved();
     } catch (err) {
+      const refused = refusedReading(err, "odometer");
+      if (refused && odometerUnit) {
+        errors = { odometer: refusedMessage(refused, odometerUnit) };
+        return m.form_check_fields();
+      }
       errors = apiFieldErrors(err);
       if (Object.keys(errors).length > 0) return m.form_check_fields();
       return apiErrorMessage(err);

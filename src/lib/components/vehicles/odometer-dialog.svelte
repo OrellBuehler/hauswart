@@ -17,8 +17,10 @@
   import { apiFieldErrors } from "$lib/tasks/field-errors";
   import { formatOdometer, parseOdometerValue } from "$lib/vehicles/format";
   import {
-    lowerThanReading,
-    type LowerThanReading,
+    refusedMessage,
+    refusedReading,
+    refusedShort,
+    type RefusedReading,
   } from "$lib/vehicles/odometer-error";
 
   let {
@@ -43,14 +45,14 @@
   let value = $state("");
   let note = $state("");
   let errors = $state<Record<string, string>>({});
-  /** The server refused the entry as lower than the reading before; what was typed then. */
-  let lower = $state<
-    (LowerThanReading & { forValue: string; forDate: string }) | null
+  /** The server refused the entry as lower than the reading before or higher than the one after; what was typed then. */
+  let refusal = $state<
+    (RefusedReading & { forValue: string; forDate: string }) | null
   >(null);
 
   /** The person has seen the warning for exactly this entry and sends it again: `force`. */
   const confirmed = $derived(
-    lower !== null && lower.forValue === value && lower.forDate === date,
+    refusal !== null && refusal.forValue === value && refusal.forDate === date,
   );
 
   $effect(() => {
@@ -59,7 +61,7 @@
     value = "";
     note = "";
     errors = {};
-    lower = null;
+    refusal = null;
   });
 
   async function submit(): Promise<string | void> {
@@ -96,16 +98,11 @@
       );
       await onsaved();
     } catch (err) {
-      const refused = lowerThanReading(err);
+      const refused = refusedReading(err, "value");
       if (refused) {
-        lower = { ...refused, forValue: value, forDate: date };
-        errors = { value: m.vehicle_odometer_lower_short() };
-        return refused.value !== null && refused.date !== null
-          ? m.vehicle_odometer_lower({
-              value: formatOdometer(refused.value, unit),
-              date: formatDay(refused.date),
-            })
-          : m.vehicle_odometer_lower_unknown();
+        refusal = { ...refused, forValue: value, forDate: date };
+        errors = { value: refusedShort(refused) };
+        return refusedMessage(refused, unit, { canForce: true });
       }
       errors = apiFieldErrors(err);
       if (Object.keys(errors).length > 0) return m.form_check_fields();

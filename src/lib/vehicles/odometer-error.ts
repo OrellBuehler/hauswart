@@ -1,74 +1,33 @@
 import type { OdometerUnit } from "$lib/api/enums";
 import { isApiError } from "$lib/api/errors";
+import {
+  odometerRefusalDetailsSchema,
+  type OdometerRefusalDetails,
+} from "$lib/api/schemas/vehicles";
 import { formatDay } from "$lib/format";
 import { m } from "$lib/paraglide/messages";
 import { formatOdometer } from "./format";
 
-/** What the server said about the reading a new one is lower than; `null` parts when it could not be read. */
-export type LowerThanReading = {
-  value: number | null;
-  date: string | null;
-};
-
-const LOWER =
-  /^Lower than the reading of (\d+(?:\.\d+)?) on (\d{4}-\d{2}-\d{2})/;
+/** Why the server refused a reading and which neighbouring reading is in the way (`details` of the 400). */
+export type RefusedReading = OdometerRefusalDetails;
 
 /**
- * Whether an API error is the refusal of a reading lower than the one before it: a 400 on the
- * value field whose message starts "Lower than the reading of <value> on <date>". That is the one
- * refusal `force` can lift (a replaced instrument cluster), so the form offers "save anyway" for
- * it and for nothing else. `field` is the request field the server names: `value` for a reading,
- * `counterValue` for a completion.
+ * The structured reason of a refused reading: a 400 whose `details` say `lower_than_previous` or
+ * `higher_than_next`, with the neighbouring reading. These are the two refusals `force` can lift (a
+ * replaced instrument cluster); every other problem with a reading has no code and gives null. The
+ * English field error is never read. `field` is the request field this form shows the reading under
+ * (`value`, `odometer` or `counterValue`): a refusal reported on another field is not this form's.
  */
-export function lowerThanReading(
-  err: unknown,
-  field = "value",
-): LowerThanReading | null {
-  if (!isApiError(err) || err.code !== "invalid_request") return null;
-  const messages = (
-    err.details as
-      { body?: { fieldErrors?: Record<string, unknown> } } | undefined
-  )?.body?.fieldErrors?.[field];
-  const first = Array.isArray(messages) ? messages[0] : undefined;
-  if (
-    typeof first !== "string" ||
-    !first.startsWith("Lower than the reading")
-  ) {
-    return null;
-  }
-  const match = LOWER.exec(first);
-  return match
-    ? { value: Number(match[1]), date: match[2] ?? null }
-    : { value: null, date: null };
-}
-
-export type RefusedReading = {
-  direction: "lower" | "higher";
-  value: number | null;
-  date: string | null;
-};
-
-const REFUSED =
-  /^(Lower than the reading|Higher than the later reading)(?: of (\d+(?:\.\d+)?) on (\d{4}-\d{2}-\d{2}))?/;
-
 export function refusedReading(
   err: unknown,
-  field: string,
+  field?: string,
 ): RefusedReading | null {
   if (!isApiError(err) || err.code !== "invalid_request") return null;
-  const messages = (
-    err.details as
-      { body?: { fieldErrors?: Record<string, unknown> } } | undefined
-  )?.body?.fieldErrors?.[field];
-  const first = Array.isArray(messages) ? messages[0] : undefined;
-  if (typeof first !== "string") return null;
-  const match = REFUSED.exec(first);
-  if (!match) return null;
-  return {
-    direction: match[1] === "Lower than the reading" ? "lower" : "higher",
-    value: match[2] === undefined ? null : Number(match[2]),
-    date: match[3] ?? null,
-  };
+  const parsed = odometerRefusalDetailsSchema.safeParse(err.details);
+  if (!parsed.success) return null;
+  return field === undefined || parsed.data.field === field
+    ? parsed.data
+    : null;
 }
 
 export function readingOwner(
@@ -88,18 +47,29 @@ export function canDeleteReading(reading: { source: string }): boolean {
   return reading.source === "manual";
 }
 
+/** The refusal in words, with the reading in the way; `canForce` adds that the form can save it anyway. */
 export function refusedMessage(
   refused: RefusedReading,
   unit: OdometerUnit,
+  options: { canForce?: boolean } = {},
 ): string {
-  if (refused.value === null || refused.date === null) {
-    return m.vehicle_odometer_refused_unknown();
-  }
   const values = {
-    value: formatOdometer(refused.value, unit),
-    date: formatDay(refused.date),
+    value: formatOdometer(refused.reading.value, unit),
+    date: formatDay(refused.reading.date),
   };
-  return refused.direction === "lower"
-    ? m.vehicle_odometer_refused_lower(values)
+  if (refused.code === "lower_than_previous") {
+    return options.canForce
+      ? m.vehicle_odometer_lower(values)
+      : m.vehicle_odometer_refused_lower(values);
+  }
+  return options.canForce
+    ? m.vehicle_odometer_higher(values)
     : m.vehicle_odometer_refused_higher(values);
+}
+
+/** The short wording under the field of a refusal. */
+export function refusedShort(refused: RefusedReading): string {
+  return refused.code === "lower_than_previous"
+    ? m.vehicle_odometer_lower_short()
+    : m.vehicle_odometer_higher_short();
 }
