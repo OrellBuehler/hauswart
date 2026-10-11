@@ -393,6 +393,48 @@ export const INTEGRATION_LEVELS: Record<IntegrationKind, "household" | "user"> =
 export const INTEGRATION_STATUSES = ["ok", "error", "unknown"] as const;
 export type IntegrationStatus = (typeof INTEGRATION_STATUSES)[number];
 
+/**
+ * Calendar systems hauswart can push items into. Each is also an integration kind (its connection
+ * decides the level of a target); the adapters register a provider under this name.
+ */
+export const CALENDAR_PROVIDERS = [
+  "homeassistant",
+] as const satisfies readonly IntegrationKind[];
+export type CalendarProviderKind = (typeof CALENDAR_PROVIDERS)[number];
+
+/** What a calendar target can carry; the order is the order they are listed in. */
+export const CALENDAR_ITEM_KINDS = [
+  "appointments",
+  "task_due",
+  "preparations",
+  "defect_deadlines",
+  "insurance_deadlines",
+  "warranty_ends",
+] as const;
+export type CalendarItemKind = (typeof CALENDAR_ITEM_KINDS)[number];
+
+/** Only `push` (hauswart writes, the calendar is never read back) exists; `pull` and `both` would join here. */
+export const CALENDAR_DIRECTIONS = ["push"] as const;
+export type CalendarDirection = (typeof CALENDAR_DIRECTIONS)[number];
+
+/** Items that only have a date (due dates, deadlines) become all-day events or events at a fixed time of day. */
+export const CALENDAR_TIMED_MODES = ["all_day", "timed"] as const;
+export type CalendarTimedMode = (typeof CALENDAR_TIMED_MODES)[number];
+
+/** What to do with an item whose event somebody deleted in the calendar: write it again or leave it deleted. */
+export const CALENDAR_REMOTE_DELETE_POLICIES = ["recreate", "forget"] as const;
+export type CalendarRemoteDeletePolicy =
+  (typeof CALENDAR_REMOTE_DELETE_POLICIES)[number];
+
+/** Who wins when both sides changed an event. Only hauswart can today; `remote_wins` needs the pull direction. */
+export const CALENDAR_CONFLICT_POLICIES = ["hauswart_wins"] as const;
+export type CalendarConflictPolicy =
+  (typeof CALENDAR_CONFLICT_POLICIES)[number];
+
+/** `synced`: hauswart wrote the event. `forgotten`: it was deleted in the calendar on purpose and is not written again. */
+export const CALENDAR_LINK_STATUSES = ["synced", "forgotten"] as const;
+export type CalendarLinkStatus = (typeof CALENDAR_LINK_STATUSES)[number];
+
 /** Outward delivery paths a person can address (one target per phone, speaker, ...). */
 export const NOTIFICATION_TARGET_CHANNELS = ["ha_notify"] as const;
 export type NotificationTargetChannel =

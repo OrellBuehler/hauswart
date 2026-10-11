@@ -169,6 +169,13 @@
       "when": 1791704666945,
       "tag": "0023_appointment_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1791728822172,
+      "tag": "0024_calendar_sync",
+      "breakpoints": true
     }
   ]
 }
