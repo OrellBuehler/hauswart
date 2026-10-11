@@ -184,6 +184,31 @@ describe("finance inbox tools", () => {
     });
   });
 
+  it("accepts a cost into a book by name, split among the participants", async () => {
+    const c = await mcp.connect({ scopes: [...ALL] });
+    const anna = await inboxOf(c);
+    const row = anna.cost("1", { category: "groceries" });
+    await c.ok("accept_finance_suggestion", {
+      id: row.id,
+      book: "Haushalt",
+      participants: ["me"],
+    });
+    const [cost] = (await c.ok("list_costs", { book: "Haushalt" })).costs;
+    expect(cost).toMatchObject({
+      book: "Haushalt",
+      paidBy: "Anna",
+      split: "equal",
+      shares: ["Anna: 120.50 CHF"],
+    });
+    const refused = await c.call("accept_finance_suggestion", {
+      id: anna.cost("2").id,
+      book: "Gibt es nicht",
+    });
+    expect(refused.isError).toBe(true);
+    expect(refused.text).toContain("[not_found]");
+    expect(refused.text).toContain("Haushalt");
+  });
+
   it("accepts an asset suggestion as a device, and a bill as a task", async () => {
     const c = await mcp.connect({ scopes: [...ALL] });
     const anna = await inboxOf(c);

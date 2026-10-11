@@ -108,28 +108,37 @@ export const acceptFinanceSuggestion = defineTool({
   name: "accept_finance_suggestion",
   title: "Accept a finance suggestion",
   description:
-    "Turns one of the token user's pending suggestions into what it offers: a cost entry (paid by the token's user, split by ownership), a device, or a payment task for a bill. Without overrides it is taken exactly as the finance app reported it; an accepted cost is never booked twice. Overrides for a 'cost': title, category, notes, asset and room (by name), paidBy, split (ownership, equal or none), deductible, countsAsExpense. For an 'asset': name, assetKind, room. For a 'bill_task': title. An override of another kind is rejected. Deciding twice is a conflict. Look at list_finance_suggestions first.",
+    "Turns one of the token user's pending suggestions into what it offers: a cost entry (paid by the token's user, in the default cost book and split as that book says), a device, or a payment task for a bill. Without overrides it is taken exactly as the finance app reported it; an accepted cost is never booked twice. Overrides for a 'cost': title, book (name or id, see list_cost_books), category, notes, asset and room (by name), paidBy, split (ownership, equal or none), participants (members the amount is split equally among), deductible (tax relevant books only), countsAsExpense. For an 'asset': name, assetKind, room. For a 'bill_task': title. An override of another kind is rejected. Deciding twice is a conflict. Look at list_finance_suggestions first.",
   mode: "create",
   scopes: ["costs:write"],
   input: {
     id: suggestionId,
     title: z.string().trim().min(1).max(200).optional(),
+    book: z.string().min(1).max(64).optional(),
     category: z.enum(COST_CATEGORIES).optional(),
     notes: z.string().max(4000).optional(),
     asset: z.string().min(1).max(120).optional(),
     room: z.string().min(1).max(100).optional(),
     paidBy: z.string().min(1).max(100).optional(),
     split: z.enum(["ownership", "equal", "none"]).optional(),
+    participants: z.array(z.string().min(1).max(100)).min(1).max(20).optional(),
     deductible: z.enum(COST_DEDUCTIBLE).optional(),
     countsAsExpense: z.boolean().optional(),
     name: z.string().trim().min(1).max(120).optional(),
     assetKind: z.enum(ASSET_KINDS).optional(),
   },
-  async handler({ id, asset, room, paidBy, split, ...rest }, ctx) {
-    const [a, r, p] = await Promise.all([
+  async handler(
+    { id, asset, room, paidBy, split, book, participants, ...rest },
+    ctx,
+  ) {
+    const [a, r, p, b, who] = await Promise.all([
       asset ? ctx.resolveAsset(asset) : undefined,
       room ? ctx.resolveRoom(room) : undefined,
       paidBy ? ctx.resolveUser(paidBy) : undefined,
+      book ? ctx.resolveBook(book) : undefined,
+      participants
+        ? Promise.all(participants.map((x) => ctx.resolveUser(x)))
+        : undefined,
     ]);
     const { suggestion, entity } = await ctx.api.call(
       endpoints.financeSuggestionsAccept,
@@ -140,7 +149,9 @@ export const acceptFinanceSuggestion = defineTool({
           assetId: a?.id,
           roomId: r?.id,
           paidByUserId: p,
-          splitMode: split,
+          bookId: b?.id,
+          splitMode: split ?? (who ? "equal" : undefined),
+          participantIds: who,
         },
       },
     );

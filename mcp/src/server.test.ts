@@ -33,6 +33,8 @@ const READ_TOOLS = [
   "get_insurance_policy",
   "list_costs",
   "cost_summary",
+  "list_cost_books",
+  "get_balances",
   "search_documents",
   "get_document",
   "list_document_links",
@@ -77,6 +79,7 @@ const COSTS_WRITE_TOOLS = [
   "dismiss_finance_suggestion",
   "sync_finance",
   "add_fuel_log",
+  "record_settlement",
 ];
 
 describe("tool registration", () => {

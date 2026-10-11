@@ -5,6 +5,7 @@ import { assetCareTools } from "./asset-care";
 import { listCalendarTargets } from "./calendar-targets";
 import { commentTools } from "./comments";
 import { contactTools } from "./contacts";
+import { costBookTools } from "./cost-books";
 import { costTools } from "./costs";
 import { defectTools } from "./defects";
 import { docTools } from "./docs";
@@ -53,6 +54,7 @@ export const tools: readonly Tool[] = [
   ...contactTools,
   ...commentTools,
   ...costTools,
+  ...costBookTools,
   ...assetCareTools,
   ...insuranceTools,
   ...noteTools,

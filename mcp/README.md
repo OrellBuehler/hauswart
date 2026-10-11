@@ -157,8 +157,10 @@ Results are a one-line summary followed by compact JSON (empty fields left out).
 | `list_asset_notes`           | read        | The issues noted on an asset to mention at its next appointment (open, resolved or all)                                                                    |
 | `list_appointments`          | read        | Appointments from today on (planned ones from 30 days back, marked overdue), soonest first; filter by days, status, task, asset, contact; paged            |
 | `list_calendar_targets`      | read        | The calendars hauswart pushes appointments, due dates and deadlines into: what goes in, whether the last sync worked, how many events                      |
-| `list_costs`                 | read        | Cost entries (repairs, utilities, purchases, mortgage ...); filter by year, category, asset, room, payer, text; paged                                      |
-| `cost_summary`               | read        | A year's costs, also of one asset: total, per category and month, top assets, tax classes, and who owes whom                                               |
+| `list_costs`                 | read        | Cost entries (repairs, groceries, purchases, mortgage ...); filter by book, year, category, asset, room, payer, text; paged                                |
+| `cost_summary`               | read        | A year's costs, also of one asset or one book: total, per category and month, top assets, tax classes, and who owes whom                                   |
+| `list_cost_books`            | read        | The cost books (apartment, household, car, a trip ...): default split, whether tax classes apply, the default book, entries and payments                   |
+| `get_balances`               | read        | Who owes whom, all time, over all books or one book: paid, share, payments made and received, balance, and the fewest payments that square it              |
 | `create_defect`              | write       | Report a defect (room, asset and responsible contact by name)                                                                                              |
 | `set_defect_status`          | write       | Move a defect to reported, in progress, fixed, rejected or back to open, with a note                                                                       |
 | `adjust_stock`               | write       | Book a stock movement for a part: used, bought or a correction                                                                                             |
@@ -171,7 +173,8 @@ Results are a one-line summary followed by compact JSON (empty fields left out).
 | `complete_appointment`       | write       | Mark an appointment done and complete its task with it (backdated, with a note); repeating changes nothing                                                 |
 | `link_document`              | write       | Link an archived document to an asset, room, page, task, defect, part, contact or cost entry, with a role (manual, receipt, ...)                           |
 | `unlink_document`            | write       | Remove one document link (the document itself stays in the document system)                                                                                |
-| `create_cost`                | costs:write | Book an expense or refund (decimal amount, category, asset and payer by name; split by ownership, equal or none)                                           |
+| `create_cost`                | costs:write | Book an expense or refund (decimal amount, category, book, asset and payer by name; split by ownership, equal or none, or equally among `participants`)    |
+| `record_settlement`          | costs:write | Record that one member paid another to square what they owe ("Ben paid Anna 45.00"): not a cost, it moves the balances; answers with what is still open    |
 | `list_finance_suggestions`   | read        | Your own inbox from the connected finance app (costs, devices, bills); pending by default, filter by kind or status; paged                                 |
 | `accept_finance_suggestion`  | costs:write | Turn a suggestion into a cost entry, device or payment task, optionally overriding title, category, asset, room, payer, split ...                          |
 | `dismiss_finance_suggestion` | costs:write | Reject a suggestion for good (it is never offered again)                                                                                                   |
