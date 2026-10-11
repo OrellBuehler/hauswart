@@ -5,12 +5,14 @@
     options,
     value = $bindable(),
     label,
+    disabled = false,
     class: className,
     onchange,
   }: {
     options: { value: T; label: string }[];
     value: T;
     label: string;
+    disabled?: boolean;
     class?: string;
     onchange?: (value: T) => void;
   } = $props();
@@ -41,6 +43,7 @@
 <div
   role="radiogroup"
   aria-label={label}
+  aria-disabled={disabled || undefined}
   class={cn(
     "bg-muted flex w-full max-w-full flex-wrap rounded-lg p-0.5 sm:inline-flex sm:w-auto",
     className,
@@ -53,8 +56,9 @@
       role="radio"
       aria-checked={checked}
       tabindex={checked ? 0 : -1}
+      {disabled}
       class={cn(
-        "focus-visible:ring-ring/50 min-h-10 rounded-md px-3 py-2 text-center text-sm leading-tight font-medium whitespace-normal transition-colors outline-none focus-visible:ring-[3px] max-sm:flex-1 max-sm:px-2",
+        "focus-visible:ring-ring/50 min-h-10 rounded-md px-3 py-2 text-center text-sm leading-tight font-medium whitespace-normal transition-colors outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 max-sm:flex-1 max-sm:px-2",
         checked
           ? "bg-background shadow-xs"
           : "text-muted-foreground hover:text-foreground",

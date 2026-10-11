@@ -36,12 +36,14 @@
     parseDraftAmount,
     type CostDraft,
   } from "$lib/costs/form";
+  import { fuelLogOfConflict } from "$lib/costs/fuel-owner";
   import { categoryLabels, deductibleLabels } from "$lib/costs/labels";
   import { COST_NOTES_MAX, COST_TITLE_MAX } from "$lib/api/schemas/costs";
   import { apiErrorMessage } from "$lib/error-message";
   import { formatDay } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
   import { apiFieldErrors } from "$lib/tasks/field-errors";
+  import { fuelLogHref } from "$lib/vehicles/links";
   import { cn } from "$lib/utils";
   import SplitEditor from "./split-editor.svelte";
 
@@ -169,6 +171,10 @@
     { value: "", label: m.cost_payer_none() },
     ...people.map((p) => ({ value: p.id, label: p.displayName })),
   ]);
+  /** A fuel log entry booked this entry and owns its amount, currency and date. */
+  const owned = $derived(Boolean(entry?.fuelLogId));
+  /** The vehicle whose fuel log holds the entry's fill (the entry's device). */
+  const ownerAssetId = $derived(entry?.fuelLogId ? entry.assetId : null);
   const amount = $derived(
     parseDraftAmount(draft.amount, draft.refund, draft.currency),
   );
@@ -276,7 +282,10 @@
       });
     } catch (err) {
       errors = apiFieldErrors(err);
-      formError = apiErrorMessage(err);
+      formError = apiErrorMessage(
+        err,
+        fuelLogOfConflict(err) ? { conflict: m.cost_fuel_conflict() } : {},
+      );
       focusFirstError();
     } finally {
       pending = false;
@@ -324,6 +333,7 @@
             (value) => (draft.refund = value === "refund")
           }
           label={m.cost_kind()}
+          disabled={owned}
         />
         {#if draft.refund}
           <p class="text-muted-foreground text-xs text-pretty">
@@ -347,6 +357,7 @@
               required
               autocomplete="off"
               placeholder="0.00"
+              disabled={owned}
               aria-invalid={invalid || undefined}
               aria-describedby={describedby}
               bind:value={draft.amount}
@@ -366,6 +377,7 @@
               autocomplete="off"
               autocapitalize="characters"
               spellcheck={false}
+              disabled={owned}
               aria-invalid={invalid || undefined}
               aria-describedby={describedby}
               value={draft.currency}
@@ -374,7 +386,23 @@
           {/snippet}
         </Field>
       </div>
-      {#if otherCurrency}
+      {#if owned}
+        <p
+          class="text-muted-foreground bg-muted/50 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-3 py-2 text-xs text-pretty"
+        >
+          <span class="min-w-0">{m.cost_fuel_owned_note()}</span>
+          {#if ownerAssetId}
+            <!-- eslint-disable svelte/no-navigation-without-resolve -- the path is resolved in fuelLogHref, only the fragment is appended -->
+            <a
+              href={fuelLogHref(ownerAssetId)}
+              class="text-foreground focus-visible:ring-ring/50 rounded font-medium underline underline-offset-4 outline-none focus-visible:ring-[3px]"
+              >{m.cost_fuel_owned_link()}</a
+            >
+            <!-- eslint-enable svelte/no-navigation-without-resolve -->
+          {/if}
+        </p>
+      {/if}
+      {#if otherCurrency && !owned}
         <p
           class="text-muted-foreground -mt-2 text-xs text-pretty"
           aria-live="polite"
@@ -391,6 +419,7 @@
               class="h-10"
               type="date"
               required
+              disabled={owned}
               aria-invalid={invalid || undefined}
               aria-describedby={describedby}
               bind:value={draft.date}

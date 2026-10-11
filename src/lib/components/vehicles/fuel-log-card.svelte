@@ -165,7 +165,7 @@
   }
 </script>
 
-<Card.Root>
+<Card.Root id="fuel-log" class="scroll-mt-16">
   <Card.Header>
     <Card.Title class="flex items-center gap-2">
       <FuelIcon class="text-muted-foreground size-5" aria-hidden="true" />

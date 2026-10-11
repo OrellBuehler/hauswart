@@ -415,6 +415,52 @@ describe("editing", () => {
     });
   });
 
+  describe("an entry a fuel log entry booked", () => {
+    const fuel = () => entry({ category: "fuel", fuelLogId: "f1" });
+
+    it("never sends the amount, the currency or the date: they change on the fuel log entry", () => {
+      const e = fuel();
+      const d = draftFromEntry(e, USERS);
+      d.amount = "200";
+      d.currency = "EUR";
+      d.date = "2026-09-01";
+      d.refund = true;
+      d.payee = "Example Station";
+      expect(buildUpdateBody(d, e, USERS).body).toEqual({
+        payee: "Example Station",
+      });
+    });
+
+    it("still sends what stays editable", () => {
+      const e = fuel();
+      const d = draftFromEntry(e, USERS);
+      d.title = "Tanken, Ferien";
+      d.notes = "Ferien";
+      d.deductible = "maintenance";
+      d.splitMode = "equal";
+      expect(buildUpdateBody(d, e, USERS).body).toEqual({
+        title: "Tanken, Ferien",
+        notes: "Ferien",
+        deductible: "maintenance",
+        splitMode: "equal",
+      });
+    });
+
+    it("still checks the draft, so a mistyped amount stops the form", () => {
+      const e = fuel();
+      const d = draftFromEntry(e, USERS);
+      d.amount = "x";
+      expect(buildUpdateBody(d, e, USERS).body).toBeUndefined();
+    });
+
+    it("sends the amount of any other entry", () => {
+      const e = entry();
+      const d = draftFromEntry(e, USERS);
+      d.amount = "200";
+      expect(buildUpdateBody(d, e, USERS).body).toEqual({ amountMinor: 20000 });
+    });
+  });
+
   it("reports a custom split that does not add up", () => {
     const e = entry();
     const d = draftFromEntry(e, USERS);
