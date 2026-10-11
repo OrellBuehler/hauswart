@@ -31,6 +31,7 @@
   import { setMake, setTitle } from "$lib/vehicles/tire-label";
   import {
     mountedSet,
+    mountedSince,
     tireWarnings,
     type TireWarning,
   } from "$lib/vehicles/tire-view";
@@ -467,6 +468,7 @@
   {assetId}
   set={mounting}
   {today}
+  since={mountedSince(sets)}
   vehicle={reading}
   onmounted={() => invalidateAll()}
 />

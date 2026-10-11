@@ -8,10 +8,10 @@
   import { Input } from "$lib/components/ui/input/index.js";
   import { apiErrorMessage } from "$lib/error-message";
   import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
+  import { formatDay } from "$lib/format";
   import { refusedMessage, refusedReading } from "$lib/vehicles/odometer-error";
   import type { VehicleReadingState } from "$lib/vehicles/odometer-state.svelte";
-  import { buildMount } from "$lib/vehicles/tire-form";
+  import { buildMount, mountFieldErrors } from "$lib/vehicles/tire-form";
   import { setTitle } from "$lib/vehicles/tire-label";
   import OdometerReadingField from "./odometer-reading-field.svelte";
 
@@ -20,6 +20,7 @@
     assetId,
     set,
     today,
+    since = null,
     vehicle,
     onmounted,
   }: {
@@ -27,6 +28,8 @@
     assetId: string;
     set: TireSet | undefined;
     today: string;
+    /** The day the set on the vehicle was mounted: the earliest day another set can be mounted. */
+    since?: string | null;
     vehicle: VehicleReadingState;
     onmounted: () => void | Promise<void>;
   } = $props();
@@ -50,7 +53,7 @@
 
   async function submit(): Promise<string | void> {
     if (!set) return;
-    const built = buildMount({ date, odometer, known, today });
+    const built = buildMount({ date, odometer, known, today, since });
     errors = built.errors;
     if (!built.body) return m.form_check_fields();
     try {
@@ -66,7 +69,7 @@
         errors = { odometer: refusedMessage(refused, unit) };
         return m.form_check_fields();
       }
-      errors = apiFieldErrors(err);
+      errors = mountFieldErrors(err, since);
       if (Object.keys(errors).length > 0) return m.form_check_fields();
       return apiErrorMessage(err, { conflict: m.tire_error_not_mountable() });
     }
@@ -81,12 +84,20 @@
   pendingLabel={m.tire_mount_pending()}
   onsubmit={submit}
 >
-  <Field id="tire-mount-date" label={m.tire_mount_date()} error={errors.date}>
+  <Field
+    id="tire-mount-date"
+    label={m.tire_mount_date()}
+    hint={since
+      ? m.tire_mount_date_hint({ date: formatDay(since) })
+      : undefined}
+    error={errors.date}
+  >
     {#snippet children({ describedby, invalid })}
       <Input
         id="tire-mount-date"
         class="h-10"
         type="date"
+        min={since ?? undefined}
         max={today}
         required
         aria-invalid={invalid || undefined}

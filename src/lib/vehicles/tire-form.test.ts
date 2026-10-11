@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { ApiError } from "$lib/api/errors";
 import type { TireSet } from "$lib/api/schemas/tire-sets";
 import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
 import { formatNumber } from "$lib/format";
 import {
   buildCreateTireSet,
   buildMount,
+  mountFieldErrors,
   buildTread,
   buildUpdateTireSet,
   draftFromTireSet,
@@ -212,6 +214,36 @@ describe("buildMount", () => {
     ).toBeTruthy();
   });
 
+  describe("against the day the mounted set was mounted", () => {
+    const mount = (date: string, since: string | null) =>
+      buildMount({ date, odometer: "", known: null, today: TODAY, since });
+
+    it("refuses a day before it, naming it", () => {
+      const { body, errors } = mount("2026-09-11", "2026-09-12");
+      expect(body).toBeUndefined();
+      expect(errors.date).toContain("12.09.2026");
+    });
+
+    it("takes that day and later ones", () => {
+      expect(mount("2026-09-12", "2026-09-12").body).toEqual({
+        date: "2026-09-12",
+      });
+      expect(mount("2026-10-01", "2026-09-12").errors).toEqual({});
+    });
+
+    it("sets no limit when nothing is mounted", () => {
+      expect(mount("2020-01-01", null).errors).toEqual({});
+      expect(
+        buildMount({
+          date: "2020-01-01",
+          odometer: "",
+          known: null,
+          today: TODAY,
+        }).errors,
+      ).toEqual({});
+    });
+  });
+
   it("names the limit of the odometer in the language of the app, not in English", () => {
     const { errors } = buildMount({
       date: TODAY,
@@ -221,6 +253,42 @@ describe("buildMount", () => {
     });
     expect(errors.odometer).toContain(formatNumber(MAX_ODOMETER_VALUE));
     expect(errors.odometer).not.toContain("10,000,000");
+  });
+});
+
+describe("mountFieldErrors", () => {
+  const refused = (fields: string[]) =>
+    new ApiError("invalid_request", "Invalid request", {
+      details: {
+        body: {
+          formErrors: [],
+          fieldErrors: Object.fromEntries(
+            fields.map((f) => [f, ["English text"]]),
+          ),
+        },
+      },
+    });
+
+  it("words the server's 400 on the date, with the day when the dialog knows it", () => {
+    expect(mountFieldErrors(refused(["date"]), "2026-09-12").date).toContain(
+      "12.09.2026",
+    );
+    const unknown = mountFieldErrors(refused(["date"]), null).date;
+    expect(unknown).toBeTruthy();
+    expect(unknown).not.toContain("English text");
+  });
+
+  it("keeps the other fields it was told about", () => {
+    expect(
+      Object.keys(mountFieldErrors(refused(["date", "odometer"]), null)).sort(),
+    ).toEqual(["date", "odometer"]);
+  });
+
+  it("is empty for an error that names no field", () => {
+    expect(mountFieldErrors(new ApiError("conflict", "taken"), null)).toEqual(
+      {},
+    );
+    expect(mountFieldErrors(new Error("boom"), null)).toEqual({});
   });
 });
 

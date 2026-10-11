@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { mountableSets, mountedSet, tireWarnings } from "./tire-view";
+import {
+  mountableSets,
+  mountedSet,
+  mountedSince,
+  tireWarnings,
+} from "./tire-view";
 
 const base = {
   season: "winter" as const,
@@ -72,5 +77,26 @@ describe("mountedSet and mountableSets", () => {
 
   it("offers the sets that are neither on the vehicle nor retired", () => {
     expect(mountableSets(sets).map((s) => s.id)).toEqual(["b"]);
+  });
+});
+
+describe("mountedSince", () => {
+  const set = (id: string, mounted: boolean, mountedOn: string | null) => ({
+    id,
+    mounted,
+    retiredAt: null,
+    mountedOn,
+  });
+
+  it("is the day the set on the vehicle was mounted: no set can be mounted before it", () => {
+    expect(
+      mountedSince([set("a", false, null), set("b", true, "2026-09-12")]),
+    ).toBe("2026-09-12");
+  });
+
+  it("is null when nothing is mounted or the day is not known", () => {
+    expect(mountedSince([])).toBeNull();
+    expect(mountedSince([set("a", false, null)])).toBeNull();
+    expect(mountedSince([set("a", true, null)])).toBeNull();
   });
 });

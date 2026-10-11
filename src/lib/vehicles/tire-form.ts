@@ -13,9 +13,9 @@ import {
 } from "$lib/api/schemas/tire-sets";
 import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
 import { isValidDate } from "$lib/dates";
-import { formatNumber } from "$lib/format";
+import { formatDay, formatNumber } from "$lib/format";
 import { m } from "$lib/paraglide/messages";
-import { issuesToErrors } from "$lib/tasks/field-errors";
+import { apiFieldErrors, issuesToErrors } from "$lib/tasks/field-errors";
 import { parseDecimalInput } from "./format";
 import { readingToSend } from "./odometer-input";
 import { isValidDot } from "./tires";
@@ -155,6 +155,23 @@ function checkDay(
   else if (date > today) errors.date = m.vehicle_odometer_date_future();
 }
 
+/**
+ * What a refused mount shows: a 400 on `date` (the English text names the day, but it is no contract)
+ * becomes a sentence, with the day when the dialog knows it; the other fields as usual.
+ */
+export function mountFieldErrors(
+  err: unknown,
+  since: string | null | undefined,
+): Record<string, string> {
+  const errors = apiFieldErrors(err);
+  if (errors.date) {
+    errors.date = since
+      ? m.tire_mount_date_before({ date: formatDay(since) })
+      : m.tire_mount_date_refused();
+  }
+  return errors;
+}
+
 function readOdometer(
   text: string,
   known: number | null,
@@ -175,9 +192,14 @@ export function buildMount(input: {
   odometer: string;
   known: number | null;
   today: string;
+  /** The day the set on the vehicle was mounted; mounting another set takes it off, so not before. */
+  since?: string | null | undefined;
 }): Built<MountTireSetRequest> {
   const errors: Record<string, string> = {};
   checkDay(input.date, input.today, errors);
+  if (!errors.date && input.since && input.date < input.since) {
+    errors.date = m.tire_mount_date_before({ date: formatDay(input.since) });
+  }
   const odometer = readOdometer(input.odometer, input.known, errors);
   const candidate = {
     date: input.date,

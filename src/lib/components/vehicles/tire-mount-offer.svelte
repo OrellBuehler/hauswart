@@ -13,13 +13,17 @@
   import { apiErrorMessage } from "$lib/error-message";
   import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
   import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
+  import { formatDay } from "$lib/format";
   import { refusedMessage, refusedReading } from "$lib/vehicles/odometer-error";
   import { VehicleReading } from "$lib/vehicles/odometer-state.svelte";
-  import { buildMount } from "$lib/vehicles/tire-form";
+  import { buildMount, mountFieldErrors } from "$lib/vehicles/tire-form";
   import { setMake, setTitle } from "$lib/vehicles/tire-label";
   import { tireOffers } from "$lib/vehicles/tire-offer.svelte";
-  import { mountableSets, mountedSet } from "$lib/vehicles/tire-view";
+  import {
+    mountableSets,
+    mountedSet,
+    mountedSince,
+  } from "$lib/vehicles/tire-view";
   import OdometerReadingField from "./odometer-reading-field.svelte";
 
   const offer = $derived(tireOffers.current);
@@ -29,6 +33,7 @@
   let sets = $state.raw<TireSet[]>([]);
   let selectedId = $state("");
   let today = $state("");
+  let since = $state<string | null>(null);
   let date = $state("");
   let odometer = $state("");
   let errors = $state<Record<string, string>>({});
@@ -66,6 +71,7 @@
       stopReading = vehicle.load(current.assetId);
       today = household.today;
       const onVehicle = mountedSet(list.items);
+      since = mountedSince(list.items);
       if (current.season && onVehicle?.season === current.season) {
         return tireOffers.dismiss();
       }
@@ -102,6 +108,7 @@
       odometer,
       known: vehicle.known,
       today,
+      since,
     });
     errors = built.errors;
     if (!built.body) return m.form_check_fields();
@@ -118,7 +125,7 @@
         errors = { odometer: refusedMessage(refused, vehicle.unit) };
         return m.form_check_fields();
       }
-      errors = apiFieldErrors(err);
+      errors = mountFieldErrors(err, since);
       if (Object.keys(errors).length > 0) return m.form_check_fields();
       return apiErrorMessage(err, { conflict: m.tire_error_not_mountable() });
     }
@@ -154,6 +161,9 @@
       <Field
         id="tire-offer-date"
         label={m.tire_mount_date()}
+        hint={since
+          ? m.tire_mount_date_hint({ date: formatDay(since) })
+          : undefined}
         error={errors.date}
       >
         {#snippet children({ describedby, invalid })}
@@ -161,6 +171,7 @@
             id="tire-offer-date"
             class="h-10"
             type="date"
+            min={since ?? undefined}
             max={today}
             required
             aria-invalid={invalid || undefined}

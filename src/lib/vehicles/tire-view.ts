@@ -32,6 +32,13 @@ export function mountedSet<T extends Pick<TireSet, "mounted">>(
   return sets.find((set) => set.mounted);
 }
 
+/** The day the set on the vehicle was (last) mounted: a set cannot be mounted on an earlier day. */
+export function mountedSince(
+  sets: readonly Pick<TireSet, "mounted" | "mountedOn">[],
+): string | null {
+  return sets.find((set) => set.mounted)?.mountedOn ?? null;
+}
+
 export function mountableSets<T extends Pick<TireSet, "mounted" | "retiredAt">>(
   sets: readonly T[],
 ): T[] {
