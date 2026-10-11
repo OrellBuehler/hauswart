@@ -74,6 +74,11 @@ export const dueResultSchema = z
   .meta({ id: "DueResult" });
 export type DueResultWire = z.infer<typeof dueResultSchema>;
 
+/**
+ * `dueDate` is the date that is fixed (a limit, a deadline); for `dueKind` `estimated` it is the
+ * hard time limit of a counter task whose counter is expected to get there first (null when it has
+ * none) and `estimate` is the earlier guess, which is the date to show (`shownDate`).
+ */
 export const taskStateSchema = z
   .object({
     status: dueStatusSchema,
@@ -119,6 +124,8 @@ export const taskSchema = z
     externalUrl: z.string().nullable(),
     createdBy: z.string().nullable(),
     commentCount: z.number().int(),
+    /** Open notes on the task's asset ("brakes squeak"), to mention at this appointment; 0 without an asset. See `/assets/{id}/notes`. */
+    openNoteCount: z.number().int(),
     createdAt: isoTimestampSchema,
     updatedAt: isoTimestampSchema,
     state: taskStateSchema.nullable(),

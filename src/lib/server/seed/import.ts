@@ -2,6 +2,7 @@ import type { ApiClient } from "$lib/api/client";
 import { ApiError } from "$lib/api/errors";
 import { endpoints } from "$lib/api/registry";
 import type { Seed, SeedTask } from "$lib/api/schemas/seed";
+import type { PutVehicleRequest } from "$lib/api/schemas/vehicles";
 
 export const SEED_SOURCE = "seed";
 
@@ -23,6 +24,8 @@ export interface SeedReport {
   household: "updated" | "unchanged" | "skipped" | "absent";
   rooms: Counts;
   assets: Counts;
+  /** The details of vehicles (`vehicle` in the file). */
+  vehicles: Counts;
   tasks: Counts;
   preparations: Counts;
 }
@@ -84,6 +87,7 @@ export async function importSeed(
     household: "absent",
     rooms: counts(),
     assets: counts(),
+    vehicles: counts(),
     tasks: counts(),
     preparations: counts(),
   };
@@ -163,7 +167,7 @@ export async function importSeed(
     ).map((a) => [a.slug, a]),
   );
   for (const asset of seed.assets) {
-    const { key, room, ...fields } = asset;
+    const { key, room, vehicle, ...fields } = asset;
     const roomId = room ? (rooms.get(room)?.id ?? null) : undefined;
     const existing = assets.get(key);
     if (!existing) {
@@ -189,6 +193,10 @@ export async function importSeed(
       }
     } else {
       report.assets.unchanged += 1;
+    }
+    const current = assets.get(key);
+    if (vehicle && current?.kind === "vehicle") {
+      await syncVehicle(api, current.id, key, vehicle, report, options);
     }
   }
 
@@ -251,6 +259,52 @@ export async function importSeed(
     await syncPreparations(api, existing.id, task, report, options);
   }
   return report;
+}
+
+/**
+ * The details of a vehicle: saved when there are none yet (so a run that stopped half way is
+ * completed by the next one), overwritten only with `update`. `PUT` replaces the details, so what
+ * the file leaves out is cleared then.
+ */
+async function syncVehicle(
+  api: ApiClient,
+  assetId: string,
+  key: string,
+  vehicle: PutVehicleRequest,
+  report: SeedReport,
+  options: ImportOptions,
+): Promise<void> {
+  const current = await api.call(endpoints.vehiclesGet, {
+    params: { id: assetId },
+  });
+  const desired = {
+    plate: vehicle.plate ?? null,
+    vin: vehicle.vin ?? null,
+    registrationNumber: vehicle.registrationNumber ?? null,
+    firstRegistration: vehicle.firstRegistration ?? null,
+    fuelType: vehicle.fuelType ?? null,
+    tireSizeSummer: vehicle.tireSizeSummer ?? null,
+    tireSizeWinter: vehicle.tireSizeWinter ?? null,
+    location: vehicle.location ?? null,
+    odometerUnit: vehicle.odometerUnit ?? ("km" as const),
+    notes: vehicle.notes ?? null,
+  };
+  const never = current.updatedAt === null;
+  if (!never && !options.update) {
+    report.vehicles.unchanged += 1;
+    return;
+  }
+  if (!never && Object.keys(changes(current, desired)).length === 0) {
+    report.vehicles.unchanged += 1;
+    return;
+  }
+  await api.call(endpoints.vehiclesPut, {
+    params: { id: assetId },
+    body: desired,
+  });
+  if (never) report.vehicles.created += 1;
+  else report.vehicles.updated += 1;
+  log(options, `vehicle ${key} ${never ? "saved" : "updated"}`);
 }
 
 function taskBody(

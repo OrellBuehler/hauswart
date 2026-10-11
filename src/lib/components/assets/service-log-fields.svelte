@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { SERVICE_LOG_KINDS } from "$lib/api/enums";
+  import { SERVICE_LOG_KINDS, type OdometerUnit } from "$lib/api/enums";
   import ContactSelect from "$lib/components/contacts/contact-select.svelte";
   import Field from "$lib/components/tasks/field.svelte";
   import OptionSelect from "$lib/components/tasks/option-select.svelte";
@@ -15,6 +15,8 @@
     description = $bindable(""),
     contactId = $bindable(null),
     cost = $bindable(""),
+    odometer = $bindable(""),
+    odometerUnit = null,
     date = $bindable(undefined),
     currency,
     errors = {},
@@ -26,6 +28,9 @@
     description?: string;
     contactId?: string | null;
     cost?: string;
+    /** The odometer when the work was done, as typed; shown for a vehicle only (`odometerUnit` set). */
+    odometer?: string;
+    odometerUnit?: OdometerUnit | null;
     /** Shown when bound; the completion dialog uses the completion's date instead. */
     date?: string | undefined;
     currency: string;
@@ -126,3 +131,25 @@
     {/snippet}
   </Field>
 </div>
+{#if odometerUnit}
+  <Field
+    id={`${idPrefix}-odometer`}
+    label={m.service_odometer({ unit: odometerUnit })}
+    optional
+    hint={m.service_odometer_hint()}
+    error={errors.odometer}
+  >
+    {#snippet children({ describedby, invalid })}
+      <Input
+        id={`${idPrefix}-odometer`}
+        type="text"
+        inputmode="decimal"
+        autocomplete="off"
+        aria-invalid={invalid || undefined}
+        aria-describedby={describedby}
+        class="h-10 tabular-nums sm:max-w-56"
+        bind:value={odometer}
+      />
+    {/snippet}
+  </Field>
+{/if}

@@ -339,7 +339,8 @@ function sameShares(
 
 /**
  * The request that changes `entry` into the draft, with only what differs.
- * An empty body means nothing changed. Sending the split again would divide
+ * An empty body means nothing changed; the date, amount, currency and device of an entry a fuel log
+ * entry booked (`fuelLogId`) are never sent. Sending the split again would divide
  * the amount by today's ownership shares, so it goes only when the person
  * changed the mode or the custom shares.
  */
@@ -354,12 +355,18 @@ export function buildUpdateBody(
   }
   const patch: Record<string, unknown> = {};
   const title = draft.title.trim();
-  if (draft.date !== entry.date) patch.date = draft.date;
+  // A fuel log entry owns the date, amount, currency and device of the entry it booked: they stay with it.
+  const owned = Boolean(entry.fuelLogId);
+  if (!owned && draft.date !== entry.date) patch.date = draft.date;
   if (title !== entry.title) patch.title = title;
-  if (amountMinor !== entry.amountMinor) patch.amountMinor = amountMinor;
-  if (draft.currency !== entry.currency) patch.currency = draft.currency;
+  if (!owned && amountMinor !== entry.amountMinor) {
+    patch.amountMinor = amountMinor;
+  }
+  if (!owned && draft.currency !== entry.currency) {
+    patch.currency = draft.currency;
+  }
   if (draft.category !== entry.category) patch.category = draft.category;
-  if ((draft.assetId || null) !== entry.assetId) {
+  if (!owned && (draft.assetId || null) !== entry.assetId) {
     patch.assetId = draft.assetId || null;
   }
   if ((draft.roomId || null) !== entry.roomId) {

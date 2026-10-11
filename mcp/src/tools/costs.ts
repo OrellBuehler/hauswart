@@ -19,6 +19,27 @@ const category = z.enum(COST_CATEGORIES);
 export const money = (amountMinor: number, currency: string) =>
   `${toDecimalString(minor(amountMinor), currencyExponent(currency))} ${currency}`;
 
+/**
+ * A price per unit, given in minor units that need not be whole (184.7 Rappen per litre):
+ * `1.847 CHF/l`, one digit more than the currency's own precision.
+ */
+export const rate = (perUnitMinor: number, currency: string, per: string) => {
+  const exponent = currencyExponent(currency);
+  return `${(perUnitMinor / 10 ** exponent).toFixed(exponent + 1)} ${currency}/${per}`;
+};
+
+/** A decimal amount such as '123.45' in minor units of the currency; a typo is an `invalid_request`. */
+export function toMinor(amount: string, currency: string): number {
+  try {
+    return parseAmount(amount, currencyExponent(currency));
+  } catch (err) {
+    throw new ToolError(
+      "invalid_request",
+      err instanceof Error ? err.message : "The amount is not valid",
+    );
+  }
+}
+
 const costRow = (c: CostEntry) => ({
   id: c.id,
   date: c.date,
@@ -80,14 +101,20 @@ export const costSummary = defineTool({
   name: "cost_summary",
   title: "Costs of a year",
   description:
-    "What a year cost: expense total (mortgage repayments are equity and counted separately), per category, per month, the assets with the highest costs, the tax classes (maintenance = deductible, investment = not), and the settlement between the people (who paid what, who owes whom). Default year: the current one.",
+    "What a year cost: expense total (mortgage repayments are equity and counted separately), per category, per month, the assets with the highest costs, the tax classes (maintenance = deductible, investment = not), and the settlement between the people (who paid what, who owes whom). Default year: the current one. With asset (id, name or a vehicle's plate) everything is that asset's alone.",
   mode: "read",
-  input: { year: z.number().int().min(1990).max(2200).optional() },
-  async handler({ year }, ctx) {
-    const s = await ctx.api.call(endpoints.costsSummary, { query: { year } });
+  input: {
+    year: z.number().int().min(1990).max(2200).optional(),
+    asset: z.string().min(1).max(120).optional(),
+  },
+  async handler({ year, asset }, ctx) {
+    const a = asset ? await ctx.resolveAsset(asset) : undefined;
+    const s = await ctx.api.call(endpoints.costsSummary, {
+      query: { year, assetId: a?.id },
+    });
     const m = (n: number) => money(n, s.currency);
     return {
-      summary: `${s.year}: ${m(s.expenseTotalMinor)} in expenses${
+      summary: `${s.year}${a ? ` (${a.name})` : ""}: ${m(s.expenseTotalMinor)} in expenses${
         s.settlement.length
           ? `; ${s.settlement.map((t) => `${t.fromName ?? t.fromUserId} owes ${t.toName ?? t.toUserId} ${m(t.amountMinor)}`).join(", ")}`
           : "; nothing to settle"
@@ -165,18 +192,7 @@ export const createCost = defineTool({
   },
   async handler(args, ctx) {
     const { amount, asset, room, paidBy, split, currency, ...rest } = args;
-    let amountMinor: number;
-    try {
-      amountMinor = parseAmount(
-        amount,
-        currencyExponent(currency ?? ctx.household.currency),
-      );
-    } catch (err) {
-      throw new ToolError(
-        "invalid_request",
-        err instanceof Error ? err.message : "The amount is not valid",
-      );
-    }
+    const amountMinor = toMinor(amount, currency ?? ctx.household.currency);
     const [a, r, p] = await Promise.all([
       asset ? ctx.resolveAsset(asset) : undefined,
       room ? ctx.resolveRoom(room) : undefined,

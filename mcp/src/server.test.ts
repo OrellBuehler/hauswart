@@ -28,12 +28,19 @@ const READ_TOOLS = [
   "list_comments",
   "list_hints",
   "list_warranties",
+  "list_insurance_policies",
+  "list_asset_notes",
+  "get_insurance_policy",
   "list_costs",
   "cost_summary",
   "search_documents",
   "get_document",
   "list_document_links",
   "list_finance_suggestions",
+  "get_vehicle",
+  "get_vehicle_stats",
+  "list_fuel_logs",
+  "list_tire_sets",
 ];
 const WRITE_TOOLS = [
   "create_task",
@@ -49,8 +56,14 @@ const WRITE_TOOLS = [
   "adjust_stock",
   "add_comment",
   "add_service_log",
+  "add_asset_note",
+  "resolve_asset_note",
   "link_document",
   "unlink_document",
+  "record_odometer",
+  "add_tire_set",
+  "mount_tire_set",
+  "record_tire_tread",
 ];
 const DOCS_WRITE_TOOLS = ["create_page", "update_page"];
 const COSTS_WRITE_TOOLS = [
@@ -58,6 +71,7 @@ const COSTS_WRITE_TOOLS = [
   "accept_finance_suggestion",
   "dismiss_finance_suggestion",
   "sync_finance",
+  "add_fuel_log",
 ];
 
 describe("tool registration", () => {

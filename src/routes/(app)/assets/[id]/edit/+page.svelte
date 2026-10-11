@@ -31,6 +31,11 @@
     />
   </div>
   {#key data.asset.id}
-    <AssetForm rooms={data.rooms} asset={data.asset} today={data.today} />
+    <AssetForm
+      rooms={data.rooms}
+      asset={data.asset}
+      vehicle={data.vehicle}
+      today={data.today}
+    />
   {/key}
 </div>

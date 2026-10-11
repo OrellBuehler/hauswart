@@ -32,6 +32,13 @@ export const dashboardTaskSchema = z
     estimated: z.boolean(),
     estimate: estimateSchema.nullable(),
     progress: progressSchema.nullable(),
+    /** Open notes on the task's asset, to mention at this appointment; 0 without an asset. */
+    openNoteCount: z.number().int(),
+    /**
+     * The vehicle whose odometer the task counts on (a counter on `odometer:<asset id>`), else null: a
+     * completion asks for the reading first, without fetching the task to find out.
+     */
+    odometerAssetId: z.string().nullable(),
   })
   .meta({ id: "DashboardTask" });
 

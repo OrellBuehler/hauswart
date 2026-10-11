@@ -172,6 +172,24 @@ describe("registry", () => {
         "GET /api/v1/assets/{id}/service-log/{entryId} both",
         "PATCH /api/v1/assets/{id}/service-log/{entryId} both",
         "DELETE /api/v1/assets/{id}/service-log/{entryId} both",
+        "GET /api/v1/assets/{id}/vehicle both",
+        "PUT /api/v1/assets/{id}/vehicle both",
+        "GET /api/v1/assets/{id}/odometer both",
+        "POST /api/v1/assets/{id}/odometer both",
+        "DELETE /api/v1/odometer-readings/{id} both",
+        "GET /api/v1/assets/{id}/tire-sets both",
+        "POST /api/v1/assets/{id}/tire-sets both",
+        "POST /api/v1/assets/{id}/tire-sets/{setId}/mount both",
+        "GET /api/v1/tire-sets/{id} both",
+        "PATCH /api/v1/tire-sets/{id} both",
+        "DELETE /api/v1/tire-sets/{id} both",
+        "POST /api/v1/tire-sets/{id}/tread both",
+        "GET /api/v1/assets/{id}/vehicle/stats both",
+        "GET /api/v1/assets/{id}/fuel-logs both",
+        "POST /api/v1/assets/{id}/fuel-logs both",
+        "GET /api/v1/fuel-logs/{id} both",
+        "PATCH /api/v1/fuel-logs/{id} both",
+        "DELETE /api/v1/fuel-logs/{id} both",
         "GET /api/v1/defects both",
         "POST /api/v1/defects both",
         "GET /api/v1/defects/export.pdf both",
@@ -181,6 +199,17 @@ describe("registry", () => {
         "POST /api/v1/defects/{id}/status both",
         "POST /api/v1/defects/{id}/events both",
         "GET /api/v1/defects/{id}/timeline both",
+        "GET /api/v1/insurance-policies both",
+        "POST /api/v1/insurance-policies both",
+        "GET /api/v1/insurance-policies/{id} both",
+        "PATCH /api/v1/insurance-policies/{id} both",
+        "DELETE /api/v1/insurance-policies/{id} both",
+        "GET /api/v1/assets/{id}/insurance-policies both",
+        "GET /api/v1/assets/{id}/notes both",
+        "POST /api/v1/assets/{id}/notes both",
+        "PATCH /api/v1/asset-notes/{id} both",
+        "DELETE /api/v1/asset-notes/{id} both",
+        "POST /api/v1/asset-notes/{id}/to-defect both",
         "GET /api/v1/warranties both",
         "GET /api/v1/comments both",
         "POST /api/v1/comments both",
@@ -237,6 +266,43 @@ describe("registry", () => {
         "POST /api/v1/ha/action bearer",
       ].sort(),
     );
+  });
+});
+
+describe("the odometer refusal in the descriptions", () => {
+  const fields: Record<string, string> = {
+    tasksComplete: "counterValue",
+    assetServiceLogCreate: "odometer",
+    assetServiceLogUpdate: "odometer",
+    fuelLogsCreate: "odometer",
+    fuelLogsUpdate: "odometer",
+    tireSetsMount: "odometer",
+    tireSetsTread: "odometer",
+  };
+
+  it("names the field each endpoint reports an out-of-order reading on", () => {
+    for (const [id, field] of Object.entries(fields)) {
+      const { description } = endpoints[id as keyof typeof endpoints];
+      expect(description, id).toContain(`(\`${field}\` here)`);
+      expect(description, id).toContain("`lower_than_previous`");
+      expect(description, id).toContain("`higher_than_next`");
+      for (const other of new Set(Object.values(fields))) {
+        if (other !== field)
+          expect(description, id).not.toContain(`(\`${other}\` here)`);
+      }
+    }
+  });
+
+  it("states it after a full stop or colon, never as a sentence inside parentheses", () => {
+    for (const [id, field] of Object.entries(fields)) {
+      const { description } = endpoints[id as keyof typeof endpoints];
+      expect(description, id).not.toMatch(/\(\s*A reading below/);
+      expect(description, id).toMatch(
+        new RegExp(
+          `(^|[.:] )A reading below the one before its date or above the one after it is a 400 on the value field \\(\`${field}\` here\\)`,
+        ),
+      );
+    }
   });
 });
 

@@ -87,6 +87,28 @@ describe("calendar feed content", () => {
     expect(event.description).toBe("Gerät: Dampfabzug\nRaum: Küche");
   });
 
+  it("puts the time limit of a counter task on its date, without needing a reading", async () => {
+    const user = await createTestUser();
+    await makeTask(ctx(), {
+      title: "Service",
+      trigger: {
+        v: 1,
+        type: "counter_delta",
+        entityId: "odometer:example-car",
+        threshold: 15_000,
+        unit: "km",
+        orEvery: { every: 12, unit: "month" },
+      },
+    });
+    const { parsed } = await feedFor(user.id);
+    expect(parsed.events).toHaveLength(1);
+    expect(parsed.events[0]).toMatchObject({
+      summary: "Service",
+      start: "20270615",
+      status: "CONFIRMED",
+    });
+  });
+
   it("shows overdue tasks on their (past) due date", async () => {
     const user = await createTestUser();
     await makeTask(ctx(), { trigger: everyDays(30, "2026-06-01") });
@@ -200,6 +222,28 @@ describe("calendar feed content", () => {
         .run();
       return task;
     }
+
+    it("a hard time limit stays in the calendar, exact, when the counter is expected to get there first", async () => {
+      const user = await createTestUser();
+      const task = await estimatedTask({
+        date: "2026-07-01",
+        confidence: "medium",
+      });
+      test.db
+        .update(taskState)
+        .set({ dueDate: "2026-12-01" })
+        .where(eq(taskState.taskId, task.id))
+        .run();
+      for (const includeEstimated of [false, true]) {
+        const { parsed } = await feedFor(user.id, { includeEstimated });
+        expect(parsed.events).toHaveLength(1);
+        expect(parsed.events[0]).toMatchObject({
+          summary: "Batterie",
+          start: "20261201",
+        });
+        expect(parsed.events[0].status).not.toBe("TENTATIVE");
+      }
+    });
 
     it("are left out unless the feed asks for them", async () => {
       const user = await createTestUser();

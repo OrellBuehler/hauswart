@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { and, eq } from "drizzle-orm";
-import { notifications, type DB } from "$lib/server/db";
+import { notifications, taskState, type DB } from "$lib/server/db";
 import { updateHousehold } from "$lib/server/household/household";
 import { completeTask, snoozeTask } from "$lib/server/tasks/completions";
 import { runEvaluationCycle } from "$lib/server/tasks/scheduler";
@@ -155,6 +155,116 @@ describe("generateNotifications", () => {
           .map((r) => r.dedupeKey.split(":")[1])
           .sort(),
       ).toEqual(["2026-06-16", "2026-06-16", "2026-06-23", "2026-06-23"]);
+    });
+  });
+
+  describe("counter tasks with a time limit", () => {
+    const service = {
+      v: 1,
+      type: "counter_delta",
+      entityId: "odometer:example-car",
+      threshold: 15_000,
+      unit: "km",
+      orEvery: { every: 1, unit: "month" },
+    } as const;
+
+    it("announce the time limit coming up, due and overdue like any dated task", async () => {
+      const [anna] = await household();
+      const task = await makeTask(ctx("2026-06-15"), {
+        title: "Service",
+        trigger: service,
+      });
+      expect(task.state).toMatchObject({
+        status: "ok",
+        dueDate: "2026-07-15",
+        dueKind: "exact",
+      });
+      const kindsAt = async (when: string) => {
+        await runEvaluationCycle(ctx(when, "07:00"));
+        return rows(test.db, { userId: anna.id })
+          .filter((r) => r.kind !== "digest")
+          .map((r) => r.kind)
+          .sort();
+      };
+      expect(await kindsAt("2026-07-01")).toEqual([]);
+      expect(await kindsAt("2026-07-10")).toEqual(["due_soon"]);
+      expect(await kindsAt("2026-07-15")).toEqual(["due", "due_soon"]);
+      expect(await kindsAt("2026-07-16")).toEqual([
+        "due",
+        "due_soon",
+        "overdue",
+      ]);
+    });
+
+    describe("when the counter is expected to get there first", () => {
+      async function expectedFirst() {
+        const [anna] = await household();
+        const task = await makeTask(ctx("2026-06-15"), {
+          title: "Service",
+          trigger: service,
+        });
+        // What the evaluator stores when the counter is expected to cross before a limit a few
+        // days away: the limit stays the due date, the estimate is the earlier guess.
+        test.db
+          .update(taskState)
+          .set({
+            status: "open",
+            dueDate: "2026-06-20",
+            dueKind: "estimated",
+            progressJson: { current: 14_000, target: 15_000 },
+            estimateJson: { date: "2026-06-17", confidence: "medium" },
+          })
+          .where(eq(taskState.taskId, task.id))
+          .run();
+        return { anna, task };
+      }
+
+      it("still announces the hard limit coming up", async () => {
+        const { anna } = await expectedFirst();
+        await generateNotifications(ctx("2026-06-15", "07:00"));
+        const soon = rows(test.db, { userId: anna.id, kind: "due_soon" });
+        expect(soon).toHaveLength(1);
+        expect(soon[0].paramsJson).toMatchObject({
+          title: "Service",
+          date: "2026-06-20",
+        });
+      });
+
+      it("prepares for the estimate, which is the date shown", async () => {
+        const { anna, task } = await expectedFirst();
+        await createPreparation(ctx("2026-06-15"), task.id, {
+          title: "Termin buchen",
+          kind: "generic",
+          leadDays: 3,
+          qty: 1,
+        });
+        test.db
+          .update(taskState)
+          .set({ status: "ok" })
+          .where(eq(taskState.taskId, task.id))
+          .run();
+        await generateNotifications(ctx("2026-06-14", "07:00"));
+        expect(rows(test.db, { userId: anna.id, kind: "prep" })).toHaveLength(
+          1,
+        );
+        expect(
+          rows(test.db, { userId: anna.id, kind: "prep" })[0].paramsJson,
+        ).toMatchObject({ prep: "Termin buchen", date: "2026-06-17" });
+      });
+    });
+
+    it("a counter task without a time limit stays quiet until it is due", async () => {
+      const [anna] = await household();
+      await makeTask(ctx("2026-06-15"), {
+        trigger: {
+          v: 1,
+          type: "counter_delta",
+          entityId: service.entityId,
+          threshold: service.threshold,
+        },
+      });
+      await runEvaluationCycle(ctx("2026-07-10", "07:00"));
+      expect(rows(test.db, { userId: anna.id, kind: "due_soon" })).toEqual([]);
     });
   });
 

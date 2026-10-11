@@ -9,6 +9,11 @@ import type {
 import { minor } from "$lib/money";
 import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
 import { assets, contacts, serviceLog, type DB } from "$lib/server/db";
+import {
+  assertNotesOfAsset,
+  reopenNotesOf,
+  resolveNotes,
+} from "$lib/server/asset-notes/resolve";
 import { commentCountSql } from "$lib/server/comments/counts";
 import { costsOfSql, type CostsOf } from "$lib/server/costs/totals";
 import { getHousehold } from "$lib/server/household/household";
@@ -19,6 +24,10 @@ import {
   type ServiceContext,
 } from "$lib/server/service";
 import { clockAt } from "$lib/server/tasks/evaluator";
+import {
+  removeReadingsOfSource,
+  writeOdometer,
+} from "$lib/server/vehicles/odometer";
 
 type Db = Pick<ServiceContext, "db">;
 type Now = Pick<ServiceContext, "db" | "now">;
@@ -180,6 +189,39 @@ function costFields(
   };
 }
 
+/**
+ * The vehicle reading that goes with an entry's odometer value, kept in step with it: written (or
+ * moved to the entry's date) when the entry has a value, removed when it has none. A value lower
+ * than the reading before it is a 400 on `odometer`; an asset that is no vehicle cannot take one.
+ */
+function syncEntryReading(
+  ctx: Now,
+  entry: {
+    id: string;
+    assetId: string;
+    date: string;
+    odometer: number | null;
+    createdBy: string | null;
+  },
+): void {
+  if (entry.odometer === null) {
+    removeReadingsOfSource(ctx, "service_log", entry.id);
+    return;
+  }
+  writeOdometer(
+    ctx,
+    {
+      assetId: entry.assetId,
+      date: entry.date,
+      value: entry.odometer,
+      source: "service_log",
+      sourceId: entry.id,
+      createdBy: entry.createdBy,
+    },
+    { date: "date", value: "odometer", asset: "odometer" },
+  );
+}
+
 export function listAssetEntries(
   ctx: Db,
   assetId: string,
@@ -199,52 +241,109 @@ export function createEntry(
 ): ServiceLogRecord {
   assertAsset(ctx, assetId);
   assertContact(ctx, input.contactId);
-  const row = ctx.db
-    .insert(serviceLog)
-    .values({
-      assetId,
-      date: input.date ?? clockAt(ctx.now).today,
-      kind: input.kind,
-      title: input.title,
-      descriptionMd: input.descriptionMd,
-      contactId: input.contactId ?? null,
-      completionId: link.completionId ?? null,
-      ...costFields(ctx, input.costMinor, input.currency),
-      performedBy: input.performedBy ?? null,
+  const date = input.date ?? clockAt(ctx.now).today;
+  const odometer = input.odometer ?? null;
+  const noteIds = assertNotesOfAsset(ctx, assetId, input.resolvedNoteIds ?? []);
+  const id = ctx.db.transaction((tx) => {
+    const row = tx
+      .insert(serviceLog)
+      .values({
+        assetId,
+        date,
+        kind: input.kind,
+        title: input.title,
+        descriptionMd: input.descriptionMd,
+        contactId: input.contactId ?? null,
+        completionId: link.completionId ?? null,
+        ...costFields(ctx, input.costMinor, input.currency),
+        odometer,
+        performedBy: input.performedBy ?? null,
+        createdBy,
+      })
+      .returning({ id: serviceLog.id })
+      .get();
+    syncEntryReading(
+      { ...ctx, db: tx as unknown as DB },
+      { id: row.id, assetId, date, odometer, createdBy },
+    );
+    resolveNotes(
+      { db: tx as unknown as DB, now: ctx.now },
+      noteIds,
+      row.id,
       createdBy,
-    })
-    .returning({ id: serviceLog.id })
-    .get();
-  return getEntry(ctx, row.id);
+    );
+    return row.id;
+  });
+  return getEntry(ctx, id);
 }
 
 export function updateEntry(
-  ctx: Db,
+  ctx: Now,
   assetId: string,
   entryId: string,
   patch: UpdateServiceLogRequest,
+  userId: string | null = null,
 ): ServiceLogRecord {
   const current = getAssetEntry(ctx, assetId, entryId);
   if (patch.contactId !== undefined) assertContact(ctx, patch.contactId);
-  const { costMinor, currency, ...rest } = patch;
+  const { costMinor, currency, resolvedNoteIds, ...rest } = patch;
+  const noteIds = assertNotesOfAsset(ctx, assetId, resolvedNoteIds ?? []);
   const touchesCost = costMinor !== undefined || currency !== undefined;
   const nextCost = costMinor !== undefined ? costMinor : current.costMinor;
-  ctx.db
-    .update(serviceLog)
-    .set({
-      ...rest,
-      ...(touchesCost
-        ? costFields(ctx, nextCost, currency ?? current.currency)
-        : {}),
-    })
-    .where(eq(serviceLog.id, entryId))
-    .run();
+  const odometer =
+    patch.odometer !== undefined ? patch.odometer : current.odometer;
+  const date = patch.date ?? current.date;
+  ctx.db.transaction((tx) => {
+    tx.update(serviceLog)
+      .set({
+        ...rest,
+        ...(touchesCost
+          ? costFields(ctx, nextCost, currency ?? current.currency)
+          : {}),
+        // Also set when only notes are resolved, which touches no column of the entry.
+        updatedAt: new Date(ctx.now),
+      })
+      .where(eq(serviceLog.id, entryId))
+      .run();
+    // The reading follows the entry's value and date.
+    if (
+      patch.odometer !== undefined ||
+      (patch.date !== undefined && current.odometer !== null)
+    ) {
+      syncEntryReading(
+        { ...ctx, db: tx as unknown as DB },
+        {
+          id: entryId,
+          assetId,
+          date,
+          odometer,
+          createdBy: current.createdBy,
+        },
+      );
+    }
+    resolveNotes(
+      { db: tx as unknown as DB, now: ctx.now },
+      noteIds,
+      entryId,
+      userId,
+    );
+  });
   return getEntry(ctx, entryId);
 }
 
+/** The notes the entry had resolved are open again; its attachments go with it. */
 export function deleteEntry(ctx: Now, assetId: string, entryId: string): void {
   getAssetEntry(ctx, assetId, entryId);
-  ctx.db.delete(serviceLog).where(eq(serviceLog.id, entryId)).run();
+  ctx.db.transaction((tx) => {
+    reopenNotesOf({ db: tx as unknown as DB, now: ctx.now }, [entryId]);
+    tx.delete(serviceLog).where(eq(serviceLog.id, entryId)).run();
+    // The reading it wrote goes with it.
+    removeReadingsOfSource(
+      { ...ctx, db: tx as unknown as DB },
+      "service_log",
+      entryId,
+    );
+  });
   removeOwnedAttachments(ctx, "service_log", entryId);
 }
 
@@ -264,6 +363,12 @@ export function checkCompletionLog(
     );
   }
   assertContact(ctx, input.contactId);
+  assertNotesOfAsset(
+    ctx,
+    task.assetId,
+    input.resolvedNoteIds ?? [],
+    "serviceLog",
+  );
   return task.assetId;
 }
 
@@ -291,6 +396,7 @@ export function logCompletion(
       descriptionMd: input.descriptionMd ?? "",
       contactId: input.contactId,
       costMinor: input.costMinor,
+      resolvedNoteIds: input.resolvedNoteIds,
     },
     createdBy,
     { completionId },

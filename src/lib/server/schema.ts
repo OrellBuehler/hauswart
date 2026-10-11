@@ -11,6 +11,7 @@ import {
 import {
   ASSET_CONTACT_ROLES,
   ASSET_KINDS,
+  ASSET_NOTE_STATUSES,
   ASSIGN_MODES,
   ATTACHMENT_OWNER_TYPES,
   COMMENT_ENTITY_TYPES,
@@ -36,14 +37,20 @@ import {
   FEED_SCOPES,
   FINANCE_SUGGESTION_KINDS,
   FINANCE_SUGGESTION_STATUSES,
+  FUEL_UNITS,
   GUEST_SECTIONS,
   HINT_KINDS,
+  INSURANCE_PREMIUM_PERIODS,
+  INSURANCE_RENEWALS,
+  INSURANCE_TYPES,
   INTEGRATION_KINDS,
   INTEGRATION_STATUSES,
   NOTIFICATION_KINDS,
   NOTIFICATION_TARGET_CHANNELS,
   NOTIFICATION_TITLE_KEYS,
   NOTIFY_MODES,
+  ODOMETER_SOURCES,
+  ODOMETER_UNITS,
   PART_MOVEMENT_REASONS,
   PREPARATION_KINDS,
   ROTATION_STRATEGIES,
@@ -51,9 +58,12 @@ import {
   TASK_CATEGORIES,
   TASK_PRIORITIES,
   TASK_SOURCES,
+  TIRE_EVENT_KINDS,
+  TIRE_SEASONS,
   TOKEN_KINDS,
   USER_LOCALES,
   USER_ROLES,
+  VEHICLE_FUEL_TYPES,
   WARRANTY_SOURCES,
 } from "$lib/api/enums";
 import type { Scope } from "$lib/api/scopes";
@@ -228,6 +238,157 @@ export const assets = sqliteTable(
     index("assets_room_id_idx").on(t.roomId),
     index("assets_kind_idx").on(t.kind),
     uniqueIndex("assets_external_idx").on(t.externalSource, t.externalRef),
+  ],
+);
+
+/** What only a vehicle has (assets of kind `vehicle`); one row per vehicle, created by the first save. */
+export const vehicleDetails = sqliteTable("vehicle_details", {
+  assetId: text("asset_id")
+    .primaryKey()
+    .references(() => assets.id, { onDelete: "cascade" }),
+  plate: text("plate"),
+  vin: text("vin"),
+  /** The Swiss "Stammnummer". */
+  registrationNumber: text("registration_number"),
+  firstRegistration: text("first_registration"),
+  fuelType: text("fuel_type", { enum: VEHICLE_FUEL_TYPES }),
+  tireSizeSummer: text("tire_size_summer"),
+  tireSizeWinter: text("tire_size_winter"),
+  /** Where the vehicle is kept; a car has no room. */
+  location: text("location"),
+  odometerUnit: text("odometer_unit", { enum: ODOMETER_UNITS })
+    .notNull()
+    .default("km"),
+  notes: text("notes"),
+  ...timestamps,
+});
+
+/**
+ * Odometer readings of a vehicle, never pruned. The latest one is mirrored as the signal
+ * `odometer:<asset id>` (with a sample per reading) so tasks can count on it.
+ */
+export const odometerReadings = sqliteTable(
+  "odometer_readings",
+  {
+    id: id(),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    date: text("date").notNull(),
+    value: real("value").notNull(),
+    source: text("source", { enum: ODOMETER_SOURCES })
+      .notNull()
+      .default("manual"),
+    /** The record the reading came from (a completion, a service log entry, ...); one reading per record. */
+    sourceId: text("source_id"),
+    note: text("note"),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    ...timestamps,
+  },
+  (t) => [
+    index("odometer_readings_asset_idx").on(t.assetId, sql`${t.date} desc`),
+    uniqueIndex("odometer_readings_source_idx")
+      .on(t.source, t.sourceId)
+      .where(sql`${t.sourceId} is not null`),
+  ],
+);
+
+/**
+ * A set of tires of a vehicle. At most one set of a vehicle is mounted (the partial unique index);
+ * sets are mounted through the mount endpoint, which writes the events below. Photos are attachments
+ * of the owner type `tire_set`.
+ */
+export const tireSets = sqliteTable(
+  "tire_sets",
+  {
+    id: id(),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    season: text("season", { enum: TIRE_SEASONS }).notNull(),
+    brand: text("brand"),
+    model: text("model"),
+    /** For example "205/55 R16 91H". */
+    size: text("size"),
+    /** The DOT date code, week and year: "2423" is week 24 of 2023. */
+    dot: text("dot"),
+    treadDepthMm: real("tread_depth_mm"),
+    treadMeasuredOn: text("tread_measured_on"),
+    storageLocation: text("storage_location"),
+    /** A tire hotel, for example. */
+    storageContactId: text("storage_contact_id").references(() => contacts.id, {
+      onDelete: "set null",
+    }),
+    mounted: integer("mounted", { mode: "boolean" }).notNull().default(false),
+    purchasedOn: text("purchased_on"),
+    retiredAt: integer("retired_at", { mode: "timestamp_ms" }),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (t) => [
+    index("tire_sets_asset_idx").on(t.assetId),
+    index("tire_sets_storage_contact_idx").on(t.storageContactId),
+    uniqueIndex("tire_sets_mounted_idx")
+      .on(t.assetId)
+      .where(sql`${t.mounted} = 1`),
+  ],
+);
+
+/** What happened to a tire set: mounted, taken off, measured. The mount and unmount events give the distance driven on it. */
+export const tireSetEvents = sqliteTable(
+  "tire_set_events",
+  {
+    id: id(),
+    tireSetId: text("tire_set_id")
+      .notNull()
+      .references(() => tireSets.id, { onDelete: "cascade" }),
+    date: text("date").notNull(),
+    kind: text("kind", { enum: TIRE_EVENT_KINDS }).notNull(),
+    odometer: real("odometer"),
+    treadDepthMm: real("tread_depth_mm"),
+    ...timestamps,
+  },
+  (t) => [index("tire_set_events_set_idx").on(t.tireSetId, t.date)],
+);
+
+/**
+ * The fuel log (Tankbuch) of a vehicle: one row per fill-up or charge. Each one is also an odometer
+ * reading (source `fuel_log`) and, when it cost something, a cost entry of the category `fuel`.
+ */
+export const fuelLogs = sqliteTable(
+  "fuel_logs",
+  {
+    id: id(),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    date: text("date").notNull(),
+    odometer: real("odometer").notNull(),
+    quantity: real("quantity").notNull(),
+    unit: text("unit", { enum: FUEL_UNITS }).notNull().default("l"),
+    amountMinor: minor("amount_minor").notNull(),
+    currency: text("currency").notNull(),
+    /** The tank was filled up; only a full fill closes a stretch of consumption. */
+    fullTank: integer("full_tank", { mode: "boolean" }).notNull().default(true),
+    /** A fill-up before this one is missing from the log: no stretch reaches back past it. */
+    missedPrevious: integer("missed_previous", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    station: text("station"),
+    notes: text("notes"),
+    costEntryId: text("cost_entry_id").references(() => costEntries.id, {
+      onDelete: "set null",
+    }),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    ...timestamps,
+  },
+  (t) => [
+    index("fuel_logs_asset_idx").on(t.assetId, sql`${t.date} desc`),
+    index("fuel_logs_cost_entry_idx").on(t.costEntryId),
   ],
 );
 
@@ -594,6 +755,8 @@ export const serviceLog = sqliteTable(
     currency: text("currency"),
     /** Cost entries arrive with the costs milestone; no foreign key yet. */
     costEntryId: text("cost_entry_id"),
+    /** The odometer when the work was done (vehicles); it also writes a reading of the vehicle. */
+    odometer: real("odometer"),
     performedBy: text("performed_by"),
     createdBy: text("created_by").references(() => users.id, {
       onDelete: "set null",
@@ -673,6 +836,109 @@ export const defectEvents = sqliteTable(
     ...timestamps,
   },
   (t) => [index("defect_events_defect_idx").on(t.defectId, t.at)],
+);
+
+/**
+ * An insurance policy of the household (car, contents, liability, building ...). Domain data shared
+ * by everybody. The cancellation deadline is not stored: it follows from the end date, the notice
+ * period and the renewal mode (`insurance/policy.ts`), so it can never be out of step with them.
+ */
+export const insurancePolicies = sqliteTable(
+  "insurance_policies",
+  {
+    id: id(),
+    title: text("title").notNull(),
+    type: text("type", { enum: INSURANCE_TYPES }).notNull().default("other"),
+    insurerContactId: text("insurer_contact_id").references(() => contacts.id, {
+      onDelete: "set null",
+    }),
+    policyNumber: text("policy_number"),
+    premiumMinor: integer("premium_minor").notNull().$type<Minor>(),
+    /** ISO 4217; the deductible is in the same currency. */
+    currency: text("currency").notNull(),
+    premiumPeriod: text("premium_period", { enum: INSURANCE_PREMIUM_PERIODS })
+      .notNull()
+      .default("annual"),
+    deductibleMinor: integer("deductible_minor").$type<Minor>(),
+    startDate: text("start_date").notNull(),
+    /** The last day of cover of the current term; null = open-ended. */
+    endDate: text("end_date"),
+    renewal: text("renewal", { enum: INSURANCE_RENEWALS })
+      .notNull()
+      .default("auto"),
+    cancellationNoticeMonths: integer("cancellation_notice_months"),
+    /** A number to call when something happens (breakdown service, claims line). */
+    assistancePhone: text("assistance_phone"),
+    showOnEmergency: integer("show_on_emergency", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    notes: text("notes"),
+    archivedAt: integer("archived_at", { mode: "timestamp_ms" }),
+    ...timestamps,
+  },
+  (t) => [
+    index("insurance_policies_type_idx").on(t.type),
+    index("insurance_policies_archived_at_idx").on(t.archivedAt),
+    index("insurance_policies_insurer_idx").on(t.insurerContactId),
+  ],
+);
+
+/** What a policy covers: any number of assets, and an asset can be covered by several policies. */
+export const insurancePolicyAssets = sqliteTable(
+  "insurance_policy_assets",
+  {
+    policyId: text("policy_id")
+      .notNull()
+      .references(() => insurancePolicies.id, { onDelete: "cascade" }),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.policyId, t.assetId] }),
+    index("insurance_policy_assets_asset_id_idx").on(t.assetId),
+  ],
+);
+
+/**
+ * A small issue to mention at the next appointment ("brakes squeak"). Open until a service log
+ * entry addressed it (`serviceLogId`), it was turned into a defect (`defectId`) or somebody
+ * resolved it by hand. Domain data shared by everybody; the photos of the issue are attachments of
+ * the owner type `asset_note`.
+ */
+export const assetNotes = sqliteTable(
+  "asset_notes",
+  {
+    id: id(),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    status: text("status", { enum: ASSET_NOTE_STATUSES })
+      .notNull()
+      .default("open"),
+    resolvedAt: integer("resolved_at", { mode: "timestamp_ms" }),
+    resolvedBy: text("resolved_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    /** The service log entry that addressed the issue. */
+    serviceLogId: text("service_log_id").references(() => serviceLog.id, {
+      onDelete: "set null",
+    }),
+    /** The defect the note was turned into. */
+    defectId: text("defect_id").references(() => defects.id, {
+      onDelete: "set null",
+    }),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    ...timestamps,
+  },
+  (t) => [
+    index("asset_notes_asset_status_idx").on(t.assetId, t.status),
+    index("asset_notes_service_log_id_idx").on(t.serviceLogId),
+    index("asset_notes_defect_id_idx").on(t.defectId),
+  ],
 );
 
 export const comments = sqliteTable(

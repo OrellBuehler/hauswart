@@ -12,6 +12,7 @@ import {
 import { minorAmountSchema } from "./fields";
 import { currencySchema } from "./household";
 import { costsOfSchema } from "./costs";
+import { odometerValueSchema } from "./vehicles";
 
 export const serviceLogKindSchema = z.enum(SERVICE_LOG_KINDS);
 
@@ -32,6 +33,8 @@ export const serviceLogEntrySchema = z
     costEntryId: z.string().nullable(),
     /** Cost entries booked against this entry (household currency); see `/costs?...`. */
     costs: costsOfSchema,
+    /** The odometer when the work was done (vehicles only); it is also a reading of the vehicle. */
+    odometer: z.number().nullable(),
     performedBy: z.string().nullable(),
     createdBy: z.string().nullable(),
     commentCount: z.number().int(),
@@ -52,6 +55,10 @@ export const listAssetServiceLogQuerySchema = paginationQuerySchema.extend({
 });
 export const listServiceLogResponseSchema = paginated(serviceLogEntrySchema);
 
+/** How many notes one service log entry can resolve (see `/assets/{id}/notes`). */
+export const MAX_RESOLVED_NOTES = 50;
+const resolvedNoteIds = z.array(idSchema).max(MAX_RESOLVED_NOTES);
+
 const logFields = {
   date: dateSchema,
   kind: serviceLogKindSchema,
@@ -60,10 +67,14 @@ const logFields = {
   contactId: idSchema.nullable(),
   costMinor: minorAmountSchema.nullable(),
   currency: currencySchema.nullable(),
+  odometer: odometerValueSchema.nullable(),
   performedBy: nullableText(160),
 };
 
-/** `date` defaults to today, `currency` to the household's when a cost is given. */
+/**
+ * `date` defaults to today, `currency` to the household's when a cost is given. An `odometer` (vehicles
+ * only, 400 on any other asset) is also recorded as a reading of the vehicle on the entry's date.
+ */
 export const createServiceLogRequestSchema = z.strictObject({
   date: logFields.date.optional(),
   kind: logFields.kind.default("maintenance"),
@@ -72,7 +83,10 @@ export const createServiceLogRequestSchema = z.strictObject({
   contactId: logFields.contactId.optional(),
   costMinor: logFields.costMinor.optional(),
   currency: logFields.currency.optional(),
+  odometer: logFields.odometer.optional(),
   performedBy: logFields.performedBy.optional(),
+  /** Notes of this asset the entry addresses: they become resolved with this entry. Another asset's note or an unknown id is a 400. */
+  resolvedNoteIds: resolvedNoteIds.optional(),
 });
 export type CreateServiceLogRequest = z.output<
   typeof createServiceLogRequestSchema
@@ -87,7 +101,10 @@ export const updateServiceLogRequestSchema = atLeastOne(
     contactId: logFields.contactId.optional(),
     costMinor: logFields.costMinor.optional(),
     currency: logFields.currency.optional(),
+    odometer: logFields.odometer.optional(),
     performedBy: logFields.performedBy.optional(),
+    /** Notes of this asset the entry addresses, added to those it resolved already; open notes become resolved with this entry, resolved ones stay as they are. */
+    resolvedNoteIds: resolvedNoteIds.optional(),
   }),
 );
 export type UpdateServiceLogRequest = z.output<
@@ -106,6 +123,8 @@ export const completionServiceLogSchema = z.strictObject({
   descriptionMd: logFields.descriptionMd.optional(),
   contactId: logFields.contactId.optional(),
   costMinor: logFields.costMinor.optional(),
+  /** Notes of the task's asset this work addressed: they become resolved with the entry, and open again if the completion is undone. */
+  resolvedNoteIds: resolvedNoteIds.optional(),
 });
 export type CompletionServiceLogRequest = z.output<
   typeof completionServiceLogSchema

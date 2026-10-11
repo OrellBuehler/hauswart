@@ -3,6 +3,7 @@
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { formatDay } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
+  import { shownDate, shownDateIsEstimate } from "$lib/tasks/engine/shown";
   import { cn } from "$lib/utils";
 
   let {
@@ -30,11 +31,12 @@
     snoozed: "text-muted-foreground",
     unknown: "text-muted-foreground",
   };
+  const shown = $derived(state ? shownDate(state) : null);
   const date = $derived(
-    state?.dueDate
-      ? state.dueKind === "estimated"
-        ? m.due_estimated_date({ date: formatDay(state.dueDate) })
-        : formatDay(state.dueDate)
+    state && shown
+      ? shownDateIsEstimate(state)
+        ? m.due_estimated_date({ date: formatDay(shown) })
+        : formatDay(shown)
       : undefined,
   );
 </script>

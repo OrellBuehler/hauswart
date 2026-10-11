@@ -62,6 +62,14 @@
       0,
     ),
   );
+  /** The summary covers one device when the device filter is set. */
+  const summaryAsset = $derived(
+    filters.assetId
+      ? {
+          name: data.assets.find((a) => a.id === filters.assetId)?.name ?? null,
+        }
+      : undefined,
+  );
   const showInbox = $derived(
     data.financeConnected || data.pendingSuggestions > 0,
   );
@@ -247,7 +255,7 @@
     </Button>
   </div>
 
-  <CostsSummary summary={data.summary} />
+  <CostsSummary summary={data.summary} asset={summaryAsset} />
 
   <Tabs.Root bind:value={tab} class="gap-4">
     <Tabs.List class="h-10 w-full sm:w-fit">

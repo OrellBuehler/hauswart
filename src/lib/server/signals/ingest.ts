@@ -3,7 +3,11 @@ import { generateNotifications } from "$lib/server/notifications/generate";
 import { evaluateTasks } from "$lib/server/tasks/evaluator";
 import { applyAutoComplete } from "./auto-complete";
 import { processDueReactions, scheduleReactions } from "./reactions";
-import { upsertSignals, type SignalReading } from "./service";
+import {
+  upsertSignals,
+  type SignalChange,
+  type SignalReading,
+} from "./service";
 import { tasksReading } from "./watch";
 
 export interface IngestSummary {
@@ -15,6 +19,36 @@ export interface IngestSummary {
   reactionsScheduled: number;
   reactionsFired: number;
   evaluated: number;
+}
+
+type Settled = Omit<IngestSummary, "changed" | "skipped">;
+
+/**
+ * What follows a change of stored readings, whoever stored them: completes the
+ * tasks whose auto-complete rules match, schedules hint reactions, re-evaluates
+ * the tasks that read a changed signal and announces what became due.
+ */
+export async function settleSignalChanges(
+  ctx: ServiceContext,
+  changes: readonly SignalChange[],
+): Promise<Settled> {
+  const settled: Settled = {
+    autoCompleted: 0,
+    reactionsScheduled: 0,
+    reactionsFired: 0,
+    evaluated: 0,
+  };
+  if (changes.length === 0) return settled;
+  settled.autoCompleted = (await applyAutoComplete(ctx, changes)).length;
+  settled.reactionsScheduled = scheduleReactions(ctx, changes);
+  const affected = tasksReading(
+    ctx,
+    changes.map((c) => c.key),
+  );
+  settled.evaluated = (await evaluateTasks(ctx, affected)).evaluated;
+  settled.reactionsFired = (await processDueReactions(ctx)).sent;
+  await generateNotifications(ctx);
+  return settled;
 }
 
 /**
@@ -30,25 +64,11 @@ export async function ingestSignals(
   source: string,
 ): Promise<IngestSummary> {
   const { changes, skipped } = upsertSignals(ctx, readings, source);
-  const summary: IngestSummary = {
+  return {
     changed: changes.length,
     skipped,
-    autoCompleted: 0,
-    reactionsScheduled: 0,
-    reactionsFired: 0,
-    evaluated: 0,
+    ...(await settleSignalChanges(ctx, changes)),
   };
-  if (changes.length === 0) return summary;
-  summary.autoCompleted = (await applyAutoComplete(ctx, changes)).length;
-  summary.reactionsScheduled = scheduleReactions(ctx, changes);
-  const affected = tasksReading(
-    ctx,
-    changes.map((c) => c.key),
-  );
-  summary.evaluated = (await evaluateTasks(ctx, affected)).evaluated;
-  summary.reactionsFired = (await processDueReactions(ctx)).sent;
-  await generateNotifications(ctx);
-  return summary;
 }
 
 /** New calendar dates arrived for these subscription keys: re-evaluate the tasks that use them and announce what became due. */

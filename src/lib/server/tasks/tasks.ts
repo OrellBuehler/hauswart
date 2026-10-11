@@ -1,12 +1,18 @@
 import { and, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { DueStatus } from "$lib/tasks/engine";
-import { evaluateTask, triggerSchema, type Trigger } from "$lib/tasks/engine";
+import {
+  evaluateTask,
+  shownDate,
+  triggerSchema,
+  type Trigger,
+} from "$lib/tasks/engine";
 import { zonedTimeToInstant } from "$lib/dates";
 import type { TaskCategory } from "$lib/api/enums";
 import type {
   CreateTaskRequest,
   UpdateTaskRequest,
 } from "$lib/api/schemas/tasks";
+import { openNoteCountSql } from "$lib/server/asset-notes/counts";
 import { commentCountSql } from "$lib/server/comments/counts";
 import { assets, rooms, taskState, tasks, users } from "$lib/server/db";
 import { parseStored } from "$lib/server/json";
@@ -32,6 +38,8 @@ export interface TaskRecord extends Omit<TaskRow, "trigger"> {
   assetName: string | null;
   roomName: string | null;
   commentCount: number;
+  /** Open notes on the task's asset (0 without an asset). */
+  openNoteCount: number;
   state: TaskStateRecord | null;
 }
 
@@ -40,6 +48,7 @@ type Joined = {
   assetName: string | null;
   roomName: string | null;
   commentCount: number;
+  openNoteCount: number;
   state: StateRow | null;
 };
 
@@ -50,6 +59,7 @@ const selectTasks = (db: ServiceContext["db"]) =>
       assetName: assets.name,
       roomName: rooms.name,
       commentCount: commentCountSql("task", tasks.id),
+      openNoteCount: openNoteCountSql(tasks.assetId),
       state: taskState,
     })
     .from(tasks)
@@ -62,6 +72,7 @@ function toRecord({
   assetName,
   roomName,
   commentCount,
+  openNoteCount,
   state,
 }: Joined): TaskRecord {
   return {
@@ -70,6 +81,7 @@ function toRecord({
     assetName,
     roomName,
     commentCount: Number(commentCount),
+    openNoteCount: Number(openNoteCount),
     state: state ? toStateRecord(state) : null,
   };
 }
@@ -102,8 +114,8 @@ const STATUS_RANK: Record<DueStatus, number> = {
 };
 
 function compareTasks(a: TaskRecord, b: TaskRecord): number {
-  const dateA = a.state?.dueDate ?? a.state?.estimate?.date ?? "9999-12-31";
-  const dateB = b.state?.dueDate ?? b.state?.estimate?.date ?? "9999-12-31";
+  const dateA = (a.state && shownDate(a.state)) ?? "9999-12-31";
+  const dateB = (b.state && shownDate(b.state)) ?? "9999-12-31";
   return (
     STATUS_RANK[a.state?.status ?? "unknown"] -
       STATUS_RANK[b.state?.status ?? "unknown"] ||
@@ -275,6 +287,8 @@ export async function createTask(
         externalRef: input.externalRef ?? null,
         externalUrl: input.externalUrl ?? null,
         createdBy,
+        // The instant the request works as of, like every completion: the engine counts time from it.
+        createdAt: new Date(ctx.now),
       })
       .returning({ id: tasks.id })
       .get().id;

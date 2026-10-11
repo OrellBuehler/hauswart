@@ -1,7 +1,9 @@
 <script lang="ts">
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
+  import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
   import FormAlert from "$lib/components/app/form-alert.svelte";
   import SwitchField from "$lib/components/app/switch-field.svelte";
+  import NoteChoices from "$lib/components/asset-notes/note-choices.svelte";
   import ServiceLogFields from "$lib/components/assets/service-log-fields.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
@@ -16,10 +18,16 @@
   } from "$lib/dates";
   import { apiErrorMessage } from "$lib/error-message";
   import { householdCurrency } from "$lib/api/household-currency";
-  import { formatDateShort } from "$lib/format";
+  import { formatDateShort, formatNumber } from "$lib/format";
   import { readMoney } from "$lib/format-money";
   import { m } from "$lib/paraglide/messages";
   import type { ServiceLogKind } from "$lib/api/enums";
+  import OdometerReadingField from "$lib/components/vehicles/odometer-reading-field.svelte";
+  import type { Trigger } from "$lib/tasks/engine/types";
+  import { refusedMessage, refusedReading } from "$lib/vehicles/odometer-error";
+  import { knownOdometerAsset } from "$lib/vehicles/odometer";
+  import { readingToSend } from "$lib/vehicles/odometer-input";
+  import { VehicleReading } from "$lib/vehicles/odometer-state.svelte";
   import {
     completeTask,
     skipTask,
@@ -41,6 +49,11 @@
       title: string;
       snoozedUntil?: string | null;
       assetId?: string | null;
+      /** Open notes on the task's asset; they can be ticked off with the service log entry. */
+      openNoteCount?: number;
+      /** A task that counts a vehicle's odometer asks for the reading when it is completed: named here, else read from its trigger. */
+      odometerAssetId?: string | null;
+      trigger?: Trigger;
     };
     today: string;
     /** The household's zone; needed to backdate a completion. */
@@ -58,8 +71,15 @@
   let logDescription = $state("");
   let logContactId = $state<string | null>(null);
   let logCost = $state("");
+  let logNoteIds = $state<string[]>([]);
   let logErrors = $state<Record<string, string>>({});
   let currency = $state("CHF");
+  let odometer = $state("");
+  let odometerError = $state<string | undefined>();
+  const vehicle = new VehicleReading();
+
+  /** The vehicle whose odometer the task counts, if it does. */
+  const odometerAssetId = $derived(knownOdometerAsset(task) ?? null);
 
   const tomorrow = $derived(addDays(today, 1));
   const presets = $derived([
@@ -80,7 +100,16 @@
     logDescription = "";
     logContactId = null;
     logCost = "";
+    logNoteIds = [];
     logErrors = {};
+    odometer = "";
+    odometerError = undefined;
+  });
+
+  $effect(() => {
+    const assetId = odometerAssetId;
+    if (!open || mode !== "complete" || !assetId) return;
+    return vehicle.load(assetId);
   });
 
   $effect(() => {
@@ -131,6 +160,23 @@
       error = m.task_complete_future();
       return;
     }
+    let counterValue: number | undefined;
+    if (mode === "complete" && odometerAssetId) {
+      const reading = readingToSend(
+        odometer,
+        vehicle.known,
+        MAX_ODOMETER_VALUE,
+      );
+      if (!reading.ok) {
+        odometerError = m.task_odometer_invalid({
+          max: formatNumber(MAX_ODOMETER_VALUE),
+        });
+        error = m.form_check_fields();
+        return;
+      }
+      odometerError = undefined;
+      if (reading.value !== null) counterValue = reading.value;
+    }
     let serviceLog: CompleteOptions["serviceLog"];
     if (mode === "complete" && logWork && task.assetId) {
       logErrors = {};
@@ -147,6 +193,7 @@
         ...(logDescription.trim() ? { descriptionMd: logDescription } : {}),
         ...(logContactId ? { contactId: logContactId } : {}),
         ...(cost ? { costMinor: cost } : {}),
+        ...(logNoteIds.length > 0 ? { resolvedNoteIds: [...logNoteIds] } : {}),
       };
     }
     pending = true;
@@ -157,6 +204,7 @@
         await completeTask(task, {
           note: note.trim() || null,
           ...(serviceLog ? { serviceLog } : {}),
+          ...(counterValue === undefined ? {} : { counterValue }),
           ...(backdated
             ? {
                 completedAt: new Date(
@@ -172,7 +220,13 @@
       }
       open = false;
     } catch (err) {
-      error = apiErrorMessage(err);
+      const refused = refusedReading(err, "counterValue");
+      if (refused) {
+        odometerError = refusedMessage(refused, vehicle.unit);
+        error = m.form_check_fields();
+      } else {
+        error = apiErrorMessage(err);
+      }
     } finally {
       pending = false;
     }
@@ -248,6 +302,14 @@
               </p>
             </div>
           {/if}
+          {#if mode === "complete" && odometerAssetId}
+            <OdometerReadingField
+              id="action-odometer"
+              vehicle={vehicle.state}
+              bind:value={odometer}
+              error={odometerError}
+            />
+          {/if}
           <div class="flex flex-col gap-2">
             <Label for="action-note">
               {m.task_note()}
@@ -268,7 +330,9 @@
                 id="action-log"
                 bind:checked={logWork}
                 label={m.task_service_log_toggle()}
-                hint={m.task_service_log_hint()}
+                hint={(task.openNoteCount ?? 0) > 0
+                  ? `${m.task_service_log_hint()} ${m.task_service_log_notes_hint({ count: task.openNoteCount ?? 0 })}`
+                  : m.task_service_log_hint()}
               />
               {#if logWork}
                 <ServiceLogFields
@@ -281,6 +345,13 @@
                   {currency}
                   errors={logErrors}
                 />
+                {#if task.assetId && (task.openNoteCount ?? 0) > 0}
+                  <NoteChoices
+                    assetId={task.assetId}
+                    bind:selected={logNoteIds}
+                    idPrefix="action-notes"
+                  />
+                {/if}
               {/if}
             </div>
           {/if}

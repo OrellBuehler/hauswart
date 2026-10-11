@@ -17,8 +17,17 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
     ]),
     url.pathname,
   );
+  // The details of a vehicle are a resource of their own.
+  const vehicle =
+    asset.kind === "vehicle"
+      ? await orFail(
+          api.call(endpoints.vehiclesGet, { params: { id: params.id } }),
+          url.pathname,
+        )
+      : null;
   return {
     asset,
+    vehicle,
     today,
     rooms: rooms.sort(
       (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),

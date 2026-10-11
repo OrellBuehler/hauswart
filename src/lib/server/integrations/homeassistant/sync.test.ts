@@ -4,6 +4,7 @@ import { addDays } from "$lib/dates";
 import { connections, notifications, taskCompletions } from "$lib/server/db";
 import { getConnectionRow } from "$lib/server/connections/connections";
 import { getSignal, listSamples } from "$lib/server/signals/service";
+import { watchedEntities } from "$lib/server/signals/watch";
 import { completeTask } from "$lib/server/tasks/completions";
 import { getTask } from "$lib/server/tasks/tasks";
 import { createTestUser } from "$lib/testing/auth";
@@ -75,6 +76,35 @@ describe("Home Assistant polling and calendar sync", () => {
       expect(fake.requests[0].headers.get("authorization")).toBe(
         `Bearer ${fake.token}`,
       );
+    });
+
+    it("never asks for an odometer key: it is a reading hauswart keeps itself, not an entity", async () => {
+      connect();
+      fake.setState(WASHER, "3");
+      await counterTask();
+      await makeTask(ctx(), {
+        title: "Service",
+        trigger: {
+          v: 1,
+          type: "counter_delta",
+          entityId: "odometer:4d0f6f4e-9a1e-4a77-a0f2-7a2f2f6a6f10",
+          threshold: 15000,
+          unit: "km",
+          orEvery: { every: 12, unit: "month" },
+        },
+      });
+      expect(watchedEntities(ctx()).entityIds).toContain(
+        "odometer:4d0f6f4e-9a1e-4a77-a0f2-7a2f2f6a6f10",
+      );
+      const result = await pollStates(ctx());
+      expect(result).toMatchObject({ status: "ok", read: 1, missing: 0 });
+      expect(fake.requestsTo("/api/states", "GET")).toHaveLength(1);
+      expect(fake.requests.filter((r) => r.path.includes("odometer"))).toEqual(
+        [],
+      );
+      expect(
+        getSignal(ctx(), "odometer:4d0f6f4e-9a1e-4a77-a0f2-7a2f2f6a6f10"),
+      ).toBeUndefined();
     });
 
     it("a washer that runs 0 to 5 cycles makes the task due, and completing it snapshots the counter", async () => {

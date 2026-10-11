@@ -70,6 +70,7 @@ function entry(over: Partial<CostEntry> = {}): CostEntry {
     deductible: "unknown",
     source: "manual",
     providerUrl: null,
+    fuelLogId: null,
     commentCount: 0,
     createdBy: "u1",
     createdAt: "2026-10-01T08:00:00.000Z",
@@ -411,6 +412,70 @@ describe("editing", () => {
     d.deductible = "maintenance";
     expect(buildUpdateBody(d, e, USERS).body).toEqual({
       deductible: "maintenance",
+    });
+  });
+
+  describe("an entry a fuel log entry booked", () => {
+    const fuel = () =>
+      entry({
+        category: "fuel",
+        fuelLogId: "f1",
+        assetId: "a1",
+        assetName: "Familienauto",
+      });
+
+    it("never sends the amount, the currency, the date or the device: they stay with the fuel log entry", () => {
+      const e = fuel();
+      const d = draftFromEntry(e, USERS);
+      d.amount = "200";
+      d.currency = "EUR";
+      d.date = "2026-09-01";
+      d.assetId = "a2";
+      d.refund = true;
+      d.payee = "Example Station";
+      expect(buildUpdateBody(d, e, USERS).body).toEqual({
+        payee: "Example Station",
+      });
+    });
+
+    it("still sends what stays editable", () => {
+      const e = fuel();
+      const d = draftFromEntry(e, USERS);
+      d.title = "Tanken, Ferien";
+      d.notes = "Ferien";
+      d.deductible = "maintenance";
+      d.splitMode = "equal";
+      expect(buildUpdateBody(d, e, USERS).body).toEqual({
+        title: "Tanken, Ferien",
+        notes: "Ferien",
+        deductible: "maintenance",
+        splitMode: "equal",
+      });
+    });
+
+    it("still checks the draft, so a mistyped amount stops the form", () => {
+      const e = fuel();
+      const d = draftFromEntry(e, USERS);
+      d.amount = "x";
+      expect(buildUpdateBody(d, e, USERS).body).toBeUndefined();
+    });
+
+    it("never sends a cleared device either", () => {
+      const e = fuel();
+      const d = draftFromEntry(e, USERS);
+      d.assetId = "";
+      expect(buildUpdateBody(d, e, USERS).body).toEqual({});
+    });
+
+    it("sends the amount and the device of any other entry", () => {
+      const e = entry({ assetId: "a1", assetName: "Familienauto" });
+      const d = draftFromEntry(e, USERS);
+      d.amount = "200";
+      d.assetId = "a2";
+      expect(buildUpdateBody(d, e, USERS).body).toEqual({
+        amountMinor: 20000,
+        assetId: "a2",
+      });
     });
   });
 

@@ -14,6 +14,7 @@ import {
   loginTestUser,
 } from "$lib/testing/auth";
 import { useTestDB } from "$lib/testing/db";
+import { createPolicy, deletePolicy } from "$lib/server/insurance/policies";
 import { allowIntegrationHosts } from "$lib/testing/integrations";
 import { makeAsset } from "$lib/testing/documents";
 import { syncAll } from "./sync";
@@ -562,6 +563,54 @@ describe("document API", () => {
       const row = test.db.select().from(documentLinks).get()!;
       expect(row.connectionId).not.toBeNull();
       expect(test.db.select().from(externalDocuments).all()).toHaveLength(1);
+    });
+
+    it("links a document to an insurance policy as its policy or as the vehicle registration, and removes the links with the policy", async () => {
+      const { asA } = await world();
+      const policy = await createPolicy(ctx(), {
+        title: "Kasko Kombi",
+        type: "motor_full_casco",
+        premiumMinor: 12_500,
+        premiumPeriod: "quarterly",
+        startDate: "2026-01-01",
+        renewal: "auto",
+        showOnEmergency: false,
+        assetIds: [],
+      });
+      fake.addDoc({ id: 10, title: "Policy document" });
+      fake.addDoc({ id: 11, title: "Registration document" });
+      for (const [externalId, role] of [
+        [10, "policy"],
+        [11, "registration"],
+      ] as const) {
+        const r = await asA("POST", "/api/v1/document-links", {
+          json: {
+            externalId,
+            ownerType: "insurance_policy",
+            ownerId: policy.id,
+            role,
+          },
+        });
+        expect(r.res.status, role).toBe(201);
+        expect(r.body).toMatchObject({
+          ownerType: "insurance_policy",
+          ownerTitle: "Kasko Kombi",
+          ownerUrl: `/insurance/${policy.id}`,
+          role,
+        });
+      }
+      expect(
+        items(
+          await asA(
+            "GET",
+            `/api/v1/document-links?ownerType=insurance_policy&ownerId=${policy.id}`,
+          ),
+        )
+          .map((l) => l.role)
+          .sort(),
+      ).toEqual(["policy", "registration"]);
+      deletePolicy(ctx(), policy.id);
+      expect(test.db.select().from(documentLinks).all()).toEqual([]);
     });
 
     it("defaults the role to other and the provider to the only one", async () => {

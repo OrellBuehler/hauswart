@@ -3,6 +3,7 @@ import type { Asset } from "../../src/lib/api/schemas/assets";
 import type { Notification } from "../../src/lib/api/schemas/notifications";
 import type { Completion, Task } from "../../src/lib/api/schemas/tasks";
 import type { Trigger } from "../../src/lib/tasks/engine/types";
+import { isOdometerKey } from "../../src/lib/vehicles/odometer";
 
 /** Drops `null` and `undefined` recursively: an absent field means "none", which saves tokens. */
 export function compact(value: unknown): unknown {
@@ -60,8 +61,13 @@ export function describeTrigger(t: Trigger): string {
     }
     case "min_per_period":
       return `at least ${t.count}x per ${t.period}`;
-    case "counter_delta":
-      return `every ${t.threshold}${t.unit ? ` ${t.unit}` : ""} on ${t.entityId}`;
+    case "counter_delta": {
+      const on = isOdometerKey(t.entityId) ? "the odometer" : t.entityId;
+      const base = `every ${t.threshold}${t.unit ? ` ${t.unit}` : ""} on ${on}`;
+      return t.orEvery
+        ? `${base}, or ${every(t.orEvery.every, t.orEvery.unit)}, whichever comes first`
+        : base;
+    }
     case "state_condition":
       return `when ${t.entityId} ${t.op} ${t.value}`;
     case "ha_calendar":
@@ -73,6 +79,27 @@ export function describeTrigger(t: Trigger): string {
     case "warranty":
       return `warranty until ${t.extendedUntil ?? t.until}`;
   }
+}
+
+/**
+ * "ok, due 2026-11-06", "ok, estimated 2026-11-06" or, when a counter is expected to get there
+ * before its hard time limit, both: "ok, estimated 2026-11-06, at the latest 2027-01-15".
+ */
+export function describeWhen(state: {
+  status: string;
+  dueDate: string | null;
+  dueKind?: string | undefined;
+  estimate?: { date: string } | null | undefined;
+}): string {
+  if (state.dueKind === "estimated" && state.estimate) {
+    return `${state.status}, estimated ${state.estimate.date}${
+      state.dueDate ? `, at the latest ${state.dueDate}` : ""
+    }`;
+  }
+  if (state.dueDate) return `${state.status}, due ${state.dueDate}`;
+  if (state.estimate)
+    return `${state.status}, estimated ${state.estimate.date}`;
+  return state.status;
 }
 
 export function taskRow(task: Task, users: UserNames) {
@@ -91,6 +118,7 @@ export function taskRow(task: Task, users: UserNames) {
     schedule: describeTrigger(task.trigger),
     asset: task.assetName,
     assetId: task.assetId,
+    openNotes: task.openNoteCount || null,
     room: task.roomName,
     assignee: nameOf(users, state?.currentAssigneeUserId ?? null),
     effortMinutes: task.effortMinutes,
@@ -134,6 +162,10 @@ const NOTIFICATION_TEXT: Record<
   notification_prep: (p) => `Prepare: ${p.prep} for "${p.title}" (${p.date})`,
   notification_due_soon: (p) => `"${p.title}" is due soon (${p.date})`,
   notification_due: (p) => `"${p.title}" is due (${p.date})`,
+  notification_due_soon_notes: (p) =>
+    `"${p.title}" is due soon (${p.date}); ${plural(Number(p.notes), "open note")}`,
+  notification_due_notes: (p) =>
+    `"${p.title}" is due (${p.date}); ${plural(Number(p.notes), "open note")}`,
   notification_overdue: (p) =>
     `"${p.title}" has been overdue for ${p.days} days (was due ${p.date})`,
   notification_digest: (p) =>
@@ -146,6 +178,12 @@ const NOTIFICATION_TEXT: Record<
 export function renderNotification(n: Notification): string {
   return NOTIFICATION_TEXT[n.titleKey](n.params);
 }
+
+/** A number rounded to `digits` decimals, still a number: 6.8342 -> 6.83. */
+export const round = (value: number, digits = 2): number => {
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
+};
 
 /** `1 task`, `2 tasks`. */
 export const plural = (n: number, one: string, many = `${one}s`) =>

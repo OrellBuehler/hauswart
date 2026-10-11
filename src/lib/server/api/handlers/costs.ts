@@ -47,6 +47,7 @@ export function wireCost(
     source: c.source,
     // The address of the item in the person's own finance app is theirs alone.
     providerUrl: c.createdBy === viewerId ? c.providerUrl : null,
+    fuelLogId: c.fuelLogId,
     commentCount: c.commentCount,
     createdBy: c.createdBy,
     createdAt: toIso(c.createdAt),
@@ -86,7 +87,10 @@ export const remove: Handler<typeof endpoints.costsDelete> = ({
 export const summary: Handler<typeof endpoints.costsSummary> = ({
   ctx,
   query,
-}) => costsSummary(ctx, query.year ?? yearOf(ctx.today));
+}) =>
+  costsSummary(ctx, query.year ?? yearOf(ctx.today), {
+    assetId: query.assetId,
+  });
 
 export const exportCsv: Handler<typeof endpoints.costsExport> = ({
   ctx,

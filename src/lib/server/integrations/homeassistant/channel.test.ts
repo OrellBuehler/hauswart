@@ -357,6 +357,16 @@ describe("renderPush", () => {
       ["due_soon", "notification_due_soon", { title: "T", date: "2026-06-10" }],
       ["due", "notification_due", { title: "T", date: "2026-06-10" }],
       [
+        "due_soon",
+        "notification_due_soon_notes",
+        { title: "T", date: "2026-06-10", notes: 2 },
+      ],
+      [
+        "due",
+        "notification_due_notes",
+        { title: "T", date: "2026-06-10", notes: 1 },
+      ],
+      [
         "overdue",
         "notification_overdue",
         { title: "T", date: "2026-06-10", days: 3 },

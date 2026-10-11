@@ -1,6 +1,7 @@
 import type { Component } from "svelte";
 import BanknoteIcon from "@lucide/svelte/icons/banknote";
 import BuildingIcon from "@lucide/svelte/icons/building";
+import FuelIcon from "@lucide/svelte/icons/fuel";
 import HammerIcon from "@lucide/svelte/icons/hammer";
 import HouseIcon from "@lucide/svelte/icons/house";
 import LandmarkIcon from "@lucide/svelte/icons/landmark";
@@ -29,6 +30,7 @@ export const categoryLabels: Record<CostCategory, () => string> = {
   insurance: () => m.cost_category_insurance(),
   renovation: () => m.cost_category_renovation(),
   maintenance: () => m.cost_category_maintenance(),
+  fuel: () => m.cost_category_fuel(),
   taxes_fees: () => m.cost_category_taxes_fees(),
   other: () => m.cost_category_other(),
 };
@@ -43,6 +45,7 @@ export const categoryIcons: Record<CostCategory, Component> = {
   insurance: ShieldIcon,
   renovation: HammerIcon,
   maintenance: WrenchIcon,
+  fuel: FuelIcon,
   taxes_fees: BuildingIcon,
   other: ReceiptIcon,
 };

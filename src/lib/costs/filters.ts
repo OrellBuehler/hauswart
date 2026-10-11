@@ -104,6 +104,11 @@ export function costsQuery(filters: CostFilters, cursor?: string) {
   };
 }
 
+/** The summary follows the year and the device; the other filters only narrow the list. */
+export function costsSummaryQuery(filters: CostFilters) {
+  return { year: filters.year, assetId: filters.assetId || undefined };
+}
+
 /** The same filters one year later or earlier, keeping everything else but the month. */
 export function withYear(filters: CostFilters, year: number): CostFilters {
   return { ...filters, year, month: "" };

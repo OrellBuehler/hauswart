@@ -64,6 +64,8 @@ export interface CostRecord extends CostRow {
   serviceLogTitle: string | null;
   paidByName: string | null;
   commentCount: number;
+  /** The fuel log entry that booked this entry, which then owns its amount, currency and date. */
+  fuelLogId: string | null;
   shares: CostShareRecord[];
 }
 
@@ -82,6 +84,9 @@ const selectCosts = (db: DB) =>
         string | null
       >`coalesce(${payer.displayName}, ${payer.username})`,
       commentCount: commentCountSql("cost", costEntries.id),
+      fuelLogId: sql<
+        string | null
+      >`(select fuel_logs.id from fuel_logs where fuel_logs.cost_entry_id = ${costEntries.id} limit 1)`,
       rowid: sql<number>`${costEntries}.rowid`,
     })
     .from(costEntries)
@@ -152,6 +157,7 @@ function toRecords(db: DB, joined: readonly Joined[]): CostRecord[] {
     serviceLogTitle: j.serviceLogTitle,
     paidByName: j.paidByName,
     commentCount: Number(j.commentCount),
+    fuelLogId: j.fuelLogId,
     shares: shares.get(j.cost.id) ?? [],
   }));
 }
@@ -417,12 +423,34 @@ export function createCost(
   return getCost(ctx, id);
 }
 
+/**
+ * Changes an entry. An entry a fuel log entry booked keeps its amount, currency, date and device as
+ * the fuel log entry has them: asking for other values is a 409 `conflict` with `details.fuelLogId`
+ * (repeating the current ones is fine, and everything else stays editable). Only that fuel log
+ * entry, saying so in `options.fuelLogId`, may move the amount, currency and date; it does so from
+ * its own update, which never sends a device (that stays the vehicle).
+ */
 export function updateCost(
   ctx: ServiceContext,
   id: string,
   patch: UpdateCostRequest,
+  options: { fuelLogId?: string } = {},
 ): CostRecord {
   const current = getCost(ctx, id);
+  if (
+    current.fuelLogId !== null &&
+    current.fuelLogId !== options.fuelLogId &&
+    ((patch.amountMinor !== undefined &&
+      patch.amountMinor !== current.amountMinor) ||
+      (patch.currency !== undefined && patch.currency !== current.currency) ||
+      (patch.date !== undefined && patch.date !== current.date) ||
+      (patch.assetId !== undefined && patch.assetId !== current.assetId))
+  ) {
+    throw conflict(
+      "This cost entry was booked by a fuel log entry; change its amount, currency and date there, its device is the vehicle and stays",
+      { fuelLogId: current.fuelLogId },
+    );
+  }
   if (patch.assetId !== undefined) {
     assertRef(ctx, assets, patch.assetId, "assetId", "Asset");
   }
@@ -504,9 +532,20 @@ export function updateCost(
   return getCost(ctx, id);
 }
 
-/** Removes the entry with its shares, comments and attachments; a back-link in the provider is queued for removal. */
+/**
+ * Removes the entry with its shares, comments and attachments; a back-link in the provider is queued
+ * for removal. An entry a fuel log entry booked goes with that entry: 409 `conflict` with
+ * `details.fuelLogId` while it exists (the fuel log entry lets go of its cost entry before it
+ * deletes it).
+ */
 export function deleteCost(ctx: ServiceContext, id: string): void {
   const current = getCost(ctx, id);
+  if (current.fuelLogId !== null) {
+    throw conflict(
+      "This cost entry was booked by a fuel log entry; delete the fuel log entry instead",
+      { fuelLogId: current.fuelLogId },
+    );
+  }
   ctx.db.transaction((tx) => {
     if (current.providerConnectionId && current.providerLinkId) {
       tx.insert(costLinkRemovals)

@@ -1,4 +1,5 @@
 import { addDays } from "$lib/dates";
+import { shownDate } from "./shown";
 import { evalPredicate } from "./state-condition";
 import type { ConditionOp, DueResult, Signals } from "./types";
 
@@ -29,7 +30,7 @@ export function prepState(input: {
     return "in_stock_skip";
   }
 
-  const effective = due.dueDate ?? due.estimate?.date ?? null;
+  const effective = shownDate(due);
   if (prep.leadValue) {
     const signal = signals[prep.leadValue.entityId];
     if (
@@ -75,7 +76,7 @@ export function orderNowItems(
 ): OrderNowItem[] {
   const items: OrderNowItem[] = [];
   for (const task of tasks) {
-    const neededBy = task.due.dueDate ?? task.due.estimate?.date ?? null;
+    const neededBy = shownDate(task.due);
     if (neededBy === null) continue;
     for (const part of task.parts) {
       const quantity = (part.qty ?? 1) + part.minStock - part.stock;

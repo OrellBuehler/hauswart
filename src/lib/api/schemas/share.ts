@@ -8,6 +8,7 @@ import {
 import { atLeastOne, idSchema, isoTimestampSchema, paginated } from "./common";
 import { contactSchema } from "./contacts";
 import { hintKindSchema } from "./hints";
+import { insuranceTypeSchema } from "./insurance";
 import { docSectionSchema } from "./docs";
 
 export const FEED_NAME_MAX = 64;
@@ -198,12 +199,28 @@ export const emergencyAssetSchema = z
   })
   .meta({ id: "EmergencyAsset" });
 
+export const emergencyInsuranceSchema = z
+  .object({
+    id: z.string(),
+    title: z.string(),
+    type: insuranceTypeSchema,
+    /** The insurer's name and phone, from its contact. */
+    insurerName: z.string().nullable(),
+    insurerPhone: z.string().nullable(),
+    policyNumber: z.string().nullable(),
+    /** The line to call when something happens (breakdown service, claims). */
+    assistancePhone: z.string().nullable(),
+  })
+  .meta({ id: "EmergencyInsurance" });
+
 export const emergencySchema = z
   .object({
     household: z.object({ name: z.string() }),
     pages: z.array(emergencyPageSchema),
     contacts: z.array(contactSchema),
     assets: z.array(emergencyAssetSchema),
+    /** Active policies marked "show on emergency page". Members only: guest links never show them. */
+    insurance: z.array(emergencyInsuranceSchema),
   })
   .meta({ id: "Emergency" });
 export type Emergency = z.infer<typeof emergencySchema>;

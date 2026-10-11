@@ -2,6 +2,7 @@
   import { invalidateAll } from "$app/navigation";
   import { resolve } from "$app/paths";
   import BoxesIcon from "@lucide/svelte/icons/boxes";
+  import CarIcon from "@lucide/svelte/icons/car";
   import FileSearchIcon from "@lucide/svelte/icons/file-search";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import QrCodeIcon from "@lucide/svelte/icons/qr-code";
@@ -83,7 +84,8 @@
   }
 
   function details(asset: (typeof data.assets)[number]): string {
-    return [asset.manufacturer, asset.model].filter(Boolean).join(" ");
+    const make = [asset.manufacturer, asset.model].filter(Boolean).join(" ");
+    return [asset.vehicle?.plate, make].filter(Boolean).join(" · ");
   }
 </script>
 
@@ -110,6 +112,9 @@
         class="max-sm:hidden"
       >
         <QrCodeIcon />{m.inventory_qr_sheet()}
+      </Button>
+      <Button href={newAssetHref("vehicle")} variant="outline">
+        <CarIcon />{m.vehicle_create()}
       </Button>
       <Button href={newAssetHref("device")}>
         <PlusIcon />{m.inventory_create()}

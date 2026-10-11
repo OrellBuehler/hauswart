@@ -1,5 +1,13 @@
 import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
-import { assetHints, assets, contacts, docPages, rooms } from "$lib/server/db";
+import type { InsuranceType } from "$lib/api/enums";
+import {
+  assetHints,
+  assets,
+  contacts,
+  docPages,
+  insurancePolicies,
+  rooms,
+} from "$lib/server/db";
 import { getHousehold } from "$lib/server/household/household";
 import type { ServiceContext } from "$lib/server/service";
 
@@ -18,17 +26,30 @@ export interface EmergencyAssetRecord {
   pinnedHints: EmergencyHintRow[];
 }
 
+/** An insurance policy marked "show on emergency page": who to call and under which number. */
+export interface EmergencyInsuranceRecord {
+  id: string;
+  title: string;
+  type: InsuranceType;
+  insurerName: string | null;
+  insurerPhone: string | null;
+  policyNumber: string | null;
+  assistancePhone: string | null;
+}
+
 export interface EmergencyRecord {
   householdName: string;
   pages: EmergencyPageRow[];
   contacts: EmergencyContactRow[];
   assets: EmergencyAssetRecord[];
+  insurance: EmergencyInsuranceRecord[];
 }
 
 /**
  * What a member needs in an emergency, in one read: the emergency and rules pages, the contacts
  * marked as emergency contacts and the devices marked "show on emergency page" with their pinned
- * hints. Members see everything, secret blocks included.
+ * hints, and the active insurance policies marked for it (insurer, policy number, assistance
+ * line). Members see everything, secret blocks included. Guest links never show policies.
  */
 export function getEmergency(ctx: Db): EmergencyRecord {
   const pages = ctx.db
@@ -82,6 +103,26 @@ export function getEmergency(ctx: Db): EmergencyRecord {
             asc(assetHints.id),
           )
           .all();
+  const policies = ctx.db
+    .select({
+      id: insurancePolicies.id,
+      title: insurancePolicies.title,
+      type: insurancePolicies.type,
+      insurerName: contacts.name,
+      insurerPhone: contacts.phone,
+      policyNumber: insurancePolicies.policyNumber,
+      assistancePhone: insurancePolicies.assistancePhone,
+    })
+    .from(insurancePolicies)
+    .leftJoin(contacts, eq(contacts.id, insurancePolicies.insurerContactId))
+    .where(
+      and(
+        isNull(insurancePolicies.archivedAt),
+        eq(insurancePolicies.showOnEmergency, true),
+      ),
+    )
+    .orderBy(asc(insurancePolicies.title), asc(insurancePolicies.id))
+    .all();
   return {
     householdName: getHousehold(ctx).name,
     pages,
@@ -92,5 +133,6 @@ export function getEmergency(ctx: Db): EmergencyRecord {
       roomName,
       pinnedHints: hints.filter((h) => h.assetId === asset.id),
     })),
+    insurance: policies,
   };
 }

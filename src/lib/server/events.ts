@@ -8,6 +8,10 @@ export interface CompletionFacts {
   kind: CompletionKind;
   userId: string | null;
   completedAt: Date;
+  /** `completedAt` as a date in the household time zone. */
+  completedDate: string;
+  /** The counter reading taken with the completion (given, or snapshotted from the counter). */
+  counterValue: number | null;
 }
 
 export interface DomainEvents {

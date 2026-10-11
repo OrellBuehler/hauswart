@@ -50,7 +50,7 @@ export const TRIGGER_DOCS: Record<TriggerType, TriggerDoc> = {
     example: { type: "warranty", until: "2027-11-20", leadDays: 60 },
   },
   counter_delta: {
-    what: 'Due when a counter entity grew by `threshold` since the last completion (needs the Home Assistant adapter). Optional autoComplete: [{type: "counter_reset", entityId, minDrop} | {type: "state_change", entityId, to, from?}] completes the task by itself when the counter drops or a state changes (any recurring trigger takes it).',
+    what: 'Due when a counter entity grew by `threshold` since the last completion (a Home Assistant counter, or a vehicle\'s odometer: entityId "odometer:<asset id>", fed by record_odometer). Optional orEvery {every, unit day|week|month|year}: due when that much time has passed since the last completion (or since the task was created), whichever comes first - a service every 15000 km or every 12 months; the time part keeps working without a counter reading. Optional autoComplete: [{type: "counter_reset", entityId, minDrop} | {type: "state_change", entityId, to, from?}] completes the task by itself when the counter drops or a state changes (any recurring trigger takes it).',
     example: {
       type: "counter_delta",
       entityId: "sensor.example_runtime",

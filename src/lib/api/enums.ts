@@ -7,8 +7,64 @@ export type UserLocale = (typeof USER_LOCALES)[number];
 export const TOKEN_KINDS = ["mobile", "integration", "ha", "mcp"] as const;
 export type TokenKind = (typeof TOKEN_KINDS)[number];
 
-export const ASSET_KINDS = ["device", "plant", "fixture", "other"] as const;
+export const ASSET_KINDS = [
+  "device",
+  "plant",
+  "fixture",
+  "vehicle",
+  "other",
+] as const;
 export type AssetKind = (typeof ASSET_KINDS)[number];
+
+export const VEHICLE_FUEL_TYPES = [
+  "petrol",
+  "diesel",
+  "electric",
+  "hybrid",
+  "plugin_hybrid",
+  "other",
+] as const;
+export type VehicleFuelType = (typeof VEHICLE_FUEL_TYPES)[number];
+
+export const ODOMETER_UNITS = ["km", "mi"] as const;
+export type OdometerUnit = (typeof ODOMETER_UNITS)[number];
+
+export const TIRE_SEASONS = ["summer", "winter", "all_season"] as const;
+export type TireSeason = (typeof TIRE_SEASONS)[number];
+
+export const TIRE_EVENT_KINDS = [
+  "mounted",
+  "unmounted",
+  "tread_measured",
+] as const;
+export type TireEventKind = (typeof TIRE_EVENT_KINDS)[number];
+
+export const FUEL_UNITS = ["l", "kWh"] as const;
+export type FuelUnit = (typeof FUEL_UNITS)[number];
+
+/**
+ * Where an odometer reading came from: typed in (`manual`) or written along with another record
+ * (`completion`, `service_log`, `fuel_log`, `tire_change`), which then owns it. Every value has a
+ * writer today; a feature that records readings on the side (`recordOdometer`) adds its source here.
+ */
+export const ODOMETER_SOURCES = [
+  "manual",
+  "completion",
+  "service_log",
+  "fuel_log",
+  "tire_change",
+] as const;
+export type OdometerSource = (typeof ODOMETER_SOURCES)[number];
+
+/**
+ * Why a reading was refused with a 400 on its value field: lower than the reading before its date, or
+ * higher than the one after it. Both can be lifted with `force` (a replaced instrument cluster).
+ */
+export const ODOMETER_REFUSAL_CODES = [
+  "lower_than_previous",
+  "higher_than_next",
+] as const;
+export type OdometerRefusalCode = (typeof ODOMETER_REFUSAL_CODES)[number];
 
 export const TASK_CATEGORIES = [
   "cleaning",
@@ -133,6 +189,8 @@ export const NOTIFICATION_TITLE_KEYS = [
   "notification_prep",
   "notification_due_soon",
   "notification_due",
+  "notification_due_soon_notes",
+  "notification_due_notes",
   "notification_overdue",
   "notification_digest",
   "notification_info",
@@ -167,6 +225,9 @@ export const ATTACHMENT_OWNER_TYPES = [
   "asset_hint",
   "contact",
   "cost",
+  "insurance_policy",
+  "asset_note",
+  "tire_set",
 ] as const;
 export type AttachmentOwnerType = (typeof ATTACHMENT_OWNER_TYPES)[number];
 
@@ -244,6 +305,8 @@ export const DOCUMENT_LINK_ROLES = [
   "datasheet",
   "correspondence",
   "invoice",
+  "policy",
+  "registration",
   "other",
 ] as const;
 export type DocumentLinkRole = (typeof DOCUMENT_LINK_ROLES)[number];
@@ -259,6 +322,7 @@ export const DOCUMENT_LINK_OWNER_TYPES = [
   "part",
   "contact",
   "cost",
+  "insurance_policy",
 ] as const;
 export type DocumentLinkOwnerType = (typeof DOCUMENT_LINK_OWNER_TYPES)[number];
 
@@ -285,6 +349,7 @@ export const COMMENT_ENTITY_TYPES = [
   "asset_hint",
   "doc_page",
   "cost",
+  "insurance_policy",
 ] as const;
 export type CommentEntityType = (typeof COMMENT_ENTITY_TYPES)[number];
 
@@ -369,6 +434,7 @@ export const COST_CATEGORIES = [
   "insurance",
   "renovation",
   "maintenance",
+  "fuel",
   "taxes_fees",
   "other",
 ] as const;
@@ -385,6 +451,7 @@ export const COST_CATEGORY_COUNTS_AS_EXPENSE: Record<CostCategory, boolean> = {
   insurance: true,
   renovation: true,
   maintenance: true,
+  fuel: true,
   taxes_fees: true,
   other: true,
 };
@@ -427,3 +494,36 @@ export const FINANCE_SUGGESTION_STATUSES = [
 ] as const;
 export type FinanceSuggestionStatus =
   (typeof FINANCE_SUGGESTION_STATUSES)[number];
+
+/** `open`: to be mentioned at the next appointment. `resolved`: addressed, converted to a defect or dismissed. */
+export const ASSET_NOTE_STATUSES = ["open", "resolved"] as const;
+export type AssetNoteStatus = (typeof ASSET_NOTE_STATUSES)[number];
+/** What a list of notes can be asked for. */
+export const ASSET_NOTE_STATUS_FILTERS = ["open", "resolved", "all"] as const;
+
+export const INSURANCE_TYPES = [
+  "motor_liability",
+  "motor_partial_casco",
+  "motor_full_casco",
+  "household",
+  "personal_liability",
+  "building",
+  "legal",
+  "travel",
+  "health",
+  "life",
+  "other",
+] as const;
+export type InsuranceType = (typeof INSURANCE_TYPES)[number];
+
+export const INSURANCE_PREMIUM_PERIODS = [
+  "monthly",
+  "quarterly",
+  "semiannual",
+  "annual",
+] as const;
+export type InsurancePremiumPeriod = (typeof INSURANCE_PREMIUM_PERIODS)[number];
+
+/** `auto`: renews by itself unless cancelled in time. `fixed`: ends on its end date, nothing to cancel. */
+export const INSURANCE_RENEWALS = ["auto", "fixed"] as const;
+export type InsuranceRenewal = (typeof INSURANCE_RENEWALS)[number];

@@ -1,5 +1,6 @@
 import { addDays, isoWeekEnd } from "$lib/dates";
 import type { PrepState } from "./preparations";
+import { shownDate, shownDateIsEstimate } from "./shown";
 import type { DueResult } from "./types";
 
 export type UpcomingPrep = {
@@ -72,8 +73,8 @@ export function buildUpcoming(
 
   for (const item of items) {
     const { due } = item;
-    const date = due.dueDate ?? due.estimate?.date ?? null;
-    const estimated = due.dueKind === "estimated" || due.dueDate === null;
+    const date = shownDate(due);
+    const estimated = shownDateIsEstimate(due);
 
     for (const prep of item.preps ?? []) {
       if (prep.state !== "now") continue;
@@ -93,7 +94,7 @@ export function buildUpcoming(
       title: item.title,
       due,
       date,
-      estimated: date !== null && estimated,
+      estimated,
     };
     if (date === null) {
       if (due.progress || due.status === "unknown") {

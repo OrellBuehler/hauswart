@@ -49,6 +49,7 @@ export function evaluateTask(input: EvaluateInput): DueResult {
     today: input.today,
     now: input.now,
     tz: input.tz,
+    startedOn: input.startedOn ?? input.today,
     graceDays: input.graceDays ?? DEFAULT_GRACE_DAYS,
     dueSoonDays: input.dueSoonDays ?? DEFAULT_DUE_SOON_DAYS,
   };

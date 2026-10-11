@@ -1,8 +1,8 @@
 import { and, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import {
-  SIGNAL_STALE_MS,
   evalPredicate,
   evaluateTask,
+  isSignalFresh,
   nextAssignee,
   triggerSchema,
   type Completion,
@@ -10,6 +10,7 @@ import {
   type EngineState,
   type Trigger,
 } from "$lib/tasks/engine";
+import { localDateOf } from "$lib/dates";
 import { dateInZone, householdTimeZone } from "$lib/server/config";
 import { taskCompletions, taskState, tasks } from "$lib/server/db";
 import { getHousehold } from "$lib/server/household/household";
@@ -100,13 +101,13 @@ function observeState(
       signal &&
       typeof signal.numeric === "number" &&
       Number.isFinite(signal.numeric) &&
-      batch.clock.now - signal.seenAt <= SIGNAL_STALE_MS
+      isSignalFresh(signal, batch.clock.now)
     ) {
       counterBaseline = signal.numeric;
     }
   } else if (trigger.type === "state_condition") {
     const signal = batch.signals.signals[trigger.entityId];
-    if (signal && batch.clock.now - signal.seenAt <= SIGNAL_STALE_MS) {
+    if (signal && isSignalFresh(signal, batch.clock.now)) {
       const holds = evalPredicate(signal, trigger.op, trigger.value);
       if (holds === true) {
         activeSince ??= Math.min(signal.changedAt, batch.clock.now);
@@ -144,6 +145,7 @@ function verdict(
     today: batch.clock.today,
     now: batch.clock.now,
     tz: batch.clock.tz,
+    startedOn: localDateOf(batch.clock.tz, task.createdAt.getTime()),
     graceDays: task.graceDays,
     dueSoonDays: task.dueSoonDays ?? batch.dueSoonDays,
     snoozedUntil: task.snoozedUntil,

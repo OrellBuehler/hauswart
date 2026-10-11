@@ -55,6 +55,25 @@ import type {
 } from "$lib/api/schemas/parts";
 import type { serviceLogEntrySchema } from "$lib/api/schemas/service-log";
 import type {
+  odometerReadingSchema,
+  vehicleSchema,
+} from "$lib/api/schemas/vehicles";
+import type {
+  tireEventSchema,
+  tireSetDetailSchema,
+  tireSetSchema,
+} from "$lib/api/schemas/tire-sets";
+import type { fuelLogSchema } from "$lib/api/schemas/fuel-logs";
+import type { FuelLogRecord } from "$lib/server/vehicles/fuel-logs";
+import type { OdometerRow } from "$lib/server/vehicles/odometer";
+import type {
+  TireEventRow,
+  TireSetDetailRecord,
+  TireSetRecord,
+} from "$lib/server/vehicles/tires";
+import { tireAgeYears, treadWarning } from "$lib/vehicles/tires";
+import type { VehicleRecord } from "$lib/server/vehicles/vehicles";
+import type {
   defectDetailSchema,
   defectEventSchema,
   defectSchema,
@@ -167,8 +186,123 @@ export function wireAsset(asset: AssetRecord): z.input<typeof assetSchema> {
     externalRef: asset.externalRef,
     archivedAt: iso(asset.archivedAt),
     commentCount: asset.commentCount,
+    ...(asset.vehicle ? { vehicle: asset.vehicle } : {}),
     createdAt: toIso(asset.createdAt),
     updatedAt: toIso(asset.updatedAt),
+  };
+}
+
+export function wireVehicle(v: VehicleRecord): z.input<typeof vehicleSchema> {
+  return {
+    assetId: v.assetId,
+    plate: v.plate,
+    vin: v.vin,
+    registrationNumber: v.registrationNumber,
+    firstRegistration: v.firstRegistration,
+    fuelType: v.fuelType,
+    tireSizeSummer: v.tireSizeSummer,
+    tireSizeWinter: v.tireSizeWinter,
+    location: v.location,
+    odometerUnit: v.odometerUnit,
+    notes: v.notes,
+    odometer: v.odometer,
+    updatedAt: iso(v.updatedAt),
+  };
+}
+
+export function wireFuelLog(f: FuelLogRecord): z.input<typeof fuelLogSchema> {
+  return {
+    id: f.id,
+    assetId: f.assetId,
+    date: f.date,
+    odometer: f.odometer,
+    odometerUnit: f.odometerUnit,
+    quantity: f.quantity,
+    unit: f.unit,
+    amountMinor: f.amountMinor,
+    currency: f.currency,
+    fullTank: f.fullTank,
+    missedPrevious: f.missedPrevious,
+    station: f.station,
+    notes: f.notes,
+    costEntryId: f.costEntryId,
+    paidByUserId: f.paidByUserId,
+    pricePerUnitMinor: f.pricePerUnitMinor,
+    distance: f.distance,
+    consumptionPer100: f.consumptionPer100,
+    costPerDistanceMinor: f.costPerDistanceMinor,
+    createdBy: f.createdBy,
+    createdAt: toIso(f.createdAt),
+    updatedAt: toIso(f.updatedAt),
+  };
+}
+
+export function wireTireEvent(
+  e: TireEventRow,
+): z.input<typeof tireEventSchema> {
+  return {
+    id: e.id,
+    kind: e.kind,
+    date: e.date,
+    odometer: e.odometer,
+    treadDepthMm: e.treadDepthMm,
+    createdAt: toIso(e.createdAt),
+  };
+}
+
+/** `today` is the household's date, which the age of the tires counts to. */
+export function wireTireSet(
+  s: TireSetRecord,
+  today: string,
+): z.input<typeof tireSetSchema> {
+  return {
+    id: s.id,
+    assetId: s.assetId,
+    season: s.season,
+    brand: s.brand,
+    model: s.model,
+    size: s.size,
+    dot: s.dot,
+    treadDepthMm: s.treadDepthMm,
+    treadMeasuredOn: s.treadMeasuredOn,
+    treadWarning: treadWarning(s.season, s.treadDepthMm),
+    ageYears: tireAgeYears(s.dot, today),
+    storageLocation: s.storageLocation,
+    storageContactId: s.storageContactId,
+    storageContactName: s.storageContactName,
+    mounted: s.mounted,
+    mountedOn: s.mountedOn,
+    purchasedOn: s.purchasedOn,
+    retiredAt: iso(s.retiredAt),
+    notes: s.notes,
+    distance: s.distance,
+    odometerUnit: s.odometerUnit,
+    createdAt: toIso(s.createdAt),
+    updatedAt: toIso(s.updatedAt),
+  };
+}
+
+export function wireTireSetDetail(
+  s: TireSetDetailRecord,
+  today: string,
+): z.input<typeof tireSetDetailSchema> {
+  return { ...wireTireSet(s, today), events: s.events.map(wireTireEvent) };
+}
+
+export function wireOdometerReading(
+  r: OdometerRow,
+): z.input<typeof odometerReadingSchema> {
+  return {
+    id: r.id,
+    assetId: r.assetId,
+    date: r.date,
+    value: r.value,
+    source: r.source,
+    sourceId: r.sourceId,
+    note: r.note,
+    createdBy: r.createdBy,
+    createdAt: toIso(r.createdAt),
+    updatedAt: toIso(r.updatedAt),
   };
 }
 
@@ -222,6 +356,7 @@ export function wireTask(
     externalUrl: urlVisible(task) ? task.externalUrl : null,
     createdBy: task.createdBy,
     commentCount: task.commentCount,
+    openNoteCount: task.openNoteCount,
     createdAt: toIso(task.createdAt),
     updatedAt: toIso(task.updatedAt),
     state: task.state ? wireTaskState(task.state) : null,
@@ -485,6 +620,7 @@ export function wireServiceLogEntry(
     currency: e.currency,
     costEntryId: e.costEntryId,
     costs: e.costs,
+    odometer: e.odometer,
     performedBy: e.performedBy,
     createdBy: e.createdBy,
     commentCount: e.commentCount,

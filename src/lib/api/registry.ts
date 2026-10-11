@@ -179,6 +179,35 @@ import {
   updateServiceLogRequestSchema,
 } from "./schemas/service-log";
 import {
+  vehicleStatsQuerySchema,
+  vehicleStatsSchema,
+} from "./schemas/vehicle-stats";
+import {
+  createFuelLogRequestSchema,
+  fuelLogSchema,
+  listFuelLogsQuerySchema,
+  listFuelLogsResponseSchema,
+  updateFuelLogRequestSchema,
+} from "./schemas/fuel-logs";
+import {
+  createTireSetRequestSchema,
+  listTireSetsQuerySchema,
+  listTireSetsResponseSchema,
+  measureTreadRequestSchema,
+  mountTireSetRequestSchema,
+  tireSetDetailSchema,
+  tireSetMountParamsSchema,
+  updateTireSetRequestSchema,
+} from "./schemas/tire-sets";
+import {
+  listOdometerQuerySchema,
+  listOdometerResponseSchema,
+  odometerReadingSchema,
+  putVehicleRequestSchema,
+  recordOdometerRequestSchema,
+  vehicleSchema,
+} from "./schemas/vehicles";
+import {
   addDefectEventRequestSchema,
   changeDefectStatusRequestSchema,
   createDefectRequestSchema,
@@ -263,6 +292,22 @@ import {
   listFinanceSuggestionsResponseSchema,
   financeSuggestionSchema,
 } from "./schemas/finance";
+import {
+  assetInsurancePoliciesQuerySchema,
+  createInsurancePolicyRequestSchema,
+  insurancePolicySchema,
+  listInsurancePoliciesQuerySchema,
+  listInsurancePoliciesResponseSchema,
+  updateInsurancePolicyRequestSchema,
+} from "./schemas/insurance";
+import {
+  assetNoteSchema,
+  assetNoteToDefectResponseSchema,
+  createAssetNoteRequestSchema,
+  listAssetNotesQuerySchema,
+  listAssetNotesResponseSchema,
+  updateAssetNoteRequestSchema,
+} from "./schemas/asset-notes";
 
 const DOCUMENT_CONTENT_TYPES = [
   "application/pdf",
@@ -423,6 +468,24 @@ export function defineEndpoint<
     setsSession: def.setsSession ?? false,
     maxBodyBytes: def.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES,
   };
+}
+
+/**
+ * The rule for everything under `/assets/{id}` that only a vehicle has (details, statistics, odometer
+ * readings, fuel log, tire sets), stated in each description so it reaches the OpenAPI document.
+ */
+const VEHICLE_ONLY_READ =
+  "Only a vehicle has this: 404 `not_found` for an asset of another kind, as for a missing asset.";
+const VEHICLE_ONLY_WRITE =
+  "Only a vehicle can take this: 400 `invalid_request` for an asset of another kind, 404 `not_found` for a missing asset.";
+
+/**
+ * Said by every endpoint that writes an odometer reading, with the request field the value is reported
+ * on: the 400 for a reading that is out of order carries a machine-readable reason (see
+ * `odometerRefusalDetailsSchema`), so no client reads the message.
+ */
+function odometerRefusal(field: string): string {
+  return `A reading below the one before its date or above the one after it is a 400 on the value field (\`${field}\` here) whose \`details\` carry \`code\` (\`lower_than_previous\` or \`higher_than_next\`), \`field\` and \`reading\` (\`{value, date}\` of the neighbouring reading in the way) besides the English field error; no such code for any other problem.`;
 }
 
 export const endpoints = {
@@ -765,7 +828,7 @@ export const endpoints = {
     path: "/api/v1/assets",
     summary: "List assets (devices, plants, fixtures)",
     description:
-      "Filter by kind, room or a search text. Archived assets are left out unless includeArchived=true.",
+      "Filter by kind, room or a search text (name, manufacturer, model, category, species and, for a vehicle, its plate: case, spaces, dots and dashes do not matter, so `zh 000.000` finds `ZH 000000`). Archived assets are left out unless includeArchived=true.",
     tags: ["assets"],
     auth: "both",
     scopes: ["read"],
@@ -820,7 +883,8 @@ export const endpoints = {
     method: "PATCH",
     path: "/api/v1/assets/{id}",
     summary: "Update or archive an asset",
-    description: "Set archived to true to archive, false to restore.",
+    description:
+      "Set archived to true to archive, false to restore. A vehicle that holds saved details, odometer readings or tire sets cannot change its kind: 400 with a field error on `kind` until they are removed (details saved with nothing in them do not count).",
     tags: ["assets"],
     auth: "both",
     scopes: ["write"],
@@ -940,8 +1004,7 @@ export const endpoints = {
     method: "POST",
     path: "/api/v1/tasks/{id}/complete",
     summary: "Mark a task done",
-    description:
-      "Returns the completion and the re-evaluated task. A repeated idempotencyKey returns the first completion with status 200. Browser sessions are attributed as manual (or qr when sent); API tokens by their kind (mcp, ha, otherwise api) and their source field is ignored. Linked spare parts are taken out of stock. With serviceLog the work is also logged on the task's asset (400 for a task without an asset); the entry comes back as serviceLog.",
+    description: `Returns the completion and the re-evaluated task. A repeated idempotencyKey returns the first completion with status 200. Browser sessions are attributed as manual (or qr when sent); API tokens by their kind (mcp, ha, otherwise api) and their source field is ignored. Linked spare parts are taken out of stock. With serviceLog the work is also logged on the task's asset (400 for a task without an asset); the entry comes back as serviceLog, and serviceLog.resolvedNoteIds resolves notes of that asset with it (undoing the completion reopens them, except a note that has become a defect meanwhile; another asset's note is a 400 and nothing is completed). The returned task is read after the entry was written, so its openNoteCount is current. A counterValue of a task that counts on a vehicle's odometer is a reading of it: ${odometerRefusal("counterValue")}`,
     tags: ["tasks"],
     auth: "both",
     scopes: ["write"],
@@ -1075,7 +1138,7 @@ export const endpoints = {
     path: "/api/v1/completions/{id}",
     summary: "Undo a completion",
     description:
-      "Any household member may undo within 7 days of the completion being recorded; the task goes back to its previous due date. Undoing twice is not an error.",
+      "Any household member may undo within 7 days of the completion being recorded; the task goes back to its previous due date. Notes that the service log entry written with the completion had resolved are open again (the entry stays in the log), except a note that has become a defect meanwhile: that stays resolved. Undoing twice is not an error.",
     tags: ["tasks"],
     auth: "both",
     scopes: ["write"],
@@ -1598,6 +1661,7 @@ export const endpoints = {
     method: "POST",
     path: "/api/v1/assets/{id}/service-log",
     summary: "Add a service log entry",
+    description: `resolvedNoteIds: notes of this asset (see /assets/{id}/notes) the work addressed. They become resolved with this entry; another asset's note or an unknown id is a 400 and nothing is written. A vehicle's odometer value is a reading of it: ${odometerRefusal("odometer")}`,
     tags: ["service-log", "assets"],
     auth: "both",
     scopes: ["write"],
@@ -1626,6 +1690,7 @@ export const endpoints = {
     method: "PATCH",
     path: "/api/v1/assets/{id}/service-log/{entryId}",
     summary: "Update a service log entry",
+    description: `resolvedNoteIds adds notes of this asset to those the entry resolved (open ones become resolved with it, resolved ones stay as they are); it can be the only field. Notes are reopened by changing the note, deleting the entry or undoing the completion the entry was written with; a note that has become a defect stays resolved when the entry goes. A vehicle's odometer value is a reading of it: ${odometerRefusal("odometer")}`,
     tags: ["service-log", "assets"],
     auth: "both",
     scopes: ["write"],
@@ -1640,6 +1705,8 @@ export const endpoints = {
     method: "DELETE",
     path: "/api/v1/assets/{id}/service-log/{entryId}",
     summary: "Delete a service log entry",
+    description:
+      "The notes the entry had resolved are open again, except a note that has become a defect meanwhile (it stays resolved); its attachments and comments go with it.",
     tags: ["service-log", "assets"],
     auth: "both",
     scopes: ["write"],
@@ -1647,6 +1714,279 @@ export const endpoints = {
     response: emptySchema,
     status: 204,
     errors: ["not_found"],
+  }),
+
+  vehiclesGet: defineEndpoint({
+    id: "vehiclesGet",
+    method: "GET",
+    path: "/api/v1/assets/{id}/vehicle",
+    summary: "Details of a vehicle",
+    description: `Plate, VIN, registration data, tire sizes, where it is kept and the newest odometer reading. A vehicle whose details were never saved answers with empty ones (and kilometres). ${VEHICLE_ONLY_READ}`,
+    tags: ["vehicles", "assets"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: vehicleSchema,
+    errors: ["not_found"],
+  }),
+
+  vehicleStats: defineEndpoint({
+    id: "vehicleStats",
+    method: "GET",
+    path: "/api/v1/assets/{id}/vehicle/stats",
+    summary: "A vehicle in numbers",
+    description: `For a year (year=) or for all time: distance driven (from the odometer readings, per month too), the cost entries of the vehicle that count as an expense in the household currency by category and per distance unit, the average and the last ten consumption values (full-to-full) per unit, the price per unit of the fuel, the mounted tire set and the next tasks of the vehicle. ${VEHICLE_ONLY_READ}`,
+    tags: ["vehicles", "assets"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    query: vehicleStatsQuerySchema,
+    response: vehicleStatsSchema,
+    errors: ["not_found"],
+  }),
+
+  vehiclesPut: defineEndpoint({
+    id: "vehiclesPut",
+    method: "PUT",
+    path: "/api/v1/assets/{id}/vehicle",
+    summary: "Save the details of a vehicle",
+    description: `Replaces the details: a field left out is cleared and the odometer unit goes back to km. Changing the unit relabels the readings, it does not convert them. ${VEHICLE_ONLY_WRITE}`,
+    tags: ["vehicles", "assets"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: putVehicleRequestSchema,
+    response: vehicleSchema,
+    errors: ["not_found"],
+  }),
+
+  fuelLogsList: defineEndpoint({
+    id: "fuelLogsList",
+    method: "GET",
+    path: "/api/v1/assets/{id}/fuel-logs",
+    summary: "Fuel log (Tankbuch) of a vehicle, newest first",
+    description: `Every fill-up or charge with its price per unit and, on a full fill that closes a stretch, the distance since the previous full fill, the consumption per 100 and the cost per distance (full-to-full method: partial fills in between are added up, a fill flagged missedPrevious starts the chain again, litres and kWh are counted apart). Filter by year. ${VEHICLE_ONLY_READ}`,
+    tags: ["vehicles", "assets"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    query: listFuelLogsQuerySchema,
+    response: listFuelLogsResponseSchema,
+    errors: ["not_found"],
+  }),
+
+  fuelLogsCreate: defineEndpoint({
+    id: "fuelLogsCreate",
+    method: "POST",
+    path: "/api/v1/assets/{id}/fuel-logs",
+    summary: "Log a fill-up or charge",
+    description: `In one transaction: the odometer becomes a reading of the vehicle (source fuel_log; a value lower than the reading before is a 400 on odometer) and, unless amountMinor is 0, a cost entry of the category fuel is booked for the vehicle (title like "Tanken <station>", paid by paidByUserId, default the caller, split by splitMode, default ownership). The cost entry is the fuel log entry's own: its amount, currency and date change through PATCH /fuel-logs/{id} only, and its device stays the vehicle. It needs costs:write because it books money. ${odometerRefusal("odometer")} ${VEHICLE_ONLY_WRITE}`,
+    tags: ["vehicles", "assets"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    body: createFuelLogRequestSchema,
+    response: fuelLogSchema,
+    status: 201,
+    errors: ["not_found"],
+  }),
+
+  fuelLogsGet: defineEndpoint({
+    id: "fuelLogsGet",
+    method: "GET",
+    path: "/api/v1/fuel-logs/{id}",
+    summary: "A fuel log entry",
+    tags: ["vehicles"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: fuelLogSchema,
+    errors: ["not_found"],
+  }),
+
+  fuelLogsUpdate: defineEndpoint({
+    id: "fuelLogsUpdate",
+    method: "PATCH",
+    path: "/api/v1/fuel-logs/{id}",
+    summary: "Change a fuel log entry",
+    description: `The reading follows the date and the odometer; the cost entry follows the amount, currency, date, station, payer and split. The fuel log entry owns the amount, currency and date of its cost entry: they change here only (\`PATCH /costs/{id}\` refuses other values, and any other device, with 409 \`conflict\`, \`details.fuelLogId\`; the cost entry's \`fuelLogId\` points back). A change of station or unit rewrites the cost entry's title and payee only while each still is what this entry wrote there last time, so a title or payee edited on the cost entry stays. An entry made free loses its cost entry, one that costs something now and has none gets one. ${odometerRefusal("odometer")}`,
+    tags: ["vehicles"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    body: updateFuelLogRequestSchema,
+    response: fuelLogSchema,
+    errors: ["not_found"],
+  }),
+
+  fuelLogsDelete: defineEndpoint({
+    id: "fuelLogsDelete",
+    method: "DELETE",
+    path: "/api/v1/fuel-logs/{id}",
+    summary: "Delete a fuel log entry",
+    description:
+      "The odometer reading it wrote and the cost entry it booked are deleted with it (receipts attached to that cost entry too); the cost entry cannot be deleted on its own (`DELETE /costs/{id}` is a 409 `conflict`, `details.fuelLogId`).",
+    tags: ["vehicles"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
+  tireSetsList: defineEndpoint({
+    id: "tireSetsList",
+    method: "GET",
+    path: "/api/v1/assets/{id}/tire-sets",
+    summary: "Tire sets of a vehicle",
+    description: `The mounted set first, then by season; retired sets only with includeRetired=true. Each set carries the distance driven on it, a treadWarning (below 3 mm for summer, 4 mm for winter and all-season) and its age from the DOT code. ${VEHICLE_ONLY_READ}`,
+    tags: ["vehicles", "assets"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    query: listTireSetsQuerySchema,
+    response: listTireSetsResponseSchema,
+    errors: ["not_found"],
+  }),
+
+  tireSetsCreate: defineEndpoint({
+    id: "tireSetsCreate",
+    method: "POST",
+    path: "/api/v1/assets/{id}/tire-sets",
+    summary: "Add a tire set to a vehicle",
+    description: `The set is not mounted; mount it with the mount endpoint. ${VEHICLE_ONLY_WRITE}`,
+    tags: ["vehicles", "assets"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: createTireSetRequestSchema,
+    response: tireSetDetailSchema,
+    status: 201,
+    errors: ["not_found"],
+  }),
+
+  tireSetsGet: defineEndpoint({
+    id: "tireSetsGet",
+    method: "GET",
+    path: "/api/v1/tire-sets/{id}",
+    summary: "A tire set with its mount and measurement history",
+    tags: ["vehicles"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: tireSetDetailSchema,
+    errors: ["not_found"],
+  }),
+
+  tireSetsUpdate: defineEndpoint({
+    id: "tireSetsUpdate",
+    method: "PATCH",
+    path: "/api/v1/tire-sets/{id}",
+    summary: "Change or retire a tire set",
+    description:
+      "Whether the set is mounted and its tread depth change through the mount and tread endpoints only. retired: true takes a mounted set off first.",
+    tags: ["vehicles"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: updateTireSetRequestSchema,
+    response: tireSetDetailSchema,
+    errors: ["not_found"],
+  }),
+
+  tireSetsDelete: defineEndpoint({
+    id: "tireSetsDelete",
+    method: "DELETE",
+    path: "/api/v1/tire-sets/{id}",
+    summary: "Delete a tire set",
+    description:
+      "Its events, the odometer readings they wrote and its attachments go with it. Retire the set instead to keep its history.",
+    tags: ["vehicles"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
+  tireSetsMount: defineEndpoint({
+    id: "tireSetsMount",
+    method: "POST",
+    path: "/api/v1/assets/{id}/tire-sets/{setId}/mount",
+    summary: "Mount a tire set",
+    description: `Takes the mounted set off (an unmounted event of the same day) and mounts this one. With an odometer value the vehicle gets that reading (source tire_change). ${odometerRefusal("odometer")} Nothing is changed when the odometer value is refused or when the date is before the day the set that would be taken off was mounted (400 on \`date\`; the same day is fine). 409 for a retired set and for one that is already mounted. ${VEHICLE_ONLY_WRITE}`,
+    tags: ["vehicles", "assets"],
+    auth: "both",
+    scopes: ["write"],
+    params: tireSetMountParamsSchema,
+    body: mountTireSetRequestSchema,
+    response: tireSetDetailSchema,
+    errors: ["not_found", "conflict"],
+  }),
+
+  tireSetsTread: defineEndpoint({
+    id: "tireSetsTread",
+    method: "POST",
+    path: "/api/v1/tire-sets/{id}/tread",
+    summary: "Record a tread depth measurement",
+    description: `Adds a measurement event; the newest measurement is the set's current depth. With an odometer value the vehicle gets that reading as well. ${odometerRefusal("odometer")}`,
+    tags: ["vehicles"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: measureTreadRequestSchema,
+    response: tireSetDetailSchema,
+    status: 201,
+    errors: ["not_found"],
+  }),
+
+  odometerList: defineEndpoint({
+    id: "odometerList",
+    method: "GET",
+    path: "/api/v1/assets/{id}/odometer",
+    summary: "Odometer readings of a vehicle, newest first",
+    description: `Every reading ever recorded, by date and then by when it was entered. Readings are never pruned. ${VEHICLE_ONLY_READ}`,
+    tags: ["vehicles", "assets"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    query: listOdometerQuerySchema,
+    response: listOdometerResponseSchema,
+    errors: ["not_found"],
+  }),
+
+  odometerCreate: defineEndpoint({
+    id: "odometerCreate",
+    method: "POST",
+    path: "/api/v1/assets/{id}/odometer",
+    summary: "Record an odometer reading",
+    description: `The date defaults to today and must not be in the future. A value lower than the reading before it or higher than the reading after it (by date) is a 400 on \`value\` with \`details.code\` \`lower_than_previous\` or \`higher_than_next\`, \`details.field\` and \`details.reading\` (\`{value, date}\` of the reading in the way), unless \`force\` is true (a replaced instrument cluster). The newest reading becomes the signal \`odometer:<asset id>\` that tasks with a counter trigger read, so due dates, estimates and notifications follow at once. ${VEHICLE_ONLY_WRITE}`,
+    tags: ["vehicles", "assets"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: recordOdometerRequestSchema,
+    response: odometerReadingSchema,
+    status: 201,
+    errors: ["not_found"],
+  }),
+
+  odometerDelete: defineEndpoint({
+    id: "odometerDelete",
+    method: "DELETE",
+    path: "/api/v1/odometer-readings/{id}",
+    summary: "Delete an odometer reading",
+    description:
+      "Deletes a reading a person typed in; the vehicle's newest remaining reading becomes its current one. A reading written for a completion, a service log entry, a fuel log entry or a tire change belongs to that record and goes when the record is changed or deleted: deleting it here is a 409 `conflict` that names the owner (`details.source`, `details.sourceId`). A reading whose record no longer exists is free and can be deleted.",
+    tags: ["vehicles"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found", "conflict"],
   }),
 
   costsList: defineEndpoint({
@@ -1684,7 +2024,7 @@ export const endpoints = {
     path: "/api/v1/costs/summary",
     summary: "Costs of a year: totals and settlement",
     description:
-      "Totals per category, month and asset (top ten) and per tax class count entries in the household currency that count as an expense; mortgage repayments are reported as `equityTotalMinor`. `people` and `settlement` cover every split entry with a payer: `balanceMinor` = paid - share, and `settlement` lists who pays whom to square the balances.",
+      "Totals per category, month and asset (top ten) and per tax class count entries in the household currency that count as an expense; mortgage repayments are reported as `equityTotalMinor`. `people` and `settlement` cover every split entry with a payer: `balanceMinor` = paid - share, and `settlement` lists who pays whom to square the balances. With assetId only the entries of that asset are counted.",
     tags: ["costs"],
     auth: "both",
     scopes: ["read"],
@@ -1727,14 +2067,14 @@ export const endpoints = {
     path: "/api/v1/costs/{id}",
     summary: "Change a cost entry",
     description:
-      "Setting `splitMode` to `ownership` or `equal` splits again by the people's current shares; `shares` need `custom`. Changing only the amount keeps the frozen shares. An entry booked from a finance provider keeps its source; its back-link in the provider is refreshed.",
+      "Setting `splitMode` to `ownership` or `equal` splits again by the people's current shares; `shares` need `custom`. Changing only the amount keeps the frozen shares. An entry booked from a finance provider keeps its source; its back-link in the provider is refreshed. An entry a fuel log entry booked (`fuelLogId` is set) keeps its amount, currency, date and device as that entry has them: asking for other values is a 409 `conflict` with `details.fuelLogId` (the first three change with `PATCH /fuel-logs/{id}`, the device is the vehicle and stays); sending the current values is fine, and category, title, notes, payee, payer, split, deductibility, room, defect and service log entry stay editable here.",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
     params: idParamsSchema,
     body: updateCostRequestSchema,
     response: costEntrySchema,
-    errors: ["not_found"],
+    errors: ["not_found", "conflict"],
   }),
 
   costsDelete: defineEndpoint({
@@ -1743,14 +2083,14 @@ export const endpoints = {
     path: "/api/v1/costs/{id}",
     summary: "Delete a cost entry",
     description:
-      "Removes the entry with its comments and attachments, and its back-link in the finance provider. A transaction booked from a provider is not offered again.",
+      "Removes the entry with its comments and attachments, and its back-link in the finance provider. A transaction booked from a provider is not offered again. An entry a fuel log entry booked (`fuelLogId` is set) goes with that entry: 409 `conflict` with `details.fuelLogId`, delete it with `DELETE /fuel-logs/{id}`.",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
     params: idParamsSchema,
     response: emptySchema,
     status: 204,
-    errors: ["not_found"],
+    errors: ["not_found", "conflict"],
   }),
 
   financeSuggestionsList: defineEndpoint({
@@ -1946,6 +2286,176 @@ export const endpoints = {
     params: idParamsSchema,
     response: defectTimelineResponseSchema,
     errors: ["not_found"],
+  }),
+
+  insurancePoliciesList: defineEndpoint({
+    id: "insurancePoliciesList",
+    method: "GET",
+    path: "/api/v1/insurance-policies",
+    summary: "List insurance policies",
+    description:
+      "Active policies by cancellation deadline (those without one last), then title. Filter by covered asset, type and a text (q: title, policy number or the insurer's name); archived=true lists the archived ones instead. Every policy carries the assets it covers, the insurer's name, the premium normalised to a year and the cancellation deadline derived from the end date and the notice period.",
+    tags: ["insurance"],
+    auth: "both",
+    scopes: ["read"],
+    query: listInsurancePoliciesQuerySchema,
+    response: listInsurancePoliciesResponseSchema,
+  }),
+
+  insurancePoliciesCreate: defineEndpoint({
+    id: "insurancePoliciesCreate",
+    method: "POST",
+    path: "/api/v1/insurance-policies",
+    summary: "Create an insurance policy",
+    description:
+      "currency defaults to the household's. A policy that renews by itself (renewal auto) with an end date and a notice period gets a cancellation deadline and keeps a reminder task due on that day. endDate is the last day of cover.",
+    tags: ["insurance"],
+    auth: "both",
+    scopes: ["write"],
+    body: createInsurancePolicyRequestSchema,
+    response: insurancePolicySchema,
+    status: 201,
+  }),
+
+  insurancePoliciesGet: defineEndpoint({
+    id: "insurancePoliciesGet",
+    method: "GET",
+    path: "/api/v1/insurance-policies/{id}",
+    summary: "Get an insurance policy",
+    tags: ["insurance"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: insurancePolicySchema,
+    errors: ["not_found"],
+  }),
+
+  insurancePoliciesUpdate: defineEndpoint({
+    id: "insurancePoliciesUpdate",
+    method: "PATCH",
+    path: "/api/v1/insurance-policies/{id}",
+    summary: "Update an insurance policy",
+    description:
+      "assetIds replaces the covered assets; archived archives or restores the policy (its reminder task follows). After an automatic renewal, move endDate to the end of the next term: the cancellation deadline and the reminder follow.",
+    tags: ["insurance"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: updateInsurancePolicyRequestSchema,
+    response: insurancePolicySchema,
+    errors: ["not_found"],
+  }),
+
+  insurancePoliciesDelete: defineEndpoint({
+    id: "insurancePoliciesDelete",
+    method: "DELETE",
+    path: "/api/v1/insurance-policies/{id}",
+    summary: "Delete an insurance policy",
+    description:
+      "Comments, attachments, document links and reminder tasks go with it. Archive the policy to keep it.",
+    tags: ["insurance"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
+  assetInsurancePoliciesList: defineEndpoint({
+    id: "assetInsurancePoliciesList",
+    method: "GET",
+    path: "/api/v1/assets/{id}/insurance-policies",
+    summary: "Insurance policies that cover an asset",
+    description:
+      "The same policies as GET /insurance-policies?assetId=, for the asset page; 404 for an unknown asset. Active policies unless archived=true.",
+    tags: ["insurance", "assets"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    query: assetInsurancePoliciesQuerySchema,
+    response: listInsurancePoliciesResponseSchema,
+    errors: ["not_found"],
+  }),
+
+  assetNotesList: defineEndpoint({
+    id: "assetNotesList",
+    method: "GET",
+    path: "/api/v1/assets/{id}/notes",
+    summary: "Notes on an asset for the next appointment",
+    description:
+      'Small issues to mention at the next service appointment ("brakes squeak"), newest first. status: open (default), resolved or all.',
+    tags: ["asset-notes", "assets"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    query: listAssetNotesQuerySchema,
+    response: listAssetNotesResponseSchema,
+    errors: ["not_found"],
+  }),
+
+  assetNotesCreate: defineEndpoint({
+    id: "assetNotesCreate",
+    method: "POST",
+    path: "/api/v1/assets/{id}/notes",
+    summary: "Add a note to an asset",
+    description:
+      "A photo of the issue is an attachment of the owner type asset_note.",
+    tags: ["asset-notes", "assets"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: createAssetNoteRequestSchema,
+    response: assetNoteSchema,
+    status: 201,
+    errors: ["not_found"],
+  }),
+
+  assetNotesUpdate: defineEndpoint({
+    id: "assetNotesUpdate",
+    method: "PATCH",
+    path: "/api/v1/asset-notes/{id}",
+    summary: "Change the text of a note, resolve or reopen it",
+    description:
+      "status resolved records who resolved it and when; open reopens it and forgets the service log entry that had addressed it. A service log entry resolves notes itself (resolvedNoteIds).",
+    tags: ["asset-notes"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: updateAssetNoteRequestSchema,
+    response: assetNoteSchema,
+    errors: ["not_found"],
+  }),
+
+  assetNotesDelete: defineEndpoint({
+    id: "assetNotesDelete",
+    method: "DELETE",
+    path: "/api/v1/asset-notes/{id}",
+    summary: "Delete a note",
+    description: "Its attachments go with it. Resolve a note to keep it.",
+    tags: ["asset-notes"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
+  assetNotesToDefect: defineEndpoint({
+    id: "assetNotesToDefect",
+    method: "POST",
+    path: "/api/v1/asset-notes/{id}/to-defect",
+    summary: "Turn a note into a defect",
+    description:
+      "Creates a defect on the note's asset (title from the first line, description the whole text, discovered the day the note was written, no deadline) and marks the note resolved with a link to it, in one transaction. Answers with both. 409 when the note already is a defect.",
+    tags: ["asset-notes", "defects"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    response: assetNoteToDefectResponseSchema,
+    status: 201,
+    errors: ["not_found", "conflict"],
   }),
 
   warrantiesList: defineEndpoint({

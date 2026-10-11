@@ -10,6 +10,7 @@ import {
   contacts,
   defects,
   docPages,
+  insurancePolicies,
   parts,
   rooms,
   tasks,
@@ -168,6 +169,15 @@ const URLS: Record<SearchKind, Urls> = {
         .where(inArray(assetHints.id, ids))
         .all(),
       (row) => `/assets/${row.assetId}`,
+    ),
+  insurance_policy: (ctx, ids) =>
+    urlsOf(
+      ctx.db
+        .select({ id: insurancePolicies.id })
+        .from(insurancePolicies)
+        .where(inArray(insurancePolicies.id, ids))
+        .all(),
+      (row) => `/insurance/${row.id}`,
     ),
 };
 

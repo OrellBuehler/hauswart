@@ -5,6 +5,7 @@
   import ExternalLinkIcon from "@lucide/svelte/icons/external-link";
   import SkipForwardIcon from "@lucide/svelte/icons/skip-forward";
   import { toast } from "svelte-sonner";
+  import OpenNotesBadge from "$lib/components/asset-notes/open-notes-badge.svelte";
   import CommentCount from "$lib/components/comments/comment-count.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
@@ -108,6 +109,13 @@
           {today}
         />
         <CommentCount count={task.commentCount ?? 0} />
+        {#if task.assetId && task.openNoteCount}
+          <OpenNotesBadge
+            count={task.openNoteCount}
+            assetId={task.assetId}
+            assetName={task.assetName ?? ""}
+          />
+        {/if}
         {#if task.assigneeUserId}
           <span
             class="text-muted-foreground inline-flex items-center gap-1.5 text-xs"

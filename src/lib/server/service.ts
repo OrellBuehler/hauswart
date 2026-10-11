@@ -16,8 +16,12 @@ export function forbidden(message: string): ApiError {
   return new ApiError("forbidden", message);
 }
 
-export function conflict(message: string): ApiError {
-  return new ApiError("conflict", message);
+export function conflict(message: string, details?: unknown): ApiError {
+  return new ApiError(
+    "conflict",
+    message,
+    details === undefined ? {} : { details },
+  );
 }
 
 /** A 400 in the same shape as a schema failure, for checks only the database can make. */

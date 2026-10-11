@@ -8,10 +8,16 @@ import { defectTools } from "./defects";
 import { docTools } from "./docs";
 import { documentTools } from "./documents";
 import { financeTools } from "./finance";
+import { fuelTools } from "./fuel";
 import { getStats, listNotifications } from "./insights";
+import { insuranceTools } from "./insurance";
+import { noteTools } from "./notes";
 import { partTools } from "./parts";
 import { taskTools } from "./tasks";
+import { tireTools } from "./tires";
 import { listUpcoming } from "./upcoming";
+import { getVehicleStats } from "./vehicle-stats";
+import { vehicleTools } from "./vehicles";
 import { whoami } from "./whoami";
 
 /**
@@ -46,5 +52,11 @@ export const tools: readonly Tool[] = [
   ...commentTools,
   ...costTools,
   ...assetCareTools,
+  ...insuranceTools,
+  ...noteTools,
   ...financeTools,
+  ...vehicleTools,
+  getVehicleStats,
+  ...fuelTools,
+  ...tireTools,
 ];

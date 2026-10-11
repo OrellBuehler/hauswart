@@ -9,7 +9,9 @@
   import { toast } from "svelte-sonner";
   import { api } from "$lib/api/browser";
   import { endpoints } from "$lib/api/registry";
+  import type { OdometerUnit } from "$lib/api/enums";
   import type { ServiceLogEntry } from "$lib/api/schemas/service-log";
+  import { formatOdometer } from "$lib/vehicles/format";
   import Attachments from "$lib/components/attachments/attachments.svelte";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
   import EmptyState from "$lib/components/app/empty-state.svelte";
@@ -32,12 +34,15 @@
     nextCursor,
     today,
     currency,
+    odometerUnit = null,
   }: {
     assetId: string;
     entries: ServiceLogEntry[];
     nextCursor: string | null;
     today: string;
     currency: string;
+    /** The unit of the vehicle's odometer; null for anything that is no vehicle. */
+    odometerUnit?: OdometerUnit | null;
   } = $props();
 
   let formOpen = $state(false);
@@ -145,7 +150,7 @@
                   {entry.descriptionMd}
                 </p>
               {/if}
-              {#if entry.contactName || entry.costMinor !== null}
+              {#if entry.contactName || entry.costMinor !== null || (odometerUnit && entry.odometer !== null)}
                 <p
                   class="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs"
                 >
@@ -158,6 +163,13 @@
                     </a>
                   {:else if entry.contactName}
                     <span>{entry.contactName}</span>
+                  {/if}
+                  {#if odometerUnit && entry.odometer !== null}
+                    <span class="tabular-nums">
+                      {m.service_odometer_shown({
+                        value: formatOdometer(entry.odometer, odometerUnit),
+                      })}
+                    </span>
                   {/if}
                   {#if entry.costMinor !== null}
                     <span class="text-foreground font-medium tabular-nums">
@@ -238,6 +250,7 @@
   entry={editing}
   {today}
   {currency}
+  {odometerUnit}
   onsaved={() => invalidateAll()}
 />
 

@@ -88,5 +88,6 @@ export function wireEmergency(
         kind: h.kind,
       })),
     })),
+    insurance: record.insurance,
   };
 }

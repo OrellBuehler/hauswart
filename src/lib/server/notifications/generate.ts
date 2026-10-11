@@ -1,7 +1,8 @@
-import { eq, isNull } from "drizzle-orm";
+import { eq, isNull, sql } from "drizzle-orm";
 import { addDays, diffDays, zonedTimeToInstant } from "$lib/dates";
 import type { NotificationKind, NotificationTitleKey } from "$lib/api/enums";
-import { taskState, tasks, users } from "$lib/server/db";
+import { shownDate } from "$lib/tasks/engine";
+import { assetNotes, taskState, tasks, users } from "$lib/server/db";
 import { getHousehold } from "$lib/server/household/household";
 import type { ServiceContext } from "$lib/server/service";
 import { clockAt } from "$lib/server/tasks/evaluator";
@@ -55,13 +56,20 @@ function soonDaysOf(task: TaskRow, fallback: number): number {
   return task.dueSoonDays ?? fallback;
 }
 
-/** `open` within the lead window; progress-based tasks (x per month) only speak up once due. */
+/**
+ * `open` within the lead window; progress-based tasks (x per month) only speak up once due. A
+ * counter task with a time limit has progress too, but its due date is a fixed one (`exact`, or
+ * `estimated` when the counter is expected to get there first: the limit stays the due date and
+ * the estimate only an earlier guess), so it does announce that.
+ */
 function isDueSoon(c: Candidate, today: string, fallback: number): boolean {
   const { state } = c;
   return (
     state.status === "open" &&
     state.dueDate !== null &&
-    state.progress === null &&
+    (state.progress === null ||
+      state.dueKind === "exact" ||
+      state.dueKind === "estimated") &&
     diffDays(state.dueDate, today) <= soonDaysOf(c.task, fallback)
   );
 }
@@ -96,6 +104,20 @@ export async function generateNotifications(
   const preps = await preparationsForTasks(
     ctx,
     new Map(active.map((c) => [c.task.id, c.state])),
+  );
+
+  // Open notes per asset: the notices of a task that is (nearly) due say how many issues wait for it.
+  const openNotes = new Map(
+    ctx.db
+      .select({
+        assetId: assetNotes.assetId,
+        n: sql<number>`count(*)`,
+      })
+      .from(assetNotes)
+      .where(eq(assetNotes.status, "open"))
+      .groupBy(assetNotes.assetId)
+      .all()
+      .map((row) => [row.assetId, Number(row.n)]),
   );
 
   const delivered: [DeliverableNotification, NotificationRecipient[]][] = [];
@@ -144,8 +166,12 @@ export async function generateNotifications(
     const { task, state } = candidate;
     const recipients = recipientsFor(candidate, people);
     const base = `${task.id}:${state.occurrenceKey}`;
+    // The date of the stage texts is the due date (the hard limit, if there is one); a
+    // preparation is about the date the task is shown with, which may be the earlier guess.
     const date = state.dueDate ?? state.estimate?.date ?? "";
+    const shown = shownDate(state) ?? "";
     const url = `/tasks/${task.id}`;
+    const notes = task.assetId ? (openNotes.get(task.assetId) ?? 0) : 0;
 
     for (const prep of preps.get(task.id) ?? []) {
       if (prep.state !== "now") continue;
@@ -154,7 +180,7 @@ export async function generateNotifications(
         taskId: task.id,
         key: `${base}:prep-${prep.id}`,
         titleKey: "notification_prep",
-        params: { title: task.title, prep: prep.title, date },
+        params: { title: task.title, prep: prep.title, date: shown },
         url,
         occurrenceKey: state.occurrenceKey,
       });
@@ -165,8 +191,12 @@ export async function generateNotifications(
         kind: "due_soon",
         taskId: task.id,
         key: `${base}:due_soon`,
-        titleKey: "notification_due_soon",
-        params: { title: task.title, date },
+        titleKey:
+          notes > 0 ? "notification_due_soon_notes" : "notification_due_soon",
+        params:
+          notes > 0
+            ? { title: task.title, date, notes }
+            : { title: task.title, date },
         url,
         occurrenceKey: state.occurrenceKey,
       });
@@ -175,8 +205,11 @@ export async function generateNotifications(
         kind: "due",
         taskId: task.id,
         key: `${base}:due`,
-        titleKey: "notification_due",
-        params: { title: task.title, date },
+        titleKey: notes > 0 ? "notification_due_notes" : "notification_due",
+        params:
+          notes > 0
+            ? { title: task.title, date, notes }
+            : { title: task.title, date },
         url,
         occurrenceKey: state.occurrenceKey,
       });

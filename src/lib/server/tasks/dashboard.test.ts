@@ -5,6 +5,8 @@ import { createRoom } from "$lib/server/rooms/rooms";
 import { createTestUser } from "$lib/testing/auth";
 import { useTestDB } from "$lib/testing/db";
 import { at, ctxAt, everyDays, makeTask, NOW } from "$lib/testing/domain";
+import { makeVehicle } from "$lib/testing/vehicles";
+import { odometerSignalKey } from "$lib/vehicles/odometer";
 import { completeTask, snoozeTask, undoCompletion } from "./completions";
 import { getDashboard } from "./dashboard";
 import { createPreparation } from "./preparations";
@@ -157,6 +159,88 @@ describe("dashboard", () => {
     expect(d.upcoming.signalBased[0]).toMatchObject({
       date: null,
       status: "unknown",
+    });
+  });
+
+  describe("odometerAssetId", () => {
+    const counter = (
+      entityId: string,
+      extra: Record<string, unknown> = {},
+    ) => ({
+      v: 1 as const,
+      type: "counter_delta" as const,
+      entityId,
+      threshold: 15_000,
+      ...extra,
+    });
+
+    it("is the vehicle whose odometer the task counts on, so a completion needs no second request", async () => {
+      const car = makeVehicle(test);
+      await makeTask(ctx(), {
+        title: "Service",
+        assetId: car.id,
+        trigger: counter(odometerSignalKey(car.id)),
+      });
+      await makeTask(ctx(), {
+        title: "Service mit Frist",
+        assetId: car.id,
+        trigger: counter(odometerSignalKey(car.id), {
+          orEvery: { every: 1, unit: "month" },
+        }),
+      });
+      const { upcoming } = await getDashboard(ctx());
+      const found = [...upcoming.signalBased, ...upcoming.later].filter((i) =>
+        i.title.startsWith("Service"),
+      );
+      expect(found).toHaveLength(2);
+      expect(found.map((i) => i.odometerAssetId)).toEqual([car.id, car.id]);
+    });
+
+    it("is the odometer's vehicle even when the task is not tied to an asset", async () => {
+      const car = makeVehicle(test);
+      await makeTask(ctx(), {
+        title: "Service",
+        trigger: counter(odometerSignalKey(car.id)),
+      });
+      const [item] = (await getDashboard(ctx())).upcoming.signalBased;
+      expect(item).toMatchObject({ assetId: null, odometerAssetId: car.id });
+    });
+
+    it("is null for every other kind of task", async () => {
+      const car = makeVehicle(test);
+      await makeTask(ctx(), {
+        title: "Zähler",
+        assetId: car.id,
+        trigger: counter("sensor.example_meter"),
+      });
+      await makeTask(ctx(), {
+        title: "Kein Zähler",
+        assetId: car.id,
+        trigger: {
+          v: 1,
+          type: "state_condition",
+          entityId: odometerSignalKey(car.id),
+          op: "gt",
+          value: 100_000,
+        },
+      });
+      await makeTask(ctx(), {
+        title: "Heute",
+        assetId: car.id,
+        trigger: everyDays(30, "2026-06-15"),
+      });
+      const { upcoming } = await getDashboard(ctx());
+      const all = [
+        ...upcoming.signalBased,
+        ...upcoming.today,
+        ...upcoming.thisWeek,
+      ];
+      expect(all.map((i) => i.title).sort()).toEqual([
+        "Heute",
+        "Kein Zähler",
+        "Zähler",
+      ]);
+      expect(all.map((i) => i.odometerAssetId)).toEqual(all.map(() => null));
     });
   });
 

@@ -13,6 +13,8 @@ export const documentRoleLabels: Record<DocumentLinkRole, () => string> = {
   datasheet: () => m.document_role_datasheet(),
   correspondence: () => m.document_role_correspondence(),
   invoice: () => m.document_role_invoice(),
+  policy: () => m.document_role_policy(),
+  registration: () => m.document_role_registration(),
   other: () => m.document_role_other(),
 };
 
@@ -28,6 +30,7 @@ export const documentOwnerLabels: Record<DocumentLinkOwnerType, () => string> =
     part: () => m.document_owner_part(),
     contact: () => m.document_owner_contact(),
     cost: () => m.document_owner_cost(),
+    insurance_policy: () => m.document_owner_insurance_policy(),
   };
 
 /** Where a document is used, as a short list: the first two titles, then "+n". */
@@ -52,6 +55,7 @@ const DEFAULT_ROLES: Partial<Record<DocumentLinkOwnerType, DocumentLinkRole>> =
     contact: "correspondence",
     service_log: "invoice",
     cost: "invoice",
+    insurance_policy: "policy",
   };
 
 /** The role a person most likely wants on this kind of owner; they can change it. */

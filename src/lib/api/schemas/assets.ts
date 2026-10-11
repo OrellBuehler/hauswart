@@ -11,6 +11,7 @@ import {
   queryBooleanSchema,
   slugSchema,
 } from "./common";
+import { vehicleSummarySchema } from "./vehicles";
 
 export const assetKindSchema = z.enum(ASSET_KINDS);
 
@@ -51,6 +52,8 @@ export const assetSchema = z
     externalRef: z.string().nullable(),
     archivedAt: isoTimestampSchema.nullable(),
     commentCount: z.number().int(),
+    /** Only for vehicles: the plate and the newest odometer reading. The full details are `/assets/{id}/vehicle`. */
+    vehicle: vehicleSummarySchema.optional(),
     createdAt: isoTimestampSchema,
     updatedAt: isoTimestampSchema,
   })

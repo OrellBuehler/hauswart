@@ -13,6 +13,7 @@ export const SECTIONS = [
   "contacts",
   "costs",
   "warranties",
+  "insurance",
   "emergency",
 ] as const;
 

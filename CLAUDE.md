@@ -2,18 +2,19 @@
 
 hauswart is a self-hosted apartment-management app for a single household with a few users:
 recurring maintenance tasks with completion tracking, documentation (markdown, uploads,
-Paperless-ngx links), device inventory, defects, spare parts, contacts, costs, notifications, an
+Paperless-ngx links), device inventory, defects, spare parts, contacts, costs, insurance policies, notifications, an
 iCal feed, a guest link and an MCP server. Home Assistant, Paperless-ngx and Kept (finance) are
 optional adapters, never requirements. Status: early development — authentication, the API spine,
 the task core (rooms, assets, tasks, completions, notifications, dashboard), documentation (pages,
 attachments, search, file backup), contacts, spare parts, the service log, care hints, defects (with
 a PDF export), the warranty overview, generic comments, iCal feeds, the emergency page data and guest
-links, costs (with the settlement between the people and a CSV export) and the per-person finance
-connection (Kept) exist; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
+links, costs (with the settlement between the people and a CSV export), the per-person finance
+connection (Kept), insurance policies (with a cancellation reminder), asset notes and vehicles (details, odometer
+readings, tire sets, a fuel log with consumption, statistics, task templates; see "Vehicles") exist; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
 push notifications with a "done" button, areas taken over as rooms; see "Signals, integrations and delivery"); Paperless-ngx is wired as
 a per-person document provider (links, previews, warranty dates, pushing attachments; see "Documents and the
 document provider"); the MCP server covers the task core, documentation, defects, parts, contacts,
-comments, hints, service log, warranties, costs, the finance inbox and archived documents, and hauswart serves it over HTTP at
+comments, hints, service log, warranties, costs, the finance inbox, archived documents, insurance policies, asset notes and vehicles (odometer, fuel log, tire sets, statistics), and hauswart serves it over HTTP at
 `/api/v1/mcp` (see "MCP server" and `mcp/README.md`); the web app is installable as a PWA (see "Installable app").
 
 There is one household, not many: all domain data is shared by every user. Only sessions, API
@@ -113,6 +114,11 @@ src/lib/server/domain-events.ts  registerDomainEventHandlers(): wires reactions 
 src/lib/server/contacts/         contacts CRUD + search, links to assets (role per link)
 src/lib/server/parts/            spare parts: CRUD, stock movements, "ordered" state, links to assets/tasks, order-now, completion events
 src/lib/server/service-log/      per-asset work log (also written with a task completion by the complete handler)
+src/lib/insurance/policy.ts      premium per year and the cancellation deadline (pure, client-safe)
+src/lib/server/insurance/        insurance policies: policies.ts (CRUD, filters, covered assets), reminder.ts (the cancellation
+                                 reminder task); see "Insurance policies and asset notes"
+src/lib/server/asset-notes/      asset notes: notes.ts (CRUD, to a defect), resolve.ts (service log resolution), events.ts (undo
+                                 reopens), counts.ts (openNoteCount)
 src/lib/server/costs/            cost entries: split.ts (frozen shares), costs.ts (CRUD, list), summary.ts (year totals, settlement),
                                  csv.ts, totals.ts (cost sums on defects and service log entries)
 src/lib/server/finance/          generic finance-provider seam: providers.ts (registry), suggestions.ts (the private inbox, accept,
@@ -127,6 +133,11 @@ src/lib/server/share/            guest links: tokens.ts, guest-links.ts (CRUD, w
                                  state, PIN attempts, signed unlock cookie), guest-view.ts (what a link shows), guest-http.ts
                                  (gate + PIN action for the /g routes, response headers), purge.ts
 src/lib/server/emergency/        emergency page data (members) and the "Notfall- & Vertretungsblatt" PDF
+src/lib/server/vehicles/         vehicle details (`vehicle_details`), odometer readings and the signal they feed: odometer.ts
+                                 (`writeOdometer` sync, `recordOdometer` async), signal.ts (readings -> signal + samples),
+                                 summary.ts (plate + newest reading on assets), events.ts (completions), vehicles.ts, tires.ts, fuel-logs.ts, stats.ts (see "Vehicles")
+src/lib/vehicles/                client-safe: odometer.ts (`odometer:<asset id>` key helpers), plate.ts (plate matching), tires.ts (tread limits,
+                                 DOT age, distance per set), fuel.ts (full-to-full consumption), stats.ts (distance per month), templates.ts (task bodies), template-mark.ts (the mark on their tasks, the template ids)
 src/lib/server/pdf/render.ts     shared pdfmake wrapper (A4, Roboto from node_modules, no network or file access)
 src/lib/pwa/                     client-safe PWA parts: colors.ts (theme colours, tested against app.css), manifest.ts, options.ts
                                  (the service worker's whole behaviour; see "Installable app")
@@ -171,7 +182,28 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   (tests). Without readings, signal-based triggers report `unknown`. A failing provider is logged by
   name and treated as "no signals". The evaluator also keeps `task_state.counterBaseline` (the first
   fresh reading of a counter task, until a completion snapshots one) and `activeSince` (since when a
-  state condition holds; forgotten when it stops holding).
+  state condition holds; forgotten when it stops holding). A reading with source `manual` (typed in
+  by a person, e.g. an odometer) never goes stale (`isSignalFresh`), is never pruned (neither the
+  signal nor its samples), its samples are loaded 400 days back and its estimates look back up to a
+  year (`SPARSE_WINDOWS_DAYS`); every other reading is stale after 24 h as before.
+- **`counter_delta.orEvery`** `{every, unit}` makes a counter task also fall due by time: when the
+  counter threshold is reached or the interval since the last completion (the task's creation, the
+  `startedOn` the evaluator passes, when there is none) has passed, whichever comes first. While the
+  counter is short of its threshold the time limit sets the status and the date shown is the earlier
+  of the limit and the counter estimate: `dueKind` `exact` for the limit, `estimated` while the
+  estimate comes first. Once the counter has crossed its threshold the status follows the counter:
+  `dueKind` `condition`, `dueDate` the day the evaluator first saw it there, `due` from then and
+  `overdue` after the grace days counted from that day - unless the time limit had already fallen on
+  an earlier day, which then stays the date and sets the status (`exact`). In the `estimated` case
+  `dueDate` **stays the hard time limit** and
+  `estimate` carries the earlier guess, so the status, the "due soon" notification and the iCal feed
+  keep the limit; whoever shows a date takes `shownDate` / `shownDateIsEstimate`
+  (`lib/tasks/engine/shown.ts`: the estimate for kind `estimated`, else the due date) instead of
+  `dueDate ?? estimate`. Lists, the dashboard and preparations use the estimate, the detail page
+  shows both ("~ date" and "at the latest ..."). A missing, stale or baseline-less counter no longer makes the task
+  `unknown`: the time half decides, the reason (`signal_missing`, `signal_stale`, `baseline_missing`)
+  is still reported. The occurrence key stays `c:<last completion id>`. `createTask` stores
+  `createdAt` from the injected clock.
 - **A completion settles the occurrence the task shows** (`occurrenceKey` defaults to the cached
   one; `dueDateAtCompletion` is stored with it). Sources: a session is `manual` (or `qr` /
   `notification` when it says so); a token is attributed by its kind (`mcp`, `ha`, otherwise
@@ -185,11 +217,16 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   one digest per person per day after the household's digest time (skipped when empty). Snoozed and
   archived tasks are silent. `userId` null means household-wide (shared read state). Outward
   delivery is a `NotificationChannel` registered with `registerNotificationChannel`; the in-app
-  list needs none.
+  list needs none. A task whose asset has open notes announces due soon and due with the `*_notes` variants
+  of the message (see "Insurance policies and asset notes").
 - **Seed files** (`seedSchema`, `seed/*.json`; real data in gitignored `seed/local/`) are imported
   by `scripts/seed.ts` through the REST API and matched by `key`, so repeating it changes nothing:
   rooms and assets by slug, tasks by `externalSource: "seed"` + `externalRef`, preparations by title.
   Existing entries are left alone unless `--update`. Changing the household needs the admin scope.
+  An asset of kind `vehicle` may carry a `vehicle` block (the body of `PUT /assets/{id}/vehicle`):
+  saved when the vehicle has no saved details yet, overwritten (and what the file leaves out cleared)
+  only with `--update`. Tire sets and fuel logs are not seeded: a set has no key to find it again by, and a fill books
+  a cost entry (`costs:write`).
 
 ### Signals, integrations and delivery
 
@@ -290,14 +327,17 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
 
 - **Cost entries** (`cost_entries`, domain data shared by the household): `date`, `title`,
   `amountMinor` (positive = expense, negative = refund, never 0) + `currency`, `category`
-  (`repair|utilities|renewal_fund|purchase|mortgage_interest|mortgage_principal|insurance|renovation|maintenance|taxes_fees|other`),
+  (`repair|utilities|renewal_fund|purchase|mortgage_interest|mortgage_principal|insurance|renovation|maintenance|fuel|taxes_fees|other`),
   optional asset, room, defect and service log entry (a service log entry or defect fills in
   asset/room when none is given; deleting the target only unlinks), `payee`, `notes`,
   `paidByUserId`, `splitMode`, `countsAsExpense`, `deductible` (`unknown|maintenance|investment|no`: the
   Swiss tax distinction between value-preserving and value-increasing work), `source`
   (`manual|finance_transaction|finance_bill`). `countsAsExpense` defaults to false for
   `mortgage_principal` (equity, not a cost) and follows a category change unless the person overrode it.
-  Entries can be commented on and carry receipts (attachments, owner `cost`).
+  Entries can be commented on and carry receipts (attachments, owner `cost`). The fuel log of a vehicle books its
+  fills as `fuel` entries (see "Vehicles"); such an entry carries `fuelLogId` and keeps its amount, currency, date and
+  device and its existence in step with that fill (`updateCost`/`deleteCost` refuse with 409 `conflict`,
+  `details.fuelLogId`; everything else stays editable).
 - **Split math** (`money.ts` `allocate`, `costs/split.ts`): shares are frozen per entry in
   `cost_entry_shares` (basis points, sum exactly 10000), so a later ownership change never rewrites
   history. `ownership` weighs people by `users.ownership_bps` (normalised, 0% pays nothing, all zero
@@ -309,8 +349,9 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
 - **Currency**: entries may be in any currency, but every total, the settlement and the dashboard
   count the household currency only; `otherCurrencyCount` says how many entries were left out (the CSV
   has them all).
-- **Summary** (`GET /costs/summary?year=`): `expenseTotalMinor` and the per category / month (always 12) /
-  asset (top 10) / tax class breakdowns count entries with `countsAsExpense`; `equityTotalMinor` is the rest.
+- **Summary** (`GET /costs/summary?year=&assetId=`): `expenseTotalMinor` and the per category / month (always 12) /
+  asset (top 10) / tax class breakdowns count entries with `countsAsExpense`; `equityTotalMinor` is the rest. With an
+  `assetId` every number in it, the settlement included, is that asset's alone.
   **Settlement** covers every split entry with a payer, equity included (it is about who paid cash):
   `balanceMinor` = paid - share (positive = the others owe this person), `settlement` = greedy payments
   from the largest debtor to the largest creditor ("A owes B CHF x"). Split entries without a payer are
@@ -403,9 +444,9 @@ map), billTasks, billCreditorFilter (case-insensitive exact creditor names; appl
   mime, pages, notes count, the two warranty dates, `ownerVisible`; unique per connection and external id; a row with
   `ownerVisible = false` keeps no content, it only says "asked, not shown"), `external_document_sync` (address and
   scope the cache was built for, newest modification seen, last full read), `document_links` (provider, external id,
-  generic owner `asset|room|page|task|defect|service_log|part|contact|cost` + id, `role`, `label`, the maker's
+  generic owner `asset|room|page|task|defect|service_log|part|contact|cost|insurance_policy` + id, `role`, `label`, the maker's
   connection; unique per document, owner and role), `document_uploads` (push jobs). `AFTER DELETE` triggers on the
-  nine owner tables (`0011`, and `0014` for costs) remove the links of a deleted owner (cascades included); a new link
+  ten owner tables (`0011`, `0014` for costs and `0018` for insurance policies) remove the links of a deleted owner (cascades included); a new link
   owner type needs its trigger and an entry in `documents/owners.ts` (it reuses the comments registry for title and url).
 - **Sync** (`registerPaperless()` in `init()`, `integrations/paperless/sync.ts`, scheduler every 30 minutes, soon after
   a connection is saved - backoff ignored - and after a link was made so other people's caches catch up): per
@@ -480,16 +521,16 @@ of the owner>` is added to the document unless an identical note exists (writes 
   flipping `guestVisible` re-renders the pages that embed it (`onAttachmentsChanged` listener,
   started in `init()` by `startAttachmentRerender`; only the two HTML caches change, guarded by `rev`).
 - **Attachments** (`attachments`): one row per upload, generic owner `ownerType` + `ownerId` without
-  foreign keys (`asset|room|page|task|defect|service_log|part|asset_hint|contact|cost`), files stored
+  foreign keys (`asset|room|page|task|defect|service_log|part|asset_hint|contact|cost|insurance_policy|asset_note|tire_set`), files stored
   once by sha256 in `HAUSWART_FILES_DIR` (`files/store.ts`: images re-encoded, metadata stripped,
   thumbnail; PDFs as uploaded; HEIC/SVG/HTML/GIF refused). Owner existence is checked through the
   registry in `attachments/owners.ts`: asset, room, page and task are built in; defect, service_log,
-  part, asset_hint and contact are registered by `registerDomainAttachmentOwners()`
+  part, asset_hint, contact, cost, insurance_policy, asset_note and tire_set are registered by `registerDomainAttachmentOwners()`
   (`attachments/domain-owners.ts`, called from `registerDomainEventHandlers()`, so from `init()` and
   `useTestDB()`). A new owner type registers with `registerAttachmentOwner(type, existsFn)` **from
   `init()`** (never from a module that is only loaded with its routes) and calls
-  `removeOwnedAttachments(ctx, type, id)` from its delete service (done for all ten; deleting an
-  asset also removes the attachments of its service log entries and hints, whose rows go by cascade
+  `removeOwnedAttachments(ctx, type, id)` from its delete service (done for all thirteen; deleting an
+  asset also removes the attachments of its service log entries, hints, notes and tire sets, whose rows go by cascade
   without a foreign key to follow). A type nobody registered is a 400 field error on `ownerType`. Uploading, patching or deleting an attachment of a page needs `docs:write`,
   others `write`. `deleteIfUnreferenced` keeps files younger than a minute, so a daily orphan sweep
   (`startFileSweeper`) removes what deletions left behind. `assets.photoAttachmentId` must be an
@@ -508,11 +549,13 @@ of the owner>` is added to the document unless an identical note exists (writes 
   strings); the client builds the `FormData`. In route tests use `callRoute(..., { form })`.
 - **Search** (`search_fts`, FTS5, created in custom migration `0006_search_index`): triggers on pages,
   assets, rooms, tasks, defects (title, description, location), contacts (name, company, notes; never
-  phone, e-mail or address), parts (name, part number, supplier, notes) and asset hints (title, body)
-  keep it current (archived assets, tasks, pages and parts are dropped). No secret text enters the
+  phone, e-mail or address), parts (name, part number, supplier, notes), asset hints (title, body) and insurance
+  policies (title, policy number, notes; custom migration `0018`) keep it current (archived assets, tasks, pages and
+  parts are dropped). The plate of a vehicle is part of its asset's row (custom migration `0016_vehicle_search`:
+  replaces `search_assets_au`, adds triggers on `vehicle_details`); nothing else of `vehicle_details` is indexed. No secret text enters the
   index: pages index `plain_text`; every other free text is cut off at the first `:::` when it
   mentions "secret" anywhere. Hit `url`s are the UI routes (`/docs/<slug>`, `/assets/<id>` also for
-  plants and hints, `/rooms/<id>`, `/tasks/<id>`, `/defects/<id>`, `/parts/<id>`, `/contacts/<id>`).
+  plants and hints, `/rooms/<id>`, `/tasks/<id>`, `/defects/<id>`, `/parts/<id>`, `/contacts/<id>`, `/insurance/<id>`).
   New searchable entities need their own triggers in a new migration and an entry in `URLS`
   (`search/search.ts`). Queries become quoted prefix terms (`ftsExpression`), so no FTS syntax reaches SQLite.
 - **Backup** (`backup/`): on by default (`HAUSWART_BACKUP_DIR` default `./data/backups`, set it empty
@@ -537,17 +580,216 @@ of the owner>` is added to the document unless an identical note exists (writes 
   `GET /defects/{id}/timeline` merges both. The deadline defaults to household handover date +
   `defectDeadlineMonths` (`deadlineSource` handover) and is recomputed when the household changes.
   A deadline keeps one `one_off` reminder task (`externalSource: "defect"`, category `defect`, system
-  text in the base language) that is archived when the defect is fixed/rejected or has no deadline.
+  text in the base language) that is archived when the defect is fixed/rejected or has no deadline. A note on an
+  asset can become a defect (`POST /asset-notes/{id}/to-defect`, see "Insurance policies and asset notes").
 - **Comments** (`comments` table, `entityType` + `entityId`): a kind of entity is commentable once
   it is in `comments/registry.ts` (`exists`, `title`, `url`, optional `audience`; the urls are the UI
   routes, `/docs/<slug>` for pages). Deleting an entity removes its comments through
   `AFTER DELETE` triggers (migrations `0004` and `0007` for pages): add one per new commentable table. Delete is soft
   (empty body, `deleted: true`), edit is author-only (403 otherwise), delete is author or admin. A new
   comment notifies the other involved members (`notification_comment`). Tasks, assets, defects, hints,
-  service log entries, pages and cost entries carry `commentCount`; cost entries are commentable too
-  (trigger in migration `0013`).
+  service log entries, pages, cost entries and insurance policies carry `commentCount`; cost entries (trigger in
+  migration `0013`) and insurance policies (`/insurance/<id>`, trigger in `0018`) are commentable too.
 - **Hint reactions** (`signalReactionSchema`, type `signal_change`) are stored with the hint
   (`GET /hints?reactive=true`) and executed by `signals/reactions.ts`, see below.
+
+### Vehicles
+
+- **A vehicle is an asset of kind `vehicle`** (no room; `GET /assets?kind=vehicle`, and `q` also matches
+  the plate, both sides compared through `plateKey`: case, spaces, dots and dashes do not matter, so `zh 000.000` finds
+  `ZH 000000`; `vehiclesWithPlateLike` in `vehicles/summary.ts`, in code and not in SQL, which could only strip the
+  characters it was told about). `vehicle_details` (1:1, created by the first save) holds plate, VIN, Stammnummer
+  (`registrationNumber`), `firstRegistration`, `fuelType`, tire sizes, `location`, `odometerUnit`
+  (`km|mi`) and notes. `GET|PUT /assets/{id}/vehicle`: PUT replaces (a field left out is cleared; the
+  unit relabels the readings, it does not convert them), 400 for an asset of another kind, 404 for a
+  missing one; GET answers empty details for a vehicle never saved and 404 for another kind. The asset
+  DTO carries `vehicle: {plate, odometer: {value, date, unit} | null}` for vehicles only. The plate is
+  indexed for search (see "Search"); deleting the asset removes the odometer signal as well. A vehicle cannot
+  change its kind away (`PATCH /assets/{id}`) while it holds saved details (a row that says something; one saved
+  with nothing in it does not count and goes with the change), odometer readings or tire sets: 400 field error on
+  `kind` naming what is left (`vehicles/kind.ts`, `storedVehicleData`). Fuel log entries need no check of their own,
+  each is also an odometer reading.
+- **One rule for what only a vehicle has.** Everything under `/assets/{id}` that belongs to vehicles (`/vehicle`,
+  `/vehicle/stats`, `/odometer`, `/fuel-logs`, `/tire-sets`, `/tire-sets/{setId}/mount`) treats an asset of another kind
+  alike: a **read** is a 404 `not_found` (there is nothing of the sort to show, as for a missing asset), a **write** is a
+  400 `invalid_request` (well formed, but that asset cannot have it); a missing asset is a 404 for both. It lives in
+  `vehicles/kind.ts` (`assertVehicleForRead` / `assertVehicleForWrite`) and every registry description repeats it, so it
+  reaches OpenAPI; `src/routes/api/v1/assets/vehicle-only.test.ts` runs the table. Endpoints addressed by the id of a
+  tire set, fuel log entry or odometer reading (`/tire-sets/{id}`, `/tread`, `/fuel-logs/{id}`, `/odometer-readings/{id}`)
+  look at no asset kind: those records can only exist for vehicles (see the kind rule above).
+- **Odometer readings** (`odometer_readings`, never pruned): `POST /assets/{id}/odometer` (`date`
+  defaults to today and is never in the future), `GET` newest first (keyset), `DELETE
+/odometer-readings/{id}` (a reading written for a completion, service log entry, fuel log entry or tire change belongs to
+  that record and is a 409 `conflict` naming the owner, `details.source`/`sourceId`; one whose record is gone, say a deleted
+  task's completion, is free again). A value lower than the reading before it (the newest on or before the date)
+  is a 400 on `value`, and so is a value higher than the reading after it (the first one on a later
+  date; the same rule for every writer, completions, service log, fuel log and tire changes included), unless
+  `force: true` (replaced instrument cluster). That 400 carries a structured reason in `details` besides the English field
+  error (whose text is no contract): `code` `lower_than_previous` / `higher_than_next` (`ODOMETER_REFUSAL_CODES`), `field`
+  (the request field it is reported on: `value`, `odometer` or `counterValue`) and `reading` `{value, date}`, the
+  neighbouring reading in the way (`odometerRefusalDetailsSchema`, built by `outOfOrder` in `vehicles/odometer.ts`); every
+  other 400 of a reading (future date, negative value, no vehicle) has no `code`, since `force` would not help.
+  `recordOdometer(ctx, {assetId, date, value, source, sourceId?, note?,
+createdBy?, force?})` is what other features call when they learn the odometer on the side (fuel log,
+  tire change); `source` is `manual|completion|service_log|fuel_log|tire_change` and one
+  `(source, sourceId)` has one reading, so saving the record again updates it. `writeOdometer` is its
+  synchronous half (runs in the caller's transaction, `fields` names the request field a problem is
+  reported on); `settleOdometer` re-evaluates the tasks that read the odometer and announces what became
+  due (`recordOdometer` runs both).
+- **The engine reads a signal, the readings stay the truth.** `syncOdometerSignal` rebuilds, after every
+  insert, update and delete, the signal `odometer:<asset id>` (`odometerSignalKey`; source `manual`, so
+  it never goes stale and is never pruned; unit of the vehicle) from the newest reading and one sample
+  per reading (at noon of its date in the household zone, or the moment it was entered when earlier).
+  A task counts on it with `counter_delta` and `entityId: "odometer:<asset id>"` (optionally `orEvery`);
+  the Home Assistant adapter never asks for such a key (not an entity id). A change of the newest value
+  goes through `settleSignalChanges` (auto-complete, hint reactions, re-evaluation, notifications, as for
+  an adapter's readings). Readings come in now and then, so the estimate (`estimateCrossing`, windows of 28, 90 and
+  365 days for manual signals) counts its days from the day of the newest sample, not from today: without a new
+  reading it stays where it is, and once that day has passed it says tomorrow with low confidence. A counter task remembers the first value it saw (`task_state.counterBaseline`) until a
+  completion snapshots one; the same sync forgets that value when no reading has it any more (the typo that was deleted
+  or corrected), so the task starts again from what the vehicle shows instead of counting from a number it never had.
+- **Other writers.** A completion with a `counterValue` of a task that reads the odometer records a
+  reading dated the day of the completion (`vehicles/events.ts`, a listener on `completionRecorded`, so
+  inside the completion's transaction): a value equal to the reading on or before the completion's date
+  (including the counter snapshot a completion takes by itself) adds nothing, a lower one fails the completion
+  with a 400 on `counterValue`, undo removes the reading. Without a `counterValue` such a task snapshots the
+  reading on or before the completion's date (`readingOnOrBefore`, the last one entered among a day's), not the
+  current one, so a completion dated back counts from what the odometer showed that day (dated before the first
+  reading it takes no snapshot and the task goes on from its remembered starting value; any other counter, say a
+  Home Assistant one, still snapshots its current value); the complete and undo handlers then re-evaluate the other tasks that read
+  the same odometer (`refreshOdometerReaders`), so they do not wait for the scheduler. A service log entry's `odometer` (vehicles only, 400 on `odometer` for anything else)
+  keeps one reading in step with the entry through create, update (value or date) and delete, in the
+  entry's transaction; the handlers re-evaluate the readers at once (`refreshOdometerReaders`). A task that counts on a
+  vehicle's odometer says so in the lists: every dashboard task (also `nextTasks` of the statistics) carries
+  `odometerAssetId`, the vehicle of its `counter_delta` on `odometer:<asset id>` (`odometerAssetOfTrigger`, read from the
+  stored trigger), else null, so a one-tap completion opens the reading dialog without fetching the task first.
+- **Tire sets** (`tire_sets`, `tire_set_events`, migration `0020`; `vehicles/tires.ts`, rules in `lib/vehicles/tires.ts`):
+  `GET|POST /assets/{id}/tire-sets`, `GET|PATCH|DELETE /tire-sets/{id}`, `POST /assets/{id}/tire-sets/{setId}/mount`,
+  `POST /tire-sets/{id}/tread`. A set has season (`summer|winter|all_season`), brand, model, size, `dot` (week and
+  year, `"2423"`, validated as week 01-53 plus two digits), tread depth and the day it was measured, storage location
+  and contact (a tire hotel), purchase date and `retiredAt`. At most one set per vehicle is `mounted` (partial unique
+  index and the mount code). **Mounting** (`mountTireSet`) takes the mounted set off (an `unmounted` event of the same
+  day and odometer), writes the `mounted` event and, with an `odometer`, a reading of the vehicle (source `tire_change`,
+  the mount event as `sourceId`; lower than the reading before is a 400 on `odometer`), in one transaction; 409 for a
+  retired or already mounted set. A mount dated before the day the set it takes off was (last) mounted is a 400 on `date`
+  (the same day is fine), so an `unmounted` event never precedes its `mounted` one. Whether a set is mounted and its tread change only through mount and tread (each
+  measurement is a `tread_measured` event, the newest is the set's depth, and an `odometer` with it is a reading of the
+  same kind and rule as for mounting); `retired: true` takes a mounted set off.
+  The DTO carries `treadWarning` (below 3 mm summer, 4 mm winter and all-season, `TREAD_WARNING_MM`), `ageYears` (from
+  the DOT, one decimal), `mountedOn` and `distance` (`tireSetDistance`: odometer at the unmount, or the newest reading
+  while mounted, minus at the mount; events without an odometer use the newest reading on or before their date).
+  Completing a tire-change task does not mount anything: the frontend completes the task, then calls mount. Photos are
+  attachments of the owner type `tire_set` (comments and document links are not offered).
+- **Fuel log** (`fuel_logs`, migration `0021`; `vehicles/fuel-logs.ts`, consumption in `lib/vehicles/fuel.ts`):
+  `GET|POST /assets/{id}/fuel-logs` (list takes `year`) and `GET|PATCH|DELETE /fuel-logs/{id}`; writing needs
+  `costs:write` (it books money, like accepting a finance suggestion), reading `read`. A fill has `date`, `odometer`,
+  `quantity` and `unit` (`l|kWh`, default by the vehicle's fuel type), `amountMinor` + `currency`, `fullTank`,
+  `missedPrevious`, `station`, `notes`. **Creating** is one transaction: the fill, an odometer reading (source
+  `fuel_log`, same monotonic rule, 400 on `odometer`) and, unless the amount is 0 (a free charge), a cost entry of the new
+  category `fuel` for the vehicle (title "Tanken <station>" or "Laden ..." in the base language, payee = station, paid by
+  `paidByUserId`, default the caller, `splitMode` default ownership). **PATCH** moves the reading with date and
+  odometer and keeps the cost entry in step for amount, currency, date, station (title and payee, the unit decides the
+  title too), payer and split (made free it loses the entry; costing again gets a new one; an entry somebody deleted is
+  not brought back by other changes). **The fill owns what it booked**: on the cost entry (`PATCH|DELETE /costs/{id}`) a
+  change of amount, currency, date or device (`assetId`, which would break the link to the fuel log and the vehicle's
+  statistics) and a delete are a 409 `conflict` (message names the fuel log, `details.fuelLogId`;
+  repeating the current values is fine, so is every other field: category, title, notes, payee, payer, split, deductible,
+  room, defect, service log entry, receipts) and `CostEntry.fuelLogId` points back (null for any other entry, and once
+  the fill is gone the entry is free). The fill passes `{fuelLogId}` to `updateCost` to move amount, currency and date (its
+  device is the vehicle's and is never sent), and lets go of the entry (`cost_entry_id` null)
+  before it deletes it. Title and payee of the entry are rewritten by a change of station or unit only while each still
+  equals what the fill wrote last time (`writtenNames`), so a title edited on the cost entry stays; the two are judged apart. **DELETE** removes the reading and the cost entry with its receipts. A fill itself
+  takes no attachments, comments or document links: receipts go on its cost entry. Consumption is the full-to-full method (`fuelStretches`): a full fill
+  closes a stretch from the previous full fill, partial fills in between are added up, a fill flagged `missedPrevious`
+  starts the chain again, litres and kWh are separate chains; the DTO carries `pricePerUnitMinor` (a rate in minor
+  units, not an amount), and on a closing fill `distance`, `consumptionPer100` and `costPerDistanceMinor` (unknown when an
+  amount in the stretch is in another currency), worked out from the whole log whatever page is asked for.
+- **Statistics** (`GET /assets/{id}/vehicle/stats?year=`, all time without a year; `vehicles/stats.ts`, distance maths in
+  `lib/vehicles/stats.ts`): `distance` and `distanceByMonth` from the odometer readings (a stretch between two readings
+  counts evenly for the days after the first up to the second, so a mid-month reading splits the stretch; nothing before
+  the first or after the last reading; a reading lower than the one before adds nothing), `costs` (the vehicle's cost
+  entries that count as an expense, household currency only, by category, `otherCurrencyCount` for the rest),
+  `costPerDistanceMinor`, `consumption` per unit (average weighted by distance and the last ten, over the stretches closed
+  in the period), `priceTrend` (last 24 fills), the mounted `tireSet` and `nextTasks` (at most five, from
+  `getUpcomingTasks(ctx, {assetId})`, the dashboard's selector). `GET /costs/summary` takes `assetId` too: everything in
+  it is then that asset's alone.
+- **Task templates** (`lib/vehicles/templates.ts`, pure, titles are Paraglide messages in the given
+  locale): winter and summer tires (yearly calendar, October/April 15th, `earlyDays` 14, preparation
+  "Garagentermin buchen" 28 days ahead), service (`counter_delta` on the odometer, 15000 km / 10000 mi,
+  `orEvery` 12 months), MFK (`one_off`; `suggestMfkDate` = 4, 7, then every 2 years after the first
+  registration), vignette (yearly, end of January), vehicle tax (yearly, payment), brake fluid and
+  air-conditioning service (every 2 years). Each returns `{id, task, preparations}`: the frontend sends
+  `task` to `POST /tasks`, then each preparation to `POST /tasks/{id}/preparations`. `task` carries the mark
+  `externalSource: "vehicle_template"`, `externalRef: "<asset id>:<template id>"` (the pair is unique on the server).
+
+### Insurance policies and asset notes
+
+- **Insurance policies** (`insurance_policies`, `insurance_policy_assets`, migrations `0017` and, for the
+  triggers, `0018`; `insurance/policies.ts`): generic and shared by the household (`type`: car liability / partial /
+  full casco, contents, personal liability, building, legal, travel, health, life, other). `title`, the insurer as
+  a contact (`insurerContactId`, set null when the contact is deleted; the DTO has `insurerName`), `policyNumber`,
+  `premiumMinor` per `premiumPeriod` (`monthly|quarterly|semiannual|annual`) + `currency` (the household's when
+  omitted), `deductibleMinor` (same currency), `startDate`, `endDate` = the **last day of cover** of the current term
+  (what an insurer prints as "expires 1 January" is 31 December here), `renewal` (`auto|fixed`),
+  `cancellationNoticeMonths`, `assistancePhone`, `showOnEmergency`, `notes`, `archivedAt`. What a policy covers is
+  a many-to-many list (`assetIds`, replaced as a whole by PATCH); deleting an asset or the insurer's contact never
+  deletes the policy.
+- **Derived, never stored** (`lib/insurance/policy.ts`, pure, client-safe, table-tested): `annualPremiumMinor` =
+  premium times the periods in a year (exact integer) and `cancellationDeadline` = `endDate` minus the notice months,
+  clamped to the end of a shorter month (31 May and 3 months = 28 February); an end date that is the last day of its
+  month gives the last day of the target month (30 June and 3 months = 31 March), only for `renewal: auto` with an
+  end date and a notice period, else null. It is a function of three stored fields, so storing it could only let it
+  disagree with them; the web form can show it live with the same function. It does not roll by itself: after an
+  automatic renewal somebody moves `endDate` to the end of the next term and the deadline and reminder follow.
+- **API**: `GET|POST /insurance-policies` (filters `assetId`, `type`, `q` over title, policy number and insurer's
+  name; only active ones unless `archived=true`, which lists the archived ones; sorted by deadline, none last, then
+  title), `GET|PATCH|DELETE /insurance-policies/{id}` (`archived` archives and restores), `GET
+/assets/{id}/insurance-policies` (for the asset page; 404 for an unknown asset). The DTO carries the covered
+  assets (id, name, kind), `reminderTaskId` and `commentCount`.
+- **Reminder task** (`insurance/reminder.ts`, `syncReminder` after every create and update; the defect pattern): a
+  `one_off` task with `externalSource: "insurance"`, `externalRef` = the policy id, category `payment`, text in the base
+  language, `externalUrl` `/insurance/<id>`, **due on the deadline itself** (so every date shown anywhere is the real
+  one), `dueSoonDays` 14 and a preparation 30 days ahead. It exists while the policy is active and the deadline is
+  today or later; it is archived when the policy is archived or the deadline goes away or moves into the past (an
+  overdue reminder that nobody finished stays, whatever else of the policy is edited, until the dates change) and the
+  same task comes back. A one-off task
+  stays done once completed, so when the deadline moves and the reminder was completed or skipped, that task is kept
+  archived with its history under `externalRef` `<policyId>@<taskId>` and a new one is created for the new deadline;
+  an unfinished one moves in place. Deleting the policy deletes all of them.
+- **Owner type `insurance_policy`**: attachments (policy documents), document links (new roles `policy` and
+  `registration` = vehicle registration; trigger in `0018`), comments (`/insurance/<id>`, trigger in `0018`) and search
+  (`search_fts` kind `insurance_policy`: title, policy number and notes cut at a secret block, never the assistance
+  phone; archived policies are dropped).
+- **Emergency**: not archived policies with `showOnEmergency` are in `GET /emergency` (`insurance`: insurer name and
+  phone, policy number, assistance phone) and in a section of the sheet (left out when there are none). Guest links
+  never show policies: no guest section fits, the guest view reads none.
+- **Asset notes** (`asset_notes`, migration `0019`; `asset-notes/`): small issues to mention at the next
+  appointment ("brakes squeak"). `body` (at most 2000 characters), `status` `open|resolved`, `resolvedAt`,
+  `resolvedBy`, `serviceLogId` (the entry that addressed it, set null with the entry), `defectId` (set null with the
+  defect), `createdBy`. `GET|POST /assets/{id}/notes` (`status` `open` (default), `resolved` or `all`, newest first),
+  `PATCH|DELETE /asset-notes/{id}`: resolving records who and when, reopening clears both and the service log link,
+  asking for the status a note already has changes nothing. The owner type `asset_note` takes photos (they go with the
+  note, and with the asset); a note takes no document links.
+- **To a defect** (`POST /asset-notes/{id}/to-defect`, 201 `{note, defect}`): in one transaction a defect on the asset
+  (title = the first line cut to 200 characters, description = the text, discovered the day the note was written,
+  medium, **no deadline and so no reminder task**: a note is not a claim against the builder, so the household's
+  handover deadline is not assumed) and the note resolved with `defectId`. 409 for a note that already is a defect;
+  once that defect is deleted the note can be converted again.
+- **Resolving through the service log** (`asset-notes/resolve.ts`): `resolvedNoteIds` on service log create and
+  update and inside `serviceLog` of `POST /tasks/{id}/complete`. The notes must exist and belong to the entry's asset
+  (400 on `resolvedNoteIds`, in a completion on `serviceLog`, before anything is written); open ones become resolved
+  with the entry (`resolvedBy` = whoever wrote it), resolved ones stay as they are, so a retry changes nothing; an
+  update only adds. The notes and the entry are written in one transaction. **Undoing** the completion that wrote the
+  entry reopens its notes (listener on `completionRevoked`, `asset-notes/events.ts`; the entry stays in the log) and
+  **deleting** an entry reopens them too. Neither reopens a note that was turned into a defect in the meantime
+  (`defectId` set; `reopenNotesOf` skips it): the defect carries the issue on, so the note would be listed twice.
+  Once that defect is deleted the note counts as an ordinary resolved one again.
+- **`openNoteCount`** is on every task and every dashboard task: the open notes of the task's asset (a correlated
+  subquery, 0 without an asset), so the due service task can say "3 Anliegen". The complete endpoint reads the task
+  again after writing the entry, so the count it returns is current.
+- **Notices**: the due soon and due notices of a task whose asset has open notes are
+  `notification_due_soon_notes` / `notification_due_notes` (the usual params plus `notes`, counted when the notice is
+  written; the dedupe key is the same, so a stage is still announced once). Prep and overdue notices are unchanged.
 
 ### iCal feeds, emergency page and guest links
 
@@ -577,7 +819,8 @@ of the owner>` is added to the document unless an identical note exists (writes 
   household zone, `alarmDaysBefore` days ahead (1 = evening before). Texts are Paraglide messages
   with the feed's locale (`m.key(params, {locale})`).
 - **Emergency page**: `GET /api/v1/emergency` (read scope) = emergency + rules pages (member HTML,
-  secrets included), emergency contacts (full), `showOnEmergency` assets with pinned hints.
+  secrets included), emergency contacts (full), `showOnEmergency` assets with pinned hints and `showOnEmergency` insurance policies
+  (insurer, policy number, assistance line; a section of the sheet when there are any).
   `GET /api/v1/emergency/export.pdf` is the A4 sheet; secrets only with `?includeSecrets=1|true`
   (then a red confidentiality box on top and "Vertraulich" in the footer). The text of pages and
   hints comes from the markdown renderer's HTML (guest audience = secrets stripped, fail closed),
@@ -655,7 +898,11 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
 - **Finance inbox tools** (`tools/finance.ts`): `list_finance_suggestions` (read), `accept_finance_suggestion`,
   `dismiss_finance_suggestion` (mode `undo`: destructive, idempotent) and `sync_finance`, the last three with the
   `costs:write` scope like their endpoints. Strictly the token user's own inbox; a sync that ends `ok: false` is a
-  normal result, not a tool error. 48 tools when the token holds every scope.
+  normal result, not a tool error.
+- **Insurance and asset notes** (`tools/insurance.ts`, `tools/notes.ts`): `list_insurance_policies` and
+  `get_insurance_policy` (read; a policy by id, title or policy number), `add_asset_note`, `list_asset_notes` and
+  `resolve_asset_note` (the asset by id or name; resolving is idempotent). `add_service_log` takes `resolvedNoteIds`, task
+  rows carry `openNotes`, and documents can be linked to a policy by its title. 62 tools when the token holds every scope.
 - **New tool**: add the endpoint to the registry first, then a ~15-line `defineTool` in
   `mcp/src/tools/` and an entry in `tools/index.ts` (which lists the planned extension points).
   Triggers go through `parseTrigger` (engine schema, per-type docs in `trigger-docs.ts`, a `Record`
@@ -663,11 +910,32 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
 - **Errors** become MCP tool errors `Error [code]: message` (API code, or `unreachable`);
   `complete_task`/`skip_task` send a fresh idempotency key; completions are attributed `mcp` by the
   token kind.
+- **References** (`searchText` in `mcp/src/search-text.ts`; used by `resolveAsset`, `resolveVehicle`, `resolveContact`,
+  `resolvePart` and `resolvePolicy`): a record is named by id, name or similar and found with the list endpoint's
+  `q`, which the API limits to 100 characters. A blank reference is refused (`invalid_request`, "Nothing to look
+  for: give the ..."), never matched against everything; one longer than 100 characters is searched by its first
+  100 and only a hit that matches the whole reference counts (else `not_found`), so a long title is found and a
+  record that merely starts alike is not taken for it.
 - **Documents** (`tools/documents.ts`): `search_documents`, `get_document`, `list_document_links`, `link_document`,
   `unlink_document` go through the token user's own document connection like every other caller (no connection or a
   document that account cannot see: `not_found` with a sentence saying which; linking to a page also needs
   `docs:write`). Owners are given as id, or name for asset, room, part and contact and slug for a page; tags and
   correspondents by name or id. The files are not transferred, sending a file is not offered.
+- **Vehicle tools** (`tools/vehicles.ts`): `get_vehicle` (read: details, newest reading, open tasks) and
+  `record_odometer` (write: value, date, note, `force`; answers with the tasks that now need attention). A
+  vehicle is given by id, name or plate (spaces, dashes and case do not matter; parts of a name or plate
+  work when unambiguous); a device given by name is told apart from "no such vehicle".
+  Every tool that takes an asset (`ctx.resolveAsset`) accepts a vehicle's plate as well (`lib/vehicles/plate.ts`).
+  Fuel, tires and numbers: `list_fuel_logs` and `add_fuel_log` (`tools/fuel.ts`; **`costs:write`**, because a fill books a
+  cost entry, so it is offered with the cost tools, not with `write`), `get_vehicle_stats` (`tools/vehicle-stats.ts`),
+  `list_tire_sets`, `add_tire_set`, `mount_tire_set` and `record_tire_tread` (`tools/tires.ts`). A tire set is given by
+  its id or by words from its season, brand, model, size or DOT (`winter`; `findTireSets` searches the vehicle's own
+  sets only, so another vehicle's set is never found; an id also finds a retired set, words only active ones; several
+  hits are reported with their ids).
+  `record_tire_tread` without a set measures the mounted one; mounting the set that already is mounted answers normally
+  and changes nothing (the tool is `update`, annotated idempotent). Amounts are decimals in the currency (`toMinor`,
+  `money` and `rate` in `tools/costs.ts`; a price per litre or distance unit is a rate, `1.847 CHF/l`) and consumption
+  is rounded to two decimals. `cost_summary` takes an `asset` (id, name or plate).
 - **Tests** (`mcp/src/*.test.ts`, vitest) connect the real server to an in-process hauswart
   (`createInProcessFetch`) via the SDK's in-memory transport: `useMcp().connect({scopes})` returns
   `call`/`ok` helpers. Document tests also use the fake Paperless of `integrations/paperless/testing.ts`
@@ -846,6 +1114,50 @@ in dark mode. Every list has an empty state, every async action a pending and an
   plain `goto` from an open overlay leaves its entry behind. `FormDialog`/`ConfirmDialog` give up their entry while
   their action runs. Long forms on pages get a sticky bottom save bar.
 - **Information is not hover-only**: anything in `title=` that matters (exact dates, amounts) is also visible on touch.
+- **Insurance and asset notes in the web app**: `/insurance` (list with a yearly total, detail, form; the form shows the
+  cancellation deadline live from `lib/insurance/policy.ts`, request mapping in `lib/insurance/form.ts`) sits in the finance group
+  of the sidebar, so behind "More" on phones. Asset notes live in the card with the anchor `#notes` (`components/asset-notes/`);
+  `NoteChoices` is the picker for the completion and service log dialogs and `OpenNotesBadge` the count on task rows and the task
+  page. After `bun run check` or `bun run i18n` restart a running `bun dev`: regenerated route nodes and message modules leave the
+  dev client with a stale manifest.
+- **Vehicles in the web app**: `assets/[id]` for kind `vehicle` shows `components/vehicles/` first: `VehicleCard` (plate chip,
+  odometer with the "record" dialog, details), `OdometerHistoryCard` (delete is offered for every reading; a reading that belongs to
+  a completion, service log entry, fuel log entry or tire change is a 409 whose `details.source` is worded by `readingOwner`),
+  `TireSetsCard` (sets with tread and age warnings, mount, measure, retire), `FuelLogCard` (anchor `#fuel-log`; consumption and
+  price trends as `Sparkline`, a small SVG without a chart library) and `VehicleCostsCard` (`/assets/{id}/vehicle/stats` per year,
+  links to `/costs?asset=`). The asset form takes the vehicle details (`PUT /assets/{id}/vehicle` after the asset; vehicles have no
+  room picker).
+- **Odometer readings in forms**: `VehicleReading` (`lib/vehicles/odometer-state.svelte.ts`) loads a vehicle's unit and newest
+  reading for a dialog and `OdometerReadingField` prefills it; an unchanged or empty field sends no reading. A task that counts on the
+  odometer asks for it when completed: `CompleteButton` asks `odometerAssetOf(task)` (the dashboard's `odometerAssetId`, else the
+  trigger; only a task that has neither is fetched, and a failed lookup completes plainly) and opens `CompleteOdometerDialog`, whose
+  reading goes along as `counterValue`; the "with note" dialog has the same field. Odometer fields read "95.000", "95,000" and
+  "95'000" as 95000 (`parseOdometerValue`), amounts, litres and millimetres keep their decimals (`parseDecimalInput`). Limits in
+  messages go through `formatNumber`, never `toLocaleString("en")`. A refused reading is recognised by `refusedReading(err, field)`
+  (`lib/vehicles/odometer-error.ts`) from `details.code` and `details.reading` (`odometerRefusalDetailsSchema`), never from the
+  English message, and `refusedMessage` names the reading in the way for `lower_than_previous` and `higher_than_next`. Only the record
+  dialog (`POST /assets/{id}/odometer`) can send `force`, so only it offers "save anyway", for both codes; the other forms
+  (completion, fuel log, tire mount and tread, service log) show the explanation.
+- **Tire change offer**: `completeTask` hands the task the server answers with to `tireOffers` (`lib/vehicles/tire-offer.svelte.ts`);
+  if `tireChange(task)` (`tire-task.ts`) says it is a tire change, `TireMountOffer` (in the app layout) offers to mount a set. The
+  template mark decides (`tires_winter` / `tires_summer`, any other template never offers); an unmarked task is judged by its title
+  ("Reifenwechsel", "Radwechsel", "Winterreifen aufziehen", ...). The mount dialogs take the mounted set's `mountedOn` as the minimum
+  date (`mountedSince`) and word the server's 400 on `date`.
+- **Setting up a vehicle's tasks**: "Termine einrichten" (`lib/vehicles/setup.ts`, `vehicle-setup-dialog.svelte`) creates the
+  templates of `lib/vehicles/templates.ts` through the API, task first, then its preparations, each template with its own progress
+  and error. Every template task carries the mark `externalSource: "vehicle_template"`, `externalRef: "<asset id>:<template id>"`
+  (`lib/vehicles/template-mark.ts`); the server keeps that pair unique, so on a 409 the task that holds the mark is read (`GET /tasks` with `externalSource`,
+  `externalRef` and `includeArchived`, the client's `findMarked`): archived, finished (a one-off that was completed or skipped) or
+  moved to another device means the vehicle had the template before, and the creation retries with `:<n>` appended; a task that is
+  still there means none is made and the template shows "already there" (`TemplateRun.state` `exists`, the page reloads); a holder
+  that is gone by now gets the same mark again. `findExistingTask` finds what a vehicle has already by the mark, and only
+  a task without a readable mark by likeness (title in either language, odometer counter, an inspection on a date), so nothing is
+  offered twice. A mark is readable (`templateOfMark`) when it names one of `VEHICLE_TEMPLATE_IDS` (defined in `template-mark.ts`,
+  re-exported by `templates.ts`); one that names another template counts as unreadable here and in the tire change offer. A new vehicle opens that dialog once through `?termine=1`.
+- **Costs of a vehicle**: `/costs?asset=` passes the device on to the summary (`costsSummaryQuery`; no other filter narrows its
+  totals) and says so above it. A cost entry with `fuelLogId` has its amount, currency, date and device locked in the form (never sent by
+  `buildUpdateBody`) with a link to `#fuel-log`, and the detail page offers that link instead of delete; a 409 with
+  `details.fuelLogId` that still arrives is worded (`fuelLogOfConflict`).
 
 ## Testing
 

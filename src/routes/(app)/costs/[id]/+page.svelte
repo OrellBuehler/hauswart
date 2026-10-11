@@ -1,6 +1,7 @@
 <script lang="ts">
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
   import ExternalLinkIcon from "@lucide/svelte/icons/external-link";
+  import FuelIcon from "@lucide/svelte/icons/fuel";
   import PencilIcon from "@lucide/svelte/icons/pencil";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
@@ -16,6 +17,8 @@
   import CostFlags from "$lib/components/costs/cost-flags.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
+  import { apiErrorMessage } from "$lib/error-message";
+  import { fuelLogOfConflict } from "$lib/costs/fuel-owner";
   import {
     categoryIcons,
     categoryLabels,
@@ -27,6 +30,7 @@
   import { formatMoney } from "$lib/format-money";
   import { assetHref, roomHref } from "$lib/links";
   import { m } from "$lib/paraglide/messages";
+  import { fuelLogHref } from "$lib/vehicles/links";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -45,10 +49,20 @@
 
   let deleteOpen = $state(false);
 
+  /** A fuel log entry booked this entry and deletes it with itself. */
+  const fuelOwned = $derived(Boolean(cost.fuelLogId));
+
   async function remove() {
     await api.call(endpoints.costsDelete, { params: { id: cost.id } });
     toast.success(m.cost_deleted_toast({ title: cost.title }));
     await gotoFromOverlay(resolve("/costs"), { invalidateAll: true });
+  }
+
+  function deleteError(err: unknown): string {
+    return apiErrorMessage(
+      err,
+      fuelLogOfConflict(err) ? { conflict: m.cost_fuel_conflict() } : {},
+    );
   }
 
   const linkClass =
@@ -103,15 +117,35 @@
           <PencilIcon />
           {m.common_edit()}
         </Button>
-        <Button
-          size="lg"
-          variant="outline"
-          class="text-destructive hover:text-destructive"
-          onclick={() => (deleteOpen = true)}
-        >
-          <Trash2Icon />
-          {m.common_delete()}
-        </Button>
+        {#if fuelOwned}
+          <p
+            class="text-muted-foreground flex min-w-0 flex-1 basis-60 items-start gap-2 text-sm text-pretty"
+          >
+            <FuelIcon class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            <span class="min-w-0">
+              {m.cost_fuel_owned_delete_hint()}
+              {#if cost.assetId}
+                <!-- eslint-disable svelte/no-navigation-without-resolve -- the path is resolved in fuelLogHref, only the fragment is appended -->
+                <a
+                  href={fuelLogHref(cost.assetId)}
+                  class="text-foreground focus-visible:ring-ring/50 rounded font-medium underline underline-offset-4 outline-none focus-visible:ring-[3px]"
+                  >{m.cost_fuel_owned_link()}</a
+                >
+                <!-- eslint-enable svelte/no-navigation-without-resolve -->
+              {/if}
+            </span>
+          </p>
+        {:else}
+          <Button
+            size="lg"
+            variant="outline"
+            class="text-destructive hover:text-destructive"
+            onclick={() => (deleteOpen = true)}
+          >
+            <Trash2Icon />
+            {m.common_delete()}
+          </Button>
+        {/if}
       </div>
     {/if}
   </header>
@@ -316,4 +350,5 @@
   pendingLabel={m.common_deleting()}
   destructive
   onconfirm={remove}
+  errorMessage={deleteError}
 />

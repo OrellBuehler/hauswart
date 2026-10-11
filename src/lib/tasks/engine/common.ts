@@ -8,7 +8,7 @@ import type {
   Reason,
   Signal,
 } from "./types";
-import { SIGNAL_STALE_MS } from "./types";
+import { MANUAL_SIGNAL_SOURCE, SIGNAL_STALE_MS } from "./types";
 
 type StatusContext = Pick<EvalContext, "today" | "graceDays" | "dueSoonDays">;
 
@@ -85,6 +85,20 @@ export function latestByInstant(
   return best;
 }
 
+/**
+ * Whether a reading is recent enough to act on: seen within the last day, or typed in by a
+ * person (`manual`), whose readings are sparse and stay valid until the next one.
+ */
+export function isSignalFresh(
+  signal: Pick<Signal, "seenAt" | "source">,
+  now: number,
+): boolean {
+  return (
+    signal.source === MANUAL_SIGNAL_SOURCE ||
+    now - signal.seenAt <= SIGNAL_STALE_MS
+  );
+}
+
 export type SignalLookup =
   | { ok: true; signal: Signal }
   | { ok: false; reason: "signal_missing" | "signal_stale" };
@@ -102,7 +116,7 @@ export function lookupSignal(
   if (needs === "numeric" ? !hasNumeric : !hasNumeric && !hasText) {
     return { ok: false, reason: "signal_missing" };
   }
-  if (ctx.now - signal.seenAt > SIGNAL_STALE_MS) {
+  if (!isSignalFresh(signal, ctx.now)) {
     return { ok: false, reason: "signal_stale" };
   }
   return { ok: true, signal };

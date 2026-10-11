@@ -117,6 +117,72 @@ describe("costsSummary", () => {
     return { a, b };
   }
 
+  it("can be limited to one asset: its totals, categories, months and settlement only", async () => {
+    const { a, b } = await household();
+    const car = createAsset(
+      ctx(),
+      createAssetRequestSchema.parse({ name: "Auto", kind: "vehicle" }),
+    );
+    const oven = createAsset(
+      ctx(),
+      createAssetRequestSchema.parse({ name: "Backofen" }),
+    );
+    book({
+      assetId: car.id,
+      amountMinor: 8000,
+      category: "fuel",
+      paidByUserId: a.id,
+    });
+    book({
+      assetId: car.id,
+      amountMinor: 2000,
+      category: "repair",
+      date: "2026-05-02",
+      paidByUserId: b.id,
+    });
+    book({
+      assetId: oven.id,
+      amountMinor: 50_000,
+      category: "repair",
+      paidByUserId: a.id,
+    });
+    book({ amountMinor: 700, paidByUserId: b.id });
+
+    const all = costsSummary(ctx(), 2026);
+    const only = costsSummary(ctx(), 2026, { assetId: car.id });
+    expect(all.expenseTotalMinor).toBe(60_700);
+    expect(only).toMatchObject({
+      year: 2026,
+      expenseTotalMinor: 10_000,
+      byCategory: [
+        { category: "fuel", totalMinor: 8000, count: 1 },
+        { category: "repair", totalMinor: 2000, count: 1 },
+      ],
+      byAsset: [
+        { assetId: car.id, assetName: "Auto", totalMinor: 10_000, count: 2 },
+      ],
+    });
+    expect(only.byMonth[2]).toMatchObject({
+      month: "2026-03",
+      totalMinor: 8000,
+    });
+    expect(only.byMonth[4]).toMatchObject({
+      month: "2026-05",
+      totalMinor: 2000,
+    });
+    // Anna paid 8,000 and bears 5,000; Ben paid 2,000 and bears 5,000.
+    expect(only.settlement).toEqual([
+      expect.objectContaining({
+        fromName: "Ben",
+        toName: "Anna",
+        amountMinor: 3000,
+      }),
+    ]);
+    expect(
+      costsSummary(ctx(), 2026, { assetId: "unknown" }).expenseTotalMinor,
+    ).toBe(0);
+  });
+
   it("is empty but complete for a year without entries", async () => {
     const { a, b } = await household();
     const s = costsSummary(ctx(), 2026);

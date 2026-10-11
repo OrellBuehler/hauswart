@@ -1,9 +1,13 @@
 <script lang="ts">
   import { toast } from "svelte-sonner";
   import { api } from "$lib/api/browser";
-  import type { ServiceLogKind } from "$lib/api/enums";
+  import type { OdometerUnit, ServiceLogKind } from "$lib/api/enums";
+  import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
+  import { parseOdometerValue } from "$lib/vehicles/format";
+  import { refusedMessage, refusedReading } from "$lib/vehicles/odometer-error";
   import { endpoints } from "$lib/api/registry";
   import type { ServiceLogEntry } from "$lib/api/schemas/service-log";
+  import NoteChoices from "$lib/components/asset-notes/note-choices.svelte";
   import FormDialog from "$lib/components/app/form-dialog.svelte";
   import { apiErrorMessage } from "$lib/error-message";
   import { readMoney } from "$lib/format-money";
@@ -18,6 +22,7 @@
     entry,
     today,
     currency,
+    odometerUnit = null,
     onsaved,
   }: {
     open?: boolean;
@@ -26,6 +31,8 @@
     entry?: ServiceLogEntry | undefined;
     today: string;
     currency: string;
+    /** The unit of the vehicle's odometer; set for a vehicle only, which asks for the odometer. */
+    odometerUnit?: OdometerUnit | null;
     onsaved: () => void | Promise<void>;
   } = $props();
 
@@ -35,6 +42,8 @@
   let description = $state("");
   let contactId = $state<string | null>(null);
   let cost = $state("");
+  let odometer = $state("");
+  let resolvedNoteIds = $state<string[]>([]);
   let errors = $state<Record<string, string>>({});
 
   const editing = $derived(entry !== undefined);
@@ -51,6 +60,8 @@
       entry?.costMinor == null
         ? ""
         : toDecimalString(minor(entry.costMinor), 2);
+    odometer = entry?.odometer == null ? "" : String(entry.odometer);
+    resolvedNoteIds = [];
     errors = {};
   });
 
@@ -60,6 +71,10 @@
     if (!date) found.date = m.field_required();
     const costMinor = readMoney(cost, entryCurrency);
     if (costMinor === undefined) found.costMinor = m.field_number();
+    const reading = odometerUnit
+      ? parseOdometerValue(odometer, MAX_ODOMETER_VALUE)
+      : null;
+    if (reading === undefined) found.odometer = m.field_number();
     errors = found;
     if (Object.keys(found).length > 0) return m.form_check_fields();
 
@@ -73,6 +88,12 @@
       ...(costMinor === null || costMinor === undefined
         ? { currency: null }
         : { currency: entryCurrency }),
+      ...(odometerUnit && (reading !== null || entry)
+        ? { odometer: reading ?? null }
+        : {}),
+      ...(resolvedNoteIds.length > 0
+        ? { resolvedNoteIds: [...resolvedNoteIds] }
+        : {}),
     };
     try {
       const saved = entry
@@ -91,6 +112,11 @@
       );
       await onsaved();
     } catch (err) {
+      const refused = refusedReading(err, "odometer");
+      if (refused && odometerUnit) {
+        errors = { odometer: refusedMessage(refused, odometerUnit) };
+        return m.form_check_fields();
+      }
       errors = apiFieldErrors(err);
       if (Object.keys(errors).length > 0) return m.form_check_fields();
       return apiErrorMessage(err);
@@ -114,8 +140,15 @@
     bind:description
     bind:contactId
     bind:cost
+    bind:odometer
+    {odometerUnit}
     currency={entryCurrency}
     {errors}
     {today}
+  />
+  <NoteChoices
+    {assetId}
+    bind:selected={resolvedNoteIds}
+    idPrefix="service-notes"
   />
 </FormDialog>

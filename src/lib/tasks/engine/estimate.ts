@@ -3,6 +3,8 @@ import type { Completion, Estimate, Sample } from "./types";
 
 const DAY_MS = 86_400_000;
 const WINDOWS_DAYS = [28, 90];
+/** For readings someone types in now and then (an odometer): a year back when nothing nearer is enough. */
+export const SPARSE_WINDOWS_DAYS = [28, 90, 365];
 const MIN_SPAN_DAYS = 7;
 const MAX_HORIZON_DAYS = 365;
 const MEDIUM_CONFIDENCE_SPAN_DAYS = 14;
@@ -33,6 +35,7 @@ export function estimateCrossing(
   { target, direction, current }: CrossingTarget,
   today: string,
   tz: string,
+  windowsDays: readonly number[] = WINDOWS_DAYS,
 ): Estimate | null {
   const todayN = dayNumber(today);
   const dated = samples
@@ -41,7 +44,7 @@ export function estimateCrossing(
     .filter((s) => s.day <= todayN)
     .sort((a, b) => a.at - b.at);
 
-  for (const windowDays of WINDOWS_DAYS) {
+  for (const windowDays of windowsDays) {
     const used = dated.filter((s) => s.day >= todayN - windowDays);
     if (used.length < 2) continue;
     const spanDays = (used[used.length - 1].at - used[0].at) / DAY_MS;
@@ -58,8 +61,14 @@ export function estimateCrossing(
       MAX_HORIZON_DAYS,
       Math.max(1, Math.ceil(Number((remaining / rate).toFixed(9)))),
     );
+    // The days are counted from the newest sample, which `remaining` is measured at. Counted
+    // from today, readings someone types in now and then would push the date back by a day
+    // every day. A date that has passed without the target being reached is a wrong guess:
+    // the best that can be said is "tomorrow", and not with confidence.
+    const date = addDays(localDateOf(tz, used[used.length - 1].at), days);
+    if (date <= today) return { date: addDays(today, 1), confidence: "low" };
     return {
-      date: addDays(today, days),
+      date,
       confidence: spanDays < MEDIUM_CONFIDENCE_SPAN_DAYS ? "low" : "medium",
     };
   }

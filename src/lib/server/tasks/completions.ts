@@ -1,7 +1,7 @@
 import { and, desc, eq, isNull, lt, or, sql, type SQL } from "drizzle-orm";
 import type { CompletionKind, CompletionSource } from "$lib/api/enums";
 import { UNDO_WINDOW_DAYS } from "$lib/api/schemas/tasks";
-import { SIGNAL_STALE_MS } from "$lib/tasks/engine";
+import { isSignalFresh } from "$lib/tasks/engine";
 import { taskCompletions, tasks, users, type DB } from "$lib/server/db";
 import { emitEvent, type CompletionFacts } from "$lib/server/events";
 import { decodeCursor, pageOf } from "$lib/server/pagination";
@@ -12,6 +12,8 @@ import {
   notFound,
   type ServiceContext,
 } from "$lib/server/service";
+import { assetIdOfOdometerKey } from "$lib/vehicles/odometer";
+import { readingOnOrBefore } from "$lib/server/vehicles/summary";
 import { z } from "zod";
 import { clockAt, evaluateTaskById } from "./evaluator";
 import { loadSignals } from "./signals";
@@ -67,6 +69,8 @@ const factsOf = (row: CompletionRow): CompletionFacts => ({
   kind: row.kind,
   userId: row.userId,
   completedAt: row.completedAt,
+  completedDate: row.completedDate,
+  counterValue: row.counterValue,
 });
 
 /** The newest non-revoked completions of one task. */
@@ -173,11 +177,18 @@ const NO_OCCURRENCE = "none";
 async function counterSnapshot(
   ctx: ServiceContext,
   task: TaskRecord,
+  completedDate: string,
 ): Promise<number | undefined> {
   if (task.trigger.type !== "counter_delta" || task.archivedAt) {
     return undefined;
   }
   const { entityId } = task.trigger;
+  // A vehicle's odometer is its readings, and a completion dated earlier counts from what the
+  // odometer showed that day, not from today's value.
+  const vehicleId = assetIdOfOdometerKey(entityId);
+  if (vehicleId) {
+    return readingOnOrBefore(ctx.db, vehicleId, completedDate)?.value;
+  }
   const { signals } = await loadSignals(
     ctx.db,
     { entityIds: [entityId], calendars: [] },
@@ -188,7 +199,7 @@ async function counterSnapshot(
     !signal ||
     typeof signal.numeric !== "number" ||
     !Number.isFinite(signal.numeric) ||
-    ctx.now - signal.seenAt > SIGNAL_STALE_MS
+    !isSignalFresh(signal, ctx.now)
   ) {
     return undefined;
   }
@@ -217,7 +228,9 @@ export async function completeTask(
   if (completedAt > ctx.now + FUTURE_TOLERANCE_MS) {
     throw invalidField("completedAt", "Must not be in the future");
   }
-  const counterValue = input.counterValue ?? (await counterSnapshot(ctx, task));
+  const completedDate = clockAt(completedAt).today;
+  const counterValue =
+    input.counterValue ?? (await counterSnapshot(ctx, task, completedDate));
 
   const state = task.state;
   const occurrenceKey =
@@ -237,7 +250,7 @@ export async function completeTask(
         .values({
           taskId,
           completedAt: new Date(completedAt),
-          completedDate: clockAt(completedAt).today,
+          completedDate,
           userId: input.userId,
           source: input.source,
           kind: input.kind,

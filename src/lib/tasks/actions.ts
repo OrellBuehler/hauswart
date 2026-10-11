@@ -6,6 +6,7 @@ import type { CompletionServiceLogRequest } from "$lib/api/schemas/service-log";
 import { formatDate } from "$lib/format";
 import { m } from "$lib/paraglide/messages";
 import { apiErrorMessage } from "$lib/error-message";
+import { tireOffers } from "$lib/vehicles/tire-offer.svelte";
 
 const TOAST_MS = 8000;
 
@@ -32,18 +33,23 @@ export type CompleteOptions = {
   serviceLog?: CompletionServiceLogRequest;
   /** ISO instant for a backdated completion; omit for "now". */
   completedAt?: string;
+  /** The counter's reading at completion; a task that counts a vehicle's odometer records it as a reading. */
+  counterValue?: number;
 };
 
 export async function completeTask(
-  task: { id: string; title: string },
+  task: { id: string; title: string; assetId?: string | null | undefined },
   options: CompleteOptions = {},
 ): Promise<void> {
-  const { completion } = await api.call(endpoints.tasksComplete, {
+  const { completion, task: done } = await api.call(endpoints.tasksComplete, {
     params: { id: task.id },
     body: {
       idempotencyKey: newIdempotencyKey(),
       ...(options.note ? { note: options.note } : {}),
       ...(options.completedAt ? { completedAt: options.completedAt } : {}),
+      ...(options.counterValue === undefined
+        ? {}
+        : { counterValue: options.counterValue }),
       ...(options.serviceLog ? { serviceLog: options.serviceLog } : {}),
     },
   });
@@ -60,6 +66,8 @@ export async function completeTask(
     },
   );
   await invalidateAll();
+  // The answer carries the whole task, so its mark is known even when the caller's row has none (the dashboard).
+  tireOffers.offer(done);
 }
 
 export async function skipTask(

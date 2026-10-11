@@ -1,10 +1,16 @@
 <script lang="ts">
-  import { goto, invalidateAll } from "$app/navigation";
+  import {
+    afterNavigate,
+    goto,
+    invalidateAll,
+    replaceState,
+  } from "$app/navigation";
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
   import ArchiveIcon from "@lucide/svelte/icons/archive";
   import ArchiveRestoreIcon from "@lucide/svelte/icons/archive-restore";
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
+  import CalendarCheckIcon from "@lucide/svelte/icons/calendar-check";
   import EllipsisVerticalIcon from "@lucide/svelte/icons/ellipsis-vertical";
   import FileCheckIcon from "@lucide/svelte/icons/file-check";
   import ListChecksIcon from "@lucide/svelte/icons/list-checks";
@@ -18,12 +24,20 @@
   import { kindLabels } from "$lib/assets/kinds";
   import { newTaskHref } from "$lib/assets/links";
   import { warrantyStatus } from "$lib/assets/warranty";
+  import AssetNotesCard from "$lib/components/asset-notes/asset-notes-card.svelte";
   import AssetPhoto from "$lib/components/assets/asset-photo.svelte";
   import AssetContactsCard from "$lib/components/assets/asset-contacts-card.svelte";
   import AssetHintsCard from "$lib/components/assets/asset-hints-card.svelte";
   import AssetPartsCard from "$lib/components/assets/asset-parts-card.svelte";
   import AssetServiceLogCard from "$lib/components/assets/asset-service-log-card.svelte";
   import QrCard from "$lib/components/assets/qr-card.svelte";
+  import FuelLogCard from "$lib/components/vehicles/fuel-log-card.svelte";
+  import OdometerHistoryCard from "$lib/components/vehicles/odometer-history-card.svelte";
+  import PlateBadge from "$lib/components/vehicles/plate-badge.svelte";
+  import TireSetsCard from "$lib/components/vehicles/tire-sets-card.svelte";
+  import VehicleCard from "$lib/components/vehicles/vehicle-card.svelte";
+  import VehicleCostsCard from "$lib/components/vehicles/vehicle-costs-card.svelte";
+  import VehicleSetupDialog from "$lib/components/vehicles/vehicle-setup-dialog.svelte";
   import TaskRows from "$lib/components/assets/task-rows.svelte";
   import WarrantyBadge from "$lib/components/assets/warranty-badge.svelte";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
@@ -33,6 +47,7 @@
   import Comments from "$lib/components/comments/comments.svelte";
   import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
   import HintCallout from "$lib/components/hints/hint-callout.svelte";
+  import AssetInsuranceCard from "$lib/components/insurance/asset-insurance-card.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
@@ -41,6 +56,7 @@
   import { docsFilterHref, newDocHref } from "$lib/docs/links";
   import { formatDay } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
+  import { statsYears } from "$lib/vehicles/cost-card";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -50,7 +66,19 @@
 
   const asset = $derived(data.asset);
   const canWriteDocs = $derived(data.scopes.includes("docs:write"));
+  const canWrite = $derived(data.scopes.includes("write"));
+  const canWriteCosts = $derived(data.scopes.includes("costs:write"));
   const isPlant = $derived(asset.kind === "plant");
+  const isVehicle = $derived(asset.kind === "vehicle");
+  let setupOpen = $state(false);
+
+  /** A new vehicle comes here with `?termine=1`: the dialog for its recurring tasks opens once, the address is cleaned first. */
+  afterNavigate(() => {
+    if (!isVehicle || !canWrite) return;
+    if (page.url.searchParams.get("termine") !== "1") return;
+    replaceState(resolve(`/assets/${asset.id}` as "/"), page.state);
+    setupOpen = true;
+  });
   const pinnedHints = $derived(data.hints.filter((hint) => hint.pinned));
   const warranty = $derived(warrantyStatus(asset, data.today));
   const backHref = $derived(
@@ -148,6 +176,9 @@
             class="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2 text-sm"
           >
             <span>{kindLabels[asset.kind]()}</span>
+            {#if isVehicle && asset.vehicle?.plate}
+              <PlateBadge plate={asset.vehicle.plate} />
+            {/if}
             {#if asset.roomId && asset.roomName}
               <span aria-hidden="true">·</span>
               <a
@@ -229,6 +260,56 @@
 
   <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-3 print:block">
     <div class="flex min-w-0 flex-col gap-6 lg:col-span-2 print:hidden">
+      {#if data.vehicle}
+        <VehicleCard
+          assetId={asset.id}
+          vehicle={data.vehicle.details}
+          today={data.today}
+          {canWrite}
+        />
+
+        <OdometerHistoryCard
+          assetId={asset.id}
+          unit={data.vehicle.details.odometerUnit}
+          readings={data.vehicle.readings.items}
+          nextCursor={data.vehicle.readings.nextCursor}
+          {canWrite}
+        />
+
+        <TireSetsCard
+          assetId={asset.id}
+          sets={data.vehicle.tireSets}
+          vehicle={data.vehicle.details}
+          today={data.today}
+          {canWrite}
+        />
+
+        <FuelLogCard
+          assetId={asset.id}
+          logs={data.vehicle.fuelLogs.items}
+          nextCursor={data.vehicle.fuelLogs.nextCursor}
+          stats={data.vehicle.stats}
+          vehicle={data.vehicle.details}
+          currency={data.currency}
+          today={data.today}
+          people={data.vehicle.people}
+          currentUserId={data.user.id}
+          canWrite={canWriteCosts}
+        />
+
+        <VehicleCostsCard
+          assetId={asset.id}
+          year={data.vehicle.year}
+          stats={data.vehicle.yearStats}
+          years={statsYears(data.today, [
+            data.vehicle.stats.from,
+            data.vehicle.details.firstRegistration,
+            asset.purchaseDate,
+          ])}
+          canAddCost={canWriteCosts}
+        />
+      {/if}
+
       <Card.Root>
         <Card.Header>
           <Card.Title>{m.asset_facts_title()}</Card.Title>
@@ -304,13 +385,40 @@
                 <Button href={newTaskHref(asset.id)}>
                   <PlusIcon />{m.asset_add_task()}
                 </Button>
+                {#if isVehicle && canWrite}
+                  <Button variant="outline" onclick={() => (setupOpen = true)}>
+                    <CalendarCheckIcon />{m.vehicle_setup_open()}
+                  </Button>
+                {/if}
               {/snippet}
             </EmptyState>
           {:else}
             <TaskRows tasks={data.tasks} />
+            {#if isVehicle && canWrite}
+              <div class="mt-3">
+                <Button variant="outline" onclick={() => (setupOpen = true)}>
+                  <CalendarCheckIcon />{m.vehicle_setup_open()}
+                </Button>
+              </div>
+            {/if}
           {/if}
         </Card.Content>
       </Card.Root>
+
+      <AssetNotesCard
+        assetId={asset.id}
+        assetName={asset.name}
+        notes={data.notes}
+        {canWrite}
+      />
+
+      {#if asset.kind === "vehicle" || data.insurance.length > 0}
+        <AssetInsuranceCard
+          assetId={asset.id}
+          policies={data.insurance}
+          today={data.today}
+        />
+      {/if}
 
       <LinkedDocsCard
         title={m.asset_docs_title()}
@@ -348,6 +456,7 @@
         nextCursor={data.serviceLog.nextCursor}
         today={data.today}
         currency={data.currency}
+        odometerUnit={data.vehicle?.details.odometerUnit ?? null}
       />
 
       <Comments entityType="asset" entityId={asset.id} />
@@ -358,6 +467,19 @@
     </div>
   </div>
 </div>
+
+{#if data.vehicle}
+  <VehicleSetupDialog
+    bind:open={setupOpen}
+    assetId={asset.id}
+    assetName={asset.name}
+    firstRegistration={data.vehicle.details.firstRegistration}
+    unit={data.vehicle.details.odometerUnit}
+    today={data.today}
+    tasks={data.tasks}
+    onfinished={() => invalidateAll()}
+  />
+{/if}
 
 <ConfirmDialog
   bind:open={deleteOpen}

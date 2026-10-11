@@ -12,6 +12,7 @@ import PuzzleIcon from "@lucide/svelte/icons/puzzle";
 import SettingsIcon from "@lucide/svelte/icons/settings";
 import ShieldCheckIcon from "@lucide/svelte/icons/shield-check";
 import SproutIcon from "@lucide/svelte/icons/sprout";
+import UmbrellaIcon from "@lucide/svelte/icons/umbrella";
 import UsersIcon from "@lucide/svelte/icons/users";
 import WrenchIcon from "@lucide/svelte/icons/wrench";
 import { m } from "$lib/paraglide/messages";
@@ -29,6 +30,7 @@ export type NavHref =
   | "/contacts"
   | "/costs"
   | "/warranties"
+  | "/insurance"
   | "/emergency"
   | "/settings/account"
   | "/admin/users";
@@ -139,6 +141,11 @@ export const navGroups: NavGroup[] = [
         href: "/warranties",
         label: () => m.nav_warranties(),
         icon: ShieldCheckIcon,
+      },
+      {
+        href: "/insurance",
+        label: () => m.nav_insurance(),
+        icon: UmbrellaIcon,
       },
     ],
   },

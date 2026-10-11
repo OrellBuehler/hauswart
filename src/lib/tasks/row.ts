@@ -1,7 +1,9 @@
 import type { Dashboard } from "$lib/api/schemas/dashboard";
 import type { Task } from "$lib/api/schemas/tasks";
 import { daysUntil, formatDateShort, formatRelativeDays } from "$lib/format";
-import type { DueStatus } from "./engine/types";
+import { odometerAssetOfTrigger } from "$lib/vehicles/odometer";
+import { shownDate, shownDateIsEstimate } from "./engine/shown";
+import type { DueStatus, Trigger } from "./engine/types";
 
 /** What a task row needs to render; built from a dashboard entry or a listed task. */
 type DashboardTask = Dashboard["upcoming"]["today"][number];
@@ -26,6 +28,11 @@ export type TaskRowData = {
   archived: boolean;
   snoozedUntil: string | null;
   commentCount?: number;
+  /** Open notes on the task's asset, to mention at this appointment. */
+  openNoteCount?: number;
+  /** The vehicle whose odometer the task counts on, else null: completing it asks for the reading first. */
+  odometerAssetId?: string | null;
+  trigger?: Trigger;
 };
 
 export function rowFromDashboard(task: DashboardTask): TaskRowData {
@@ -44,6 +51,8 @@ export function rowFromDashboard(task: DashboardTask): TaskRowData {
     progress: task.progress,
     archived: false,
     snoozedUntil: null,
+    openNoteCount: task.openNoteCount,
+    odometerAssetId: task.odometerAssetId,
   };
 }
 
@@ -68,15 +77,15 @@ export function rowFromTask(
     assigneeUserId: assignee,
     assigneeName: assignee ? (people.get(assignee) ?? null) : null,
     status: state?.status ?? "unknown",
-    date: state?.dueDate ?? state?.estimate?.date ?? null,
-    estimated:
-      state !== null &&
-      (state.dueKind === "estimated" ||
-        (state.dueDate === null && state.estimate !== null)),
+    date: state ? shownDate(state) : null,
+    estimated: state !== null && shownDateIsEstimate(state),
     progress: state?.progress ?? null,
     archived: task.archivedAt !== null,
     snoozedUntil: task.snoozedUntil,
     commentCount: task.commentCount,
+    openNoteCount: task.openNoteCount,
+    odometerAssetId: odometerAssetOfTrigger(task.trigger),
+    trigger: task.trigger,
   };
 }
 

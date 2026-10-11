@@ -136,6 +136,18 @@
 
   const triggerErrors = $derived(errorsUnder(errors, "trigger"));
 
+  /** The chosen asset when it is a vehicle: a counter task can count its odometer. */
+  const vehicle = $derived.by(() => {
+    const found = assets.find((a) => a.id === assetId && a.kind === "vehicle");
+    return found
+      ? {
+          id: found.id,
+          name: found.name,
+          unit: found.vehicle?.odometer?.unit ?? "km",
+        }
+      : undefined;
+  });
+
   const categoryOptions = $derived(
     TASK_CATEGORIES.map((c) => ({ value: c, label: categoryLabels[c]() })),
   );
@@ -457,7 +469,7 @@
         >
       </Card.Header>
       <Card.Content>
-        <TriggerBuilder bind:trigger errors={triggerErrors} {today} />
+        <TriggerBuilder bind:trigger errors={triggerErrors} {today} {vehicle} />
       </Card.Content>
     </Card.Root>
 

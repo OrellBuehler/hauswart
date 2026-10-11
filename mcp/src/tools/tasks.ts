@@ -12,6 +12,7 @@ import { ToolError } from "../errors";
 import {
   completionRow,
   describeTrigger,
+  describeWhen,
   moreHint,
   plural,
   taskRow,
@@ -32,9 +33,7 @@ function whenNext(task: Task): string {
   if (task.archivedAt) return "archived";
   if (task.snoozedUntil) return `snoozed until ${task.snoozedUntil}`;
   if (!s) return "not evaluated yet";
-  if (s.dueDate) return `${s.status}, due ${s.dueDate}`;
-  if (s.estimate) return `${s.status}, estimated ${s.estimate.date}`;
-  return s.status;
+  return describeWhen(s);
 }
 
 /** A backdated completion: noon of that day in the household time zone. Today means now. */
@@ -170,7 +169,7 @@ export const previewTrigger = defineTool({
       body: { trigger, graceDays: args.graceDays, today: args.today },
     });
     return {
-      summary: `${describeTrigger(trigger)}: ${r.status}${r.dueDate ? `, due ${r.dueDate}` : r.estimate ? `, estimated ${r.estimate.date}` : ""}.`,
+      summary: `${describeTrigger(trigger)}: ${describeWhen(r)}.`,
       data: r,
     };
   },

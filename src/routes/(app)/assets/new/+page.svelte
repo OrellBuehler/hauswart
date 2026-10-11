@@ -10,11 +10,18 @@
   let { data }: PageProps = $props();
 
   const isPlant = $derived(data.kind === "plant");
+  const heading = $derived(
+    isPlant
+      ? m.plants_create()
+      : data.kind === "vehicle"
+        ? m.vehicle_create()
+        : m.inventory_create(),
+  );
 </script>
 
 <svelte:head>
   <title>
-    {isPlant ? m.plants_create() : m.inventory_create()} · {m.app_name()}
+    {heading} · {m.app_name()}
   </title>
 </svelte:head>
 
@@ -28,10 +35,7 @@
     >
       <ArrowLeftIcon />{isPlant ? m.nav_plants() : m.nav_inventory()}
     </Button>
-    <PageHeader
-      title={isPlant ? m.plants_create() : m.inventory_create()}
-      description={m.asset_create_description()}
-    />
+    <PageHeader title={heading} description={m.asset_create_description()} />
   </div>
   {#key data.kind}
     <AssetForm

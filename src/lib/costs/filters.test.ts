@@ -3,6 +3,7 @@ import {
   activeFilterCount,
   costFilterQuery,
   costsQuery,
+  costsSummaryQuery,
   monthRange,
   parseCostFilters,
   withYear,
@@ -79,6 +80,16 @@ describe("cost filters", () => {
       category: "repair",
       paidBy: "me",
     });
+  });
+
+  it("asks the summary for the year and the device: nothing else narrows its totals", () => {
+    expect(costsSummaryQuery(parse(""))).toEqual({
+      year: 2026,
+      assetId: undefined,
+    });
+    expect(
+      costsSummaryQuery(parse("year=2025&asset=a1&category=repair&month=05")),
+    ).toEqual({ year: 2025, assetId: "a1" });
   });
 
   it("drops the month when the year changes", () => {

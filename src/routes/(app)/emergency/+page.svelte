@@ -9,6 +9,7 @@
   import PrinterIcon from "@lucide/svelte/icons/printer";
   import SirenIcon from "@lucide/svelte/icons/siren";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
+  import UmbrellaIcon from "@lucide/svelte/icons/umbrella";
   import { endpointUrl } from "$lib/api/client";
   import { endpoints } from "$lib/api/registry";
   import EmptyState from "$lib/components/app/empty-state.svelte";
@@ -22,7 +23,8 @@
   import { Label } from "$lib/components/ui/label/index.js";
   import { telHref } from "$lib/contacts/labels";
   import { sectionLabels } from "$lib/docs/sections";
-  import { assetHref, contactHref } from "$lib/links";
+  import { insuranceTypeLabels } from "$lib/insurance/labels";
+  import { assetHref, contactHref, insuranceHref } from "$lib/links";
   import { m } from "$lib/paraglide/messages";
   import type { PageProps } from "./$types";
 
@@ -39,6 +41,7 @@
   );
   const empty = $derived(
     emergency.contacts.length === 0 &&
+      emergency.insurance.length === 0 &&
       emergency.assets.length === 0 &&
       emergency.pages.length === 0,
   );
@@ -139,6 +142,90 @@
               </Button>
               <p class="hidden text-sm wrap-anywhere print:block">
                 {contact.email}
+              </p>
+            {/if}
+          </li>
+        {/each}
+      </ul>
+    </section>
+  {/if}
+
+  {#if emergency.insurance.length > 0}
+    <section class="flex flex-col gap-3" aria-labelledby="emergency-insurance">
+      <h2 id="emergency-insurance" class="text-lg font-semibold">
+        {m.emergency_insurance()}
+      </h2>
+      <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {#each emergency.insurance as policy (policy.id)}
+          <li
+            class="bg-card flex break-inside-avoid flex-col gap-3 rounded-xl border p-4 print:rounded-lg print:p-3"
+          >
+            <div class="flex items-start gap-3">
+              <span
+                class="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-lg print:hidden"
+                aria-hidden="true"
+              >
+                <UmbrellaIcon class="size-5" />
+              </span>
+              <div class="min-w-0">
+                <a
+                  href={insuranceHref(policy.id)}
+                  class="font-semibold wrap-anywhere underline-offset-4 hover:underline print:no-underline"
+                >
+                  {policy.title}
+                </a>
+                <p class="text-muted-foreground text-sm wrap-anywhere">
+                  {[
+                    insuranceTypeLabels[policy.type](),
+                    policy.insurerName,
+                    policy.policyNumber
+                      ? m.emergency_insurance_number({
+                          number: policy.policyNumber,
+                        })
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              </div>
+            </div>
+            {#if policy.assistancePhone}
+              <div class="flex flex-col gap-1">
+                <p class="text-muted-foreground text-xs">
+                  {m.emergency_insurance_assistance()}
+                </p>
+                <Button
+                  href={telHref(policy.assistancePhone)}
+                  variant="destructive"
+                  class="h-14 w-full gap-3 rounded-lg text-xl font-semibold tabular-nums print:h-auto print:justify-start print:bg-transparent print:px-0! print:text-lg print:font-semibold print:text-black print:shadow-none"
+                  aria-label={m.insurance_call_aria({ title: policy.title })}
+                >
+                  <PhoneIcon
+                    class="size-5 shrink-0 print:hidden"
+                    aria-hidden="true"
+                  />
+                  <span class="min-w-0 truncate">{policy.assistancePhone}</span>
+                </Button>
+              </div>
+            {/if}
+            {#if policy.insurerPhone}
+              <Button
+                href={telHref(policy.insurerPhone)}
+                variant="outline"
+                size="lg"
+                class="max-w-full min-w-0 justify-start tabular-nums print:hidden"
+                aria-label={m.contact_call_aria({
+                  name: policy.insurerName ?? policy.title,
+                })}
+              >
+                <PhoneIcon aria-hidden="true" />
+                <span class="min-w-0 truncate">{policy.insurerPhone}</span>
+                <span class="text-muted-foreground ms-auto text-xs font-normal"
+                  >{m.emergency_insurance_insurer()}</span
+                >
+              </Button>
+              <p class="hidden text-sm tabular-nums print:block">
+                {m.emergency_insurance_insurer()}: {policy.insurerPhone}
               </p>
             {/if}
           </li>

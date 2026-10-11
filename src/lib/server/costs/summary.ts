@@ -73,14 +73,20 @@ const bump = (map: Map<string, Tally>, key: string, amount: number) => {
  * The year in numbers. Totals, categories, months, assets and tax classes
  * count entries in the household currency that count as an expense;
  * settlement covers every split entry with a payer (it is about who paid,
- * not about what is an expense).
+ * not about what is an expense). With an `assetId` only the entries of that
+ * asset are counted, all of it.
  */
-export function costsSummary(ctx: Db, year: number): CostsSummary {
+export function costsSummary(
+  ctx: Db,
+  year: number,
+  filter: { assetId?: string } = {},
+): CostsSummary {
   const { currency } = getHousehold(ctx);
   const { from, to } = yearRange(year);
   const inYear = and(
     sql`${costEntries.date} >= ${from}`,
     sql`${costEntries.date} <= ${to}`,
+    filter.assetId ? eq(costEntries.assetId, filter.assetId) : undefined,
   );
   const entries = ctx.db
     .select({
