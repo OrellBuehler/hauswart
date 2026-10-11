@@ -16,7 +16,7 @@ import {
   connectCalendarSystem,
   useFakeCalendars,
 } from "./testing";
-import { startCalendarSyncScheduler } from "./scheduler";
+import { startCalendarSyncScheduler, SYNC_INTERVAL_MS } from "./scheduler";
 import { syncTarget } from "./sync";
 import { updateTarget } from "./targets";
 import { ADMIN } from "./testing";
@@ -178,13 +178,16 @@ describe("calendar sync scheduler", () => {
     expect(fake.callsOf("list")).toEqual([]);
   });
 
-  it("backs off after a failure: 1 minute, then 2, until the calendar works again", async () => {
+  it("backs off after a failure: 1 minute, then 2, until the calendar works again, even with nothing to write", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const target = await setup();
-    book("Kaminfeger");
     fake.failNext("open", "network", 2);
     let now = NOW;
-    start({ checkIntervalMs: 15, intervalMs: 1_000, clock: () => now });
+    start({
+      checkIntervalMs: 15,
+      intervalMs: SYNC_INTERVAL_MS,
+      clock: () => now,
+    });
     await waitFor(
       () => getTargetRow(ctx(), target.id)!.consecutiveFailures === 1,
     );
@@ -203,7 +206,8 @@ describe("calendar sync scheduler", () => {
     expect(fake.calls.length).toBe(second);
     now += 120_000;
     await waitFor(() => getTargetRow(ctx(), target.id)!.status === "ok");
-    expect(titles()).toEqual(["Kaminfeger"]);
+    book("Kaminfeger");
+    await waitFor(() => titles().length === 1);
   });
 
   it("syncs the targets of a connection that was saved", async () => {

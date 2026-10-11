@@ -41,7 +41,7 @@ const errorName = (err: unknown) =>
  * is how events somebody deleted in the calendar are noticed. A target that is saved, and one
  * whose connection changed, is synced after a short pause ignoring the back-off; a completion
  * (which moves the next due date) has the targets looked at soon. Targets that failed back off
- * 1, 2, 4 ... 15 minutes. Runs never overlap (a request during a run is run once more afterwards),
+ * 1, 2, 4 ... 15 minutes and are tried again once that is over. Runs never overlap (a request during a run is run once more afterwards),
  * a failing run is logged by code and tried again at the next tick, the timers do not keep the
  * process alive; the returned function stops everything.
  */
@@ -58,6 +58,8 @@ export function startCalendarSyncScheduler(
     const ctx = { db: getDB(), now };
     if (forced.delete(row.id)) return "sync";
     if (!dueForAttempt(row, now)) return "skip";
+    // A failed run is tried again as soon as its back-off is over, whatever else is pending.
+    if (row.consecutiveFailures > 0) return "sync";
     if (!row.lastCheckedAt || now - row.lastCheckedAt.getTime() >= interval) {
       return "sync";
     }

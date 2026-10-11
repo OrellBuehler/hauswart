@@ -993,7 +993,7 @@ people plan. Optional like every adapter: without a target nothing happens, and 
   calendar** (`hasPendingChanges`) and syncs the targets with a difference, which is how a change is written within a minute without
   instrumenting every service; every 15 minutes every target is synced regardless (that is how a deleted event is noticed). A saved target
   (event `calendarTargetChanged`), a saved connection and a completion (`completionRecorded`/`Revoked`, which move the next due date) kick a
-  run after two seconds; targets that failed back off, and a run that was cut short by its size goes on at once, but a failed one does not. A request
+  run after two seconds; targets that failed back off and are tried again as soon as the back-off is over (pending changes or not), and a run that was cut short by its size goes on at once, but a failed one does not. A request
   that finds its target busy (a manual sync) comes round again. Overlap guard, `unref`, injectable intervals and clock.
 - **API**: `GET /calendar-targets`, `POST` (404 without a working connection or adapter, 400 on `remoteCalendarId` for a calendar that does not
   exist or cannot create, 409 for a calendar that has a target, 502 `upstream_error` with `details.code`), `PATCH /{id}` (`config` is merged),
