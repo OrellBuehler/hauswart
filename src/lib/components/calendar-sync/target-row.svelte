@@ -31,11 +31,7 @@
     capabilityNotes,
   } from "$lib/calendar-sync/labels";
   import { providerName } from "$lib/calendar-sync/providers";
-  import {
-    statLines,
-    statsNeedAttention,
-    statsSummary,
-  } from "$lib/calendar-sync/stats";
+  import { statLines, statsSummary } from "$lib/calendar-sync/stats";
   import { integrationErrorMessage } from "$lib/connections/errors";
   import { apiErrorMessage } from "$lib/error-message";
   import { formatDateTime, formatRelativeInstant } from "$lib/format";
@@ -74,11 +70,6 @@
   const limitNote = $derived(capabilityNotes[level]);
   const name = $derived(providerName(target.provider));
   /**
-   * What the last run did. A run that failed before it counted anything leaves the counts of the
-   * run before it, which would read as news next to the error, so after a failure only counts that
-   * name a problem are shown.
-   */
-  /**
    * The answer of the run the person started, for as long as it is the latest one: a run of the
    * scheduler after it replaces what the row says, so the answer would only contradict it.
    */
@@ -88,12 +79,6 @@
       result.target.lastOkAt === target.lastOkAt
       ? result
       : undefined,
-  );
-  const lastRun = $derived(
-    target.lastStats !== null &&
-      (target.status !== "error" || statsNeedAttention(target.lastStats))
-      ? target.lastStats
-      : null,
   );
 
   function when(iso: string): { relative: string; absolute: string } {
@@ -275,10 +260,10 @@
     <dd class="font-medium tabular-nums">
       {m.caltargets_event_count_value({ count: target.eventCount })}
     </dd>
-    {#if lastRun}
+    {#if target.lastStats}
       <dt class="text-muted-foreground">{m.caltargets_last_run()}</dt>
       <dd class="min-w-0 font-medium text-pretty">
-        {statsSummary(lastRun)}
+        {statsSummary(target.lastStats)}
       </dd>
     {/if}
   </dl>

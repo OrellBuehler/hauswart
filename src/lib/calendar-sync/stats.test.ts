@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { m } from "$lib/paraglide/messages";
 import { countsDto } from "$lib/testing/calendar-targets";
-import { statLines, statsNeedAttention, statsSummary } from "./stats";
+import { statLines, statsSummary } from "./stats";
 
 describe("statLines", () => {
   it("has a phrase for every count that is not zero, in the order that matters", () => {
@@ -47,16 +47,5 @@ describe("statsSummary", () => {
 
   it("says that nothing had to be done", () => {
     expect(statsSummary(countsDto())).toBe(m.caltargets_stats_nothing());
-  });
-});
-
-describe("statsNeedAttention", () => {
-  it.each([
-    [{ created: 5, deleted: 2, adopted: 1, forgotten: 1, skipped: 3 }, false],
-    [{ failed: 1 }, true],
-    [{ unconfirmed: 1 }, true],
-    [{ remaining: 4 }, true],
-  ])("%j -> %s", (over, expected) => {
-    expect(statsNeedAttention(countsDto(over))).toBe(expected);
   });
 });

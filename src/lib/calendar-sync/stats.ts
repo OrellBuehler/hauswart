@@ -29,8 +29,3 @@ export function statsSummary(counts: CalendarSyncCounts): string {
   const lines = statLines(counts);
   return lines.length === 0 ? m.caltargets_stats_nothing() : lines.join(", ");
 }
-
-/** Whether a run left something undone: calls that failed, events the calendar did not show, or work for the next run. */
-export function statsNeedAttention(counts: CalendarSyncCounts): boolean {
-  return counts.failed > 0 || counts.unconfirmed > 0 || counts.remaining > 0;
-}

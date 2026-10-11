@@ -97,7 +97,11 @@ export function recordTargetOk(
     .run();
 }
 
-/** Records a failed run and returns the number of failures in a row. */
+/**
+ * Records a failed run and returns the number of failures in a row. A run that failed before it
+ * counted anything (`counts` null) stores no counts, so the target does not show those of the run
+ * before it next to the error.
+ */
 export function recordTargetFailure(
   ctx: Now,
   row: Pick<TargetRow, "id" | "consecutiveFailures">,
@@ -112,7 +116,7 @@ export function recordTargetFailure(
       lastError: code,
       lastCheckedAt: new Date(ctx.now),
       consecutiveFailures: failures,
-      ...(counts ? { lastStatsJson: counts } : {}),
+      lastStatsJson: counts,
     })
     .where(eq(calendarTargets.id, row.id))
     .run();

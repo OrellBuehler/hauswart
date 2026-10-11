@@ -618,6 +618,29 @@ describe("syncTarget", () => {
       });
     });
 
+    it("keep no counts of the run before when a run fails before it counted anything", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const target = await setup();
+      book();
+      await sync(target.id);
+      expect(row(target.id).lastStatsJson).toMatchObject({ created: 1 });
+      fake.failNext("open", "unauthorized");
+      await sync(target.id);
+      expect(row(target.id)).toMatchObject({
+        status: "error",
+        lastStatsJson: null,
+      });
+      book({
+        title: "Maler",
+        startsAt: at("2026-06-21", "08:00"),
+        endsAt: at("2026-06-21", "09:00"),
+      });
+      fake.failNext("create", "bad_request", 1);
+      await sync(target.id, {}, NOW + 120_000);
+      // A run that did count keeps its counts, failures included.
+      expect(row(target.id).lastStatsJson).toMatchObject({ failed: 1 });
+    });
+
     it("name a calendar that is gone", async () => {
       vi.spyOn(console, "error").mockImplementation(() => {});
       const target = await setup();

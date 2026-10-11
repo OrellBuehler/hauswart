@@ -1319,8 +1319,8 @@ in dark mode. Every list has an empty state, every async action a pending and an
   system the person may add calendars of (`creatableProviders`: the household's connection means administrators). A target's state is
   `targetState` (paused, offline = its connection is not active, error, waiting, ok); codes go through `integrationErrorMessage(code, provider)`, which
   words the calendar codes too (`calendar_missing`, `unsupported`, `unconfirmed`, `config_invalid`, and the run-only `busy`, `disabled`, `no_connection`,
-  `provider_unavailable`). A sync that ends `ok: false` is shown inline as a result, never as a crash; counts (`statLines`) after a failure that name no
-  problem are hidden, because a run that failed before counting leaves the counts of the run before it. A new target is looked at again every 3 s
+  `provider_unavailable`). A sync that ends `ok: false` is shown inline as a result, never as a crash; counts (`statLines`) are the target's `lastStats`, which
+  a run that failed before it counted anything sets to null (it no longer keeps those of the run before it). A new target is looked at again every 3 s
   (ten times) so its first run shows. The dialog never shows or sends `direction` and `conflictPolicy`, lists the calendars of
   `GET /integrations/{provider}/calendars` with their capabilities (calendars that cannot create or already have a target are disabled, the 400 on
   `remoteCalendarId` and the 409 are worded on that field), sends only the fields that differ on PATCH (`updateBody`) and offers a reminder only when
