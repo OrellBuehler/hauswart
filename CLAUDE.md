@@ -137,7 +137,7 @@ src/lib/server/vehicles/         vehicle details (`vehicle_details`), odometer r
                                  (`writeOdometer` sync, `recordOdometer` async), signal.ts (readings -> signal + samples),
                                  summary.ts (plate + newest reading on assets), events.ts (completions), vehicles.ts, tires.ts, fuel-logs.ts, stats.ts (see "Vehicles")
 src/lib/vehicles/                client-safe: odometer.ts (`odometer:<asset id>` key helpers), plate.ts (plate matching), tires.ts (tread limits,
-                                 DOT age, distance per set), fuel.ts (full-to-full consumption), stats.ts (distance per month), templates.ts (task bodies)
+                                 DOT age, distance per set), fuel.ts (full-to-full consumption), stats.ts (distance per month), templates.ts (task bodies), template-mark.ts (the mark on their tasks)
 src/lib/server/pdf/render.ts     shared pdfmake wrapper (A4, Roboto from node_modules, no network or file access)
 src/lib/pwa/                     client-safe PWA parts: colors.ts (theme colours, tested against app.css), manifest.ts, options.ts
                                  (the service worker's whole behaviour; see "Installable app")
@@ -717,7 +717,8 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   `orEvery` 12 months), MFK (`one_off`; `suggestMfkDate` = 4, 7, then every 2 years after the first
   registration), vignette (yearly, end of January), vehicle tax (yearly, payment), brake fluid and
   air-conditioning service (every 2 years). Each returns `{id, task, preparations}`: the frontend sends
-  `task` to `POST /tasks`, then each preparation to `POST /tasks/{id}/preparations`.
+  `task` to `POST /tasks`, then each preparation to `POST /tasks/{id}/preparations`. `task` carries the mark
+  `externalSource: "vehicle_template"`, `externalRef: "<asset id>:<template id>"` (the pair is unique on the server).
 
 ### Insurance policies and asset notes
 
@@ -1111,19 +1112,46 @@ in dark mode. Every list has an empty state, every async action a pending and an
   plain `goto` from an open overlay leaves its entry behind. `FormDialog`/`ConfirmDialog` give up their entry while
   their action runs. Long forms on pages get a sticky bottom save bar.
 - **Information is not hover-only**: anything in `title=` that matters (exact dates, amounts) is also visible on touch.
-- **Vehicles, insurance and asset notes in the web app**: `/insurance` (list with a yearly total, detail, form; the form shows the
+- **Insurance and asset notes in the web app**: `/insurance` (list with a yearly total, detail, form; the form shows the
   cancellation deadline live from `lib/insurance/policy.ts`, request mapping in `lib/insurance/form.ts`) sits in the finance group
-  of the sidebar, so behind "More" on phones. `assets/[id]` for kind `vehicle` shows `components/vehicles/` first (plate chip,
-  odometer with the "record" dialog, history, details; a comment marks where the tire, fuel log and cost sections go) and the
-  asset form takes the vehicle details (`PUT /assets/{id}/vehicle` after the asset; vehicles have no room picker). A refused reading
-  that is lower than the one before is recognised by `lowerThanReading` (`lib/vehicles/odometer-error.ts`), and only then does the
-  dialog offer "save anyway" (`force`). "Termine einrichten" (`lib/vehicles/setup.ts`, `vehicle-setup-dialog.svelte`) creates the
+  of the sidebar, so behind "More" on phones. Asset notes live in the card with the anchor `#notes` (`components/asset-notes/`);
+  `NoteChoices` is the picker for the completion and service log dialogs and `OpenNotesBadge` the count on task rows and the task
+  page. After `bun run check` or `bun run i18n` restart a running `bun dev`: regenerated route nodes and message modules leave the
+  dev client with a stale manifest.
+- **Vehicles in the web app**: `assets/[id]` for kind `vehicle` shows `components/vehicles/` first: `VehicleCard` (plate chip,
+  odometer with the "record" dialog, details), `OdometerHistoryCard` (delete is offered for every reading; a reading that belongs to
+  a completion, service log entry, fuel log entry or tire change is a 409 whose `details.source` is worded by `readingOwner`),
+  `TireSetsCard` (sets with tread and age warnings, mount, measure, retire), `FuelLogCard` (anchor `#fuel-log`; consumption and
+  price trends as `Sparkline`, a small SVG without a chart library) and `VehicleCostsCard` (`/assets/{id}/vehicle/stats` per year,
+  links to `/costs?asset=`). The asset form takes the vehicle details (`PUT /assets/{id}/vehicle` after the asset; vehicles have no
+  room picker).
+- **Odometer readings in forms**: `VehicleReading` (`lib/vehicles/odometer-state.svelte.ts`) loads a vehicle's unit and newest
+  reading for a dialog and `OdometerReadingField` prefills it; an unchanged or empty field sends no reading. A task that counts on the
+  odometer asks for it when completed: `CompleteButton` asks `odometerAssetOf(task)` (the dashboard's `odometerAssetId`, else the
+  trigger; only a task that has neither is fetched, and a failed lookup completes plainly) and opens `CompleteOdometerDialog`, whose
+  reading goes along as `counterValue`; the "with note" dialog has the same field. Odometer fields read "95.000", "95,000" and
+  "95'000" as 95000 (`parseOdometerValue`), amounts, litres and millimetres keep their decimals (`parseDecimalInput`). Limits in
+  messages go through `formatNumber`, never `toLocaleString("en")`. A refused reading is recognised by `refusedReading(err, field)`
+  (`lib/vehicles/odometer-error.ts`) from `details.code` and `details.reading` (`odometerRefusalDetailsSchema`), never from the
+  English message, and `refusedMessage` names the reading in the way for `lower_than_previous` and `higher_than_next`. Only the record
+  dialog (`POST /assets/{id}/odometer`) can send `force`, so only it offers "save anyway", for both codes; the other forms
+  (completion, fuel log, tire mount and tread, service log) show the explanation.
+- **Tire change offer**: `completeTask` hands the task the server answers with to `tireOffers` (`lib/vehicles/tire-offer.svelte.ts`);
+  if `tireChange(task)` (`tire-task.ts`) says it is a tire change, `TireMountOffer` (in the app layout) offers to mount a set. The
+  template mark decides (`tires_winter` / `tires_summer`, any other template never offers); an unmarked task is judged by its title
+  ("Reifenwechsel", "Radwechsel", "Winterreifen aufziehen", ...). The mount dialogs take the mounted set's `mountedOn` as the minimum
+  date (`mountedSince`) and word the server's 400 on `date`.
+- **Setting up a vehicle's tasks**: "Termine einrichten" (`lib/vehicles/setup.ts`, `vehicle-setup-dialog.svelte`) creates the
   templates of `lib/vehicles/templates.ts` through the API, task first, then its preparations, each template with its own progress
-  and error; the templates leave no mark on their tasks, so what a vehicle has already is found by likeness (title in either
-  language, odometer counter, an inspection on a date) and not offered twice. A new vehicle opens that dialog once through `?termine=1`.
-  Asset notes live in the card with the anchor `#notes` (`components/asset-notes/`); `NoteChoices` is the picker for the
-  completion and service log dialogs and `OpenNotesBadge` the count on task rows and the task page. After `bun run check` or `bun run
-i18n` restart a running `bun dev`: regenerated route nodes and message modules leave the dev client with a stale manifest.
+  and error. Every template task carries the mark `externalSource: "vehicle_template"`, `externalRef: "<asset id>:<template id>"`
+  (`lib/vehicles/template-mark.ts`); the server keeps that pair unique, so when a vehicle had the template before (inspection done,
+  task archived) the creation retries with `:<n>` appended. `findExistingTask` finds what a vehicle has already by the mark, and only
+  a task without a readable mark by likeness (title in either language, odometer counter, an inspection on a date), so nothing is
+  offered twice. A new vehicle opens that dialog once through `?termine=1`.
+- **Costs of a vehicle**: `/costs?asset=` passes the device on to the summary (`costsSummaryQuery`; no other filter narrows its
+  totals) and says so above it. A cost entry with `fuelLogId` has its amount, currency and date locked in the form (never sent by
+  `buildUpdateBody`) with a link to `#fuel-log`, and the detail page offers that link instead of delete; a 409 with
+  `details.fuelLogId` that still arrives is worded (`fuelLogOfConflict`).
 
 ## Testing
 
