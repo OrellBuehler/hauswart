@@ -60,7 +60,7 @@ export function completionSourceFor(
 }
 
 /** `wireTask` for this caller: the finance address of somebody else's bill task stays hidden. */
-function wireTaskFor(ctx: AuthedContext) {
+export function wireTaskFor(ctx: AuthedContext) {
   const visible = billUrlVisibility(ctx, ctx.user.id);
   return (task: TaskRecord) => wireTask(task, visible);
 }

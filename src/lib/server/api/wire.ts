@@ -357,6 +357,7 @@ export function wireTask(
     createdBy: task.createdBy,
     commentCount: task.commentCount,
     openNoteCount: task.openNoteCount,
+    nextAppointment: task.nextAppointment,
     createdAt: toIso(task.createdAt),
     updatedAt: toIso(task.updatedAt),
     state: task.state ? wireTaskState(task.state) : null,
