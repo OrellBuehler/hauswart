@@ -624,7 +624,12 @@ of the owner>` is added to the document unless an identical note exists (writes 
   task's completion, is free again). A value lower than the reading before it (the newest on or before the date)
   is a 400 on `value`, and so is a value higher than the reading after it (the first one on a later
   date; the same rule for every writer, completions, service log, fuel log and tire changes included), unless
-  `force: true` (replaced instrument cluster). `recordOdometer(ctx, {assetId, date, value, source, sourceId?, note?,
+  `force: true` (replaced instrument cluster). That 400 carries a structured reason in `details` besides the English field
+  error (whose text is no contract): `code` `lower_than_previous` / `higher_than_next` (`ODOMETER_REFUSAL_CODES`), `field`
+  (the request field it is reported on: `value`, `odometer` or `counterValue`) and `reading` `{value, date}`, the
+  neighbouring reading in the way (`odometerRefusalDetailsSchema`, built by `outOfOrder` in `vehicles/odometer.ts`); every
+  other 400 of a reading (future date, negative value, no vehicle) has no `code`, since `force` would not help.
+  `recordOdometer(ctx, {assetId, date, value, source, sourceId?, note?,
 createdBy?, force?})` is what other features call when they learn the odometer on the side (fuel log,
   tire change); `source` is `manual|completion|service_log|fuel_log|tire_change|signal` and one
   `(source, sourceId)` has one reading, so saving the record again updates it. `writeOdometer` is its

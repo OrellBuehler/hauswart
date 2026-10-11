@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { ODOMETER_SOURCES, ODOMETER_UNITS, VEHICLE_FUEL_TYPES } from "../enums";
+import {
+  ODOMETER_REFUSAL_CODES,
+  ODOMETER_SOURCES,
+  ODOMETER_UNITS,
+  VEHICLE_FUEL_TYPES,
+} from "../enums";
 import {
   dateSchema,
   isoTimestampSchema,
@@ -19,6 +24,22 @@ export const odometerValueSchema = z
   .finite()
   .min(0)
   .max(MAX_ODOMETER_VALUE);
+
+/**
+ * What the `details` of a refused reading carry besides `body.fieldErrors` (whose message stays English
+ * text): `code` says why, `field` is the request field the 400 is reported on (`value` for a reading,
+ * `odometer` for a fuel log entry, tire change or service log entry, `counterValue` for a completion),
+ * `reading` the neighbouring reading that is in the way (the one before for `lower_than_previous`, the one
+ * after for `higher_than_next`). Sending `force: true` where the endpoint takes it lifts the refusal.
+ */
+export const odometerRefusalDetailsSchema = z.object({
+  code: z.enum(ODOMETER_REFUSAL_CODES),
+  field: z.string(),
+  reading: z.object({ value: z.number(), date: dateSchema }),
+});
+export type OdometerRefusalDetails = z.infer<
+  typeof odometerRefusalDetailsSchema
+>;
 
 /** The newest reading of a vehicle (by date). */
 export const odometerSummarySchema = z

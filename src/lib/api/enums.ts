@@ -56,6 +56,16 @@ export const ODOMETER_SOURCES = [
 ] as const;
 export type OdometerSource = (typeof ODOMETER_SOURCES)[number];
 
+/**
+ * Why a reading was refused with a 400 on its value field: lower than the reading before its date, or
+ * higher than the one after it. Both can be lifted with `force` (a replaced instrument cluster).
+ */
+export const ODOMETER_REFUSAL_CODES = [
+  "lower_than_previous",
+  "higher_than_next",
+] as const;
+export type OdometerRefusalCode = (typeof ODOMETER_REFUSAL_CODES)[number];
+
 export const TASK_CATEGORIES = [
   "cleaning",
   "maintenance",

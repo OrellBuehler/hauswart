@@ -12,8 +12,11 @@ import {
 } from "drizzle-orm";
 import { z } from "zod";
 import { ApiError } from "$lib/api/errors";
-import type { OdometerSource } from "$lib/api/enums";
-import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
+import type { OdometerRefusalCode, OdometerSource } from "$lib/api/enums";
+import {
+  MAX_ODOMETER_VALUE,
+  type OdometerRefusalDetails,
+} from "$lib/api/schemas/vehicles";
 import { isValidDate } from "$lib/dates";
 import { dateInZone, householdTimeZone } from "$lib/server/config";
 import {
@@ -87,13 +90,40 @@ function notAVehicle(field: string | null): ApiError {
 }
 
 /**
+ * The 400 for a reading that breaks the order of the readings: the usual field error (message
+ * unchanged) plus `details.code`, `details.field` and the neighbouring reading in the way
+ * (`OdometerRefusalDetails`), so a client never has to read the message.
+ */
+function outOfOrder(
+  field: string,
+  code: OdometerRefusalCode,
+  neighbour: Pick<OdometerRow, "value" | "date">,
+): ApiError {
+  const message =
+    code === "lower_than_previous"
+      ? `Lower than the reading of ${neighbour.value} on ${neighbour.date}; send force to take it anyway`
+      : `Higher than the later reading of ${neighbour.value} on ${neighbour.date}; send force to take it anyway`;
+  const base = invalidField(field, message);
+  const refusal: OdometerRefusalDetails = {
+    code,
+    field,
+    reading: { value: neighbour.value, date: neighbour.date },
+  };
+  return new ApiError("invalid_request", base.message, {
+    details: { ...(base.details as object), ...refusal },
+  });
+}
+
+/**
  * Stores a reading and brings the signal the tasks read up to date, in one transaction (the
  * caller's, when it has one). Synchronous so completions and service log entries can write their
  * reading in their own transaction; the follow-up work (re-evaluating tasks, notifications) is
  * `settleOdometer`, which `recordOdometer` runs for you.
  *
  * A value lower than the reading before (the latest one on or before the date) or higher than the
- * reading after (the first one on a later date) is a 400 on the value field, unless `force`. A reading with a `sourceId` that already has one updates it.
+ * reading after (the first one on a later date) is a 400 on the value field, unless `force`; its
+ * `details.code` is `lower_than_previous` or `higher_than_next` (see `outOfOrder`). A reading with a
+ * `sourceId` that already has one updates it.
  */
 export function writeOdometer(
   ctx: Ctx,
@@ -154,10 +184,7 @@ export function writeOdometer(
         .limit(1)
         .get();
       if (before && input.value < before.value) {
-        throw invalidField(
-          fields.value,
-          `Lower than the reading of ${before.value} on ${before.date}; send force to take it anyway`,
-        );
+        throw outOfOrder(fields.value, "lower_than_previous", before);
       }
       const after = inner.db
         .select()
@@ -173,10 +200,7 @@ export function writeOdometer(
         .limit(1)
         .get();
       if (after && input.value > after.value) {
-        throw invalidField(
-          fields.value,
-          `Higher than the later reading of ${after.value} on ${after.date}; send force to take it anyway`,
-        );
+        throw outOfOrder(fields.value, "higher_than_next", after);
       }
     }
 

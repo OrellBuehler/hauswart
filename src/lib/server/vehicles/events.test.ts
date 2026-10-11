@@ -248,6 +248,11 @@ describe("a completion with an odometer reading", () => {
     const err = await failure(() => finish(task.id, { counterValue: 70_000 }));
     expect(err.code).toBe("invalid_request");
     expect(fieldErrors(err, "counterValue")).not.toEqual([]);
+    expect(err.details).toMatchObject({
+      code: "lower_than_previous",
+      field: "counterValue",
+      reading: { value: 80_000, date: expect.any(String) },
+    });
     expect(readings(car.id)).toHaveLength(1);
     expect(
       test.db
@@ -271,6 +276,11 @@ describe("a completion with an odometer reading", () => {
     );
     expect(err.code).toBe("invalid_request");
     expect(fieldErrors(err, "counterValue")).not.toEqual([]);
+    expect(err.details).toMatchObject({
+      code: "higher_than_next",
+      field: "counterValue",
+      reading: { value: 84_000, date: "2026-06-12" },
+    });
     expect(readings(car.id).map((r) => r.value)).toEqual([84_000, 80_000]);
     const ok = await finish(task.id, {
       counterValue: 82_000,

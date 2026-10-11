@@ -342,6 +342,13 @@ describe("vehicles API", () => {
       expect(refused.res.status).toBe(400);
       expect(errorCode(refused)).toBe("invalid_request");
       expect(fieldError(refused.body, "value")[0]).toContain("120000");
+      expect(
+        (refused.body as { error: { details: unknown } }).error.details,
+      ).toMatchObject({
+        code: "lower_than_previous",
+        field: "value",
+        reading: { value: 120_000, date: today(-10) },
+      });
       const forced = await call("POST", `/api/v1/assets/${car.id}/odometer`, {
         json: { value: 500, date: today(-5), force: true },
       });
@@ -352,6 +359,25 @@ describe("vehicles API", () => {
             .body as Page<Reading>
         ).items.map((r) => r.value),
       ).toEqual([500, 120_000]);
+    });
+
+    it("a value above the reading after its date says so with a code", async () => {
+      const { call, create } = await setup();
+      const car = await create();
+      await call("POST", `/api/v1/assets/${car.id}/odometer`, {
+        json: { value: 20_000, date: today(-5) },
+      });
+      const refused = await call("POST", `/api/v1/assets/${car.id}/odometer`, {
+        json: { value: 30_000, date: today(-10) },
+      });
+      expect(refused.res.status).toBe(400);
+      expect(
+        (refused.body as { error: { details: unknown } }).error.details,
+      ).toMatchObject({
+        code: "higher_than_next",
+        field: "value",
+        reading: { value: 20_000, date: today(-5) },
+      });
     });
 
     it.each([

@@ -224,6 +224,11 @@ describe("fuel log", () => {
       const err = await failure(() => fill(over));
       expect(err.code).toBe("invalid_request");
       expect(fieldErrors(err, field)).not.toEqual([]);
+      expect(err.details).toMatchObject(
+        field === "odometer"
+          ? { code: "lower_than_previous", field: "odometer" }
+          : {},
+      );
       expect({
         logs: test.db.select().from(fuelLogs).all().length,
         costs: test.db.select().from(costEntries).all().length,
@@ -410,6 +415,11 @@ describe("fuel log", () => {
         change(log.id, { odometer: 70_000, amountMinor: 9_999 }),
       );
       expect(fieldErrors(err, "odometer")).not.toEqual([]);
+      expect(err.details).toMatchObject({
+        code: "lower_than_previous",
+        field: "odometer",
+        reading: { value: 79_000, date: "2026-05-01" },
+      });
       expect(getFuelLog(ctx(), log.id)).toMatchObject({
         odometer: 80_000,
         amountMinor: 7_200,

@@ -228,6 +228,11 @@ describe("tire sets", () => {
       );
       expect(err.code).toBe("invalid_request");
       expect(fieldErrors(err, "odometer")).not.toEqual([]);
+      expect(err.details).toMatchObject({
+        code: "lower_than_previous",
+        field: "odometer",
+        reading: { value: 90_000, date: "2026-05-01" },
+      });
       expect(getTireSet(ctx(), first.id).mounted).toBe(true);
       expect(getTireSet(ctx(), first.id).events).toHaveLength(1);
       expect(getTireSet(ctx(), second.id).mounted).toBe(false);
@@ -397,6 +402,11 @@ describe("tire sets", () => {
         measure(set.id, { treadDepthMm: 5, odometer: 70_000 }),
       );
       expect(fieldErrors(err, "odometer")).not.toEqual([]);
+      expect(err.details).toMatchObject({
+        code: "lower_than_previous",
+        field: "odometer",
+        reading: { value: 81_000 },
+      });
       expect(getTireSet(ctx(), set.id).events).toHaveLength(1);
     });
 

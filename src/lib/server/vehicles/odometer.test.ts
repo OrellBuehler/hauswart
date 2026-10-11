@@ -4,6 +4,7 @@ import { createTestUser } from "$lib/testing/auth";
 import { useTestDB } from "$lib/testing/db";
 import { at, ctxAt, makeTask, NOW } from "$lib/testing/domain";
 import { failure, fieldErrors, makeVehicle } from "$lib/testing/vehicles";
+import { odometerRefusalDetailsSchema } from "$lib/api/schemas/vehicles";
 import { createAsset, deleteAsset } from "$lib/server/assets/assets";
 import {
   notifications,
@@ -173,6 +174,53 @@ describe("odometer readings", () => {
       expect(fieldErrors(err, "value")[0]).toContain("80000");
       expect(fieldErrors(err, "value")[0]).toContain("2026-05-01");
     });
+
+    it("gives a lower value a code and the reading in the way, besides the message", async () => {
+      const car = makeVehicle(test);
+      await record(car.id, "2026-05-01", 80_000);
+      const err = await failure(() => record(car.id, "2026-06-01", 79_000));
+      expect(odometerRefusalDetailsSchema.parse(err.details)).toEqual({
+        code: "lower_than_previous",
+        field: "value",
+        reading: { value: 80_000, date: "2026-05-01" },
+      });
+      expect(fieldErrors(err, "value")[0]).toBe(
+        "Lower than the reading of 80000 on 2026-05-01; send force to take it anyway",
+      );
+    });
+
+    it("gives a value above the later reading a code and that reading", async () => {
+      const car = makeVehicle(test);
+      await record(car.id, "2026-01-01", 10_000);
+      await record(car.id, "2026-06-01", 20_000.5);
+      const err = await failure(() => record(car.id, "2026-03-01", 25_000));
+      expect(odometerRefusalDetailsSchema.parse(err.details)).toEqual({
+        code: "higher_than_next",
+        field: "value",
+        reading: { value: 20_000.5, date: "2026-06-01" },
+      });
+      expect(fieldErrors(err, "value")[0]).toBe(
+        "Higher than the later reading of 20000.5 on 2026-06-01; send force to take it anyway",
+      );
+    });
+
+    it.each([
+      ["in the future", "2026-06-16", 90_000],
+      ["not a date", "2026-02-30", 90_000],
+      ["negative", "2026-06-10", -1],
+      ["beyond any odometer", "2026-06-10", 10_000_001],
+    ])(
+      "a value that is %s has no code: force would not help",
+      async (_name, date, value) => {
+        const car = makeVehicle(test);
+        await record(car.id, "2026-05-01", 80_000);
+        const err = await failure(() => record(car.id, date, value));
+        expect(err.details).not.toHaveProperty("code");
+        expect(
+          odometerRefusalDetailsSchema.safeParse(err.details).success,
+        ).toBe(false);
+      },
+    );
 
     it("compares with the reading before the date, not with the newest", async () => {
       const car = makeVehicle(test);

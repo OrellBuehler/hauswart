@@ -76,6 +76,11 @@ describe("service log entries with an odometer value", () => {
     );
     expect(err.code).toBe("invalid_request");
     expect(fieldErrors(err, "odometer")).not.toEqual([]);
+    expect(err.details).toMatchObject({
+      code: "lower_than_previous",
+      field: "odometer",
+      reading: { value: 90_000, date: "2026-06-01" },
+    });
     expect(test.db.select().from(serviceLog).all()).toEqual([]);
     expect(readings(car.id)).toHaveLength(1);
   });
