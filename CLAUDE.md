@@ -137,7 +137,7 @@ src/lib/server/vehicles/         vehicle details (`vehicle_details`), odometer r
                                  (`writeOdometer` sync, `recordOdometer` async), signal.ts (readings -> signal + samples),
                                  summary.ts (plate + newest reading on assets), events.ts (completions), vehicles.ts, tires.ts, fuel-logs.ts, stats.ts (see "Vehicles")
 src/lib/vehicles/                client-safe: odometer.ts (`odometer:<asset id>` key helpers), plate.ts (plate matching), tires.ts (tread limits,
-                                 DOT age, distance per set), fuel.ts (full-to-full consumption), stats.ts (distance per month), templates.ts (task bodies), template-mark.ts (the mark on their tasks)
+                                 DOT age, distance per set), fuel.ts (full-to-full consumption), stats.ts (distance per month), templates.ts (task bodies), template-mark.ts (the mark on their tasks, the template ids)
 src/lib/server/pdf/render.ts     shared pdfmake wrapper (A4, Roboto from node_modules, no network or file access)
 src/lib/pwa/                     client-safe PWA parts: colors.ts (theme colours, tested against app.css), manifest.ts, options.ts
                                  (the service worker's whole behaviour; see "Installable app")
@@ -1152,7 +1152,8 @@ in dark mode. Every list has an empty state, every async action a pending and an
   still there means none is made and the template shows "already there" (`TemplateRun.state` `exists`, the page reloads); a holder
   that is gone by now gets the same mark again. `findExistingTask` finds what a vehicle has already by the mark, and only
   a task without a readable mark by likeness (title in either language, odometer counter, an inspection on a date), so nothing is
-  offered twice. A new vehicle opens that dialog once through `?termine=1`.
+  offered twice. A mark is readable (`templateOfMark`) when it names one of `VEHICLE_TEMPLATE_IDS` (defined in `template-mark.ts`,
+  re-exported by `templates.ts`); one that names another template counts as unreadable here and in the tire change offer. A new vehicle opens that dialog once through `?termine=1`.
 - **Costs of a vehicle**: `/costs?asset=` passes the device on to the summary (`costsSummaryQuery`; no other filter narrows its
   totals) and says so above it. A cost entry with `fuelLogId` has its amount, currency, date and device locked in the form (never sent by
   `buildUpdateBody`) with a link to `#fuel-log`, and the detail page offers that link instead of delete; a 409 with

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createTaskRequestSchema } from "$lib/api/schemas/tasks";
 import {
+  VEHICLE_TEMPLATE_IDS,
   VEHICLE_TEMPLATE_SOURCE,
   templateMark,
   templateOfMark,
@@ -70,7 +71,28 @@ describe("templateOfMark", () => {
       { externalSource: "vehicle_template", externalRef: `${ASSET}:mfk:x` },
     ],
     ["no reference", { externalSource: "vehicle_template", externalRef: null }],
+    [
+      "a template that does not exist",
+      { externalSource: "vehicle_template", externalRef: `${ASSET}:tire_swap` },
+    ],
+    [
+      "a template id that only starts like one",
+      {
+        externalSource: "vehicle_template",
+        externalRef: `${ASSET}:tires_winter_2:3`,
+      },
+    ],
+    [
+      "a template id in capitals",
+      { externalSource: "vehicle_template", externalRef: `${ASSET}:SERVICE` },
+    ],
   ])("is null for %s", (_name, task) => {
     expect(templateOfMark(task)).toBeNull();
+  });
+
+  it("knows every template of the vehicle setup", () => {
+    for (const id of VEHICLE_TEMPLATE_IDS) {
+      expect(templateOfMark(templateMark(ASSET, id, 2))).toBe(id);
+    }
   });
 });

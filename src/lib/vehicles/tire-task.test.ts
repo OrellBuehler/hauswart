@@ -113,4 +113,11 @@ describe("tireChange", () => {
       }),
     ).toEqual({ season: "winter" });
   });
+
+  it("falls back on the title for a mark that names no template of ours", () => {
+    expect(tireChange(marked("tire_swap", "Winterreifen aufziehen"))).toEqual({
+      season: "winter",
+    });
+    expect(tireChange(marked("tire_swap", "Service"))).toBeNull();
+  });
 });

@@ -8,25 +8,19 @@ import { addYears, daysInMonth, formatDate, parseDate } from "$lib/dates";
 import { m } from "$lib/paraglide/messages";
 import type { CalendarTrigger } from "$lib/tasks/engine/types";
 import { odometerSignalKey } from "./odometer";
-import { templateMark } from "./template-mark";
+import {
+  VEHICLE_TEMPLATE_IDS,
+  templateMark,
+  type VehicleTemplateId,
+} from "./template-mark";
+
+export { VEHICLE_TEMPLATE_IDS, type VehicleTemplateId };
 
 /**
  * Tasks a vehicle usually needs, ready to send to `POST /tasks` (and, for the preparations,
  * `POST /tasks/{id}/preparations`). Pure: the date comes in as `today`, the titles are Paraglide
  * messages in the given locale, nothing is read from the clock or the server.
  */
-
-export const VEHICLE_TEMPLATE_IDS = [
-  "tires_winter",
-  "tires_summer",
-  "service",
-  "mfk",
-  "vignette",
-  "vehicle_tax",
-  "brake_fluid",
-  "ac_service",
-] as const;
-export type VehicleTemplateId = (typeof VEHICLE_TEMPLATE_IDS)[number];
 
 export type VehicleTaskBody = z.input<typeof createTaskRequestSchema>;
 export type VehiclePreparationBody = z.input<

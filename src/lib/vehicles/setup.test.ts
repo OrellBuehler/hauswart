@@ -438,6 +438,17 @@ describe("findExistingTask", () => {
       ).toBeUndefined();
     });
 
+    it("falls back on the likeness for a mark that names no template of ours", () => {
+      expect(
+        find("tires_winter", [
+          marked("winter_tires", { title: "Winterreifen aufziehen" }),
+        ]),
+      ).toBe("t1");
+      expect(
+        find("tires_winter", [marked("winter_tires", { title: "Service" })]),
+      ).toBeUndefined();
+    });
+
     it("falls back on the likeness for a task with another mark or an unreadable one", () => {
       const title = "Winterreifen aufziehen";
       expect(
