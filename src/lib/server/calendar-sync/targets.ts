@@ -39,7 +39,12 @@ import {
 } from "./provider";
 import { reconcile } from "./reconcile";
 import { configOf, getTargetRow, statsOf, type TargetRow } from "./store";
-import { applyOperations, syncTarget, type SyncResult } from "./sync";
+import {
+  applyOperations,
+  lockTarget,
+  syncTarget,
+  type SyncResult,
+} from "./sync";
 
 type Db = Pick<ServiceContext, "db">;
 
@@ -281,6 +286,12 @@ export function updateTarget(
  * Removes a target and what hauswart remembers about its events. With `removeRemote` the events
  * hauswart wrote are deleted from the calendar first (it needs a calendar that allows deleting, and
  * a connection that is on); without it they stay where they are.
+ *
+ * Removing the events holds the target's run lock, so no sync can write them again meanwhile; a
+ * sync that is going on makes the request a 409 `conflict` (`details.code` `busy`) at once rather
+ * than wait for a run that may take minutes. If the removal stops half way, the target is left
+ * switched off (the answer says so), because the items still exist and the next sync would write
+ * the removed events again; deleting it once more goes on from there.
  */
 export async function deleteTarget(
   ctx: ServiceContext,
@@ -289,9 +300,27 @@ export async function deleteTarget(
   options: { removeRemote?: boolean } = {},
 ): Promise<void> {
   const row = manageableRow(ctx, caller, id);
-  if (options.removeRemote) await removeRemoteEvents(ctx, row);
-  ctx.db.delete(calendarTargets).where(eq(calendarTargets.id, row.id)).run();
+  if (!options.removeRemote) {
+    removeRow(ctx, row.id);
+    return;
+  }
+  const release = lockTarget(row.id);
+  if (!release) {
+    throw conflict(
+      "A sync of this calendar is running right now. Try again in a moment.",
+      { code: "busy" },
+    );
+  }
+  try {
+    await removeRemoteEvents(ctx, row);
+    removeRow(ctx, row.id);
+  } finally {
+    release();
+  }
 }
+
+const removeRow = (ctx: Db, id: string) =>
+  ctx.db.delete(calendarTargets).where(eq(calendarTargets.id, id)).run();
 
 async function removeRemoteEvents(
   ctx: ServiceContext,
@@ -347,6 +376,14 @@ async function removeRemoteEvents(
     kinds: new Set(CALENDAR_ITEM_KINDS),
     now: ctx.now,
   });
+  // From here events are removed: if that stops, the target stays off so a sync does not write them again.
+  if (row.enabled) {
+    ctx.db
+      .update(calendarTargets)
+      .set({ enabled: false })
+      .where(eq(calendarTargets.id, row.id))
+      .run();
+  }
   const applied = await applyOperations(ctx, row.id, session, plan.operations, {
     maxOperations: REMOVE_LIMIT,
     range,
@@ -354,13 +391,15 @@ async function removeRemoteEvents(
   if (applied.error || applied.counts.remaining > 0) {
     throw new ApiError(
       "upstream_error",
-      applied.error?.message ??
-        "There are too many events to remove at once. Try again to remove the rest.",
+      `${
+        applied.error?.message ?? "There are too many events to remove at once."
+      } The calendar was switched off so that the events are not written again; delete it once more to remove the rest.`,
       {
         details: {
           code: applied.error?.code ?? "too_many",
           deleted: applied.counts.deleted,
           remaining: applied.counts.remaining + applied.counts.failed,
+          disabled: true,
         },
       },
     );

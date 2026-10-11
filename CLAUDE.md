@@ -992,7 +992,7 @@ people plan. Optional like every adapter: without a target nothing happens, and 
   `status`, `lastError`, `consecutiveFailures` and the usual 1, 2, 4 ... 15 minute back-off (`dueForAttempt`). Codes: the connection's own and `calendar_missing`, `unsupported`
   (the calendar cannot create), `unconfirmed`, `config_invalid`; a target that is switched off, whose connection is off or whose adapter
   does not run is answered (`disabled`, `no_connection`, `provider_unavailable`, `busy` for a second run at once) without touching its health.
-  Logs carry codes only.
+  A target deleted during its run stops the run at the next step (a 404 as for any missing target) and nothing is saved for it. Logs carry codes only.
 - **Scheduler** (`registerCalendarSync()` in `init()`): every minute it compares what hauswart knows with the links **without calling any
   calendar** (`hasPendingChanges`) and syncs the targets with a difference, which is how a change is written within a minute without
   instrumenting every service; every 15 minutes every target is synced regardless (that is how a deleted event is noticed). A saved target
@@ -1001,8 +1001,11 @@ people plan. Optional like every adapter: without a target nothing happens, and 
   that finds its target busy (a manual sync) comes round again. Overlap guard, `unref`, injectable intervals and clock.
 - **API**: `GET /calendar-targets`, `POST` (404 without a working connection or adapter, 400 on `remoteCalendarId` for a calendar that does not
   exist or cannot create, 409 for a calendar that has a target, 502 `upstream_error` with `details.code`), `PATCH /{id}` (`config` is merged),
-  `DELETE /{id}?removeRemote=true` (deletes the events carrying the marker first, linked or not; 400 on `removeRemote` for a calendar that cannot
-  delete, 409 for a connection that is off, 502 and the target stays so a second try goes on) and `POST /{id}/sync` (run now, a failed run is
+  `DELETE /{id}?removeRemote=true` (deletes the events carrying the marker first, linked or not, holding the target's run lock so no sync
+  writes them again meanwhile: 409 `details.code: "busy"` while a run is going on, 400 on `removeRemote` for a calendar that cannot
+  delete, 409 for a connection that is off, 502 with the target left as it was when nothing was touched yet; once events were deleted a
+  failure or a too long list leaves the target **switched off** (502 with `details.deleted/remaining/disabled`), because the items still
+  exist and the next sync would write the events again, and a second try goes on) and `POST /{id}/sync` (run now, a failed run is
   `ok: false` with the code, not an HTTP error). Scopes `read`/`write`; household targets additionally need the `admin` scope (403). The calendar
   picker `GET /integrations/{kind}/calendars` carries `capabilities` per calendar.
 - **Home Assistant** (`integrations/homeassistant/calendar-provider.ts`, `calendar-events.ts`): a calendar is a `calendar.*` entity and
@@ -1322,7 +1325,8 @@ in dark mode. Every list has an empty state, every async action a pending and an
   `GET /integrations/{provider}/calendars` with their capabilities (calendars that cannot create or already have a target are disabled, the 400 on
   `remoteCalendarId` and the 409 are worded on that field), sends only the fields that differ on PATCH (`updateBody`) and offers a reminder only when
   `capabilities.alarms`. Deleting offers "Termine im Kalender ebenfalls entfernen" (`?removeRemote=true`) only with `capabilities.delete`; a 409 (connection
-  off) or 502 (`details.code`, `too_many` with counts) is worded by `deleteFailure` and the target stays. `ConfirmDialog` takes optional content (`children`).
+  off, or `busy`) or 502 (`details.code`, with counts and `disabled` once it began) is worded by `deleteFailure` and the target stays (then paused, and
+  the list behind the dialog is reloaded to show it). `ConfirmDialog` takes optional content (`children`).
 - **Odometer readings in forms**: `VehicleReading` (`lib/vehicles/odometer-state.svelte.ts`) loads a vehicle's unit and newest
   reading for a dialog and `OdometerReadingField` prefills it; an unchanged or empty field sends no reading. A task that counts on the
   odometer asks for it when completed: `CompleteButton` asks `odometerAssetOf(task)` (the dashboard's `odometerAssetId`, else the

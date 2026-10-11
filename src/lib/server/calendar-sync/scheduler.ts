@@ -1,4 +1,5 @@
 import { CALENDAR_PROVIDERS } from "$lib/api/enums";
+import { ApiError } from "$lib/api/errors";
 import { dueForAttempt } from "$lib/server/connections/connections";
 import { getDB } from "$lib/server/db";
 import { onEvent } from "$lib/server/events";
@@ -105,6 +106,8 @@ export function startCalendarSyncScheduler(
             again = true;
           }
         } catch (err) {
+          // Deleted while its run was going on: nothing is left to sync.
+          if (err instanceof ApiError && err.code === "not_found") continue;
           console.error(
             JSON.stringify({
               event: "calendar_sync.target_failed",

@@ -8,7 +8,13 @@ import { IntegrationError } from "$lib/server/connections/errors";
 import { connections } from "$lib/server/db";
 import { notFound, type ServiceContext } from "$lib/server/service";
 import { buildDesiredItems, readRange, type DesiredItem } from "./items";
-import { deleteLink, listLinks, saveLink, setLinkUid } from "./links";
+import {
+  deleteLink,
+  listLinks,
+  saveLink,
+  setLinkUid,
+  type LinkValues,
+} from "./links";
 import {
   getCalendarProvider,
   NO_UID,
@@ -115,6 +121,19 @@ const running = new Set<string>();
 /** Whether a run for the target is going on in this process. */
 export const isSyncing = (targetId: string) => running.has(targetId);
 
+/**
+ * Takes the target's run lock, which keeps every other run (the scheduler's, a manual one) away until
+ * the returned function is called; null while a run holds it. Whoever works on the calendar of a
+ * target outside a run (removing its events) takes it the same way.
+ */
+export function lockTarget(targetId: string): (() => void) | null {
+  if (running.has(targetId)) return null;
+  running.add(targetId);
+  return () => {
+    running.delete(targetId);
+  };
+}
+
 function unrecorded(error: SyncFailure): SyncResult {
   return { ok: false, error, counts: emptyCounts() };
 }
@@ -127,6 +146,8 @@ function unrecorded(error: SyncFailure): SyncResult {
  * result (`ok: false` with a code), recorded on the target as its health with the back-off
  * (1, 2, 4 ... 15 minutes); a target that is switched off, whose connection is missing or whose
  * adapter does not run is reported without touching its health. Runs for one target never overlap.
+ * A target that is deleted while its run goes on stops the run at the next step (404 as for any
+ * target that does not exist), and nothing is saved for it.
  */
 export async function syncTarget(
   ctx: ServiceContext,
@@ -135,12 +156,12 @@ export async function syncTarget(
 ): Promise<SyncResult> {
   const row = getTargetRow(ctx, targetId);
   if (!row) throw notFound("Calendar target");
-  if (running.has(row.id)) return unrecorded(failure("busy"));
-  running.add(row.id);
+  const release = lockTarget(row.id);
+  if (!release) return unrecorded(failure("busy"));
   try {
     return await run(ctx, row, options);
   } finally {
-    running.delete(row.id);
+    release();
   }
 }
 
@@ -221,6 +242,7 @@ async function run(
     maxOperations: options.maxOperations ?? DEFAULT_MAX_OPERATIONS,
     range,
   });
+  if (applied.vanished) throw notFound("Calendar target");
   const counts = applied.counts;
   counts.unconfirmed += plan.unconfirmed.length;
 
@@ -250,6 +272,8 @@ export interface Applied {
   error: SyncFailure | null;
   /** The run stopped calling the calendar because it is out of reach. */
   aborted: boolean;
+  /** The target was deleted meanwhile; the run stopped and saved nothing more. */
+  vanished: boolean;
   /** Events written without learning the calendar's id for them: ref -> item. */
   awaitingUid: Map<string, DesiredItem>;
 }
@@ -271,17 +295,28 @@ export async function applyOperations(
   const awaitingUid = new Map<string, DesiredItem>();
   let error: SyncFailure | null = null;
   let aborted = false;
+  let vanished = false;
   let calls = 0;
   let markerSeen = false;
 
+  /** Links are only saved for a target that still exists: a link of a deleted one cannot be saved. */
+  const save = (item: DesiredItem, values: LinkValues): boolean => {
+    if (!getTargetRow(ctx, targetId)) {
+      vanished = true;
+      return false;
+    }
+    saveLink(ctx, targetId, item, values);
+    return true;
+  };
+
   const written = (item: DesiredItem, uid: string | null, hash = item.hash) => {
-    saveLink(ctx, targetId, item, {
+    const saved = save(item, {
       remoteUid: uid,
       status: "synced",
       contentHash: hash,
       pushedAt: ctx.now,
     });
-    if (uid === null) awaitingUid.set(item.ref, item);
+    if (saved && uid === null) awaitingUid.set(item.ref, item);
   };
 
   const create = async (item: DesiredItem) => {
@@ -297,7 +332,7 @@ export async function applyOperations(
    * been seen, the ids of the others are looked up together at the end.
    */
   const confirmFirst = async (item: DesiredItem, uid: string | null) => {
-    if (uid !== null || markerSeen) return;
+    if (uid !== null || markerSeen || vanished) return;
     const found = (await session.listEvents(options.range)).filter(
       (e) => e.ref === item.ref,
     );
@@ -313,6 +348,10 @@ export async function applyOperations(
   };
 
   for (const op of operations) {
+    if (vanished || !getTargetRow(ctx, targetId)) {
+      vanished = true;
+      break;
+    }
     if (isRemote(op)) {
       // A replace is a delete and a create; the first call of a run is made whatever it costs.
       const cost = op.type === "replace" ? 2 : 1;
@@ -357,7 +396,7 @@ export async function applyOperations(
           counts.adopted++;
           break;
         case "acknowledge":
-          saveLink(ctx, targetId, op.item, {
+          save(op.item, {
             remoteUid: op.uid ?? op.link?.remoteUid ?? NO_UID,
             status: "synced",
             contentHash: op.item.hash,
@@ -370,7 +409,7 @@ export async function applyOperations(
           counts.forgotten++;
           break;
         case "tombstone":
-          saveLink(ctx, targetId, op.item, {
+          save(op.item, {
             remoteUid: null,
             status: "forgotten",
             contentHash: op.item.hash,
@@ -394,7 +433,7 @@ export async function applyOperations(
       }
     }
   }
-  return { counts, error, aborted, awaitingUid };
+  return { counts, error, aborted, vanished, awaitingUid };
 }
 
 /** An event that is gone already is what a delete wants. */

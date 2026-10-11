@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ApiError } from "$lib/api/errors";
 import { integrationErrorMessage } from "$lib/connections/errors";
 import { m } from "$lib/paraglide/messages";
-import { deleteFailure, saveFailure } from "./errors";
+import { deleteFailure, removalPausedTarget, saveFailure } from "./errors";
 
 const bodyFields = (fields: Record<string, string[]>) =>
   new ApiError("invalid_request", "Invalid request", {
@@ -107,13 +107,45 @@ describe("deleteFailure", () => {
     );
   });
 
+  it("says a sync that is running keeps the entries from being removed for the moment", () => {
+    const err = new ApiError("conflict", "x", { details: { code: "busy" } });
+    expect(deleteFailure(err, "homeassistant")).toBe(
+      m.caltargets_error_remove_busy(),
+    );
+  });
+
   it("reports how far a removal got when the target stays", () => {
     const err = new ApiError("upstream_error", "Too many", {
-      details: { code: "too_many", deleted: 1000, remaining: 40 },
+      details: {
+        code: "too_many",
+        deleted: 1000,
+        remaining: 40,
+        disabled: true,
+      },
     });
     expect(deleteFailure(err, "homeassistant")).toBe(
       m.caltargets_error_remove_partial({ deleted: 1000, remaining: 40 }),
     );
+  });
+
+  it("says the target was switched off when a removal that failed half way left it so", () => {
+    const err = new ApiError("upstream_error", "Bad gateway", {
+      details: { code: "network", deleted: 3, remaining: 2, disabled: true },
+    });
+    expect(deleteFailure(err, "homeassistant")).toBe(
+      m.caltargets_error_remove_paused({
+        reason: integrationErrorMessage("network", "homeassistant"),
+        deleted: 3,
+        remaining: 2,
+      }),
+    );
+    expect(removalPausedTarget(err)).toBe(true);
+    expect(
+      removalPausedTarget(
+        new ApiError("upstream_error", "x", { details: { code: "timeout" } }),
+      ),
+    ).toBe(false);
+    expect(removalPausedTarget(new Error("x"))).toBe(false);
   });
 
   it("words a failure of the system and says the target stays", () => {

@@ -9,6 +9,7 @@ import {
   useFakeCalendars,
 } from "$lib/server/calendar-sync/testing";
 import { createAppointment } from "$lib/server/appointments/appointments";
+import { lockTarget } from "$lib/server/calendar-sync/sync";
 import { calendarTargets, connections } from "$lib/server/db";
 import { createCaller, errorCode } from "$lib/testing/api";
 import {
@@ -466,6 +467,56 @@ describe("calendar targets API", () => {
           }
         ).items,
       ).toHaveLength(1);
+    });
+
+    it("answers 409 busy while a sync of the target is running", async () => {
+      const { asAdmin } = await people();
+      connect();
+      const target = await addTarget(ctx(), fake);
+      book();
+      await asAdmin("POST", `/api/v1/calendar-targets/${target.id}/sync`);
+      const release = lockTarget(target.id)!;
+      const r = await asAdmin(
+        "DELETE",
+        `/api/v1/calendar-targets/${target.id}?removeRemote=true`,
+      );
+      release();
+      expect(r.res.status).toBe(409);
+      expect(r.body).toMatchObject({
+        error: { code: "conflict", details: { code: "busy" } },
+      });
+      expect(fake.ours(CALENDAR_ID).size).toBe(1);
+    });
+
+    it("answers 502, says the target was switched off, and keeps it when the removal stops half way", async () => {
+      const { asAdmin } = await people();
+      connect();
+      const target = await addTarget(ctx(), fake);
+      book();
+      book("Maler");
+      await asAdmin("POST", `/api/v1/calendar-targets/${target.id}/sync`);
+      fake.failNext("delete", "network", 1, 1);
+      const r = await asAdmin(
+        "DELETE",
+        `/api/v1/calendar-targets/${target.id}?removeRemote=true`,
+      );
+      expect(r.res.status).toBe(502);
+      expect(r.body).toMatchObject({
+        error: {
+          code: "upstream_error",
+          details: {
+            code: "network",
+            deleted: 1,
+            remaining: 1,
+            disabled: true,
+          },
+        },
+      });
+      const listed = (await asAdmin("GET", "/api/v1/calendar-targets"))
+        .body as {
+        items: CalendarTarget[];
+      };
+      expect(listed.items).toMatchObject([{ id: target.id, enabled: false }]);
     });
   });
 });

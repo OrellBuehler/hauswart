@@ -476,13 +476,122 @@ describe("calendar targets", () => {
         deleteTarget(ctx(), ADMIN, target.id, { removeRemote: true }),
       ).rejects.toMatchObject({
         code: "upstream_error",
-        details: { code: "network", remaining: 3 },
+        details: { code: "network", remaining: 3, disabled: true },
       });
       expect(listTargets(ctx(), ADMIN)).toHaveLength(1);
       expect(fake.ours(CALENDAR_ID).size).toBe(3);
       await deleteTarget(ctx(), ADMIN, target.id, { removeRemote: true });
       expect(fake.get(CALENDAR_ID).events).toEqual([]);
       expect(listTargets(ctx(), ADMIN)).toEqual([]);
+    });
+
+    it("refuses removeRemote while a sync of the target is running, and works afterwards", async () => {
+      connectCalendarSystem(ctx());
+      const target = await addTarget(ctx(), fake);
+      book();
+      let attempt: Promise<unknown> | undefined;
+      fake.onCall = (call) => {
+        if (call.step === "create" && !attempt) {
+          attempt = deleteTarget(ctx(), ADMIN, target.id, {
+            removeRemote: true,
+          }).then(
+            () => null,
+            (err: unknown) => err,
+          );
+        }
+      };
+      expect((await syncTarget(ctx(), target.id)).ok).toBe(true);
+      expect(await attempt).toMatchObject({
+        code: "conflict",
+        details: { code: "busy" },
+      });
+      expect(listTargets(ctx(), ADMIN)).toHaveLength(1);
+      expect(fake.ours(CALENDAR_ID).size).toBe(1);
+      fake.onCall = null;
+      await deleteTarget(ctx(), ADMIN, target.id, { removeRemote: true });
+      expect(fake.get(CALENDAR_ID).events).toEqual([]);
+      expect(listTargets(ctx(), ADMIN)).toEqual([]);
+    });
+
+    it("lets no sync run while the events are removed, so none is written again", async () => {
+      connectCalendarSystem(ctx());
+      const target = await addTarget(ctx(), fake);
+      for (const title of ["A", "B"]) book(title);
+      await syncTarget(ctx(), target.id);
+      let meanwhile: ReturnType<typeof syncTarget> | undefined;
+      fake.onCall = (call) => {
+        if (call.step === "delete" && !meanwhile) {
+          meanwhile = syncTarget(ctx(), target.id);
+        }
+      };
+      await deleteTarget(ctx(), ADMIN, target.id, { removeRemote: true });
+      expect((await meanwhile)?.error?.code).toBe("busy");
+      expect(fake.get(CALENDAR_ID).events).toEqual([]);
+      expect(fake.callsOf("create")).toHaveLength(2);
+    });
+
+    it("switches the target off when the removal stops half way, says so, and a later try finishes", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      connectCalendarSystem(ctx());
+      const target = await addTarget(ctx(), fake);
+      for (const title of ["A", "B", "C"]) book(title);
+      await syncTarget(ctx(), target.id);
+      fake.failNext("delete", "network", 1, 1);
+      await expect(
+        deleteTarget(ctx(), ADMIN, target.id, { removeRemote: true }),
+      ).rejects.toMatchObject({
+        code: "upstream_error",
+        message: expect.stringContaining("switched off"),
+        details: { code: "network", deleted: 1, remaining: 2, disabled: true },
+      });
+      expect(listTargets(ctx(), ADMIN)[0]).toMatchObject({ enabled: false });
+      expect(fake.ours(CALENDAR_ID).size).toBe(2);
+
+      // Nothing writes the removed event again, however the sync is asked for.
+      const creates = fake.callsOf("create").length;
+      expect((await syncTarget(ctx(), target.id)).error?.code).toBe("disabled");
+      expect(fake.callsOf("create")).toHaveLength(creates);
+
+      await deleteTarget(ctx(), ADMIN, target.id, { removeRemote: true });
+      expect(fake.get(CALENDAR_ID).events).toEqual([]);
+      expect(listTargets(ctx(), ADMIN)).toEqual([]);
+    });
+
+    it("leaves a target as it was when the removal fails before an event was touched", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      connectCalendarSystem(ctx());
+      const target = await addTarget(ctx(), fake);
+      book();
+      await syncTarget(ctx(), target.id);
+      fake.failNext("list", "timeout");
+      await expect(
+        deleteTarget(ctx(), ADMIN, target.id, { removeRemote: true }),
+      ).rejects.toMatchObject({ details: { code: "timeout" } });
+      expect(listTargets(ctx(), ADMIN)[0]).toMatchObject({ enabled: true });
+      test.db.update(connections).set({ enabled: false }).run();
+      await expect(
+        deleteTarget(ctx(), ADMIN, target.id, { removeRemote: true }),
+      ).rejects.toMatchObject({ code: "conflict" });
+      expect(listTargets(ctx(), ADMIN)[0]).toMatchObject({ enabled: true });
+    });
+
+    it("stops a run that is going on when the target is deleted, without writing more or failing", async () => {
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      connectCalendarSystem(ctx());
+      const target = await addTarget(ctx(), fake);
+      for (const title of ["A", "B", "C"]) book(title);
+      fake.onCall = (call) => {
+        if (call.step === "create" && fake.callsOf("create").length === 1) {
+          void deleteTarget(ctx(), ADMIN, target.id);
+        }
+      };
+      await expect(syncTarget(ctx(), target.id)).rejects.toMatchObject({
+        code: "not_found",
+      });
+      expect(fake.callsOf("create")).toHaveLength(1);
+      expect(test.db.select().from(calendarLinks).all()).toEqual([]);
+      expect(test.db.select().from(calendarTargets).all()).toEqual([]);
+      expect(error).not.toHaveBeenCalled();
     });
 
     it("needs a connection that is on for removeRemote, but not otherwise", async () => {

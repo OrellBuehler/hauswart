@@ -76,9 +76,28 @@ export function saveFailure(
   return { form: apiErrorMessage(err), fields };
 }
 
+type RemovalDetails = {
+  code?: unknown;
+  deleted?: unknown;
+  remaining?: unknown;
+  disabled?: unknown;
+};
+
+const removalDetails = (err: unknown): RemovalDetails | undefined =>
+  isApiError(err) ? (err.details as RemovalDetails | undefined) : undefined;
+
+/** Whether a failed removal left the target switched off (it stopped after it had begun to delete events). */
+export function removalPausedTarget(err: unknown): boolean {
+  return (
+    isApiError(err) &&
+    err.code === "upstream_error" &&
+    removalDetails(err)?.disabled === true
+  );
+}
+
 /**
  * The failure of removing a target. With the events removed as well the server may stop half way:
- * the target stays, and a second try goes on from there.
+ * the target stays, switched off so nothing is written again, and a second try goes on from there.
  */
 export function deleteFailure(
   err: unknown,
@@ -91,24 +110,32 @@ export function deleteFailure(
   if (isApiError(err)) {
     switch (err.code) {
       case "conflict":
-        return m.caltargets_error_remove_offline();
+        return removalDetails(err)?.code === "busy"
+          ? m.caltargets_error_remove_busy()
+          : m.caltargets_error_remove_offline();
       case "forbidden":
         return m.caltargets_error_forbidden();
       case "not_found":
         return m.caltargets_error_gone();
       case "upstream_error": {
-        const details = err.details as
-          | { code?: unknown; deleted?: unknown; remaining?: unknown }
-          | undefined;
+        const details = removalDetails(err);
         if (
-          details?.code === "too_many" &&
-          typeof details.deleted === "number" &&
+          typeof details?.deleted === "number" &&
           typeof details.remaining === "number"
         ) {
-          return m.caltargets_error_remove_partial({
-            deleted: details.deleted,
-            remaining: details.remaining,
-          });
+          if (details.code === "too_many") {
+            return m.caltargets_error_remove_partial({
+              deleted: details.deleted,
+              remaining: details.remaining,
+            });
+          }
+          if (details.disabled === true) {
+            return m.caltargets_error_remove_paused({
+              reason: pickerErrorMessage(err, provider),
+              deleted: details.deleted,
+              remaining: details.remaining,
+            });
+          }
         }
         return m.caltargets_error_remove_failed({
           reason: pickerErrorMessage(err, provider),

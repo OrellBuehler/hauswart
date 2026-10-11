@@ -108,6 +108,8 @@ export class FakeCalendars {
   delayMs = 0;
   /** How many calls were going on at once, at most. */
   maxActive = 0;
+  /** Called when a call starts, before it does anything: to do something while a run is in progress. */
+  onCall: ((call: Call) => void) | null = null;
   private active = 0;
   private injected: {
     step: Step;
@@ -121,7 +123,7 @@ export class FakeCalendars {
     this.provider = {
       kind: CALENDAR_PROVIDERS[0],
       listCalendars: async () => {
-        this.calls.push({ step: "open" });
+        this.record({ step: "open" });
         return [...this.calendars.values()].map((c): RemoteCalendar => ({
           id: c.id,
           name: c.name,
@@ -143,6 +145,7 @@ export class FakeCalendars {
     this.hidesIds = false;
     this.delayMs = 0;
     this.maxActive = 0;
+    this.onCall = null;
     this.injected = [];
     this.next = 1;
   }
@@ -204,6 +207,11 @@ export class FakeCalendars {
     }
   }
 
+  private record(call: Call): void {
+    this.calls.push(call);
+    this.onCall?.(call);
+  }
+
   private async busy(): Promise<void> {
     this.active++;
     this.maxActive = Math.max(this.maxActive, this.active);
@@ -228,7 +236,7 @@ export class FakeCalendars {
   }
 
   private open(calendarId: string): CalendarSession {
-    this.calls.push({ step: "open" });
+    this.record({ step: "open" });
     this.maybeFail("open");
     const calendar = this.calendars.get(calendarId);
     if (!calendar) {
@@ -240,7 +248,7 @@ export class FakeCalendars {
       name: calendar.name,
       capabilities: calendar.capabilities,
       listEvents: async () => {
-        this.calls.push({ step: "list" });
+        this.record({ step: "list" });
         await this.busy();
         this.maybeFail("list");
         return calendar.events.map((e): RemoteEvent => ({
@@ -249,7 +257,7 @@ export class FakeCalendars {
         }));
       },
       create: async (item) => {
-        this.calls.push({ step: "create", ref: item.ref });
+        this.record({ step: "create", ref: item.ref });
         await this.busy();
         this.maybeFail("create");
         if (!calendar.capabilities.create) throw unsupported("create events");
@@ -265,7 +273,7 @@ export class FakeCalendars {
         return { uid: this.reportsIds ? uid : null };
       },
       update: async (uid, item) => {
-        this.calls.push({ step: "update", ref: item.ref, uid });
+        this.record({ step: "update", ref: item.ref, uid });
         await this.busy();
         this.maybeFail("update");
         if (!calendar.capabilities.update) throw unsupported("change events");
@@ -275,7 +283,7 @@ export class FakeCalendars {
         event.description = `${item.description}\n\n${markerLine(item.ref)}`;
       },
       delete: async (uid) => {
-        this.calls.push({ step: "delete", uid });
+        this.record({ step: "delete", uid });
         await this.busy();
         this.maybeFail("delete");
         if (!calendar.capabilities.delete) throw unsupported("delete events");

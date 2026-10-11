@@ -33745,7 +33745,7 @@
       "delete": {
         "operationId": "calendarTargetsDelete",
         "summary": "Remove a calendar target",
-        "description": "The events hauswart wrote stay in the calendar, and a new target for the same calendar takes them over, unless `removeRemote=true`: then the events carrying hauswart's marker are deleted first (400 on `removeRemote` for a calendar that cannot delete events, 409 when the connection is switched off, 502 `upstream_error` when the system fails; the target stays then, and a second try continues). Household targets need an administrator.",
+        "description": "The events hauswart wrote stay in the calendar, and a new target for the same calendar takes them over, unless `removeRemote=true`: then the events carrying hauswart's marker are deleted first, while no sync of the target can run (409 `conflict` with `details.code` `busy` when one is running right now: try again in a moment; 400 on `removeRemote` for a calendar that cannot delete events; 409 when the connection is switched off; 502 `upstream_error` when the system fails). A failure before an event was touched leaves the target as it was; one that stops after the removal began (`details.deleted`, `details.remaining`, `details.disabled` true) leaves the target in place but switched off, so that the next sync does not write the events again, and a second try continues. Household targets need an administrator.",
         "tags": [
           "calendar"
         ],

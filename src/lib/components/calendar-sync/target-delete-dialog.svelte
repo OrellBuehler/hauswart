@@ -5,7 +5,10 @@
   import type { CalendarTarget } from "$lib/api/schemas/calendar-sync";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
   import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-  import { deleteFailure } from "$lib/calendar-sync/errors";
+  import {
+    deleteFailure,
+    removalPausedTarget,
+  } from "$lib/calendar-sync/errors";
   import { providerName } from "$lib/calendar-sync/providers";
   import { m } from "$lib/paraglide/messages";
 
@@ -32,10 +35,16 @@
     if (!target) return;
     const { id, name } = target;
     const withRemote = canRemoveRemote && removeRemote;
-    await api.call(endpoints.calendarTargetsDelete, {
-      params: { id },
-      ...(withRemote ? { query: { removeRemote: "true" as const } } : {}),
-    });
+    try {
+      await api.call(endpoints.calendarTargetsDelete, {
+        params: { id },
+        ...(withRemote ? { query: { removeRemote: "true" as const } } : {}),
+      });
+    } catch (err) {
+      // A removal that stopped half way switched the target off: the list behind the dialog shows it.
+      if (removalPausedTarget(err)) await onremoved();
+      throw err;
+    }
     toast.success(
       withRemote
         ? m.caltargets_deleted_remote_toast({ name })
