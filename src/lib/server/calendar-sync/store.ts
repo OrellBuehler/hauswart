@@ -1,0 +1,120 @@
+import { and, asc, eq } from "drizzle-orm";
+import {
+  calendarTargetConfigSchema,
+  calendarSyncCountsSchema,
+  type CalendarSyncCounts,
+  type CalendarTargetCapabilities,
+  type CalendarTargetConfig,
+} from "$lib/api/schemas/calendar-sync";
+import { calendarTargets, connections } from "$lib/server/db";
+import { parseStored } from "$lib/server/json";
+import type { ServiceContext } from "$lib/server/service";
+
+type Db = Pick<ServiceContext, "db">;
+type Now = Pick<ServiceContext, "db" | "now">;
+
+export type TargetRow = typeof calendarTargets.$inferSelect;
+
+export function getTargetRow(ctx: Db, id: string): TargetRow | undefined {
+  return ctx.db
+    .select()
+    .from(calendarTargets)
+    .where(eq(calendarTargets.id, id))
+    .get();
+}
+
+/** The settings, checked again: a stored value that no longer fits is a bug or a hand edit, never silently repaired. */
+export function configOf(
+  row: Pick<TargetRow, "configJson">,
+): CalendarTargetConfig {
+  return parseStored(
+    calendarTargetConfigSchema,
+    row.configJson,
+    "calendar target settings",
+  );
+}
+
+export function statsOf(
+  row: Pick<TargetRow, "lastStatsJson">,
+): CalendarSyncCounts | null {
+  if (row.lastStatsJson === null) return null;
+  const parsed = calendarSyncCountsSchema.safeParse(row.lastStatsJson);
+  return parsed.success ? parsed.data : null;
+}
+
+/** Targets that are switched on and whose connection is switched on, oldest first. */
+export function listRunnableTargets(ctx: Db): TargetRow[] {
+  return ctx.db
+    .select({ target: calendarTargets })
+    .from(calendarTargets)
+    .innerJoin(connections, eq(connections.id, calendarTargets.connectionId))
+    .where(
+      and(eq(calendarTargets.enabled, true), eq(connections.enabled, true)),
+    )
+    .orderBy(asc(calendarTargets.createdAt), asc(calendarTargets.id))
+    .all()
+    .map((r) => r.target);
+}
+
+export function saveCapabilities(
+  ctx: Db,
+  row: Pick<TargetRow, "id" | "capabilitiesJson">,
+  capabilities: CalendarTargetCapabilities,
+): void {
+  const known = row.capabilitiesJson;
+  if (
+    known &&
+    known.create === capabilities.create &&
+    known.update === capabilities.update &&
+    known.delete === capabilities.delete &&
+    known.alarms === capabilities.alarms
+  ) {
+    return;
+  }
+  ctx.db
+    .update(calendarTargets)
+    .set({ capabilitiesJson: capabilities })
+    .where(eq(calendarTargets.id, row.id))
+    .run();
+}
+
+export function recordTargetOk(
+  ctx: Now,
+  id: string,
+  counts: CalendarSyncCounts,
+): void {
+  ctx.db
+    .update(calendarTargets)
+    .set({
+      status: "ok",
+      lastError: null,
+      lastOkAt: new Date(ctx.now),
+      lastCheckedAt: new Date(ctx.now),
+      consecutiveFailures: 0,
+      lastStatsJson: counts,
+    })
+    .where(eq(calendarTargets.id, id))
+    .run();
+}
+
+/** Records a failed run and returns the number of failures in a row. */
+export function recordTargetFailure(
+  ctx: Now,
+  row: Pick<TargetRow, "id" | "consecutiveFailures">,
+  code: string,
+  counts: CalendarSyncCounts | null,
+): number {
+  const failures = row.consecutiveFailures + 1;
+  ctx.db
+    .update(calendarTargets)
+    .set({
+      status: "error",
+      lastError: code,
+      lastCheckedAt: new Date(ctx.now),
+      consecutiveFailures: failures,
+      ...(counts ? { lastStatsJson: counts } : {}),
+    })
+    .where(eq(calendarTargets.id, row.id))
+    .run();
+  return failures;
+}
