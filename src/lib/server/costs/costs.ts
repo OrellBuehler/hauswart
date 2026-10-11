@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   COST_CATEGORY_COUNTS_AS_EXPENSE,
   type CostCategory,
+  type CostDeductible,
   type CostSource,
   type CostSplitMode,
 } from "$lib/api/enums";
@@ -17,6 +18,7 @@ import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
 import { commentCountSql } from "$lib/server/comments/counts";
 import {
   assets,
+  costBooks,
   costEntries,
   costEntryShares,
   costLinkRemovals,
@@ -38,10 +40,17 @@ import {
 } from "$lib/server/service";
 import { clockAt } from "$lib/server/tasks/evaluator";
 import {
+  defaultCostBook,
+  findCostBookRow,
+  requireOpenCostBook,
+  type CostBookRow,
+} from "./books";
+import {
   amountsFor,
   listPeople,
   sharesFor,
   validateCustomShares,
+  validateParticipants,
   type Share,
 } from "./split";
 
@@ -57,6 +66,7 @@ export interface CostShareRecord {
 }
 
 export interface CostRecord extends CostRow {
+  bookName: string;
   assetName: string | null;
   roomName: string | null;
   defectNumber: number | null;
@@ -75,6 +85,7 @@ const selectCosts = (db: DB) =>
   db
     .select({
       cost: costEntries,
+      bookName: costBooks.name,
       assetName: assets.name,
       roomName: rooms.name,
       defectNumber: defects.number,
@@ -90,6 +101,7 @@ const selectCosts = (db: DB) =>
       rowid: sql<number>`${costEntries}.rowid`,
     })
     .from(costEntries)
+    .innerJoin(costBooks, eq(costBooks.id, costEntries.bookId))
     .leftJoin(assets, eq(assets.id, costEntries.assetId))
     .leftJoin(rooms, eq(rooms.id, costEntries.roomId))
     .leftJoin(defects, eq(defects.id, costEntries.defectId))
@@ -150,6 +162,7 @@ function toRecords(db: DB, joined: readonly Joined[]): CostRecord[] {
   );
   return joined.map((j) => ({
     ...j.cost,
+    bookName: j.bookName,
     assetName: j.assetName,
     roomName: j.roomName,
     defectNumber: j.defectNumber,
@@ -193,6 +206,7 @@ function whereOf(filter: ListCostsQuery, viewerId: string): SQL[] {
   }
   if (filter.from) where.push(sql`${costEntries.date} >= ${filter.from}`);
   if (filter.to) where.push(sql`${costEntries.date} <= ${filter.to}`);
+  if (filter.bookId) where.push(eq(costEntries.bookId, filter.bookId));
   if (filter.category) where.push(eq(costEntries.category, filter.category));
   if (filter.assetId) where.push(eq(costEntries.assetId, filter.assetId));
   if (filter.roomId) where.push(eq(costEntries.roomId, filter.roomId));
@@ -304,20 +318,58 @@ export interface ProviderOrigin {
   url: string | null;
 }
 
+/**
+ * The frozen shares for a split. `participantIds` narrows an `equal` split to those people (everybody without it);
+ * `shares` belong to `custom` alone.
+ */
 function resolveSplit(
   ctx: Db,
   mode: CostSplitMode,
   custom: readonly Share[] | undefined,
+  participantIds?: readonly string[],
 ): Share[] {
   if (mode === "custom") {
     if (!custom)
       throw invalidField("shares", "Shares are required for a custom split");
+    if (participantIds) {
+      throw invalidField(
+        "participantIds",
+        "Participants are only allowed for an equal split",
+      );
+    }
     return validateCustomShares(ctx, custom);
   }
   if (custom) {
     throw invalidField("shares", "Shares are only allowed for a custom split");
   }
+  if (participantIds) {
+    if (mode !== "equal") {
+      throw invalidField(
+        "participantIds",
+        "Participants are only allowed for an equal split",
+      );
+    }
+    return sharesFor("equal", validateParticipants(ctx, participantIds));
+  }
   return sharesFor(mode, listPeople(ctx));
+}
+
+/**
+ * The tax class means something in a tax relevant book only. Anywhere else a class other than `unknown` is a 400 on
+ * `deductible`, except the one the entry already has (a book that stopped being tax relevant keeps what its entries
+ * say, and sending that back is no change).
+ */
+function assertDeductible(
+  book: Pick<CostBookRow, "taxRelevant">,
+  deductible: CostDeductible,
+  current: CostDeductible = "unknown",
+) {
+  if (!book.taxRelevant && deductible !== "unknown" && deductible !== current) {
+    throw invalidField(
+      "deductible",
+      "The tax class only applies to cost books that are tax relevant",
+    );
+  }
 }
 
 function writeShares(db: DB, entryId: string, shares: readonly Share[]) {
@@ -351,7 +403,17 @@ export function createCost(
     "Service log entry",
   );
   assertUser(ctx, input.paidByUserId);
-  const shares = resolveSplit(ctx, input.splitMode, input.shares);
+  const book = input.bookId
+    ? requireOpenCostBook(ctx, input.bookId)
+    : defaultCostBook(ctx);
+  const splitMode = input.splitMode ?? book.defaultSplitMode;
+  const shares = resolveSplit(
+    ctx,
+    splitMode,
+    input.shares,
+    input.participantIds,
+  );
+  assertDeductible(book, input.deductible);
 
   let assetId = input.assetId ?? null;
   let roomId = input.roomId ?? null;
@@ -379,6 +441,7 @@ export function createCost(
       const row = tx
         .insert(costEntries)
         .values({
+          bookId: book.id,
           date: input.date ?? clockAt(ctx.now).today,
           title: input.title,
           amountMinor: minor(input.amountMinor),
@@ -391,7 +454,7 @@ export function createCost(
           payee: input.payee ?? null,
           notes: input.notes ?? null,
           paidByUserId: input.paidByUserId ?? null,
-          splitMode: input.splitMode,
+          splitMode,
           countsAsExpense:
             input.countsAsExpense ??
             COST_CATEGORY_COUNTS_AS_EXPENSE[input.category],
@@ -471,7 +534,27 @@ export function updateCost(
   }
   if (patch.paidByUserId !== undefined) assertUser(ctx, patch.paidByUserId);
 
-  const { shares: customShares, splitMode, amountMinor, ...fields } = patch;
+  const moved = patch.bookId !== undefined && patch.bookId !== current.bookId;
+  const book = moved
+    ? requireOpenCostBook(ctx, patch.bookId as string)
+    : (findCostBookRow(ctx, current.bookId) as CostBookRow);
+  if (patch.deductible !== undefined) {
+    assertDeductible(book, patch.deductible, current.deductible);
+  }
+  // What an entry says about its tax class means nothing in a book without one: moving it there starts over.
+  const resetDeductible =
+    moved &&
+    !book.taxRelevant &&
+    patch.deductible === undefined &&
+    current.deductible !== "unknown";
+
+  const {
+    shares: customShares,
+    participantIds,
+    splitMode,
+    amountMinor,
+    ...fields
+  } = patch;
   let nextShares: Share[] | undefined;
   if (customShares !== undefined) {
     if ((splitMode ?? current.splitMode) !== "custom") {
@@ -480,7 +563,15 @@ export function updateCost(
         "Shares are only allowed for a custom split",
       );
     }
-    nextShares = resolveSplit(ctx, "custom", customShares);
+    nextShares = resolveSplit(ctx, "custom", customShares, participantIds);
+  } else if (participantIds !== undefined) {
+    if ((splitMode ?? current.splitMode) !== "equal") {
+      throw invalidField(
+        "participantIds",
+        "Participants are only allowed for an equal split",
+      );
+    }
+    nextShares = resolveSplit(ctx, "equal", undefined, participantIds);
   } else if (splitMode !== undefined) {
     if (splitMode === "custom") {
       if (current.splitMode !== "custom") {
@@ -510,10 +601,16 @@ export function updateCost(
     tx.update(costEntries)
       .set({
         ...fields,
+        ...(resetDeductible ? { deductible: "unknown" as const } : {}),
         ...(amountMinor === undefined
           ? {}
           : { amountMinor: minor(amountMinor) }),
-        ...(splitMode === undefined ? {} : { splitMode }),
+        // Naming the mode even when it stays keeps the update from being empty when only the shares change.
+        ...(splitMode === undefined
+          ? nextShares
+            ? { splitMode: current.splitMode }
+            : {}
+          : { splitMode }),
         ...(defaultExpense === undefined
           ? {}
           : { countsAsExpense: defaultExpense }),

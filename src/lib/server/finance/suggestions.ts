@@ -270,6 +270,7 @@ export function dismissSuggestion(
 const ONLY: Record<FinanceSuggestionKind, readonly string[]> = {
   cost: [
     "title",
+    "bookId",
     "category",
     "notes",
     "assetId",
@@ -279,6 +280,7 @@ const ONLY: Record<FinanceSuggestionKind, readonly string[]> = {
     "paidByUserId",
     "splitMode",
     "shares",
+    "participantIds",
     "countsAsExpense",
     "deductible",
   ],
@@ -302,13 +304,17 @@ export interface Accepted {
   entity: { type: "cost" | "asset" | "task"; id: string };
 }
 
-/** The cost entry a suggestion becomes: the provider's facts, the person as payer, split by ownership unless the body says otherwise. */
+/**
+ * The cost entry a suggestion becomes: the provider's facts, the person as payer, in the default book and split as that
+ * book says (or as the body says).
+ */
 function costInput(
   row: SuggestionRow,
   body: AcceptFinanceSuggestionRequest,
 ): CreateCostRequest {
   const p = payloadOf(row) as z.output<typeof costSuggestionPayloadSchema>;
   return {
+    bookId: body.bookId,
     date: p.date,
     title: body.title ?? p.title,
     amountMinor: p.amountMinor,
@@ -322,8 +328,9 @@ function costInput(
     notes: body.notes,
     paidByUserId:
       body.paidByUserId !== undefined ? body.paidByUserId : row.userId,
-    splitMode: body.splitMode ?? "ownership",
+    splitMode: body.splitMode,
     shares: body.shares,
+    participantIds: body.participantIds,
     countsAsExpense: body.countsAsExpense,
     deductible: body.deductible ?? "unknown",
   };

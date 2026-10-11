@@ -8,6 +8,7 @@ import { putVehicleRequestSchema } from "$lib/api/schemas/vehicles";
 import { createAssetRequestSchema } from "$lib/api/schemas/assets";
 import { createAsset, deleteAsset } from "$lib/server/assets/assets";
 import { createAttachment } from "$lib/server/attachments/attachments";
+import { defaultCostBook } from "$lib/server/costs/books";
 import {
   createCostRequestSchema,
   updateCostRequestSchema,
@@ -122,6 +123,7 @@ describe("fuel log", () => {
         splitMode: "ownership",
         countsAsExpense: true,
         deductible: "unknown",
+        bookId: defaultCostBook(ctx()).id,
       });
       expect(cost.shares.map((s) => s.amountMinor).sort()).toEqual([
         3_600, 3_600,

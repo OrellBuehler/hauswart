@@ -281,6 +281,8 @@ import {
 } from "./schemas/share";
 
 import {
+  costBalancesQuerySchema,
+  costBalancesSchema,
   costEntrySchema,
   costsSummaryQuerySchema,
   costsSummarySchema,
@@ -290,6 +292,20 @@ import {
   listCostsResponseSchema,
   updateCostRequestSchema,
 } from "./schemas/costs";
+import {
+  costBookSchema,
+  createCostBookRequestSchema,
+  listCostBooksQuerySchema,
+  listCostBooksResponseSchema,
+  updateCostBookRequestSchema,
+} from "./schemas/cost-books";
+import {
+  createSettlementRequestSchema,
+  listSettlementsQuerySchema,
+  listSettlementsResponseSchema,
+  settlementSchema,
+  updateSettlementRequestSchema,
+} from "./schemas/settlements";
 import {
   acceptFinanceSuggestionRequestSchema,
   acceptFinanceSuggestionResponseSchema,
@@ -2012,7 +2028,7 @@ export const endpoints = {
     path: "/api/v1/costs",
     summary: "List cost entries",
     description:
-      "Newest first by date. Filter by year or a date range (`from`/`to`), category, asset, room, defect, who paid (`paidBy`, a user id or `me`) and a search text over title, payee and notes. Amounts are minor units of the entry's currency: positive = expense, negative = refund.",
+      "Newest first by date. Filter by book (`bookId`), year or a date range (`from`/`to`), category, asset, room, defect, who paid (`paidBy`, a user id or `me`) and a search text over title, payee and notes. Amounts are minor units of the entry's currency: positive = expense, negative = refund.",
     tags: ["costs"],
     auth: "both",
     scopes: ["read"],
@@ -2026,7 +2042,7 @@ export const endpoints = {
     path: "/api/v1/costs",
     summary: "Book a cost",
     description:
-      "`currency` defaults to the household's, `date` to today. `splitMode` `ownership` (default) divides by the people's current ownership shares, `equal` equally, `custom` by `shares` (basis points, sum 10000), `none` does not split. The shares are frozen with the entry; the parts add up to the amount exactly (largest remainder). `countsAsExpense` defaults to false for a mortgage repayment (equity), else true. Entries cannot be created for a finance provider's transaction here: accept the suggestion instead.",
+      "`bookId` defaults to the default book (the first book that is not archived; an archived book is a 400 on `bookId`), `currency` to the household's, `date` to today. `splitMode` defaults to the book's default split: `ownership` divides by the people's current ownership shares, `equal` equally among everybody or, with `participantIds`, among those household members only (each listed once), `custom` by `shares` (basis points, sum 10000), `none` does not split; `participantIds` with any other split and `shares` with any other than `custom` are a 400. The shares are frozen with the entry; the parts add up to the amount exactly (largest remainder, ties to the earlier user id). `countsAsExpense` defaults to false for a mortgage repayment (equity), else true. `deductible` other than `unknown` needs a tax relevant book (400 on `deductible` otherwise). Entries cannot be created for a finance provider's transaction here: accept the suggestion instead.",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2041,7 +2057,7 @@ export const endpoints = {
     path: "/api/v1/costs/summary",
     summary: "Costs of a year: totals and settlement",
     description:
-      "Totals per category, month and asset (top ten) and per tax class count entries in the household currency that count as an expense; mortgage repayments are reported as `equityTotalMinor`. `people` and `settlement` cover every split entry with a payer: `balanceMinor` = paid - share, and `settlement` lists who pays whom to square the balances. With assetId only the entries of that asset are counted.",
+      "Totals per category, month and asset (top ten) and per tax class count entries in the household currency that count as an expense; mortgage repayments are reported as `equityTotalMinor`; the tax classes count the entries of tax relevant books only. `people` and `settlement` cover every split entry with a payer of the year: `balanceMinor` = paid - share, and `settlement` lists who pays whom to square the balances. Recorded payments (`/settlements`) are not part of a year: the running balance with them is `GET /costs/balances`. With `assetId` or `bookId` only the entries of that asset or book are counted.",
     tags: ["costs"],
     auth: "both",
     scopes: ["read"],
@@ -2055,7 +2071,7 @@ export const endpoints = {
     path: "/api/v1/costs/export.csv",
     summary: "Cost entries of a year as CSV",
     description:
-      "UTF-8 with a byte order mark, semicolon separated and CRLF line ends (opens in Swiss Excel). Amounts are plain decimals with a point and no thousands separator (`-12.50`), so they parse the same everywhere. Text that would be read as a formula is prefixed with an apostrophe.",
+      "UTF-8 with a byte order mark, semicolon separated and CRLF line ends (opens in Swiss Excel). Amounts are plain decimals with a point and no thousands separator (`-12.50`), so they parse the same everywhere. Text that would be read as a formula is prefixed with an apostrophe. Columns are only ever added at the end (`book` is the last one). With `bookId` only that book's entries are exported.",
     tags: ["costs"],
     auth: "both",
     scopes: ["read"],
@@ -2084,7 +2100,7 @@ export const endpoints = {
     path: "/api/v1/costs/{id}",
     summary: "Change a cost entry",
     description:
-      "Setting `splitMode` to `ownership` or `equal` splits again by the people's current shares; `shares` need `custom`. Changing only the amount keeps the frozen shares. An entry booked from a finance provider keeps its source; its back-link in the provider is refreshed. An entry a fuel log entry booked (`fuelLogId` is set) keeps its amount, currency, date and device as that entry has them: asking for other values is a 409 `conflict` with `details.fuelLogId` (the first three change with `PATCH /fuel-logs/{id}`, the device is the vehicle and stays); sending the current values is fine, and category, title, notes, payee, payer, split, deductibility, room, defect and service log entry stay editable here.",
+      "Setting `splitMode` to `ownership` or `equal` splits again by the people's current shares (`equal` among everybody); `shares` need `custom`; `participantIds` need an `equal` split (the entry's, or the one set in the same request) and split again among those members. Changing only the amount keeps the frozen shares. `bookId` moves the entry to another book that is not archived (an entry may stay in an archived book); moving it to a book that is not tax relevant resets its `deductible` to `unknown` unless the request sets it, and `deductible` other than `unknown` (and other than the entry's own) is a 400 there. An entry booked from a finance provider keeps its source; its back-link in the provider is refreshed. An entry a fuel log entry booked (`fuelLogId` is set) keeps its amount, currency, date and device as that entry has them: asking for other values is a 409 `conflict` with `details.fuelLogId` (the first three change with `PATCH /fuel-logs/{id}`, the device is the vehicle and stays); sending the current values is fine, and category, title, notes, payee, payer, split, deductibility, room, defect and service log entry stay editable here.",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2110,6 +2126,167 @@ export const endpoints = {
     errors: ["not_found", "conflict"],
   }),
 
+  costsBalances: defineEndpoint({
+    id: "costsBalances",
+    method: "GET",
+    path: "/api/v1/costs/balances",
+    summary: "Where everybody stands: running balances and suggested payments",
+    description:
+      "All-time balance per household member: paid - share over the split entries with a payer, plus the payments they made (settlements) minus those they received; positive means the others owe this person. Pass `bookId` for one book (its settlements only; payments across all books cannot be attributed and stay out) or `all=true` for every book together, archived ones and payments across all books included; without parameters all books are used. A book together with `all=true`, or `all=false` without a book, is a 400; an unknown `bookId` is a 404. Only the household currency is counted (`otherCurrencyCount` says how many entries and payments were left out). `suggestedPayments` are the fewest payments that square the balances. The per-year settlement in `GET /costs/summary` is separate and does not include recorded payments.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    query: costBalancesQuerySchema,
+    response: costBalancesSchema,
+    errors: ["not_found"],
+  }),
+
+  costBooksList: defineEndpoint({
+    id: "costBooksList",
+    method: "GET",
+    path: "/api/v1/cost-books",
+    summary: "List cost books",
+    description:
+      "The ledgers entries are booked into (by default `Wohnung`, `Haushalt` and `Auto`). Active books by sort order; archived ones only with `includeArchived=true`, after the active ones. `isDefault` marks the book an entry without `bookId` goes to.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    query: listCostBooksQuerySchema,
+    response: listCostBooksResponseSchema,
+  }),
+
+  costBooksCreate: defineEndpoint({
+    id: "costBooksCreate",
+    method: "POST",
+    path: "/api/v1/cost-books",
+    summary: "Create a cost book",
+    description:
+      "`slug` is derived from the name, `defaultSplitMode` is `ownership` (or `equal`, `none`), `taxRelevant` false (only a tax relevant book takes a `deductible` class on its entries) and the book goes to the end of the list. Names are unique without regard to case (409 `conflict`).",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    body: createCostBookRequestSchema,
+    response: costBookSchema,
+    status: 201,
+    errors: ["conflict"],
+  }),
+
+  costBooksGet: defineEndpoint({
+    id: "costBooksGet",
+    method: "GET",
+    path: "/api/v1/cost-books/{id}",
+    summary: "Get a cost book",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: costBookSchema,
+    errors: ["not_found"],
+  }),
+
+  costBooksUpdate: defineEndpoint({
+    id: "costBooksUpdate",
+    method: "PATCH",
+    path: "/api/v1/cost-books/{id}",
+    summary: "Change, archive or restore a cost book",
+    description:
+      "`archived` archives (closed to new entries; its entries and payments stay and still count in the balances) or restores. The last book that is not archived cannot be archived (409 `conflict`). Switching `taxRelevant` off keeps what its entries say about their tax class; it stays out of the tax breakdown.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    body: updateCostBookRequestSchema,
+    response: costBookSchema,
+    errors: ["not_found", "conflict"],
+  }),
+
+  costBooksDelete: defineEndpoint({
+    id: "costBooksDelete",
+    method: "DELETE",
+    path: "/api/v1/cost-books/{id}",
+    summary: "Delete an empty cost book",
+    description:
+      "Only a book without entries and payments can be deleted; otherwise 409 `conflict` with `details.entryCount` and `details.settlementCount`: archive it instead. The last book that is not archived cannot be deleted either.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found", "conflict"],
+  }),
+
+  settlementsList: defineEndpoint({
+    id: "settlementsList",
+    method: "GET",
+    path: "/api/v1/settlements",
+    summary: "List recorded payments between the people",
+    description:
+      "Newest first by date. Filter by book (`bookId`; payments across all books are not listed then), year or a date range, and by a person who made or received them (`userId`, a user id or `me`).",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    query: listSettlementsQuerySchema,
+    response: listSettlementsResponseSchema,
+  }),
+
+  settlementsCreate: defineEndpoint({
+    id: "settlementsCreate",
+    method: "POST",
+    path: "/api/v1/settlements",
+    summary: "Record a payment between two people",
+    description:
+      '"Ben paid Anna 50": `fromUserId` handed `amountMinor` over to `toUserId`. It is not a cost (no expense total counts it); it moves the balances in `GET /costs/balances`. `bookId` omitted or null settles across all books; a book may be archived (paying back a closed trip is the normal order). `currency` defaults to the household\'s, `date` to today. The two people must differ and be household members (400 on the field otherwise).',
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    body: createSettlementRequestSchema,
+    response: settlementSchema,
+    status: 201,
+  }),
+
+  settlementsGet: defineEndpoint({
+    id: "settlementsGet",
+    method: "GET",
+    path: "/api/v1/settlements/{id}",
+    summary: "Get a recorded payment",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: settlementSchema,
+    errors: ["not_found"],
+  }),
+
+  settlementsUpdate: defineEndpoint({
+    id: "settlementsUpdate",
+    method: "PATCH",
+    path: "/api/v1/settlements/{id}",
+    summary: "Change a recorded payment",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    body: updateSettlementRequestSchema,
+    response: settlementSchema,
+    errors: ["not_found"],
+  }),
+
+  settlementsDelete: defineEndpoint({
+    id: "settlementsDelete",
+    method: "DELETE",
+    path: "/api/v1/settlements/{id}",
+    summary: "Delete a recorded payment",
+    description: "The balances move back: the payment counts as never made.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
   financeSuggestionsList: defineEndpoint({
     id: "financeSuggestionsList",
     method: "GET",
@@ -2130,7 +2307,7 @@ export const endpoints = {
     path: "/api/v1/finance/suggestions/{id}/accept",
     summary: "Accept a suggestion",
     description:
-      "Creates the cost entry (paid by you, split by ownership unless the body says otherwise), the asset or the bill task. The body may override category, title, split, asset link and so on; fields of another kind are a 400. Accepting twice is a 409.",
+      "Creates the cost entry (paid by you, in the default book unless the body names a `bookId`, split as that book says unless the body says otherwise), the asset or the bill task. The body may override book, category, title, split (`participantIds` narrow an equal split), asset link and so on; fields of another kind are a 400. Accepting twice is a 409.",
     tags: ["finance"],
     auth: "both",
     scopes: ["costs:write"],

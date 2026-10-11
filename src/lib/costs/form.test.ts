@@ -33,6 +33,8 @@ function draft(over: Partial<CostDraft> = {}): CostDraft {
 function entry(over: Partial<CostEntry> = {}): CostEntry {
   return {
     id: "c1",
+    bookId: "b1",
+    bookName: "Wohnung",
     date: "2026-10-01",
     title: "Dishwasher repair",
     amountMinor: 18950,

@@ -480,6 +480,15 @@ export const COST_CATEGORIES = [
   "maintenance",
   "fuel",
   "taxes_fees",
+  "groceries",
+  "household",
+  "dining",
+  "leisure",
+  "travel",
+  "health",
+  "gifts",
+  "transport",
+  "subscriptions",
   "other",
 ] as const;
 export type CostCategory = (typeof COST_CATEGORIES)[number];
@@ -497,6 +506,15 @@ export const COST_CATEGORY_COUNTS_AS_EXPENSE: Record<CostCategory, boolean> = {
   maintenance: true,
   fuel: true,
   taxes_fees: true,
+  groceries: true,
+  household: true,
+  dining: true,
+  leisure: true,
+  travel: true,
+  health: true,
+  gifts: true,
+  transport: true,
+  subscriptions: true,
   other: true,
 };
 
@@ -508,6 +526,13 @@ export const COST_SPLIT_MODES = [
   "none",
 ] as const;
 export type CostSplitMode = (typeof COST_SPLIT_MODES)[number];
+
+/**
+ * How a book splits an entry that names no split. `custom` is left out: it needs explicit shares, which a default
+ * cannot carry.
+ */
+export const COST_BOOK_SPLIT_MODES = ["ownership", "equal", "none"] as const;
+export type CostBookSplitMode = (typeof COST_BOOK_SPLIT_MODES)[number];
 
 /** Swiss tax distinction: value-preserving (maintenance) costs are deductible, value-increasing (investment) ones are not. */
 export const COST_DEDUCTIBLE = [

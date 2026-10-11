@@ -1,12 +1,19 @@
 import { and, eq, sql } from "drizzle-orm";
 import { COST_DEDUCTIBLE, type CostCategory } from "$lib/api/enums";
 import type { CostsSummary } from "$lib/api/schemas/costs";
-import { assets, costEntries, costEntryShares, users } from "$lib/server/db";
+import {
+  assets,
+  costBooks,
+  costEntries,
+  costEntryShares,
+  users,
+} from "$lib/server/db";
 import { getHousehold } from "$lib/server/household/household";
 import type { ServiceContext } from "$lib/server/service";
 import { clockAt } from "$lib/server/tasks/evaluator";
 import { yearRange } from "./costs";
-import { amountsFor, type Share } from "./split";
+import { bookEntry, newLedger, personBalances } from "./ledger";
+import type { Share } from "./split";
 
 type Db = Pick<ServiceContext, "db">;
 
@@ -73,13 +80,16 @@ const bump = (map: Map<string, Tally>, key: string, amount: number) => {
  * The year in numbers. Totals, categories, months, assets and tax classes
  * count entries in the household currency that count as an expense;
  * settlement covers every split entry with a payer (it is about who paid,
- * not about what is an expense). With an `assetId` only the entries of that
- * asset are counted, all of it.
+ * not about what is an expense). With an `assetId` or a `bookId` only the
+ * entries of that asset or book are counted, all of it. The tax classes count
+ * the entries of books that are tax relevant only, since the class means
+ * nothing elsewhere. Recorded payments (settlements) are not part of a year:
+ * the running balance with them is `costBalances`.
  */
 export function costsSummary(
   ctx: Db,
   year: number,
-  filter: { assetId?: string } = {},
+  filter: { assetId?: string; bookId?: string } = {},
 ): CostsSummary {
   const { currency } = getHousehold(ctx);
   const { from, to } = yearRange(year);
@@ -87,6 +97,7 @@ export function costsSummary(
     sql`${costEntries.date} >= ${from}`,
     sql`${costEntries.date} <= ${to}`,
     filter.assetId ? eq(costEntries.assetId, filter.assetId) : undefined,
+    filter.bookId ? eq(costEntries.bookId, filter.bookId) : undefined,
   );
   const entries = ctx.db
     .select({
@@ -101,8 +112,10 @@ export function costsSummary(
       deductible: costEntries.deductible,
       splitMode: costEntries.splitMode,
       paidByUserId: costEntries.paidByUserId,
+      taxRelevant: costBooks.taxRelevant,
     })
     .from(costEntries)
+    .innerJoin(costBooks, eq(costBooks.id, costEntries.bookId))
     .leftJoin(assets, eq(assets.id, costEntries.assetId))
     .where(inYear)
     .all();
@@ -133,8 +146,7 @@ export function costsSummary(
     })
     .from(users)
     .all();
-  const paid = new Map<string, number>();
-  const share = new Map<string, number>();
+  const ledger = newLedger();
 
   const categories = new Map<string, Tally>();
   const months = new Map<string, Tally>();
@@ -144,7 +156,6 @@ export function costsSummary(
   let expense = 0;
   let equity = 0;
   let otherCurrency = 0;
-  let unassigned = 0;
 
   for (const e of entries) {
     if (e.currency !== currency) {
@@ -155,7 +166,7 @@ export function costsSummary(
       expense += e.amountMinor;
       bump(categories, e.category, e.amountMinor);
       bump(months, e.date.slice(0, 7), e.amountMinor);
-      bump(deductibles, e.deductible, e.amountMinor);
+      if (e.taxRelevant) bump(deductibles, e.deductible, e.amountMinor);
       if (e.assetId) {
         bump(assetTallies, e.assetId, e.amountMinor);
         assetNames.set(e.assetId, e.assetName ?? "");
@@ -163,35 +174,19 @@ export function costsSummary(
     } else {
       equity += e.amountMinor;
     }
-    const shares = sharesByEntry.get(e.id) ?? [];
-    if (e.splitMode === "none" || shares.length === 0) continue;
-    if (e.paidByUserId === null) {
-      unassigned++;
-      continue;
-    }
-    paid.set(e.paidByUserId, (paid.get(e.paidByUserId) ?? 0) + e.amountMinor);
-    for (const part of amountsFor(e.amountMinor, shares)) {
-      share.set(part.userId, (share.get(part.userId) ?? 0) + part.amountMinor);
-    }
+    bookEntry(ledger, e, sharesByEntry.get(e.id) ?? []);
   }
 
-  const peopleRows = people
-    .map((p) => {
-      const paidMinor = paid.get(p.id) ?? 0;
-      const shareMinor = share.get(p.id) ?? 0;
-      return {
-        userId: p.id,
-        userName: p.name,
-        paidMinor,
-        shareMinor,
-        balanceMinor: paidMinor - shareMinor,
-      };
-    })
-    .sort(
-      (a, b) =>
-        (a.userName ?? "").localeCompare(b.userName ?? "", "de") ||
-        a.userId.localeCompare(b.userId),
-    );
+  const peopleRows = personBalances(
+    ledger,
+    people.map((p) => ({ id: p.id, name: p.name })),
+  ).map(({ userId, userName, paidMinor, shareMinor, balanceMinor }) => ({
+    userId,
+    userName,
+    paidMinor,
+    shareMinor,
+    balanceMinor,
+  }));
   const nameOf = new Map(peopleRows.map((p) => [p.userId, p.userName]));
 
   return {
@@ -235,7 +230,7 @@ export function costsSummary(
       toName: nameOf.get(t.toUserId) ?? null,
       amountMinor: t.amountMinor,
     })),
-    unassignedPayerCount: unassigned,
+    unassignedPayerCount: ledger.unassigned,
   };
 }
 

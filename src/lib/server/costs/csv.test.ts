@@ -127,7 +127,7 @@ describe("costsCsv", () => {
     expect(third).toContain(";5000.00;CHF;mortgage_principal;");
     expect(third).toContain(";false;unknown;");
     for (const record of [first, second, third]) {
-      expect(record).toMatch(/;manual;[0-9a-f-]{36}\r\n$/);
+      expect(record).toMatch(/;manual;[0-9a-f-]{36};Wohnung\r\n$/);
     }
   });
 });

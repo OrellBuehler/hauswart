@@ -12,6 +12,7 @@ import {
 } from "$lib/server/db";
 import type { Minor } from "$lib/money";
 import { getConnectionRow } from "$lib/server/connections/connections";
+import { defaultCostBook } from "$lib/server/costs/books";
 import { deleteCost, getCost, updateCost } from "$lib/server/costs/costs";
 import {
   acceptSuggestion,
@@ -299,6 +300,7 @@ describe("Kept sync", () => {
         source: "finance_transaction",
         providerRef: "tx:t2",
         createdBy: user.id,
+        bookId: defaultCostBook(ctx()).id,
       });
       const accepted = test.db
         .select()
@@ -340,6 +342,7 @@ describe("Kept sync", () => {
       test.db
         .insert(costEntries)
         .values({
+          bookId: defaultCostBook(ctx()).id,
           date: "2026-05-01",
           title: "schon da",
           amountMinor: 1 as Minor,

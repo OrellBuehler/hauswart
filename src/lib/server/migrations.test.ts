@@ -84,6 +84,10 @@ describe("migrations", () => {
       insert into assets (id, kind, name, slug, qr_slug) values ('a1', 'device', 'Backofen', 'backofen', 'aaaaaaaaaa');
       insert into service_log (id, asset_id, date, kind, title) values ('s1', 'a1', '2026-01-02', 'maintenance', 'Entkalkt');
       insert into comments (id, entity_type, entity_id, body_md) values ('c1', 'asset', 'a1', 'Notiz');
+      insert into users (id, username, password_hash) values ('u1', 'anna', 'x'), ('u2', 'ben', 'x');
+      insert into cost_entries (id, date, title, amount_minor, currency, category, paid_by_user_id, split_mode, created_by)
+        values ('k1', '2026-01-05', 'Dachrinne', 10001, 'CHF', 'maintenance', 'u1', 'ownership', 'u1');
+      insert into cost_entry_shares (entry_id, user_id, share_bps) values ('k1', 'u1', 7000), ('k1', 'u2', 3000);
     `);
 
     migrateDatabase(db);
@@ -115,6 +119,30 @@ describe("migrations", () => {
     ]);
     expect(rows(db, "select name from assets")).toEqual([{ name: "Backofen" }]);
     expect(rows(db, "pragma foreign_key_check")).toEqual([]);
+
+    // The cost entry of the old database is in the book "Wohnung", with its shares as they were.
+    expect(
+      rows(
+        db,
+        "select e.title, e.amount_minor, b.name, b.tax_relevant from cost_entries e join cost_books b on b.id = e.book_id",
+      ),
+    ).toEqual([
+      {
+        title: "Dachrinne",
+        amount_minor: 10001,
+        name: "Wohnung",
+        tax_relevant: 1,
+      },
+    ]);
+    expect(
+      rows(
+        db,
+        "select user_id, share_bps from cost_entry_shares order by user_id",
+      ),
+    ).toEqual([
+      { user_id: "u1", share_bps: 7000 },
+      { user_id: "u2", share_bps: 3000 },
+    ]);
 
     // The search triggers of the old and the new migrations work side by side.
     const find = (q: string) =>
@@ -220,6 +248,239 @@ describe("migrations", () => {
     expect(rows(db, "select id from calendar_targets")).toEqual([]);
     expect(rows(db, "select id from calendar_links")).toEqual([]);
     expect(rows(db, "pragma foreign_key_check")).toEqual([]);
+  });
+
+  it("put every cost entry into the book Wohnung and keep what hangs off the entries", () => {
+    const db = databaseAt("0025_calendar_target_remote_name");
+    db.$client.exec(`
+      insert into users (id, username, password_hash) values ('u1', 'anna', 'x'), ('u2', 'ben', 'x'), ('u3', 'carl', 'x');
+      insert into assets (id, kind, name, slug, qr_slug) values ('v1', 'vehicle', 'Auto', 'auto', 'cccccccccc');
+      insert into cost_entries (id, date, title, amount_minor, currency, category, paid_by_user_id, split_mode, counts_as_expense, deductible, source, payee, notes, created_by, created_at, updated_at, asset_id)
+        values ('k1', '2026-01-05', 'Dachrinne', 10001, 'CHF', 'maintenance', 'u1', 'ownership', 1, 'maintenance', 'manual', 'Beispiel AG', 'Notiz', 'u1', 1767600000000, 1767600001000, null),
+               ('k2', '2026-02-01', 'Tanken', 7050, 'CHF', 'fuel', 'u2', 'equal', 1, 'unknown', 'manual', null, null, 'u2', 1769900000000, 1769900001000, 'v1'),
+               ('k3', '2026-03-01', 'Hypothek', 200000, 'EUR', 'mortgage_principal', null, 'none', 0, 'unknown', 'finance_transaction', null, null, null, 1772300000000, 1772300001000, null);
+      update cost_entries set provider_ref = 'tx-1', provider_url = 'https://finance.example.org/t/1', provider_link_id = 'l-1', link_synced_at = 1772300002000 where id = 'k3';
+      insert into cost_entry_shares (entry_id, user_id, share_bps) values ('k1', 'u1', 7000), ('k1', 'u2', 3000), ('k2', 'u2', 3334), ('k2', 'u1', 3333), ('k2', 'u3', 3333);
+      insert into fuel_logs (id, asset_id, date, odometer, quantity, amount_minor, currency, cost_entry_id)
+        values ('f1', 'v1', '2026-02-01', 1000, 40, 7050, 'CHF', 'k2'), ('f2', 'v1', '2026-02-02', 1500, 5, 0, 'CHF', null);
+      insert into comments (id, entity_type, entity_id, body_md) values ('m1', 'cost', 'k1', 'Rechnung da'), ('m2', 'cost', 'k2', 'Quittung');
+      insert into document_links (id, provider, external_id, owner_type, owner_id, role) values ('d1', 'paperless', 7, 'cost', 'k1', 'receipt'), ('d2', 'paperless', 8, 'cost', 'k2', 'receipt');
+    `);
+    const before = rows(db, "select * from cost_entries order by id");
+
+    migrateDatabase(db);
+
+    // The default books, editable like any other.
+    expect(
+      rows(
+        db,
+        "select name, slug, icon, default_split_mode, tax_relevant, archived_at, sort_order from cost_books order by sort_order",
+      ),
+    ).toEqual([
+      {
+        name: "Wohnung",
+        slug: "wohnung",
+        icon: "house",
+        default_split_mode: "ownership",
+        tax_relevant: 1,
+        archived_at: null,
+        sort_order: 0,
+      },
+      {
+        name: "Haushalt",
+        slug: "haushalt",
+        icon: "shopping-basket",
+        default_split_mode: "equal",
+        tax_relevant: 0,
+        archived_at: null,
+        sort_order: 1,
+      },
+      {
+        name: "Auto",
+        slug: "auto",
+        icon: "car",
+        default_split_mode: "equal",
+        tax_relevant: 0,
+        archived_at: null,
+        sort_order: 2,
+      },
+    ]);
+    const ids = rows(db, "select id from cost_books").map(
+      (r) => r.id as string,
+    );
+    for (const id of ids) {
+      expect(id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      );
+    }
+    expect(new Set(ids).size).toBe(3);
+
+    // Every entry is in Wohnung and nothing else about it changed.
+    const wohnung = rows(
+      db,
+      "select id from cost_books where slug = 'wohnung'",
+    )[0].id;
+    const after = rows(db, "select * from cost_entries order by id");
+    expect(after.map((r) => r.book_id)).toEqual([wohnung, wohnung, wohnung]);
+    expect(after.map(({ book_id: _book, ...rest }) => rest)).toEqual(before);
+
+    // The frozen shares, the fuel log links, the comments and the document links are all still there.
+    expect(
+      rows(
+        db,
+        "select entry_id, user_id, share_bps from cost_entry_shares order by entry_id, user_id",
+      ),
+    ).toEqual([
+      { entry_id: "k1", user_id: "u1", share_bps: 7000 },
+      { entry_id: "k1", user_id: "u2", share_bps: 3000 },
+      { entry_id: "k2", user_id: "u1", share_bps: 3333 },
+      { entry_id: "k2", user_id: "u2", share_bps: 3334 },
+      { entry_id: "k2", user_id: "u3", share_bps: 3333 },
+    ]);
+    expect(
+      rows(db, "select id, cost_entry_id from fuel_logs order by id"),
+    ).toEqual([
+      { id: "f1", cost_entry_id: "k2" },
+      { id: "f2", cost_entry_id: null },
+    ]);
+    expect(rows(db, "select id from comments order by id")).toHaveLength(2);
+    expect(rows(db, "select id from document_links order by id")).toHaveLength(
+      2,
+    );
+    expect(rows(db, "pragma foreign_key_check")).toEqual([]);
+    expect(
+      rows(
+        db,
+        "select name from sqlite_master where name in ('__stash_cost_entry_shares', '__stash_fuel_log_costs', '__new_cost_entries')",
+      ).map((r) => r.name),
+    ).toEqual([]);
+
+    // The table is as a fresh one: its indexes and delete triggers work, the foreign keys act as before.
+    expect(
+      rows(
+        db,
+        "select name from sqlite_master where type = 'index' and tbl_name = 'cost_entries' and name like 'cost_entries_%' order by name",
+      ).map((r) => r.name),
+    ).toEqual([
+      "cost_entries_asset_id_idx",
+      "cost_entries_book_id_idx",
+      "cost_entries_category_idx",
+      "cost_entries_date_idx",
+      "cost_entries_defect_id_idx",
+      "cost_entries_paid_by_idx",
+      "cost_entries_provider_idx",
+      "cost_entries_room_id_idx",
+      "cost_entries_service_log_id_idx",
+    ]);
+    expect(() =>
+      db.$client.exec(
+        "insert into cost_entries (id, book_id, date, title, amount_minor, currency, category, provider_connection_id, provider_ref) values ('k9', '" +
+          wohnung +
+          "', '2026-03-02', 'x', 1, 'CHF', 'other', null, null)",
+      ),
+    ).not.toThrow();
+    db.$client.exec("delete from cost_entries where id = 'k9'");
+    db.$client.exec("delete from cost_entries where id = 'k2'");
+    expect(rows(db, "select id from comments")).toEqual([{ id: "m1" }]);
+    expect(rows(db, "select id from document_links")).toEqual([{ id: "d1" }]);
+    expect(
+      rows(db, "select entry_id from cost_entry_shares where entry_id = 'k2'"),
+    ).toEqual([]);
+    expect(
+      rows(db, "select cost_entry_id from fuel_logs where id = 'f1'"),
+    ).toEqual([{ cost_entry_id: null }]);
+
+    // An entry needs a book, and a book with entries cannot be deleted.
+    expect(() =>
+      db.$client.exec(
+        "insert into cost_entries (id, book_id, date, title, amount_minor, currency, category) values ('k8', 'missing', '2026-03-02', 'x', 1, 'CHF', 'other')",
+      ),
+    ).toThrow(/FOREIGN KEY/);
+    expect(() =>
+      db.$client.exec(
+        "insert into cost_entries (id, date, title, amount_minor, currency, category) values ('k8', '2026-03-02', 'x', 1, 'CHF', 'other')",
+      ),
+    ).toThrow(/NOT NULL/);
+    expect(() =>
+      db.$client.exec("delete from cost_books where slug = 'wohnung'"),
+    ).toThrow(/FOREIGN KEY/);
+    expect(() =>
+      db.$client.exec("delete from cost_books where slug = 'auto'"),
+    ).not.toThrow();
+  });
+
+  it("add the settlements: positive amounts between two people, a book or none, tied to the people and books", () => {
+    const db = databaseAt("0025_calendar_target_remote_name");
+    migrateDatabase(db);
+    db.$client.exec(
+      "insert into users (id, username, password_hash) values ('u1', 'anna', 'x'), ('u2', 'ben', 'x')",
+    );
+    const book = rows(
+      db,
+      "select id from cost_books where slug = 'haushalt'",
+    )[0].id;
+    const insert = (
+      id: string,
+      bookId: string | null,
+      from: string,
+      to: string,
+      amount: number,
+    ) =>
+      db.$client
+        .query(
+          "insert into settlements (id, book_id, from_user_id, to_user_id, amount_minor, currency, date) values (?, ?, ?, ?, ?, 'CHF', '2026-04-01')",
+        )
+        .run(id, bookId as never, from, to, amount);
+    insert("s1", null, "u2", "u1", 5000);
+    insert("s2", book as string, "u2", "u1", 1);
+    expect(() => insert("s3", null, "u2", "u1", 0)).toThrow(/CHECK/);
+    expect(() => insert("s3", null, "u2", "u1", -5)).toThrow(/CHECK/);
+    expect(() => insert("s3", null, "u1", "u1", 5)).toThrow(/CHECK/);
+    expect(() => insert("s3", "missing", "u2", "u1", 5)).toThrow(/FOREIGN KEY/);
+    expect(() => insert("s3", null, "u2", "missing", 5)).toThrow(/FOREIGN KEY/);
+    expect(() =>
+      db.$client.exec("delete from cost_books where slug = 'haushalt'"),
+    ).toThrow(/FOREIGN KEY/);
+    expect(() => db.$client.exec("delete from users where id = 'u2'")).toThrow(
+      /FOREIGN KEY/,
+    );
+    db.$client.exec("delete from settlements where id = 's2'");
+    db.$client.exec("delete from cost_books where slug = 'haushalt'");
+    expect(rows(db, "select id, book_id from settlements")).toEqual([
+      { id: "s1", book_id: null },
+    ]);
+    expect(rows(db, "pragma foreign_key_check")).toEqual([]);
+  });
+
+  it("keep book names and slugs unique, whatever the case", () => {
+    const db = databaseAt("0025_calendar_target_remote_name");
+    migrateDatabase(db);
+    expect(() =>
+      db.$client.exec(
+        "insert into cost_books (id, name, slug) values ('b1', 'WOHNUNG', 'other')",
+      ),
+    ).toThrow(/UNIQUE/);
+    expect(() =>
+      db.$client.exec(
+        "insert into cost_books (id, name, slug) values ('b1', 'Ferien', 'wohnung')",
+      ),
+    ).toThrow(/UNIQUE/);
+    db.$client.exec(
+      "insert into cost_books (id, name, slug) values ('b1', 'Ferien', 'ferien')",
+    );
+    expect(
+      rows(
+        db,
+        "select default_split_mode, tax_relevant, sort_order, archived_at from cost_books where id = 'b1'",
+      ),
+    ).toEqual([
+      {
+        default_split_mode: "ownership",
+        tax_relevant: 0,
+        sort_order: 0,
+        archived_at: null,
+      },
+    ]);
   });
 
   it("run again on a database that is up to date without changing it", () => {

@@ -7,6 +7,7 @@ import {
   assets,
 } from "$lib/server/db";
 import { saveConnection } from "$lib/server/connections/connections";
+import { listCostBooks, updateCostBook } from "$lib/server/costs/books";
 import { getCost } from "$lib/server/costs/costs";
 import { createTestUser } from "$lib/testing/auth";
 import { ctxAt } from "$lib/testing/domain";
@@ -315,6 +316,80 @@ describe("finance suggestions", () => {
       });
     });
 
+    it("books into the default book, split as it says, unless the body names a book", async () => {
+      const a = await owner();
+      const ben = await createTestUser({ displayName: "Ben" });
+      const books = listCostBooks(ctx(), {}, { limit: 50 }).items;
+      const wohnung = books.find((b) => b.name === "Wohnung")!;
+      const haushalt = books.find((b) => b.name === "Haushalt")!;
+
+      const plain = await acceptSuggestion(
+        ctx(),
+        a.user.id,
+        record(a, { providerRef: "tx:10" }).row.id,
+        {},
+      );
+      expect(getCost(ctx(), plain.entity.id)).toMatchObject({
+        bookId: wohnung.id,
+        splitMode: "ownership",
+      });
+
+      const named = await acceptSuggestion(
+        ctx(),
+        a.user.id,
+        record(a, { providerRef: "tx:11" }).row.id,
+        { bookId: haushalt.id },
+      );
+      expect(getCost(ctx(), named.entity.id)).toMatchObject({
+        bookId: haushalt.id,
+        bookName: "Haushalt",
+        splitMode: "equal",
+      });
+
+      const subset = await acceptSuggestion(
+        ctx(),
+        a.user.id,
+        record(a, { providerRef: "tx:12" }).row.id,
+        {
+          bookId: haushalt.id,
+          splitMode: "equal",
+          participantIds: [ben.id],
+        },
+      );
+      expect(
+        getCost(ctx(), subset.entity.id).shares.map((s) => s.userId),
+      ).toEqual([ben.id]);
+
+      updateCostBook(ctx(), wohnung.id, { archived: true });
+      const next = await acceptSuggestion(
+        ctx(),
+        a.user.id,
+        record(a, { providerRef: "tx:13" }).row.id,
+        {},
+      );
+      expect(getCost(ctx(), next.entity.id).bookId).toBe(haushalt.id);
+    });
+
+    it("refuses a book that is missing or archived, or a tax class the book does not have, and books nothing", async () => {
+      const a = await owner();
+      const books = listCostBooks(ctx(), {}, { limit: 50 }).items;
+      const haushalt = books.find((b) => b.name === "Haushalt")!;
+      const auto = books.find((b) => b.name === "Auto")!;
+      updateCostBook(ctx(), auto.id, { archived: true });
+      const { row } = record(a);
+      for (const body of [
+        { bookId: "missing" },
+        { bookId: auto.id },
+        { bookId: haushalt.id, deductible: "maintenance" as const },
+      ]) {
+        await expect(
+          acceptSuggestion(ctx(), a.user.id, row.id, body),
+        ).rejects.toMatchObject({ code: "invalid_request" });
+      }
+      expect(getOwnSuggestion(ctx(), a.user.id, row.id).status).toBe("pending");
+      expect(test.db.select().from(costEntries).all()).toHaveLength(0);
+    });
+
     it("books a bill-sourced cost with the bill as its origin", async () => {
       const a = await owner();
       const { row } = record(a, {
@@ -461,6 +536,14 @@ describe("finance suggestions", () => {
       await expect(
         acceptSuggestion(ctx(), a.user.id, row.id, { category: "repair" }),
       ).rejects.toThrow();
+      for (const body of [
+        { bookId: listCostBooks(ctx(), {}, { limit: 1 }).items[0].id },
+        { participantIds: ["x"] },
+      ]) {
+        await expect(
+          acceptSuggestion(ctx(), a.user.id, row.id, body),
+        ).rejects.toMatchObject({ code: "invalid_request" });
+      }
     });
   });
 

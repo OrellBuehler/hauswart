@@ -87,3 +87,34 @@ export function validateCustomShares(
   }
   return [...shares].sort((a, b) => a.userId.localeCompare(b.userId));
 }
+
+/**
+ * The people an equal split is narrowed to: household members, each once. (Every user is a member; there is no way to
+ * deactivate one, so "exists" is all there is to check.) The order is the user id order `sharesFor` takes anyway.
+ */
+export function validateParticipants(
+  ctx: Pick<ServiceContext, "db">,
+  participantIds: readonly string[],
+): Person[] {
+  const everybody = new Map(listPeople(ctx).map((p) => [p.id, p]));
+  const seen = new Set<string>();
+  const out: Person[] = [];
+  for (const id of participantIds) {
+    const person = everybody.get(id);
+    if (!person) {
+      throw invalidField(
+        "participantIds",
+        "A participant is not a member of the household",
+      );
+    }
+    if (seen.has(id)) {
+      throw invalidField(
+        "participantIds",
+        "A participant appears twice in the list",
+      );
+    }
+    seen.add(id);
+    out.push(person);
+  }
+  return out;
+}

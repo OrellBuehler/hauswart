@@ -13,6 +13,7 @@ import {
   nullableText,
   paginated,
   paginationQuerySchema,
+  queryBooleanSchema,
 } from "./common";
 import { currencySchema } from "./household";
 
@@ -42,6 +43,8 @@ export const costSharesInputSchema = z
   .array(costShareInputSchema)
   .min(1)
   .max(20);
+/** The people an equal split is narrowed to; each is a household member and listed once. */
+export const costParticipantsInputSchema = z.array(idSchema).min(1).max(20);
 
 export const costShareSchema = z
   .object({
@@ -56,6 +59,9 @@ export const costShareSchema = z
 export const costEntrySchema = z
   .object({
     id: z.string(),
+    /** The book (ledger) the entry belongs to; `GET /cost-books`. */
+    bookId: z.string(),
+    bookName: z.string(),
     date: dateSchema,
     title: z.string(),
     /** Positive = expense, negative = refund. Minor units of `currency`. */
@@ -76,10 +82,14 @@ export const costEntrySchema = z
     paidByUserId: z.string().nullable(),
     paidByName: z.string().nullable(),
     splitMode: costSplitModeSchema,
-    /** Who bears which part; empty for `none`. Frozen when the split was set. */
+    /**
+     * Who bears which part; empty for `none`. Frozen when the split was set. For an `equal` split these are exactly
+     * the participants.
+     */
     shares: z.array(costShareSchema),
     /** False for what builds equity (mortgage repayment); such entries stay out of the expense totals. */
     countsAsExpense: z.boolean(),
+    /** The tax class; `unknown` and without meaning unless the book is tax relevant. */
     deductible: costDeductibleSchema,
     source: costSourceSchema,
     /** The entry in the person's finance app; shown only to the person who booked it from there. */
@@ -101,6 +111,8 @@ export type CostEntry = z.infer<typeof costEntrySchema>;
 const year = z.coerce.number().int().min(1990).max(2200);
 
 export const listCostsQuerySchema = paginationQuerySchema.extend({
+  /** Only the entries of this book. */
+  bookId: idSchema.optional(),
   year: year.optional(),
   from: dateSchema.optional(),
   to: dateSchema.optional(),
@@ -116,6 +128,7 @@ export type ListCostsQuery = z.output<typeof listCostsQuerySchema>;
 export const listCostsResponseSchema = paginated(costEntrySchema);
 
 const costFields = {
+  bookId: idSchema,
   date: dateSchema,
   title: z.string().trim().min(1).max(COST_TITLE_MAX),
   amountMinor: costAmountSchema,
@@ -130,16 +143,19 @@ const costFields = {
   paidByUserId: idSchema.nullable(),
   splitMode: costSplitModeSchema,
   shares: costSharesInputSchema,
+  participantIds: costParticipantsInputSchema,
   countsAsExpense: z.boolean(),
   deductible: costDeductibleSchema,
 };
 
 /**
- * `date` defaults to today, `currency` to the household's, `splitMode` to
- * `ownership`, `countsAsExpense` to true (false for a mortgage repayment).
- * `shares` are required for `custom` and refused otherwise.
+ * `bookId` defaults to the default book (the first that is not archived), `date` to today, `currency` to the
+ * household's, `splitMode` to the book's default split, `countsAsExpense` to true (false for a mortgage repayment).
+ * `shares` are required for `custom` and refused otherwise; `participantIds` narrow an `equal` split to those people
+ * (everybody without it) and are refused for any other split. `deductible` other than `unknown` needs a tax relevant book.
  */
 export const createCostRequestSchema = z.strictObject({
+  bookId: costFields.bookId.optional(),
   date: costFields.date.optional(),
   title: costFields.title,
   amountMinor: costFields.amountMinor,
@@ -152,8 +168,9 @@ export const createCostRequestSchema = z.strictObject({
   payee: costFields.payee.optional(),
   notes: costFields.notes.optional(),
   paidByUserId: costFields.paidByUserId.optional(),
-  splitMode: costFields.splitMode.default("ownership"),
+  splitMode: costFields.splitMode.optional(),
   shares: costFields.shares.optional(),
+  participantIds: costFields.participantIds.optional(),
   countsAsExpense: costFields.countsAsExpense.optional(),
   deductible: costFields.deductible.default("unknown"),
 });
@@ -161,11 +178,13 @@ export type CreateCostRequest = z.output<typeof createCostRequestSchema>;
 
 /**
  * Setting `splitMode` to `ownership` or `equal` splits again by the people's
- * current shares; sending `shares` needs `custom`. Changing only the amount
- * keeps the frozen shares.
+ * current shares; sending `shares` needs `custom`, `participantIds` an `equal` split (the entry's, or the one set in
+ * the same request) and split again among those people. Changing only the amount keeps the frozen shares.
+ * `bookId` moves the entry to another book that is not archived.
  */
 export const updateCostRequestSchema = atLeastOne(
   z.strictObject({
+    bookId: costFields.bookId.optional(),
     date: costFields.date.optional(),
     title: costFields.title.optional(),
     amountMinor: costFields.amountMinor.optional(),
@@ -180,6 +199,7 @@ export const updateCostRequestSchema = atLeastOne(
     paidByUserId: costFields.paidByUserId.optional(),
     splitMode: costFields.splitMode.optional(),
     shares: costFields.shares.optional(),
+    participantIds: costFields.participantIds.optional(),
     countsAsExpense: costFields.countsAsExpense.optional(),
     deductible: costFields.deductible.optional(),
   }),
@@ -190,6 +210,8 @@ export const costsSummaryQuerySchema = z.object({
   year: year.optional(),
   /** Only the cost entries of this asset: totals, months, categories and settlement are then those of the asset. */
   assetId: idSchema.optional(),
+  /** Only the cost entries of this book: everything in the summary, the settlement included, is then that book's alone. */
+  bookId: idSchema.optional(),
 });
 export type CostsSummaryQuery = z.output<typeof costsSummaryQuerySchema>;
 
@@ -229,7 +251,7 @@ export const costsSummarySchema = z
         count: z.number().int(),
       }),
     ),
-    /** Expenses per tax class (`unknown` until someone decides). */
+    /** Expenses per tax class (`unknown` until someone decides); entries of books that are not tax relevant are left out. */
     byDeductible: z.array(
       z.object({
         deductible: costDeductibleSchema,
@@ -280,8 +302,61 @@ export const dashboardCostsSchema = z
   })
   .meta({ id: "DashboardCosts" });
 
-export const exportCostsQuerySchema = z.object({ year: year.optional() });
+export const exportCostsQuerySchema = z.object({
+  year: year.optional(),
+  /** Only the entries of this book. */
+  bookId: idSchema.optional(),
+});
 export type ExportCostsQuery = z.output<typeof exportCostsQuerySchema>;
+
+/**
+ * One book (`bookId`) or all of them together (`all=true`, also what no parameter at all means). Naming a book and
+ * `all=true` together, or `all=false` without a book, contradict each other and are a 400.
+ */
+export const costBalancesQuerySchema = z.object({
+  bookId: idSchema.optional(),
+  all: queryBooleanSchema.optional(),
+});
+export type CostBalancesQuery = z.output<typeof costBalancesQuerySchema>;
+
+export const costBalancesSchema = z
+  .object({
+    /** The book the numbers are for; null = all books together. */
+    book: z.object({ id: z.string(), name: z.string() }).nullable(),
+    /** The household currency: only entries and payments in this currency are counted. */
+    currency: z.string(),
+    /** Entries and payments in another currency, left out of every number. */
+    otherCurrencyCount: z.number().int(),
+    /** Split entries without a payer: they cannot be settled until someone is named. */
+    unassignedPayerCount: z.number().int(),
+    /**
+     * Everybody, all time: `balanceMinor` = `paidMinor` - `shareMinor` + `sentMinor` - `receivedMinor`; positive means
+     * the others owe this person. `sentMinor` and `receivedMinor` are recorded payments (settlements).
+     */
+    people: z.array(
+      z.object({
+        userId: z.string(),
+        userName: z.string().nullable(),
+        paidMinor: z.number().int(),
+        shareMinor: z.number().int(),
+        sentMinor: z.number().int(),
+        receivedMinor: z.number().int(),
+        balanceMinor: z.number().int(),
+      }),
+    ),
+    /** The fewest payments that would square the balances ("A owes B CHF x"); empty when everybody is square. */
+    suggestedPayments: z.array(
+      z.object({
+        fromUserId: z.string(),
+        fromName: z.string().nullable(),
+        toUserId: z.string(),
+        toName: z.string().nullable(),
+        amountMinor: z.number().int(),
+      }),
+    ),
+  })
+  .meta({ id: "CostBalances" });
+export type CostBalances = z.infer<typeof costBalancesSchema>;
 
 /** Cost entries booked against a defect or service log entry. */
 export const costsOfSchema = z

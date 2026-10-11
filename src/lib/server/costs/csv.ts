@@ -1,7 +1,14 @@
-import { asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { currencyExponent, minor, toDecimalString } from "$lib/money";
-import { assets, costEntries, defects, rooms, users } from "$lib/server/db";
+import {
+  assets,
+  costBooks,
+  costEntries,
+  defects,
+  rooms,
+  users,
+} from "$lib/server/db";
 import type { ServiceContext } from "$lib/server/service";
 import { yearRange } from "./costs";
 
@@ -26,6 +33,8 @@ export const CSV_COLUMNS = [
   "notes",
   "source",
   "id",
+  // Columns are only ever added at the end, so a spreadsheet or script built on the earlier ones keeps working.
+  "book",
 ] as const;
 
 /**
@@ -48,15 +57,20 @@ export function csvAmount(amountMinor: number, currency: string): string {
 
 const payer = alias(users, "payer");
 
-/** The entries of a year, oldest first, as a CSV text with byte order mark, semicolons and CRLF. */
+/**
+ * The entries of a year (of one book with `bookId`), oldest first, as a CSV text with byte order mark, semicolons and
+ * CRLF.
+ */
 export function costsCsv(
   ctx: Pick<ServiceContext, "db">,
   year: number,
+  filter: { bookId?: string } = {},
 ): string {
   const { from, to } = yearRange(year);
   const rows = ctx.db
     .select({
       cost: costEntries,
+      bookName: costBooks.name,
       assetName: assets.name,
       roomName: rooms.name,
       defectNumber: defects.number,
@@ -66,11 +80,18 @@ export function costsCsv(
       >`coalesce(${payer.displayName}, ${payer.username})`,
     })
     .from(costEntries)
+    .innerJoin(costBooks, eq(costBooks.id, costEntries.bookId))
     .leftJoin(assets, eq(assets.id, costEntries.assetId))
     .leftJoin(rooms, eq(rooms.id, costEntries.roomId))
     .leftJoin(defects, eq(defects.id, costEntries.defectId))
     .leftJoin(payer, eq(payer.id, costEntries.paidByUserId))
-    .where(sql`${costEntries.date} >= ${from} and ${costEntries.date} <= ${to}`)
+    .where(
+      and(
+        sql`${costEntries.date} >= ${from}`,
+        sql`${costEntries.date} <= ${to}`,
+        filter.bookId ? eq(costEntries.bookId, filter.bookId) : undefined,
+      ),
+    )
     .orderBy(
       asc(costEntries.date),
       asc(costEntries.createdAt),
@@ -102,6 +123,7 @@ export function costsCsv(
         csvField(c.notes),
         c.source,
         c.id,
+        csvField(r.bookName),
       ].join(CSV_SEPARATOR),
     );
   }
