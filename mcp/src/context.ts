@@ -8,6 +8,7 @@ import type { Room } from "../../src/lib/api/schemas/rooms";
 import { todayIn } from "../../src/lib/dates";
 import { plateKey } from "../../src/lib/vehicles/plate";
 import { ToolError } from "./errors";
+import { searchText } from "./search-text";
 
 export interface Me {
   id: string;
@@ -113,18 +114,32 @@ export function createContext(options: ContextOptions): ToolContext {
     },
 
     async resolveAsset(ref) {
-      if (ref.length <= 64) {
+      const search = searchText(
+        "give the asset's id, name or, for a vehicle, plate",
+        ref,
+      );
+      if (search.text.length <= 64) {
         try {
-          return await api.call(endpoints.assetsGet, { params: { id: ref } });
+          return await api.call(endpoints.assetsGet, {
+            params: { id: search.text },
+          });
         } catch (err) {
           if (!isApiError(err) || err.code !== "not_found") throw err;
         }
       }
       const { items } = await api.call(endpoints.assetsList, {
-        query: { q: ref, limit: 50 },
+        query: { q: search.q, limit: 50 },
       });
-      const exact = items.filter((a) => same(a.name, ref) || same(a.slug, ref));
-      const hits = exact.length > 0 ? exact : await byPlate(ref, items);
+      const exact = items.filter(
+        (a) => same(a.name, search.text) || same(a.slug, search.text),
+      );
+      // A plate is short: a reference that had to be cut is a name or nothing.
+      const hits =
+        exact.length > 0
+          ? exact
+          : search.cut
+            ? []
+            : await byPlate(search.text, items);
       if (hits.length === 1) return hits[0];
       if (hits.length > 1) {
         throw ambiguous(

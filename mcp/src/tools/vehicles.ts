@@ -8,6 +8,7 @@ import { plateKey } from "../../../src/lib/vehicles/plate";
 import type { ToolContext } from "../context";
 import { ToolError } from "../errors";
 import { plural, taskRow } from "../format";
+import { searchText } from "../search-text";
 import { defineTool } from "../tool";
 
 const date = z.iso.date();
@@ -38,10 +39,11 @@ export async function resolveVehicle(
   ctx: ToolContext,
   ref: string,
 ): Promise<Asset> {
-  if (ref.length <= 64) {
+  const search = searchText("give the vehicle's id, name or plate", ref);
+  if (search.text.length <= 64) {
     try {
       const asset = await ctx.api.call(endpoints.assetsGet, {
-        params: { id: ref },
+        params: { id: search.text },
       });
       if (asset.kind === "vehicle") return asset;
       throw new ToolError(
@@ -53,8 +55,8 @@ export async function resolveVehicle(
     }
   }
   const vehicles = await allVehicles(ctx);
-  const wanted = ref.trim().toLowerCase();
-  const plate = plateKey(ref);
+  const wanted = search.text.toLowerCase();
+  const plate = plateKey(search.text);
   const platesOf = (v: Asset) =>
     v.vehicle?.plate ? plateKey(v.vehicle.plate) : "";
   const exact = vehicles.filter(
@@ -78,7 +80,9 @@ export async function resolveVehicle(
     );
   }
   const other = (
-    await ctx.api.call(endpoints.assetsList, { query: { q: ref, limit: 10 } })
+    await ctx.api.call(endpoints.assetsList, {
+      query: { q: search.q, limit: 10 },
+    })
   ).items.find((a) => a.name.trim().toLowerCase() === wanted);
   if (other) {
     throw new ToolError(

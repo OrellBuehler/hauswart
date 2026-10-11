@@ -120,6 +120,37 @@ describe("insurance policy tools", () => {
     expect(missing.text).toContain("[not_found]");
   });
 
+  it("reads a policy by a title longer than the search takes, and only by all of it", async () => {
+    const { ok, call, policy, api } = await world();
+    const title = `Kasko ${"X".repeat(140)}`;
+    const created = await policy({ title });
+    expect((await ok("get_insurance_policy", { policy: title })).id).toBe(
+      created.id,
+    );
+    // The same first hundred characters are not enough: it is another title.
+    const nearMiss = `${title.slice(0, 120)}Y`;
+    const miss = await call("get_insurance_policy", { policy: nearMiss });
+    expect(miss.isError).toBe(true);
+    expect(miss.text).toContain("[not_found]");
+    // Archived policies are looked at when no active one matches.
+    await api.call(endpoints.insurancePoliciesUpdate, {
+      params: { id: created.id },
+      body: { archived: true },
+    });
+    expect((await ok("get_insurance_policy", { policy: title })).id).toBe(
+      created.id,
+    );
+  });
+
+  it("refuses a blank policy and says what to give", async () => {
+    const { call, policy } = await world();
+    await policy({ title: "Hausrat" });
+    const blank = await call("get_insurance_policy", { policy: "   " });
+    expect(blank.isError).toBe(true);
+    expect(blank.text).toContain("[invalid_request]");
+    expect(blank.text).toContain("id, title or policy number");
+  });
+
   it("finds an archived policy by its title", async () => {
     const { ok, api, policy } = await world();
     const old = await policy({ title: "Alte Haftpflicht" });

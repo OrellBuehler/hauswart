@@ -5,6 +5,7 @@ import type { InsurancePolicy } from "../../../src/lib/api/schemas/insurance";
 import type { Part } from "../../../src/lib/api/schemas/parts";
 import type { ToolContext } from "../context";
 import { ToolError } from "../errors";
+import { searchText, type SearchText } from "../search-text";
 
 const same = (a: string | null | undefined, b: string) =>
   a?.trim().toLowerCase() === b.trim().toLowerCase();
@@ -31,6 +32,15 @@ function pick<T extends { id: string }>(
   );
 }
 
+/** The hits of a search whose text had to be cut short, narrowed to those that match the whole reference. */
+function narrowed<T>(
+  search: SearchText,
+  items: T[],
+  isExact: (item: T) => boolean,
+): T[] {
+  return search.cut ? items.filter(isExact) : items;
+}
+
 async function byIdFirst<T>(
   ref: string,
   get: (id: string) => Promise<T>,
@@ -49,18 +59,21 @@ export async function resolveContact(
   ctx: ToolContext,
   ref: string,
 ): Promise<Contact> {
-  const found = await byIdFirst(ref, (id) =>
+  const search = searchText("give the contact's id, name or company", ref);
+  const found = await byIdFirst(search.text, (id) =>
     ctx.api.call(endpoints.contactsGet, { params: { id } }),
   );
   if (found) return found;
   const { items } = await ctx.api.call(endpoints.contactsList, {
-    query: { q: ref, limit: 50 },
+    query: { q: search.q, limit: 50 },
   });
+  const isExact = (c: Contact) =>
+    same(c.name, search.text) || same(c.company, search.text);
   return pick(
     "Contact",
     ref,
-    items,
-    (c) => same(c.name, ref) || same(c.company, ref),
+    narrowed(search, items, isExact),
+    isExact,
     (c) => c.name,
   );
 }
@@ -70,18 +83,21 @@ export async function resolvePart(
   ctx: ToolContext,
   ref: string,
 ): Promise<Part> {
-  const found = await byIdFirst(ref, (id) =>
+  const search = searchText("give the part's id, name or part number", ref);
+  const found = await byIdFirst(search.text, (id) =>
     ctx.api.call(endpoints.partsGet, { params: { id } }),
   );
   if (found) return found;
   const { items } = await ctx.api.call(endpoints.partsList, {
-    query: { q: ref, limit: 50 },
+    query: { q: search.q, limit: 50 },
   });
+  const isExact = (p: Part) =>
+    same(p.name, search.text) || same(p.partNumber, search.text);
   return pick(
     "Part",
     ref,
-    items,
-    (p) => same(p.name, ref) || same(p.partNumber, ref),
+    narrowed(search, items, isExact),
+    isExact,
     (p) => p.name,
   );
 }
@@ -91,23 +107,27 @@ export async function resolvePolicy(
   ctx: ToolContext,
   ref: string,
 ): Promise<InsurancePolicy> {
-  const found = await byIdFirst(ref, (id) =>
+  const search = searchText(
+    "give the policy's id, title or policy number",
+    ref,
+  );
+  const found = await byIdFirst(search.text, (id) =>
     ctx.api.call(endpoints.insurancePoliciesGet, { params: { id } }),
   );
   if (found) return found;
-  let { items } = await ctx.api.call(endpoints.insurancePoliciesList, {
-    query: { q: ref, limit: 50 },
-  });
-  if (items.length === 0) {
-    ({ items } = await ctx.api.call(endpoints.insurancePoliciesList, {
-      query: { q: ref, archived: "true", limit: 50 },
-    }));
-  }
-  return pick(
-    "Insurance policy",
-    ref,
-    items,
-    (p) => same(p.title, ref) || same(p.policyNumber, ref),
-    (p) => p.title,
-  );
+  const isExact = (p: InsurancePolicy) =>
+    same(p.title, search.text) || same(p.policyNumber, search.text);
+  const matches = async (archived: boolean) => {
+    const { items } = await ctx.api.call(endpoints.insurancePoliciesList, {
+      query: {
+        q: search.q,
+        archived: archived ? "true" : undefined,
+        limit: 50,
+      },
+    });
+    return narrowed(search, items, isExact);
+  };
+  let items = await matches(false);
+  if (items.length === 0) items = await matches(true);
+  return pick("Insurance policy", ref, items, isExact, (p) => p.title);
 }

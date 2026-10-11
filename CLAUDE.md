@@ -188,10 +188,14 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   year (`SPARSE_WINDOWS_DAYS`); every other reading is stale after 24 h as before.
 - **`counter_delta.orEvery`** `{every, unit}` makes a counter task also fall due by time: when the
   counter threshold is reached or the interval since the last completion (the task's creation, the
-  `startedOn` the evaluator passes, when there is none) has passed, whichever comes first. The date
-  shown is the earlier of the time limit and the counter estimate: `dueKind` `exact` for the time
-  limit, `condition` once the counter is there (it decides the status from then on), `estimated`
-  while the estimate comes first. In that last case `dueDate` **stays the hard time limit** and
+  `startedOn` the evaluator passes, when there is none) has passed, whichever comes first. While the
+  counter is short of its threshold the time limit sets the status and the date shown is the earlier
+  of the limit and the counter estimate: `dueKind` `exact` for the limit, `estimated` while the
+  estimate comes first. Once the counter has crossed its threshold the status follows the counter:
+  `dueKind` `condition`, `dueDate` the day the evaluator first saw it there, `due` from then and
+  `overdue` after the grace days counted from that day - unless the time limit had already fallen on
+  an earlier day, which then stays the date and sets the status (`exact`). In the `estimated` case
+  `dueDate` **stays the hard time limit** and
   `estimate` carries the earlier guess, so the status, the "due soon" notification and the iCal feed
   keep the limit; whoever shows a date takes `shownDate` / `shownDateIsEstimate`
   (`lib/tasks/engine/shown.ts`: the estimate for kind `estimated`, else the due date) instead of
@@ -886,6 +890,12 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
 - **Errors** become MCP tool errors `Error [code]: message` (API code, or `unreachable`);
   `complete_task`/`skip_task` send a fresh idempotency key; completions are attributed `mcp` by the
   token kind.
+- **References** (`searchText` in `mcp/src/search-text.ts`; used by `resolveAsset`, `resolveVehicle`, `resolveContact`,
+  `resolvePart` and `resolvePolicy`): a record is named by id, name or similar and found with the list endpoint's
+  `q`, which the API limits to 100 characters. A blank reference is refused (`invalid_request`, "Nothing to look
+  for: give the ..."), never matched against everything; one longer than 100 characters is searched by its first
+  100 and only a hit that matches the whole reference counts (else `not_found`), so a long title is found and a
+  record that merely starts alike is not taken for it.
 - **Documents** (`tools/documents.ts`): `search_documents`, `get_document`, `list_document_links`, `link_document`,
   `unlink_document` go through the token user's own document connection like every other caller (no connection or a
   document that account cannot see: `not_found` with a sentence saying which; linking to a page also needs

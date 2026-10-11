@@ -76,6 +76,31 @@ describe("vehicle tools", () => {
     expect((await ok("get_vehicle", { vehicle: ref })).id).toBe(id);
   });
 
+  it.each(["   ", "\t", " \n "])(
+    "refuses a blank vehicle %j instead of taking the only one",
+    async (blank) => {
+      const { call, vehicle } = await connect();
+      await vehicle("Familienauto", "ZH 000000");
+      for (const tool of ["get_vehicle", "record_odometer"]) {
+        const reply = await call(tool, { vehicle: blank, value: 1 });
+        expect(reply.isError, tool).toBe(true);
+        expect(reply.text).toContain("[invalid_request]");
+        expect(reply.text).toContain("id, name or plate");
+      }
+      const readings = await call("get_vehicle", { vehicle: "familienauto" });
+      expect(readings.json.odometer).toBeUndefined();
+    },
+  );
+
+  it("says not_found for a reference longer than the search takes", async () => {
+    const { call, vehicle } = await connect();
+    await vehicle("Familienauto", "ZH 000000");
+    const reply = await call("get_vehicle", { vehicle: "x".repeat(110) });
+    expect(reply.isError).toBe(true);
+    expect(reply.text).toContain("[not_found]");
+    expect(reply.text).toContain("No vehicle matches");
+  });
+
   it("finds it by id", async () => {
     const { ok, vehicle } = await connect();
     const id = await vehicle("Familienauto", null);
