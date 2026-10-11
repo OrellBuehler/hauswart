@@ -31,9 +31,12 @@
   import AssetPartsCard from "$lib/components/assets/asset-parts-card.svelte";
   import AssetServiceLogCard from "$lib/components/assets/asset-service-log-card.svelte";
   import QrCard from "$lib/components/assets/qr-card.svelte";
+  import FuelLogCard from "$lib/components/vehicles/fuel-log-card.svelte";
   import OdometerHistoryCard from "$lib/components/vehicles/odometer-history-card.svelte";
   import PlateBadge from "$lib/components/vehicles/plate-badge.svelte";
+  import TireSetsCard from "$lib/components/vehicles/tire-sets-card.svelte";
   import VehicleCard from "$lib/components/vehicles/vehicle-card.svelte";
+  import VehicleCostsCard from "$lib/components/vehicles/vehicle-costs-card.svelte";
   import VehicleSetupDialog from "$lib/components/vehicles/vehicle-setup-dialog.svelte";
   import TaskRows from "$lib/components/assets/task-rows.svelte";
   import WarrantyBadge from "$lib/components/assets/warranty-badge.svelte";
@@ -53,6 +56,7 @@
   import { docsFilterHref, newDocHref } from "$lib/docs/links";
   import { formatDay } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
+  import { statsYears } from "$lib/vehicles/cost-card";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -63,6 +67,7 @@
   const asset = $derived(data.asset);
   const canWriteDocs = $derived(data.scopes.includes("docs:write"));
   const canWrite = $derived(data.scopes.includes("write"));
+  const canWriteCosts = $derived(data.scopes.includes("costs:write"));
   const isPlant = $derived(asset.kind === "plant");
   const isVehicle = $derived(asset.kind === "vehicle");
   let setupOpen = $state(false);
@@ -271,11 +276,38 @@
           {canWrite}
         />
 
-        <!--
-          Sections that follow the vehicle's own card: "Reifen", "Tankbuch" and "Kosten" (tire sets,
-          fuel log and cost statistics). Each one is a Card of its own, placed here, before the
-          generic cards below, and only for vehicles.
-        -->
+        <TireSetsCard
+          assetId={asset.id}
+          sets={data.vehicle.tireSets}
+          vehicle={data.vehicle.details}
+          today={data.today}
+          {canWrite}
+        />
+
+        <FuelLogCard
+          assetId={asset.id}
+          logs={data.vehicle.fuelLogs.items}
+          nextCursor={data.vehicle.fuelLogs.nextCursor}
+          stats={data.vehicle.stats}
+          vehicle={data.vehicle.details}
+          currency={data.currency}
+          today={data.today}
+          people={data.vehicle.people}
+          currentUserId={data.user.id}
+          canWrite={canWriteCosts}
+        />
+
+        <VehicleCostsCard
+          assetId={asset.id}
+          year={data.vehicle.year}
+          stats={data.vehicle.yearStats}
+          years={statsYears(data.today, [
+            data.vehicle.stats.from,
+            data.vehicle.details.firstRegistration,
+            asset.purchaseDate,
+          ])}
+          canAddCost={canWriteCosts}
+        />
       {/if}
 
       <Card.Root>
