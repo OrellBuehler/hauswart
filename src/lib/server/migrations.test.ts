@@ -102,6 +102,7 @@ describe("migrations", () => {
         "tire_sets",
         "tire_set_events",
         "fuel_logs",
+        "appointments",
       ]),
     );
     expect(
@@ -139,6 +140,23 @@ describe("migrations", () => {
     expect(
       rows(db, "select ref from search_fts where kind = 'insurance_policy'"),
     ).toEqual([{ ref: "p1" }]);
+    db.$client.exec(
+      "insert into appointments (id, title, location, all_day, start_date, end_date) values ('ap1', 'Kaminfeger', 'Keller', 1, '2026-01-02', '2026-01-02')",
+    );
+    db.$client.exec(
+      "insert into comments (id, entity_type, entity_id, body_md) values ('c2', 'appointment', 'ap1', 'Schlüssel')",
+    );
+    expect(
+      rows(db, "select ref from search_fts where kind = 'appointment'"),
+    ).toEqual([{ ref: "ap1" }]);
+    db.$client.exec("delete from appointments where id = 'ap1'");
+    expect(
+      rows(db, "select ref from search_fts where kind = 'appointment'"),
+    ).toEqual([]);
+    expect(
+      rows(db, "select id from comments where entity_type = 'appointment'"),
+    ).toEqual([]);
+    expect(rows(db, "select id from comments")).toEqual([{ id: "c1" }]);
   });
 
   it("run again on a database that is up to date without changing it", () => {

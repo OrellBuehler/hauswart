@@ -5,6 +5,7 @@ import type {
   searchHitSchema,
 } from "$lib/api/schemas/search";
 import {
+  appointments,
   assetHints,
   assets,
   contacts,
@@ -178,6 +179,15 @@ const URLS: Record<SearchKind, Urls> = {
         .where(inArray(insurancePolicies.id, ids))
         .all(),
       (row) => `/insurance/${row.id}`,
+    ),
+  appointment: (ctx, ids) =>
+    urlsOf(
+      ctx.db
+        .select({ id: appointments.id })
+        .from(appointments)
+        .where(inArray(appointments.id, ids))
+        .all(),
+      (row) => `/appointments/${row.id}`,
     ),
 };
 

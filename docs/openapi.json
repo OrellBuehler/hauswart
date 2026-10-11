@@ -23334,7 +23334,8 @@
                 "asset_hint",
                 "doc_page",
                 "cost",
-                "insurance_policy"
+                "insurance_policy",
+                "appointment"
               ]
             }
           },
@@ -23573,7 +23574,8 @@
                       "asset_hint",
                       "doc_page",
                       "cost",
-                      "insurance_policy"
+                      "insurance_policy",
+                      "appointment"
                     ]
                   },
                   "entityId": {
@@ -26107,6 +26109,7 @@
                 "part",
                 "asset_hint",
                 "insurance_policy",
+                "appointment",
                 "document"
               ]
             }
@@ -26329,7 +26332,8 @@
                       "cost",
                       "insurance_policy",
                       "asset_note",
-                      "tire_set"
+                      "tire_set",
+                      "appointment"
                     ]
                   },
                   "ownerId": {
@@ -26421,7 +26425,8 @@
                 "cost",
                 "insurance_policy",
                 "asset_note",
-                "tire_set"
+                "tire_set",
+                "appointment"
               ]
             }
           },
@@ -40227,7 +40232,8 @@
               "asset_hint",
               "doc_page",
               "cost",
-              "insurance_policy"
+              "insurance_policy",
+              "appointment"
             ]
           },
           "entityId": {
@@ -40840,6 +40846,7 @@
               "part",
               "asset_hint",
               "insurance_policy",
+              "appointment",
               "document"
             ]
           },
@@ -40886,7 +40893,8 @@
               "cost",
               "insurance_policy",
               "asset_note",
-              "tire_set"
+              "tire_set",
+              "appointment"
             ]
           },
           "ownerId": {

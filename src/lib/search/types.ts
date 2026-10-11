@@ -1,4 +1,5 @@
 import type { Component } from "svelte";
+import CalendarClockIcon from "@lucide/svelte/icons/calendar-clock";
 import ContactIcon from "@lucide/svelte/icons/contact";
 import CpuIcon from "@lucide/svelte/icons/cpu";
 import DoorOpenIcon from "@lucide/svelte/icons/door-open";
@@ -32,6 +33,7 @@ export const hitLabels: Record<SearchHitType, () => string> = {
   part: () => m.search_type_part(),
   asset_hint: () => m.search_type_hint(),
   insurance_policy: () => m.search_type_insurance_policy(),
+  appointment: () => m.search_type_appointment(),
   document: () => m.search_type_document(),
 };
 
@@ -45,6 +47,7 @@ export const hitIcons: Record<SearchHitType, Component> = {
   part: PuzzleIcon,
   asset_hint: LightbulbIcon,
   insurance_policy: UmbrellaIcon,
+  appointment: CalendarClockIcon,
   document: FileSearchIcon,
 };
 

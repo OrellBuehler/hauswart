@@ -1722,6 +1722,7 @@
   "search_type_part": "Spare parts",
   "search_type_hint": "Hints",
   "search_type_insurance_policy": "Insurance policies",
+  "search_type_appointment": "Appointments",
   "search_type_document": "Documents",
   "editor_settings": "Settings",
   "editor_save_now": "Save now",

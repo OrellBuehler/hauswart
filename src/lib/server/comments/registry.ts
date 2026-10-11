@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import type { CommentEntityType } from "$lib/api/enums";
 import {
+  appointments,
   assetHints,
   assets,
   contacts,
@@ -57,6 +58,7 @@ function simple(
     | typeof defects
     | typeof costEntries
     | typeof insurancePolicies
+    | typeof appointments
     | typeof docPages,
   titleOf: (row: Record<string, unknown>) => string,
   url: (db: DB, id: string) => string,
@@ -193,5 +195,13 @@ registerCommentable(
     insurancePolicies,
     (r) => r.title as string,
     (_db, id) => `/insurance/${id}`,
+  ),
+);
+registerCommentable(
+  "appointment",
+  simple(
+    appointments,
+    (r) => r.title as string,
+    (_db, id) => `/appointments/${id}`,
   ),
 );
