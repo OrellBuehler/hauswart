@@ -148,6 +148,10 @@
         <span class="min-w-0">
           {name}
           <span aria-hidden="true">·</span>
+          {#if target.remoteName}
+            {target.remoteName}
+            <span aria-hidden="true">·</span>
+          {/if}
           <span class="font-mono break-all">{target.remoteCalendarId}</span>
         </span>
       </p>

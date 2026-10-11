@@ -135,6 +135,8 @@ export const calendarTargetSchema = z
     ownerId: z.string().nullable(),
     /** The calendar in the connected system, as its picker lists it (an entity id, a collection address). */
     remoteCalendarId: z.string(),
+    /** The calendar's own name as its system last reported it (follows a rename there); null before the first contact. `name` is the target's, given when it was added. */
+    remoteName: z.string().nullable(),
     name: z.string(),
     enabled: z.boolean(),
     config: calendarTargetConfigSchema.meta({ id: "CalendarTargetConfig" }),

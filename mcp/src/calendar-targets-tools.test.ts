@@ -41,6 +41,7 @@ describe("calendar target tools", () => {
         provider: "homeassistant",
         level: "household",
         calendar: "calendar.example_household",
+        calendarName: "Name of calendar.example_household",
         enabled: true,
         kinds: ["appointments", "warranty_ends"],
         status: "ok",

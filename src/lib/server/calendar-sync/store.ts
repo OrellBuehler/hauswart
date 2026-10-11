@@ -10,6 +10,9 @@ import { calendarTargets, connections } from "$lib/server/db";
 import { parseStored } from "$lib/server/json";
 import type { ServiceContext } from "$lib/server/service";
 
+/** The longest calendar name that is kept. */
+export const MAX_REMOTE_NAME = 255;
+
 type Db = Pick<ServiceContext, "db">;
 type Now = Pick<ServiceContext, "db" | "now">;
 
@@ -74,6 +77,21 @@ export function saveCapabilities(
   ctx.db
     .update(calendarTargets)
     .set({ capabilitiesJson: capabilities })
+    .where(eq(calendarTargets.id, row.id))
+    .run();
+}
+
+/** The calendar's name as its system reports it now; kept apart from the target's own name. */
+export function saveRemoteName(
+  ctx: Db,
+  row: Pick<TargetRow, "id" | "remoteName">,
+  name: string,
+): void {
+  const value = name.slice(0, MAX_REMOTE_NAME);
+  if (row.remoteName === value) return;
+  ctx.db
+    .update(calendarTargets)
+    .set({ remoteName: value })
     .where(eq(calendarTargets.id, row.id))
     .run();
 }

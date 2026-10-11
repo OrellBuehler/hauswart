@@ -20,6 +20,7 @@ export const listCalendarTargets = defineTool({
           provider: t.provider,
           level: t.level,
           calendar: t.remoteCalendarId,
+          calendarName: t.remoteName,
           enabled: t.enabled,
           kinds: t.config.kinds,
           status: t.status,

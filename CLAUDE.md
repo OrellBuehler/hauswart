@@ -943,7 +943,8 @@ people plan. Optional like every adapter: without a target nothing happens, and 
   (`/tasks/<id>`, the provider may add the app address) and `alarmMinutes`. A CalDAV adapter plugs in with no core change: it hands back
   `ref` from wherever it keeps it (the UID, an X-property), returns the `uid` it chose from `create`, and sets `alarms: true` to receive
   `alarmMinutes`.
-- **Tables** (migration `0024_calendar_sync`): `calendar_targets` holds the connection, provider, `remoteCalendarId`, name, `level`
+- **Tables** (migrations `0024_calendar_sync`, `0025_calendar_target_remote_name`): `calendar_targets` holds the connection, provider, `remoteCalendarId`, `remoteName` (the calendar's own
+  name as the system last reported it, updated by every run; `name` is the target's, given when it was added), name, `level`
   (`household|user`) with the `userId` the check requires, `enabled`, `configJson`, `capabilitiesJson` (from the last time the calendar was
   opened) and the health: `status`, `lastError` code, `lastOkAt`, `lastCheckedAt` (the last attempt), `consecutiveFailures`, `lastStatsJson`.
   It is **unique per provider and calendar**, because two targets in one calendar would delete each other's events. `calendar_links` holds

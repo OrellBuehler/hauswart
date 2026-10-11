@@ -103,6 +103,8 @@ describe("migrations", () => {
         "tire_set_events",
         "fuel_logs",
         "appointments",
+        "calendar_targets",
+        "calendar_links",
       ]),
     );
     expect(
@@ -157,6 +159,67 @@ describe("migrations", () => {
       rows(db, "select id from comments where entity_type = 'appointment'"),
     ).toEqual([]);
     expect(rows(db, "select id from comments")).toEqual([{ id: "c1" }]);
+  });
+
+  it("add the calendar targets: one target per calendar, one link per item, links gone with their target, and the name of the calendar", () => {
+    const db = databaseAt("0014_cost_document_link_cleanup");
+    migrateDatabase(db);
+    db.$client.exec(`
+      insert into connections (id, kind, base_url, token_enc) values ('k1', 'homeassistant', 'https://ha.example.org', 'x');
+      insert into calendar_targets (id, connection_id, provider, remote_calendar_id, name, level, config_json)
+        values ('t1', 'k1', 'homeassistant', 'calendar.example_one', 'Eins', 'household', '{}');
+      insert into calendar_links (id, target_id, kind, item_id, instance_key, ref, content_hash)
+        values ('l1', 't1', 'appointments', 'ap1', '', 'appointment-ap1', 'h1');
+    `);
+    expect(
+      rows(db, "select remote_name from calendar_targets where id = 't1'"),
+    ).toEqual([{ remote_name: null }]);
+    db.$client.exec(
+      "update calendar_targets set remote_name = 'Haushalt' where id = 't1'",
+    );
+    expect(rows(db, "select remote_name from calendar_targets")).toEqual([
+      { remote_name: "Haushalt" },
+    ]);
+
+    // A calendar has one target, whoever's connection reaches it.
+    expect(() =>
+      db.$client.exec(
+        "insert into calendar_targets (id, connection_id, provider, remote_calendar_id, name, level, config_json) values ('t2', 'k1', 'homeassistant', 'calendar.example_one', 'Zwei', 'household', '{}')",
+      ),
+    ).toThrow(/UNIQUE/);
+    // An item has one link per target, and the same item may be linked in another target.
+    expect(() =>
+      db.$client.exec(
+        "insert into calendar_links (id, target_id, kind, item_id, instance_key, ref, content_hash) values ('l2', 't1', 'appointments', 'ap1', '', 'appointment-ap1', 'h2')",
+      ),
+    ).toThrow(/UNIQUE/);
+    db.$client.exec(`
+      insert into calendar_targets (id, connection_id, provider, remote_calendar_id, name, level, config_json)
+        values ('t3', 'k1', 'homeassistant', 'calendar.example_two', 'Drei', 'household', '{}');
+      insert into calendar_links (id, target_id, kind, item_id, instance_key, ref, content_hash)
+        values ('l3', 't3', 'appointments', 'ap1', '', 'appointment-ap1', 'h3');
+    `);
+    // A household target has no owner, a personal one has.
+    db.$client.exec(
+      "insert into users (id, username, password_hash) values ('u1', 'anna', 'x')",
+    );
+    expect(() =>
+      db.$client.exec(
+        "insert into calendar_targets (id, connection_id, provider, remote_calendar_id, name, level, user_id, config_json) values ('t4', 'k1', 'homeassistant', 'calendar.example_three', 'Vier', 'household', 'u1', '{}')",
+      ),
+    ).toThrow(/CHECK/);
+    expect(() =>
+      db.$client.exec(
+        "insert into calendar_targets (id, connection_id, provider, remote_calendar_id, name, level, config_json) values ('t5', 'k1', 'homeassistant', 'calendar.example_four', 'Fünf', 'user', '{}')",
+      ),
+    ).toThrow(/CHECK/);
+
+    db.$client.exec("delete from calendar_targets where id = 't1'");
+    expect(rows(db, "select id from calendar_links")).toEqual([{ id: "l3" }]);
+    db.$client.exec("delete from connections where id = 'k1'");
+    expect(rows(db, "select id from calendar_targets")).toEqual([]);
+    expect(rows(db, "select id from calendar_links")).toEqual([]);
+    expect(rows(db, "pragma foreign_key_check")).toEqual([]);
   });
 
   it("run again on a database that is up to date without changing it", () => {

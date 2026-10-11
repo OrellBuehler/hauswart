@@ -38,7 +38,13 @@ import {
   type CalendarSession,
 } from "./provider";
 import { reconcile } from "./reconcile";
-import { configOf, getTargetRow, statsOf, type TargetRow } from "./store";
+import {
+  configOf,
+  getTargetRow,
+  MAX_REMOTE_NAME,
+  statsOf,
+  type TargetRow,
+} from "./store";
 import {
   applyOperations,
   lockTarget,
@@ -61,6 +67,7 @@ export interface TargetView {
   level: "household" | "user";
   ownerId: string | null;
   remoteCalendarId: string;
+  remoteName: string | null;
   name: string;
   enabled: boolean;
   config: CalendarTargetConfig;
@@ -91,6 +98,7 @@ export function toView(ctx: Db, row: TargetRow, caller: Caller): TargetView {
     level: row.level,
     ownerId: row.userId,
     remoteCalendarId: row.remoteCalendarId,
+    remoteName: row.remoteName,
     name: row.name,
     enabled: row.enabled,
     config: configOf(row),
@@ -229,6 +237,7 @@ export async function createTarget(
         connectionId: connection.id,
         provider: input.provider,
         remoteCalendarId: input.remoteCalendarId,
+        remoteName: session.name.slice(0, MAX_REMOTE_NAME),
         name: (input.name ?? session.name).slice(0, 100),
         level,
         userId: owner,

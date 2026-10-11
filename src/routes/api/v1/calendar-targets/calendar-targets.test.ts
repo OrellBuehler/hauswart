@@ -68,6 +68,7 @@ describe("calendar targets API", () => {
         level: "household",
         ownerId: null,
         remoteCalendarId: CALENDAR_ID,
+        remoteName: "Haushalt",
         name: "Haushalt",
         enabled: true,
         capabilities: FULL_CAPABILITIES,

@@ -88,6 +88,7 @@ describe("calendar targets", () => {
         level: "household",
         ownerId: null,
         remoteCalendarId: CALENDAR_ID,
+        remoteName: "Haushalt",
         name: "Haushalt",
         enabled: true,
         capabilities: FULL_CAPABILITIES,
@@ -108,10 +109,13 @@ describe("calendar targets", () => {
       expect(seen).toEqual([target.id]);
     });
 
-    it("takes a name of its own", async () => {
+    it("takes a name of its own, and still remembers the calendar's", async () => {
       connectCalendarSystem(ctx());
       fake.add(CALENDAR_ID, { name: "Haushalt" });
-      expect((await create({ name: "Familie" })).name).toBe("Familie");
+      expect(await create({ name: "Familie" })).toMatchObject({
+        name: "Familie",
+        remoteName: "Haushalt",
+      });
     });
 
     it("is for administrators when the connection is the household's", async () => {
@@ -300,6 +304,18 @@ describe("calendar targets", () => {
         lastStats: expect.objectContaining({ created: 1 }),
       });
       expect(listTargets(ctx(), ADMIN)[0]!.canManage).toBe(true);
+    });
+
+    it("follows the name the calendar has in its system, and leaves the target's own", async () => {
+      connectCalendarSystem(ctx());
+      fake.add(CALENDAR_ID, { name: "Haushalt" });
+      const target = await create({ name: "Familie" });
+      fake.get(CALENDAR_ID).name = "Familienkalender";
+      await syncTarget(ctx(), target.id);
+      expect(listTargets(ctx(), ADMIN)[0]).toMatchObject({
+        name: "Familie",
+        remoteName: "Familienkalender",
+      });
     });
 
     it("does not count notes about events somebody deleted", async () => {

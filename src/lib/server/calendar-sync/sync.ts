@@ -29,6 +29,7 @@ import {
   recordTargetFailure,
   recordTargetOk,
   saveCapabilities,
+  saveRemoteName,
   type TargetRow,
 } from "./store";
 
@@ -217,6 +218,7 @@ async function run(
     );
   }
   saveCapabilities(ctx, row, session.capabilities);
+  saveRemoteName(ctx, row, session.name);
   if (!session.capabilities.create) return fail(failure("unsupported"));
 
   let desired: DesiredItem[];

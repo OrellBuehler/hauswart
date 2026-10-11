@@ -66,6 +66,7 @@ export function targetDto(over: Partial<CalendarTarget> = {}): CalendarTarget {
     level: "household",
     ownerId: null,
     remoteCalendarId: "calendar.example_household",
+    remoteName: "Haushalt",
     name: "Haushaltskalender",
     enabled: true,
     config: configDto(),

@@ -1217,6 +1217,8 @@ export const calendarTargets = sqliteTable(
     provider: text("provider", { enum: CALENDAR_PROVIDERS }).notNull(),
     /** The calendar in the connected system, opaque to the core (an entity id, a collection address). */
     remoteCalendarId: text("remote_calendar_id").notNull(),
+    /** The calendar's own display name as its system last reported it (every run updates it); null before the first contact. */
+    remoteName: text("remote_name"),
     name: text("name").notNull(),
     level: text("level", { enum: ["household", "user"] }).notNull(),
     userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),

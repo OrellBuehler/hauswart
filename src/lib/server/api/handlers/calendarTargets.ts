@@ -30,6 +30,7 @@ export function wireCalendarTarget(
     level: view.level,
     ownerId: view.ownerId,
     remoteCalendarId: view.remoteCalendarId,
+    remoteName: view.remoteName,
     name: view.name,
     enabled: view.enabled,
     config: view.config,

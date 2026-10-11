@@ -220,6 +220,9 @@
         class="bg-muted/50 flex flex-col gap-0.5 rounded-lg border px-3 py-2"
       >
         <span class="text-sm font-medium">{providerName(target.provider)}</span>
+        {#if target.remoteName}
+          <span class="text-sm break-words">{target.remoteName}</span>
+        {/if}
         <span class="text-muted-foreground font-mono text-xs break-all"
           >{target.remoteCalendarId}</span
         >
