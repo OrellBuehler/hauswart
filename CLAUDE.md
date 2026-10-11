@@ -335,8 +335,8 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   (`manual|finance_transaction|finance_bill`). `countsAsExpense` defaults to false for
   `mortgage_principal` (equity, not a cost) and follows a category change unless the person overrode it.
   Entries can be commented on and carry receipts (attachments, owner `cost`). The fuel log of a vehicle books its
-  fills as `fuel` entries (see "Vehicles"); such an entry carries `fuelLogId` and keeps its amount, currency and date
-  and its existence in step with that fill (`updateCost`/`deleteCost` refuse with 409 `conflict`,
+  fills as `fuel` entries (see "Vehicles"); such an entry carries `fuelLogId` and keeps its amount, currency, date and
+  device and its existence in step with that fill (`updateCost`/`deleteCost` refuse with 409 `conflict`,
   `details.fuelLogId`; everything else stays editable).
 - **Split math** (`money.ts` `allocate`, `costs/split.ts`): shares are frozen per entry in
   `cost_entry_shares` (basis points, sum exactly 10000), so a later ownership change never rewrites
@@ -691,10 +691,12 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   odometer and keeps the cost entry in step for amount, currency, date, station (title and payee, the unit decides the
   title too), payer and split (made free it loses the entry; costing again gets a new one; an entry somebody deleted is
   not brought back by other changes). **The fill owns what it booked**: on the cost entry (`PATCH|DELETE /costs/{id}`) a
-  change of amount, currency or date and a delete are a 409 `conflict` (message names the fuel log, `details.fuelLogId`;
+  change of amount, currency, date or device (`assetId`, which would break the link to the fuel log and the vehicle's
+  statistics) and a delete are a 409 `conflict` (message names the fuel log, `details.fuelLogId`;
   repeating the current values is fine, so is every other field: category, title, notes, payee, payer, split, deductible,
-  receipts) and `CostEntry.fuelLogId` points back (null for any other entry, and once the fill is gone the entry is free).
-  The fill passes `{fuelLogId}` to `updateCost` to move those three, and lets go of the entry (`cost_entry_id` null)
+  room, defect, service log entry, receipts) and `CostEntry.fuelLogId` points back (null for any other entry, and once
+  the fill is gone the entry is free). The fill passes `{fuelLogId}` to `updateCost` to move amount, currency and date (its
+  device is the vehicle's and is never sent), and lets go of the entry (`cost_entry_id` null)
   before it deletes it. Title and payee of the entry are rewritten by a change of station or unit only while each still
   equals what the fill wrote last time (`writtenNames`), so a title edited on the cost entry stays; the two are judged apart. **DELETE** removes the reading and the cost entry with its receipts. A fill itself
   takes no attachments, comments or document links: receipts go on its cost entry. Consumption is the full-to-full method (`fuelStretches`): a full fill
@@ -1149,7 +1151,7 @@ in dark mode. Every list has an empty state, every async action a pending and an
   a task without a readable mark by likeness (title in either language, odometer counter, an inspection on a date), so nothing is
   offered twice. A new vehicle opens that dialog once through `?termine=1`.
 - **Costs of a vehicle**: `/costs?asset=` passes the device on to the summary (`costsSummaryQuery`; no other filter narrows its
-  totals) and says so above it. A cost entry with `fuelLogId` has its amount, currency and date locked in the form (never sent by
+  totals) and says so above it. A cost entry with `fuelLogId` has its amount, currency, date and device locked in the form (never sent by
   `buildUpdateBody`) with a link to `#fuel-log`, and the detail page offers that link instead of delete; a 409 with
   `details.fuelLogId` that still arrives is worded (`fuelLogOfConflict`).
 

@@ -504,10 +504,11 @@ describe("fuel log", () => {
       ["currency", { currency: "EUR" }],
       ["date", { date: "2026-06-02" }],
       ["amount and date", { amountMinor: 1, date: "2026-06-03" }],
+      ["device cleared", { assetId: null }],
     ])(
       "keeps its %s: a change there is refused, naming the fill",
       async (_name, patch) => {
-        const { fill } = await world();
+        const { car, fill } = await world();
         const log = fill();
         const err = await failure(() => patchCost(log.costEntryId!, patch));
         expect(err).toMatchObject({
@@ -520,30 +521,56 @@ describe("fuel log", () => {
           amountMinor: 7_200,
           currency: "CHF",
           date: "2026-06-01",
+          assetId: car.id,
         });
       },
     );
 
-    it("accepts what repeats the amount, the currency and the date as they are", async () => {
-      const { fill } = await world();
+    it("keeps its device: moving it to another asset is refused, and nothing else of the patch is written", async () => {
+      const { car, fill } = await world();
+      const log = fill();
+      const other = createAsset(
+        ctx(),
+        createAssetRequestSchema.parse({ name: "Zweitwagen", kind: "vehicle" }),
+      );
+      const err = await failure(() =>
+        patchCost(log.costEntryId!, {
+          assetId: other.id,
+          title: "Benzin",
+          notes: "Umgebucht",
+        }),
+      );
+      expect(err).toMatchObject({
+        code: "conflict",
+        status: 409,
+        details: { fuelLogId: log.id },
+      });
+      expect(err.message).toMatch(/fuel log/i);
+      expect(getCost(ctx(), log.costEntryId!)).toMatchObject({
+        assetId: car.id,
+        title: "Tanken Muster Tankstelle",
+        notes: null,
+        fuelLogId: log.id,
+      });
+    });
+
+    it("accepts what repeats the amount, the currency, the date and the device as they are", async () => {
+      const { car, fill } = await world();
       const log = fill();
       expect(
         patchCost(log.costEntryId!, {
           amountMinor: 7_200,
           currency: "CHF",
           date: "2026-06-01",
+          assetId: car.id,
           notes: "Beleg liegt bei",
-        }).notes,
-      ).toBe("Beleg liegt bei");
+        }),
+      ).toMatchObject({ notes: "Beleg liegt bei", assetId: car.id });
     });
 
     it("stays editable in everything else", async () => {
       const { anna, ben, car, fill } = await world();
       const log = fill();
-      const other = createAsset(
-        ctx(),
-        createAssetRequestSchema.parse({ name: "Zweitwagen", kind: "vehicle" }),
-      );
       const changed = patchCost(log.costEntryId!, {
         title: "Benzin",
         category: "other",
@@ -556,7 +583,6 @@ describe("fuel log", () => {
           { userId: anna.id, shareBps: 2_000 },
           { userId: ben.id, shareBps: 8_000 },
         ],
-        assetId: other.id,
       });
       expect(changed).toMatchObject({
         title: "Benzin",
@@ -566,10 +592,9 @@ describe("fuel log", () => {
         deductible: "maintenance",
         paidByUserId: ben.id,
         splitMode: "custom",
-        assetId: other.id,
+        assetId: car.id,
         fuelLogId: log.id,
       });
-      expect(changed.assetId).not.toBe(car.id);
       expect(getFuelLog(ctx(), log.id).paidByUserId).toBe(ben.id);
     });
 

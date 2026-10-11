@@ -424,10 +424,11 @@ export function createCost(
 }
 
 /**
- * Changes an entry. An entry a fuel log entry booked keeps its amount, currency and date as the fuel
- * log entry has them: asking for other values is a 409 `conflict` with `details.fuelLogId`
+ * Changes an entry. An entry a fuel log entry booked keeps its amount, currency, date and device as
+ * the fuel log entry has them: asking for other values is a 409 `conflict` with `details.fuelLogId`
  * (repeating the current ones is fine, and everything else stays editable). Only that fuel log
- * entry, saying so in `options.fuelLogId`, may move them; it does so from its own update.
+ * entry, saying so in `options.fuelLogId`, may move the amount, currency and date; it does so from
+ * its own update, which never sends a device (that stays the vehicle).
  */
 export function updateCost(
   ctx: ServiceContext,
@@ -442,10 +443,11 @@ export function updateCost(
     ((patch.amountMinor !== undefined &&
       patch.amountMinor !== current.amountMinor) ||
       (patch.currency !== undefined && patch.currency !== current.currency) ||
-      (patch.date !== undefined && patch.date !== current.date))
+      (patch.date !== undefined && patch.date !== current.date) ||
+      (patch.assetId !== undefined && patch.assetId !== current.assetId))
   ) {
     throw conflict(
-      "This cost entry was booked by a fuel log entry; change its amount, currency and date there",
+      "This cost entry was booked by a fuel log entry; change its amount, currency and date there, its device is the vehicle and stays",
       { fuelLogId: current.fuelLogId },
     );
   }

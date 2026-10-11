@@ -171,7 +171,7 @@
     { value: "", label: m.cost_payer_none() },
     ...people.map((p) => ({ value: p.id, label: p.displayName })),
   ]);
-  /** A fuel log entry booked this entry and owns its amount, currency and date. */
+  /** A fuel log entry booked this entry and owns its amount, currency, date and device. */
   const owned = $derived(Boolean(entry?.fuelLogId));
   /** The vehicle whose fuel log holds the entry's fill (the entry's device). */
   const ownerAssetId = $derived(entry?.fuelLogId ? entry.assetId : null);
@@ -475,13 +475,19 @@
       <Card.Description>{m.cost_form_links_description()}</Card.Description>
     </Card.Header>
     <Card.Content class="grid gap-5 sm:grid-cols-2">
-      <Field id="cost-asset" label={m.cost_asset()} error={errors.assetId}>
+      <Field
+        id="cost-asset"
+        label={m.cost_asset()}
+        hint={owned ? m.cost_fuel_asset_locked() : undefined}
+        error={errors.assetId}
+      >
         {#snippet children({ describedby, invalid })}
           <OptionSelect
             id="cost-asset"
             bind:value={draft.assetId}
             options={assetOptions}
             onchange={pickAsset}
+            disabled={owned}
             {invalid}
             {describedby}
           />

@@ -85,8 +85,8 @@ export const costEntrySchema = z
     /** The entry in the person's finance app; shown only to the person who booked it from there. */
     providerUrl: z.string().nullable(),
     /**
-     * The fuel log entry (`GET /fuel-logs/{id}`) that booked this entry, else null. That entry owns the amount, currency
-     * and date and the entry's deletion: asking for other values, or to delete it, is a 409 `conflict` with
+     * The fuel log entry (`GET /fuel-logs/{id}`) that booked this entry, else null. That entry owns the amount, currency,
+     * date and device and the entry's deletion: asking for other values, or to delete it, is a 409 `conflict` with
      * `details.fuelLogId`. Everything else stays editable here.
      */
     fuelLogId: z.string().nullable(),

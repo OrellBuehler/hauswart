@@ -187,8 +187,13 @@ describe("fuel log API", () => {
     ).toMatchObject({ paidByUserId: other.id, splitMode: "equal" });
   });
 
-  it("owns the amount, currency and date of its cost entry, and the cost entry points back", async () => {
-    const { call, fill } = await setup();
+  it("owns the amount, currency, date and device of its cost entry, and the cost entry points back", async () => {
+    const { call, car, fill } = await setup();
+    const spare = (
+      await call("POST", "/api/v1/assets", {
+        json: { name: "Zweitwagen", kind: "vehicle" },
+      })
+    ).body as { id: string };
     const log = (
       await fill({
         date: today(-2),
@@ -204,6 +209,8 @@ describe("fuel log API", () => {
       { amountMinor: 9_000 },
       { currency: "EUR" },
       { date: today(-1) },
+      { assetId: spare.id },
+      { assetId: null },
     ]) {
       const r = await call("PATCH", cost, { json });
       expect(r.res.status).toBe(409);
@@ -221,6 +228,7 @@ describe("fuel log API", () => {
     const edited = await call("PATCH", cost, {
       json: {
         amountMinor: 7_200,
+        assetId: car.id,
         title: "Benzin",
         notes: "Bar",
         category: "other",
@@ -229,6 +237,7 @@ describe("fuel log API", () => {
     expect(edited.res.status).toBe(200);
     expect(edited.body).toMatchObject({
       amountMinor: 7_200,
+      assetId: car.id,
       date: today(-2),
       title: "Benzin",
       notes: "Bar",

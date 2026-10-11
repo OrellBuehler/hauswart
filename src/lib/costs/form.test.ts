@@ -416,14 +416,21 @@ describe("editing", () => {
   });
 
   describe("an entry a fuel log entry booked", () => {
-    const fuel = () => entry({ category: "fuel", fuelLogId: "f1" });
+    const fuel = () =>
+      entry({
+        category: "fuel",
+        fuelLogId: "f1",
+        assetId: "a1",
+        assetName: "Familienauto",
+      });
 
-    it("never sends the amount, the currency or the date: they change on the fuel log entry", () => {
+    it("never sends the amount, the currency, the date or the device: they stay with the fuel log entry", () => {
       const e = fuel();
       const d = draftFromEntry(e, USERS);
       d.amount = "200";
       d.currency = "EUR";
       d.date = "2026-09-01";
+      d.assetId = "a2";
       d.refund = true;
       d.payee = "Example Station";
       expect(buildUpdateBody(d, e, USERS).body).toEqual({
@@ -453,11 +460,22 @@ describe("editing", () => {
       expect(buildUpdateBody(d, e, USERS).body).toBeUndefined();
     });
 
-    it("sends the amount of any other entry", () => {
-      const e = entry();
+    it("never sends a cleared device either", () => {
+      const e = fuel();
+      const d = draftFromEntry(e, USERS);
+      d.assetId = "";
+      expect(buildUpdateBody(d, e, USERS).body).toEqual({});
+    });
+
+    it("sends the amount and the device of any other entry", () => {
+      const e = entry({ assetId: "a1", assetName: "Familienauto" });
       const d = draftFromEntry(e, USERS);
       d.amount = "200";
-      expect(buildUpdateBody(d, e, USERS).body).toEqual({ amountMinor: 20000 });
+      d.assetId = "a2";
+      expect(buildUpdateBody(d, e, USERS).body).toEqual({
+        amountMinor: 20000,
+        assetId: "a2",
+      });
     });
   });
 

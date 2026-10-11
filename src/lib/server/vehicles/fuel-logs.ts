@@ -362,7 +362,8 @@ export function createFuelLog(
  * Changes a fill. The reading follows the date and the odometer; the cost entry follows the amount,
  * the currency, the date, the station (its title and payee, unless somebody changed those on the
  * cost entry since) and the payer or split. The fill owns the amount, currency and date of its cost
- * entry: they change here and nowhere else. A fill that becomes free loses its cost entry; one that
+ * entry: they change here and nowhere else (its device stays the vehicle and is never sent). A fill
+ * that becomes free loses its cost entry; one that
  * costs something now and has none gets one (unless only other things changed).
  */
 export function updateFuelLog(
