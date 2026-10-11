@@ -7,34 +7,48 @@ import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ fetch, params, url }) => {
   const client = createApiClient(fetch);
-  const [task, history, household, people, parts] = await Promise.all([
-    orFail(
-      client.call(endpoints.tasksGet, { params: { id: params.id } }),
-      url.pathname,
-    ),
-    orFail(
-      client.call(endpoints.completionsList, {
-        query: { taskId: params.id, limit: 20 },
-      }),
-      url.pathname,
-    ),
-    loadHousehold(client, url.pathname),
-    loadDirectory(client, url.pathname),
-    orFail(
-      fetchAll((cursor) =>
-        client.call(endpoints.taskPartsList, {
-          params: { id: params.id },
-          query: { cursor, limit: 200 },
-        }),
+  const [task, history, household, people, parts, appointments] =
+    await Promise.all([
+      orFail(
+        client.call(endpoints.tasksGet, { params: { id: params.id } }),
+        url.pathname,
       ),
-      url.pathname,
-    ),
-  ]);
+      orFail(
+        client.call(endpoints.completionsList, {
+          query: { taskId: params.id, limit: 20 },
+        }),
+        url.pathname,
+      ),
+      loadHousehold(client, url.pathname),
+      loadDirectory(client, url.pathname),
+      orFail(
+        fetchAll((cursor) =>
+          client.call(endpoints.taskPartsList, {
+            params: { id: params.id },
+            query: { cursor, limit: 200 },
+          }),
+        ),
+        url.pathname,
+      ),
+      orFail(
+        fetchAll((cursor) =>
+          client.call(endpoints.appointmentsList, {
+            query: {
+              taskId: params.id,
+              status: "planned",
+              limit: 200,
+              ...(cursor ? { cursor } : {}),
+            },
+          }),
+        ),
+        url.pathname,
+      ),
+    ]);
   const asset = task.assetId
     ? await orFail(
         client.call(endpoints.assetsGet, { params: { id: task.assetId } }),
         url.pathname,
       )
     : null;
-  return { task, history, asset, ...household, people, parts };
+  return { task, history, asset, ...household, people, parts, appointments };
 };

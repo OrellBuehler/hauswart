@@ -21,6 +21,8 @@
   import { FINANCE_BILL_TASK_SOURCE } from "$lib/api/enums";
   import { endpoints } from "$lib/api/registry";
   import type { Completion } from "$lib/api/schemas/tasks";
+  import AppointmentBadge from "$lib/components/appointments/appointment-badge.svelte";
+  import AppointmentsCard from "$lib/components/appointments/appointments-card.svelte";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
   import OpenNotesBadge from "$lib/components/asset-notes/open-notes-badge.svelte";
   import Comments from "$lib/components/comments/comments.svelte";
@@ -77,6 +79,7 @@
       : null,
   );
   const now = Date.now();
+  const canWrite = $derived(data.scopes.includes("write"));
 
   let dialog = $state<"complete" | "skip" | "snooze" | null>(null);
   let dialogOpen = $state(false);
@@ -228,6 +231,14 @@
             count={task.openNoteCount}
             assetId={task.assetId}
             assetName={task.assetName ?? ""}
+            class="text-sm"
+          />
+        {/if}
+        {#if task.nextAppointment}
+          <AppointmentBadge
+            appointment={task.nextAppointment}
+            timeZone={data.timeZone}
+            {today}
             class="text-sm"
           />
         {/if}
@@ -572,6 +583,23 @@
           {/if}
         </Card.Content>
       </Card.Root>
+
+      <AppointmentsCard
+        appointments={data.appointments}
+        timeZone={data.timeZone}
+        {today}
+        canWrite={canWrite && !archived}
+        addLabel={m.appointment_schedule()}
+        emptyBody={m.appointments_card_empty_task()}
+        defaults={{
+          title: task.title,
+          taskId: task.id,
+          taskTitle: task.title,
+          assetId: task.assetId,
+          assetName: task.assetName,
+          occurrenceKey: task.state?.occurrenceKey ?? null,
+        }}
+      />
 
       <Card.Root>
         <Card.Header>

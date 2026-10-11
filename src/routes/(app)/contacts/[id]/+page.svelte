@@ -16,6 +16,7 @@
   import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
   import EmptyState from "$lib/components/app/empty-state.svelte";
+  import AppointmentsCard from "$lib/components/appointments/appointments-card.svelte";
   import ContactActions from "$lib/components/contacts/contact-actions.svelte";
   import ContactFormDialog from "$lib/components/contacts/contact-form-dialog.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
@@ -219,6 +220,15 @@
           {/if}
         </Card.Content>
       </Card.Root>
+
+      <AppointmentsCard
+        appointments={data.appointments}
+        timeZone={data.timeZone}
+        today={data.today}
+        canWrite={data.scopes.includes("write")}
+        emptyBody={m.appointments_card_empty_contact()}
+        defaults={{ contactId: contact.id }}
+      />
     </div>
 
     <Card.Root>

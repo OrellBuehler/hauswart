@@ -181,7 +181,12 @@
           class="py-8"
         />
       {:else}
-        <TaskRows {tasks} showAsset />
+        <TaskRows
+          {tasks}
+          timeZone={data.timeZone}
+          today={data.today}
+          showAsset
+        />
       {/if}
     </Card.Content>
   </Card.Root>

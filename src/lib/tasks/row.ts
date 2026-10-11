@@ -1,5 +1,5 @@
 import type { Dashboard } from "$lib/api/schemas/dashboard";
-import type { Task } from "$lib/api/schemas/tasks";
+import type { NextAppointment, Task } from "$lib/api/schemas/tasks";
 import { daysUntil, formatDateShort, formatRelativeDays } from "$lib/format";
 import { odometerAssetOfTrigger } from "$lib/vehicles/odometer";
 import { shownDate, shownDateIsEstimate } from "./engine/shown";
@@ -32,6 +32,8 @@ export type TaskRowData = {
   openNoteCount?: number;
   /** The vehicle whose odometer the task counts on, else null: completing it asks for the reading first. */
   odometerAssetId?: string | null;
+  /** The earliest planned appointment of the task. */
+  nextAppointment?: NextAppointment | null;
   trigger?: Trigger;
 };
 
@@ -53,6 +55,7 @@ export function rowFromDashboard(task: DashboardTask): TaskRowData {
     snoozedUntil: null,
     openNoteCount: task.openNoteCount,
     odometerAssetId: task.odometerAssetId,
+    nextAppointment: task.nextAppointment,
   };
 }
 
@@ -85,6 +88,7 @@ export function rowFromTask(
     commentCount: task.commentCount,
     openNoteCount: task.openNoteCount,
     odometerAssetId: odometerAssetOfTrigger(task.trigger),
+    nextAppointment: task.nextAppointment,
     trigger: task.trigger,
   };
 }

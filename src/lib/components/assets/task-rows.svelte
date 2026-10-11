@@ -1,13 +1,19 @@
 <script lang="ts">
   import type { Task } from "$lib/api/schemas/tasks";
   import { resolve } from "$app/paths";
+  import AppointmentBadge from "$lib/components/appointments/appointment-badge.svelte";
   import DueBadge from "./due-badge.svelte";
 
   let {
     tasks,
+    timeZone,
+    today,
     showAsset = false,
   }: {
     tasks: Task[];
+    /** The household's time zone and today's date, for the appointment of a task. */
+    timeZone: string;
+    today: string;
     /** Adds the name of the asset each task belongs to. */
     showAsset?: boolean;
   } = $props();
@@ -25,6 +31,16 @@
           {#if showAsset && task.assetName}
             <span class="text-muted-foreground block truncate text-xs">
               {task.assetName}
+            </span>
+          {/if}
+          {#if task.nextAppointment}
+            <span class="mt-1 block">
+              <AppointmentBadge
+                appointment={task.nextAppointment}
+                {timeZone}
+                {today}
+                linked={false}
+              />
             </span>
           {/if}
         </span>
