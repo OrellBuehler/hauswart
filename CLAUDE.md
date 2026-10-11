@@ -671,7 +671,8 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   index and the mount code). **Mounting** (`mountTireSet`) takes the mounted set off (an `unmounted` event of the same
   day and odometer), writes the `mounted` event and, with an `odometer`, a reading of the vehicle (source `tire_change`,
   the mount event as `sourceId`; lower than the reading before is a 400 on `odometer`), in one transaction; 409 for a
-  retired or already mounted set. Whether a set is mounted and its tread change only through mount and tread (each
+  retired or already mounted set. A mount dated before the day the set it takes off was (last) mounted is a 400 on `date`
+  (the same day is fine), so an `unmounted` event never precedes its `mounted` one. Whether a set is mounted and its tread change only through mount and tread (each
   measurement is a `tread_measured` event, the newest is the set's depth, and an `odometer` with it is a reading of the
   same kind and rule as for mounting); `retired: true` takes a mounted set off.
   The DTO carries `treadWarning` (below 3 mm summer, 4 mm winter and all-season, `TREAD_WARNING_MM`), `ageYears` (from

@@ -240,6 +240,62 @@ describe("tire sets", () => {
       expect(readings(car.id)).toEqual(["2026-05-01 90000 manual"]);
     });
 
+    describe("a date before the mounted set was mounted", () => {
+      it("is a 400 on date and changes nothing", async () => {
+        const car = makeVehicle(test);
+        const first = make(car.id, { season: "summer" });
+        const second = make(car.id);
+        mount(car.id, first.id, { date: "2026-06-10" });
+        const err = await failure(() =>
+          mount(car.id, second.id, { date: "2026-06-09" }),
+        );
+        expect(err.code).toBe("invalid_request");
+        expect(err.status).toBe(400);
+        expect(fieldErrors(err, "date")[0]).toContain("2026-06-10");
+        expect(getTireSet(ctx(), first.id)).toMatchObject({
+          mounted: true,
+          mountedOn: "2026-06-10",
+        });
+        expect(getTireSet(ctx(), first.id).events).toHaveLength(1);
+        expect(getTireSet(ctx(), second.id).mounted).toBe(false);
+        expect(getTireSet(ctx(), second.id).events).toEqual([]);
+        expect(mountedTireSet(ctx(), car.id)?.id).toBe(first.id);
+      });
+
+      it("is fine on the day itself and after it", () => {
+        const car = makeVehicle(test);
+        const first = make(car.id, { season: "summer" });
+        const second = make(car.id);
+        mount(car.id, first.id, { date: "2026-06-10" });
+        mount(car.id, second.id, { date: "2026-06-10" });
+        mount(car.id, first.id, { date: "2026-06-12" });
+        expect(mountedTireSet(ctx(), car.id)?.id).toBe(first.id);
+      });
+
+      it("counts from the last time the mounted set was mounted", () => {
+        const car = makeVehicle(test);
+        const first = make(car.id, { season: "summer" });
+        const second = make(car.id);
+        mount(car.id, first.id, { date: "2026-04-01" });
+        mount(car.id, second.id, { date: "2026-05-01" });
+        mount(car.id, first.id, { date: "2026-06-01" });
+        return failure(() =>
+          mount(car.id, second.id, { date: "2026-05-20" }),
+        ).then((err) => {
+          expect(fieldErrors(err, "date")[0]).toContain("2026-06-01");
+          expect(mountedTireSet(ctx(), car.id)?.id).toBe(first.id);
+        });
+      });
+
+      it("is no problem for the first set of a vehicle, whatever its date", () => {
+        const car = makeVehicle(test);
+        const set = make(car.id);
+        expect(mount(car.id, set.id, { date: "2019-01-01" }).mountedOn).toBe(
+          "2019-01-01",
+        );
+      });
+    });
+
     it.each([
       ["a date in the future", { date: "2026-12-01" }, "invalid_request"],
       ["a set that is mounted already", { again: true }, "conflict"],

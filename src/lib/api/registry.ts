@@ -1914,7 +1914,7 @@ export const endpoints = {
     method: "POST",
     path: "/api/v1/assets/{id}/tire-sets/{setId}/mount",
     summary: "Mount a tire set",
-    description: `Takes the mounted set off (an unmounted event of the same day) and mounts this one. With an odometer value the vehicle gets that reading (source tire_change); an odometer value that is out of order is a 400 on odometer and nothing is changed (${ODOMETER_REFUSAL}). 409 for a retired set and for one that is already mounted. ${VEHICLE_ONLY_WRITE}`,
+    description: `Takes the mounted set off (an unmounted event of the same day) and mounts this one. With an odometer value the vehicle gets that reading (source tire_change); an odometer value that is out of order is a 400 on odometer and nothing is changed (${ODOMETER_REFUSAL}), and so is a date before the day the set that would be taken off was mounted (400 on \`date\`; the same day is fine). 409 for a retired set and for one that is already mounted. ${VEHICLE_ONLY_WRITE}`,
     tags: ["vehicles", "assets"],
     auth: "both",
     scopes: ["write"],

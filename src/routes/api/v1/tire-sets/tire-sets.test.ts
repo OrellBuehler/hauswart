@@ -200,6 +200,26 @@ describe("tire sets API", () => {
     ).toBe(false);
   });
 
+  it("a mount dated before the mounted set was mounted is a 400 on date", async () => {
+    const { call, vehicle, set } = await setup();
+    const car = await vehicle();
+    const summer = await set(car.id, { season: "summer" });
+    const winter = await set(car.id);
+    const mount = (setId: string, date: string) =>
+      call("POST", `/api/v1/assets/${car.id}/tire-sets/${setId}/mount`, {
+        json: { date },
+      });
+    expect((await mount(summer.id, today(-20))).res.status).toBe(200);
+    const refused = await mount(winter.id, today(-21));
+    expect(refused.res.status).toBe(400);
+    expect(fieldError(refused.body, "date")[0]).toContain(today(-20));
+    expect(
+      ((await call("GET", `/api/v1/tire-sets/${summer.id}`)).body as TireSet)
+        .mounted,
+    ).toBe(true);
+    expect((await mount(winter.id, today(-20))).res.status).toBe(200);
+  });
+
   it("answers 409 for a set that is mounted already or retired, and 404 for another vehicle's", async () => {
     const { call, vehicle, set } = await setup();
     const car = await vehicle("Auto A");

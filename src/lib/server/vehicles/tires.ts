@@ -326,8 +326,9 @@ export function deleteTireSet(ctx: Ctx, id: string): void {
  * Mounts a set on its vehicle: the set that was mounted is taken off first (an `unmounted` event of
  * the same day and odometer), then the `mounted` event is written, and with an odometer value the
  * vehicle gets that reading (source `tire_change`, the mount event as its source record) under the
- * usual rule that it must not be lower than the reading before. All of it or nothing. A retired
- * set or one already mounted is a 409.
+ * usual rule that it must not be lower than the reading before. A date before the day the set
+ * that is taken off was mounted (its last mounting) is a 400 on `date`. All of it or nothing. A
+ * retired set or one already mounted is a 409.
  */
 export function mountTireSet(
   ctx: Ctx,
@@ -350,7 +351,25 @@ export function mountTireSet(
       .from(tireSets)
       .where(and(eq(tireSets.assetId, assetId), eq(tireSets.mounted, true)))
       .get();
-    if (before) takeOff(inner.db, ctx, before, date, input.odometer ?? null);
+    if (before) {
+      const since = tx
+        .select({ date: sql<string | null>`max(${tireSetEvents.date})` })
+        .from(tireSetEvents)
+        .where(
+          and(
+            eq(tireSetEvents.tireSetId, before.id),
+            eq(tireSetEvents.kind, "mounted"),
+          ),
+        )
+        .get()?.date;
+      if (since && date < since) {
+        throw invalidField(
+          "date",
+          `Must not be before the day the mounted set was mounted (${since})`,
+        );
+      }
+      takeOff(inner.db, ctx, before, date, input.odometer ?? null);
+    }
     tx.update(tireSets)
       .set({ mounted: true })
       .where(eq(tireSets.id, setId))
