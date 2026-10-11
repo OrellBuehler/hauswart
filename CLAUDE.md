@@ -128,6 +128,8 @@ src/lib/server/defects/          defects (Mängel): status machine, events, hand
 src/lib/server/warranties/       warranty overview + status (valid / expiring ≤ 90 days / expired); feeds the dashboard
 src/lib/server/comments/         generic comments on any entity: commentable registry, soft delete, notifications, counts
 src/lib/appointments/when.ts     when an appointment takes place (timed instants or all-day dates), the 14-day limit, start/end instants (pure, client-safe)
+src/lib/appointments/            client-safe UI logic next to it: format.ts (wording in the household zone), list.ts (views, filters, day groups),
+                                 form.ts (draft -> request bodies), labels.ts; see "Appointments in the web app"
 src/lib/server/appointments/     appointments ("Termine"): appointments.ts (CRUD, filters, merge rules), complete.ts (done + the task's
                                  completion), next.ts (the next appointment of a task); see "Appointments"
 src/lib/server/calendar/         ical.ts (pure RFC 5545 builder), feeds.ts (ical_feeds CRUD, token), feed.ts (events of a feed),
@@ -1174,6 +1176,20 @@ in dark mode. Every list has an empty state, every async action a pending and an
   `NoteChoices` is the picker for the completion and service log dialogs and `OpenNotesBadge` the count on task rows and the task
   page. After `bun run check` or `bun run i18n` restart a running `bun dev`: regenerated route nodes and message modules leave the
   dev client with a stale manifest.
+- **Appointments in the web app**: `/appointments` (entry "Termine" in the overview group, behind "More" on phones; creating is a dialog, no
+  `/new` route) shows `?view=upcoming|past` and `?status=planned,done,cancelled`; the load reads only `view` (it fetches `from`/`to` ranges,
+  `viewRange`), the status chips filter in the page from `page.url`. "Over" is day-based and in the household zone (`isOver`: last day before
+  today; a timed one that ends at midnight does not touch the next day). Upcoming = the last 30 days on, split by `sectionsFor` into "Noch offen"
+  (planned and over: someone still has to close it, its task keeps waiting) and day groups by start day (a longer one that already started sits
+  under today); past = the last 12 months, newest first, "older" loads the rest. The detail page completes with `POST .../complete {}` and keeps
+  what it answered for that page only: the task was completed, or why not (`completion: null`: archived, or the occurrence is settled); cancel
+  has an undo toast, "reopen" says it does not undo the task's completion. `AppointmentFormDialog` creates, edits and prefills (`defaults`: task
+  with its `occurrenceKey`, device, contact); its times are wall-clock in the household zone (`zonedTimeToInstant`, never the browser's), an empty
+  end sends none on create (the server's hour) and is made explicit on edit, a changed start or end sends both, and `buildUpdateBody` compares the
+  wall-clock fields with `draftFromAppointment`, so an end that falls in the repeated autumn hour is not moved by a title edit. `LinkSelect` is a
+  searchable combobox (task, device; contacts keep `ContactSelect`). `AppointmentsCard` (planned ones plus "create") sits on the task, device and
+  contact pages; `AppointmentBadge` shows `nextAppointment` on task rows (`TaskRow` and `TaskRows` take `timeZone`; the badge is a link except
+  inside `TaskRows`, whose row is one) and on the task page.
 - **Vehicles in the web app**: `assets/[id]` for kind `vehicle` shows `components/vehicles/` first: `VehicleCard` (plate chip,
   odometer with the "record" dialog, details), `OdometerHistoryCard` (delete is offered for every reading; a reading that belongs to
   a completion, service log entry, fuel log entry or tire change is a 409 whose `details.source` is worded by `readingOwner`),
