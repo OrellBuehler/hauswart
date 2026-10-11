@@ -1,4 +1,4 @@
-import { asc, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, lte, sql } from "drizzle-orm";
 import type { OdometerUnit } from "$lib/api/enums";
 import type {
   OdometerSummary,
@@ -37,6 +37,29 @@ export function latestReading(db: Pick<DB, "select">, assetId: string) {
     .select()
     .from(odometerReadings)
     .where(eq(odometerReadings.assetId, assetId))
+    .orderBy(...readingOrder("desc"))
+    .limit(1)
+    .get();
+}
+
+/**
+ * The newest reading on or before a date (`YYYY-MM-DD`): the latest date up to it, and among
+ * readings of that date the one entered last. What the odometer showed as of that day.
+ */
+export function readingOnOrBefore(
+  db: Pick<DB, "select">,
+  assetId: string,
+  date: string,
+) {
+  return db
+    .select()
+    .from(odometerReadings)
+    .where(
+      and(
+        eq(odometerReadings.assetId, assetId),
+        lte(odometerReadings.date, date),
+      ),
+    )
     .orderBy(...readingOrder("desc"))
     .limit(1)
     .get();

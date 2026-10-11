@@ -5,7 +5,7 @@ import { dateInZone, householdTimeZone } from "$lib/server/config";
 import { assets, tasks } from "$lib/server/db";
 import { onEvent } from "$lib/server/events";
 import { writeOdometer, removeReadingsOfSource } from "./odometer";
-import { latestReading } from "./summary";
+import { readingOnOrBefore } from "./summary";
 
 type RecordedPayload = Parameters<
   Parameters<typeof onEvent<"completionRecorded">>[1]
@@ -50,15 +50,22 @@ export function onCompletionRecorded({
   if (completion.counterValue === null) return;
   const assetId = odometerVehicleOf(ctx, completion.taskId);
   if (!assetId) return;
-  if (latestReading(ctx.db, assetId)?.value === completion.counterValue) return;
   // A completion may be a few minutes ahead of the clock, which at midnight is already tomorrow;
   // a reading is never dated in the future.
   const today = dateInZone(ctx.now, householdTimeZone());
+  const date =
+    completion.completedDate > today ? today : completion.completedDate;
+  // The reading of that day already says it (the snapshot a completion takes by itself, or the
+  // value somebody typed that the odometer showed then): nothing to add.
+  if (
+    readingOnOrBefore(ctx.db, assetId, date)?.value === completion.counterValue
+  )
+    return;
   writeOdometer(
     ctx,
     {
       assetId,
-      date: completion.completedDate > today ? today : completion.completedDate,
+      date,
       value: completion.counterValue,
       source: "completion",
       sourceId: completion.id,

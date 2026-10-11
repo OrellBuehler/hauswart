@@ -639,9 +639,13 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   or corrected), so the task starts again from what the vehicle shows instead of counting from a number it never had.
 - **Other writers.** A completion with a `counterValue` of a task that reads the odometer records a
   reading dated the day of the completion (`vehicles/events.ts`, a listener on `completionRecorded`, so
-  inside the completion's transaction): a value equal to the newest (including the counter snapshot a
-  completion takes by itself) adds nothing, a lower one fails the completion with a 400 on
-  `counterValue`, undo removes the reading; the complete and undo handlers then re-evaluate the other tasks that read
+  inside the completion's transaction): a value equal to the reading on or before the completion's date
+  (including the counter snapshot a completion takes by itself) adds nothing, a lower one fails the completion
+  with a 400 on `counterValue`, undo removes the reading. Without a `counterValue` such a task snapshots the
+  reading on or before the completion's date (`readingOnOrBefore`, the last one entered among a day's), not the
+  current one, so a completion dated back counts from what the odometer showed that day (dated before the first
+  reading it takes no snapshot and the task goes on from its remembered starting value; any other counter, say a
+  Home Assistant one, still snapshots its current value); the complete and undo handlers then re-evaluate the other tasks that read
   the same odometer (`refreshOdometerReaders`), so they do not wait for the scheduler. A service log entry's `odometer` (vehicles only, 400 on `odometer` for anything else)
   keeps one reading in step with the entry through create, update (value or date) and delete, in the
   entry's transaction; the handlers re-evaluate the readers at once (`refreshOdometerReaders`).

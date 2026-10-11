@@ -135,6 +135,97 @@ describe("a completion with an odometer reading", () => {
     });
   });
 
+  describe("backdated, without a reading of its own", () => {
+    async function history() {
+      const { car, task } = await setup();
+      const reading = (date: string, value: number) =>
+        recordOdometer(ctx(), {
+          assetId: car.id,
+          date,
+          value,
+          source: "manual",
+        });
+      await reading("2026-06-05", 81_000);
+      await reading("2026-06-10", 83_000);
+      return { car, task, reading };
+    }
+
+    it.each([
+      ["before every reading", "2026-05-20", null],
+      ["on the day of the first reading", "2026-06-01", 80_000],
+      ["between two readings", "2026-06-03", 80_000],
+      ["on the day of a later reading", "2026-06-05", 81_000],
+      ["after that reading, before the next", "2026-06-08", 81_000],
+      ["on the day of the newest reading", "2026-06-10", 83_000],
+      ["today", "2026-06-15", 83_000],
+    ])(
+      "a completion %s (%s) takes the reading on or before its date",
+      async (_when, date, expected) => {
+        const { car, task } = await history();
+        const { completion } = await finish(task.id, {
+          completedAt: at(date, "09:00"),
+        });
+        expect(completion.counterValue).toBe(expected);
+        // The snapshot is no new reading.
+        expect(readings(car.id).map((r) => r.value)).toEqual([
+          83_000, 81_000, 80_000,
+        ]);
+      },
+    );
+
+    it("takes the reading entered last when a day has several", async () => {
+      const { task, reading } = await history();
+      await reading("2026-06-05", 81_200);
+      const { completion } = await finish(task.id, {
+        completedAt: at("2026-06-05", "09:00"),
+      });
+      expect(completion.counterValue).toBe(81_200);
+    });
+
+    it("so the next period counts from what the odometer showed then, not from today's value", async () => {
+      const { task } = await history();
+      const { task: after } = await finish(task.id, {
+        completedAt: at("2026-06-05", "09:00"),
+      });
+      expect(after.state).toMatchObject({
+        status: "ok",
+        progress: { current: 2_000, target: 15_000 },
+      });
+    });
+
+    it("a value given with it is taken as it is and dated back; one the day's reading already has adds nothing", async () => {
+      const { car, task } = await history();
+      await finish(task.id, {
+        completedAt: at("2026-06-05", "09:00"),
+        counterValue: 81_000,
+      });
+      expect(readings(car.id)).toHaveLength(3);
+      await finish(task.id, {
+        completedAt: at("2026-06-06", "09:00"),
+        counterValue: 81_500,
+      });
+      expect(readings(car.id).map((r) => [r.date, r.value, r.source])).toEqual([
+        ["2026-06-10", 83_000, "manual"],
+        ["2026-06-06", 81_500, "completion"],
+        ["2026-06-05", 81_000, "manual"],
+        ["2026-06-01", 80_000, "manual"],
+      ]);
+    });
+
+    it("undoing it removes no reading", async () => {
+      const anna = await createTestUser();
+      const { car, task } = await history();
+      const { completion } = await finish(task.id, {
+        userId: anna.id,
+        completedAt: at("2026-06-05", "09:00"),
+      });
+      await undoCompletion(ctx(), completion.id, anna.id);
+      expect(readings(car.id).map((r) => r.value)).toEqual([
+        83_000, 81_000, 80_000,
+      ]);
+    });
+  });
+
   it("a completion a few minutes ahead of midnight is dated today, not tomorrow", async () => {
     const { car, task } = await setup();
     // The completion tolerates a clock five minutes ahead, which can be the next day.
