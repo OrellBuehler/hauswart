@@ -126,7 +126,8 @@ function checkSpan(v: WhenFields, ctx: Issues) {
 /**
  * `allDay` (default false) says which kind it is. A timed appointment needs `startsAt`; `endsAt`
  * defaults to an hour later. An all-day one needs `startDate`; `endDate` defaults to the same day.
- * The fields of the other kind are refused. At most 14 days long. `assetId` defaults to the asset of
+ * The fields of the other kind are refused. At most 14 days long (a timed one up to an hour more, for
+ * the hour 14 calendar days can have more when the clocks go back). `assetId` defaults to the asset of
  * the task; `occurrenceKey` needs a `taskId` and defaults to the occurrence the task shows now
  * (none for a task that shows none). A new appointment is `planned`.
  */

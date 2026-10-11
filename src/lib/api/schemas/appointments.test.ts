@@ -54,6 +54,24 @@ describe("createAppointmentRequestSchema", () => {
     ).toEqual([]);
   });
 
+  it("accepts 14 calendar days across the night the clocks go back, an hour more than 14 days", () => {
+    // 27 October 2030: Zurich goes from UTC+2 to UTC+1.
+    expect(
+      refused({
+        title: "x",
+        startsAt: "2030-10-20T07:00:00.000Z",
+        endsAt: "2030-11-03T08:00:00.000Z",
+      }),
+    ).toEqual([]);
+    expect(
+      refused({
+        title: "x",
+        startsAt: "2030-10-20T07:00:00.000Z",
+        endsAt: "2030-11-03T08:00:01.000Z",
+      }),
+    ).toEqual(["endsAt"]);
+  });
+
   it("trims and bounds the texts and turns an empty text into null", () => {
     const parsed = createAppointmentRequestSchema.parse({
       title: "  Kaminfeger ",
@@ -111,8 +129,8 @@ describe("createAppointmentRequestSchema", () => {
       ["endsAt"],
     ],
     [
-      "a span of 14 days and a second",
-      { title: "x", startsAt: START, endsAt: "2030-03-26T08:00:01.000Z" },
+      "a span of 14 days, an hour and a second",
+      { title: "x", startsAt: START, endsAt: "2030-03-26T09:00:01.000Z" },
       ["endsAt"],
     ],
     [

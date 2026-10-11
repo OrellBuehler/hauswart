@@ -29,8 +29,49 @@ describe("whenProblem", () => {
       null,
     ],
     [
-      "a timed appointment of 14 days and a millisecond",
-      { allDay: false, startsAt: start, endsAt: start + 14 * DAY + 1 },
+      "a timed appointment of 14 days and an hour, the most a clock change adds",
+      { allDay: false, startsAt: start, endsAt: start + 14 * DAY + HOUR },
+      null,
+    ],
+    [
+      "a timed appointment of 14 days, an hour and a millisecond",
+      { allDay: false, startsAt: start, endsAt: start + 14 * DAY + HOUR + 1 },
+      "endsAt",
+    ],
+    [
+      "14 calendar days across the night the clocks go back (an hour longer than 14 days)",
+      {
+        allDay: false,
+        startsAt: at("2026-10-18", "09:00"),
+        endsAt: at("2026-11-01", "09:00"),
+      },
+      null,
+    ],
+    [
+      "14 calendar days across the night the clocks go forward (an hour shorter than 14 days)",
+      {
+        allDay: false,
+        startsAt: at("2026-03-22", "09:00"),
+        endsAt: at("2026-04-05", "09:00"),
+      },
+      null,
+    ],
+    [
+      "more than 14 calendar days across the night the clocks go back",
+      {
+        allDay: false,
+        startsAt: at("2026-10-18", "09:00"),
+        endsAt: at("2026-11-01", "10:01"),
+      },
+      "endsAt",
+    ],
+    [
+      "more than 14 calendar days across the night the clocks go forward",
+      {
+        allDay: false,
+        startsAt: at("2026-03-22", "09:00"),
+        endsAt: at("2026-04-06", "10:01"),
+      },
       "endsAt",
     ],
     [

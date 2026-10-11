@@ -2487,7 +2487,7 @@ export const endpoints = {
     path: "/api/v1/appointments",
     summary: "Create an appointment",
     description:
-      "A timed appointment needs startsAt (endsAt defaults to an hour later); an all-day one needs allDay true and startDate (endDate defaults to the same day, the last day included). The fields of the other kind are refused, the end must come after the start and an appointment lasts at most 14 days. It can belong to a task (taskId, optionally the occurrenceKey it is for; without one the occurrence the task shows now is recorded, none for a task that shows none), a device and a contact; the asset defaults to the task's asset. It starts as planned. 400 field errors name the offending field (`taskId`, `assetId`, `contactId` when they do not exist).",
+      "A timed appointment needs startsAt (endsAt defaults to an hour later); an all-day one needs allDay true and startDate (endDate defaults to the same day, the last day included). The fields of the other kind are refused, the end must come after the start and an appointment lasts at most 14 days (a timed one may run an hour over, which is what 14 calendar days have more when the clocks go back). It can belong to a task (taskId, optionally the occurrenceKey it is for; without one the occurrence the task shows now is recorded, none for a task that shows none), a device and a contact; the asset defaults to the task's asset. It starts as planned. 400 field errors name the offending field (`taskId`, `assetId`, `contactId` when they do not exist).",
     tags: ["appointments"],
     auth: "both",
     scopes: ["write"],

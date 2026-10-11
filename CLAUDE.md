@@ -803,8 +803,9 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   `notes` (5000, no markup), `location` (300), `status` `planned|done|cancelled` (any status can be set from any other).
   **Two kinds, one CHECK**: timed (`allDay` false, `startsAt` < `endsAt`, UTC instants) or all-day (`allDay` true,
   `startDate` <= `endDate`, calendar dates in the household zone, the last day included, so it never moves with the zone); the
-  fields of the other kind are null. At most 14 days (`whenProblem`, one function for the request schema and the service, which
-  re-checks the merged result). On create `endsAt` defaults to an hour after the start and `endDate` to `startDate`. Optional
+  fields of the other kind are null. At most 14 days (`whenProblem`, one function for the request schema, the form and the service, which
+  re-checks the merged result; it has no time zone, so a timed one may be up to 14 days and an hour in real time,
+  `MAX_TIMED_SPAN_MS`: 14 calendar days across the night the clocks go back are an hour longer, forward an hour shorter). On create `endsAt` defaults to an hour after the start and `endDate` to `startDate`. Optional
   `taskId` + `occurrenceKey` (the occurrence it is for: **pinned** when the appointment gets a task - on create, or in a PATCH that
   changes the task - as the key the task shows then, unless the request names one; the engine's placeholders `none` and `s:none`
   mean "no occurrence" and are never stored, so those stay null), `assetId` (defaults to the task's asset on create) and `contactId`, all

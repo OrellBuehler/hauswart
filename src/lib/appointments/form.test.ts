@@ -231,6 +231,42 @@ describe("draftWhen", () => {
     expect(before.errors.endDate).toBeTruthy();
   });
 
+  it("allows 14 calendar days across the night the clocks go back, which last an hour more", () => {
+    const back = draftWhen(
+      draft({
+        startDate: "2026-10-18",
+        endDate: "2026-11-01",
+        endTime: "09:00",
+      }),
+      timeZone,
+    );
+    expect(back.errors).toEqual({});
+    expect(back.when).toMatchObject({ allDay: false });
+    const tooLong = draftWhen(
+      draft({
+        startDate: "2026-10-18",
+        endDate: "2026-11-01",
+        endTime: "10:01",
+      }),
+      timeZone,
+    );
+    expect(tooLong.when).toBeNull();
+    expect(tooLong.errors.endTime).toMatch(/14/);
+  });
+
+  it("allows 14 calendar days across the night the clocks go forward", () => {
+    const forward = draftWhen(
+      draft({
+        startDate: "2026-03-22",
+        endDate: "2026-04-05",
+        endTime: "09:00",
+      }),
+      timeZone,
+    );
+    expect(forward.errors).toEqual({});
+    expect(forward.when).not.toBeNull();
+  });
+
   it("refuses an appointment longer than 14 days and allows exactly 14", () => {
     expect(
       draftWhen(draft({ allDay: true, endDate: "2026-10-27" }), timeZone).when,

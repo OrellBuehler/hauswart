@@ -136,6 +136,31 @@ describe("appointments", () => {
       expect(makeAllDay({ endDate: "2026-07-05" }).endDate).toBe("2026-07-05");
     });
 
+    it("counts 14 calendar days across the nights the clocks change as 14 days", () => {
+      // 25 October: the clocks go back, so these 14 days last an hour more; 29 March: forward, an hour less.
+      const back = make({
+        startsAt: at("2026-10-18", "09:00"),
+        endsAt: at("2026-11-01", "09:00"),
+      });
+      expect(back.endsAt).toEqual(new Date(at("2026-11-01", "09:00")));
+      expect(back.endsAt!.getTime() - back.startsAt!.getTime()).toBe(
+        14 * DAY + HOUR,
+      );
+      const forward = make({
+        startsAt: at("2026-03-22", "09:00"),
+        endsAt: at("2026-04-05", "09:00"),
+      });
+      expect(forward.endsAt!.getTime() - forward.startsAt!.getTime()).toBe(
+        14 * DAY - HOUR,
+      );
+      expect(() =>
+        make({
+          startsAt: at("2026-10-18", "09:00"),
+          endsAt: at("2026-11-01", "10:01"),
+        }),
+      ).toThrowError(expect.objectContaining({ code: "invalid_request" }));
+    });
+
     it("links a task, a device and a contact and names them", async () => {
       const task = await makeTask(ctx(), { title: "Heizung warten" });
       const heater = asset();
@@ -221,8 +246,8 @@ describe("appointments", () => {
         "endsAt",
       ],
       [
-        "more than 14 days",
-        { endsAt: at("2026-06-20", "09:00") + 14 * DAY + 1 },
+        "more than 14 days and the hour a clock change adds",
+        { endsAt: at("2026-06-20", "09:00") + 14 * DAY + HOUR + 1 },
         "endsAt",
       ],
       ["a task that does not exist", { taskId: "nope" }, "taskId"],
@@ -622,6 +647,20 @@ describe("appointments", () => {
       expect(
         updateAppointment(ctx(), days.id, { endDate: "2026-07-05" }).endDate,
       ).toBe("2026-07-05");
+    });
+
+    it("stretches a timed appointment to 14 calendar days across the night the clocks go back", () => {
+      const a = make({
+        startsAt: at("2026-10-18", "09:00"),
+        endsAt: at("2026-10-18", "10:00"),
+      });
+      expect(
+        updateAppointment(ctx(), a.id, { endsAt: at("2026-11-01", "09:00") })
+          .endsAt,
+      ).toEqual(new Date(at("2026-11-01", "09:00")));
+      expect(() =>
+        updateAppointment(ctx(), a.id, { endsAt: at("2026-11-01", "10:01") }),
+      ).toThrowError(expect.objectContaining({ code: "invalid_request" }));
     });
 
     it("changes the dates of an all-day appointment", () => {
