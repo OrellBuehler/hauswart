@@ -3037,5 +3037,21 @@
   "vehicle_facts_empty": "Noch keine Fahrzeugangaben. Trage Fahrgestell- und Stammnummer, Reifengrössen und mehr ein.",
   "vehicle_facts_edit": "Fahrzeugangaben ergänzen",
   "vehicle_create": "Fahrzeug hinzufügen",
-  "vehicle_odometer_lower_short": "Tiefer als der letzte Stand."
+  "vehicle_odometer_lower_short": "Tiefer als der letzte Stand.",
+  "vehicle_odometer_prefilled": "Letzter Stand: {value} am {date}. Ändere die Zahl, wenn der Tacho mehr zeigt.",
+  "vehicle_odometer_refused_lower": "Der Stand ist tiefer als der Stand davor ({value} am {date}). Prüfe die Zahl und das Datum.",
+  "vehicle_odometer_refused_higher": "Der Stand ist höher als der spätere Stand ({value} am {date}). Prüfe die Zahl und das Datum.",
+  "vehicle_odometer_refused_unknown": "Der Stand passt nicht zu den Ständen davor und danach. Prüfe die Zahl und das Datum.",
+  "vehicle_owner_completion": "einer erledigten Aufgabe",
+  "vehicle_owner_service_log": "einem Service-Eintrag",
+  "vehicle_owner_fuel_log": "einer Tankung",
+  "vehicle_owner_tire_change": "einem Reifenwechsel",
+  "tire_season_summer": "Sommerreifen",
+  "tire_season_winter": "Winterreifen",
+  "tire_season_all_season": "Ganzjahresreifen",
+  "fuel_unit_l": "Liter (l)",
+  "fuel_unit_kwh": "Kilowattstunden (kWh)",
+  "tire_season_option_summer": "Sommer",
+  "tire_season_option_winter": "Winter",
+  "tire_season_option_all_season": "Ganzjahr"
 }

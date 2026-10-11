@@ -3037,5 +3037,21 @@
   "vehicle_facts_empty": "No vehicle details yet. Add the VIN, registration number, tire sizes and more.",
   "vehicle_facts_edit": "Add vehicle details",
   "vehicle_create": "Add vehicle",
-  "vehicle_odometer_lower_short": "Lower than the last reading."
+  "vehicle_odometer_lower_short": "Lower than the last reading.",
+  "vehicle_odometer_prefilled": "Last reading: {value} on {date}. Change the number if the odometer shows more.",
+  "vehicle_odometer_refused_lower": "The reading is lower than the one before ({value} on {date}). Check the number and the date.",
+  "vehicle_odometer_refused_higher": "The reading is higher than a later one ({value} on {date}). Check the number and the date.",
+  "vehicle_odometer_refused_unknown": "The reading does not fit the ones before and after it. Check the number and the date.",
+  "vehicle_owner_completion": "a completed task",
+  "vehicle_owner_service_log": "a service log entry",
+  "vehicle_owner_fuel_log": "a fill-up",
+  "vehicle_owner_tire_change": "a tire change",
+  "tire_season_summer": "Summer tires",
+  "tire_season_winter": "Winter tires",
+  "tire_season_all_season": "All-season tires",
+  "fuel_unit_l": "Litres (l)",
+  "fuel_unit_kwh": "Kilowatt hours (kWh)",
+  "tire_season_option_summer": "Summer",
+  "tire_season_option_winter": "Winter",
+  "tire_season_option_all_season": "All-season"
 }

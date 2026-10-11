@@ -7,11 +7,11 @@ export function formatOdometer(value: number, unit: OdometerUnit): string {
 }
 
 /**
- * Reads what a person typed as an odometer value: a plain number, with `'`, `’` or spaces as
- * thousands separators and a point or comma as the decimal sign. `null` for an empty field,
- * `undefined` for text that is no number or lies outside `0..max`.
+ * Reads what a person typed as a plain number: `'`, `’` or spaces as thousands separators and a
+ * point or comma as the decimal sign. `null` for an empty field, `undefined` for text that is no
+ * number or lies outside `0..max`.
  */
-export function parseOdometerValue(
+export function parseDecimalInput(
   text: string,
   max: number,
 ): number | null | undefined {
@@ -23,3 +23,5 @@ export function parseOdometerValue(
     ? value
     : undefined;
 }
+
+export const parseOdometerValue = parseDecimalInput;

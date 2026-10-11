@@ -1,6 +1,12 @@
+import type { Component } from "svelte";
+import CloudSunIcon from "@lucide/svelte/icons/cloud-sun";
+import SnowflakeIcon from "@lucide/svelte/icons/snowflake";
+import SunIcon from "@lucide/svelte/icons/sun";
 import type {
+  FuelUnit,
   OdometerSource,
   OdometerUnit,
+  TireSeason,
   VehicleFuelType,
 } from "$lib/api/enums";
 import { m } from "$lib/paraglide/messages";
@@ -26,4 +32,36 @@ export const odometerSourceLabels: Record<OdometerSource, () => string> = {
   fuel_log: () => m.vehicle_source_fuel_log(),
   tire_change: () => m.vehicle_source_tire_change(),
   signal: () => m.vehicle_source_signal(),
+};
+
+export const tireSeasonLabels: Record<TireSeason, () => string> = {
+  summer: () => m.tire_season_summer(),
+  winter: () => m.tire_season_winter(),
+  all_season: () => m.tire_season_all_season(),
+};
+
+export const tireSeasonOptionLabels: Record<TireSeason, () => string> = {
+  summer: () => m.tire_season_option_summer(),
+  winter: () => m.tire_season_option_winter(),
+  all_season: () => m.tire_season_option_all_season(),
+};
+
+export const tireSeasonIcons: Record<TireSeason, Component> = {
+  summer: SunIcon,
+  winter: SnowflakeIcon,
+  all_season: CloudSunIcon,
+};
+
+export const fuelUnitLabels: Record<FuelUnit, () => string> = {
+  l: () => m.fuel_unit_l(),
+  kWh: () => m.fuel_unit_kwh(),
+};
+
+export const odometerOwnerLabels: Partial<
+  Record<OdometerSource, () => string>
+> = {
+  completion: () => m.vehicle_owner_completion(),
+  service_log: () => m.vehicle_owner_service_log(),
+  fuel_log: () => m.vehicle_owner_fuel_log(),
+  tire_change: () => m.vehicle_owner_tire_change(),
 };

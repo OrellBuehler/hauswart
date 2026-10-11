@@ -20,3 +20,11 @@ export function isOdometerKey(key: string): boolean {
 export function assetIdOfOdometerKey(key: string): string | null {
   return isOdometerKey(key) ? key.slice(ODOMETER_KEY_PREFIX.length) : null;
 }
+
+export function odometerAssetOfTrigger(
+  trigger: { type: string; entityId?: string } | null | undefined,
+): string | null {
+  return trigger?.type === "counter_delta" && trigger.entityId
+    ? assetIdOfOdometerKey(trigger.entityId)
+    : null;
+}
