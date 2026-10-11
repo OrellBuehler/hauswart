@@ -236,11 +236,11 @@ function followsTemplate(
 }
 
 /**
- * The task of this vehicle that already does what the template would (a title like the template's, in
- * either language, or the same kind of trigger for service and inspection), so it is not offered
- * twice. Archived tasks and finished one-off tasks do not count. The templates leave no mark on the
- * tasks they make (a mark would have to be unique per task, and the next inspection is a new task
- * of the same kind), so this is a likeness, not a certainty.
+ * The task of this vehicle that already does what the template would, so it is not offered twice.
+ * A task a template made carries its mark and the mark decides, whatever the task is called now. Only
+ * a task without a readable mark is judged by likeness (a title like the template's, in either
+ * language, or the same kind of trigger for service and inspection), which is a guess, not a
+ * certainty. Archived tasks and finished one-off tasks do not count.
  */
 export function findExistingTask<T extends TaskLike>(
   id: VehicleTemplateId,
