@@ -1146,8 +1146,11 @@ in dark mode. Every list has an empty state, every async action a pending and an
 - **Setting up a vehicle's tasks**: "Termine einrichten" (`lib/vehicles/setup.ts`, `vehicle-setup-dialog.svelte`) creates the
   templates of `lib/vehicles/templates.ts` through the API, task first, then its preparations, each template with its own progress
   and error. Every template task carries the mark `externalSource: "vehicle_template"`, `externalRef: "<asset id>:<template id>"`
-  (`lib/vehicles/template-mark.ts`); the server keeps that pair unique, so when a vehicle had the template before (inspection done,
-  task archived) the creation retries with `:<n>` appended. `findExistingTask` finds what a vehicle has already by the mark, and only
+  (`lib/vehicles/template-mark.ts`); the server keeps that pair unique, so on a 409 the task that holds the mark is read (`GET /tasks` with `externalSource`,
+  `externalRef` and `includeArchived`, the client's `findMarked`): archived, finished (a one-off that was completed or skipped) or
+  moved to another device means the vehicle had the template before, and the creation retries with `:<n>` appended; a task that is
+  still there means none is made and the template shows "already there" (`TemplateRun.state` `exists`, the page reloads); a holder
+  that is gone by now gets the same mark again. `findExistingTask` finds what a vehicle has already by the mark, and only
   a task without a readable mark by likeness (title in either language, odometer counter, an inspection on a date), so nothing is
   offered twice. A new vehicle opens that dialog once through `?termine=1`.
 - **Costs of a vehicle**: `/costs?asset=` passes the device on to the summary (`costsSummaryQuery`; no other filter narrows its

@@ -94,10 +94,13 @@
     ),
   );
   const offered = $derived(
-    SETUP_TEMPLATE_IDS.filter(
-      (id) => !existing.get(id) && runs[id]?.state !== "created",
-    ),
+    SETUP_TEMPLATE_IDS.filter((id) => !existing.get(id) && !isDone(runs[id])),
   );
+
+  /** The template has its task now: made just now, or found to be there already. */
+  function isDone(run: TemplateRun | undefined): boolean {
+    return run?.state === "created" || run?.state === "exists";
+  }
 
   $effect(() => {
     if (!open) return;
@@ -153,6 +156,12 @@
             params: { id: taskId },
             body,
           }),
+        findMarked: async (mark) => {
+          const page = await api.call(endpoints.tasksList, {
+            query: { ...mark, includeArchived: "true", limit: 1 },
+          });
+          return page.items[0];
+        },
       },
       (run) => {
         runs = { ...runs, [run.id]: run };
@@ -160,11 +169,12 @@
       apiErrorMessage,
     );
     const created = results.filter((run) => run.state === "created");
-    for (const run of created) selected[run.id] = false;
+    for (const run of results.filter(isDone)) selected[run.id] = false;
     if (created.length > 0) {
       toast.success(m.vehicle_setup_done_toast({ count: created.length }));
-      await onfinished();
     }
+    // a task that was there all along is news to the page, too: its list was out of date
+    if (results.some(isDone)) await onfinished();
     if (results.some((run) => run.state === "failed")) {
       return m.vehicle_setup_partial_error();
     }
@@ -184,7 +194,10 @@
     {#each SETUP_TEMPLATE_IDS as id (id)}
       {@const found = existing.get(id)}
       {@const run = runs[id]}
-      {@const locked = Boolean(found) || run?.state === "created"}
+      {@const locked = Boolean(found) || isDone(run)}
+      {@const there =
+        found?.title ??
+        (run?.state === "exists" ? run.existingTitle : undefined)}
       {@const template = built.get(id)}
       <li
         class={cn(
@@ -208,7 +221,7 @@
               >
                 {titleOf[id]()}
               </Label>
-              {#if found}
+              {#if there !== undefined}
                 <Badge variant="secondary">{m.vehicle_setup_exists()}</Badge>
               {:else if run?.state === "created"}
                 <Badge variant="secondary" class="gap-1">
@@ -221,9 +234,9 @@
                 </Badge>
               {/if}
             </div>
-            {#if found}
+            {#if there !== undefined}
               <p class="text-muted-foreground mt-0.5 text-xs text-pretty">
-                {m.vehicle_setup_exists_hint({ title: found.title })}
+                {m.vehicle_setup_exists_hint({ title: there })}
               </p>
             {:else}
               {@const text = summary(id)}

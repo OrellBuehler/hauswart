@@ -16,8 +16,10 @@ import {
   templateTitles,
   type SetupContext,
   type SetupParams,
+  type TemplateClient,
   type TemplateRun,
 } from "./setup";
+import type { TemplateMark } from "./template-mark";
 import { vehicleTemplates } from "./templates";
 
 const ASSET = "6f1c2d3e-0000-4000-8000-000000000001";
@@ -496,6 +498,7 @@ describe("createTemplates", () => {
             if (over.failPrep) throw new Error("prep boom");
           },
         ),
+        findMarked: vi.fn(async () => undefined),
       },
     };
   }
@@ -575,12 +578,43 @@ describe("createTemplates", () => {
   });
 
   describe("when the mark is taken", () => {
-    const taken = (refs: string[]) => {
+    type Holder = NonNullable<
+      Awaited<ReturnType<TemplateClient["findMarked"]>>
+    >;
+    const finishedOneOff = {
+      v: 1,
+      type: "one_off",
+      date: "2026-03-10",
+    } as Holder["trigger"];
+    const holder = (over: Partial<Holder> = {}): Holder => ({
+      id: "held",
+      title: "Etwas anderes",
+      assetId: ASSET,
+      trigger: finishedOneOff,
+      state: null,
+      archivedAt: null,
+      ...over,
+    });
+    const archived = (over: Partial<Holder> = {}) =>
+      holder({ archivedAt: "2026-01-01T00:00:00.000Z", ...over });
+    const finished = (over: Partial<Holder> = {}) =>
+      holder({
+        state: {
+          status: "ok",
+          dueDate: null,
+          reasons: ["completed"],
+        } as unknown as Holder["state"],
+        ...over,
+      });
+
+    /** `holders` are the tasks that carry a mark; creating a task with a marked one is refused. */
+    const taken = (holders: Record<string, Holder | undefined>) => {
       const sent: string[] = [];
+      const looked: { externalSource: string; externalRef: string }[] = [];
       const c = {
         createTask: vi.fn(async (body: { externalRef?: string | null }) => {
           sent.push(body.externalRef ?? "");
-          if (refs.includes(body.externalRef ?? "")) {
+          if (holders[body.externalRef ?? ""]) {
             throw new ApiError(
               "conflict",
               "A task with this external reference already exists",
@@ -589,12 +623,100 @@ describe("createTemplates", () => {
           return { id: `id${sent.length}` };
         }),
         createPreparation: vi.fn(async () => undefined),
+        findMarked: vi.fn(async (mark: TemplateMark) => {
+          looked.push(mark);
+          return holders[mark.externalRef];
+        }),
       };
-      return { sent, client: c };
+      return { sent, looked, client: c };
     };
 
-    it("tries the next number, since the server keeps the pair unique", async () => {
-      const { sent, client: c } = taken([`${ASSET}:mfk`, `${ASSET}:mfk:2`]);
+    it("tries the next number when the task that holds the mark is archived or a finished one-off", async () => {
+      const {
+        sent,
+        looked,
+        client: c,
+      } = taken({
+        [`${ASSET}:mfk`]: archived(),
+        [`${ASSET}:mfk:2`]: finished(),
+      });
+      const runs = await createTemplates(
+        templates(["mfk"]),
+        c,
+        () => undefined,
+        message,
+      );
+      expect(sent).toEqual([
+        `${ASSET}:mfk`,
+        `${ASSET}:mfk:2`,
+        `${ASSET}:mfk:3`,
+      ]);
+      expect(looked).toEqual([
+        { externalSource: "vehicle_template", externalRef: `${ASSET}:mfk` },
+        { externalSource: "vehicle_template", externalRef: `${ASSET}:mfk:2` },
+      ]);
+      expect(runs[0]).toMatchObject({ state: "created", taskId: "id3" });
+    });
+
+    it("makes no second task when a live task holds the mark, and says it is there", async () => {
+      const { sent, client: c } = taken({
+        [`${ASSET}:service`]: holder({
+          id: "live",
+          title: "Service beim Händler",
+          trigger: {
+            v: 1,
+            type: "counter_delta",
+            entityId: odometerSignalKey(ASSET),
+            threshold: 15000,
+          },
+        }),
+      });
+      const seen: string[] = [];
+      const runs = await createTemplates(
+        templates(["service"]),
+        c,
+        (run) => seen.push(`${run.id}:${run.state}`),
+        message,
+      );
+      expect(sent).toEqual([`${ASSET}:service`]);
+      expect(runs[0]).toMatchObject({
+        id: "service",
+        state: "exists",
+        taskId: "live",
+        existingTitle: "Service beim Händler",
+        preparationErrors: [],
+      });
+      expect(seen).toEqual(["service:running", "service:exists"]);
+      expect(c.createPreparation).not.toHaveBeenCalled();
+    });
+
+    it("finds the live task behind a numbered mark too, and goes on with the next template", async () => {
+      const { sent, client: c } = taken({
+        [`${ASSET}:mfk`]: finished(),
+        [`${ASSET}:mfk:2`]: holder({ id: "second", title: "MFK 2026" }),
+      });
+      const runs = await createTemplates(
+        templates(["mfk", "vignette"]),
+        c,
+        () => undefined,
+        message,
+      );
+      expect(sent).toEqual([
+        `${ASSET}:mfk`,
+        `${ASSET}:mfk:2`,
+        `${ASSET}:vignette`,
+      ]);
+      expect(runs.map((r) => [r.id, r.state, r.taskId])).toEqual([
+        ["mfk", "exists", "second"],
+        ["vignette", "created", "id3"],
+      ]);
+    });
+
+    it("does not take a task that has moved to another device for the vehicle's own", async () => {
+      const { sent, client: c } = taken({
+        [`${ASSET}:mfk`]: holder({ assetId: OTHER_ASSET }),
+        [`${ASSET}:mfk:2`]: holder({ assetId: null }),
+      });
       const runs = await createTemplates(
         templates(["mfk"]),
         c,
@@ -609,8 +731,40 @@ describe("createTemplates", () => {
       expect(runs[0]).toMatchObject({ state: "created", taskId: "id3" });
     });
 
+    it("tries the same mark again when its holder is gone by the time it is looked up", async () => {
+      const held: Record<string, Holder | undefined> = {
+        [`${ASSET}:tires_winter`]: holder(),
+      };
+      const { sent, client: c } = taken(held);
+      c.findMarked.mockImplementationOnce(async () => {
+        delete held[`${ASSET}:tires_winter`];
+        return undefined;
+      });
+      const runs = await createTemplates(
+        templates(["tires_winter"]),
+        c,
+        () => undefined,
+        message,
+      );
+      expect(sent).toEqual([`${ASSET}:tires_winter`, `${ASSET}:tires_winter`]);
+      expect(runs[0]).toMatchObject({ state: "created", taskId: "id2" });
+    });
+
+    it("reports the failure of the lookup instead of guessing", async () => {
+      const { sent, client: c } = taken({ [`${ASSET}:mfk`]: archived() });
+      c.findMarked.mockRejectedValueOnce(new Error("offline"));
+      const runs = await createTemplates(
+        templates(["mfk"]),
+        c,
+        () => undefined,
+        message,
+      );
+      expect(sent).toEqual([`${ASSET}:mfk`]);
+      expect(runs[0]).toMatchObject({ state: "failed", error: "offline" });
+    });
+
     it("keeps the first mark when it is free", async () => {
-      const { sent, client: c } = taken([]);
+      const { sent, looked, client: c } = taken({});
       await createTemplates(
         templates(["tires_winter"]),
         c,
@@ -618,6 +772,7 @@ describe("createTemplates", () => {
         message,
       );
       expect(sent).toEqual([`${ASSET}:tires_winter`]);
+      expect(looked).toEqual([]);
     });
 
     it("gives up after a number of tries and reports the refusal", async () => {
@@ -626,6 +781,7 @@ describe("createTemplates", () => {
           throw new ApiError("conflict", "taken");
         }),
         createPreparation: vi.fn(async () => undefined),
+        findMarked: vi.fn(async () => archived()),
       };
       const runs = await createTemplates(
         templates(["service"]),
@@ -638,12 +794,13 @@ describe("createTemplates", () => {
       expect(everything.createTask.mock.calls.length).toBeLessThanOrEqual(50);
     });
 
-    it("does not try again after any other refusal", async () => {
+    it("does not try again, or look anything up, after any other refusal", async () => {
       const c = {
         createTask: vi.fn(async () => {
           throw new ApiError("invalid_request", "bad");
         }),
         createPreparation: vi.fn(async () => undefined),
+        findMarked: vi.fn(async () => undefined),
       };
       await createTemplates(
         templates(["vignette"]),
@@ -652,6 +809,7 @@ describe("createTemplates", () => {
         message,
       );
       expect(c.createTask).toHaveBeenCalledTimes(1);
+      expect(c.findMarked).not.toHaveBeenCalled();
     });
   });
 

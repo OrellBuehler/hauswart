@@ -9,7 +9,11 @@ import { isValidDate } from "$lib/dates";
 import { m } from "$lib/paraglide/messages";
 import { parseOdometerValue } from "./format";
 import { odometerSignalKey } from "./odometer";
-import { templateMark, templateOfMark } from "./template-mark";
+import {
+  templateMark,
+  templateOfMark,
+  type TemplateMark,
+} from "./template-mark";
 import {
   DEFAULT_SERVICE_DISTANCE,
   DEFAULT_SERVICE_MONTHS,
@@ -196,7 +200,7 @@ type TaskLike = Pick<
   Partial<Pick<Task, "externalSource" | "externalRef">>;
 
 /** A one-off task that was completed or skipped is over: the next one has to be made new. */
-function isFinishedOneOff(task: TaskLike): boolean {
+function isFinishedOneOff(task: Pick<Task, "trigger" | "state">): boolean {
   return (
     task.trigger.type === "one_off" &&
     task.state !== null &&
@@ -204,6 +208,18 @@ function isFinishedOneOff(task: TaskLike): boolean {
     task.state.reasons.some(
       (reason) => reason === "completed" || reason === "skipped",
     )
+  );
+}
+
+/** A task of this vehicle that is not archived and not over: what a template would do is there. */
+function isLiveTaskOf(
+  task: Pick<Task, "assetId" | "archivedAt" | "trigger" | "state">,
+  assetId: string,
+): boolean {
+  return (
+    task.assetId === assetId &&
+    task.archivedAt === null &&
+    !isFinishedOneOff(task)
   );
 }
 
@@ -248,54 +264,72 @@ export function findExistingTask<T extends TaskLike>(
   assetId: string,
 ): T | undefined {
   return tasks.find(
-    (task) =>
-      task.assetId === assetId &&
-      task.archivedAt === null &&
-      !isFinishedOneOff(task) &&
-      followsTemplate(id, task, assetId),
+    (task) => isLiveTaskOf(task, assetId) && followsTemplate(id, task, assetId),
   );
 }
 
 export type TemplateRun = {
   id: VehicleTemplateId;
-  state: "running" | "created" | "failed";
+  /** `exists`: a task that does what the template would was there already, nothing was created. */
+  state: "running" | "created" | "exists" | "failed";
+  /** The task created, or the one that was there already. */
   taskId?: string;
+  /** The title of the task that was there already. */
+  existingTitle?: string;
   /** Why the task could not be created. */
   error?: string;
   /** Preparations that could not be created; the task exists. */
   preparationErrors: { title: string; error: string }[];
 };
 
+/** The task that carries a template's mark, archived or not. */
+export type MarkHolder = Pick<
+  Task,
+  "id" | "title" | "assetId" | "trigger" | "state" | "archivedAt"
+>;
+
 export type TemplateClient = {
   createTask: (body: VehicleTaskBody) => Promise<{ id: string }>;
+  /** The task that carries the mark, archived ones included, or undefined when there is none. */
+  findMarked: (mark: TemplateMark) => Promise<MarkHolder | undefined>;
   createPreparation: (
     taskId: string,
     body: VehiclePreparationBody,
   ) => Promise<unknown>;
 };
 
-/** How many numbered marks are tried for one task before the refusal is reported. */
+/** How many creations are tried for one task before the refusal is reported. */
 const MAX_MARK_TRIES = 50;
 
 /**
- * Creates the task of a template. The server keeps the mark unique, and a vehicle that had the template
- * before (its inspection done, its task archived) has the plain mark taken: the next number is tried.
+ * Creates the task of a template. The server keeps the mark unique, so a refusal (409) says some task
+ * carries it already; the task is read to see which kind:
+ * - archived, finished or moved to another device: the vehicle had the template before (its inspection
+ *   done, its task archived), the next number is tried;
+ * - still there: the vehicle has this task already (say the list the dialog works from is out of date),
+ *   so none is made and that task is reported;
+ * - gone by now: the same mark is tried again.
  */
 async function createMarked(
   template: VehicleTaskTemplate,
   client: TemplateClient,
-): Promise<{ id: string }> {
+): Promise<{ id: string; existingTitle?: string }> {
   const { assetId } = template.task;
-  for (let n = 1; ; n += 1) {
+  let n = 1;
+  for (let tries = 1; ; tries += 1) {
+    const mark = assetId ? templateMark(assetId, template.id, n) : null;
     const body =
-      n === 1 || !assetId
-        ? template.task
-        : { ...template.task, ...templateMark(assetId, template.id, n) };
+      n === 1 || !mark ? template.task : { ...template.task, ...mark };
     try {
       return await client.createTask(body);
     } catch (err) {
       const taken = isApiError(err) && err.code === "conflict";
-      if (!taken || !assetId || n >= MAX_MARK_TRIES) throw err;
+      if (!taken || !assetId || !mark || tries >= MAX_MARK_TRIES) throw err;
+      const holder = await client.findMarked(mark);
+      if (holder && isLiveTaskOf(holder, assetId)) {
+        return { id: holder.id, existingTitle: holder.title };
+      }
+      if (holder) n += 1;
     }
   }
 }
@@ -322,20 +356,25 @@ export async function createTemplates(
     try {
       const task = await createMarked(template, client);
       run.taskId = task.id;
-      for (const [index, preparation] of template.preparations.entries()) {
-        try {
-          await client.createPreparation(task.id, {
-            sortOrder: index,
-            ...preparation,
-          });
-        } catch (err) {
-          run.preparationErrors.push({
-            title: preparation.title,
-            error: messageOf(err),
-          });
+      if (task.existingTitle === undefined) {
+        for (const [index, preparation] of template.preparations.entries()) {
+          try {
+            await client.createPreparation(task.id, {
+              sortOrder: index,
+              ...preparation,
+            });
+          } catch (err) {
+            run.preparationErrors.push({
+              title: preparation.title,
+              error: messageOf(err),
+            });
+          }
         }
+        run.state = "created";
+      } else {
+        run.state = "exists";
+        run.existingTitle = task.existingTitle;
       }
-      run.state = "created";
     } catch (err) {
       run.state = "failed";
       run.error = messageOf(err);
