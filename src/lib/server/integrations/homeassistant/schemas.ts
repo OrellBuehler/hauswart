@@ -97,6 +97,23 @@ export const calendarEventSchema = z
 
 export const calendarEventListSchema = z.array(calendarEventSchema);
 
+/**
+ * An event to write. Dates are calendar dates with an exclusive end (a one-day event ends on the
+ * next day); times are local wall-clock time in Home Assistant's own zone, without an offset
+ * (`2026-06-20T08:00:00`): both ends then need no common offset, which an event across the night
+ * the clocks change would not have.
+ */
+export interface HaCalendarEventWrite {
+  summary: string;
+  description: string;
+  location: string | null;
+  start: { date: string } | { dateTime: string };
+  end: { date: string } | { dateTime: string };
+}
+
+/** What a calendar entity can do, from the bits of its `supported_features`. */
+export const CALENDAR_FEATURE = { create: 1, delete: 2, update: 4 } as const;
+
 export interface HaCalendar {
   entityId: string;
   name: string;

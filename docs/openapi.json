@@ -43415,11 +43415,46 @@
           },
           "name": {
             "type": "string"
+          },
+          "capabilities": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CalendarCapabilities"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "id",
-          "name"
+          "name",
+          "capabilities"
+        ],
+        "additionalProperties": false
+      },
+      "CalendarCapabilities": {
+        "type": "object",
+        "properties": {
+          "create": {
+            "type": "boolean"
+          },
+          "update": {
+            "type": "boolean"
+          },
+          "delete": {
+            "type": "boolean"
+          },
+          "alarms": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "create",
+          "update",
+          "delete",
+          "alarms"
         ],
         "additionalProperties": false
       },
@@ -44833,30 +44868,6 @@
           "onRemoteDelete",
           "conflictPolicy",
           "locale"
-        ],
-        "additionalProperties": false
-      },
-      "CalendarCapabilities": {
-        "type": "object",
-        "properties": {
-          "create": {
-            "type": "boolean"
-          },
-          "update": {
-            "type": "boolean"
-          },
-          "delete": {
-            "type": "boolean"
-          },
-          "alarms": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "create",
-          "update",
-          "delete",
-          "alarms"
         ],
         "additionalProperties": false
       },

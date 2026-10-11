@@ -1,6 +1,7 @@
 import { setLenientHostPolicy } from "$lib/server/net/host-policy";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { HomeAssistantClient, HomeAssistantError, haWsCommand } from "./index";
+import { haWsCall } from "./ws";
 import { startFakeHomeAssistant } from "./fake-server";
 
 const fake = startFakeHomeAssistant();
@@ -349,4 +350,54 @@ describe("haWsCommand", () => {
     ).toBe("invalid_input");
     expect(fake.wsConnections).toBe(0);
   });
+});
+
+describe("haWsCall", () => {
+  it("sends a command with fields of its own and answers its result", async () => {
+    fake.addCalendar("calendar.example_full", [], "Full", 7);
+    const result = await haWsCall(fake.baseUrl, "test-token", {
+      type: "calendar/event/create",
+      entity_id: "calendar.example_full",
+      event: {
+        dtstart: "2026-06-20",
+        dtend: "2026-06-21",
+        summary: "Example",
+      },
+    });
+    expect(result).toBeNull();
+    expect(fake.wsMessages).toEqual([
+      { type: "auth", access_token: "test-token" },
+      {
+        type: "calendar/event/create",
+        entity_id: "calendar.example_full",
+        event: {
+          dtstart: "2026-06-20",
+          dtend: "2026-06-21",
+          summary: "Example",
+        },
+        id: 1,
+      },
+    ]);
+  });
+
+  it.each([
+    ["not_found", "not_found"],
+    ["unauthorized", "forbidden"],
+    ["not_supported", "bad_request"],
+    ["failed", "bad_request"],
+  ])(
+    "maps the refusal %s to %s and keeps only the code",
+    async (refusal, code) => {
+      fake.addCalendar("calendar.example_full", [], "Full", 7);
+      fake.failWsCommand("calendar/event/delete", refusal);
+      const err = await haWsCall(fake.baseUrl, "test-token", {
+        type: "calendar/event/delete",
+        entity_id: "calendar.example_full",
+        uid: "x",
+      }).catch((e) => e);
+      expect(err).toBeInstanceOf(HomeAssistantError);
+      expect((err as HomeAssistantError).code).toBe(code);
+      expect((err as Error).message).not.toContain("Injected failure");
+    },
+  );
 });

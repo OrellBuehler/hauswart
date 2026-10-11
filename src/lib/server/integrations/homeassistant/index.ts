@@ -1,6 +1,11 @@
+import { registerCalendarProvider } from "$lib/server/calendar-sync/provider";
 import { registerIntegration } from "$lib/server/connections/registry";
 import { registerNotificationChannel } from "$lib/server/notifications/channels";
 import { homeAssistantIntegration } from "./adapter";
+import {
+  createCalendarProvider,
+  type CalendarProviderOptions,
+} from "./calendar-provider";
 import { createNotifyChannel } from "./channel";
 import {
   startHomeAssistantScheduler,
@@ -10,17 +15,25 @@ import {
 /**
  * Wires the Home Assistant adapter into the app at startup: the connection
  * settings (`/integrations/homeassistant`), the `ha_notify` notification
- * channel and the polling scheduler. Everything is inert until an
- * administrator saves a connection. Returns a function that undoes it.
+ * channel, the calendar provider behind calendar targets and the polling
+ * scheduler. Everything is inert until an administrator saves a connection.
+ * Returns a function that undoes it.
  */
 export function registerHomeAssistant(
-  options: { scheduler?: SchedulerOptions } = {},
+  options: {
+    scheduler?: SchedulerOptions;
+    calendar?: CalendarProviderOptions;
+  } = {},
 ): () => void {
   const offIntegration = registerIntegration(homeAssistantIntegration);
   const offChannel = registerNotificationChannel(createNotifyChannel());
+  const offCalendar = registerCalendarProvider(
+    createCalendarProvider(options.calendar),
+  );
   const stopScheduler = startHomeAssistantScheduler(options.scheduler);
   return () => {
     stopScheduler();
+    offCalendar();
     offChannel();
     offIntegration();
   };
@@ -28,6 +41,10 @@ export function registerHomeAssistant(
 
 export { createNotifyChannel, CHANNEL_NAME } from "./channel";
 export { homeAssistantIntegration } from "./adapter";
+export {
+  createCalendarProvider,
+  type CalendarProviderOptions,
+} from "./calendar-provider";
 export {
   startHomeAssistantScheduler,
   type SchedulerOptions,

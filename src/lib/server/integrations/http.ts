@@ -391,3 +391,42 @@ export async function boundedStream(
     cancel: (reason) => cancelUpstream(reason),
   });
 }
+
+/** Failures that may pass by themselves: the system did not answer in time, could not be reached, or had a hiccup. */
+const TRANSIENT_CODES = new Set(["timeout", "network", "server"]);
+
+export interface RetryOptions {
+  /** Retries after the first attempt (default 2). */
+  maxRetries?: number;
+  /** First wait; doubles per retry (default 300 ms). */
+  baseDelayMs?: number;
+  /** Replaceable for tests. */
+  sleep?: (ms: number) => Promise<void>;
+}
+
+const defaultSleep = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Runs `fn` and runs it again, at most `maxRetries` more times, when it failed with a transient code
+ * (`timeout`, `network`, `server`). Everything else, and the last attempt's own error, is thrown
+ * unchanged. Only for calls that are harmless to repeat: reads, and writes that set the same state.
+ */
+export async function retryTransient<T>(
+  fn: () => Promise<T>,
+  options: RetryOptions = {},
+): Promise<T> {
+  const maxRetries = Math.max(0, options.maxRetries ?? 2);
+  const baseDelay = options.baseDelayMs ?? 300;
+  const sleep = options.sleep ?? defaultSleep;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (attempt >= maxRetries || !TRANSIENT_CODES.has(errorCodeOf(err))) {
+        throw err;
+      }
+      await sleep(baseDelay * 2 ** attempt);
+    }
+  }
+}

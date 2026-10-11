@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { INTEGRATION_KINDS, INTEGRATION_STATUSES } from "../enums";
+import { calendarCapabilitiesSchema } from "./calendar-sync";
 import { isoTimestampSchema, paginated } from "./common";
 
 export const integrationKindSchema = z.enum(INTEGRATION_KINDS);
@@ -101,7 +102,12 @@ export const listNotifyServicesResponseSchema = z.object({
 });
 
 export const externalCalendarSchema = z
-  .object({ id: z.string(), name: z.string() })
+  .object({
+    id: z.string(),
+    name: z.string(),
+    /** What can be done with events in it (candidates for a calendar target need `create`); null when the system does not say. */
+    capabilities: calendarCapabilitiesSchema.nullable(),
+  })
   .meta({ id: "ExternalCalendar" });
 
 export const listCalendarsResponseSchema = z.object({
