@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import type { CalendarRemoteDeletePolicy } from "$lib/api/enums";
 import type {
   CalendarSyncCounts,
   CalendarTargetConfig,
@@ -22,7 +23,12 @@ import {
   type RemoteEvent,
   type TimeRange,
 } from "./provider";
-import { isRemote, reconcile, type Operation } from "./reconcile";
+import {
+  isRemote,
+  reconcile,
+  type LinkRecord,
+  type Operation,
+} from "./reconcile";
 import {
   configOf,
   getTargetRow,
@@ -243,6 +249,7 @@ async function run(
   const applied = await applyOperations(ctx, row.id, session, plan.operations, {
     maxOperations: options.maxOperations ?? DEFAULT_MAX_OPERATIONS,
     range,
+    onRemoteDelete: config.onRemoteDelete,
   });
   if (applied.vanished) throw notFound("Calendar target");
   const counts = applied.counts;
@@ -291,7 +298,11 @@ export async function applyOperations(
   targetId: string,
   session: CalendarSession,
   operations: readonly Operation[],
-  options: { maxOperations: number; range: TimeRange },
+  options: {
+    maxOperations: number;
+    range: TimeRange;
+    onRemoteDelete: CalendarRemoteDeletePolicy;
+  },
 ): Promise<Applied> {
   const counts = emptyCounts();
   const awaitingUid = new Map<string, DesiredItem>();
@@ -325,6 +336,42 @@ export async function applyOperations(
     const { uid } = await session.create(item);
     written(item, uid);
     return uid;
+  };
+
+  /** Changes the event; false when the calendar says it is gone (somebody deleted it after the events were read). */
+  const updateEvent = async (
+    uid: string,
+    item: DesiredItem,
+  ): Promise<boolean> => {
+    try {
+      await session.update(uid, item);
+      return true;
+    } catch (err) {
+      if (err instanceof IntegrationError && err.code === "not_found") {
+        return false;
+      }
+      throw err;
+    }
+  };
+
+  /** An event found gone when it was to be changed is a deleted event like any other: written again, or left as it is. */
+  const deletedMeanwhile = async (
+    item: DesiredItem,
+    link: LinkRecord | null,
+  ) => {
+    if (link && options.onRemoteDelete === "forget") {
+      save(item, {
+        remoteUid: null,
+        status: "forgotten",
+        contentHash: item.hash,
+        pushedAt: null,
+      });
+      counts.forgotten++;
+      return;
+    }
+    const uid = await create(item);
+    counts.created++;
+    await confirmFirst(item, uid);
   };
 
   /**
@@ -376,9 +423,12 @@ export async function applyOperations(
           break;
         }
         case "update":
-          await session.update(op.uid, op.item);
-          written(op.item, op.uid);
-          counts.updated++;
+          if (await updateEvent(op.uid, op.item)) {
+            written(op.item, op.uid);
+            counts.updated++;
+          } else {
+            await deletedMeanwhile(op.item, op.link);
+          }
           break;
         case "replace": {
           await deleteEvent(session, op.uid);

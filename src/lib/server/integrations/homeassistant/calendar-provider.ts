@@ -8,6 +8,7 @@ import type {
   CalendarProvider,
   CalendarSession,
   RemoteCalendar,
+  TimeRange,
 } from "$lib/server/calendar-sync/provider";
 import { retryTransient, type RetryOptions } from "../http";
 import { appUrlOf } from "./app-url";
@@ -137,12 +138,49 @@ export function createCalendarProvider(
         item: Parameters<typeof toHaEvent>[0],
       ): HaCalendarEventWrite => toHaEvent(item, timeZone, appUrl);
 
+      /** The span of the events read last: where an event that a change did not find is looked for. */
+      let listed: TimeRange | null = null;
+
+      /**
+       * Home Assistant answers a change or a delete of an event it does not know as it answers every
+       * other refusal of that command: `failed`, with a message that differs per calendar, so "gone"
+       * cannot be told from the code. The events read last settle it: if the id is not among them
+       * the event is gone (`not_found`, which the core takes for what a delete wants), else the
+       * refusal stands.
+       */
+      const settle = async <T>(
+        uid: string,
+        change: () => Promise<T>,
+      ): Promise<T> => {
+        try {
+          return await change();
+        } catch (err) {
+          const range = listed;
+          if (
+            !(err instanceof HomeAssistantError) ||
+            err.code !== "bad_request" ||
+            range === null
+          ) {
+            throw err;
+          }
+          const events = await retry(() =>
+            ha.getCalendarEvents(id, new Date(range.from), new Date(range.to)),
+          );
+          if (events.some((event) => event.uid === uid)) throw err;
+          throw new HomeAssistantError("not_found", {
+            detail: "the event is gone",
+            cause: err,
+          });
+        }
+      };
+
       return {
         name: nameOf(state, id),
         capabilities: capabilitiesOf(featuresOf(state.attributes)),
 
         listEvents: (range) =>
           run(async () => {
+            listed = range;
             const events = await retry(() =>
               ha.getCalendarEvents(
                 id,
@@ -161,9 +199,14 @@ export function createCalendarProvider(
           }),
 
         update: (uid, item) =>
-          run(() => retry(() => ha.updateCalendarEvent(id, uid, write(item)))),
+          run(() =>
+            settle(uid, () =>
+              retry(() => ha.updateCalendarEvent(id, uid, write(item))),
+            ),
+          ),
 
-        delete: (uid) => run(() => ha.deleteCalendarEvent(id, uid)),
+        delete: (uid) =>
+          run(() => settle(uid, () => ha.deleteCalendarEvent(id, uid))),
       };
     },
   };

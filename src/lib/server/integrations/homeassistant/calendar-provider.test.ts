@@ -483,9 +483,28 @@ describe("changing and deleting events", () => {
     expect(fake.calendarEvents(CAL)).toEqual([]);
   });
 
-  it("names an event that does not exist", async () => {
-    const { session } = await written();
-    expect(await codeOf(session.update("missing", item()))).toBe("bad_request");
+  it("only says that the change failed for an event it does not know, so the events read last settle whether it is gone", async () => {
+    const { session, uid } = await written();
+    // `failed` is all Home Assistant says, for this and for every other refusal of the command.
+    expect(await codeOf(session.update("missing", item()))).toBe("not_found");
+    expect(await codeOf(session.delete("missing"))).toBe("not_found");
+    fake.requests = [];
+    fake.failWsCommand("calendar/event/delete", "failed");
+    // The same answer for an event that is still there stays a refusal.
+    expect(await codeOf(session.delete(uid))).toBe("bad_request");
+    expect(fake.requestsTo(`/api/calendars/${CAL}`)).toHaveLength(1);
+    expect(fake.calendarEvents(CAL)).toHaveLength(1);
+  });
+
+  it("asks nothing more when a change works, and cannot settle an event it never listed", async () => {
+    fake.addCalendar(CAL, [], "Haushalt", FULL_CALENDAR);
+    const session = await open();
+    await session.create(item());
+    const [{ uid }] = await fake.calendarEvents(CAL);
+    fake.requests = [];
+    await session.update(uid!, item({ summary: "x" }));
+    expect(fake.requestsTo(`/api/calendars/${CAL}`)).toHaveLength(0);
+    // Nothing was read through this session, so there is no span to look in.
     expect(await codeOf(session.delete("missing"))).toBe("bad_request");
   });
 

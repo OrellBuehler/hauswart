@@ -417,6 +417,7 @@ async function removeRemoteEvents(
   const applied = await applyOperations(ctx, row.id, session, plan.operations, {
     maxOperations: REMOVE_LIMIT,
     range,
+    onRemoteDelete: "recreate",
   });
   if (applied.error || applied.counts.remaining > 0) {
     throw new ApiError(

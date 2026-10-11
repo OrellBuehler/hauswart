@@ -989,7 +989,7 @@ people plan. Optional like every adapter: without a target nothing happens, and 
   by their marker (`uid: null` creates): the first such create of a run is looked up at once, and when the marker did not survive (a
   calendar that drops the description) the run stops with `unconfirmed`, so such a calendar gets one stray event per run and not one per
   item; the ids of the others are looked up together at the end. A refusal of the system (`unauthorized`, `forbidden`, `network`, `timeout`, `tls`, `server`, ...)
-  stops the calls, any other failure is counted and the rest goes on; five failures stop too. The outcome is the target's health:
+  stops the calls, any other failure is counted and the rest goes on; five failures stop too. A delete that finds its event gone has done what it should; a change that finds it gone (deleted after the events were read) writes it again or leaves it, as `onRemoteDelete` says. The outcome is the target's health:
   `status`, `lastError`, `consecutiveFailures` and the usual 1, 2, 4 ... 15 minute back-off (`dueForAttempt`). Codes: the connection's own and `calendar_missing`, `unsupported`
   (the calendar cannot create), `unconfirmed`, `config_invalid`; a target that is switched off, whose connection is off or whose adapter
   does not run is answered (`disabled`, `no_connection`, `provider_unavailable`, `busy` for a second run at once) without touching its health.
@@ -1017,7 +1017,9 @@ people plan. Optional like every adapter: without a target nothing happens, and 
   strings in the zone of `GET /api/config` (`2026-06-20T09:00:00`; the household zone is converted by instant, and both ends need no common offset across
   the night the clocks change), all-day items `start_date`/`end_date` with the exclusive end. The description is the item's text, a link when `appUrl`
   or `ORIGIN` is known, an empty line and the marker. Reads and `update` are retried twice (`retryTransient`, 300 and 600 ms) on `timeout`, `network`,
-  `server`; `create` and `delete` never (a second event, or a delete of a deleted event). Fake: `fake-server.ts` models features, `create_event`,
+  `server`; `create` and `delete` never (a second event, or a delete of a deleted event). Home Assistant refuses a change or delete of an event it
+  does not know with the same bare code `failed` as every other refusal (`not_found` is only the entity), so after such a refusal the adapter reads
+  the span it listed last and answers `not_found` if the id is not in it (else the refusal stands). Fake: `fake-server.ts` models features, `create_event`,
   the commands and the zone; tests in `calendar-provider.test.ts` (calls, zones, failures, timeouts, malformed bodies) and `calendar-sync.test.ts` (the core runner against
   full, create-only and create-and-delete calendars). A core test must not import the adapter: `calendar-sync/testing.ts` has in-memory fake calendars.
 - **Not built yet**: CalDAV/iCloud (the seam is meant for it), the pull direction (`pull`, `both`, `remote_wins`), `.ics` URL subscriptions as

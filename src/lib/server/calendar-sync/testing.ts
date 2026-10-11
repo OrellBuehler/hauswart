@@ -278,7 +278,7 @@ export class FakeCalendars {
         this.maybeFail("update");
         if (!calendar.capabilities.update) throw unsupported("change events");
         const event = calendar.events.find((e) => e.uid === uid);
-        if (!event) throw new IntegrationError("bad_request", "Unknown event.");
+        if (!event) throw new IntegrationError("not_found", "Unknown event.");
         event.item = item;
         event.description = `${item.description}\n\n${markerLine(item.ref)}`;
       },

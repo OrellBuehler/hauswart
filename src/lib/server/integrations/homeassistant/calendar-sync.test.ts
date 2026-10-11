@@ -34,10 +34,25 @@ describe("pushing items into a Home Assistant calendar", () => {
   const { fake, connect } = useFakeHomeAssistant();
   const ctx = (now = NOW) => ctxAt(test.db, now);
   let off: () => void = () => {};
+  /** Runs right after the events were read, to let something happen in Home Assistant between the look and the change. */
+  let afterRead: (() => void) | null = null;
   beforeEach(() => {
-    off = registerCalendarProvider(
-      createCalendarProvider({ retry: { sleep: async () => {} } }),
-    );
+    afterRead = null;
+    const real = createCalendarProvider({ retry: { sleep: async () => {} } });
+    off = registerCalendarProvider({
+      ...real,
+      open: async (connection, calendarId) => {
+        const session = await real.open(connection, calendarId);
+        return {
+          ...session,
+          listEvents: async (range) => {
+            const events = await session.listEvents(range);
+            afterRead?.();
+            return events;
+          },
+        };
+      },
+    });
   });
   afterEach(() => {
     off();
@@ -325,6 +340,61 @@ describe("pushing items into a Home Assistant calendar", () => {
       expect(listLinks(ctx(), target.id)).toMatchObject([
         { status: "forgotten" },
       ]);
+    });
+  });
+
+  describe("an event that is deleted in Home Assistant between reading and changing it", () => {
+    const vanish = () => {
+      afterRead = () => {
+        afterRead = null;
+        fake.calendarEvents(CAL).length = 0;
+      };
+    };
+
+    it("counts as removed when the item is gone anyway, although Home Assistant only says that the delete failed", async () => {
+      const target = await setup();
+      const a = book();
+      await sync(target.id);
+      deleteAppointment(ctx(), a.id);
+      vanish();
+      const result = await sync(target.id);
+      expect(result).toMatchObject({
+        ok: true,
+        counts: { deleted: 1, failed: 0 },
+      });
+      expect(listLinks(ctx(), target.id)).toEqual([]);
+    });
+
+    it("is written again when the item changed", async () => {
+      const target = await setup();
+      const a = book();
+      await sync(target.id);
+      updateAppointment(ctx(), a.id, { title: "Kaminfeger kommt" });
+      vanish();
+      const result = await sync(target.id);
+      expect(result).toMatchObject({
+        ok: true,
+        counts: { updated: 0, created: 1, failed: 0 },
+      });
+      expect(ours().map((e) => e.summary)).toEqual(["Kaminfeger kommt"]);
+      expect((await sync(target.id)).counts).toMatchObject({
+        created: 0,
+        updated: 0,
+      });
+    });
+
+    it("is replaced all the same on a calendar that cannot change events", async () => {
+      const target = await setup(CREATE_DELETE_CALENDAR);
+      const a = book();
+      await sync(target.id);
+      updateAppointment(ctx(), a.id, { title: "Kaminfeger kommt" });
+      vanish();
+      const result = await sync(target.id);
+      expect(result).toMatchObject({
+        ok: true,
+        counts: { replaced: 1, failed: 0 },
+      });
+      expect(ours().map((e) => e.summary)).toEqual(["Kaminfeger kommt"]);
     });
   });
 

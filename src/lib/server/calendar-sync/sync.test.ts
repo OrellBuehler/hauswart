@@ -739,6 +739,45 @@ describe("syncTarget", () => {
       expect(fake.ours(CALENDAR_ID).size).toBe(1);
     });
 
+    it("write an event again when it was deleted between the look and the change", async () => {
+      const target = await setup();
+      const a = book();
+      await sync(target.id);
+      updateAppointment(ctx(), a.id, { title: "Neu" });
+      fake.onCall = (call) => {
+        if (call.step === "update") fake.get(CALENDAR_ID).events = [];
+      };
+      const result = await sync(target.id);
+      expect(result).toMatchObject({
+        ok: true,
+        counts: { updated: 0, created: 1, failed: 0 },
+      });
+      expect([...fake.ours(CALENDAR_ID).values()][0]!.item!.summary).toBe(
+        "Neu",
+      );
+      fake.onCall = null;
+      expect(await pending(target.id)).toBe(false);
+    });
+
+    it("leave an event deleted between the look and the change deleted when the target says forget", async () => {
+      const target = await setup({ config: { onRemoteDelete: "forget" } });
+      const a = book();
+      await sync(target.id);
+      updateAppointment(ctx(), a.id, { title: "Neu" });
+      fake.onCall = (call) => {
+        if (call.step === "update") fake.get(CALENDAR_ID).events = [];
+      };
+      const result = await sync(target.id);
+      expect(result).toMatchObject({
+        ok: true,
+        counts: { updated: 0, created: 0, forgotten: 1, failed: 0 },
+      });
+      expect(fake.get(CALENDAR_ID).events).toEqual([]);
+      expect(listLinks(ctx(), target.id)).toMatchObject([
+        { status: "forgotten" },
+      ]);
+    });
+
     it("treat an event that is gone already as deleted", async () => {
       const target = await setup();
       const a = book();
