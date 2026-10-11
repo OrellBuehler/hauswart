@@ -46,9 +46,24 @@ const PAPERLESS: Messages = {
   consume_failed: () => m.integration_paperless_error_consume_failed(),
 };
 
-/** Codes the core records for any kind. */
+/**
+ * Codes the core records for any kind. The calendar ones are what a sync of a calendar target
+ * reports besides the connection's own codes (`calendar_missing` ... `config_invalid`), and, only as
+ * the answer to a run that could not start and so never as a target's health, `busy`, `disabled`,
+ * `no_connection` and `provider_unavailable`.
+ */
 const COMMON: Messages = {
   token_unreadable: () => m.integration_error_token_unreadable(),
+  calendar_missing: () => m.integration_error_calendar_missing(),
+  unsupported: () => m.integration_error_unsupported(),
+  unconfirmed: () => m.integration_error_unconfirmed(),
+  config_invalid: () => m.integration_error_config_invalid(),
+  busy: () => m.integration_error_busy(),
+  disabled: () => m.integration_error_disabled(),
+  no_connection: () => m.integration_error_no_connection(),
+  provider_unavailable: () => m.integration_error_provider_unavailable(),
+  too_many: () => m.integration_error_too_many(),
+  internal: () => m.integration_error_internal(),
 };
 
 const BY_KIND: Partial<Record<IntegrationKind, Messages>> = {

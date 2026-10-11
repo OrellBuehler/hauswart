@@ -3303,5 +3303,15 @@
   "appointments_card_empty_task": "Schedule the visit or the inspection for this task. The appointment then shows here and in the task lists.",
   "appointments_card_empty_asset": "Plan a service, an inspection or a delivery for this device.",
   "appointments_card_empty_contact": "Plan a visit by this contact, for example a service call.",
-  "appointment_preview_missing_day": "Enter the date."
+  "appointment_preview_missing_day": "Enter the date.",
+  "integration_error_calendar_missing": "This calendar no longer exists; it may have been renamed or deleted. Remove it here and add the right calendar.",
+  "integration_error_unsupported": "This calendar takes no new entries, so hauswart cannot write anything into it. Choose another calendar.",
+  "integration_error_unconfirmed": "The calendar does not show the entries that were just written. It may not keep the description where hauswart stores its marker. hauswart does not write the entries again for that reason.",
+  "integration_error_config_invalid": "The settings of this calendar are no longer valid. Open “Edit” and save them again.",
+  "integration_error_busy": "This calendar is being synced right now. Try again in a moment.",
+  "integration_error_disabled": "This calendar is switched off. Switch it on to have it synced.",
+  "integration_error_no_connection": "The connection to the calendar system is missing or switched off. Check it under “Integrations”.",
+  "integration_error_provider_unavailable": "No adapter for this calendar system is running on the server. That can only be fixed there, not in this calendar.",
+  "integration_error_too_many": "There are too many entries to remove at once. Try again to remove the rest.",
+  "integration_error_internal": "An unexpected error occurred while syncing. Try again later."
 }

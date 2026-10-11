@@ -47,6 +47,46 @@ describe("integrationErrorMessage", () => {
   });
 });
 
+describe("calendar sync codes", () => {
+  const CODES = [
+    "calendar_missing",
+    "unsupported",
+    "unconfirmed",
+    "config_invalid",
+    "busy",
+    "disabled",
+    "no_connection",
+    "provider_unavailable",
+    "too_many",
+    "internal",
+  ];
+
+  it("words the codes of a calendar run, whatever the system", () => {
+    const seen = new Set<string>();
+    for (const code of CODES) {
+      for (const kind of ["homeassistant", "paperless"] as const) {
+        const message = integrationErrorMessage(code, kind);
+        expect(message, `${kind}:${code}`).not.toBe(UNKNOWN);
+        seen.add(message);
+      }
+    }
+    expect(seen.size).toBe(CODES.length);
+  });
+
+  it("tells what to do for the codes a person can act on", () => {
+    expect(integrationErrorMessage("calendar_missing")).toContain("Kalender");
+    expect(integrationErrorMessage("unsupported")).toContain(
+      "anderen Kalender",
+    );
+    expect(integrationErrorMessage("disabled")).toContain("Schalte ihn ein");
+    expect(integrationErrorMessage("config_invalid")).toContain("Bearbeiten");
+  });
+
+  it("keeps the connection's own wording for the codes it shares", () => {
+    expect(integrationErrorMessage("unauthorized")).toContain("Home Assistant");
+  });
+});
+
 describe("pickerErrorMessage", () => {
   it("explains the code the connected system failed with", () => {
     const err = new ApiError("upstream_error", "Bad gateway", {

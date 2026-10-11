@@ -3303,5 +3303,15 @@
   "appointments_card_empty_task": "Vereinbare den Besuch oder die Kontrolle für diese Aufgabe. Der Termin erscheint dann hier und in den Aufgabenlisten.",
   "appointments_card_empty_asset": "Plane einen Service, eine Kontrolle oder eine Lieferung für dieses Gerät.",
   "appointments_card_empty_contact": "Plane einen Besuch dieses Kontakts, zum Beispiel einen Serviceeinsatz.",
-  "appointment_preview_missing_day": "Gib das Datum an."
+  "appointment_preview_missing_day": "Gib das Datum an.",
+  "integration_error_calendar_missing": "Diesen Kalender gibt es nicht mehr, vielleicht wurde er umbenannt oder gelöscht. Entferne ihn hier und füge den richtigen Kalender hinzu.",
+  "integration_error_unsupported": "Dieser Kalender nimmt keine neuen Einträge an, deshalb kann hauswart nichts hineinschreiben. Wähle einen anderen Kalender.",
+  "integration_error_unconfirmed": "Der Kalender zeigt die soeben geschriebenen Einträge nicht an. Vielleicht behält er die Beschreibung nicht, in der hauswart seine Markierung ablegt. hauswart schreibt die Einträge deshalb nicht noch einmal.",
+  "integration_error_config_invalid": "Die Einstellungen dieses Kalenders sind nicht mehr gültig. Öffne «Bearbeiten» und speichere sie neu.",
+  "integration_error_busy": "Dieser Kalender wird gerade synchronisiert. Versuche es in einem Moment nochmals.",
+  "integration_error_disabled": "Dieser Kalender ist ausgeschaltet. Schalte ihn ein, damit er synchronisiert wird.",
+  "integration_error_no_connection": "Die Verbindung zum Kalendersystem fehlt oder ist ausgeschaltet. Prüfe sie unter «Integrationen».",
+  "integration_error_provider_unavailable": "Auf dem Server läuft kein Adapter für dieses Kalendersystem. Das lässt sich nur dort beheben, nicht in diesem Kalender.",
+  "integration_error_too_many": "Es sind zu viele Einträge, um sie auf einmal zu entfernen. Versuche es nochmals, um den Rest zu entfernen.",
+  "integration_error_internal": "Beim Synchronisieren ist ein unerwarteter Fehler aufgetreten. Versuche es später erneut."
 }
