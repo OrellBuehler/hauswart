@@ -106,7 +106,7 @@ describe("filterAssets", () => {
     expect(find("zh 000000")).toEqual(["Familienauto"]);
     expect(find("ZH000000")).toEqual(["Familienauto"]);
     expect(find("0000")).toEqual(["Familienauto"]);
-    expect(find("BE 1")).toEqual([]);
+    expect(find("BE 000000")).toEqual([]);
   });
 });
 

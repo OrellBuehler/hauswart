@@ -248,7 +248,7 @@ describe("tire set tools", () => {
   it("names the sets of the vehicle when none fits, and never takes another vehicle's set", async () => {
     const { call, vehicle, addSet, ok } = await connect();
     await vehicle();
-    await vehicle("Roller", "BE 222222");
+    await vehicle("Roller", "BE 000000");
     await addSet({ season: "summer", brand: "Beispielgummi" });
     const rollers = await ok("add_tire_set", {
       vehicle: "Roller",

@@ -185,7 +185,7 @@ describe("vehicles API", () => {
       const { call, create } = await setup();
       const device = await create("Backofen", "device");
       const put = await call("PUT", `/api/v1/assets/${device.id}/vehicle`, {
-        json: { plate: "ZH 1" },
+        json: { plate: "ZH 000001" },
       });
       expect(put.res.status).toBe(400);
       expect(errorCode(put)).toBe("invalid_request");
@@ -253,7 +253,7 @@ describe("vehicles API", () => {
       expect(
         (
           await reader("PUT", `/api/v1/assets/${car.id}/vehicle`, {
-            json: { plate: "ZH 1" },
+            json: { plate: "ZH 000001" },
           })
         ).res.status,
       ).toBe(403);

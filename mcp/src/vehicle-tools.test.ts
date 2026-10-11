@@ -67,12 +67,12 @@ describe("vehicle tools", () => {
     ["the plate", "ZH 000000"],
     ["the plate in lower case without a space", "zh000000"],
     ["the plate with a dash", "zh-000000"],
-    ["part of the plate", "0000"],
+    ["part of the plate", "zh 0000"],
     ["part of the name", "familie"],
   ])("finds the vehicle by %s", async (_name, ref) => {
     const { ok, vehicle } = await connect();
     const id = await vehicle("Familienauto", "ZH 000000");
-    await vehicle("Roller", "BE 111111");
+    await vehicle("Roller", "BE 000000");
     expect((await ok("get_vehicle", { vehicle: ref })).id).toBe(id);
   });
 
@@ -120,8 +120,8 @@ describe("vehicle tools", () => {
 
   it("asks for the id when a name fits several vehicles", async () => {
     const { call, vehicle } = await connect();
-    await vehicle("Auto Anna", "ZH 111111");
-    await vehicle("Auto Ben", "ZH 222222");
+    await vehicle("Auto Anna", "ZH 000001");
+    await vehicle("Auto Ben", "ZH 000002");
     const reply = await call("record_odometer", { vehicle: "auto", value: 1 });
     expect(reply.isError).toBe(true);
     expect(reply.text).toContain("ambiguous");

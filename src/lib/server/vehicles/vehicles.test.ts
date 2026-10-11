@@ -148,7 +148,7 @@ describe("vehicle details", () => {
       ctx(),
       createAssetRequestSchema.parse({ name: "Waschmaschine" }),
     );
-    const put400 = await failure(() => put(device.id, { plate: "ZH 1" }));
+    const put400 = await failure(() => put(device.id, { plate: "ZH 000001" }));
     expect(put400.code).toBe("invalid_request");
     expect(put400.status).toBe(400);
     const get404 = await failure(() => getVehicle(ctx(), device.id));
@@ -256,7 +256,7 @@ describe("vehicles among the assets", () => {
     expect(find("ZH000000")).toEqual(["Auto"]);
     expect(find("0000")).toEqual(["Auto"]);
     expect(find("zh 0000 ")).toEqual(["Auto"]);
-    expect(find("BE 1")).toEqual([]);
+    expect(find("BE 000000")).toEqual([]);
   });
 
   it.each([
@@ -286,13 +286,13 @@ describe("vehicles among the assets", () => {
     putVehicle(
       ctx(),
       car.id,
-      putVehicleRequestSchema.parse({ plate: "ZH-123.456" }),
+      putVehicleRequestSchema.parse({ plate: "ZH-000.001" }),
     );
     const find = (q: string) =>
       listAssets(ctx(), { q }, { limit: 50 }).items.map((a) => a.name);
-    expect(find("zh 123456")).toEqual(["Auto"]);
-    expect(find("ZH123456")).toEqual(["Auto"]);
-    expect(find("123 456")).toEqual(["Auto"]);
+    expect(find("zh 000001")).toEqual(["Auto"]);
+    expect(find("ZH000001")).toEqual(["Auto"]);
+    expect(find("000 001")).toEqual(["Auto"]);
   });
 
   it.each(["BE 000.000", "zh 000.001", "000000 zh", "ZH 0000000"])(
@@ -479,17 +479,17 @@ describe("searching for a plate", () => {
     expect(find("zh000000")).toEqual(hit);
     expect(find("000000")).toEqual(hit);
     expect(find("zh")).toEqual(hit);
-    expect(find("ZH 111111")).toEqual([]);
+    expect(find("ZH 000001")).toEqual([]);
   });
 
   it("follows the plate when it changes or is removed", () => {
     const car = makeVehicle(test, "Familienauto");
     save(car.id, { plate: "ZH 000000" });
-    save(car.id, { plate: "BE 111111" });
+    save(car.id, { plate: "BE 000000" });
     expect(find("ZH 000000")).toEqual([]);
-    expect(find("BE 111111")).toHaveLength(1);
+    expect(find("BE 000000")).toHaveLength(1);
     save(car.id, {});
-    expect(find("BE 111111")).toEqual([]);
+    expect(find("BE 000000")).toEqual([]);
     expect(find("Familienauto")).toHaveLength(1);
   });
 

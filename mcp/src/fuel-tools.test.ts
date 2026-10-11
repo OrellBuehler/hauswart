@@ -155,7 +155,7 @@ describe("fuel log tools", () => {
 
   it("charges an electric vehicle in kWh, and a free charge books no cost entry", async () => {
     const { ok, vehicle } = await connect();
-    await vehicle("Stromer", "BE 111111", { fuelType: "electric" });
+    await vehicle("Stromer", "BE 000000", { fuelType: "electric" });
     const charge = await ok("add_fuel_log", {
       vehicle: "Stromer",
       odometer: 5_000,
@@ -253,7 +253,7 @@ describe("fuel log tools", () => {
   it("lists newest first, by year, and page by page", async () => {
     const { ok, vehicle } = await connect();
     await vehicle();
-    await vehicle("Roller", "BE 222222");
+    await vehicle("Roller", "BE 000000");
     const fill = (vehicleRef: string, date: string, odometer: number) =>
       ok("add_fuel_log", {
         vehicle: vehicleRef,

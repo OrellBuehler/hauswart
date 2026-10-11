@@ -349,7 +349,7 @@ describe("seed import", () => {
       const { api, writes, reset } = await client();
       await importSeed(api, example());
       reset();
-      const changed = seedSchema.parse(withVehicle({ plate: "ZH 111111" }));
+      const changed = seedSchema.parse(withVehicle({ plate: "ZH 000001" }));
       const skipped = await importSeed(api, changed);
       expect(skipped.vehicles).toEqual({
         created: 0,
@@ -365,7 +365,7 @@ describe("seed import", () => {
         updated: 1,
         unchanged: 0,
       });
-      expect((await detailsOf(api)).details.plate).toBe("ZH 111111");
+      expect((await detailsOf(api)).details.plate).toBe("ZH 000001");
 
       reset();
       const again = await importSeed(api, changed, { update: true });
@@ -397,12 +397,12 @@ describe("seed import", () => {
       const json = exampleJson();
       json.assets = (json.assets ?? []).map((a) =>
         a.key === "familienauto"
-          ? { ...a, vehicle: { plate: "BE 222222" } }
+          ? { ...a, vehicle: { plate: "BE 000000" } }
           : a,
       );
       await importSeed(api, seedSchema.parse(json), { update: true });
       expect((await detailsOf(api)).details).toMatchObject({
-        plate: "BE 222222",
+        plate: "BE 000000",
         vin: null,
         fuelType: null,
         odometerUnit: "km",
@@ -412,7 +412,7 @@ describe("seed import", () => {
     it("rejects details on an asset that is no vehicle, and unknown fields", () => {
       const json = exampleJson();
       json.assets = (json.assets ?? []).map((a) =>
-        a.key === "backofen" ? { ...a, vehicle: { plate: "ZH 1" } } : a,
+        a.key === "backofen" ? { ...a, vehicle: { plate: "ZH 000001" } } : a,
       );
       const result = seedSchema.safeParse(json);
       expect(result.success).toBe(false);

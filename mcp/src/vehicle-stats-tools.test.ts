@@ -173,7 +173,7 @@ describe("get_vehicle_stats", () => {
   it("shows the mounted tire set and the next tasks of the vehicle only", async () => {
     const { ok, vehicle, day } = await connect();
     await vehicle();
-    await vehicle("Roller", "BE 222222");
+    await vehicle("Roller", "BE 000000");
     await ok("add_tire_set", {
       vehicle: "Familienauto",
       season: "winter",
@@ -206,7 +206,7 @@ describe("get_vehicle_stats", () => {
 
   it("counts a vehicle in miles in miles", async () => {
     const { ok, vehicle } = await connect();
-    await vehicle("Pickup", "ZH 333333", { odometerUnit: "mi" });
+    await vehicle("Pickup", "ZH 000001", { odometerUnit: "mi" });
     await ok("add_fuel_log", {
       vehicle: "Pickup",
       date: "2024-03-01",

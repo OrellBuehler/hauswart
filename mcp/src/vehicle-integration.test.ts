@@ -48,7 +48,7 @@ describe("vehicles with notes and insurance", () => {
     expect((await ok("get_asset", { asset: "Backofen" })).name).toBe(
       "Backofen",
     );
-    const reply = await call("get_asset", { asset: "BE 999999" });
+    const reply = await call("get_asset", { asset: "BE 000000" });
     expect(reply.isError).toBe(true);
     expect(reply.text).toContain("not_found");
   });
