@@ -1,10 +1,25 @@
 import { and, eq, isNotNull, isNull, ne, notInArray, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import type { TaskCategory, UserLocale } from "$lib/api/enums";
-import { addDays, diffDays, maxDate } from "$lib/dates";
+import { endInstant } from "$lib/appointments/when";
+import {
+  addDays,
+  diffDays,
+  localDateOf,
+  localTimeOf,
+  maxDate,
+} from "$lib/dates";
 import { m } from "$lib/paraglide/messages";
 import { householdTimeZone } from "$lib/server/config";
-import { assets, defects, rooms, taskState, tasks } from "$lib/server/db";
+import { whenOf } from "$lib/server/appointments/appointments";
+import {
+  appointments,
+  assets,
+  defects,
+  rooms,
+  taskState,
+  tasks,
+} from "$lib/server/db";
 import { getHousehold } from "$lib/server/household/household";
 import type { ServiceContext } from "$lib/server/service";
 import { clockAt } from "$lib/server/tasks/evaluator";
@@ -19,7 +34,10 @@ import type { FeedRow } from "./feeds";
 
 export const ESTIMATE_HORIZON_DAYS = 45;
 export const WARRANTY_HORIZON_DAYS = 365;
+/** How long an appointment that is over stays in the feed (planned but never closed, or done). */
+export const APPOINTMENT_LOOKBACK_DAYS = 30;
 const SEQUENCE_EPOCH = Date.UTC(2025, 0, 1);
+const DAY_MS = 86_400_000;
 
 type Opts = { locale: UserLocale };
 
@@ -274,11 +292,62 @@ export async function buildFeedCalendar(
     }
   }
 
-  events.sort((a, b) => {
-    const start = (e: IcsEvent) =>
-      typeof e.date === "string" ? e.date : e.date.start;
-    return start(a).localeCompare(start(b)) || a.uid.localeCompare(b.uid);
-  });
+  const lookback = ctx.now - APPOINTMENT_LOOKBACK_DAYS * DAY_MS;
+  const booked = ctx.db
+    .select({
+      appointment: appointments,
+      taskTitle: tasks.title,
+      taskAssignMode: tasks.assignMode,
+      currentAssignee: taskState.currentAssigneeUserId,
+      assetName: assets.name,
+    })
+    .from(appointments)
+    .leftJoin(tasks, eq(tasks.id, appointments.taskId))
+    .leftJoin(taskState, eq(taskState.taskId, appointments.taskId))
+    .leftJoin(assets, eq(assets.id, appointments.assetId))
+    .where(ne(appointments.status, "cancelled"))
+    .all();
+  for (const r of booked) {
+    const a = r.appointment;
+    const when = whenOf(a);
+    if (endInstant(when, tz) < lookback) continue;
+    const mine =
+      feed.scope === "all" ||
+      a.taskId === null ||
+      r.taskAssignMode === "none" ||
+      r.currentAssignee === feed.userId;
+    if (!mine) continue;
+    const planned = a.status === "planned";
+    events.push({
+      uid: `appointment-${uidPart(a.id)}@hauswart`,
+      date: when.allDay
+        ? { start: when.startDate, end: addDays(when.endDate, 1) }
+        : { startsAt: when.startsAt, endsAt: when.endsAt },
+      summary: a.title,
+      description: place(
+        r.assetName,
+        null,
+        r.taskTitle ? [m.cal_prep_for({ task: r.taskTitle }, o)] : [],
+      ),
+      ...(a.location ? { location: a.location } : {}),
+      url: `${origin}/appointments/${a.id}`,
+      busy: !when.allDay,
+      sequence: sequenceOf(a.updatedAt.getTime()),
+      lastModified: a.updatedAt.getTime(),
+      ...(alarm && planned ? { alarm } : {}),
+    });
+  }
+
+  const sortKey = (e: IcsEvent) =>
+    typeof e.date === "string"
+      ? e.date
+      : "start" in e.date
+        ? e.date.start
+        : `${localDateOf(tz, e.date.startsAt)}T${localTimeOf(tz, e.date.startsAt)}`;
+  events.sort(
+    (a, b) =>
+      sortKey(a).localeCompare(sortKey(b)) || a.uid.localeCompare(b.uid),
+  );
 
   const newest = events.reduce(
     (max, e) => Math.max(max, e.lastModified ?? 0),

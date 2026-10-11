@@ -3,6 +3,11 @@ import { describe, expect, it } from "vitest";
 import { createAssetRequestSchema } from "$lib/api/schemas/assets";
 import { createCalendarFeedRequestSchema } from "$lib/api/schemas/share";
 import { createDefectRequestSchema } from "$lib/api/schemas/defects";
+import {
+  createAppointment,
+  updateAppointment,
+  type CreateAppointmentInput,
+} from "$lib/server/appointments/appointments";
 import { createAsset } from "$lib/server/assets/assets";
 import { changeStatus, createDefect } from "$lib/server/defects/defects";
 import { assets, taskState, tasks } from "$lib/server/db";
@@ -18,7 +23,7 @@ import { createTestUser } from "$lib/testing/auth";
 import { useTestDB } from "$lib/testing/db";
 import { at, ctxAt, everyDays, makeTask, NOW } from "$lib/testing/domain";
 import { parseIcs } from "$lib/testing/ics";
-import { buildFeedCalendar } from "./feed";
+import { APPOINTMENT_LOOKBACK_DAYS, buildFeedCalendar } from "./feed";
 import { createFeed, findFeedByToken } from "./feeds";
 
 const ORIGIN = "https://hauswart.example.org";
@@ -470,6 +475,388 @@ describe("calendar feed content", () => {
         .where(eq(assets.id, a.id))
         .run();
       expect((await feedFor(user.id)).parsed.events).toEqual([]);
+    });
+  });
+
+  describe("appointments", () => {
+    const book = (over: Partial<CreateAppointmentInput> = {}) =>
+      createAppointment(
+        ctx(),
+        {
+          title: "Kaminfeger",
+          startsAt: at("2026-06-20", "09:00"),
+          endsAt: at("2026-06-20", "10:30"),
+          ...over,
+        },
+        null,
+      );
+    const bookAllDay = (over: Partial<CreateAppointmentInput> = {}) =>
+      book({
+        allDay: true,
+        startDate: "2026-06-22",
+        startsAt: undefined,
+        endsAt: undefined,
+        ...over,
+      });
+
+    it("puts a timed appointment in as UTC instants with its place, link and a stable uid", async () => {
+      const user = await createTestUser();
+      const heater = createAsset(
+        ctx(),
+        createAssetRequestSchema.parse({ name: "Heizung" }),
+      );
+      const task = await makeTask(ctx(), {
+        title: "Heizung warten",
+        trigger: everyDays(30, "2026-07-20"),
+      });
+      const a = book({
+        location: "Keller, Tür hinten",
+        assetId: heater.id,
+        taskId: task.id,
+      });
+      const { parsed } = await feedFor(user.id);
+      const event = parsed.events.find((e) =>
+        e.uid.startsWith("appointment-"),
+      )!;
+      expect(event).toMatchObject({
+        uid: `appointment-${a.id}@hauswart`,
+        summary: "Kaminfeger",
+        startsAt: "20260620T070000Z",
+        endsAt: "20260620T083000Z",
+        start: "",
+        end: "",
+        location: "Keller, Tür hinten",
+        status: "CONFIRMED",
+        transp: "OPAQUE",
+        url: `${ORIGIN}/appointments/${a.id}`,
+        categories: "",
+        trigger: null,
+      });
+      expect(event.description).toBe("Gerät: Heizung\nFür: Heizung warten");
+    });
+
+    it("puts an all-day appointment in as dates with an exclusive end", async () => {
+      const user = await createTestUser();
+      bookAllDay({ title: "Maler", endDate: "2026-06-24" });
+      bookAllDay({ title: "Lieferung", startDate: "2026-06-25" });
+      const { parsed } = await feedFor(user.id);
+      expect(
+        parsed.events.map((e) => [e.summary, e.start, e.end, e.startsAt]),
+      ).toEqual([
+        ["Maler", "20260622", "20260625", ""],
+        ["Lieferung", "20260625", "20260626", ""],
+      ]);
+      expect(parsed.events[0].transp).toBe("TRANSPARENT");
+    });
+
+    it("leaves out cancelled appointments and brings them back when reopened", async () => {
+      const user = await createTestUser();
+      const a = book();
+      updateAppointment(ctx(), a.id, { status: "cancelled" });
+      expect((await feedFor(user.id)).parsed.events).toEqual([]);
+      updateAppointment(ctx(), a.id, { status: "planned" });
+      expect((await feedFor(user.id)).parsed.events).toHaveLength(1);
+    });
+
+    it("keeps a done appointment, without an alarm", async () => {
+      const user = await createTestUser();
+      book({ title: "Geplant" });
+      const done = book({
+        title: "Erledigt",
+        startsAt: at("2026-06-21", "09:00"),
+        endsAt: at("2026-06-21", "10:00"),
+      });
+      updateAppointment(ctx(), done.id, { status: "done" });
+      const { parsed } = await feedFor(user.id, {
+        alarmTime: "08:00",
+      });
+      expect(parsed.events.map((e) => [e.summary, e.trigger])).toEqual([
+        ["Geplant", "-PT1H"],
+        ["Erledigt", null],
+      ]);
+    });
+
+    it("keeps an appointment for 30 days after it is over", async () => {
+      const user = await createTestUser();
+      const lookback = NOW - APPOINTMENT_LOOKBACK_DAYS * 86_400_000;
+      expect(APPOINTMENT_LOOKBACK_DAYS).toBe(30);
+      book({
+        title: "Vor 31 Tagen",
+        startsAt: at("2026-05-15", "09:00"),
+        endsAt: at("2026-05-15", "10:00"),
+      });
+      book({
+        title: "Vor 29 Tagen",
+        startsAt: at("2026-05-17", "09:00"),
+        endsAt: at("2026-05-17", "10:00"),
+      });
+      book({
+        title: "Endet genau an der Grenze",
+        startsAt: lookback - 3_600_000,
+        endsAt: lookback,
+      });
+      book({
+        title: "Endet kurz davor",
+        startsAt: lookback - 3_600_000,
+        endsAt: lookback - 1,
+      });
+      bookAllDay({ title: "Ganztags vor 31 Tagen", startDate: "2026-05-15" });
+      bookAllDay({ title: "Ganztags am Rand", startDate: "2026-05-16" });
+      const { parsed } = await feedFor(user.id);
+      expect(titles(parsed.events).sort()).toEqual(
+        [
+          "Vor 29 Tagen",
+          "Endet genau an der Grenze",
+          "Ganztags am Rand",
+        ].sort(),
+      );
+    });
+
+    it("keeps one that is far ahead", async () => {
+      const user = await createTestUser();
+      bookAllDay({ title: "Weit weg", startDate: "2028-02-29" });
+      expect(titles((await feedFor(user.id)).parsed.events)).toEqual([
+        "Weit weg",
+      ]);
+    });
+
+    describe("scope", () => {
+      it("mine = without a task, of an unassigned task or of a task assigned to the owner; all = every appointment", async () => {
+        const [anna, ben] = [await createTestUser(), await createTestUser()];
+        const annas = await makeTask(ctx(), {
+          assignMode: "fixed",
+          assigneeUserId: anna.id,
+          trigger: everyDays(30, "2026-07-20"),
+        });
+        const bens = await makeTask(ctx(), {
+          assignMode: "fixed",
+          assigneeUserId: ben.id,
+          trigger: everyDays(30, "2026-07-20"),
+        });
+        const shared = await makeTask(ctx(), {
+          trigger: everyDays(30, "2026-07-20"),
+        });
+        const rotating = await makeTask(ctx(), {
+          assignMode: "rotate",
+          rotationOrder: [ben.id, anna.id],
+          trigger: everyDays(30, "2026-07-20"),
+        });
+        book({ title: "Ohne Aufgabe" });
+        book({ title: "Von Anna", taskId: annas.id });
+        book({ title: "Von Ben", taskId: bens.id });
+        book({ title: "Gemeinsam", taskId: shared.id });
+        book({ title: "Wechselnd", taskId: rotating.id });
+        const mine = async (userId: string, over = {}) =>
+          (await feedFor(userId, over)).parsed.events
+            .filter((e) => e.uid.startsWith("appointment-"))
+            .map((e) => e.summary)
+            .sort();
+        expect(await mine(anna.id)).toEqual(
+          ["Gemeinsam", "Ohne Aufgabe", "Von Anna"].sort(),
+        );
+        expect(await mine(ben.id)).toEqual(
+          ["Gemeinsam", "Ohne Aufgabe", "Von Ben", "Wechselnd"].sort(),
+        );
+        expect(await mine(anna.id, { scope: "all" })).toEqual(
+          [
+            "Gemeinsam",
+            "Ohne Aufgabe",
+            "Von Anna",
+            "Von Ben",
+            "Wechselnd",
+          ].sort(),
+        );
+      });
+    });
+
+    describe("alarms", () => {
+      it("ring before a timed appointment and before the midnight of an all-day one", async () => {
+        const user = await createTestUser();
+        book({
+          title: "Morgens",
+          startsAt: at("2026-06-20", "09:00"),
+          endsAt: at("2026-06-20", "10:00"),
+        });
+        bookAllDay({ title: "Ganztags", startDate: "2026-06-21" });
+        const { parsed } = await feedFor(user.id, {
+          alarmTime: "18:00",
+          alarmDaysBefore: 1,
+        });
+        expect(parsed.events.map((e) => [e.summary, e.trigger])).toEqual([
+          ["Morgens", "-PT15H"],
+          ["Ganztags", "-PT6H"],
+        ]);
+      });
+
+      it("skip a timed appointment that starts before the alarm time", async () => {
+        const user = await createTestUser();
+        book({
+          title: "Früh",
+          startsAt: at("2026-06-20", "07:00"),
+          endsAt: at("2026-06-20", "08:00"),
+        });
+        const { parsed, ics } = await feedFor(user.id, { alarmTime: "08:00" });
+        expect(parsed.events).toHaveLength(1);
+        expect(ics).not.toContain("VALARM");
+      });
+    });
+
+    describe("the days the clocks change", () => {
+      it("keeps the real instants of an appointment across the jump forward", async () => {
+        const user = await createTestUser();
+        // 01:30 CET to 03:30 CEST on 2026-03-29 is one real hour.
+        book({
+          startsAt: at("2026-03-29", "01:30"),
+          endsAt: at("2026-03-29", "03:30"),
+        });
+        const { parsed } = await feedFor(
+          user.id,
+          { alarmTime: "18:00", alarmDaysBefore: 1 },
+          at("2026-03-20", "12:00"),
+        );
+        expect(parsed.events[0]).toMatchObject({
+          startsAt: "20260329T003000Z",
+          endsAt: "20260329T013000Z",
+          trigger: "-PT7H30M",
+        });
+      });
+
+      it("counts the alarm of a Monday appointment from the Saturday evening in real hours", async () => {
+        const user = await createTestUser();
+        book({
+          startsAt: at("2026-03-30", "08:00"),
+          endsAt: at("2026-03-30", "09:00"),
+        });
+        const { parsed } = await feedFor(
+          user.id,
+          { alarmTime: "18:00", alarmDaysBefore: 2 },
+          at("2026-03-20", "12:00"),
+        );
+        expect(parsed.events[0].trigger).toBe("-PT37H");
+      });
+
+      it("keeps the real instants across the fall back and an all-day appointment on that day", async () => {
+        const user = await createTestUser();
+        // 2026-10-25 02:30 happens twice; the first (CEST) one is 00:30Z.
+        book({
+          startsAt: at("2026-10-25", "02:30"),
+          endsAt: at("2026-10-25", "03:30"),
+          title: "Doppelt",
+        });
+        bookAllDay({ title: "Ganztag", startDate: "2026-10-25" });
+        const { parsed } = await feedFor(
+          user.id,
+          {},
+          at("2026-10-20", "12:00"),
+        );
+        const doppelt = parsed.events.find((e) => e.summary === "Doppelt")!;
+        expect(doppelt.startsAt).toBe("20261025T003000Z");
+        expect(doppelt.endsAt).toBe("20261025T023000Z");
+        const ganztag = parsed.events.find((e) => e.summary === "Ganztag")!;
+        expect([ganztag.start, ganztag.end]).toEqual(["20261025", "20261026"]);
+      });
+
+      it("orders events by their date in the household zone", async () => {
+        const user = await createTestUser();
+        bookAllDay({ title: "Ganztag Sonntag", startDate: "2026-03-29" });
+        bookAllDay({ title: "Ganztag Samstag", startDate: "2026-03-28" });
+        // 23:30Z on the 28th is 00:30 on Sunday the 29th in Zurich.
+        book({
+          title: "Kurz nach Mitternacht",
+          startsAt: Date.parse("2026-03-28T23:30:00Z"),
+          endsAt: Date.parse("2026-03-29T00:15:00Z"),
+        });
+        const { parsed } = await feedFor(
+          user.id,
+          {},
+          at("2026-03-26", "12:00"),
+        );
+        expect(titles(parsed.events)).toEqual([
+          "Ganztag Samstag",
+          "Ganztag Sonntag",
+          "Kurz nach Mitternacht",
+        ]);
+      });
+    });
+
+    describe("privacy", () => {
+      it("carries no notes, comments or contact", async () => {
+        const user = await createTestUser();
+        book({
+          notes: "NOTIZ-GEHEIM\n:::secret\nCODE-GEHEIM\n:::",
+          location: "Keller",
+        });
+        const { ics } = await feedFor(user.id);
+        expect(ics).toContain("Kaminfeger");
+        expect(ics).toContain("LOCATION:Keller");
+        expect(ics).not.toContain("GEHEIM");
+      });
+
+      it("escapes what a title or location could use to inject properties", async () => {
+        const user = await createTestUser();
+        book({
+          title: "Test\r\nATTENDEE:mailto:evil@example.org",
+          location: "Keller\nORGANIZER:mailto:evil@example.org",
+        });
+        const { ics } = await feedFor(user.id);
+        expect(ics).not.toMatch(/^ATTENDEE:/m);
+        expect(ics).not.toMatch(/^ORGANIZER:/m);
+      });
+    });
+
+    describe("stability", () => {
+      it("yields the same bytes whenever on the day it is built", async () => {
+        const user = await createTestUser();
+        book({ location: "Keller" });
+        const first = await feedFor(user.id);
+        const later = await buildFeedCalendar(
+          ctx(at("2026-06-15", "20:00")),
+          first.row,
+          ORIGIN,
+        );
+        expect(later.ics).toBe(first.ics);
+        expect(later.etag).toBe(first.etag);
+      });
+
+      it("raises SEQUENCE and moves LAST-MODIFIED with every change, a status change included", async () => {
+        const user = await createTestUser();
+        const a = book();
+        const before = await feedFor(user.id);
+        updateAppointment(ctx(NOW + 5 * 60_000), a.id, {
+          location: "Dachboden",
+        });
+        const edited = await buildFeedCalendar(ctx(), before.row, ORIGIN);
+        const [one] = before.parsed.events;
+        const [two] = parseIcs(edited.ics).events;
+        expect(two.uid).toBe(one.uid);
+        expect(two.location).toBe("Dachboden");
+        expect(two.sequence).toBe(one.sequence + 5);
+        expect(two.lastModified > one.lastModified).toBe(true);
+        expect(edited.etag).not.toBe(before.etag);
+
+        updateAppointment(ctx(NOW + 9 * 60_000), a.id, { status: "done" });
+        const done = parseIcs(
+          (await buildFeedCalendar(ctx(), before.row, ORIGIN)).ics,
+        ).events[0];
+        expect(done.sequence).toBe(one.sequence + 9);
+      });
+    });
+
+    it("writes English texts for an English feed", async () => {
+      const user = await createTestUser();
+      const heater = createAsset(
+        ctx(),
+        createAssetRequestSchema.parse({ name: "Heating" }),
+      );
+      const task = await makeTask(ctx(), {
+        title: "Service",
+        trigger: everyDays(30, "2026-07-20"),
+      });
+      book({ assetId: heater.id, taskId: task.id });
+      const { parsed } = await feedFor(user.id, { locale: "en" });
+      expect(parsed.events[0].description).toBe(
+        "Device: Heating\nFor: Service",
+      );
     });
   });
 

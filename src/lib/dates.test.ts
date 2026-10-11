@@ -15,6 +15,7 @@ import {
   isoWeekStart,
   isValidDate,
   localDateOf,
+  localTimeOf,
   maxDate,
   minDate,
   monthEnd,
@@ -330,6 +331,22 @@ describe("localDateOf / todayIn", () => {
   it("throws for unknown zones and invalid instants", () => {
     expect(() => localDateOf("Not/AZone", 0)).toThrow(RangeError);
     expect(() => localDateOf(ZH, Number.NaN)).toThrow(RangeError);
+  });
+});
+
+describe("localTimeOf", () => {
+  it.each([
+    ["2026-10-06T00:00:00Z", ZH, "02:00"],
+    ["2026-01-15T22:59:00Z", ZH, "23:59"],
+    ["2026-01-15T23:00:00Z", ZH, "00:00"],
+    ["2026-03-29T00:59:00Z", ZH, "01:59"],
+    ["2026-03-29T01:00:00Z", ZH, "03:00"],
+    ["2026-10-25T00:59:00Z", ZH, "02:59"],
+    ["2026-10-25T01:00:00Z", ZH, "02:00"],
+    ["2026-10-06T00:00:00Z", "America/Los_Angeles", "17:00"],
+    ["2026-10-06T00:00:00Z", "UTC", "00:00"],
+  ])("%s in %s = %s", (iso, tz, expected) => {
+    expect(localTimeOf(tz, utc(iso))).toBe(expected);
   });
 });
 

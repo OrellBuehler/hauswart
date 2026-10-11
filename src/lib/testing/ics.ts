@@ -10,6 +10,13 @@ export interface ParsedEvent {
   categories: string;
   trigger: string | null;
   dtstamp: string;
+  location: string;
+  /** `TRANSPARENT` or `OPAQUE`, from TRANSP. */
+  transp: string;
+  lastModified: string;
+  /** The first DTSTART/DTEND value of a timed event (`20260315T080000Z`), "" for an all-day one. */
+  startsAt: string;
+  endsAt: string;
 }
 
 const unescapeText = (value: string) =>
@@ -33,6 +40,11 @@ export function parseIcs(ics: string): {
         description: unescapeText(current.DESCRIPTION ?? ""),
         start: current["DTSTART;VALUE=DATE"] ?? "",
         end: current["DTEND;VALUE=DATE"] ?? "",
+        startsAt: current.DTSTART ?? "",
+        endsAt: current.DTEND ?? "",
+        location: unescapeText(current.LOCATION ?? ""),
+        transp: current.TRANSP ?? "",
+        lastModified: current["LAST-MODIFIED"] ?? "",
         status: current.STATUS ?? "",
         sequence: Number(current.SEQUENCE ?? "-1"),
         url: current.URL ?? "",

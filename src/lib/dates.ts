@@ -260,6 +260,12 @@ export function localDateOf(timeZone: string, instantMs: number): string {
   return formatDate(p.year, p.month, p.day);
 }
 
+/** The wall-clock time `HH:MM` in `timeZone` at the given instant. */
+export function localTimeOf(timeZone: string, instantMs: number): string {
+  const p = zonedParts(timeZone, instantMs);
+  return `${String(p.hour).padStart(2, "0")}:${String(p.minute).padStart(2, "0")}`;
+}
+
 export function todayIn(timeZone: string, nowMs: number): string {
   return localDateOf(timeZone, nowMs);
 }
