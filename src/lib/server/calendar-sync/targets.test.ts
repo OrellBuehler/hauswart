@@ -135,6 +135,7 @@ describe("calendar targets", () => {
       await expect(create()).rejects.toMatchObject({
         code: "invalid_request",
         details: {
+          code: "calendar_not_found",
           body: {
             fieldErrors: { remoteCalendarId: ["This calendar was not found."] },
           },
@@ -146,6 +147,7 @@ describe("calendar targets", () => {
       await expect(create()).rejects.toMatchObject({
         code: "invalid_request",
         details: {
+          code: "calendar_unsupported",
           body: {
             fieldErrors: {
               remoteCalendarId: ["This calendar does not allow adding events."],

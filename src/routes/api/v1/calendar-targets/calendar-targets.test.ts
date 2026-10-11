@@ -168,6 +168,7 @@ describe("calendar targets API", () => {
         error: {
           code: "invalid_request",
           details: {
+            code: "calendar_not_found",
             body: { fieldErrors: { remoteCalendarId: [expect.any(String)] } },
           },
         },
@@ -175,7 +176,11 @@ describe("calendar targets API", () => {
       fake.add(CALENDAR_ID, {
         capabilities: { ...FULL_CAPABILITIES, create: false },
       });
-      expect((await post()).res.status).toBe(400);
+      const unsupported = await post();
+      expect(unsupported.res.status).toBe(400);
+      expect(unsupported.body).toMatchObject({
+        error: { details: { code: "calendar_unsupported" } },
+      });
     });
 
     it("answers 409 for a calendar that has a target, and 502 when the system fails", async () => {

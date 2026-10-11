@@ -25,9 +25,33 @@ function fieldErrorsOf(
     : undefined;
 }
 
+/** The `details.code` of a refused save (`calendar_not_found`, `calendar_unsupported`), if the server gave one. */
+function refusalCode(err: unknown): unknown {
+  return isApiError(err)
+    ? (err.details as { code?: unknown } | undefined)?.code
+    : undefined;
+}
+
+function calendarFieldMessage(
+  code: unknown,
+  provider: CalendarProviderKind,
+): string {
+  switch (code) {
+    case "calendar_not_found":
+      return m.caltargets_error_calendar_not_found({
+        provider: providerName(provider),
+      });
+    case "calendar_unsupported":
+      return m.caltargets_error_calendar_unsupported();
+    default:
+      return m.field_invalid();
+  }
+}
+
 /**
  * The failure of adding or changing a calendar target, in the person's language. The server says
- * which calendar field it refuses (`remoteCalendarId`: not there, or it takes no new events), that
+ * which calendar field it refuses (`remoteCalendarId`, with `details.code` `calendar_not_found` or
+ * `calendar_unsupported` when it takes no new events: worded apart), that
  * the calendar already has a target (409), that the household's calendars are administrators'
  * business (403), that there is no working connection (404) or what the connected system answered
  * (502 with its code).
@@ -42,7 +66,7 @@ export function saveFailure(
     for (const field of Object.keys(rejected)) {
       fields[field] =
         field === "remoteCalendarId"
-          ? m.caltargets_error_calendar_unusable()
+          ? calendarFieldMessage(refusalCode(err), provider)
           : m.field_invalid();
     }
     // The settings are one field for the server; the form has no single control to mark for it.

@@ -4,21 +4,55 @@ import { integrationErrorMessage } from "$lib/connections/errors";
 import { m } from "$lib/paraglide/messages";
 import { deleteFailure, removalPausedTarget, saveFailure } from "./errors";
 
+const calendarRefused = (code: string, message: string) =>
+  new ApiError("invalid_request", "Invalid request", {
+    details: {
+      body: { formErrors: [], fieldErrors: { remoteCalendarId: [message] } },
+      code,
+    },
+  });
+
 const bodyFields = (fields: Record<string, string[]>) =>
   new ApiError("invalid_request", "Invalid request", {
     details: { body: { formErrors: [], fieldErrors: fields } },
   });
 
 describe("saveFailure", () => {
-  it("marks the calendar field when the calendar is not there or takes no entries", () => {
+  it("says on the calendar field that the calendar is not there", () => {
     const failure = saveFailure(
-      bodyFields({ remoteCalendarId: ["This calendar was not found."] }),
+      calendarRefused("calendar_not_found", "This calendar was not found."),
       "homeassistant",
     );
     expect(failure.fields).toEqual({
-      remoteCalendarId: m.caltargets_error_calendar_unusable(),
+      remoteCalendarId: m.caltargets_error_calendar_not_found({
+        provider: m.integration_ha_name(),
+      }),
     });
     expect(failure.form).toBe(m.form_check_fields());
+  });
+
+  it("says on the calendar field that the calendar takes no entries, in other words", () => {
+    const failure = saveFailure(
+      calendarRefused(
+        "calendar_unsupported",
+        "This calendar does not allow adding events.",
+      ),
+      "homeassistant",
+    );
+    expect(failure.fields).toEqual({
+      remoteCalendarId: m.caltargets_error_calendar_unsupported(),
+    });
+    expect(m.caltargets_error_calendar_unsupported()).not.toBe(
+      m.caltargets_error_calendar_not_found({ provider: "x" }),
+    );
+  });
+
+  it("marks the calendar field without a reason when the server gave none", () => {
+    const failure = saveFailure(
+      bodyFields({ remoteCalendarId: ["Something"] }),
+      "homeassistant",
+    );
+    expect(failure.fields).toEqual({ remoteCalendarId: m.field_invalid() });
   });
 
   it("says the settings are not valid when only they are refused", () => {

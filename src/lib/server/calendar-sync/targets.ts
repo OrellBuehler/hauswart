@@ -151,11 +151,28 @@ function manageableRow(ctx: Db, caller: Caller, id: string): TargetRow {
   return row;
 }
 
+/**
+ * The 400 on `remoteCalendarId` for a calendar the target cannot use. `details.code` tells which
+ * (`calendar_not_found`, `calendar_unsupported`), so a client words them apart without the English.
+ */
+function calendarRefused(
+  code: "calendar_not_found" | "calendar_unsupported",
+  message: string,
+): ApiError {
+  const base = invalidField("remoteCalendarId", message);
+  return new ApiError("invalid_request", "Invalid request", {
+    details: { ...(base.details as object), code },
+  });
+}
+
 /** An adapter failure as the API shows it; a calendar that is not there is the caller's mistake. */
 function upstream(err: unknown): never {
   if (err instanceof IntegrationError) {
     if (err.code === "not_found") {
-      throw invalidField("remoteCalendarId", "This calendar was not found.");
+      throw calendarRefused(
+        "calendar_not_found",
+        "This calendar was not found.",
+      );
     }
     throw new ApiError("upstream_error", err.message, {
       details: { code: err.code },
@@ -223,8 +240,8 @@ export async function createTarget(
     return upstream(err);
   }
   if (!session.capabilities.create) {
-    throw invalidField(
-      "remoteCalendarId",
+    throw calendarRefused(
+      "calendar_unsupported",
       "This calendar does not allow adding events.",
     );
   }
