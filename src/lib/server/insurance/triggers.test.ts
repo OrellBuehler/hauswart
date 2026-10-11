@@ -22,7 +22,7 @@ describe("insurance policy triggers", () => {
         premiumMinor: minor(48_000),
         currency: "CHF",
         startDate: "2026-01-01",
-        assistancePhone: "0800 555 000",
+        assistancePhone: "000 000 00 00",
         ...over,
       })
       .returning()
@@ -51,7 +51,7 @@ describe("insurance policy triggers", () => {
 
     it("never indexes the assistance phone", () => {
       policy();
-      expect(find("0800")).toEqual([]);
+      expect(find("000 000")).toEqual([]);
     });
 
     it("follows title, number and notes of an update", () => {

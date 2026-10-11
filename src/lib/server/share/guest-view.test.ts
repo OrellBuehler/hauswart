@@ -67,7 +67,7 @@ describe("guest view", () => {
         createInsurancePolicyRequestSchema.parse({
           title: "Police-Titel-Unsichtbar",
           policyNumber: "POL-UNSICHTBAR-1",
-          assistancePhone: "0800 000 UNSICHTBAR",
+          assistancePhone: "000 000 00 02 UNSICHTBAR",
           premiumMinor: 1000,
           startDate: "2026-01-01",
           showOnEmergency: true,

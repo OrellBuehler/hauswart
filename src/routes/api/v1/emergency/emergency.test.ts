@@ -57,7 +57,7 @@ describe("emergency API", () => {
         json: {
           name: "Muster Versicherungen",
           kind: "insurance",
-          phone: "0800 100 200",
+          phone: "000 000 00 01",
         },
       })
     ).body as { id: string };
@@ -67,7 +67,7 @@ describe("emergency API", () => {
         type: "motor_full_casco",
         insurerContactId: insurer.id,
         policyNumber: "POL-2026-0042",
-        assistancePhone: "0800 555 000",
+        assistancePhone: "000 000 00 00",
         showOnEmergency: true,
         notes: "NOTIZ-POLICE",
       },
@@ -84,9 +84,9 @@ describe("emergency API", () => {
         title: "Kasko Kombi",
         type: "motor_full_casco",
         insurerName: "Muster Versicherungen",
-        insurerPhone: "0800 100 200",
+        insurerPhone: "000 000 00 01",
         policyNumber: "POL-2026-0042",
-        assistancePhone: "0800 555 000",
+        assistancePhone: "000 000 00 00",
       },
     ]);
     const pdf = await call("GET", "/api/v1/emergency/export.pdf");

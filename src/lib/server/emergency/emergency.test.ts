@@ -89,14 +89,14 @@ describe("emergency", () => {
           createContactRequestSchema.parse({
             name: "Muster Versicherungen",
             kind: "insurance",
-            phone: "0800 100 200",
+            phone: "000 000 00 01",
           }),
         );
         const kasko = await policy({
           title: "Kasko Kombi",
           insurerContactId: insurer.id,
           policyNumber: "POL-2026-0042",
-          assistancePhone: "0800 555 000",
+          assistancePhone: "000 000 00 00",
           notes: "NOTIZ-POLICE",
         });
         await policy({ title: "Alt", showOnEmergency: false });
@@ -118,9 +118,9 @@ describe("emergency", () => {
             title: "Kasko Kombi",
             type: "other",
             insurerName: "Muster Versicherungen",
-            insurerPhone: "0800 100 200",
+            insurerPhone: "000 000 00 01",
             policyNumber: "POL-2026-0042",
-            assistancePhone: "0800 555 000",
+            assistancePhone: "000 000 00 00",
           },
         ]);
         expect(JSON.stringify(getEmergency(ctx()).insurance)).not.toContain(
@@ -142,14 +142,14 @@ describe("emergency", () => {
           ctx(),
           createContactRequestSchema.parse({
             name: "Muster Versicherungen",
-            phone: "0800 100 200",
+            phone: "000 000 00 01",
           }),
         );
         await policy({
           title: "Kasko Kombi",
           insurerContactId: insurer.id,
           policyNumber: "POL-2026-0042",
-          assistancePhone: "0800 555 000",
+          assistancePhone: "000 000 00 00",
           notes: "NOTIZ-POLICE",
         });
         await policy({ title: "Ohne Angaben" });
@@ -162,9 +162,9 @@ describe("emergency", () => {
           expect(json).toContain("Versicherungen");
           expect(json).toContain("Kasko Kombi");
           expect(json).toContain("Muster Versicherungen");
-          expect(json).toContain("0800 100 200");
+          expect(json).toContain("000 000 00 01");
           expect(json).toContain("POL-2026-0042");
-          expect(json).toContain("0800 555 000");
+          expect(json).toContain("000 000 00 00");
           expect(json).toContain("Ohne Angaben");
           expect(json).not.toContain("NOTIZ-POLICE");
           // The section comes after the contacts and before the places.

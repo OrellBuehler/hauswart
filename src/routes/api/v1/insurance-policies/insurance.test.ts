@@ -78,7 +78,7 @@ describe("insurance policies API", () => {
         endDate: today(300),
         renewal: "auto",
         cancellationNoticeMonths: 3,
-        assistancePhone: "0800 555 000",
+        assistancePhone: "000 000 00 00",
         showOnEmergency: true,
         notes: "Europaweit",
         assetIds: [kombi.id],

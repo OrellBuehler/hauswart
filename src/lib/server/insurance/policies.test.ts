@@ -100,7 +100,7 @@ describe("insurance policies", () => {
         endDate: "2026-12-31",
         renewal: "auto",
         cancellationNoticeMonths: 3,
-        assistancePhone: "0800 555 000",
+        assistancePhone: "000 000 00 00",
         showOnEmergency: true,
         notes: "Gilt in ganz Europa",
         assetIds: [kombi.id],
@@ -117,7 +117,7 @@ describe("insurance policies", () => {
         endDate: "2026-12-31",
         cancellationNoticeMonths: 3,
         cancellationDeadline: "2026-09-30",
-        assistancePhone: "0800 555 000",
+        assistancePhone: "000 000 00 00",
         showOnEmergency: true,
         notes: "Gilt in ganz Europa",
         assets: [{ id: kombi.id, name: "Kombi", kind: "other" }],
@@ -322,7 +322,7 @@ describe("insurance policies", () => {
       const b = await asset("Anhänger");
       const p = await make({
         policyNumber: "X-1",
-        assistancePhone: "0800 555 000",
+        assistancePhone: "000 000 00 00",
         deductibleMinor: 50_000,
         assetIds: [a.id],
       });

@@ -91,7 +91,7 @@ describe("insurance policy tools", () => {
     const created = await policy({
       title: "Kasko Kombi",
       policyNumber: "POL-2026-0042",
-      assistancePhone: "0800 555 000",
+      assistancePhone: "000 000 00 00",
       deductibleMinor: 100_000,
       notes: "Europaweit gültig",
       showOnEmergency: true,
@@ -104,7 +104,7 @@ describe("insurance policy tools", () => {
         id: created.id,
         title: "Kasko Kombi",
         policyNumber: "POL-2026-0042",
-        assistancePhone: "0800 555 000",
+        assistancePhone: "000 000 00 00",
         deductibleMinor: 100_000,
         notes: "Europaweit gültig",
         showOnEmergency: true,
