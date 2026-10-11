@@ -9,7 +9,7 @@ const target = {
   entityType: z
     .enum(COMMENT_ENTITY_TYPES)
     .describe(
-      "What the comment is on: task, defect, asset, room, part, contact, service_log, asset_hint, doc_page, cost or insurance_policy",
+      "What the comment is on: task, defect, asset, room, part, contact, service_log, asset_hint, doc_page, cost, insurance_policy or appointment",
     ),
   entityId: z
     .string()
@@ -54,7 +54,7 @@ export const addComment = defineTool({
   name: "add_comment",
   title: "Add a comment",
   description:
-    "Writes a comment (markdown, at most 10 000 characters) on a task, defect, asset, room, part, contact, service log entry, care hint, documentation page, cost entry or insurance policy, as the token's user. The other involved household members get a notification, so comment only when it is worth their attention.",
+    "Writes a comment (markdown, at most 10 000 characters) on a task, defect, asset, room, part, contact, service log entry, care hint, documentation page, cost entry, insurance policy or appointment, as the token's user. The other involved household members get a notification, so comment only when it is worth their attention.",
   mode: "create",
   input: {
     ...target,

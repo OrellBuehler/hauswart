@@ -37,7 +37,7 @@ function whenNext(task: Task): string {
 }
 
 /** A backdated completion: noon of that day in the household time zone. Today means now. */
-function completedAt(ctx: ToolContext, day: string | undefined) {
+export function completedAt(ctx: ToolContext, day: string | undefined) {
   if (!day || day === ctx.today()) return undefined;
   if (day > ctx.today()) {
     throw new ToolError(
