@@ -110,6 +110,25 @@ describe("buildTemplate", () => {
     });
   });
 
+  it.each([
+    ["20'000", 20000],
+    ["20.000", 20000],
+    ["20,000", 20000],
+    ["20 000", 20000],
+    ["15000", 15000],
+    ["7500.5", 7500.5],
+  ])(
+    "reads the service distance %j as %j, a thousands separator included",
+    (text, expected) => {
+      const { template } = buildTemplate(
+        "service",
+        ctx(),
+        params({ serviceDistance: text }),
+      );
+      expect(template?.task.trigger).toMatchObject({ threshold: expected });
+    },
+  );
+
   it("builds the inspection on the date given", () => {
     const { template } = buildTemplate(
       "mfk",

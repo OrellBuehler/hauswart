@@ -7,6 +7,7 @@ import { isApiError } from "$lib/api/errors";
 import type { Task } from "$lib/api/schemas/tasks";
 import { isValidDate } from "$lib/dates";
 import { m } from "$lib/paraglide/messages";
+import { parseOdometerValue } from "./format";
 import { odometerSignalKey } from "./odometer";
 import { templateMark, templateOfMark } from "./template-mark";
 import {
@@ -90,6 +91,12 @@ function parseNumber(text: string, max: number, whole: boolean): number | null {
   return whole && !Number.isInteger(value) ? null : value;
 }
 
+/** A distance in the vehicle's unit as people write it: "20'000", "20.000" and "20000" are the same. */
+function parseDistance(text: string, max: number): number | null {
+  const value = parseOdometerValue(text, max);
+  return typeof value === "number" && value > 0 ? value : null;
+}
+
 export type BuiltTemplate = {
   template: VehicleTaskTemplate | undefined;
   /** Problems with the parameters, keyed like `SetupParams`. */
@@ -123,7 +130,7 @@ export function buildTemplate(
     case "vignette":
       return done(vignette(context));
     case "service": {
-      const distance = parseNumber(params.serviceDistance, MAX_DISTANCE, false);
+      const distance = parseDistance(params.serviceDistance, MAX_DISTANCE);
       const months = parseNumber(params.serviceMonths, MAX_MONTHS, true);
       if (distance === null)
         errors.serviceDistance = m.vehicle_setup_error_number();

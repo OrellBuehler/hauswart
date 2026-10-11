@@ -17,7 +17,7 @@ import { formatMoney, readMoney } from "$lib/format-money";
 import { currencyExponent, minor, toDecimalString } from "$lib/money";
 import { m } from "$lib/paraglide/messages";
 import { issuesToErrors } from "$lib/tasks/field-errors";
-import { parseDecimalInput } from "./format";
+import { parseDecimalInput, parseOdometerValue } from "./format";
 
 export type FuelDraft = {
   date: string;
@@ -110,7 +110,7 @@ function check(draft: FuelDraft, today: string): Checked {
   else if (!isValidDate(draft.date)) errors.date = m.field_invalid_date();
   else if (draft.date > today) errors.date = m.vehicle_odometer_date_future();
 
-  const odometer = parseDecimalInput(draft.odometer, MAX_ODOMETER_VALUE);
+  const odometer = parseOdometerValue(draft.odometer, MAX_ODOMETER_VALUE);
   if (odometer === null) errors.odometer = m.field_required();
   else if (odometer === undefined) {
     errors.odometer = m.vehicle_odometer_invalid({
