@@ -23327,7 +23327,7 @@
       "post": {
         "operationId": "appointmentsCreate",
         "summary": "Create an appointment",
-        "description": "A timed appointment needs startsAt (endsAt defaults to an hour later); an all-day one needs allDay true and startDate (endDate defaults to the same day, the last day included). The fields of the other kind are refused, the end must come after the start and an appointment lasts at most 14 days. It can belong to a task (taskId, optionally the occurrenceKey it is for), a device and a contact; the asset defaults to the task's asset. It starts as planned. 400 field errors name the offending field (`taskId`, `assetId`, `contactId` when they do not exist).",
+        "description": "A timed appointment needs startsAt (endsAt defaults to an hour later); an all-day one needs allDay true and startDate (endDate defaults to the same day, the last day included). The fields of the other kind are refused, the end must come after the start and an appointment lasts at most 14 days. It can belong to a task (taskId, optionally the occurrenceKey it is for; without one the occurrence the task shows now is recorded, none for a task that shows none), a device and a contact; the asset defaults to the task's asset. It starts as planned. 400 field errors name the offending field (`taskId`, `assetId`, `contactId` when they do not exist).",
         "tags": [
           "appointments"
         ],
@@ -23647,7 +23647,7 @@
       "patch": {
         "operationId": "appointmentsUpdate",
         "summary": "Change an appointment",
-        "description": "Changes only the fields given. allDay switches between timed and all-day (then the new kind's start is required); otherwise the fields must fit the appointment as it is and the whole must stay valid, so moving only the start of a timed appointment to after its end is a 400 on endsAt. Changing the task forgets the occurrenceKey unless one is sent. Cancel an appointment by setting status to cancelled, reopen it with planned. Setting status to done records the status only; POST /appointments/{id}/complete also completes the task. A request that changes nothing leaves updatedAt alone.",
+        "description": "Changes only the fields given. allDay switches between timed and all-day (then the new kind's start is required); otherwise the fields must fit the appointment as it is and the whole must stay valid, so moving only the start of a timed appointment to after its end is a 400 on endsAt. Changing the task records the occurrence the new task shows now as the occurrenceKey, unless one is sent; sending occurrenceKey null for the same task removes it. Cancel an appointment by setting status to cancelled, reopen it with planned. Setting status to done records the status only; POST /appointments/{id}/complete also completes the task. A request that changes nothing leaves updatedAt alone.",
         "tags": [
           "appointments"
         ],
@@ -23987,7 +23987,7 @@
       "post": {
         "operationId": "appointmentsComplete",
         "summary": "Mark an appointment done",
-        "description": "Sets the status to done and, when the appointment belongs to a task, completes that task's occurrence (the appointment's occurrenceKey, else the one the task shows) as the caller, with the idempotency key `appointment:<id>`: repeating the request completes nothing twice and answers with the first completion and replayed true. Always answers 200; send `{}` when there is no note or date to give. Browser sessions are attributed as manual, API tokens by their kind. The task is left alone (completion null) when it is archived or when the occurrence the appointment is for has been settled meanwhile. A cancelled appointment is a 409. Undoing the task's completion later (DELETE /completions/{id}) does not reopen the appointment, and reopening the appointment does not undo the completion.",
+        "description": "Sets the status to done and, when the appointment belongs to a task, completes the occurrence the appointment is for (its occurrenceKey, recorded when it got the task) as the caller, with the idempotency key `appointment:<id>`: repeating the request completes nothing twice and answers with the first completion and replayed true. Always answers 200; send `{}` when there is no note or date to give. Browser sessions are attributed as manual, API tokens by their kind. The task is left alone (completion null) when it is archived or when that occurrence has been settled meanwhile (the task shows another occurrence, or reports this one as completed, skipped or acknowledged), so the work is never counted twice and no cycle is skipped. An appointment without an occurrenceKey (its task showed none, or it was removed) completes the occurrence the task shows only if that is dated and fell due on or before the last day of the appointment. A cancelled appointment is a 409. Undoing the task's completion later (DELETE /completions/{id}) does not reopen the appointment, and reopening the appointment does not undo the completion.",
         "tags": [
           "appointments",
           "tasks"

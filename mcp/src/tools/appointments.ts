@@ -126,7 +126,7 @@ export const createAppointment = defineTool({
   name: "create_appointment",
   title: "Book an appointment",
   description:
-    "Adds an appointment. date is the day (YYYY-MM-DD, household time zone); with startTime (HH:MM, 24 hours) it is a timed appointment that ends at endTime (default one hour later; an end on another day needs endDate), without startTime it is an all-day appointment that can run to endDate (at most 14 days in all). task (id or title) links it to a recurring task: completing the appointment with complete_appointment then completes that task, and the task shows the appointment as its next one. asset and contact are optional (the asset defaults to the task's). location is a place, notes plain text. Check list_appointments first to avoid booking twice.",
+    "Adds an appointment. date is the day (YYYY-MM-DD, household time zone); with startTime (HH:MM, 24 hours) it is a timed appointment that ends at endTime (default one hour later; an end on another day needs endDate), without startTime it is an all-day appointment that can run to endDate (at most 14 days in all). task (id or title) links it to a recurring task, for the occurrence the task shows now: completing the appointment with complete_appointment then completes that occurrence, and the task shows the appointment as its next one. asset and contact are optional (the asset defaults to the task's). location is a place, notes plain text. Check list_appointments first to avoid booking twice.",
   mode: "create",
   input: {
     title: z.string().trim().min(1).max(200),
@@ -273,7 +273,7 @@ export const updateAppointment = defineTool({
   name: "update_appointment",
   title: "Change an appointment",
   description:
-    "Changes an appointment; only what you pass changes. To move it pass date and/or startTime: the appointment keeps its length unless you also pass endTime/endDate. startTime on an all-day appointment makes it a timed one, allDay: true makes a timed one all-day. status: cancelled calls it off (it leaves the calendar feeds), planned reopens it, done records that it took place WITHOUT completing its task (use complete_appointment for that). task, asset and contact take an id or name, null removes the link. location and notes: an empty string clears them.",
+    "Changes an appointment; only what you pass changes. To move it pass date and/or startTime: the appointment keeps its length unless you also pass endTime/endDate. startTime on an all-day appointment makes it a timed one, allDay: true makes a timed one all-day. status: cancelled calls it off (it leaves the calendar feeds), planned reopens it, done records that it took place WITHOUT completing its task (use complete_appointment for that). task, asset and contact take an id or name, null removes the link (a new task is linked for the occurrence it shows now). location and notes: an empty string clears them.",
   mode: "update",
   input: {
     id: appointmentId,
@@ -340,7 +340,7 @@ export const completeAppointment = defineTool({
   name: "complete_appointment",
   title: "Mark an appointment done",
   description:
-    "Records that an appointment took place: it becomes done and, when it belongs to a task, that task is completed too (as the token's user, with the optional note; completedDate backdates it, default today) and the next due date follows. Repeating it changes nothing. A cancelled appointment cannot be completed (reopen it with update_appointment first). Undoing the task's completion later with undo_completion does not reopen the appointment.",
+    "Records that an appointment took place: it becomes done and, when it belongs to a task, the occurrence it was booked for is completed too (as the token's user, with the optional note; completedDate backdates it, default today) and the next due date follows. If that occurrence was settled meanwhile (completed or skipped by hand), the task is left as it is. Repeating it changes nothing. A cancelled appointment cannot be completed (reopen it with update_appointment first). Undoing the task's completion later with undo_completion does not reopen the appointment.",
   mode: "update",
   input: {
     id: appointmentId,

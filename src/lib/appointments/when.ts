@@ -1,4 +1,4 @@
-import { addDays, diffDays, zonedTimeToInstant } from "../dates";
+import { addDays, diffDays, localDateOf, zonedTimeToInstant } from "../dates";
 
 /** The longest an appointment can last, in days (an all-day one counts its first and last day). */
 export const MAX_APPOINTMENT_DAYS = 14;
@@ -68,4 +68,9 @@ export function endInstant(when: AppointmentWhen, timeZone: string): number {
   return when.allDay
     ? zonedTimeToInstant(addDays(when.endDate, 1), "00:00", timeZone)
     : when.endsAt;
+}
+
+/** The last day the appointment touches in `timeZone`; a timed one that ends at midnight belongs to the day before. */
+export function lastDay(when: AppointmentWhen, timeZone: string): string {
+  return when.allDay ? when.endDate : localDateOf(timeZone, when.endsAt - 1);
 }

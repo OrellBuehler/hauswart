@@ -12,6 +12,7 @@ import { isValidDate, localDateOf, zonedTimeToInstant } from "$lib/dates";
 import { m } from "$lib/paraglide/messages";
 import { issuesToErrors } from "$lib/tasks/field-errors";
 import { spanOf, whenOf, type WhenFields } from "./format";
+import { pinnableOccurrenceKey } from "./occurrence";
 import { defaultEnd, whenProblem, type AppointmentWhen } from "./when";
 
 export type CreateBody = z.input<typeof createAppointmentRequestSchema>;
@@ -36,7 +37,10 @@ export type AppointmentDraft = {
   taskId: string | null;
   assetId: string | null;
   contactId: string | null;
-  /** The occurrence of the task the appointment is for; only a new appointment sends it. */
+  /**
+   * The occurrence of the task the appointment is for; only a new appointment sends it, and without
+   * one the server takes the occurrence the task shows.
+   */
   occurrenceKey: string | null;
 };
 
@@ -69,7 +73,9 @@ export function newDraft(defaults: NewDraftDefaults): AppointmentDraft {
     taskId: defaults.taskId ?? null,
     assetId: defaults.assetId ?? null,
     contactId: defaults.contactId ?? null,
-    occurrenceKey: defaults.taskId ? (defaults.occurrenceKey ?? null) : null,
+    occurrenceKey: defaults.taskId
+      ? pinnableOccurrenceKey(defaults.occurrenceKey)
+      : null,
   };
 }
 

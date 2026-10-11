@@ -1,11 +1,20 @@
 import { eq } from "drizzle-orm";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { taskCompletions } from "$lib/server/db";
 import { completeTask, undoCompletion } from "$lib/server/tasks/completions";
+import { evaluateTaskById } from "$lib/server/tasks/evaluator";
+import { setSignalProvider } from "$lib/server/tasks/signals";
 import { getTask, updateTask } from "$lib/server/tasks/tasks";
 import { createTestUser } from "$lib/testing/auth";
 import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, everyDays, makeTask, NOW } from "$lib/testing/domain";
+import {
+  at,
+  ctxAt,
+  everyDays,
+  makeTask,
+  NOW,
+  weekly,
+} from "$lib/testing/domain";
 import {
   createAppointment,
   getAppointment,
@@ -17,7 +26,8 @@ import { appointmentKey, completeAppointment } from "./complete";
 describe("completing an appointment", () => {
   const test = useTestDB();
   const ctx = (now: number = NOW) => ctxAt(test.db, now);
-  const LATER = NOW + 3_600_000;
+  const HOUR = 3_600_000;
+  const LATER = NOW + HOUR;
 
   async function world() {
     const user = await createTestUser();
@@ -242,22 +252,344 @@ describe("completing an appointment", () => {
     expect(completions()).toHaveLength(1);
   });
 
-  it("completes the occurrence the task shows when the appointment names none", async () => {
-    const { task, input, make, completions } = await world();
-    const a = make();
-    await completeTask(ctx(), task.id, {
-      kind: "done",
-      source: "manual",
-      userId: input.userId,
+  const visit = (
+    taskId: string,
+    userId: string,
+    day: string,
+    over: Partial<CreateAppointmentInput> = {},
+  ) =>
+    createAppointment(
+      ctx(),
+      {
+        title: "Besuch",
+        startsAt: at(day, "09:00"),
+        endsAt: at(day, "10:00"),
+        taskId,
+        ...over,
+      },
+      userId,
+    );
+  const unpin = (id: string) =>
+    updateAppointment(ctx(), id, { occurrenceKey: null });
+  const byHand = (
+    taskId: string,
+    userId: string,
+    kind: "done" | "skipped" = "done",
+  ) => completeTask(ctx(), taskId, { kind, source: "manual", userId });
+  const oneOff = (date: string) => ({
+    v: 1 as const,
+    type: "one_off" as const,
+    date,
+  });
+
+  describe("an occurrence settled by hand meanwhile", () => {
+    it("is not completed a second time: the appointment pinned the occurrence the task showed", async () => {
+      const { user, task, input, make, completions } = await world();
+      const a = make();
+      expect(a.occurrenceKey).toBe(task.state!.occurrenceKey);
+      await byHand(task.id, user.id);
+      const shown = getTask(ctx(), task.id).state!.occurrenceKey;
+      expect(shown).not.toBe(a.occurrenceKey);
+      const result = await completeAppointment(ctx(LATER), a.id, input);
+      expect(result.appointment.status).toBe("done");
+      expect(result.completion).toBeNull();
+      expect(result.task?.state?.occurrenceKey).toBe(shown);
+      expect(completions()).toHaveLength(1);
     });
-    const shown = getTask(ctx(), task.id).state!.occurrenceKey;
-    await completeAppointment(ctx(LATER), a.id, input);
-    const rows = completions();
-    expect(rows).toHaveLength(2);
-    expect(
-      rows.find((r) => r.idempotencyKey?.startsWith("appointment:"))
-        ?.occurrenceKey,
-    ).toBe(shown);
+
+    it("does not skip a cycle of a weekly calendar task", async () => {
+      const { user, input, completions } = await world();
+      const task = await makeTask(ctx(), {
+        title: "Mülltonne rausstellen",
+        trigger: weekly("2026-06-15"),
+      });
+      expect(task.state?.occurrenceKey).toBe("2026-06-15");
+      const a = visit(task.id, user.id, "2026-06-16");
+      await byHand(task.id, user.id);
+      expect(getTask(ctx(), task.id).state?.occurrenceKey).toBe("2026-06-22");
+      const result = await completeAppointment(ctx(LATER), a.id, input);
+      expect(result.completion).toBeNull();
+      expect(result.appointment.status).toBe("done");
+      const rows = completions(task.id);
+      expect(rows).toHaveLength(1);
+      expect(rows[0].occurrenceKey).toBe("2026-06-15");
+      expect(getTask(ctx(), task.id).state?.occurrenceKey).toBe("2026-06-22");
+    });
+
+    it("leaves a one-off task alone whose key does not change when it is done", async () => {
+      const { user, input, completions } = await world();
+      const task = await makeTask(ctx(), { trigger: oneOff("2026-06-18") });
+      const a = visit(task.id, user.id, "2026-06-18");
+      expect(a.occurrenceKey).toBe("2026-06-18");
+      await byHand(task.id, user.id);
+      expect(getTask(ctx(), task.id).state?.occurrenceKey).toBe("2026-06-18");
+      const result = await completeAppointment(ctx(LATER), a.id, input);
+      expect(result.completion).toBeNull();
+      expect(result.appointment.status).toBe("done");
+      expect(completions(task.id)).toHaveLength(1);
+    });
+
+    it("leaves a one-off task alone that was skipped", async () => {
+      const { user, input, completions } = await world();
+      const task = await makeTask(ctx(), { trigger: oneOff("2026-06-18") });
+      const a = visit(task.id, user.id, "2026-06-18");
+      await byHand(task.id, user.id, "skipped");
+      const result = await completeAppointment(ctx(LATER), a.id, input);
+      expect(result.completion).toBeNull();
+      expect(completions(task.id)).toHaveLength(1);
+    });
+
+    it("leaves a one-off task alone whose date was edited after it was done", async () => {
+      const { user, input, completions } = await world();
+      const task = await makeTask(ctx(), { trigger: oneOff("2026-06-18") });
+      await byHand(task.id, user.id);
+      await updateTask(ctx(), task.id, { trigger: oneOff("2026-06-25") });
+      const a = visit(task.id, user.id, "2026-06-25");
+      expect(a.occurrenceKey).toBe("2026-06-25");
+      const result = await completeAppointment(ctx(LATER), a.id, input);
+      expect(result.completion).toBeNull();
+      expect(completions(task.id)).toHaveLength(1);
+    });
+
+    it("still completes a period that wants more than one completion", async () => {
+      const { user, input, completions } = await world();
+      const task = await makeTask(ctx(), {
+        title: "Lüften",
+        trigger: { v: 1, type: "min_per_period", period: "month", count: 2 },
+      });
+      const a = visit(task.id, user.id, "2026-06-20");
+      expect(a.occurrenceKey).toBe("p:2026-06-01");
+      await byHand(task.id, user.id);
+      expect(getTask(ctx(), task.id).state).toMatchObject({
+        occurrenceKey: "p:2026-06-01",
+        progress: { current: 1, target: 2 },
+      });
+      const result = await completeAppointment(ctx(LATER), a.id, input);
+      expect(result.completion?.occurrenceKey).toBe("p:2026-06-01");
+      expect(completions(task.id)).toHaveLength(2);
+      expect(result.task?.state?.occurrenceKey).toBe("p:2026-07-01");
+    });
+
+    it("completes the occurrence after the completion by hand was undone", async () => {
+      const { user, task, input, make, completions } = await world();
+      const a = make();
+      const { completion } = await byHand(task.id, user.id);
+      await undoCompletion(ctx(LATER), completion.id, user.id);
+      const result = await completeAppointment(ctx(LATER), a.id, input);
+      expect(result.completion?.occurrenceKey).toBe(a.occurrenceKey);
+      expect(completions().filter((c) => !c.revokedAt)).toHaveLength(1);
+    });
+  });
+
+  describe("an appointment without an occurrence", () => {
+    it("completes the occurrence the task shows when that was due by the end of the appointment", async () => {
+      const { user, task, input, completions } = await world();
+      const a = unpin(visit(task.id, user.id, "2026-06-20").id);
+      expect(a.occurrenceKey).toBeNull();
+      const result = await completeAppointment(ctx(LATER), a.id, input);
+      expect(result.completion).not.toBeNull();
+      expect(completions()).toHaveLength(1);
+      expect(completions()[0].occurrenceKey).toBe(task.state!.occurrenceKey);
+    });
+
+    it("counts the last day of the appointment: an end at midnight belongs to the day before", async () => {
+      const { user, input } = await world();
+      const task = await makeTask(ctx(), {
+        trigger: everyDays(30, "2026-06-21"),
+      });
+      const night = unpin(
+        visit(task.id, user.id, "2026-06-20", {
+          startsAt: at("2026-06-20", "22:00"),
+          endsAt: at("2026-06-21", "02:00"),
+        }).id,
+      );
+      const evening = unpin(
+        visit(task.id, user.id, "2026-06-20", {
+          startsAt: at("2026-06-20", "22:00"),
+          endsAt: at("2026-06-21", "00:00"),
+        }).id,
+      );
+      expect(
+        (await completeAppointment(ctx(LATER), evening.id, input)).completion,
+      ).toBeNull();
+      expect(
+        (await completeAppointment(ctx(LATER), night.id, input)).completion,
+      ).not.toBeNull();
+    });
+
+    it("counts the last day of an all-day appointment", async () => {
+      const { user, input } = await world();
+      const task = await makeTask(ctx(), {
+        trigger: everyDays(30, "2026-06-22"),
+      });
+      const span = unpin(
+        createAppointment(
+          ctx(),
+          {
+            title: "Handwerker im Haus",
+            allDay: true,
+            startDate: "2026-06-20",
+            endDate: "2026-06-22",
+            taskId: task.id,
+          },
+          user.id,
+        ).id,
+      );
+      const result = await completeAppointment(ctx(LATER), span.id, input);
+      expect(result.completion).not.toBeNull();
+    });
+
+    it("does not complete an occurrence that falls due after the appointment", async () => {
+      const { user, input, completions } = await world();
+      const task = await makeTask(ctx(), {
+        trigger: everyDays(30, "2026-07-01"),
+      });
+      const a = unpin(visit(task.id, user.id, "2026-06-20").id);
+      const result = await completeAppointment(ctx(LATER), a.id, input);
+      expect(result.appointment.status).toBe("done");
+      expect(result.completion).toBeNull();
+      expect(completions(task.id)).toEqual([]);
+    });
+
+    it("does not skip a cycle when the task was completed by hand meanwhile", async () => {
+      const { user, input, completions } = await world();
+      const task = await makeTask(ctx(), { trigger: weekly("2026-06-15") });
+      const a = unpin(visit(task.id, user.id, "2026-06-16").id);
+      await byHand(task.id, user.id);
+      expect(getTask(ctx(), task.id).state?.occurrenceKey).toBe("2026-06-22");
+      const result = await completeAppointment(ctx(LATER), a.id, input);
+      expect(result.completion).toBeNull();
+      expect(completions(task.id)).toHaveLength(1);
+    });
+
+    it("leaves a one-off task alone that was done meanwhile", async () => {
+      const { user, input, completions } = await world();
+      const task = await makeTask(ctx(), { trigger: oneOff("2026-06-18") });
+      const a = unpin(visit(task.id, user.id, "2026-06-18").id);
+      await byHand(task.id, user.id);
+      const result = await completeAppointment(ctx(LATER), a.id, input);
+      expect(result.completion).toBeNull();
+      expect(completions(task.id)).toHaveLength(1);
+    });
+
+    it("leaves a task alone that has no date to compare", async () => {
+      const { user, input, completions } = await world();
+      const task = await makeTask(ctx(), {
+        trigger: {
+          v: 1,
+          type: "counter_delta",
+          entityId: "sensor.example_counter",
+          threshold: 50,
+        },
+      });
+      expect(task.state).toMatchObject({ dueDate: null });
+      const a = unpin(visit(task.id, user.id, "2026-06-20").id);
+      const result = await completeAppointment(ctx(LATER), a.id, input);
+      expect(result.completion).toBeNull();
+      expect(completions(task.id)).toEqual([]);
+    });
+
+    describe("of a task whose condition did not hold when it was planned", () => {
+      const condition = {
+        v: 1 as const,
+        type: "state_condition" as const,
+        entityId: "binary_sensor.example_filter",
+        op: "eq" as const,
+        value: "on",
+      };
+      afterEach(() => setSignalProvider(null));
+
+      async function idleWorld() {
+        const { user, input } = await world();
+        const task = await makeTask(ctx(), { trigger: condition });
+        expect(task.state?.occurrenceKey).toBe("s:none");
+        const a = visit(task.id, user.id, "2026-06-20");
+        expect(a.occurrenceKey).toBeNull();
+        const conditionHolds = async (since: number) => {
+          setSignalProvider({
+            load: () => ({
+              signals: {
+                [condition.entityId]: {
+                  text: "on",
+                  changedAt: since,
+                  seenAt: since,
+                },
+              },
+            }),
+          });
+          await evaluateTaskById(ctx(since), task.id);
+        };
+        const completions = () =>
+          test.db
+            .select()
+            .from(taskCompletions)
+            .where(eq(taskCompletions.taskId, task.id))
+            .all();
+        return { user, task, a, input, conditionHolds, completions };
+      }
+
+      it("leaves the task alone while it still shows none", async () => {
+        const { a, input, completions } = await idleWorld();
+        const result = await completeAppointment(ctx(LATER), a.id, input);
+        expect(result.appointment.status).toBe("done");
+        expect(result.completion).toBeNull();
+        expect(completions()).toEqual([]);
+      });
+
+      it("completes the occurrence that arose before the appointment took place", async () => {
+        const { task, a, input, conditionHolds } = await idleWorld();
+        const since = at("2026-06-17", "08:00");
+        await conditionHolds(since);
+        expect(getTask(ctx(), task.id).state).toMatchObject({
+          occurrenceKey: `s:${since}`,
+          dueDate: "2026-06-17",
+        });
+        const result = await completeAppointment(
+          ctx(since + HOUR),
+          a.id,
+          input,
+        );
+        expect(result.completion?.occurrenceKey).toBe(`s:${since}`);
+      });
+
+      it("leaves an occurrence alone that somebody acknowledged by hand", async () => {
+        const { task, user, input, conditionHolds, completions } =
+          await idleWorld();
+        const since = at("2026-06-17", "08:00");
+        await conditionHolds(since);
+        const pinned = visit(task.id, user.id, "2026-06-20");
+        expect(pinned.occurrenceKey).toBe(`s:${since}`);
+        await completeTask(ctx(since + HOUR), task.id, {
+          kind: "done",
+          source: "manual",
+          userId: user.id,
+        });
+        expect(getTask(ctx(), task.id).state).toMatchObject({
+          occurrenceKey: `s:${since}`,
+          reasons: ["acknowledged"],
+        });
+        const result = await completeAppointment(
+          ctx(since + 2 * HOUR),
+          pinned.id,
+          input,
+        );
+        expect(result.completion).toBeNull();
+        expect(completions()).toHaveLength(1);
+      });
+
+      it("leaves an occurrence alone that arose after the appointment", async () => {
+        const { a, input, conditionHolds, completions } = await idleWorld();
+        const since = at("2026-06-22", "08:00");
+        await conditionHolds(since);
+        const result = await completeAppointment(
+          ctx(since + HOUR),
+          a.id,
+          input,
+        );
+        expect(result.completion).toBeNull();
+        expect(completions()).toEqual([]);
+      });
+    });
   });
 
   it("completes the task the appointment belongs to now when it was moved to another one", async () => {

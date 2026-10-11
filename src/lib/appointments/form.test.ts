@@ -61,6 +61,15 @@ describe("newDraft", () => {
   it("drops an occurrence that has no task", () => {
     expect(newDraft({ today, occurrenceKey: "c:1" }).occurrenceKey).toBeNull();
   });
+
+  it("drops the placeholder of a task that shows no occurrence", () => {
+    for (const occurrenceKey of ["none", "s:none"]) {
+      expect(newDraft({ today, taskId: "t1", occurrenceKey })).toMatchObject({
+        taskId: "t1",
+        occurrenceKey: null,
+      });
+    }
+  });
 });
 
 describe("draftFromAppointment", () => {

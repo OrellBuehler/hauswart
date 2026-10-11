@@ -805,7 +805,9 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   `startDate` <= `endDate`, calendar dates in the household zone, the last day included, so it never moves with the zone); the
   fields of the other kind are null. At most 14 days (`whenProblem`, one function for the request schema and the service, which
   re-checks the merged result). On create `endsAt` defaults to an hour after the start and `endDate` to `startDate`. Optional
-  `taskId` + `occurrenceKey` (the occurrence it is for), `assetId` (defaults to the task's asset on create) and `contactId`, all
+  `taskId` + `occurrenceKey` (the occurrence it is for: **pinned** when the appointment gets a task - on create, or in a PATCH that
+  changes the task - as the key the task shows then, unless the request names one; the engine's placeholders `none` and `s:none`
+  mean "no occurrence" and are never stored, so those stay null), `assetId` (defaults to the task's asset on create) and `contactId`, all
   `set null` when the target is deleted (the DTO shows no `occurrenceKey` without a task); `createdByUserId`. **For a later sync**: `id`
   is stable and `updatedAt` (from the injected clock) moves with every change, status included; a PATCH that changes nothing
   leaves it alone.
@@ -815,15 +817,23 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   day, then longer, title, id; offset cursor), `GET|PATCH|DELETE /appointments/{id}`, `POST /appointments/{id}/complete`.
   Instants are UTC ISO strings. **PATCH** changes what is given and refuses a result that breaks the rules (a start moved
   behind the end is a 400 on `endsAt`; nothing is shifted implicitly); `allDay` switches the kind and then needs the new start
-  (`startDate` or `startsAt`); the fields of the other kind without `allDay` are a 400; a new `taskId` forgets the old
-  `occurrenceKey`; `status: done` records the status only. Create/PATCH 400s are field errors (`taskId`, `assetId`, `contactId`,
-  `startsAt`, `endsAt`, `startDate`, `endDate`, `occurrenceKey`), 404 for a missing appointment.
-- **Complete** (`complete.ts`): sets `done` and, with a task, completes that task's occurrence (the appointment's `occurrenceKey`,
-  else the one the task shows) through `completeTask` with the idempotency key `appointment:<id>` as the caller (a session is
-  `manual`, a token by its kind, like any completion; `note`, `completedAt` as for tasks). Always 200 with `{appointment,
-completion, task, replayed}`; a repeat answers with the first completion (`replayed`). The task is left alone (`completion`
-  null) when it is archived or the occurrence the appointment is for was settled meanwhile (counting the work twice would be
-  wrong); a cancelled appointment is a 409. A key is bound to its completion for good, so after the completion was undone and
+  (`startDate` or `startsAt`); the fields of the other kind without `allDay` are a 400; a new `taskId` pins the occurrence that
+  task shows now (the old key means nothing for it), `occurrenceKey: null` for the same task removes the pin; `status: done`
+  records the status only. Create/PATCH 400s are field errors (`taskId`, `assetId`, `contactId`, `startsAt`, `endsAt`,
+  `startDate`, `endDate`, `occurrenceKey`), 404 for a missing appointment.
+- **Complete** (`complete.ts`): sets `done` and, with a task, completes the occurrence the appointment is for through
+  `completeTask` with the idempotency key `appointment:<id>` as the caller (a session is `manual`, a token by its kind, like any
+  completion; `note`, `completedAt` as for tasks). Always 200 with `{appointment, completion, task, replayed}`; a repeat answers with
+  the first completion (`replayed`). **Which occurrence** (`mayComplete`, built so that it can neither count the work twice nor skip a
+  cycle): a _pinned_ appointment completes only while the task still shows its pinned key (else somebody settled it, or it was missed,
+  and what is shown is a later cycle); an _unpinned_ one (the task showed none, an explicit `occurrenceKey: null`, an older row) names
+  nothing, so it completes the shown occurrence only if that is dated and fell due on or before the appointment's last day (`lastDay`
+  in the household zone, an end at midnight belongs to the day before) - a later one belongs to a cycle the visit came before, an
+  undated one has nothing to compare, a task that shows none has nothing to settle. Both also leave an occurrence the engine reports
+  as handled (`state.reasons` has `completed`, `skipped` or `acknowledged`: a one-off, warranty or bill task keeps its key when it is
+  done) - the engine's verdict, not a lookup of completions with that key, because a `min_per_period` task shows one key until its
+  last completion of the period. `completion` is then null, as it is when the task is archived; the appointment is done either way.
+  A cancelled appointment is a 409. A key is bound to its completion for good, so after the completion was undone and
   the appointment completed again the next one is `appointment:<id>:2` (and so on). **Undoing the task's completion does not
   reopen the appointment**, and reopening the appointment does not undo the completion: it took place either way.
 - **On tasks and the dashboard**: every task DTO (list, `GET /tasks/{id}`, the answers of complete/skip/snooze) and every
@@ -1184,7 +1194,7 @@ in dark mode. Every list has an empty state, every async action a pending and an
   under today); past = the last 12 months, newest first, "older" loads the rest. The detail page completes with `POST .../complete {}` and keeps
   what it answered for that page only: the task was completed, or why not (`completion: null`: archived, or the occurrence is settled); cancel
   has an undo toast, "reopen" says it does not undo the task's completion. `AppointmentFormDialog` creates, edits and prefills (`defaults`: task
-  with its `occurrenceKey`, device, contact); its times are wall-clock in the household zone (`zonedTimeToInstant`, never the browser's), an empty
+  with its `occurrenceKey` (never the placeholders `none`/`s:none`), device, contact; another task sends none and the server pins what it shows); its times are wall-clock in the household zone (`zonedTimeToInstant`, never the browser's), an empty
   end sends none on create (the server's hour) and is made explicit on edit, a changed start or end sends both, and `buildUpdateBody` compares the
   wall-clock fields with `draftFromAppointment`, so an end that falls in the repeated autumn hour is not moved by a title edit. `LinkSelect` is a
   searchable combobox (task, device; contacts keep `ContactSelect`). `AppointmentsCard` (planned ones plus "create") sits on the task, device and

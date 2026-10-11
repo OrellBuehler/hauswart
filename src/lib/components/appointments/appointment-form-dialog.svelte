@@ -30,6 +30,7 @@
     type AppointmentDefaults,
     type AppointmentDraft,
   } from "$lib/appointments/form";
+  import { pinnableOccurrenceKey } from "$lib/appointments/occurrence";
   import { apiErrorMessage } from "$lib/error-message";
   import { m } from "$lib/paraglide/messages";
   import { apiFieldErrors } from "$lib/tasks/field-errors";
@@ -137,11 +138,14 @@
     }
   }
 
-  /** A task brings its title and its device along when the form has none yet. */
+  /**
+   * A task brings its title and its device along when the form has none yet. Another task than the
+   * prefilled one sends no occurrence: the server takes the one it shows.
+   */
   function taskChosen(id: string | null) {
     draft.occurrenceKey =
       id !== null && id === defaults.taskId
-        ? (defaults.occurrenceKey ?? null)
+        ? pinnableOccurrenceKey(defaults.occurrenceKey)
         : null;
     const task = tasks.find((candidate) => candidate.value === id);
     if (!task) return;

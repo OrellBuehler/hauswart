@@ -1,5 +1,6 @@
 import { and, eq, gt, gte, lt, lte, or, type SQL } from "drizzle-orm";
 import type { AppointmentStatus } from "$lib/api/enums";
+import { pinnableOccurrenceKey } from "$lib/appointments/occurrence";
 import {
   defaultEnd,
   endInstant,
@@ -10,7 +11,14 @@ import {
 import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
 import { commentCountSql } from "$lib/server/comments/counts";
 import { householdTimeZone } from "$lib/server/config";
-import { appointments, assets, contacts, tasks, type DB } from "$lib/server/db";
+import {
+  appointments,
+  assets,
+  contacts,
+  taskState,
+  tasks,
+  type DB,
+} from "$lib/server/db";
 import { paginateArray } from "$lib/server/pagination";
 import {
   invalidField,
@@ -210,6 +218,20 @@ function assertRefs(
   check(contacts, refs.contactId, "contactId", "Contact");
 }
 
+/**
+ * The occurrence a task shows now, to pin on an appointment that gets the task: completing the
+ * appointment then settles exactly that one, however the task moves on. Null for a task that shows
+ * none (the engine's placeholders) or that has not been evaluated.
+ */
+function shownOccurrence(ctx: Db, taskId: string): string | null {
+  const state = ctx.db
+    .select({ occurrenceKey: taskState.occurrenceKey })
+    .from(taskState)
+    .where(eq(taskState.taskId, taskId))
+    .get();
+  return pinnableOccurrenceKey(state?.occurrenceKey);
+}
+
 /** The request's `when` fields as the service takes them: instants in ms, dates as `YYYY-MM-DD`. */
 interface WhenFields {
   startsAt?: number;
@@ -284,6 +306,10 @@ export function createAppointment(
   if (input.occurrenceKey != null && taskId === null) {
     throw invalidField("occurrenceKey", "Needs a taskId.");
   }
+  const occurrenceKey = taskId
+    ? (pinnableOccurrenceKey(input.occurrenceKey) ??
+      shownOccurrence(ctx, taskId))
+    : null;
   let assetId = input.assetId;
   if (assetId === undefined && taskId) {
     assetId =
@@ -302,7 +328,7 @@ export function createAppointment(
       location: input.location ?? null,
       ...columnsOf(when),
       taskId,
-      occurrenceKey: input.occurrenceKey ?? null,
+      occurrenceKey,
       assetId: assetId ?? null,
       contactId: input.contactId ?? null,
       status: "planned",
@@ -376,16 +402,20 @@ export function updateAppointment(
   const when = checked(patchedWhen(current, patch));
 
   const taskId = patch.taskId !== undefined ? patch.taskId : current.taskId;
-  let occurrenceKey = current.occurrenceKey;
-  if (patch.taskId !== undefined && patch.taskId !== current.taskId) {
-    occurrenceKey = null;
+  if (taskId === null && patch.occurrenceKey != null) {
+    throw invalidField("occurrenceKey", "Needs a taskId.");
   }
-  if (patch.occurrenceKey !== undefined) occurrenceKey = patch.occurrenceKey;
-  if (taskId === null) {
-    if (occurrenceKey !== null && patch.occurrenceKey !== undefined) {
-      throw invalidField("occurrenceKey", "Needs a taskId.");
+  let occurrenceKey = taskId === null ? null : current.occurrenceKey;
+  if (taskId !== null) {
+    if (patch.taskId !== undefined && patch.taskId !== current.taskId) {
+      // A new task: the occurrence it shows now, unless the request names one.
+      occurrenceKey =
+        pinnableOccurrenceKey(patch.occurrenceKey) ??
+        shownOccurrence(ctx, taskId);
+    } else if (patch.occurrenceKey !== undefined) {
+      // Null here unpins on purpose (see completeAppointment).
+      occurrenceKey = pinnableOccurrenceKey(patch.occurrenceKey);
     }
-    occurrenceKey = null;
   }
 
   const next = {

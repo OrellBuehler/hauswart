@@ -42,7 +42,11 @@ export const appointmentSchema = z
     endDate: dateSchema.nullable(),
     taskId: z.string().nullable(),
     taskTitle: z.string().nullable(),
-    /** The occurrence of the task this is for; null = the one the task shows when the appointment is completed. */
+    /**
+     * The occurrence of the task this is for: the one the task showed when the appointment got the
+     * task. Null when the task showed none, or the pin was removed: completing the appointment then
+     * settles the occurrence the task shows only if that fell due by the appointment's last day.
+     */
     occurrenceKey: z.string().nullable(),
     assetId: z.string().nullable(),
     assetName: z.string().nullable(),
@@ -123,7 +127,8 @@ function checkSpan(v: WhenFields, ctx: Issues) {
  * `allDay` (default false) says which kind it is. A timed appointment needs `startsAt`; `endsAt`
  * defaults to an hour later. An all-day one needs `startDate`; `endDate` defaults to the same day.
  * The fields of the other kind are refused. At most 14 days long. `assetId` defaults to the asset of
- * the task; `occurrenceKey` needs a `taskId`. A new appointment is `planned`.
+ * the task; `occurrenceKey` needs a `taskId` and defaults to the occurrence the task shows now
+ * (none for a task that shows none). A new appointment is `planned`.
  */
 export const createAppointmentRequestSchema = z
   .strictObject({
@@ -175,7 +180,8 @@ export type CreateAppointmentRequest = z.output<
  * (`startsAt` or `startDate`) and its end defaults as on create. Without `allDay` the fields must
  * fit the appointment as it is, and the whole must stay valid (end after start, at most 14 days):
  * moving only the start of an appointment is refused when it would end before the new start. A new
- * `taskId` forgets the old `occurrenceKey` unless one is given. `status` is any of the three; setting
+ * `taskId` takes the occurrence that task shows now as the `occurrenceKey`, unless one is given;
+ * `occurrenceKey: null` with the same task removes the pin. `status` is any of the three; setting
  * `done` here records the status only, `POST /appointments/{id}/complete` also completes the task.
  */
 export const updateAppointmentRequestSchema = atLeastOne(

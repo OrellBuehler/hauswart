@@ -3,6 +3,7 @@ import { zonedTimeToInstant } from "../dates";
 import {
   defaultEnd,
   endInstant,
+  lastDay,
   MAX_APPOINTMENT_DAYS,
   startInstant,
   whenProblem,
@@ -136,5 +137,54 @@ describe("startInstant / endInstant", () => {
     expect(startInstant(when, "America/Los_Angeles")).toBe(
       Date.UTC(2026, 5, 15, 7),
     );
+  });
+});
+
+describe("lastDay", () => {
+  it.each<[string, AppointmentWhen, string]>([
+    [
+      "the day a timed appointment ends on",
+      {
+        allDay: false,
+        startsAt: at("2026-06-15", "22:00"),
+        endsAt: at("2026-06-16", "01:00"),
+      },
+      "2026-06-16",
+    ],
+    [
+      "the day before when it ends at midnight",
+      {
+        allDay: false,
+        startsAt: at("2026-06-15", "22:00"),
+        endsAt: at("2026-06-16", "00:00"),
+      },
+      "2026-06-15",
+    ],
+    [
+      "the same day for one within a day",
+      {
+        allDay: false,
+        startsAt: at("2026-06-15", "09:00"),
+        endsAt: at("2026-06-15", "10:00"),
+      },
+      "2026-06-15",
+    ],
+    [
+      "the end date of an all-day one",
+      { allDay: true, startDate: "2026-06-15", endDate: "2026-06-17" },
+      "2026-06-17",
+    ],
+  ])("is %s", (_name, when, expected) => {
+    expect(lastDay(when, ZH)).toBe(expected);
+  });
+
+  it("is read in the zone given", () => {
+    const when: AppointmentWhen = {
+      allDay: false,
+      startsAt: Date.UTC(2026, 5, 15, 21),
+      endsAt: Date.UTC(2026, 5, 15, 23),
+    };
+    expect(lastDay(when, "UTC")).toBe("2026-06-15");
+    expect(lastDay(when, ZH)).toBe("2026-06-16");
   });
 });

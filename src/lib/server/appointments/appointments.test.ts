@@ -11,7 +11,7 @@ import { search } from "$lib/server/search/search";
 import { deleteTask } from "$lib/server/tasks/tasks";
 import { createTestUser } from "$lib/testing/auth";
 import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, makeTask, NOW } from "$lib/testing/domain";
+import { at, ctxAt, everyDays, makeTask, NOW } from "$lib/testing/domain";
 import { samplePdf, useTestFilesDir } from "$lib/testing/files";
 import {
   createAppointment,
@@ -24,6 +24,23 @@ import {
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
+
+/** Triggers whose task shows no occurrence yet: the engine's placeholders `s:none` and `none`. */
+const noOccurrence = {
+  idle: {
+    v: 1 as const,
+    type: "state_condition" as const,
+    entityId: "binary_sensor.example_filter",
+    op: "eq" as const,
+    value: "on",
+  },
+  empty: {
+    v: 1 as const,
+    type: "ha_calendar" as const,
+    entityId: "calendar.example_waste",
+    offsetDays: 0,
+  },
+};
 
 describe("appointments", () => {
   const test = useTestDB();
@@ -138,6 +155,37 @@ describe("appointments", () => {
         contactId: technician.id,
         contactName: "Muster Haustechnik AG",
       });
+    });
+
+    it("pins the occurrence the task shows unless one is given", async () => {
+      const task = await makeTask(ctx());
+      expect(task.state?.occurrenceKey).toBe("2026-06-20");
+      expect(make({ taskId: task.id }).occurrenceKey).toBe("2026-06-20");
+      expect(make({ taskId: task.id, occurrenceKey: null }).occurrenceKey).toBe(
+        "2026-06-20",
+      );
+      expect(
+        make({ taskId: task.id, occurrenceKey: "2026-05-01" }).occurrenceKey,
+      ).toBe("2026-05-01");
+      expect(make().occurrenceKey).toBeNull();
+    });
+
+    it("pins nothing for a task that shows no occurrence, and ignores a placeholder it is sent", async () => {
+      const idle = await makeTask(ctx(), { trigger: noOccurrence.idle });
+      const empty = await makeTask(ctx(), { trigger: noOccurrence.empty });
+      expect(idle.state?.occurrenceKey).toBe("s:none");
+      expect(empty.state?.occurrenceKey).toBe("none");
+      expect(make({ taskId: idle.id }).occurrenceKey).toBeNull();
+      expect(make({ taskId: empty.id }).occurrenceKey).toBeNull();
+      expect(
+        make({ taskId: idle.id, occurrenceKey: "s:none" }).occurrenceKey,
+      ).toBeNull();
+      const task = await makeTask(ctx());
+      for (const stale of ["none", "s:none"]) {
+        expect(
+          make({ taskId: task.id, occurrenceKey: stale }).occurrenceKey,
+        ).toBe("2026-06-20");
+      }
     });
 
     it("takes the asset of the task unless another one or none is given", async () => {
@@ -722,9 +770,12 @@ describe("appointments", () => {
       }
     });
 
-    it("forgets the occurrence with a new task and keeps it for the same one", async () => {
+    it("pins the occurrence of a new task and keeps it for the same one", async () => {
       const first = await makeTask(ctx(), { title: "Eins" });
-      const second = await makeTask(ctx(), { title: "Zwei" });
+      const second = await makeTask(ctx(), {
+        title: "Zwei",
+        trigger: everyDays(30, "2026-07-01"),
+      });
       const a = make({ taskId: first.id, occurrenceKey: "2026-06-20" });
       expect(
         updateAppointment(ctx(LATER), a.id, {
@@ -734,7 +785,7 @@ describe("appointments", () => {
       ).toBe("2026-06-20");
       expect(
         updateAppointment(ctx(LATER), a.id, { taskId: second.id }),
-      ).toMatchObject({ taskId: second.id, occurrenceKey: null });
+      ).toMatchObject({ taskId: second.id, occurrenceKey: "2026-07-01" });
       expect(
         updateAppointment(ctx(LATER), a.id, {
           taskId: first.id,
@@ -742,8 +793,46 @@ describe("appointments", () => {
         }).occurrenceKey,
       ).toBe("2026-07-20");
       expect(
+        updateAppointment(ctx(LATER), a.id, {
+          taskId: second.id,
+          occurrenceKey: null,
+        }).occurrenceKey,
+      ).toBe("2026-07-01");
+    });
+
+    it("pins the task an appointment gets later, and nothing for a task that shows no occurrence", async () => {
+      const task = await makeTask(ctx());
+      const idle = await makeTask(ctx(), { trigger: noOccurrence.idle });
+      const a = make();
+      expect(
+        updateAppointment(ctx(LATER), a.id, { taskId: task.id }),
+      ).toMatchObject({ taskId: task.id, occurrenceKey: "2026-06-20" });
+      expect(
+        updateAppointment(ctx(LATER), a.id, { taskId: idle.id }),
+      ).toMatchObject({ taskId: idle.id, occurrenceKey: null });
+      expect(
+        updateAppointment(ctx(LATER), a.id, {
+          taskId: task.id,
+          occurrenceKey: "s:none",
+        }).occurrenceKey,
+      ).toBe("2026-06-20");
+    });
+
+    it("leaves an appointment without an occurrence alone unless its task changes", async () => {
+      const task = await makeTask(ctx());
+      const a = make({ taskId: task.id });
+      expect(
         updateAppointment(ctx(LATER), a.id, { occurrenceKey: null })
           .occurrenceKey,
+      ).toBeNull();
+      expect(
+        updateAppointment(ctx(LATER), a.id, {
+          taskId: task.id,
+          title: "Neu",
+        }).occurrenceKey,
+      ).toBeNull();
+      expect(
+        updateAppointment(ctx(LATER), a.id, { notes: "x" }).occurrenceKey,
       ).toBeNull();
     });
 

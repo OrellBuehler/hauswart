@@ -21,6 +21,7 @@
   import { FINANCE_BILL_TASK_SOURCE } from "$lib/api/enums";
   import { endpoints } from "$lib/api/registry";
   import type { Completion } from "$lib/api/schemas/tasks";
+  import { pinnableOccurrenceKey } from "$lib/appointments/occurrence";
   import AppointmentBadge from "$lib/components/appointments/appointment-badge.svelte";
   import AppointmentsCard from "$lib/components/appointments/appointments-card.svelte";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
@@ -597,7 +598,7 @@
           taskTitle: task.title,
           assetId: task.assetId,
           assetName: task.assetName,
-          occurrenceKey: task.state?.occurrenceKey ?? null,
+          occurrenceKey: pinnableOccurrenceKey(task.state?.occurrenceKey),
         }}
       />
 
