@@ -13,10 +13,13 @@ import {
   hasPendingChanges,
   isRemote,
   reconcile,
+  UNCONFIRMED_GRACE_MS,
   type LinkRecord,
   type Operation,
   type ReconcileInput,
 } from "./reconcile";
+
+const T0 = Date.parse("2026-06-15T10:00:00Z");
 
 const FULL: CalendarCapabilities = {
   create: true,
@@ -72,6 +75,7 @@ function link(
     remoteUid: `uid-${desired.ref}`,
     status: "synced",
     contentHash: desired.hash,
+    pushedAt: T0,
     ...over,
   };
 }
@@ -89,6 +93,7 @@ function input(over: Partial<ReconcileInput> = {}): ReconcileInput {
     capabilities: FULL,
     onRemoteDelete: "recreate",
     kinds: KINDS,
+    now: T0,
     ...over,
   };
 }
@@ -226,6 +231,59 @@ describe("reconcile", () => {
       );
       expect(result.operations).toEqual([]);
       expect(result.unconfirmed).toEqual(["task-a"]);
+    });
+
+    it("is waited for until just before the wait is over", () => {
+      const written = link(A, {
+        remoteUid: null,
+        pushedAt: T0 - UNCONFIRMED_GRACE_MS + 1,
+      });
+      const result = reconcile(input({ desired: [A], links: [written] }));
+      expect(result.operations).toEqual([]);
+      expect(result.unconfirmed).toEqual(["task-a"]);
+    });
+
+    it("counts as deleted when it was never shown in half an hour, and is written again", () => {
+      const written = link(A, {
+        remoteUid: null,
+        pushedAt: T0 - UNCONFIRMED_GRACE_MS,
+      });
+      const result = reconcile(input({ desired: [A], links: [written] }));
+      expect(result.operations.map(named)).toEqual(["create task-a (again)"]);
+      expect(result.unconfirmed).toEqual([]);
+    });
+
+    it("counts as deleted on purpose after the wait when the target says forget", () => {
+      const written = link(A, {
+        remoteUid: null,
+        pushedAt: T0 - UNCONFIRMED_GRACE_MS - 1,
+      });
+      expect(
+        plan({ desired: [A], links: [written], onRemoteDelete: "forget" }),
+      ).toEqual(["tombstone task-a"]);
+    });
+
+    it("is not waited for when nothing says when it was written", () => {
+      expect(
+        plan({
+          desired: [A],
+          links: [link(A, { remoteUid: null, pushedAt: null })],
+        }),
+      ).toEqual(["create task-a (again)"]);
+    });
+
+    it("is found by its id when the event shows up, whenever that is", () => {
+      const written = link(A, {
+        remoteUid: null,
+        pushedAt: T0 - 10 * UNCONFIRMED_GRACE_MS,
+      });
+      expect(
+        plan({
+          desired: [A],
+          links: [written],
+          remote: [event("task-a", "x")],
+        }),
+      ).toEqual(["adopt task-a x"]);
     });
 
     it("is written again when somebody deleted its event and the target says recreate", () => {

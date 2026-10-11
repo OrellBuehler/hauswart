@@ -18,10 +18,12 @@ export function listLinks(ctx: Db, targetId: string): LinkRecord[] {
       remoteUid: calendarLinks.remoteUid,
       status: calendarLinks.status,
       contentHash: calendarLinks.contentHash,
+      pushedAt: calendarLinks.lastPushedAt,
     })
     .from(calendarLinks)
     .where(eq(calendarLinks.targetId, targetId))
-    .all();
+    .all()
+    .map((row) => ({ ...row, pushedAt: row.pushedAt?.getTime() ?? null }));
 }
 
 /** How many events hauswart keeps in the target's calendar (links that are not notes about deleted ones). */

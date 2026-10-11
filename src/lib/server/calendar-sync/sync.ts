@@ -9,7 +9,13 @@ import { connections } from "$lib/server/db";
 import { notFound, type ServiceContext } from "$lib/server/service";
 import { buildDesiredItems, readRange, type DesiredItem } from "./items";
 import { deleteLink, listLinks, saveLink, setLinkUid } from "./links";
-import { getCalendarProvider, NO_UID, type CalendarSession } from "./provider";
+import {
+  getCalendarProvider,
+  NO_UID,
+  type CalendarSession,
+  type RemoteEvent,
+  type TimeRange,
+} from "./provider";
 import { isRemote, reconcile, type Operation } from "./reconcile";
 import {
   configOf,
@@ -205,6 +211,7 @@ async function run(
       capabilities: session.capabilities,
       onRemoteDelete: config.onRemoteDelete,
       kinds: new Set(config.kinds),
+      now: ctx.now,
     });
   } catch (err) {
     return fail(failureOf(err));
@@ -212,9 +219,10 @@ async function run(
 
   const applied = await applyOperations(ctx, row.id, session, plan.operations, {
     maxOperations: options.maxOperations ?? DEFAULT_MAX_OPERATIONS,
+    range,
   });
   const counts = applied.counts;
-  counts.unconfirmed = plan.unconfirmed.length;
+  counts.unconfirmed += plan.unconfirmed.length;
 
   let error = applied.error;
   if (applied.awaitingUid.size > 0 && !applied.aborted) {
@@ -257,13 +265,14 @@ export async function applyOperations(
   targetId: string,
   session: CalendarSession,
   operations: readonly Operation[],
-  options: { maxOperations: number },
+  options: { maxOperations: number; range: TimeRange },
 ): Promise<Applied> {
   const counts = emptyCounts();
   const awaitingUid = new Map<string, DesiredItem>();
   let error: SyncFailure | null = null;
   let aborted = false;
   let calls = 0;
+  let markerSeen = false;
 
   const written = (item: DesiredItem, uid: string | null, hash = item.hash) => {
     saveLink(ctx, targetId, item, {
@@ -273,6 +282,34 @@ export async function applyOperations(
       pushedAt: ctx.now,
     });
     if (uid === null) awaitingUid.set(item.ref, item);
+  };
+
+  const create = async (item: DesiredItem) => {
+    const { uid } = await session.create(item);
+    written(item, uid);
+    return uid;
+  };
+
+  /**
+   * A calendar that does not say the id of a new event is asked for it right away, for the first such
+   * event of a run. If the marker did not survive (some calendars drop the description) the run stops
+   * there, so such a calendar gets one stray event per run and not one per item; once the marker has
+   * been seen, the ids of the others are looked up together at the end.
+   */
+  const confirmFirst = async (item: DesiredItem, uid: string | null) => {
+    if (uid !== null || markerSeen) return;
+    const found = (await session.listEvents(options.range)).filter(
+      (e) => e.ref === item.ref,
+    );
+    if (found.length === 0) {
+      counts.unconfirmed++;
+      error ??= failure("unconfirmed");
+      aborted = true;
+      return;
+    }
+    markerSeen = true;
+    setLinkUid(ctx, targetId, item.ref, uidOf(found));
+    awaitingUid.delete(item.ref);
   };
 
   for (const op of operations) {
@@ -286,9 +323,9 @@ export async function applyOperations(
     try {
       switch (op.type) {
         case "create": {
-          const { uid } = await session.create(op.item);
-          written(op.item, uid);
+          const uid = await create(op.item);
           counts.created++;
+          await confirmFirst(op.item, uid);
           break;
         }
         case "update":
@@ -299,9 +336,9 @@ export async function applyOperations(
         case "replace": {
           await session.delete(op.uid);
           if (op.link) deleteLink(ctx, op.link.id);
-          const { uid } = await session.create(op.item);
-          written(op.item, uid);
+          const uid = await create(op.item);
           counts.replaced++;
+          await confirmFirst(op.item, uid);
           break;
         }
         case "delete":
@@ -383,11 +420,17 @@ async function confirmUids(
       missing++;
       continue;
     }
-    const uid = found
-      .map((e) => e.uid)
-      .filter((id): id is string => id !== null)
-      .sort()[0];
-    setLinkUid(ctx, targetId, ref, uid ?? NO_UID);
+    setLinkUid(ctx, targetId, ref, uidOf(found));
   }
   return missing;
+}
+
+/** The id of the first of the events found for one ref, or `NO_UID` when the calendar gives none. */
+function uidOf(found: readonly RemoteEvent[]): string {
+  return (
+    found
+      .map((e) => e.uid)
+      .filter((id): id is string => id !== null)
+      .sort()[0] ?? NO_UID
+  );
 }

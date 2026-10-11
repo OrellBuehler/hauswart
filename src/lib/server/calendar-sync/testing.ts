@@ -109,7 +109,12 @@ export class FakeCalendars {
   /** How many calls were going on at once, at most. */
   maxActive = 0;
   private active = 0;
-  private injected: { step: Step; code: string; remaining: number }[] = [];
+  private injected: {
+    step: Step;
+    code: string;
+    remaining: number;
+    skip: number;
+  }[] = [];
   private next = 1;
 
   constructor() {
@@ -183,9 +188,9 @@ export class FakeCalendars {
     );
   }
 
-  /** The next `times` calls of this step fail with this code. */
-  failNext(step: Step, code: string, times = 1): void {
-    this.injected.push({ step, code, remaining: times });
+  /** The next `times` calls of this step fail with this code, after `skip` calls that go through. */
+  failNext(step: Step, code: string, times = 1, skip = 0): void {
+    this.injected.push({ step, code, remaining: times, skip });
   }
 
   callsOf(step: Step): Call[] {
@@ -214,6 +219,10 @@ export class FakeCalendars {
   private maybeFail(step: Step): void {
     const hit = this.injected.find((i) => i.step === step && i.remaining > 0);
     if (!hit) return;
+    if (hit.skip > 0) {
+      hit.skip--;
+      return;
+    }
     hit.remaining--;
     throw new IntegrationError(hit.code, `injected ${hit.code}`);
   }

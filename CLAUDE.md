@@ -976,14 +976,18 @@ people plan. Optional like every adapter: without a target nothing happens, and 
   is simply written again); create-only calendars keep the old event and only remember the new hash (`acknowledge`, so it is not tried
   every minute). Wanted, linked, not found: somebody deleted it; `recreate` writes it again, `forget` keeps a `forgotten` link that is
   never written again until the item is gone. A link without an id that is not found (written a moment ago) is waited for, never written
-  twice (`unconfirmed`; a calendar that drops the description makes the target report `unconfirmed` instead of piling up duplicates).
+  twice (`unconfirmed`), but for 30 minutes after it was pushed (`UNCONFIRMED_GRACE_MS`, from `lastPushedAt`): after that it counts as
+  deleted like any other (`onRemoteDelete`), which is how a target recovers once a calendar keeps the marker again (the events it dropped
+  the marker from stay in the calendar as foreign ones).
   A calendar that lists events without ids keeps them as they are: the link remembers `NO_UID` (`''`), such an event is neither changed nor deleted (the link goes when its item goes).
   Not wanted: the event is deleted when the calendar allows and it was found (otherwise only the link goes), including events of
   ours that nothing remembers when their kind is carried; duplicates of one ref keep the one the link names. The result is a mirror of the
   horizon: an occurrence that was completed disappears from the calendar. Steps are ordered delete, change, create, each by date.
 - **A run** (`sync.ts` `syncTarget`): open, read the events of the horizon plus two days, reconcile, apply with at most 100 calendar calls
   (`counts.remaining` says how many are left; the scheduler goes on at once), save the link after every step, then look the ids of new events up
-  by their marker (`uid: null` creates). A refusal of the system (`unauthorized`, `forbidden`, `network`, `timeout`, `tls`, `server`, ...)
+  by their marker (`uid: null` creates): the first such create of a run is looked up at once, and when the marker did not survive (a
+  calendar that drops the description) the run stops with `unconfirmed`, so such a calendar gets one stray event per run and not one per
+  item; the ids of the others are looked up together at the end. A refusal of the system (`unauthorized`, `forbidden`, `network`, `timeout`, `tls`, `server`, ...)
   stops the calls, any other failure is counted and the rest goes on; five failures stop too. The outcome is the target's health:
   `status`, `lastError`, `consecutiveFailures` and the usual 1, 2, 4 ... 15 minute back-off (`dueForAttempt`). Codes: the connection's own and `calendar_missing`, `unsupported`
   (the calendar cannot create), `unconfirmed`, `config_invalid`; a target that is switched off, whose connection is off or whose adapter

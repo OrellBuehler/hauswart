@@ -431,6 +431,148 @@ describe("syncTarget", () => {
       expect(fake.get(CALENDAR_ID).events).toHaveLength(1);
     });
 
+    it("a calendar that drops the marker costs one stray event per run, not one per item", async () => {
+      fake.dropsMarker = true;
+      fake.reportsIds = false;
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const target = await setup();
+      for (let i = 0; i < 3; i++) {
+        book({
+          title: `T${i}`,
+          startsAt: at("2026-06-20", `0${i + 1}:00`),
+          endsAt: at("2026-06-20", `0${i + 1}:30`),
+        });
+      }
+      const first = await sync(target.id);
+      expect(first).toMatchObject({
+        ok: false,
+        error: { code: "unconfirmed" },
+        counts: { created: 1, unconfirmed: 1, remaining: 2 },
+      });
+      expect(fake.callsOf("create")).toHaveLength(1);
+      expect(fake.get(CALENDAR_ID).events).toHaveLength(1);
+      expect(row(target.id).lastError).toBe("unconfirmed");
+
+      await sync(target.id);
+      expect(fake.callsOf("create")).toHaveLength(2);
+      expect(fake.get(CALENDAR_ID).events).toHaveLength(2);
+    });
+
+    it("looks the id of the first new event up at once and the others together, when the calendar keeps the marker", async () => {
+      fake.reportsIds = false;
+      const target = await setup();
+      for (let i = 0; i < 3; i++) {
+        book({
+          title: `T${i}`,
+          startsAt: at("2026-06-20", `0${i + 1}:00`),
+          endsAt: at("2026-06-20", `0${i + 1}:30`),
+        });
+      }
+      const result = await sync(target.id);
+      expect(result).toMatchObject({ ok: true, counts: { created: 3 } });
+      // One read for the plan, one to see that the first event kept its marker, one for the rest.
+      expect(fake.callsOf("list")).toHaveLength(3);
+      const uids = fake
+        .get(CALENDAR_ID)
+        .events.map((e) => e.uid)
+        .sort();
+      expect(
+        listLinks(ctx(), target.id)
+          .map((l) => l.remoteUid)
+          .sort(),
+      ).toEqual(uids);
+      expect(await pending(target.id)).toBe(false);
+    });
+
+    it("needs no second look when the only new event was found at once", async () => {
+      fake.reportsIds = false;
+      const target = await setup();
+      book();
+      await sync(target.id);
+      expect(fake.callsOf("list")).toHaveLength(2);
+    });
+
+    it("stops the run when the first new event cannot be looked up, and finds it again next time", async () => {
+      fake.reportsIds = false;
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const target = await setup();
+      for (let i = 0; i < 3; i++) {
+        book({
+          title: `T${i}`,
+          startsAt: at("2026-06-20", `0${i + 1}:00`),
+          endsAt: at("2026-06-20", `0${i + 1}:30`),
+        });
+      }
+      fake.failNext("list", "timeout", 1, 1);
+      const failed = await sync(target.id);
+      expect(failed).toMatchObject({
+        ok: false,
+        error: { code: "timeout" },
+        counts: { created: 1, failed: 1, remaining: 2 },
+      });
+      expect(fake.callsOf("create")).toHaveLength(1);
+      const again = await sync(target.id);
+      expect(again).toMatchObject({
+        ok: true,
+        counts: { created: 2, adopted: 1 },
+      });
+      expect(fake.get(CALENDAR_ID).events).toHaveLength(3);
+      expect(await pending(target.id)).toBe(false);
+    });
+
+    it("an event that was never shown counts as deleted after half an hour, which is how a target recovers", async () => {
+      fake.dropsMarker = true;
+      fake.reportsIds = false;
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const target = await setup();
+      book();
+      const first = await sync(target.id);
+      expect(first.error?.code).toBe("unconfirmed");
+
+      // The calendar keeps the marker now. Within the wait nothing is written twice.
+      fake.dropsMarker = false;
+      const soon = await sync(target.id, {}, NOW + 20 * 60_000);
+      expect(soon).toMatchObject({
+        ok: false,
+        error: { code: "unconfirmed" },
+        counts: { created: 0, unconfirmed: 1 },
+      });
+      expect(fake.callsOf("create")).toHaveLength(1);
+
+      const later = await sync(target.id, {}, NOW + 31 * 60_000);
+      expect(later).toMatchObject({
+        ok: true,
+        counts: { created: 1, unconfirmed: 0 },
+      });
+      expect(fake.ours(CALENDAR_ID).size).toBe(1);
+      expect(row(target.id)).toMatchObject({ status: "ok", lastError: null });
+      const [link] = listLinks(ctx(), target.id);
+      expect(link!.remoteUid).toBe(
+        [...fake.ours(CALENDAR_ID).values()][0]!.uid,
+      );
+      expect(
+        (await sync(target.id, {}, NOW + 32 * 60_000)).counts.created,
+      ).toBe(0);
+    });
+
+    it("an event that was never shown stays deleted after half an hour when the target says forget", async () => {
+      fake.dropsMarker = true;
+      fake.reportsIds = false;
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const target = await setup({ config: { onRemoteDelete: "forget" } });
+      book();
+      await sync(target.id);
+      const later = await sync(target.id, {}, NOW + 31 * 60_000);
+      expect(later).toMatchObject({
+        ok: true,
+        counts: { created: 0, forgotten: 1, unconfirmed: 0 },
+      });
+      expect(listLinks(ctx(), target.id)).toMatchObject([
+        { status: "forgotten" },
+      ]);
+      expect(fake.callsOf("create")).toHaveLength(1);
+    });
+
     it("a calendar that cannot add events is not used", async () => {
       vi.spyOn(console, "error").mockImplementation(() => {});
       const target = await setup();

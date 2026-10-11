@@ -22,7 +22,16 @@ export interface LinkRecord {
   remoteUid: string | null;
   status: CalendarLinkStatus;
   contentHash: string;
+  /** When the event was written (ms since epoch); null when nothing says. */
+  pushedAt: number | null;
 }
+
+/**
+ * How long an event that was written without learning its id is waited for. A calendar that keeps the
+ * marker shows it within seconds; after this long the event is taken for deleted (or never kept), so
+ * a target that was stuck on it can write the item again.
+ */
+export const UNCONFIRMED_GRACE_MS = 30 * 60_000;
 
 export interface ReconcileInput {
   /** What the target wants in the calendar now. */
@@ -34,6 +43,8 @@ export interface ReconcileInput {
   onRemoteDelete: CalendarRemoteDeletePolicy;
   /** The kinds the target carries: events of other kinds that nobody linked are left alone. */
   kinds: ReadonlySet<CalendarItemKind>;
+  /** The current time (ms since epoch), for how long an event written a moment ago is waited for. */
+  now: number;
 }
 
 export type SkipReason = "create_unsupported";
@@ -122,7 +133,8 @@ export function isRemote(op: Operation): boolean {
  *   delete and a new event; one that can only create keeps the event as it is.
  * - Wanted, remembered, not in the calendar: somebody deleted it. `recreate` writes it again,
  *   `forget` keeps a note and never writes it again. An event written a moment ago and not found yet
- *   (no id known) is waited for, never written twice.
+ *   (no id known) is waited for, never written twice, but only for `UNCONFIRMED_GRACE_MS`: after that
+ *   it counts as deleted like any other.
  * - Wanted, not remembered, not in the calendar: written.
  * - Not wanted any more: its event is removed when the calendar allows it, the link is dropped
  *   either way. Events of ours that nothing remembers and nothing wants are removed too.
@@ -183,7 +195,7 @@ export function reconcile(input: ReconcileInput): Plan {
     if (want) {
       if (!event) {
         if (link?.status === "forgotten") continue;
-        if (link && link.remoteUid === null) {
+        if (link && link.remoteUid === null && !expired(link, input.now)) {
           unconfirmed.push(ref);
           continue;
         }
@@ -251,6 +263,11 @@ export function reconcile(input: ReconcileInput): Plan {
         a.index - b.index,
     );
   return { operations: sorted.map((entry) => entry.op), unconfirmed };
+}
+
+/** An event written without a known id that the calendar has not shown for too long. */
+function expired(link: LinkRecord, now: number): boolean {
+  return link.pushedAt === null || now - link.pushedAt >= UNCONFIRMED_GRACE_MS;
 }
 
 function startOf(item: DesiredItem): number {

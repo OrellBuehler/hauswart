@@ -328,12 +328,13 @@ async function removeRemoteEvents(
     );
   }
   let remote;
+  // Wider than a sync reads: events written long ago are ours to remove as well.
+  const range = {
+    from: ctx.now - 5 * 365 * DAY_MS,
+    to: readRange(ctx.now).to + 365 * DAY_MS,
+  };
   try {
-    // Wider than a sync reads: events written long ago are ours to remove as well.
-    remote = await session.listEvents({
-      from: ctx.now - 5 * 365 * DAY_MS,
-      to: readRange(ctx.now).to + 365 * DAY_MS,
-    });
+    remote = await session.listEvents(range);
   } catch (err) {
     return upstream(err);
   }
@@ -344,9 +345,11 @@ async function removeRemoteEvents(
     capabilities: session.capabilities,
     onRemoteDelete: "recreate",
     kinds: new Set(CALENDAR_ITEM_KINDS),
+    now: ctx.now,
   });
   const applied = await applyOperations(ctx, row.id, session, plan.operations, {
     maxOperations: REMOVE_LIMIT,
+    range,
   });
   if (applied.error || applied.counts.remaining > 0) {
     throw new ApiError(
