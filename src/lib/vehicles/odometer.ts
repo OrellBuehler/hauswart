@@ -21,10 +21,12 @@ export function assetIdOfOdometerKey(key: string): string | null {
   return isOdometerKey(key) ? key.slice(ODOMETER_KEY_PREFIX.length) : null;
 }
 
+/** The vehicle a task's trigger counts the odometer of (a `counter_delta` on `odometer:<asset id>`), else null. */
 export function odometerAssetOfTrigger(
-  trigger: { type: string; entityId?: string } | null | undefined,
+  trigger: { type?: unknown; entityId?: unknown } | null | undefined,
 ): string | null {
-  return trigger?.type === "counter_delta" && trigger.entityId
+  return trigger?.type === "counter_delta" &&
+    typeof trigger.entityId === "string"
     ? assetIdOfOdometerKey(trigger.entityId)
     : null;
 }

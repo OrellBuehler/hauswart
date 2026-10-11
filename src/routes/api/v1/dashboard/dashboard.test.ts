@@ -111,6 +111,46 @@ describe("dashboard API", () => {
     ]);
   });
 
+  it("names the vehicle whose odometer a task counts on, null for every other task", async () => {
+    const { call } = await member();
+    const car = (
+      await call("POST", "/api/v1/assets", {
+        json: { name: "Familienauto", kind: "vehicle" },
+      })
+    ).body as { id: string };
+    await task(call, {
+      title: "Service",
+      assetId: car.id,
+      trigger: {
+        v: 1,
+        type: "counter_delta",
+        entityId: `odometer:${car.id}`,
+        threshold: 15_000,
+      },
+    });
+    await task(call, {
+      title: "Zähler",
+      trigger: {
+        v: 1,
+        type: "counter_delta",
+        entityId: "sensor.example_meter",
+        threshold: 10,
+      },
+    });
+    await task(call, { title: "Bald", trigger: interval(today(3)) });
+    const body = (await call("GET", "/api/v1/dashboard")).body as {
+      upcoming: { thisWeek: Json[]; later: Json[]; signalBased: Json[] };
+    };
+    const byTitle = Object.fromEntries(
+      [
+        ...body.upcoming.signalBased,
+        ...body.upcoming.thisWeek,
+        ...body.upcoming.later,
+      ].map((t) => [t.title, t.odometerAssetId]),
+    );
+    expect(byTitle).toEqual({ Service: car.id, Zähler: null, Bald: null });
+  });
+
   it("is readable with a read-only token", async () => {
     const user = await createTestUser();
     const call = createCaller({

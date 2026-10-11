@@ -12,6 +12,7 @@ import {
 import { openNoteCountSql } from "$lib/server/asset-notes/counts";
 import { assets, rooms, taskState, tasks, users } from "$lib/server/db";
 import type { ServiceContext } from "$lib/server/service";
+import { odometerAssetOfTrigger } from "$lib/vehicles/odometer";
 import { recentCompletions, type CompletionRecord } from "./completions";
 import { clockAt } from "./evaluator";
 import { preparationsForTasks } from "./preparations";
@@ -36,6 +37,7 @@ export interface DashboardTaskRecord {
   estimate: TaskStateRecord["estimate"];
   progress: TaskStateRecord["progress"];
   openNoteCount: number;
+  odometerAssetId: string | null;
 }
 
 export interface DashboardPreparationRecord {
@@ -171,6 +173,7 @@ export async function getUpcomingTasks(
       estimate: item.due.estimate ?? null,
       progress: item.due.progress ?? null,
       openNoteCount: Number(r.openNoteCount),
+      odometerAssetId: odometerAssetOfTrigger(r.task.trigger),
     };
   };
 

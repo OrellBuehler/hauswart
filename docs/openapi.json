@@ -35884,6 +35884,12 @@
             "type": "integer",
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
+          },
+          "odometerAssetId": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -35903,7 +35909,8 @@
           "estimated",
           "estimate",
           "progress",
-          "openNoteCount"
+          "openNoteCount",
+          "odometerAssetId"
         ],
         "additionalProperties": false
       },

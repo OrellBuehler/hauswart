@@ -9,6 +9,7 @@ import { createCost } from "$lib/server/costs/costs";
 import { useTestDB } from "$lib/testing/db";
 import { ctxAt, makeTask, NOW } from "$lib/testing/domain";
 import { failure, makeVehicle } from "$lib/testing/vehicles";
+import { odometerSignalKey } from "$lib/vehicles/odometer";
 import { createFuelLog } from "./fuel-logs";
 import { recordOdometer } from "./odometer";
 import { LAST_CONSUMPTION_VALUES, NEXT_TASKS, vehicleStats } from "./stats";
@@ -278,6 +279,29 @@ describe("vehicle statistics", () => {
       assetId: car.id,
       assetName: "Testauto",
     });
+  });
+
+  it("tells which of the next tasks count on the odometer", async () => {
+    const car = makeVehicle(test);
+    await makeTask(ctx(), {
+      title: "Service",
+      assetId: car.id,
+      trigger: {
+        v: 1,
+        type: "counter_delta",
+        entityId: odometerSignalKey(car.id),
+        threshold: 15_000,
+      },
+    });
+    await makeTask(ctx(), {
+      title: "MFK",
+      assetId: car.id,
+      trigger: { v: 1, type: "one_off", date: "2026-07-01" },
+    });
+    const { nextTasks } = await stats(car.id);
+    expect(
+      Object.fromEntries(nextTasks.map((t) => [t.title, t.odometerAssetId])),
+    ).toEqual({ Service: car.id, MFK: null });
   });
 
   it("an asset that is no vehicle, or does not exist, has no statistics", async () => {

@@ -652,7 +652,10 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   Home Assistant one, still snapshots its current value); the complete and undo handlers then re-evaluate the other tasks that read
   the same odometer (`refreshOdometerReaders`), so they do not wait for the scheduler. A service log entry's `odometer` (vehicles only, 400 on `odometer` for anything else)
   keeps one reading in step with the entry through create, update (value or date) and delete, in the
-  entry's transaction; the handlers re-evaluate the readers at once (`refreshOdometerReaders`).
+  entry's transaction; the handlers re-evaluate the readers at once (`refreshOdometerReaders`). A task that counts on a
+  vehicle's odometer says so in the lists: every dashboard task (also `nextTasks` of the statistics) carries
+  `odometerAssetId`, the vehicle of its `counter_delta` on `odometer:<asset id>` (`odometerAssetOfTrigger`, read from the
+  stored trigger), else null, so a one-tap completion opens the reading dialog without fetching the task first.
 - **Tire sets** (`tire_sets`, `tire_set_events`, migration `0020`; `vehicles/tires.ts`, rules in `lib/vehicles/tires.ts`):
   `GET|POST /assets/{id}/tire-sets`, `GET|PATCH|DELETE /tire-sets/{id}`, `POST /assets/{id}/tire-sets/{setId}/mount`,
   `POST /tire-sets/{id}/tread`. A set has season (`summer|winter|all_season`), brand, model, size, `dot` (week and
