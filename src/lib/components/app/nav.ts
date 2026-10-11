@@ -2,6 +2,7 @@ import type { Component } from "svelte";
 import BellRingIcon from "@lucide/svelte/icons/bell-ring";
 import BoxesIcon from "@lucide/svelte/icons/boxes";
 import BookOpenIcon from "@lucide/svelte/icons/book-open";
+import CalendarClockIcon from "@lucide/svelte/icons/calendar-clock";
 import ContactIcon from "@lucide/svelte/icons/contact";
 import CoinsIcon from "@lucide/svelte/icons/coins";
 import DoorOpenIcon from "@lucide/svelte/icons/door-open";
@@ -20,6 +21,7 @@ import { m } from "$lib/paraglide/messages";
 export type NavHref =
   | "/"
   | "/tasks"
+  | "/appointments"
   | "/inventory"
   | "/rooms"
   | "/plants"
@@ -63,6 +65,11 @@ export const navGroups: NavGroup[] = [
         label: () => m.nav_tasks(),
         comingSoon: () => m.coming_soon_tasks(),
         icon: ListChecksIcon,
+      },
+      {
+        href: "/appointments",
+        label: () => m.nav_appointments(),
+        icon: CalendarClockIcon,
       },
     ],
   },

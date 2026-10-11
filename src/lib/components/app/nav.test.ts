@@ -54,6 +54,26 @@ describe("insurance", () => {
   });
 });
 
+describe("appointments", () => {
+  it("sit in the overview next to the tasks, behind More on phones", () => {
+    const overview = navGroups.find((group) =>
+      group.items.some((item) => item.href === "/tasks"),
+    );
+    expect(overview?.items.map((item) => item.href)).toEqual([
+      "/",
+      "/tasks",
+      "/appointments",
+    ]);
+    expect(mobileTabs.map((item) => item.href)).not.toContain("/appointments");
+    expect(isMoreActive("/appointments")).toBe(true);
+  });
+
+  it("own their detail pages and name them in the header", () => {
+    expect(findNavItem("/appointments/4")?.href).toBe("/appointments");
+    expect(headerTitleFor("/appointments/4")).toBe(m.nav_appointments());
+  });
+});
+
 describe("bottom bar on phones", () => {
   it("has four tabs: dashboard, tasks, inventory and documentation", () => {
     expect(mobileTabs.map((item) => item.href)).toEqual([
