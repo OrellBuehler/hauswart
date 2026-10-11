@@ -757,7 +757,9 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   with the entry (`resolvedBy` = whoever wrote it), resolved ones stay as they are, so a retry changes nothing; an
   update only adds. The notes and the entry are written in one transaction. **Undoing** the completion that wrote the
   entry reopens its notes (listener on `completionRevoked`, `asset-notes/events.ts`; the entry stays in the log) and
-  **deleting** an entry reopens them too.
+  **deleting** an entry reopens them too. Neither reopens a note that was turned into a defect in the meantime
+  (`defectId` set; `reopenNotesOf` skips it): the defect carries the issue on, so the note would be listed twice.
+  Once that defect is deleted the note counts as an ordinary resolved one again.
 - **`openNoteCount`** is on every task and every dashboard task: the open notes of the task's asset (a correlated
   subquery, 0 without an asset), so the due service task can say "3 Anliegen". The complete endpoint reads the task
   again after writing the entry, so the count it returns is current.

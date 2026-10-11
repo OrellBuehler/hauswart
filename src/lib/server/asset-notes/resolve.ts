@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { assetNotes } from "$lib/server/db";
 import { invalidField, type ServiceContext } from "$lib/server/service";
 
@@ -57,7 +57,11 @@ export function resolveNotes(
     .run();
 }
 
-/** The notes that service log entries had resolved are open again (the entry is gone, or its completion was undone). */
+/**
+ * The notes that service log entries had resolved are open again (the entry is gone, or its
+ * completion was undone). A note that was turned into a defect in the meantime stays resolved: the
+ * defect carries the issue on, and reopening the note would list it twice.
+ */
 export function reopenNotesOf(
   ctx: Now,
   serviceLogIds: readonly string[],
@@ -72,6 +76,11 @@ export function reopenNotesOf(
       serviceLogId: null,
       updatedAt: new Date(ctx.now),
     })
-    .where(inArray(assetNotes.serviceLogId, [...serviceLogIds]))
+    .where(
+      and(
+        inArray(assetNotes.serviceLogId, [...serviceLogIds]),
+        isNull(assetNotes.defectId),
+      ),
+    )
     .run();
 }

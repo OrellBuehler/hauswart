@@ -5,7 +5,8 @@ import {
   createServiceLogRequestSchema,
 } from "$lib/api/schemas/service-log";
 import { createAsset } from "$lib/server/assets/assets";
-import { serviceLog, taskCompletions } from "$lib/server/db";
+import { deleteDefect } from "$lib/server/defects/defects";
+import { defects, serviceLog, taskCompletions } from "$lib/server/db";
 import {
   checkCompletionLog,
   createEntry,
@@ -18,7 +19,7 @@ import { getTask } from "$lib/server/tasks/tasks";
 import { createTestUser } from "$lib/testing/auth";
 import { useTestDB } from "$lib/testing/db";
 import { at, ctxAt, makeTask } from "$lib/testing/domain";
-import { createNote, getNote, updateNote } from "./notes";
+import { createNote, getNote, noteToDefect, updateNote } from "./notes";
 
 describe("notes resolved by service log entries", () => {
   const test = useTestDB();
@@ -209,6 +210,32 @@ describe("notes resolved by service log entries", () => {
       expect(getNote(ctx(), two.id).status).toBe("resolved");
       expect(getNote(ctx(), manual.id).status).toBe("resolved");
     });
+
+    it("leaves a note that became a defect resolved, and reopens the others of the entry", async () => {
+      const a = await asset();
+      const [turned, plain] = [note(a.id, "Wird Mangel"), note(a.id, "Bleibt")];
+      const e = entry(a.id, { resolvedNoteIds: [turned.id, plain.id] });
+      const { defect } = noteToDefect(ctx(), turned.id, null);
+      deleteEntry(ctx(), a.id, e.id);
+      expect(getNote(ctx(), turned.id)).toMatchObject({
+        status: "resolved",
+        defectId: defect.id,
+        serviceLogId: null,
+      });
+      expect(getNote(ctx(), plain.id).status).toBe("open");
+      expect(test.db.select().from(defects).all()).toHaveLength(1);
+    });
+
+    it("reopens a note again once its defect is gone", async () => {
+      const a = await asset();
+      const n = note(a.id);
+      const e = entry(a.id, { resolvedNoteIds: [n.id] });
+      const { defect } = noteToDefect(ctx(), n.id, null);
+      deleteDefect(ctx(), defect.id);
+      expect(getNote(ctx(), n.id).defectId).toBeNull();
+      deleteEntry(ctx(), a.id, e.id);
+      expect(getNote(ctx(), n.id).status).toBe("open");
+    });
   });
 
   describe("completing a task", () => {
@@ -335,6 +362,21 @@ describe("notes resolved by service log entries", () => {
       // Undoing again is harmless.
       await undoCompletion(ctx(), completion.id, user.id);
       expect(getNote(ctx(), one.id).status).toBe("open");
+    });
+
+    it("undoing the completion leaves a note that became a defect resolved", async () => {
+      const { user, a, task } = await setup();
+      const [turned, plain] = [note(a.id, "Wird Mangel"), note(a.id, "Bleibt")];
+      const { completion } = await complete(task.id, user.id, {
+        resolvedNoteIds: [turned.id, plain.id],
+      });
+      const { defect } = noteToDefect(ctx(), turned.id, user.id);
+      await undoCompletion(ctx(), completion.id, user.id);
+      expect(getNote(ctx(), turned.id)).toMatchObject({
+        status: "resolved",
+        defectId: defect.id,
+      });
+      expect(getNote(ctx(), plain.id).status).toBe("open");
     });
 
     it("undoing a completion without an entry touches no note", async () => {
