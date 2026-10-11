@@ -1191,7 +1191,7 @@ in dark mode. Every list has an empty state, every async action a pending and an
   `viewRange`), the status chips filter in the page from `page.url`. "Over" is day-based and in the household zone (`isOver`: last day before
   today; a timed one that ends at midnight does not touch the next day). Upcoming = the last 30 days on, split by `sectionsFor` into "Noch offen"
   (planned and over: someone still has to close it, its task keeps waiting) and day groups by start day (a longer one that already started sits
-  under today); past = the last 12 months, newest first, "older" loads the rest. The detail page completes with `POST .../complete {}` and keeps
+  under today); past = the last 12 months, newest first, "older" loads the rest (merged by id with `appendById`: an appointment that spans the boundary is in both ranges). The detail page completes with `POST .../complete {}` and keeps
   what it answered for that page only: the task was completed, or why not (`completion: null`: archived, or the occurrence is settled); cancel
   has an undo toast, "reopen" says it does not undo the task's completion. `AppointmentFormDialog` creates, edits and prefills (`defaults`: task
   with its `occurrenceKey` (never the placeholders `none`/`s:none`), device, contact; another task sends none and the server pins what it shows); its times are wall-clock in the household zone (`zonedTimeToInstant`, never the browser's), an empty

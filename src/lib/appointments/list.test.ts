@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { allDayDto, appointmentDto } from "$lib/testing/appointments";
 import {
   type AppointmentFilters,
+  appendById,
   compareByStart,
   countSections,
   defaultStatuses,
@@ -346,6 +347,50 @@ describe("sectionsFor", () => {
     );
     expect(sections.days.flatMap((g) => ids(g.items))).toEqual([
       "gone-planned",
+    ]);
+  });
+});
+
+describe("appendById", () => {
+  const a = appointmentDto({ id: "a", title: "A" });
+  const b = appointmentDto({ id: "b", title: "B" });
+  const c = appointmentDto({ id: "c", title: "C" });
+
+  it("puts the new ones after the list", () => {
+    expect(appendById([a], [b, c]).map((x) => x.id)).toEqual(["a", "b", "c"]);
+    expect(appendById([], [b]).map((x) => x.id)).toEqual(["b"]);
+    expect(appendById([a], []).map((x) => x.id)).toEqual(["a"]);
+  });
+
+  it("leaves out one the list has already and keeps the list's version", () => {
+    const newer = appointmentDto({ id: "a", title: "A, newer" });
+    const merged = appendById([a, b], [newer, c]);
+    expect(merged.map((x) => x.id)).toEqual(["a", "b", "c"]);
+    expect(merged[0]).toBe(a);
+  });
+
+  it("leaves out an appointment a page of the older range repeats", () => {
+    expect(appendById([a], [b, b, c, b]).map((x) => x.id)).toEqual([
+      "a",
+      "b",
+      "c",
+    ]);
+  });
+
+  it("does not repeat an appointment that overlaps both ranges", () => {
+    const today = "2026-10-11";
+    const boundary = allDayDto("2025-10-10", "2025-10-12", { id: "span" });
+    const past = [boundary, appointmentDto({ id: "recent" })];
+    const older = [
+      appointmentDto({ id: "old" }),
+      allDayDto("2025-10-10", "2025-10-12", { id: "span" }),
+    ];
+    expect(viewRange("past", today).from).toBe("2025-10-11");
+    expect(olderRange(today).to).toBe("2025-10-10");
+    expect(appendById(past, older).map((x) => x.id)).toEqual([
+      "span",
+      "recent",
+      "old",
     ]);
   });
 });

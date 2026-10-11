@@ -18,6 +18,7 @@
   import { statusLabels } from "$lib/appointments/labels";
   import {
     APPOINTMENT_VIEWS,
+    appendById,
     countSections,
     defaultStatuses,
     filterQuery,
@@ -62,7 +63,7 @@
       : null,
   );
   const all = $derived(
-    older ? [...data.appointments, ...older] : data.appointments,
+    older ? appendById(data.appointments, older) : data.appointments,
   );
 
   const sections = $derived(

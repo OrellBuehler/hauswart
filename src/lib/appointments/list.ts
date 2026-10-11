@@ -97,6 +97,24 @@ export function olderRange(today: string): { to: string } {
   return { to: addDays(today, -PAST_WINDOW_DAYS - 1) };
 }
 
+/**
+ * `more` appended to `base` without what `base` (or `more` itself) already has. The ranges of the two
+ * lists meet at a day, and an appointment that spans it is in both.
+ */
+export function appendById(
+  base: readonly Appointment[],
+  more: readonly Appointment[],
+): Appointment[] {
+  const seen = new Set(base.map((a) => a.id));
+  const merged = [...base];
+  for (const a of more) {
+    if (seen.has(a.id)) continue;
+    seen.add(a.id);
+    merged.push(a);
+  }
+  return merged;
+}
+
 /** Whether the last day of the appointment, in the household zone, is before `today`. */
 export function isOver(
   a: Appointment,
