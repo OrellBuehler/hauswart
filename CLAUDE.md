@@ -137,7 +137,7 @@ src/lib/server/calendar/         ical.ts (pure RFC 5545 builder), feeds.ts (ical
                                  public.ts (the public .ics response: limits, ETag/304)
 src/lib/server/calendar-sync/    push of items into a calendar of a connected system: provider.ts (the seam), ref.ts (the marker), items.ts (what a
                                  target wants), reconcile.ts (pure engine), links.ts, store.ts, sync.ts (one run), targets.ts (service),
-                                 scheduler.ts, testing.ts (in-memory fake calendars); see "Calendar sync"
+                                 scheduler.ts, schedule.ts (the 15-minute rhythm, `nextAttemptAt`), testing.ts (in-memory fake calendars); see "Calendar sync"
 src/lib/calendar-sync/           client-safe UI logic for calendar targets: form.ts (draft -> request bodies, PATCH diff), stats.ts, health.ts,
                                  labels.ts, errors.ts, providers.ts; see "Calendar sync in the web app"
 src/lib/server/share/            guest links: tokens.ts, guest-links.ts (CRUD, window, PIN counter), guest-access.ts (token ->
@@ -946,7 +946,7 @@ people plan. Optional like every adapter: without a target nothing happens, and 
 - **Tables** (migrations `0024_calendar_sync`, `0025_calendar_target_remote_name`): `calendar_targets` holds the connection, provider, `remoteCalendarId`, `remoteName` (the calendar's own
   name as the system last reported it, updated by every run; `name` is the target's, given when it was added), name, `level`
   (`household|user`) with the `userId` the check requires, `enabled`, `configJson`, `capabilitiesJson` (from the last time the calendar was
-  opened) and the health: `status`, `lastError` code, `lastOkAt`, `lastCheckedAt` (the last attempt), `consecutiveFailures`, `lastStatsJson`.
+  opened) and the health: `status`, `lastError` code, `lastOkAt`, `lastCheckedAt` (the last attempt), `consecutiveFailures`, `lastStatsJson` (null for a run that failed before it counted anything). The API adds `nextAttemptAt`: `lastCheckedAt` plus the back-off after failures, else plus 15 minutes (`schedule.ts`), null for a target that is off or was never tried.
   It is **unique per provider and calendar**, because two targets in one calendar would delete each other's events. `calendar_links` holds
   target, `kind`, `itemId`, `instanceKey`, `ref`, `remoteUid` (nullable), `status` (`synced|forgotten`), `contentHash` and `lastPushedAt`,
   unique per target, kind, item and occurrence. Deleting the connection or the person removes their targets and links; events already in the

@@ -320,6 +320,50 @@ describe("calendar targets", () => {
       });
     });
 
+    describe("when it is looked at next", () => {
+      const MINUTE = 60_000;
+      const failTimes = async (id: string, times: number) => {
+        vi.spyOn(console, "error").mockImplementation(() => {});
+        fake.failNext("open", "network", times);
+        for (let i = 0; i < times; i++) await syncTarget(ctx(), id);
+      };
+
+      it("is a quarter of an hour after the last check when it works", async () => {
+        connectCalendarSystem(ctx());
+        const target = await addTarget(ctx(), fake);
+        expect(target.nextAttemptAt).toBeNull();
+        await syncTarget(ctx(), target.id);
+        expect(listTargets(ctx(), ADMIN)[0]!.nextAttemptAt).toEqual(
+          new Date(NOW + 15 * MINUTE),
+        );
+      });
+
+      it("follows the back-off after failures, up to a quarter of an hour", async () => {
+        connectCalendarSystem(ctx());
+        const target = await addTarget(ctx(), fake);
+        await failTimes(target.id, 1);
+        expect(listTargets(ctx(), ADMIN)[0]!.nextAttemptAt).toEqual(
+          new Date(NOW + MINUTE),
+        );
+        await failTimes(target.id, 2);
+        expect(listTargets(ctx(), ADMIN)[0]!.nextAttemptAt).toEqual(
+          new Date(NOW + 4 * MINUTE),
+        );
+        await failTimes(target.id, 3);
+        expect(listTargets(ctx(), ADMIN)[0]!.nextAttemptAt).toEqual(
+          new Date(NOW + 15 * MINUTE),
+        );
+      });
+
+      it("is not set for a target that is switched off", async () => {
+        connectCalendarSystem(ctx());
+        const target = await addTarget(ctx(), fake);
+        await syncTarget(ctx(), target.id);
+        const off = updateTarget(ctx(), ADMIN, target.id, { enabled: false });
+        expect(off.nextAttemptAt).toBeNull();
+      });
+    });
+
     it("does not count notes about events somebody deleted", async () => {
       connectCalendarSystem(ctx());
       const target = await addTarget(ctx(), fake, {

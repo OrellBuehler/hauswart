@@ -260,6 +260,19 @@
         >
       {/if}
     </dd>
+    {#if target.nextAttemptAt && health !== "paused" && health !== "offline"}
+      <dt class="text-muted-foreground">{m.caltargets_next_attempt()}</dt>
+      <dd class="min-w-0 font-medium">
+        {#if Date.parse(target.nextAttemptAt) <= Date.now()}
+          {m.caltargets_next_attempt_soon()}
+        {:else}
+          {@const t = when(target.nextAttemptAt)}
+          <time datetime={target.nextAttemptAt} title={t.absolute}
+            >{t.relative}</time
+          >
+        {/if}
+      </dd>
+    {/if}
     <dt class="text-muted-foreground">{m.caltargets_event_count()}</dt>
     <dd class="font-medium tabular-nums">
       {m.caltargets_event_count_value({ count: target.eventCount })}

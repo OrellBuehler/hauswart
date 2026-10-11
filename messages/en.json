@@ -3342,6 +3342,8 @@
   "caltargets_sync_paused": "Switch the calendar on to sync.",
   "caltargets_last_ok": "Last synced",
   "caltargets_last_checked": "Last attempt",
+  "caltargets_next_attempt": "Next attempt",
+  "caltargets_next_attempt_soon": "any moment",
   "caltargets_event_count": "Entries in the calendar",
   "caltargets_event_count_value": "{count, plural, one {1 entry} other {{count} entries}}",
   "caltargets_last_run": "Last run",

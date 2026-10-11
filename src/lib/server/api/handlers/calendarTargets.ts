@@ -39,6 +39,7 @@ export function wireCalendarTarget(
     lastError: view.lastError,
     lastOkAt: view.lastOkAt ? toIso(view.lastOkAt) : null,
     lastCheckedAt: view.lastCheckedAt ? toIso(view.lastCheckedAt) : null,
+    nextAttemptAt: view.nextAttemptAt ? toIso(view.nextAttemptAt) : null,
     consecutiveFailures: view.consecutiveFailures,
     lastStats: view.lastStats,
     eventCount: view.eventCount,

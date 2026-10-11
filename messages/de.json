@@ -3342,6 +3342,8 @@
   "caltargets_sync_paused": "Schalte den Kalender ein, um zu synchronisieren.",
   "caltargets_last_ok": "Zuletzt synchronisiert",
   "caltargets_last_checked": "Letzter Versuch",
+  "caltargets_next_attempt": "Nächster Versuch",
+  "caltargets_next_attempt_soon": "gleich",
   "caltargets_event_count": "Einträge im Kalender",
   "caltargets_event_count_value": "{count, plural, one {1 Eintrag} other {{count} Einträge}}",
   "caltargets_last_run": "Letzter Lauf",

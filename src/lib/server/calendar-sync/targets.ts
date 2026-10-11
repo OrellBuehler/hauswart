@@ -38,6 +38,7 @@ import {
   type CalendarSession,
 } from "./provider";
 import { reconcile } from "./reconcile";
+import { nextAttemptAt } from "./schedule";
 import {
   configOf,
   getTargetRow,
@@ -76,6 +77,8 @@ export interface TargetView {
   lastError: string | null;
   lastOkAt: Date | null;
   lastCheckedAt: Date | null;
+  /** Not before when it is tried again; null when it is switched off or was never tried. */
+  nextAttemptAt: Date | null;
   consecutiveFailures: number;
   lastStats: CalendarSyncCounts | null;
   eventCount: number;
@@ -107,6 +110,7 @@ export function toView(ctx: Db, row: TargetRow, caller: Caller): TargetView {
     lastError: row.lastError,
     lastOkAt: row.lastOkAt,
     lastCheckedAt: row.lastCheckedAt,
+    nextAttemptAt: nextAttemptAt(row),
     consecutiveFailures: row.consecutiveFailures,
     lastStats: statsOf(row),
     eventCount: countLinks(ctx, row.id),

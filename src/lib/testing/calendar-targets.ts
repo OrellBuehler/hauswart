@@ -75,6 +75,7 @@ export function targetDto(over: Partial<CalendarTarget> = {}): CalendarTarget {
     lastError: null,
     lastOkAt: "2026-10-11T08:00:00.000Z",
     lastCheckedAt: "2026-10-11T08:00:00.000Z",
+    nextAttemptAt: "2026-10-11T08:15:00.000Z",
     consecutiveFailures: 0,
     lastStats: countsDto({ created: 3 }),
     eventCount: 3,

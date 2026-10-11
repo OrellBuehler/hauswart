@@ -228,6 +228,23 @@ describe("calendar targets API", () => {
   });
 
   describe("GET /calendar-targets", () => {
+    it("says when the target is looked at next", async () => {
+      const { asAdmin } = await people();
+      connect();
+      const target = await addTarget(ctx(), fake);
+      const before = (await asAdmin("GET", "/api/v1/calendar-targets"))
+        .body as { items: CalendarTarget[] };
+      expect(before.items[0]).toMatchObject({ nextAttemptAt: null });
+      await asAdmin("POST", `/api/v1/calendar-targets/${target.id}/sync`);
+      const after = (await asAdmin("GET", "/api/v1/calendar-targets")).body as {
+        items: CalendarTarget[];
+      };
+      const [item] = after.items;
+      expect(
+        Date.parse(item!.nextAttemptAt!) - Date.parse(item!.lastCheckedAt!),
+      ).toBe(15 * 60_000);
+    });
+
     it("lists the household's targets for everybody, as something only an administrator changes", async () => {
       const { asAdmin, asMember } = await people();
       connect();

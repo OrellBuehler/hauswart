@@ -148,6 +148,8 @@ export const calendarTargetSchema = z
     lastOkAt: isoTimestampSchema.nullable(),
     /** The last attempt, successful or not. */
     lastCheckedAt: isoTimestampSchema.nullable(),
+    /** Not before when it is tried again: the last attempt plus the back-off after failures (1, 2, 4 ... 15 minutes), else plus 15 minutes. Null when it is switched off or was never tried. */
+    nextAttemptAt: isoTimestampSchema.nullable(),
     consecutiveFailures: z.number().int().min(0),
     lastStats: calendarSyncCountsSchema.nullable(),
     /** Events hauswart keeps in the calendar (items it has written). */

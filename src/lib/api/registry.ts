@@ -3522,7 +3522,7 @@ export const endpoints = {
     path: "/api/v1/calendar-targets",
     summary: "The calendars hauswart pushes items into",
     description:
-      "The household's targets and the caller's own (another person's are not visible). A target pushes appointments, due dates, preparations and deadlines into one calendar of a connected system (`direction` is `push`: the calendar is never read back, edits there are not noticed until the item changes in hauswart). Every target has the calendar it writes into (`remoteCalendarId`, and `remoteName`, its name in the connected system, which follows a rename there), its health (`status`, `lastError`, `consecutiveFailures`, `lastCheckedAt`), what the last run did (`lastStats`), what the calendar allows (`capabilities`) and whether the caller may change it (`canManage`).",
+      "The household's targets and the caller's own (another person's are not visible). A target pushes appointments, due dates, preparations and deadlines into one calendar of a connected system (`direction` is `push`: the calendar is never read back, edits there are not noticed until the item changes in hauswart). Every target has the calendar it writes into (`remoteCalendarId`, and `remoteName`, its name in the connected system, which follows a rename there), its health (`status`, `lastError`, `consecutiveFailures`, `lastCheckedAt`, and `nextAttemptAt`: not before when it is tried again, by the back-off after failures), what the last run did (`lastStats`), what the calendar allows (`capabilities`) and whether the caller may change it (`canManage`).",
     tags: ["calendar"],
     auth: "both",
     scopes: ["read"],

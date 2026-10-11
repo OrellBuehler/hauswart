@@ -26,6 +26,7 @@ export const listCalendarTargets = defineTool({
           status: t.status,
           lastError: t.lastError,
           lastOkAt: t.lastOkAt,
+          nextAttemptAt: t.nextAttemptAt,
           events: t.eventCount,
           canCreate: t.capabilities?.create ?? null,
           canUpdate: t.capabilities?.update ?? null,

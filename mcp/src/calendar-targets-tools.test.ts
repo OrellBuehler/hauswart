@@ -46,6 +46,7 @@ describe("calendar target tools", () => {
         kinds: ["appointments", "warranty_ends"],
         status: "ok",
         lastOkAt: expect.any(String),
+        nextAttemptAt: expect.any(String),
         events: 1,
         canCreate: true,
         canUpdate: false,

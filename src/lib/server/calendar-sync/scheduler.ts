@@ -6,6 +6,7 @@ import { onEvent } from "$lib/server/events";
 import { buildDesiredItems } from "./items";
 import { listLinks } from "./links";
 import { hasPendingChanges } from "./reconcile";
+import { SYNC_INTERVAL_MS } from "./schedule";
 import {
   configOf,
   getTargetRow,
@@ -14,8 +15,7 @@ import {
 } from "./store";
 import { syncTarget } from "./sync";
 
-/** Every target is synced at least this often, to notice events somebody deleted in the calendar. */
-export const SYNC_INTERVAL_MS = 15 * 60 * 1000;
+export { SYNC_INTERVAL_MS };
 /** How often hauswart looks for changes of its own that are waiting to be written. */
 export const CHECK_INTERVAL_MS = 60 * 1000;
 const FIRST_RUN_DELAY_MS = 30_000;
