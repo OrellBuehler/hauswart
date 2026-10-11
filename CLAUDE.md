@@ -1332,7 +1332,7 @@ in dark mode. Every list has an empty state, every async action a pending and an
   (ten times) so its first run shows. The dialog never shows or sends `direction` and `conflictPolicy`, lists the calendars of
   `GET /integrations/{provider}/calendars` with their capabilities (calendars that cannot create or already have a target are disabled, the 400 on
   `remoteCalendarId` (by its `details.code`, the two causes in their own words) and the 409 are worded on that field), sends only the fields that differ on PATCH (`updateBody`) and offers a reminder only when
-  `capabilities.alarms`. Deleting offers "Termine im Kalender ebenfalls entfernen" (`?removeRemote=true`) only with `capabilities.delete`; a 409 (connection
+  `capabilities.alarms`. Deleting offers "Einträge im Kalender ebenfalls entfernen" (`?removeRemote=true`) only with `capabilities.delete`; a 409 (connection
   off, or `busy`) or 502 (`details.code`, with counts and `disabled` once it began) is worded by `deleteFailure` and the target stays (then paused, and
   the list behind the dialog is reloaded to show it). `ConfirmDialog` takes optional content (`children`).
 - **Odometer readings in forms**: `VehicleReading` (`lib/vehicles/odometer-state.svelte.ts`) loads a vehicle's unit and newest
