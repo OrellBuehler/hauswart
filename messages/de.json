@@ -1748,7 +1748,7 @@
   "integrations_description": "Verbinde hauswart mit anderen Systemen. Home Assistant wird einmal für den ganzen Haushalt verbunden; Dokument- und Finanz-Apps verbindet jede Person mit ihrem eigenen Konto.",
   "integrations_description_readonly": "Home Assistant verbindet ein Administrator einmal für den ganzen Haushalt. Dokument- und Finanz-Apps verbindest du selbst, mit deinem eigenen Konto; was sie liefern, siehst nur du.",
   "integration_ha_name": "Home Assistant",
-  "integration_ha_description": "Liest Zähler, Zustände und Kalender für Aufgaben und schickt Push-Meldungen aufs Handy.",
+  "integration_ha_description": "Liest Zähler, Zustände und Kalender für Aufgaben, schickt Push-Meldungen aufs Handy und trägt Termine und Fristen in Kalender ein.",
   "integration_paperless_name": "Paperless-ngx",
   "integration_paperless_description": "Verknüpft Dokumente wie Rechnungen und Garantiescheine mit Geräten und Aufgaben.",
   "integration_kept_name": "Kept",
@@ -3451,5 +3451,7 @@
   "caltargets_error_remove_partial": "Es wurden {deleted} Einträge entfernt, {remaining} sind noch übrig. Der Kalender bleibt in hauswart bestehen: Versuche es nochmals, um den Rest zu entfernen.",
   "caltargets_error_remove_failed": "{reason} Der Kalender bleibt in hauswart bestehen, ein zweiter Versuch macht dort weiter.",
   "caltargets_error_gone": "Diesen Kalender gibt es nicht mehr. Lade die Seite neu.",
-  "caltargets_provider": "Kalendersystem"
+  "caltargets_provider": "Kalendersystem",
+  "caltargets_ha_card_hint": "Welche Kalender hauswart mit Terminen und Fristen befüllt, richtest du in den Kalender-Einstellungen ein.",
+  "caltargets_ha_card_link": "Zur Kalender-Synchronisierung"
 }

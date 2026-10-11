@@ -11,6 +11,7 @@
   } from "$lib/api/schemas/share";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
   import EmptyState from "$lib/components/app/empty-state.svelte";
+  import TargetsCard from "$lib/components/calendar-sync/targets-card.svelte";
   import CalendarHowto from "$lib/components/share/calendar-howto.svelte";
   import FeedFormDialog from "$lib/components/share/feed-form-dialog.svelte";
   import FeedRow from "$lib/components/share/feed-row.svelte";
@@ -142,6 +143,13 @@
       <CalendarHowto />
     </Card.Content>
   </Card.Root>
+
+  <TargetsCard
+    targets={data.targets}
+    integrations={data.integrations}
+    isAdmin={data.user.role === "admin"}
+    timeZone={data.timeZone}
+  />
 </div>
 
 <FeedFormDialog bind:open={formOpen} feed={editing} onsaved={saved} />

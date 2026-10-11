@@ -1748,7 +1748,7 @@
   "integrations_description": "Connect hauswart to other systems. Home Assistant is connected once for the whole household; document and finance apps are connected by each person with their own account.",
   "integrations_description_readonly": "Home Assistant is connected once for the whole household, by an administrator. Document and finance apps you connect yourself, with your own account; only you see what they bring in.",
   "integration_ha_name": "Home Assistant",
-  "integration_ha_description": "Reads counters, states and calendars for tasks and sends push notifications to phones.",
+  "integration_ha_description": "Reads counters, states and calendars for tasks, sends push notifications to phones and writes appointments and deadlines into calendars.",
   "integration_paperless_name": "Paperless-ngx",
   "integration_paperless_description": "Links documents such as invoices and warranty slips to devices and tasks.",
   "integration_kept_name": "Kept",
@@ -3451,5 +3451,7 @@
   "caltargets_error_remove_partial": "{deleted} entries were removed, {remaining} are left. The calendar stays in hauswart: try again to remove the rest.",
   "caltargets_error_remove_failed": "{reason} The calendar stays in hauswart, and a second try continues from there.",
   "caltargets_error_gone": "This calendar no longer exists. Reload the page.",
-  "caltargets_provider": "Calendar system"
+  "caltargets_provider": "Calendar system",
+  "caltargets_ha_card_hint": "Which calendars hauswart fills with appointments and deadlines is set up in the calendar settings.",
+  "caltargets_ha_card_link": "Go to calendar sync"
 }
