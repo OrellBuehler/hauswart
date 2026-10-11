@@ -480,11 +480,13 @@ const VEHICLE_ONLY_WRITE =
   "Only a vehicle can take this: 400 `invalid_request` for an asset of another kind, 404 `not_found` for a missing asset.";
 
 /**
- * Said by every endpoint that writes an odometer reading: the 400 for a reading that is out of order
- * carries a machine-readable reason (see `odometerRefusalDetailsSchema`), so no client reads the message.
+ * Said by every endpoint that writes an odometer reading, with the request field the value is reported
+ * on: the 400 for a reading that is out of order carries a machine-readable reason (see
+ * `odometerRefusalDetailsSchema`), so no client reads the message.
  */
-const ODOMETER_REFUSAL =
-  "A reading below the one before its date or above the one after it is a 400 on the value field (`odometer` here) whose `details` carry `code` (`lower_than_previous` or `higher_than_next`), `field` and `reading` (`{value, date}` of the neighbouring reading in the way) besides the English field error; no such code for any other problem.";
+function odometerRefusal(field: string): string {
+  return `A reading below the one before its date or above the one after it is a 400 on the value field (\`${field}\` here) whose \`details\` carry \`code\` (\`lower_than_previous\` or \`higher_than_next\`), \`field\` and \`reading\` (\`{value, date}\` of the neighbouring reading in the way) besides the English field error; no such code for any other problem.`;
+}
 
 export const endpoints = {
   health: defineEndpoint({
@@ -1002,7 +1004,7 @@ export const endpoints = {
     method: "POST",
     path: "/api/v1/tasks/{id}/complete",
     summary: "Mark a task done",
-    description: `Returns the completion and the re-evaluated task. A repeated idempotencyKey returns the first completion with status 200. Browser sessions are attributed as manual (or qr when sent); API tokens by their kind (mcp, ha, otherwise api) and their source field is ignored. Linked spare parts are taken out of stock. With serviceLog the work is also logged on the task's asset (400 for a task without an asset); the entry comes back as serviceLog, and serviceLog.resolvedNoteIds resolves notes of that asset with it (undoing the completion reopens them, except a note that has become a defect meanwhile; another asset's note is a 400 and nothing is completed). The returned task is read after the entry was written, so its openNoteCount is current. A counterValue of a task that counts on a vehicle's odometer is a reading of it: ${ODOMETER_REFUSAL.replace("(`odometer` here)", "(`counterValue` here)")}`,
+    description: `Returns the completion and the re-evaluated task. A repeated idempotencyKey returns the first completion with status 200. Browser sessions are attributed as manual (or qr when sent); API tokens by their kind (mcp, ha, otherwise api) and their source field is ignored. Linked spare parts are taken out of stock. With serviceLog the work is also logged on the task's asset (400 for a task without an asset); the entry comes back as serviceLog, and serviceLog.resolvedNoteIds resolves notes of that asset with it (undoing the completion reopens them, except a note that has become a defect meanwhile; another asset's note is a 400 and nothing is completed). The returned task is read after the entry was written, so its openNoteCount is current. A counterValue of a task that counts on a vehicle's odometer is a reading of it: ${odometerRefusal("counterValue")}`,
     tags: ["tasks"],
     auth: "both",
     scopes: ["write"],
@@ -1659,7 +1661,7 @@ export const endpoints = {
     method: "POST",
     path: "/api/v1/assets/{id}/service-log",
     summary: "Add a service log entry",
-    description: `resolvedNoteIds: notes of this asset (see /assets/{id}/notes) the work addressed. They become resolved with this entry; another asset's note or an unknown id is a 400 and nothing is written. A vehicle's odometer value is a reading of it: ${ODOMETER_REFUSAL}`,
+    description: `resolvedNoteIds: notes of this asset (see /assets/{id}/notes) the work addressed. They become resolved with this entry; another asset's note or an unknown id is a 400 and nothing is written. A vehicle's odometer value is a reading of it: ${odometerRefusal("odometer")}`,
     tags: ["service-log", "assets"],
     auth: "both",
     scopes: ["write"],
@@ -1688,7 +1690,7 @@ export const endpoints = {
     method: "PATCH",
     path: "/api/v1/assets/{id}/service-log/{entryId}",
     summary: "Update a service log entry",
-    description: `resolvedNoteIds adds notes of this asset to those the entry resolved (open ones become resolved with it, resolved ones stay as they are); it can be the only field. Notes are reopened by changing the note, deleting the entry or undoing the completion the entry was written with; a note that has become a defect stays resolved when the entry goes. A vehicle's odometer value is a reading of it: ${ODOMETER_REFUSAL}`,
+    description: `resolvedNoteIds adds notes of this asset to those the entry resolved (open ones become resolved with it, resolved ones stay as they are); it can be the only field. Notes are reopened by changing the note, deleting the entry or undoing the completion the entry was written with; a note that has become a defect stays resolved when the entry goes. A vehicle's odometer value is a reading of it: ${odometerRefusal("odometer")}`,
     tags: ["service-log", "assets"],
     auth: "both",
     scopes: ["write"],
@@ -1778,7 +1780,7 @@ export const endpoints = {
     method: "POST",
     path: "/api/v1/assets/{id}/fuel-logs",
     summary: "Log a fill-up or charge",
-    description: `In one transaction: the odometer becomes a reading of the vehicle (source fuel_log; a value lower than the reading before is a 400 on odometer) and, unless amountMinor is 0, a cost entry of the category fuel is booked for the vehicle (title like "Tanken <station>", paid by paidByUserId, default the caller, split by splitMode, default ownership). The cost entry is the fuel log entry's own: its amount, currency and date change through PATCH /fuel-logs/{id} only, and its device stays the vehicle. It needs costs:write because it books money. ${ODOMETER_REFUSAL} ${VEHICLE_ONLY_WRITE}`,
+    description: `In one transaction: the odometer becomes a reading of the vehicle (source fuel_log; a value lower than the reading before is a 400 on odometer) and, unless amountMinor is 0, a cost entry of the category fuel is booked for the vehicle (title like "Tanken <station>", paid by paidByUserId, default the caller, split by splitMode, default ownership). The cost entry is the fuel log entry's own: its amount, currency and date change through PATCH /fuel-logs/{id} only, and its device stays the vehicle. It needs costs:write because it books money. ${odometerRefusal("odometer")} ${VEHICLE_ONLY_WRITE}`,
     tags: ["vehicles", "assets"],
     auth: "both",
     scopes: ["costs:write"],
@@ -1807,7 +1809,7 @@ export const endpoints = {
     method: "PATCH",
     path: "/api/v1/fuel-logs/{id}",
     summary: "Change a fuel log entry",
-    description: `The reading follows the date and the odometer; the cost entry follows the amount, currency, date, station, payer and split. The fuel log entry owns the amount, currency and date of its cost entry: they change here only (\`PATCH /costs/{id}\` refuses other values, and any other device, with 409 \`conflict\`, \`details.fuelLogId\`; the cost entry's \`fuelLogId\` points back). A change of station or unit rewrites the cost entry's title and payee only while each still is what this entry wrote there last time, so a title or payee edited on the cost entry stays. An entry made free loses its cost entry, one that costs something now and has none gets one. ${ODOMETER_REFUSAL}`,
+    description: `The reading follows the date and the odometer; the cost entry follows the amount, currency, date, station, payer and split. The fuel log entry owns the amount, currency and date of its cost entry: they change here only (\`PATCH /costs/{id}\` refuses other values, and any other device, with 409 \`conflict\`, \`details.fuelLogId\`; the cost entry's \`fuelLogId\` points back). A change of station or unit rewrites the cost entry's title and payee only while each still is what this entry wrote there last time, so a title or payee edited on the cost entry stays. An entry made free loses its cost entry, one that costs something now and has none gets one. ${odometerRefusal("odometer")}`,
     tags: ["vehicles"],
     auth: "both",
     scopes: ["costs:write"],
@@ -1914,7 +1916,7 @@ export const endpoints = {
     method: "POST",
     path: "/api/v1/assets/{id}/tire-sets/{setId}/mount",
     summary: "Mount a tire set",
-    description: `Takes the mounted set off (an unmounted event of the same day) and mounts this one. With an odometer value the vehicle gets that reading (source tire_change); an odometer value that is out of order is a 400 on odometer and nothing is changed (${ODOMETER_REFUSAL}), and so is a date before the day the set that would be taken off was mounted (400 on \`date\`; the same day is fine). 409 for a retired set and for one that is already mounted. ${VEHICLE_ONLY_WRITE}`,
+    description: `Takes the mounted set off (an unmounted event of the same day) and mounts this one. With an odometer value the vehicle gets that reading (source tire_change). ${odometerRefusal("odometer")} Nothing is changed when the odometer value is refused or when the date is before the day the set that would be taken off was mounted (400 on \`date\`; the same day is fine). 409 for a retired set and for one that is already mounted. ${VEHICLE_ONLY_WRITE}`,
     tags: ["vehicles", "assets"],
     auth: "both",
     scopes: ["write"],
@@ -1929,7 +1931,7 @@ export const endpoints = {
     method: "POST",
     path: "/api/v1/tire-sets/{id}/tread",
     summary: "Record a tread depth measurement",
-    description: `Adds a measurement event; the newest measurement is the set's current depth. With an odometer value the vehicle gets that reading as well. ${ODOMETER_REFUSAL}`,
+    description: `Adds a measurement event; the newest measurement is the set's current depth. With an odometer value the vehicle gets that reading as well. ${odometerRefusal("odometer")}`,
     tags: ["vehicles"],
     auth: "both",
     scopes: ["write"],

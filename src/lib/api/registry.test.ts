@@ -269,6 +269,43 @@ describe("registry", () => {
   });
 });
 
+describe("the odometer refusal in the descriptions", () => {
+  const fields: Record<string, string> = {
+    tasksComplete: "counterValue",
+    assetServiceLogCreate: "odometer",
+    assetServiceLogUpdate: "odometer",
+    fuelLogsCreate: "odometer",
+    fuelLogsUpdate: "odometer",
+    tireSetsMount: "odometer",
+    tireSetsTread: "odometer",
+  };
+
+  it("names the field each endpoint reports an out-of-order reading on", () => {
+    for (const [id, field] of Object.entries(fields)) {
+      const { description } = endpoints[id as keyof typeof endpoints];
+      expect(description, id).toContain(`(\`${field}\` here)`);
+      expect(description, id).toContain("`lower_than_previous`");
+      expect(description, id).toContain("`higher_than_next`");
+      for (const other of new Set(Object.values(fields))) {
+        if (other !== field)
+          expect(description, id).not.toContain(`(\`${other}\` here)`);
+      }
+    }
+  });
+
+  it("states it after a full stop or colon, never as a sentence inside parentheses", () => {
+    for (const [id, field] of Object.entries(fields)) {
+      const { description } = endpoints[id as keyof typeof endpoints];
+      expect(description, id).not.toMatch(/\(\s*A reading below/);
+      expect(description, id).toMatch(
+        new RegExp(
+          `(^|[.:] )A reading below the one before its date or above the one after it is a 400 on the value field \\(\`${field}\` here\\)`,
+        ),
+      );
+    }
+  });
+});
+
 describe("defineEndpoint", () => {
   const base = {
     id: "thing",
