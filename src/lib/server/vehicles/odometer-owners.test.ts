@@ -150,18 +150,6 @@ describe("deleting a reading that a record owns", () => {
     expect(readings(car.id).map((r) => r.value)).toEqual([80_000]);
   });
 
-  it("a reading of a source without a record behind it deletes", async () => {
-    const { car } = await world();
-    const loose = await recordOdometer(ctx(), {
-      assetId: car.id,
-      date: "2026-06-05",
-      value: 81_000,
-      source: "signal",
-    });
-    await deleteOdometerReading(ctx(), loose.id);
-    expect(readings(car.id).map((r) => r.value)).toEqual([80_000]);
-  });
-
   it("a reading whose record is gone is free again", async () => {
     const { anna, car } = await world();
     const taskId = await owners.completion.make(car, anna.id);

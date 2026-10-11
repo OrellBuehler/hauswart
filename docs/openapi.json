@@ -38234,8 +38234,7 @@
               "completion",
               "service_log",
               "fuel_log",
-              "tire_change",
-              "signal"
+              "tire_change"
             ]
           },
           "sourceId": {

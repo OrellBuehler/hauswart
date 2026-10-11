@@ -43,8 +43,9 @@ export const FUEL_UNITS = ["l", "kWh"] as const;
 export type FuelUnit = (typeof FUEL_UNITS)[number];
 
 /**
- * Where an odometer reading came from. `fuel_log`, `tire_change` and `signal` are written by
- * features that build on `recordOdometer`; the first three exist today.
+ * Where an odometer reading came from: typed in (`manual`) or written along with another record
+ * (`completion`, `service_log`, `fuel_log`, `tire_change`), which then owns it. Every value has a
+ * writer today; a feature that records readings on the side (`recordOdometer`) adds its source here.
  */
 export const ODOMETER_SOURCES = [
   "manual",
@@ -52,7 +53,6 @@ export const ODOMETER_SOURCES = [
   "service_log",
   "fuel_log",
   "tire_change",
-  "signal",
 ] as const;
 export type OdometerSource = (typeof ODOMETER_SOURCES)[number];
 

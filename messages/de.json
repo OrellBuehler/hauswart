@@ -2988,7 +2988,6 @@
   "vehicle_source_service_log": "Service-Eintrag",
   "vehicle_source_fuel_log": "Tankbuch",
   "vehicle_source_tire_change": "Reifenwechsel",
-  "vehicle_source_signal": "Signal",
   "vehicle_setup_open": "Termine einrichten",
   "vehicle_setup_title": "Termine für das Fahrzeug einrichten",
   "vehicle_setup_description": "Wähle, was bei «{name}» regelmässig anfällt. Alles lässt sich später unter Aufgaben anpassen.",

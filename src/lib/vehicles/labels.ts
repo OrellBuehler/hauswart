@@ -31,7 +31,6 @@ export const odometerSourceLabels: Record<OdometerSource, () => string> = {
   service_log: () => m.vehicle_source_service_log(),
   fuel_log: () => m.vehicle_source_fuel_log(),
   tire_change: () => m.vehicle_source_tire_change(),
-  signal: () => m.vehicle_source_signal(),
 };
 
 export const tireSeasonLabels: Record<TireSeason, () => string> = {

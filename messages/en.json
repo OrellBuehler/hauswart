@@ -2988,7 +2988,6 @@
   "vehicle_source_service_log": "Service entry",
   "vehicle_source_fuel_log": "Fuel log",
   "vehicle_source_tire_change": "Tire change",
-  "vehicle_source_signal": "Signal",
   "vehicle_setup_open": "Set up tasks",
   "vehicle_setup_title": "Set up tasks for the vehicle",
   "vehicle_setup_description": "Choose what “{name}” needs regularly. You can change everything later under Tasks.",

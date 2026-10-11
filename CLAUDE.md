@@ -631,7 +631,7 @@ of the owner>` is added to the document unless an identical note exists (writes 
   other 400 of a reading (future date, negative value, no vehicle) has no `code`, since `force` would not help.
   `recordOdometer(ctx, {assetId, date, value, source, sourceId?, note?,
 createdBy?, force?})` is what other features call when they learn the odometer on the side (fuel log,
-  tire change); `source` is `manual|completion|service_log|fuel_log|tire_change|signal` and one
+  tire change); `source` is `manual|completion|service_log|fuel_log|tire_change` and one
   `(source, sourceId)` has one reading, so saving the record again updates it. `writeOdometer` is its
   synchronous half (runs in the caller's transaction, `fields` names the request field a problem is
   reported on); `settleOdometer` re-evaluates the tasks that read the odometer and announces what became
