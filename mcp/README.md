@@ -188,18 +188,31 @@ Results are a one-line summary followed by compact JSON (empty fields left out).
 | `add_tire_set`               | write       | Add a set of tires to a vehicle (season, brand, model, size, DOT code, tread depth, storage); it is not mounted yet                                        |
 | `mount_tire_set`             | write       | Mount a set (by id or words like `winter`), taking the mounted one off, with optional date and odometer; repeating it changes nothing                      |
 | `record_tire_tread`          | write       | Record a tread depth in mm for a set (the mounted one by default); says when it is below the limit of the season                                           |
+| `list_ai_tasks`              | read        | The receipt queue: files the household uploaded for you to book (pending by default), with uploader, note and hints                                        |
+| `get_ai_task`                | read        | One queue task: the receipt as an image or PDF plus books, categories, members, vehicles and the uploader's bank transactions                              |
+| `complete_ai_task`           | costs:write | Close a task with the ids of the cost entries you booked for it; they get the receipt and are flagged for review                                           |
+| `dismiss_ai_task`            | costs:write | Close a task without booking anything (no receipt, unreadable, booked already), with a reason                                                              |
 | `create_page`                | docs:write  | New documentation page (needs `docs:write`)                                                                                                                |
 | `update_page`                | docs:write  | Edit a page; needs the `rev` from `get_page`, a concurrent edit is reported, not overwritten                                                               |
 
 Rooms, assets and people can be given by name (`asset: "Dishwasher"`, `assignee: "Ben"`, `me`)
 instead of an id, and so can contacts and parts (and the task of an appointment, by title); a vehicle can also be given by its plate (`asset: "ZH 000000"`, spaces and dashes do not matter). An ambiguous name is reported with the candidates. Tools are annotated with the
 MCP `readOnlyHint`, `destructiveHint` and `idempotentHint`: only `undo_completion`,
-`unlink_document` and `dismiss_finance_suggestion` (which cannot be undone) are marked destructive, and only those
-three, the `update_*`, `complete_appointment`, `set_defect_status`, `snooze_task`, `resolve_asset_note`, `mount_tire_set`, `sync_finance` and the read tools are idempotent.
+`unlink_document`, `dismiss_finance_suggestion` and `dismiss_ai_task` (which cannot be undone) are marked destructive, and only those
+four, the `update_*`, `complete_appointment`, `complete_ai_task`, `set_defect_status`, `snooze_task`, `resolve_asset_note`, `mount_tire_set`, `sync_finance` and the read tools are idempotent.
 Nothing here deletes data except a document link (never the document); files can be listed by name but not uploaded or downloaded. The finance inbox tools
 only ever see the token user's own suggestions (the inbox is private to each person) and need a Kept
 connection of that person; `accept_finance_suggestion` takes the same overrides as the REST endpoint, for the kind
 of suggestion it names (a cost, a device or a bill).
+
+The receipt queue tools work through what the household uploads in the app (`POST /ai-tasks`). `get_ai_task` is the one
+tool whose answer is more than text: after the text comes the receipt itself as MCP image content (images are scaled down to
+at most 1600 px and about 1.5 MB, a very long till receipt keeps up to 3200 px on its long side) or, for a PDF up to 4 MB, as
+an embedded resource; a larger PDF is named by its download address instead. The uploader is the default payer of what you book
+(`paidBy`), the bank transactions in the answer are the uploader's own pending ones of the last 30 days and only listed when the
+token belongs to the uploader (everybody's finance inbox is private), and `complete_ai_task` flags every entry you name for a
+person to review (`list_costs` with `reviewNeeded: true`, `needsReview` on the rows). Close a task with exactly one of
+`complete_ai_task` and `dismiss_ai_task`; repeating either changes nothing.
 
 The document tools read and link through **your own account** in the document system (each person
 connects theirs under Settings, Integrations): without a connection they answer `not_found`, so does a
