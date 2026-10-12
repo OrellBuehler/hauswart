@@ -1,4 +1,4 @@
-import { and, count, eq, inArray, ne, type SQL } from "drizzle-orm";
+import { and, count, eq, inArray, ne, sql, type SQL } from "drizzle-orm";
 import type {
   MoveCostsToBookRequest,
   MoveCostsToBookResult,
@@ -16,6 +16,9 @@ import { requireOpenCostBook } from "./books";
  *
  * Throws a 400 on `bookId` for a book that does not exist or is archived, on `ids` for an id that does not exist (and
  * nothing moves) and on `assetId` for a device that does not exist.
+ *
+ * With `dryRun` it does everything except write: the same checks, the same counts, and `years` (the first and last year
+ * of the entries that would move), so a person can see what a move of a whole device touches before confirming it.
  */
 export function moveCostsToBook(
   ctx: ServiceContext,
@@ -31,6 +34,7 @@ export function moveCostsToBook(
       .get();
     if (!asset) throw invalidField("assetId", "Asset does not exist");
   }
+  const dryRun = input.dryRun === true;
   const scope: SQL =
     ids !== undefined
       ? inArray(costEntries.id, ids)
@@ -50,7 +54,17 @@ export function moveCostsToBook(
       tx.select({ n: count() }).from(costEntries).where(elsewhere).get()?.n ??
       0;
     let deductibleReset = 0;
+    let years: MoveCostsToBookResult["years"] = null;
     if (moving > 0) {
+      const span = tx
+        .select({
+          first: sql<string>`min(substr(${costEntries.date}, 1, 4))`,
+          last: sql<string>`max(substr(${costEntries.date}, 1, 4))`,
+        })
+        .from(costEntries)
+        .where(elsewhere)
+        .get();
+      if (span) years = { from: Number(span.first), to: Number(span.last) };
       if (!book.taxRelevant) {
         const classified = and(
           elsewhere,
@@ -59,20 +73,24 @@ export function moveCostsToBook(
         deductibleReset =
           tx.select({ n: count() }).from(costEntries).where(classified).get()
             ?.n ?? 0;
-        if (deductibleReset > 0) {
+        if (deductibleReset > 0 && !dryRun) {
           tx.update(costEntries)
             .set({ deductible: "unknown" })
             .where(classified)
             .run();
         }
       }
-      tx.update(costEntries).set({ bookId: book.id }).where(elsewhere).run();
+      if (!dryRun) {
+        tx.update(costEntries).set({ bookId: book.id }).where(elsewhere).run();
+      }
     }
     return {
       bookId: book.id,
       moved: moving,
       unchanged: total - moving,
       deductibleReset,
+      dryRun,
+      years,
     };
   });
 }

@@ -14,6 +14,8 @@ import { useTestDB } from "$lib/testing/db";
 import { ctxAt } from "$lib/testing/domain";
 import { useTestFilesDir } from "$lib/testing/files";
 import { failure, fieldErrors, makeVehicle } from "$lib/testing/vehicles";
+import { costEntries } from "$lib/server/db";
+import { clockAt } from "$lib/server/tasks/evaluator";
 import { createFuelLog, updateFuelLog } from "$lib/server/vehicles/fuel-logs";
 import { costBalances } from "./balances";
 import { createCostBook, listCostBooks, updateCostBook } from "./books";
@@ -24,6 +26,12 @@ describe("moving cost entries to another book", () => {
   const test = useTestDB();
   useTestFilesDir();
   const ctx = () => ctxAt(test.db);
+
+  /** The year of an entry booked today, as the first and last year of the entries that move. */
+  const thisYear = () => {
+    const year = Number(clockAt(ctx().now).today.slice(0, 4));
+    return { from: year, to: year };
+  };
 
   async function world() {
     const anna = await createTestUser({ displayName: "Anna" });
@@ -66,6 +74,8 @@ describe("moving cost entries to another book", () => {
       moved: 2,
       unchanged: 1,
       deductibleReset: 0,
+      dryRun: false,
+      years: thisYear(),
     });
     for (const id of [a.id, b.id, c.id]) {
       expect(getCost(ctx(), id).bookName).toBe("Haushalt");
@@ -131,6 +141,144 @@ describe("moving cost entries to another book", () => {
     ).toMatchObject({ moved: 1, unchanged: 0 });
   });
 
+  describe("a dry run", () => {
+    const snapshot = () =>
+      test.db
+        .select()
+        .from(costEntries)
+        .all()
+        .map((e) => [e.id, e.bookId, e.deductible, e.updatedAt.getTime()])
+        .sort();
+
+    it("answers what the move would do, with the years of the entries that move, and writes nothing", async () => {
+      const { book, cost, move } = await world();
+      const classified = cost({
+        title: "Dach",
+        date: "2024-03-01",
+        deductible: "maintenance",
+      });
+      const plain = cost({ title: "Ohne", date: "2026-01-02" });
+      const middle = cost({
+        title: "Mitte",
+        date: "2025-07-01",
+        deductible: "investment",
+      });
+      const there = cost({
+        title: "Schon da",
+        date: "2019-01-01",
+        bookId: book("Haushalt").id,
+      });
+      const ids = [classified.id, plain.id, middle.id, there.id];
+      const before = snapshot();
+
+      const preview = move({ bookId: book("Haushalt").id, ids, dryRun: true });
+      expect(preview).toEqual({
+        bookId: book("Haushalt").id,
+        moved: 3,
+        unchanged: 1,
+        deductibleReset: 2,
+        dryRun: true,
+        years: { from: 2024, to: 2026 },
+      });
+      expect(snapshot()).toEqual(before);
+      expect(getCost(ctx(), classified.id).deductible).toBe("maintenance");
+
+      // The move itself does exactly what was announced.
+      expect(move({ bookId: book("Haushalt").id, ids })).toEqual({
+        ...preview,
+        dryRun: false,
+      });
+      expect(getCost(ctx(), classified.id)).toMatchObject({
+        bookName: "Haushalt",
+        deductible: "unknown",
+      });
+    });
+
+    it("does the same for every entry of a device, however old", async () => {
+      const { book, cost, move } = await world();
+      const car = makeVehicle(test);
+      cost({ assetId: car.id, date: "2023-12-31", deductible: "maintenance" });
+      cost({ assetId: car.id, date: "2026-01-01" });
+      cost({ assetId: car.id, date: "2021-05-05", bookId: book("Auto").id });
+      cost({ date: "2010-01-01" });
+      const before = snapshot();
+      expect(
+        move({ bookId: book("Auto").id, assetId: car.id, dryRun: true }),
+      ).toEqual({
+        bookId: book("Auto").id,
+        moved: 2,
+        unchanged: 1,
+        deductibleReset: 1,
+        dryRun: true,
+        years: { from: 2023, to: 2026 },
+      });
+      expect(snapshot()).toEqual(before);
+    });
+
+    it("resets nothing in a book that is tax relevant, and has no years when nothing moves", async () => {
+      const { book, cost, move } = await world();
+      const a = cost({ date: "2025-02-02", deductible: "maintenance" });
+      cost({ date: "2025-02-03", deductible: "maintenance" });
+      const relevant = createCostBook(
+        ctx(),
+        createCostBookRequestSchema.parse({ name: "Anbau", taxRelevant: true }),
+      );
+      expect(
+        move({ bookId: relevant.id, ids: [a.id], dryRun: true }),
+      ).toMatchObject({
+        moved: 1,
+        deductibleReset: 0,
+        years: { from: 2025, to: 2025 },
+      });
+      expect(
+        move({ bookId: book("Wohnung").id, ids: [a.id], dryRun: true }),
+      ).toEqual({
+        bookId: book("Wohnung").id,
+        moved: 0,
+        unchanged: 1,
+        deductibleReset: 0,
+        dryRun: true,
+        years: null,
+      });
+    });
+
+    it("refuses what the move would refuse", async () => {
+      const { book, cost, move } = await world();
+      const a = cost();
+      updateCostBook(
+        ctx(),
+        book("Auto").id,
+        updateCostBookRequestSchema.parse({ archived: true }),
+      );
+      const before = snapshot();
+      const unknownId = await failure(() =>
+        move({
+          bookId: book("Haushalt").id,
+          ids: [a.id, "nope"],
+          dryRun: true,
+        }),
+      );
+      expect(fieldErrors(unknownId, "ids")).not.toEqual([]);
+      const archived = await failure(() =>
+        move({ bookId: book("Auto").id, ids: [a.id], dryRun: true }),
+      );
+      expect(fieldErrors(archived, "bookId")).not.toEqual([]);
+      const unknownDevice = await failure(() =>
+        move({ bookId: book("Haushalt").id, assetId: "nope", dryRun: true }),
+      );
+      expect(fieldErrors(unknownDevice, "assetId")).not.toEqual([]);
+      expect(snapshot()).toEqual(before);
+    });
+
+    it("is a boolean in the request, and nothing else", () => {
+      const parse = (body: unknown) =>
+        moveCostsToBookRequestSchema.safeParse(body).success;
+      expect(parse({ bookId: "b", ids: ["a"], dryRun: true })).toBe(true);
+      expect(parse({ bookId: "b", ids: ["a"], dryRun: false })).toBe(true);
+      expect(parse({ bookId: "b", ids: ["a"], dryRun: "yes" })).toBe(false);
+    });
+  });
+
   describe("the tax class", () => {
     it("is reset when the book is not tax relevant, and kept when it is", async () => {
       const { book, cost, move } = await world();
@@ -147,6 +295,8 @@ describe("moving cost entries to another book", () => {
         moved: 2,
         unchanged: 0,
         deductibleReset: 1,
+        dryRun: false,
+        years: thisYear(),
       });
       expect(getCost(ctx(), classified.id).deductible).toBe("unknown");
 
@@ -287,6 +437,8 @@ describe("moving cost entries to another book", () => {
         moved: 1,
         unchanged: 1,
         deductibleReset: 0,
+        dryRun: false,
+        years: thisYear(),
       });
       expect(getCost(ctx(), a.id).bookName).toBe("Auto");
       expect(getCost(ctx(), b.id).bookName).toBe("Auto");
@@ -302,6 +454,8 @@ describe("moving cost entries to another book", () => {
         moved: 0,
         unchanged: 0,
         deductibleReset: 0,
+        dryRun: false,
+        years: null,
       });
     });
 

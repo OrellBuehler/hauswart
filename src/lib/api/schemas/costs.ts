@@ -220,6 +220,8 @@ export const moveCostsToBookRequestSchema = z
     bookId: idSchema,
     ids: z.array(idSchema).min(1).max(MOVE_COSTS_MAX_IDS).optional(),
     assetId: idSchema.optional(),
+    /** Only work out what the move would do (the same checks, the same numbers) and write nothing. */
+    dryRun: z.boolean().optional(),
   })
   .refine((v) => (v.ids === undefined) !== (v.assetId === undefined), {
     error: "Give either ids or assetId.",
@@ -238,6 +240,12 @@ export const moveCostsToBookResultSchema = z
     unchanged: z.number().int(),
     /** Moved entries whose tax class was reset to `unknown` because the book is not tax relevant. */
     deductibleReset: z.number().int(),
+    /** True for a preview (`dryRun`): nothing was written, and `moved` and `deductibleReset` are what a move would do. */
+    dryRun: z.boolean(),
+    /** The first and the last year of the dates of the entries that move (or would); null when none does. */
+    years: z
+      .object({ from: z.number().int(), to: z.number().int() })
+      .nullable(),
   })
   .meta({ id: "MoveCostsToBookResult" });
 export type MoveCostsToBookResult = z.infer<typeof moveCostsToBookResultSchema>;

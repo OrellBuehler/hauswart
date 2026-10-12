@@ -1,14 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "$lib/api/errors";
 import type { CostBook } from "$lib/api/schemas/cost-books";
-import { MOVE_COSTS_MAX_IDS } from "$lib/api/schemas/costs";
+import {
+  MOVE_COSTS_MAX_IDS,
+  type MoveCostsToBookResult,
+} from "$lib/api/schemas/costs";
 import {
   moveFailure,
+  movePreview,
   moveRequest,
   moveSummary,
   pickAll,
   suggestedTarget,
   taxClassLost,
+  yearsLabel,
 } from "./move";
 
 const book = (over: Partial<CostBook> = {}): CostBook => ({
@@ -25,6 +30,18 @@ const book = (over: Partial<CostBook> = {}): CostBook => ({
   settlementCount: 0,
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-01T00:00:00.000Z",
+  ...over,
+});
+
+const result = (
+  over: Partial<MoveCostsToBookResult> = {},
+): MoveCostsToBookResult => ({
+  bookId: "b2",
+  moved: 0,
+  unchanged: 0,
+  deductibleReset: 0,
+  dryRun: false,
+  years: null,
   ...over,
 });
 
@@ -49,6 +66,71 @@ describe("moveRequest", () => {
       bookId: "b2",
       assetId: "a1",
     });
+  });
+});
+
+describe("moveRequest for a preview", () => {
+  it("asks for a dry run only when told to", () => {
+    expect(moveRequest("b2", { assetId: "a1" }, { dryRun: true })).toEqual({
+      bookId: "b2",
+      assetId: "a1",
+      dryRun: true,
+    });
+    expect(moveRequest("b2", { ids: ["c1"] }, { dryRun: true })).toEqual({
+      bookId: "b2",
+      ids: ["c1"],
+      dryRun: true,
+    });
+    expect(moveRequest("b2", { assetId: "a1" }, { dryRun: false })).toEqual({
+      bookId: "b2",
+      assetId: "a1",
+    });
+  });
+});
+
+describe("yearsLabel", () => {
+  it("names one year, or the first and the last", () => {
+    expect(yearsLabel({ from: 2025, to: 2025 })).toBe("2025");
+    expect(yearsLabel({ from: 2024, to: 2026 })).toBe("2024\u20132026");
+  });
+});
+
+describe("movePreview", () => {
+  it("says how many entries from which years move and how many lose their tax class", () => {
+    expect(
+      movePreview(
+        result({
+          dryRun: true,
+          moved: 23,
+          deductibleReset: 5,
+          years: { from: 2024, to: 2026 },
+        }),
+      ),
+    ).toBe("23 Einträge aus 2024\u20132026, 5 verlieren ihre Steuerklasse");
+  });
+
+  it("is singular for one, leaves out a tax class nobody loses and adds those that are there already", () => {
+    expect(
+      movePreview(
+        result({
+          moved: 1,
+          years: { from: 2025, to: 2025 },
+          deductibleReset: 1,
+        }),
+      ),
+    ).toBe("1 Eintrag aus 2025, 1 verliert seine Steuerklasse");
+    expect(
+      movePreview(
+        result({ moved: 4, unchanged: 3, years: { from: 2023, to: 2026 } }),
+      ),
+    ).toBe("4 Einträge aus 2023\u20132026, 3 waren schon dort");
+  });
+
+  it("says when everything is in the book already, or there is nothing", () => {
+    expect(movePreview(result({ unchanged: 6 }))).toBe(
+      "Alles ist schon in diesem Buch.",
+    );
+    expect(movePreview(result())).toBe("Es gab nichts zu verschieben.");
   });
 });
 
@@ -108,7 +190,7 @@ describe("moveSummary", () => {
   it("says how many moved, how many were there already and how many lost their tax class", () => {
     expect(
       moveSummary(
-        { bookId: "b2", moved: 3, unchanged: 1, deductibleReset: 2 },
+        result({ moved: 3, unchanged: 1, deductibleReset: 2 }),
         "Haushalt",
       ),
     ).toBe(
@@ -119,13 +201,13 @@ describe("moveSummary", () => {
   it("leaves out what is zero", () => {
     expect(
       moveSummary(
-        { bookId: "b2", moved: 1, unchanged: 0, deductibleReset: 0 },
+        result({ moved: 1, unchanged: 0, deductibleReset: 0 }),
         "Haushalt",
       ),
     ).toBe("1 Eintrag nach «Haushalt» verschoben");
     expect(
       moveSummary(
-        { bookId: "b2", moved: 2, unchanged: 5, deductibleReset: 0 },
+        result({ moved: 2, unchanged: 5, deductibleReset: 0 }),
         "Haushalt",
       ),
     ).toBe("2 Einträge nach «Haushalt» verschoben · 5 waren schon dort");
@@ -134,7 +216,7 @@ describe("moveSummary", () => {
   it("says there was nothing when there was nothing at all", () => {
     expect(
       moveSummary(
-        { bookId: "b2", moved: 0, unchanged: 0, deductibleReset: 0 },
+        result({ moved: 0, unchanged: 0, deductibleReset: 0 }),
         "Haushalt",
       ),
     ).toBe("Es gab nichts zu verschieben.");
@@ -143,7 +225,7 @@ describe("moveSummary", () => {
   it("says plainly when everything was there already", () => {
     expect(
       moveSummary(
-        { bookId: "b2", moved: 0, unchanged: 4, deductibleReset: 0 },
+        result({ moved: 0, unchanged: 4, deductibleReset: 0 }),
         "Haushalt",
       ),
     ).toBe("Nichts verschoben: alles war schon in «Haushalt»");

@@ -14,14 +14,17 @@ import { openBooks } from "./books";
 /** What a move applies to: the entries picked in the list, or every entry of a device. */
 export type MoveTarget = { ids: string[] } | { assetId: string };
 
-/** The request for `POST /costs/move-to-book`; an entry named twice counts once. */
+/** The request for `POST /costs/move-to-book`; an entry named twice counts once. `dryRun` asks what it would do, no more. */
 export function moveRequest(
   bookId: string,
   target: MoveTarget,
+  options: { dryRun?: boolean } = {},
 ): MoveCostsToBookRequest {
-  return "assetId" in target
-    ? { bookId, assetId: target.assetId }
-    : { bookId, ids: [...new Set(target.ids)] };
+  const request: MoveCostsToBookRequest =
+    "assetId" in target
+      ? { bookId, assetId: target.assetId }
+      : { bookId, ids: [...new Set(target.ids)] };
+  return options.dryRun ? { ...request, dryRun: true } : request;
 }
 
 /** Every entry of the list, as far as one request moves them; `truncated` says there were more. */
@@ -52,6 +55,38 @@ export function taxClassLost(
 ): number {
   if (!book || book.taxRelevant) return 0;
   return entries.filter((entry) => entry.deductible !== "unknown").length;
+}
+
+/** "2025" for one year, "2024–2026" for a span. */
+export function yearsLabel(years: { from: number; to: number }): string {
+  return years.from === years.to
+    ? String(years.from)
+    : `${years.from}\u2013${years.to}`;
+}
+
+/**
+ * What a move would do, in one line, from the answer to a dry run: "23 Einträge aus 2024–2026, 5 verlieren ihre
+ * Steuerklasse". What is zero is left out; everything there already, or nothing at all, is said plainly.
+ */
+export function movePreview(result: MoveCostsToBookResult): string {
+  if (result.moved === 0) {
+    return result.unchanged === 0
+      ? m.costs_move_nothing()
+      : m.costs_move_preview_none();
+  }
+  const parts = [
+    m.costs_move_preview_entries({
+      count: result.moved,
+      years: result.years ? yearsLabel(result.years) : "",
+    }),
+  ];
+  if (result.deductibleReset > 0) {
+    parts.push(m.costs_move_preview_reset({ count: result.deductibleReset }));
+  }
+  if (result.unchanged > 0) {
+    parts.push(m.costs_move_unchanged({ count: result.unchanged }));
+  }
+  return parts.join(", ");
 }
 
 /** What a move did in one line; what is zero is left out. */

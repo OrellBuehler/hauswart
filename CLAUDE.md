@@ -399,8 +399,11 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   `bookTaxRelevant` (whether `deductible` means anything for it). **Moving entries**: `PATCH /costs/{id}` with `bookId` moves one; `POST /costs/move-to-book {bookId, ids | assetId}`
   (scope `costs:write`, `costs/move.ts`) moves up to 500 named entries or every entry of a device, all or nothing in one
   transaction (an unknown id is a 400 on `ids`, an unknown device on `assetId`, an unknown or archived target on
-  `bookId`), answers `{bookId, moved, unchanged, deductibleReset}` and changes the ledger only: split, payer and frozen
-  shares stay, a tax class the target book cannot have is reset. Entries a fuel log entry booked may move too (their lock
+  `bookId`), answers `{bookId, moved, unchanged, deductibleReset, dryRun, years}` and changes the ledger only: split, payer and frozen
+  shares stay, a tax class the target book cannot have is reset. **`dryRun: true`** does everything but write (the same
+  checks, the same counts; `dryRun: true` comes back) and `years` is `{from, to}`, the first and last year of the dates of
+  the entries that move or would (null when none does), so a client can say "23 Einträge aus 2024–2026, 5 verlieren ihre
+  Steuerklasse" before a move of a whole device is confirmed. Entries a fuel log entry booked may move too (their lock
   covers amount, currency, date and device only).
 - **Currency**: entries may be in any currency, but every total, the settlement and the dashboard
   count the household currency only; `otherCurrencyCount` says how many entries were left out (the CSV
@@ -1506,7 +1509,7 @@ in dark mode. Every list has an empty state, every async action a pending and an
   so it shows what the server books (300.00 among three: 100.02, 99.99, 99.99). Under `/settings/cost-books` a book that takes entries gets "Als Standard festlegen" (`isDefault`; the badge follows it, reordering never moves it).
   Reordering (rooms, books, hints) goes through `lib/reorder.ts`: `saveOrder` waits for every request, a failed one included, then refreshes, so the order shown is the server's.
   **Moving entries**: "Auswählen" on the list (checkboxes in the cards and the table, a sticky bar with the count, at most 500) and, on a list narrowed to a device, "Alle Einträge dieses Geräts verschieben"
-  open `MoveCostsDialog` (`POST /costs/move-to-book`; `moveSummary` words moved / unchanged / tax class reset, `moveFailure` the 400s). **Vehicles**: the asset form's "Kostenbuch" picks `costBookId` (every save sends it, a PUT would clear it),
+  open `MoveCostsDialog` (`POST /costs/move-to-book`; `moveSummary` words moved / unchanged / tax class reset, `moveFailure` the 400s; for a device it first asks a dry run for the chosen book, again whenever the book changes, and shows `movePreview` above the buttons - a failed preview is worded and does not block the move). **Vehicles**: the asset form's "Kostenbuch" picks `costBookId` (every save sends it, a PUT would clear it),
   `VehicleCard` names the book, the fuel dialog offers a book (the vehicle's while it takes entries, else the default; a new fill takes that book's split; no "Für wen", the fuel API has no participants) and the list shows each fill's `bookName`.
 - **After a dialog, refresh with `invalidateAfterOverlay`** (`lib/overlays/use-overlay-history.svelte.ts`): closing a dialog pops its history
   entry, and the router drops an `invalidateAll()` that is still loading when that popstate arrives, so the page kept the old data. It waits

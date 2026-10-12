@@ -18720,7 +18720,7 @@
       "post": {
         "operationId": "costsMoveToBook",
         "summary": "Move cost entries to another book",
-        "description": "Moves the entries in `ids` (1 to 500) or every entry of the device `assetId` into the book `bookId`, all or nothing in one transaction; give exactly one of `ids` and `assetId` (400 on `ids` otherwise). The book must be open (400 on `bookId` for an unknown or archived one), an unknown id is a 400 on `ids` and nothing moves, an unknown device a 400 on `assetId`. Entries already in the book are counted as `unchanged`. An entry keeps its split, payer and frozen shares: moving changes which ledger it counts in (summaries, balances, the book's CSV), not who bears it. Entries booked by a fuel log entry move too (the fill owns their amount, currency, date and device only). Moving into a book that is not tax relevant resets a tax class other than `unknown` to `unknown` (`deductibleReset` counts them).",
+        "description": "Moves the entries in `ids` (1 to 500) or every entry of the device `assetId` into the book `bookId`, all or nothing in one transaction; give exactly one of `ids` and `assetId` (400 on `ids` otherwise). The book must be open (400 on `bookId` for an unknown or archived one), an unknown id is a 400 on `ids` and nothing moves, an unknown device a 400 on `assetId`. Entries already in the book are counted as `unchanged`. An entry keeps its split, payer and frozen shares: moving changes which ledger it counts in (summaries, balances, the book's CSV), not who bears it. Entries booked by a fuel log entry move too (the fill owns their amount, currency, date and device only). Moving into a book that is not tax relevant resets a tax class other than `unknown` to `unknown` (`deductibleReset` counts them). With `dryRun: true` nothing is written: the same checks and the same numbers come back with `dryRun: true`, `moved` and `deductibleReset` saying what a move would do and `years` the first and last year of the dates of the entries that would move (null when none would), so a client can show \"23 entries from 2024-2026, 5 lose their tax class\" before the person confirms. A real move answers `dryRun: false` and the same `years` of what it moved.",
         "tags": [
           "costs"
         ],
@@ -18845,6 +18845,9 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 64
+                  },
+                  "dryRun": {
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -42813,13 +42816,45 @@
             "type": "integer",
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
+          },
+          "dryRun": {
+            "type": "boolean"
+          },
+          "years": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "to": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "bookId",
           "moved",
           "unchanged",
-          "deductibleReset"
+          "deductibleReset",
+          "dryRun",
+          "years"
         ],
         "additionalProperties": false
       },
