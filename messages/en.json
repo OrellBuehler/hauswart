@@ -1854,6 +1854,7 @@
   "integration_kept_sync_open_inbox": "Open the inbox",
   "integration_kept_sync_failed": "Sync failed",
   "integration_kept_stat_suggestions": "{count, plural, one {1 new cost suggestion} other {{count} new cost suggestions}}",
+  "integration_kept_stat_link_suggestions": "{count, plural, one {1 suggestion to link a transaction to an entry} other {{count} suggestions to link transactions to entries}}",
   "integration_kept_stat_auto_accepted": "{count, plural, one {1 cost booked automatically} other {{count} costs booked automatically}}",
   "integration_kept_stat_asset_suggestions": "{count, plural, one {1 new device suggestion} other {{count} new device suggestions}}",
   "integration_kept_stat_tasks_created": "{count, plural, one {1 bill task created} other {{count} bill tasks created}}",
