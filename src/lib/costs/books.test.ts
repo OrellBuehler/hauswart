@@ -3,6 +3,7 @@ import { ApiError } from "$lib/api/errors";
 import type { CostBook } from "$lib/api/schemas/cost-books";
 import {
   bookConflictMessage,
+  bookDefaultMessage,
   bookIconFor,
   bookIconNames,
   bookIcons,
@@ -190,5 +191,43 @@ describe("bookConflictMessage", () => {
       ),
     ).toBeUndefined();
     expect(bookConflictMessage(new Error("boom"), target)).toBeUndefined();
+  });
+});
+
+describe("bookDefaultMessage", () => {
+  const target = { name: "Ferien" };
+
+  it("tells a book that was archived in the meantime to be restored first", () => {
+    const err = new ApiError("invalid_request", "x", {
+      status: 400,
+      details: { body: { fieldErrors: { isDefault: ["x"] } } },
+    });
+    const text = bookDefaultMessage(err, target) ?? "";
+    expect(text).toContain("Ferien");
+    expect(text).toContain("archiviert");
+  });
+
+  it("explains that the default cannot be switched off", () => {
+    const err = new ApiError("conflict", "x", { status: 409 });
+    expect(bookDefaultMessage(err, target)).toContain("Standardbuch");
+  });
+
+  it("leaves every other error to the caller", () => {
+    expect(
+      bookDefaultMessage(
+        new ApiError("invalid_request", "x", {
+          status: 400,
+          details: { body: { fieldErrors: { name: ["x"] } } },
+        }),
+        target,
+      ),
+    ).toBeUndefined();
+    expect(
+      bookDefaultMessage(
+        new ApiError("not_found", "x", { status: 404 }),
+        target,
+      ),
+    ).toBeUndefined();
+    expect(bookDefaultMessage(new Error("boom"), target)).toBeUndefined();
   });
 });

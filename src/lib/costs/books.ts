@@ -21,6 +21,7 @@ import WalletIcon from "@lucide/svelte/icons/wallet";
 import { isApiError } from "$lib/api/errors";
 import type { CostBook } from "$lib/api/schemas/cost-books";
 import { m } from "$lib/paraglide/messages";
+import { apiFieldErrors } from "$lib/tasks/field-errors";
 
 /** What the address says for "every book" (`?book=all`); a book is its id. */
 export const ALL_BOOKS = "all";
@@ -162,4 +163,20 @@ export function bookConflictMessage(
     });
   }
   return m.costbook_error_last();
+}
+
+/**
+ * Why a book could not be made the default, in words: it was archived in the meantime (400 on `isDefault`), or the
+ * default was asked to stop being it (409). `undefined` for any other error.
+ */
+export function bookDefaultMessage(
+  err: unknown,
+  book: Pick<CostBook, "name">,
+): string | undefined {
+  if (!isApiError(err)) return undefined;
+  if (err.code === "invalid_request" && "isDefault" in apiFieldErrors(err)) {
+    return m.costbook_error_default_archived({ name: book.name });
+  }
+  if (err.code === "conflict") return m.costbook_error_default_conflict();
+  return undefined;
 }

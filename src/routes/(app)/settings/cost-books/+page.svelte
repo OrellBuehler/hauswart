@@ -7,6 +7,7 @@
   import LibraryIcon from "@lucide/svelte/icons/library";
   import PencilIcon from "@lucide/svelte/icons/pencil";
   import PlusIcon from "@lucide/svelte/icons/plus";
+  import StarIcon from "@lucide/svelte/icons/star";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import { invalidateAll } from "$app/navigation";
   import { resolve } from "$app/paths";
@@ -21,7 +22,11 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { bookConflictMessage, bookIconFor } from "$lib/costs/books";
+  import {
+    bookConflictMessage,
+    bookDefaultMessage,
+    bookIconFor,
+  } from "$lib/costs/books";
   import { splitModeLabels } from "$lib/costs/labels";
   import { apiErrorMessage } from "$lib/error-message";
   import { invalidateAfterOverlay } from "$lib/overlays/use-overlay-history.svelte";
@@ -88,6 +93,25 @@
       await invalidateAll();
     } catch (err) {
       toast.error(bookConflictMessage(err, book) ?? apiErrorMessage(err));
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function makeDefault(book: CostBook) {
+    if (busy) return;
+    busy = true;
+    try {
+      await api.call(endpoints.costBooksUpdate, {
+        params: { id: book.id },
+        body: { isDefault: true },
+      });
+      toast.success(m.costbook_default_toast({ name: book.name }));
+      await invalidateAll();
+    } catch (err) {
+      toast.error(bookDefaultMessage(err, book) ?? apiErrorMessage(err));
+      // The book may have changed meanwhile (archived elsewhere): show what the server has.
+      await invalidateAll();
     } finally {
       busy = false;
     }
@@ -187,6 +211,11 @@
             <DropdownMenu.Item onclick={() => openEdit(book)}>
               <PencilIcon />{m.common_edit()}
             </DropdownMenu.Item>
+            {#if !book.archivedAt && !book.isDefault}
+              <DropdownMenu.Item onclick={() => makeDefault(book)}>
+                <StarIcon />{m.costbook_make_default()}
+              </DropdownMenu.Item>
+            {/if}
             {#if index !== null}
               <DropdownMenu.Item
                 disabled={index === 0}
