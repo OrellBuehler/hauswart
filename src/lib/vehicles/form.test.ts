@@ -19,6 +19,7 @@ const vehicle: Vehicle = {
   location: "Tiefgarage",
   odometerUnit: "km",
   notes: "Reifenhotel in der Nähe",
+  costBookId: null,
   odometer: null,
   updatedAt: "2026-01-01T00:00:00.000Z",
 };
@@ -43,6 +44,7 @@ describe("buildVehicleBody", () => {
       location: null,
       odometerUnit: "km",
       notes: null,
+      costBookId: null,
     });
   });
 
@@ -89,6 +91,7 @@ describe("draftFromVehicle", () => {
       location: "Tiefgarage",
       odometerUnit: "km",
       notes: "Reifenhotel in der Nähe",
+      costBookId: "",
     });
   });
 
@@ -110,6 +113,15 @@ describe("draftFromVehicle", () => {
       location: vehicle.location,
       odometerUnit: vehicle.odometerUnit,
       notes: vehicle.notes,
+      costBookId: null,
+    });
+  });
+
+  it("keeps the cost book of the vehicle until the form has a picker for it", () => {
+    const withBook = { ...vehicle, costBookId: "book-1" };
+    expect(draftFromVehicle(withBook).costBookId).toBe("book-1");
+    expect(buildVehicleBody(draftFromVehicle(withBook)).body).toMatchObject({
+      costBookId: "book-1",
     });
   });
 

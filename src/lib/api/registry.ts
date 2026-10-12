@@ -290,6 +290,8 @@ import {
   exportCostsQuerySchema,
   listCostsQuerySchema,
   listCostsResponseSchema,
+  moveCostsToBookRequestSchema,
+  moveCostsToBookResultSchema,
   updateCostRequestSchema,
 } from "./schemas/costs";
 import {
@@ -1783,7 +1785,7 @@ export const endpoints = {
     method: "PUT",
     path: "/api/v1/assets/{id}/vehicle",
     summary: "Save the details of a vehicle",
-    description: `Replaces the details: a field left out is cleared and the odometer unit goes back to km. Changing the unit relabels the readings, it does not convert them. ${VEHICLE_ONLY_WRITE}`,
+    description: `Replaces the details: a field left out is cleared and the odometer unit goes back to km. Changing the unit relabels the readings, it does not convert them. \`costBookId\` is the cost book the fuel fills of the vehicle are booked into when a fill names none (an open book, else 400 on \`costBookId\`; omitted it is cleared like every other field). ${VEHICLE_ONLY_WRITE}`,
     tags: ["vehicles", "assets"],
     auth: "both",
     scopes: ["write"],
@@ -1813,7 +1815,7 @@ export const endpoints = {
     method: "POST",
     path: "/api/v1/assets/{id}/fuel-logs",
     summary: "Log a fill-up or charge",
-    description: `In one transaction: the odometer becomes a reading of the vehicle (source fuel_log; a value lower than the reading before is a 400 on odometer) and, unless amountMinor is 0, a cost entry of the category fuel is booked for the vehicle (title like "Tanken <station>", paid by paidByUserId, default the caller, split by splitMode, default ownership). The cost entry is the fuel log entry's own: its amount, currency and date change through PATCH /fuel-logs/{id} only, and its device stays the vehicle. It needs costs:write because it books money. ${odometerRefusal("odometer")} ${VEHICLE_ONLY_WRITE}`,
+    description: `In one transaction: the odometer becomes a reading of the vehicle (source fuel_log; a value lower than the reading before is a 400 on odometer) and, unless amountMinor is 0, a cost entry of the category fuel is booked for the vehicle (title like "Tanken <station>", paid by paidByUserId, default the caller, split by splitMode, default the split of its book). The book is bookId (an open book, else 400 on bookId), else the vehicle's own book (costBookId of its details, while that book is open), else the default book. The cost entry is the fuel log entry's own: its amount, currency and date change through PATCH /fuel-logs/{id} only, and its device stays the vehicle. It needs costs:write because it books money. ${odometerRefusal("odometer")} ${VEHICLE_ONLY_WRITE}`,
     tags: ["vehicles", "assets"],
     auth: "both",
     scopes: ["costs:write"],
@@ -1842,7 +1844,7 @@ export const endpoints = {
     method: "PATCH",
     path: "/api/v1/fuel-logs/{id}",
     summary: "Change a fuel log entry",
-    description: `The reading follows the date and the odometer; the cost entry follows the amount, currency, date, station, payer and split. The fuel log entry owns the amount, currency and date of its cost entry: they change here only (\`PATCH /costs/{id}\` refuses other values, and any other device, with 409 \`conflict\`, \`details.fuelLogId\`; the cost entry's \`fuelLogId\` points back). A change of station or unit rewrites the cost entry's title and payee only while each still is what this entry wrote there last time, so a title or payee edited on the cost entry stays. An entry made free loses its cost entry, one that costs something now and has none gets one. ${odometerRefusal("odometer")}`,
+    description: `The reading follows the date and the odometer; the cost entry follows the amount, currency, date, station, payer, split and book (\`bookId\` moves it to another open book; a tax class is reset when the book is not tax relevant, as for any move). The fuel log entry owns the amount, currency and date of its cost entry: they change here only (\`PATCH /costs/{id}\` refuses other values, and any other device, with 409 \`conflict\`, \`details.fuelLogId\`; the cost entry's \`fuelLogId\` points back). A change of station or unit rewrites the cost entry's title and payee only while each still is what this entry wrote there last time, so a title or payee edited on the cost entry stays. An entry made free loses its cost entry, one that costs something now and has none gets one. ${odometerRefusal("odometer")}`,
     tags: ["vehicles"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2042,7 +2044,7 @@ export const endpoints = {
     path: "/api/v1/costs",
     summary: "Book a cost",
     description:
-      "`bookId` defaults to the default book (the first book that is not archived; an archived book is a 400 on `bookId`), `currency` to the household's, `date` to today. `splitMode` defaults to the book's default split: `ownership` divides by the people's current ownership shares, `equal` equally among everybody or, with `participantIds`, among those household members only (each listed once), `custom` by `shares` (basis points, sum 10000), `none` does not split; `participantIds` with any other split and `shares` with any other than `custom` are a 400. The shares are frozen with the entry; the parts add up to the amount exactly (largest remainder, ties to the earlier user id). `countsAsExpense` defaults to false for a mortgage repayment (equity), else true. `deductible` other than `unknown` needs a tax relevant book (400 on `deductible` otherwise). Entries cannot be created for a finance provider's transaction here: accept the suggestion instead.",
+      "`bookId` defaults to the default book (`isDefault` in `GET /cost-books`; an archived book is a 400 on `bookId`), `currency` to the household's, `date` to today. `splitMode` defaults to the book's default split: `ownership` divides by the people's current ownership shares, `equal` equally among everybody or, with `participantIds`, among those household members only (each listed once), `custom` by `shares` (basis points, sum 10000), `none` does not split; `participantIds` with any other split and `shares` with any other than `custom` are a 400. The shares are frozen with the entry; the parts add up to the amount exactly (largest remainder, ties to the earlier user id). `countsAsExpense` defaults to false for a mortgage repayment (equity), else true. `deductible` other than `unknown` needs a tax relevant book (400 on `deductible` otherwise). Entries cannot be created for a finance provider's transaction here: accept the suggestion instead.",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2063,6 +2065,20 @@ export const endpoints = {
     scopes: ["read"],
     query: costsSummaryQuerySchema,
     response: costsSummarySchema,
+  }),
+
+  costsMoveToBook: defineEndpoint({
+    id: "costsMoveToBook",
+    method: "POST",
+    path: "/api/v1/costs/move-to-book",
+    summary: "Move cost entries to another book",
+    description:
+      "Moves the entries in `ids` (1 to 500) or every entry of the device `assetId` into the book `bookId`, all or nothing in one transaction; give exactly one of `ids` and `assetId` (400 on `ids` otherwise). The book must be open (400 on `bookId` for an unknown or archived one), an unknown id is a 400 on `ids` and nothing moves, an unknown device a 400 on `assetId`. Entries already in the book are counted as `unchanged`. An entry keeps its split, payer and frozen shares: moving changes which ledger it counts in (summaries, balances, the book's CSV), not who bears it. Entries booked by a fuel log entry move too (the fill owns their amount, currency, date and device only). Moving into a book that is not tax relevant resets a tax class other than `unknown` to `unknown` (`deductibleReset` counts them).",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    body: moveCostsToBookRequestSchema,
+    response: moveCostsToBookResultSchema,
   }),
 
   costsExport: defineEndpoint({

@@ -7,6 +7,7 @@ import {
 } from "../enums";
 import {
   dateSchema,
+  idSchema,
   isoTimestampSchema,
   nullableText,
   paginated,
@@ -76,6 +77,11 @@ export const vehicleSchema = z
     location: z.string().nullable(),
     odometerUnit: odometerUnitSchema,
     notes: z.string().nullable(),
+    /**
+     * The cost book (`GET /cost-books`) the fuel fills of this vehicle are booked into when a fill names none; null =
+     * the default book. It is also used only while that book is not archived.
+     */
+    costBookId: z.string().nullable(),
     /** The newest odometer reading; null before the first. */
     odometer: odometerSummarySchema.nullable(),
     /** Null while the details were never saved (the other fields then hold the defaults). */
@@ -85,8 +91,9 @@ export const vehicleSchema = z
 export type Vehicle = z.infer<typeof vehicleSchema>;
 
 /**
- * `PUT` replaces the details: a field left out is cleared (the unit goes back to km). Changing
- * `odometerUnit` only relabels the readings, it does not convert them.
+ * `PUT` replaces the details: a field left out is cleared (the unit goes back to km), `costBookId` included. Changing
+ * `odometerUnit` only relabels the readings, it does not convert them. `costBookId` must be a book that is open (400
+ * on `costBookId` for an unknown or archived one; sending the one the vehicle has already is always fine).
  */
 export const putVehicleRequestSchema = z.strictObject({
   plate: nullableText(32).optional(),
@@ -99,6 +106,7 @@ export const putVehicleRequestSchema = z.strictObject({
   location: nullableText(200).optional(),
   odometerUnit: odometerUnitSchema.optional(),
   notes: nullableText(20_000).optional(),
+  costBookId: idSchema.nullable().optional(),
 });
 export type PutVehicleRequest = z.output<typeof putVehicleRequestSchema>;
 

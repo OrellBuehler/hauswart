@@ -132,6 +132,7 @@ describe("openapi document", () => {
       "InsurancePolicyAsset",
       "Integration",
       "IntegrationTest",
+      "MoveCostsToBookResult",
       "NextAppointment",
       "Notification",
       "NotificationActionResult",

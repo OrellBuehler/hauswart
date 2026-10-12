@@ -252,6 +252,7 @@ describe("registry", () => {
         "PATCH /api/v1/costs/{id} both",
         "DELETE /api/v1/costs/{id} both",
         "GET /api/v1/costs/balances both",
+        "POST /api/v1/costs/move-to-book both",
         "GET /api/v1/cost-books both",
         "POST /api/v1/cost-books both",
         "GET /api/v1/cost-books/{id} both",

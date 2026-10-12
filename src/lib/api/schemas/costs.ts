@@ -149,7 +149,7 @@ const costFields = {
 };
 
 /**
- * `bookId` defaults to the default book (the first that is not archived), `date` to today, `currency` to the
+ * `bookId` defaults to the default book (`isDefault` of `GET /cost-books`), `date` to today, `currency` to the
  * household's, `splitMode` to the book's default split, `countsAsExpense` to true (false for a mortgage repayment).
  * `shares` are required for `custom` and refused otherwise; `participantIds` narrow an `equal` split to those people
  * (everybody without it) and are refused for any other split. `deductible` other than `unknown` needs a tax relevant book.
@@ -205,6 +205,40 @@ export const updateCostRequestSchema = atLeastOne(
   }),
 );
 export type UpdateCostRequest = z.output<typeof updateCostRequestSchema>;
+
+/** The most entries one request moves. */
+export const MOVE_COSTS_MAX_IDS = 500;
+
+/**
+ * Moves cost entries into the book `bookId`: either the entries in `ids` (1 to 500, each once) or every entry of the
+ * device `assetId`; exactly one of the two.
+ */
+export const moveCostsToBookRequestSchema = z
+  .strictObject({
+    bookId: idSchema,
+    ids: z.array(idSchema).min(1).max(MOVE_COSTS_MAX_IDS).optional(),
+    assetId: idSchema.optional(),
+  })
+  .refine((v) => (v.ids === undefined) !== (v.assetId === undefined), {
+    error: "Give either ids or assetId.",
+    path: ["ids"],
+  });
+export type MoveCostsToBookRequest = z.output<
+  typeof moveCostsToBookRequestSchema
+>;
+
+export const moveCostsToBookResultSchema = z
+  .object({
+    bookId: z.string(),
+    /** Entries that were in another book and are in `bookId` now. */
+    moved: z.number().int(),
+    /** Entries that were in `bookId` already. */
+    unchanged: z.number().int(),
+    /** Moved entries whose tax class was reset to `unknown` because the book is not tax relevant. */
+    deductibleReset: z.number().int(),
+  })
+  .meta({ id: "MoveCostsToBookResult" });
+export type MoveCostsToBookResult = z.infer<typeof moveCostsToBookResultSchema>;
 
 export const costsSummaryQuerySchema = z.object({
   year: year.optional(),

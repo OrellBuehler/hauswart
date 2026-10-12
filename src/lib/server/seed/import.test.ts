@@ -373,6 +373,27 @@ describe("seed import", () => {
       expect(writes().filter((w) => w.includes("/vehicle"))).toEqual([]);
     });
 
+    it("keeps the cost book a person chose for the vehicle when an update rewrites the details", async () => {
+      const { api } = await client();
+      await importSeed(api, example());
+      const { car } = await detailsOf(api);
+      const books = await api.call(endpoints.costBooksList, {
+        query: { limit: 50 },
+      });
+      const auto = books.items.find((b) => b.name === "Auto")!;
+      await api.call(endpoints.vehiclesPut, {
+        params: { id: car.id },
+        body: { plate: "ZH 000000", costBookId: auto.id },
+      });
+      const changed = seedSchema.parse(withVehicle({ plate: "ZH 000002" }));
+      const updated = await importSeed(api, changed, { update: true });
+      expect(updated.vehicles.updated).toBe(1);
+      expect((await detailsOf(api)).details).toMatchObject({
+        plate: "ZH 000002",
+        costBookId: auto.id,
+      });
+    });
+
     it("saves details that a run which stopped half way left out", async () => {
       const { api } = await client();
       await importSeed(

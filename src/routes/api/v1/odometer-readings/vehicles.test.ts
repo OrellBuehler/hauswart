@@ -62,6 +62,7 @@ describe("vehicles API", () => {
         location: null,
         odometerUnit: "km",
         notes: null,
+        costBookId: null,
         odometer: null,
         updatedAt: null,
       });

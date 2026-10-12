@@ -13,6 +13,7 @@ import {
   type CostRecord,
 } from "$lib/server/costs/costs";
 import { costsCsv } from "$lib/server/costs/csv";
+import { moveCostsToBook } from "$lib/server/costs/move";
 import { costsSummary } from "$lib/server/costs/summary";
 import { invalidField } from "$lib/server/service";
 import type { Handler } from "../bind";
@@ -88,6 +89,11 @@ export const remove: Handler<typeof endpoints.costsDelete> = ({
   deleteCost(ctx, params.id);
   return null;
 };
+
+export const moveToBook: Handler<typeof endpoints.costsMoveToBook> = ({
+  ctx,
+  body,
+}) => moveCostsToBook(ctx, body);
 
 export const summary: Handler<typeof endpoints.costsSummary> = ({
   ctx,

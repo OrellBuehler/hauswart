@@ -119,7 +119,7 @@ src/lib/server/insurance/        insurance policies: policies.ts (CRUD, filters,
                                  reminder task); see "Insurance policies and asset notes"
 src/lib/server/asset-notes/      asset notes: notes.ts (CRUD, to a defect), resolve.ts (service log resolution), events.ts (undo
                                  reopens), counts.ts (openNoteCount)
-src/lib/server/costs/            cost entries: split.ts (frozen shares), costs.ts (CRUD, list), books.ts (cost books), summary.ts (year totals,
+src/lib/server/costs/            cost entries: split.ts (frozen shares), costs.ts (CRUD, list), move.ts (bulk move to a book), books.ts (cost books), summary.ts (year totals,
                                  settlement), ledger.ts (paid/share/payments per person, shared by summary and balances), balances.ts (running
                                  balances), settlements.ts (recorded payments), csv.ts, totals.ts (cost sums on defects and service log entries)
 src/lib/server/finance/          generic finance-provider seam: providers.ts (registry), suggestions.ts (the private inbox, accept,
@@ -241,7 +241,8 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   Existing entries are left alone unless `--update`. Changing the household needs the admin scope.
   An asset of kind `vehicle` may carry a `vehicle` block (the body of `PUT /assets/{id}/vehicle`):
   saved when the vehicle has no saved details yet, overwritten (and what the file leaves out cleared)
-  only with `--update`. Tire sets and fuel logs are not seeded: a set has no key to find it again by, and a fill books
+  only with `--update`; the block cannot carry `costBookId` (a file knows no book ids) and an update keeps the book a
+  person chose. Tire sets and fuel logs are not seeded: a set has no key to find it again by, and a fill books
   a cost entry (`costs:write`).
 
 ### Signals, integrations and delivery
@@ -392,6 +393,12 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   may be repeated); moving an entry into such a book resets it to `unknown` unless the request sets it; switching
   `taxRelevant` off keeps what entries say, and `byDeductible` of the summary counts tax relevant books only. `bookId`
   filters the list, `GET /costs/summary` (every number is then that book's) and the CSV.
+  **Moving entries**: `PATCH /costs/{id}` with `bookId` moves one; `POST /costs/move-to-book {bookId, ids | assetId}`
+  (scope `costs:write`, `costs/move.ts`) moves up to 500 named entries or every entry of a device, all or nothing in one
+  transaction (an unknown id is a 400 on `ids`, an unknown device on `assetId`, an unknown or archived target on
+  `bookId`), answers `{bookId, moved, unchanged, deductibleReset}` and changes the ledger only: split, payer and frozen
+  shares stay, a tax class the target book cannot have is reset. Entries a fuel log entry booked may move too (their lock
+  covers amount, currency, date and device only).
 - **Currency**: entries may be in any currency, but every total, the settlement and the dashboard
   count the household currency only; `otherCurrencyCount` says how many entries were left out (the CSV
   has them all).
@@ -663,7 +670,8 @@ of the owner>` is added to the document unless an identical note exists (writes 
   `ZH 000000`; `vehiclesWithPlateLike` in `vehicles/summary.ts`, in code and not in SQL, which could only strip the
   characters it was told about). `vehicle_details` (1:1, created by the first save) holds plate, VIN, Stammnummer
   (`registrationNumber`), `firstRegistration`, `fuelType`, tire sizes, `location`, `odometerUnit`
-  (`km|mi`) and notes. `GET|PUT /assets/{id}/vehicle`: PUT replaces (a field left out is cleared; the
+  (`km|mi`), notes and `costBookId` (the cost book its fuel fills go to, see "Fuel log"; `ON DELETE SET NULL`, migration
+  `0027`). `GET|PUT /assets/{id}/vehicle`: PUT replaces (a field left out is cleared; the
   unit relabels the readings, it does not convert them), 400 for an asset of another kind, 404 for a
   missing one; GET answers empty details for a vehicle never saved and 404 for another kind. The asset
   DTO carries `vehicle: {plate, odometer: {value, date, unit} | null}` for vehicles only. The plate is
@@ -750,10 +758,15 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   `missedPrevious`, `station`, `notes`. **Creating** is one transaction: the fill, an odometer reading (source
   `fuel_log`, same monotonic rule, 400 on `odometer`) and, unless the amount is 0 (a free charge), a cost entry of the new
   category `fuel` for the vehicle (title "Tanken <station>" or "Laden ..." in the base language, payee = station, paid by
-  `paidByUserId`, default the caller, `splitMode` default ownership). **PATCH** moves the reading with date and
+  `paidByUserId`, default the caller). **The book**: `bookId` of the request (an open book, else 400 on `bookId`, also for a
+  free fill), else the vehicle's own `costBookId` while that book is open, else the default book; `splitMode` is the one
+  asked for, else the split of the book the entry lands in (it used to be `ownership` always). The DTO carries `bookId`
+  and `bookName` of the cost entry (null for a free fill). **PATCH** moves the reading with date and
   odometer and keeps the cost entry in step for amount, currency, date, station (title and payee, the unit decides the
-  title too), payer and split (made free it loses the entry; costing again gets a new one; an entry somebody deleted is
-  not brought back by other changes). **The fill owns what it booked**: on the cost entry (`PATCH|DELETE /costs/{id}`) a
+  title too), payer, split and book (`bookId` moves the entry as `PATCH /costs/{id}` does, resetting a tax class the new
+  book cannot have; the book it is in already is always accepted; on a free fill it changes nothing, and a fill that starts
+  costing in the same request is booked into it; made free it loses the entry; costing again gets a new one in the vehicle's
+  or default book; an entry somebody deleted is not brought back by other changes). **The fill owns what it booked**: on the cost entry (`PATCH|DELETE /costs/{id}`) a
   change of amount, currency, date or device (`assetId`, which would break the link to the fuel log and the vehicle's
   statistics) and a delete are a 409 `conflict` (message names the fuel log, `details.fuelLogId`;
   repeating the current values is fine, so is every other field: category, title, notes, payee, payer, split, deductible,
@@ -1160,7 +1173,7 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
   work when unambiguous); a device given by name is told apart from "no such vehicle".
   Every tool that takes an asset (`ctx.resolveAsset`) accepts a vehicle's plate as well (`lib/vehicles/plate.ts`).
   Fuel, tires and numbers: `list_fuel_logs` and `add_fuel_log` (`tools/fuel.ts`; **`costs:write`**, because a fill books a
-  cost entry, so it is offered with the cost tools, not with `write`), `get_vehicle_stats` (`tools/vehicle-stats.ts`),
+  cost entry, so it is offered with the cost tools, not with `write`; it takes `book` like `create_cost`), `get_vehicle_stats` (`tools/vehicle-stats.ts`),
   `list_tire_sets`, `add_tire_set`, `mount_tire_set` and `record_tire_tread` (`tools/tires.ts`). A tire set is given by
   its id or by words from its season, brand, model, size or DOT (`winter`; `findTireSets` searches the vehicle's own
   sets only, so another vehicle's set is never found; an id also finds a retired set, words only active ones; several

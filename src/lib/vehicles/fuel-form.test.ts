@@ -29,6 +29,8 @@ const log: FuelLog = {
   station: "Beispiel-Tankstelle",
   notes: null,
   costEntryId: "c1",
+  bookId: null,
+  bookName: null,
   paidByUserId: "u1",
   pricePerUnitMinor: 184.2,
   distance: 520,

@@ -17,6 +17,7 @@ const vehicle: Vehicle = {
   location: null,
   odometerUnit: "km",
   notes: null,
+  costBookId: null,
   odometer: { value: 44300, date: "2026-10-04", unit: "km" },
   updatedAt: null,
 };
@@ -36,6 +37,8 @@ const log = (over: Partial<FuelLog>): FuelLog => ({
   station: "Beispiel-Tankstelle",
   notes: null,
   costEntryId: "c1",
+  bookId: null,
+  bookName: null,
   paidByUserId: null,
   pricePerUnitMinor: 194.1,
   distance: 540,

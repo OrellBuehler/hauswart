@@ -75,6 +75,16 @@ export function findCostBookRow(ctx: Db, id: string): CostBookRow | undefined {
   return ctx.db.select().from(costBooks).where(eq(costBooks.id, id)).get();
 }
 
+/** The id of a book that exists and is not archived, else undefined: what a stored preference may still point at. */
+export function openCostBookId(
+  ctx: Db,
+  id: string | null | undefined,
+): string | undefined {
+  if (!id) return undefined;
+  const book = findCostBookRow(ctx, id);
+  return book && book.archivedAt === null ? book.id : undefined;
+}
+
 /** A book a request points at; a missing one is a 400 on the field that named it. */
 export function requireCostBook(
   ctx: Db,

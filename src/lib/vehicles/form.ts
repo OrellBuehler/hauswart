@@ -21,6 +21,8 @@ export type VehicleDraft = {
   location: string;
   odometerUnit: OdometerUnit;
   notes: string;
+  /** The cost book the fuel fills go to; empty for the default book. Kept as it is until the form gets a picker. */
+  costBookId: string;
 };
 
 export function emptyVehicleDraft(): VehicleDraft {
@@ -35,6 +37,7 @@ export function emptyVehicleDraft(): VehicleDraft {
     location: "",
     odometerUnit: "km",
     notes: "",
+    costBookId: "",
   };
 }
 
@@ -54,6 +57,7 @@ export function draftFromVehicle(
     location: vehicle.location ?? "",
     odometerUnit: vehicle.odometerUnit,
     notes: vehicle.notes ?? "",
+    costBookId: vehicle.costBookId ?? "",
   };
 }
 
@@ -82,6 +86,7 @@ export function buildVehicleBody(draft: VehicleDraft): BuiltVehicle {
     location: draft.location,
     odometerUnit: draft.odometerUnit,
     notes: draft.notes,
+    costBookId: draft.costBookId || null,
   };
   const result = putVehicleRequestSchema.safeParse(candidate);
   if (!result.success) {
