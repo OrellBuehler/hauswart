@@ -6,7 +6,12 @@
   import { Checkbox } from "$lib/components/ui/checkbox/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
-  import { equalShares, parseShares, sharePreview } from "$lib/costs/form";
+  import {
+    equalPreview,
+    equalShares,
+    parseShares,
+    sharePreview,
+  } from "$lib/costs/form";
   import { splitModeHints, splitModeLabels } from "$lib/costs/labels";
   import { formatPercent } from "$lib/format";
   import { formatMoney } from "$lib/format-money";
@@ -77,11 +82,8 @@
   );
 
   const equalParts = $derived(
-    amountMinor !== undefined && participants.length > 0
-      ? sharePreview(
-          amountMinor,
-          participants.map((userId) => ({ userId, shareBps: 1 })),
-        )
+    amountMinor !== undefined
+      ? equalPreview(amountMinor, participants)
       : new Map<string, number>(),
   );
 

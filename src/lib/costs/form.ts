@@ -311,6 +311,28 @@ export function sharePreview(
   return new Map(sorted.map((s, i) => [s.userId, parts[i] as number]));
 }
 
+/**
+ * Each ticked person's part of an equal split, the way the server books it: the 10000 basis points are divided first
+ * (largest remainder, the people in id order, so the first by id takes a leftover basis point), then the amount by those
+ * shares. Dividing the amount by head count directly would show 100.00 three times for 300.00 where the entry gets
+ * 100.02, 99.99 and 99.99.
+ */
+export function equalPreview(
+  amountMinor: number,
+  participantIds: readonly string[],
+): Map<string, number> {
+  const ids = [...participantIds].sort((a, b) => a.localeCompare(b));
+  if (ids.length === 0) return new Map();
+  const bps = allocate(
+    minor(SHARE_BPS_TOTAL),
+    ids.map(() => 1),
+  );
+  return sharePreview(
+    amountMinor,
+    ids.map((userId, i) => ({ userId, shareBps: bps[i] as number })),
+  );
+}
+
 type Checked = {
   errors: Record<string, string>;
   amountMinor: number | undefined;

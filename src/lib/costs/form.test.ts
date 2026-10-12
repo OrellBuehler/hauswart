@@ -11,6 +11,7 @@ import {
   newDraft,
   parseDraftAmount,
   parseShares,
+  equalPreview,
   sharePreview,
   splitAfterBook,
   taxClassApplies,
@@ -18,6 +19,7 @@ import {
   withBook,
   type CostDraft,
 } from "./form";
+import { amountsFor, sharesFor } from "$lib/server/costs/split";
 
 const USERS = ["u1", "u2", "u3"];
 
@@ -204,6 +206,36 @@ describe("shares", () => {
       ...sharePreview(-1000, [{ userId: "a", shareBps: 10000 }]).values(),
     ]).toEqual([-1000]);
     expect(sharePreview(100, []).size).toBe(0);
+  });
+
+  it("previews an equal split in basis points first, so 300.00 among three is 100.02, 99.99 and 99.99", () => {
+    expect([...equalPreview(30000, ["u1", "u2", "u3"])]).toEqual([
+      ["u1", 10002],
+      ["u2", 9999],
+      ["u3", 9999],
+    ]);
+    expect([...equalPreview(30000, ["u3", "u1", "u2"]).keys()]).toEqual([
+      "u1",
+      "u2",
+      "u3",
+    ]);
+    expect(equalPreview(100, []).size).toBe(0);
+  });
+
+  it("previews an equal split to the minor unit as the server books it", () => {
+    for (const count of [1, 2, 3, 4, 5, 6, 7, 9, 13, 20]) {
+      const ids = Array.from(
+        { length: count },
+        (_, i) => `u${String(i + 1).padStart(2, "0")}`,
+      );
+      const people = ids.map((id) => ({ id, ownershipBps: 0 }));
+      for (const amount of [1, 7, 100, 1001, 12345, 30000, -1001, -30000]) {
+        const booked = amountsFor(amount, sharesFor("equal", people));
+        expect([...equalPreview(amount, ids)], `${count} x ${amount}`).toEqual(
+          booked.map((part) => [part.userId, part.amountMinor]),
+        );
+      }
+    }
   });
 });
 
