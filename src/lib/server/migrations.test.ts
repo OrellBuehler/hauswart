@@ -18,7 +18,7 @@ import { MIGRATIONS_WITH_FOREIGN_KEYS } from "./migrator";
 const FOLDER = join(process.cwd(), "drizzle");
 
 interface Journal {
-  entries: { idx: number; tag: string }[];
+  entries: { idx: number; tag: string; when: number }[];
 }
 const journal = (): Journal =>
   JSON.parse(readFileSync(join(FOLDER, "meta", "_journal.json"), "utf8"));
@@ -47,6 +47,19 @@ describe("migrations", () => {
     expect(snapshots).toEqual(
       entries.map((e) => String(e.idx).padStart(4, "0")).sort(),
     );
+  });
+
+  it("are dated in the order they are numbered, strictly", () => {
+    // The migrator applies whatever is newer than the newest applied migration's date, so a date that does not rise
+    // would be skipped on every database that has the migration before it.
+    const { entries } = journal();
+    for (const [i, entry] of entries.entries()) {
+      if (i === 0) continue;
+      expect(
+        entry.when,
+        `${entry.tag} must be dated after ${entries[i - 1]!.tag}`,
+      ).toBeGreaterThan(entries[i - 1]!.when);
+    }
   });
 
   /** A folder of migrations of our own, `files` being tag -> SQL, in the order given. */
