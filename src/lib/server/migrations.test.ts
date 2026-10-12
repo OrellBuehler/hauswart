@@ -47,6 +47,37 @@ describe("migrations", () => {
     );
   });
 
+  /** A folder of migrations of our own, `files` being tag -> SQL, in the order given. */
+  function folderOf(files: Record<string, string>): string {
+    const dir = mkdtempSync(join(tmpdir(), "hauswart-synthetic-"));
+    cleanup.push(() => rmSync(dir, { recursive: true, force: true }));
+    mkdirSync(join(dir, "meta"));
+    const entries = Object.keys(files).map((tag, idx) => ({
+      idx,
+      version: "6",
+      when: 1_700_000_000_000 + idx * 1000,
+      tag,
+      breakpoints: true,
+    }));
+    for (const [tag, text] of Object.entries(files)) {
+      writeFileSync(join(dir, `${tag}.sql`), text);
+    }
+    writeFileSync(
+      join(dir, "meta", "_journal.json"),
+      JSON.stringify({ version: "7", dialect: "sqlite", entries }),
+    );
+    return dir;
+  }
+
+  /** A fresh database, opened as the app opens it (foreign keys on). */
+  function emptyDatabase(): DB {
+    const dir = mkdtempSync(join(tmpdir(), "hauswart-migrations-"));
+    cleanup.push(() => rmSync(dir, { recursive: true, force: true }));
+    const db = openDatabase(join(dir, "empty.db"));
+    cleanup.push(() => db.$client.close());
+    return db;
+  }
+
   /** A database as an earlier version left it: only the migrations up to `lastTag` applied. */
   function databaseAt(lastTag: string): DB {
     const { entries } = journal();
@@ -481,6 +512,143 @@ describe("migrations", () => {
         archived_at: null,
       },
     ]);
+  });
+
+  /**
+   * What drizzle-kit writes to change a column of a table: a copy, a drop, a rename. Its PRAGMA lines do nothing inside
+   * the migrator's transaction, so the migrator itself has to keep foreign keys off while a migration runs.
+   */
+  const REBUILD_PARENT = `PRAGMA foreign_keys=OFF;--> statement-breakpoint
+CREATE TABLE \`__new_parent\` (\`id\` text PRIMARY KEY NOT NULL, \`name\` text NOT NULL, \`extra\` text DEFAULT 'x' NOT NULL);--> statement-breakpoint
+INSERT INTO \`__new_parent\`(\`id\`, \`name\`) SELECT \`id\`, \`name\` FROM \`parent\`;--> statement-breakpoint
+DROP TABLE \`parent\`;--> statement-breakpoint
+ALTER TABLE \`__new_parent\` RENAME TO \`parent\`;--> statement-breakpoint
+PRAGMA foreign_keys=ON;`;
+
+  const PARENT_AND_CHILDREN = `CREATE TABLE \`parent\` (\`id\` text PRIMARY KEY NOT NULL, \`name\` text NOT NULL);--> statement-breakpoint
+CREATE TABLE \`owned\` (\`id\` text PRIMARY KEY NOT NULL, \`parent_id\` text NOT NULL, FOREIGN KEY (\`parent_id\`) REFERENCES \`parent\`(\`id\`) ON UPDATE no action ON DELETE cascade);--> statement-breakpoint
+CREATE TABLE \`linked\` (\`id\` text PRIMARY KEY NOT NULL, \`parent_id\` text, FOREIGN KEY (\`parent_id\`) REFERENCES \`parent\`(\`id\`) ON UPDATE no action ON DELETE set null);`;
+
+  const foreignKeys = (db: DB) =>
+    rows(db, "pragma foreign_keys")[0].foreign_keys;
+
+  it("keep the rows that reference a table a migration rebuilds, and switch foreign keys on again", () => {
+    const db = emptyDatabase();
+    const files: Record<string, string> = { "0000_start": PARENT_AND_CHILDREN };
+    migrateDatabase(db, folderOf(files));
+    db.$client.exec(`
+      insert into parent (id, name) values ('p1', 'eins'), ('p2', 'zwei');
+      insert into owned (id, parent_id) values ('o1', 'p1'), ('o2', 'p1'), ('o3', 'p2');
+      insert into linked (id, parent_id) values ('l1', 'p1'), ('l2', null);
+    `);
+
+    files["0001_rebuild"] = REBUILD_PARENT;
+    migrateDatabase(db, folderOf(files));
+
+    expect(rows(db, "select id, name, extra from parent order by id")).toEqual([
+      { id: "p1", name: "eins", extra: "x" },
+      { id: "p2", name: "zwei", extra: "x" },
+    ]);
+    expect(rows(db, "select id, parent_id from owned order by id")).toEqual([
+      { id: "o1", parent_id: "p1" },
+      { id: "o2", parent_id: "p1" },
+      { id: "o3", parent_id: "p2" },
+    ]);
+    expect(rows(db, "select id, parent_id from linked order by id")).toEqual([
+      { id: "l1", parent_id: "p1" },
+      { id: "l2", parent_id: null },
+    ]);
+    expect(foreignKeys(db)).toBe(1);
+
+    // The rebuilt table is the parent again: the foreign keys act as before.
+    db.$client.exec("delete from parent where id = 'p2'");
+    expect(rows(db, "select id from owned order by id")).toEqual([
+      { id: "o1" },
+      { id: "o2" },
+    ]);
+    expect(() =>
+      db.$client.exec(
+        "insert into owned (id, parent_id) values ('o9', 'nobody')",
+      ),
+    ).toThrow(/FOREIGN KEY/);
+  });
+
+  it("refuse a migration that leaves a row pointing at nothing, and leave the database as it was", () => {
+    const db = emptyDatabase();
+    const files: Record<string, string> = { "0000_start": PARENT_AND_CHILDREN };
+    migrateDatabase(db, folderOf(files));
+    db.$client.exec(`
+      insert into parent (id, name) values ('p1', 'eins');
+      insert into owned (id, parent_id) values ('o1', 'p1');
+    `);
+
+    // With foreign keys off, deleting a parent removes nothing from its children: a migration has to do that itself.
+    files["0001_forgot_the_children"] =
+      "ALTER TABLE `parent` ADD `later` text;--> statement-breakpoint\nDELETE FROM `parent`;";
+    const folder = folderOf(files);
+    expect(() => migrateDatabase(db, folder)).toThrow(/owned.*parent/s);
+
+    // Nothing of it stays: not the column, not the row, not the entry in the list of applied migrations.
+    expect(rows(db, "select name from pragma_table_info('parent')")).toEqual([
+      { name: "id" },
+      { name: "name" },
+    ]);
+    expect(rows(db, "select id from parent")).toEqual([{ id: "p1" }]);
+    expect(
+      rows(db, "select count(*) as n from __drizzle_migrations")[0].n,
+    ).toBe(1);
+    expect(foreignKeys(db)).toBe(1);
+    // It is refused again at the next start, not forgotten.
+    expect(() => migrateDatabase(db, folder)).toThrow();
+  });
+
+  it("apply what is pending together or not at all", () => {
+    const db = emptyDatabase();
+    const files: Record<string, string> = { "0000_start": PARENT_AND_CHILDREN };
+    migrateDatabase(db, folderOf(files));
+
+    files["0001_fine"] = "ALTER TABLE `parent` ADD `a` text;";
+    files["0002_dangling"] =
+      "INSERT INTO `owned` (`id`, `parent_id`) VALUES ('o1', 'nobody');";
+    expect(() => migrateDatabase(db, folderOf(files))).toThrow();
+
+    expect(rows(db, "select name from pragma_table_info('parent')")).toEqual([
+      { name: "id" },
+      { name: "name" },
+    ]);
+    expect(
+      rows(db, "select count(*) as n from __drizzle_migrations")[0].n,
+    ).toBe(1);
+
+    // Without the dangling row both go in.
+    files["0002_dangling"] = "ALTER TABLE `parent` ADD `b` text;";
+    migrateDatabase(db, folderOf(files));
+    expect(
+      rows(db, "select count(*) as n from __drizzle_migrations")[0].n,
+    ).toBe(3);
+    expect(foreignKeys(db)).toBe(1);
+  });
+
+  it("switch foreign keys on again when a migration fails for another reason", () => {
+    const db = emptyDatabase();
+    const files = {
+      "0000_broken":
+        "CREATE TABLE `a` (`id` text);--> statement-breakpoint\nSELECT * FROM `missing`;",
+    };
+    expect(() => migrateDatabase(db, folderOf(files))).toThrow(/missing/);
+    expect(foreignKeys(db)).toBe(1);
+    expect(rows(db, "select name from sqlite_master where name = 'a'")).toEqual(
+      [],
+    );
+  });
+
+  it("refuse to run inside a transaction, where the foreign keys pragma would silently do nothing", () => {
+    const db = emptyDatabase();
+    db.$client.exec("BEGIN");
+    expect(() =>
+      migrateDatabase(db, folderOf({ "0000_start": PARENT_AND_CHILDREN })),
+    ).toThrow(/transaction/);
+    db.$client.exec("ROLLBACK");
   });
 
   it("run again on a database that is up to date without changing it", () => {

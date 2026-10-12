@@ -168,6 +168,7 @@ src/lib/server/integrations/     optional adapters (homeassistant/, paperless/, 
                                  wired by `registerPaperless()`; kept/ has client, mappers, fake-server plus config, adapter
                                  (settings, pickers), sync and scheduler, wired by `registerKept()` (see "Costs and finance providers")
 src/lib/server/db.ts             SQLite connection (WAL, foreign keys); migrations run on startup
+src/lib/server/migrator.ts       the migration runner: foreign keys off while migrations run, `foreign_key_check` before commit
 src/lib/server/schema.ts         Drizzle schema — one file, every table has created_at/updated_at
 src/lib/server/crypto.ts         AES-256-GCM for stored secrets (HAUSWART_SECRET_KEY)
 src/lib/money.ts                 minor-unit money type, parsing/formatting, ownership shares
@@ -372,10 +373,11 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   ledgers entries are booked into. `name` (60, unique without regard to case), `slug`, `icon` (a key the client maps),
   `defaultSplitMode` (`ownership|equal|none`), `taxRelevant`, `archivedAt`, `sortOrder`. The migration creates Wohnung
   (tax relevant, `ownership`), Haushalt and Auto (`equal`) and puts every earlier entry into Wohnung. SQLite cannot
-  add a NOT NULL reference to a table with rows, so it rebuilds `cost_entries`; the migrator runs with foreign keys on,
-  so `DROP TABLE` would cascade-delete `cost_entry_shares` and null the fuel log links: both are set aside and restored,
-  and the delete triggers are created again (`migrations.test.ts` pins this; any later rebuild of a parent table needs
-  the same care). `cost_entries.book_id` is NOT NULL, `ON DELETE RESTRICT`. **The default book** (`defaultCostBook`,
+  add a NOT NULL reference to a table with rows, so it rebuilds `cost_entries`; it was written for a migrator with foreign
+  keys on, where `DROP TABLE` cascade-deleted `cost_entry_shares` and nulled the fuel log links, so both are set aside and
+  restored and the delete triggers are created again. It is the one migration that still runs with foreign keys on
+  (`MIGRATIONS_WITH_FOREIGN_KEYS` in `migrator.ts`); every other one runs with them off (see "Migrations" below), and
+  `migrations.test.ts` pins both. `cost_entries.book_id` is NOT NULL, `ON DELETE RESTRICT`. **The default book** (`defaultCostBook`,
   `isDefault` in the DTO) is the first book that is not archived by sort order, where an entry without `bookId` goes
   (so does an accepted finance suggestion and a fuel log's cost entry). The last book that is not archived can be
   neither archived nor deleted (409), so there always is one. A book with entries or payments cannot be deleted (409,
@@ -1304,7 +1306,11 @@ newPassword}`, 204; `auth/change-password.ts`, form in `settings/account`): the 
 - **Every UI string goes through Paraglide**; add the key to `messages/de.json` and
   `messages/en.json` together (a test enforces identical key sets). German is the base locale.
 - **Migrations**: edit `schema.ts`, run `bun run db:generate`, commit the generated file. Never
-  edit an existing migration, never use `drizzle-kit push`.
+  edit an existing migration, never use `drizzle-kit push`. The migrator (`migrator.ts`) runs migrations with foreign
+  keys **off**, set before the transaction because the `PRAGMA foreign_keys=OFF` lines drizzle-kit writes around a table
+  rebuild do nothing inside it, so a rebuilt parent table keeps its children (no stash and restore needed), and it runs
+  `PRAGMA foreign_key_check` before committing: a migration that leaves a dangling reference rolls back and the app
+  refuses to start (`MigrationIntegrityError`).
 
 ## Svelte 5 and UI
 
