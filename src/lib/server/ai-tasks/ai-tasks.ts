@@ -652,8 +652,10 @@ export function deleteAiTask(
   }
   ctx.db.transaction((tx) => {
     tx.delete(aiTasks).where(eq(aiTasks.id, id)).run();
-    removeOwnedAttachments({ ...ctx, db: tx as unknown as DB }, "ai_task", id);
   });
+  // After the transaction, with the plain context, as `deleteCost` does: the sweep of the stored file runs in the
+  // background and must not hold on to a transaction that is over.
+  removeOwnedAttachments(ctx, "ai_task", id);
 }
 
 export { claimIsActive } from "./booking";

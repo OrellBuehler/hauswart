@@ -11,6 +11,7 @@ import { createAsset } from "$lib/server/assets/assets";
 import {
   createAttachment,
   listAttachments,
+  onAttachmentsChanged,
   settleBackgroundWork,
 } from "$lib/server/attachments/attachments";
 import { createCostBook, updateCostBook } from "$lib/server/costs/books";
@@ -863,6 +864,39 @@ describe("receipt queue", () => {
       expect(test.db.select().from(aiTasks).all()).toEqual([]);
       expect(test.db.select().from(attachments).all()).toEqual([]);
       expect(await Bun.file(stored).exists()).toBe(false);
+    });
+
+    it("announces the removal of the file after the task is gone, outside the transaction, as deleting a cost entry does", async () => {
+      const { anna, upload } = await world();
+      const task = await upload();
+      const seen: { inTransaction: boolean; taskRows: number }[] = [];
+      const stop = onAttachmentsChanged(() =>
+        seen.push({
+          inTransaction: test.db.$client.inTransaction,
+          taskRows: test.db.select().from(aiTasks).all().length,
+        }),
+      );
+      try {
+        deleteAiTask(ctx(), anna, task.id);
+      } finally {
+        stop();
+      }
+      await settleBackgroundWork();
+      expect(seen).toEqual([{ inTransaction: false, taskRows: 0 }]);
+    });
+
+    it("leaves the file with its task when the task cannot be removed", async () => {
+      const { ben, upload } = await world();
+      const task = await upload();
+      const seen: string[][] = [];
+      const stop = onAttachmentsChanged((ids) => seen.push(ids));
+      try {
+        await failure(() => deleteAiTask(ctx(), ben, task.id));
+      } finally {
+        stop();
+      }
+      expect(seen).toEqual([]);
+      expect(test.db.select().from(attachments).all()).toHaveLength(1);
     });
 
     it("lets an administrator remove another person's task", async () => {
