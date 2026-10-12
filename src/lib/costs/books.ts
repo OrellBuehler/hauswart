@@ -42,16 +42,20 @@ export function bookParam(bookId: string): string {
 }
 
 export type BookChoice = {
-  /** `""` = every book. */
+  /** `""` = every book; otherwise the id of a book that exists. */
   bookId: string;
   /** The book comes from what the person looked at last, not from the address. */
   fromMemory: boolean;
+  /** What the person looked at last is a book that no longer exists: the page forgets it. */
+  staleMemory: boolean;
 };
 
 /**
  * Which book a page shows. The address wins (an id that no book has means every book); without one, the book the
  * person looked at last applies - unless the address narrows the list some other way (a device, a room, a search ...),
- * where a stray book would hide what the link was made to show.
+ * where a stray book would hide what the link was made to show. The result is `""` or the id of a book in `books`, never
+ * an id the server would answer with a 404; a remembered book that was deleted is shown as every book and marked
+ * `staleMemory`, so the caller can forget it.
  */
 export function chooseBook(input: {
   param: string | null;
@@ -61,16 +65,21 @@ export function chooseBook(input: {
 }): BookChoice {
   const known = (id: string | null): id is string =>
     id !== null && id !== "" && input.books.some((book) => book.id === id);
+  const staleMemory =
+    input.remembered !== null &&
+    input.remembered !== "" &&
+    !known(input.remembered);
   if (input.param !== null) {
     return {
       bookId: known(input.param) ? input.param : "",
       fromMemory: false,
+      staleMemory,
     };
   }
   if (!input.narrowed && known(input.remembered)) {
-    return { bookId: input.remembered, fromMemory: true };
+    return { bookId: input.remembered, fromMemory: true, staleMemory: false };
   }
-  return { bookId: "", fromMemory: false };
+  return { bookId: "", fromMemory: false, staleMemory };
 }
 
 /** Books that take new entries. */

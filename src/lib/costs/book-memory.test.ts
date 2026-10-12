@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { dismissHistoryHint, historyHintDismissed } from "./balance-hint";
-import { loadRememberedBook, rememberBook } from "./book-memory";
+import { forgetBook, loadRememberedBook, rememberBook } from "./book-memory";
 
 function storage(initial: Record<string, string> = {}) {
   const items = new Map(Object.entries(initial));
@@ -8,6 +8,7 @@ function storage(initial: Record<string, string> = {}) {
     items,
     getItem: (key: string) => items.get(key) ?? null,
     setItem: (key: string, value: string) => void items.set(key, value),
+    removeItem: (key: string) => void items.delete(key),
   };
 }
 
@@ -16,6 +17,9 @@ const refusing = {
     throw new Error("storage refused");
   },
   setItem: () => {
+    throw new Error("storage refused");
+  },
+  removeItem: () => {
     throw new Error("storage refused");
   },
 };
@@ -47,7 +51,17 @@ describe("the remembered book", () => {
     vi.stubGlobal("localStorage", refusing);
     expect(loadRememberedBook("u1")).toBeNull();
     expect(() => rememberBook("u1", "b2")).not.toThrow();
-    expect(warn).toHaveBeenCalledTimes(2);
+    expect(() => forgetBook("u1")).not.toThrow();
+    expect(warn).toHaveBeenCalledTimes(3);
+  });
+
+  it("forgets a book on request, for that person only", () => {
+    vi.stubGlobal("localStorage", storage());
+    rememberBook("u1", "b2");
+    rememberBook("u2", "b3");
+    forgetBook("u1");
+    expect(loadRememberedBook("u1")).toBeNull();
+    expect(loadRememberedBook("u2")).toBe("b3");
   });
 });
 

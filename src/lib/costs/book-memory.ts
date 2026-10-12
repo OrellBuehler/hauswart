@@ -24,3 +24,12 @@ export function rememberBook(userId: string, bookId: string): void {
     console.warn("remembered cost book not stored", err);
   }
 }
+
+/** Drops what the person looked at last, because that book no longer exists. */
+export function forgetBook(userId: string): void {
+  try {
+    localStorage.removeItem(keyFor(userId));
+  } catch (err) {
+    console.warn("remembered cost book not cleared", err);
+  }
+}

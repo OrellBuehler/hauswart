@@ -4,7 +4,7 @@ import { createApiClient } from "$lib/api/client";
 import { fetchAll } from "$lib/api/fetch-all";
 import { orFail } from "$lib/api/load";
 import { endpoints } from "$lib/api/registry";
-import { loadRememberedBook } from "$lib/costs/book-memory";
+import { forgetBook, loadRememberedBook } from "$lib/costs/book-memory";
 import { chooseBook, parseBookParam } from "$lib/costs/books";
 import {
   costFilterQuery,
@@ -39,6 +39,7 @@ export const load: PageLoad = async ({ fetch, url, parent }) => {
     books,
     narrowed: narrowsBeyondBook(url.searchParams),
   });
+  if (browser && choice.staleMemory) forgetBook(user.id);
   const filters = {
     ...parseCostFilters(url.searchParams, defaultYear),
     bookId: choice.bookId,

@@ -76,33 +76,85 @@ describe("chooseBook", () => {
   ) => chooseBook({ param, remembered, books, narrowed });
 
   it("takes the address first", () => {
-    expect(choose("b2", "b1")).toEqual({ bookId: "b2", fromMemory: false });
-    expect(choose("", "b1")).toEqual({ bookId: "", fromMemory: false });
+    expect(choose("b2", "b1")).toEqual({
+      bookId: "b2",
+      fromMemory: false,
+      staleMemory: false,
+    });
+    expect(choose("", "b1")).toEqual({
+      bookId: "",
+      fromMemory: false,
+      staleMemory: false,
+    });
   });
 
   it("shows every book for an address that names a book nobody has", () => {
-    expect(choose("gone", "b1")).toEqual({ bookId: "", fromMemory: false });
+    expect(choose("gone", "b1")).toEqual({
+      bookId: "",
+      fromMemory: false,
+      staleMemory: false,
+    });
   });
 
   it("falls back to the book looked at last", () => {
-    expect(choose(null, "b2")).toEqual({ bookId: "b2", fromMemory: true });
-    expect(choose(null, "b3")).toEqual({ bookId: "b3", fromMemory: true });
+    expect(choose(null, "b2")).toEqual({
+      bookId: "b2",
+      fromMemory: true,
+      staleMemory: false,
+    });
+    expect(choose(null, "b3")).toEqual({
+      bookId: "b3",
+      fromMemory: true,
+      staleMemory: false,
+    });
   });
 
-  it("ignores a memory that is empty, means every book or names a deleted book", () => {
-    expect(choose(null, null)).toEqual({ bookId: "", fromMemory: false });
-    expect(choose(null, "")).toEqual({ bookId: "", fromMemory: false });
-    expect(choose(null, "deleted")).toEqual({ bookId: "", fromMemory: false });
+  it("ignores a memory that is empty or means every book", () => {
+    for (const remembered of [null, ""]) {
+      expect(choose(null, remembered)).toEqual({
+        bookId: "",
+        fromMemory: false,
+        staleMemory: false,
+      });
+    }
+  });
+
+  it("shows every book for a memory that names a deleted book, and says the memory is dead", () => {
+    expect(choose(null, "deleted")).toEqual({
+      bookId: "",
+      fromMemory: false,
+      staleMemory: true,
+    });
+    expect(choose(null, "deleted", true).staleMemory).toBe(true);
+    expect(choose("b2", "deleted")).toEqual({
+      bookId: "b2",
+      fromMemory: false,
+      staleMemory: true,
+    });
+  });
+
+  it("never hands on an id that no book has", () => {
+    const known = new Set(["", ...books.map((b) => b.id)]);
+    for (const param of [null, "", "b1", "b3", "gone", "ALL", " "]) {
+      for (const remembered of [null, "", "b2", "b4", "gone", "all"]) {
+        for (const narrowed of [false, true]) {
+          const { bookId } = choose(param, remembered, narrowed);
+          expect(known.has(bookId), `${param} ${remembered}`).toBe(true);
+        }
+      }
+    }
   });
 
   it("does not hide a narrowed list behind the remembered book", () => {
     expect(choose(null, "b2", true)).toEqual({
       bookId: "",
       fromMemory: false,
+      staleMemory: false,
     });
     expect(choose("b1", "b2", true)).toEqual({
       bookId: "b1",
       fromMemory: false,
+      staleMemory: false,
     });
   });
 });
