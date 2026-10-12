@@ -8,7 +8,7 @@ optional adapters, never requirements. Status: early development — authenticat
 the task core (rooms, assets, tasks, completions, notifications, dashboard), documentation (pages,
 attachments, search, file backup), contacts, spare parts, the service log, care hints, defects (with
 a PDF export), the warranty overview, generic comments, iCal feeds, the emergency page data and guest
-links, costs (cost books, the split between the people, running balances with recorded payments and a CSV export), the per-person finance
+links, costs (cost books, the split between the people, running balances with recorded payments, tags, budgets, recurring costs that book themselves, and a CSV export), the per-person finance
 connection (Kept), insurance policies (with a cancellation reminder), appointments (see "Appointments"), asset notes and vehicles (details, odometer
 readings, tire sets, a fuel log with consumption, statistics, task templates; see "Vehicles"), and a receipt queue that an MCP client works through (see "Receipt queue", with a page and a quick entry for phones in the web app) exist; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
 push notifications with a "done" button, areas taken over as rooms, items pushed into its calendars; see "Signals, integrations and delivery" and "Calendar sync"); Paperless-ngx is wired as
@@ -122,12 +122,14 @@ src/lib/server/asset-notes/      asset notes: notes.ts (CRUD, to a defect), reso
                                  reopens), counts.ts (openNoteCount)
 src/lib/server/costs/            cost entries: split.ts (frozen shares), costs.ts (CRUD, list), move.ts (bulk move to a book), books.ts (cost books), summary.ts (year totals,
                                  settlement), ledger.ts (paid/share/payments per person, shared by summary and balances), balances.ts (running
-                                 balances), settlements.ts (recorded payments), csv.ts, totals.ts (cost sums on defects and service log entries)
+                                 balances), settlements.ts (recorded payments), csv.ts, totals.ts (cost sums on defects and service log entries),
+                                 tags.ts, budgets.ts, recurrences.ts + recurrence-scheduler.ts (recurring costs; see "Tags, budgets and recurring costs")
 src/lib/server/ai-tasks/         the receipt queue: ai-tasks.ts (upload, list, count, complete, dismiss, claim, delete), booking.ts (booking for a task and the lease: a leaf
                                  module the cost service imports), preview.ts (the task's file sized for an assistant);
                                  see "Receipt queue"
 src/lib/server/finance/          generic finance-provider seam: providers.ts (registry), suggestions.ts (the private inbox, accept,
-                                 dismiss), bill-tasks.ts (tasks that follow bills)
+                                 dismiss), bill-tasks.ts (tasks that follow bills), store.ts + links.ts (leaf modules: suggestion rows, ties between
+                                 entries and transactions; the cost service imports them), events.ts (see "Matching with entries made by hand")
 src/lib/server/hints/            per-asset care hints (tip/rule/warning), pinned, ordered, optional signal reaction (stored only)
 src/lib/server/defects/          defects (Mängel): status machine, events, handover deadline, reminder task, timeline, PDF export
 src/lib/server/warranties/       warranty overview + status (valid / expiring ≤ 90 days / expired); feeds the dashboard
@@ -178,7 +180,8 @@ src/lib/server/migration-copy.ts the `VACUUM INTO` copy written next to a databa
 src/lib/server/schema.ts         Drizzle schema — one file, every table has created_at/updated_at
 src/lib/server/crypto.ts         AES-256-GCM for stored secrets (HAUSWART_SECRET_KEY)
 src/lib/money.ts                 minor-unit money type, parsing/formatting, ownership shares
-src/lib/costs/                   client-safe UI logic of the costs pages: books.ts (book choice, icons), book-memory.ts, filters.ts, form.ts (draft ->
+src/lib/costs/                   client-safe: recurrence.ts (the rule of a recurring cost, pure), budget.ts (budget periods and usage, pure), match.ts (the
+                                 matching rule of a transaction and an entry, pure); client-safe UI logic of the costs pages: books.ts (book choice, icons), book-memory.ts, filters.ts, form.ts (draft ->
                                  request bodies), balances.ts (wording), settlements.ts (drafts, bodies, filters), load.ts, quick.ts (category ranking,
                                  chips -> split, quick draft -> bodies), receipts.ts (queue page helpers); see "Costs in the web app" and "Quick entry, receipts and the review flag in the web app"
 src/lib/attachments/             client-safe upload logic: files.ts, list.svelte.ts, upload.ts (XHR with progress), receipt-file.ts (checks and the HEIC
@@ -361,7 +364,7 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   `paidByUserId`, `splitMode`, `countsAsExpense`, `deductible` (`unknown|maintenance|investment|no`: the
   Swiss tax distinction between value-preserving and value-increasing work; only for tax relevant books, see
   "Cost books"), `source`
-  (`manual|finance_transaction|finance_bill`). `countsAsExpense` defaults to false for
+  (`manual|finance_transaction|finance_bill|recurring`), `tags` and `recurrenceId` (see "Tags, budgets and recurring costs"), `financeLinked`. `countsAsExpense` defaults to false for
   `mortgage_principal` (equity, not a cost) and follows a category change unless the person overrode it.
   Entries can be commented on and carry receipts (attachments, owner `cost`). `reviewNeeded` (with `reviewedAt` and
   `reviewedByUserId`; migration `0028`) says that a person still has to look at the entry: the receipt queue sets it on what an
@@ -464,9 +467,9 @@ suggestedPaymentCount}`, the caller's own place across all books with recorded p
   across all books included; `bookId` with `all=true`, or `all=false` without a book, is a 400, an unknown book a 404. `ledger.ts`
   (`bookEntry`, `bookSettlement`, `personBalances`) is the one place paid/share are added up, for the summary and the
   balances alike.
-- **CSV** (`GET /costs/export.csv?year=&bookId=`, binary `text/csv`): UTF-8 with BOM, `;` separated, CRLF,
-  fixed English column names (`costs/csv.ts` `CSV_COLUMNS`; columns are only ever added at the end, `book` is the
-  last; the file of one book is named `hauswart-costs-<year>-<book slug>.csv`), amounts as plain decimals with a point, no
+- **CSV** (`GET /costs/export.csv?year=&bookId=&tagId=`, binary `text/csv`): UTF-8 with BOM, `;` separated, CRLF,
+  fixed English column names (`costs/csv.ts` `CSV_COLUMNS`; columns are only ever added at the end, `tags` is the
+  last, after `book`; the file of one book is named `hauswart-costs-<year>-<book slug>.csv`), amounts as plain decimals with a point, no
   thousands separator and the currency's own precision (`-12.50`, `1500` for JPY) so they parse the same
   everywhere; text cells that start with `= + - @` tab or CR get an apostrophe (formula injection).
 - **Recent categories** (`GET /costs/recent-categories?bookId=`, scope `read`; `costs/recent-categories.ts`): how often each category was used by the newest
@@ -475,8 +478,8 @@ suggestedPaymentCount}`, the caller's own place across all books with recorded p
   chips by (`rankCategories` adds the counts) instead of reading a hundred whole entries.
 - **Defects and service log entries** carry `costs: {totalMinor, count}` (correlated subqueries in the
   list select, household currency, refunds netted); their legacy `costEntryId` column is unused.
-- **The inbox** (`finance_suggestions`): what a finance provider offers one person - `cost`, `asset` or
-  `bill_task` - with the status `pending|accepted|dismissed` and a payload shaped like the API's. It is
+- **The inbox** (`finance_suggestions`): what a finance provider offers one person - `cost`, `asset`, `bill_task` or
+  `link` (see "Matching with entries made by hand") - with the status `pending|accepted|dismissed` and a payload shaped like the API's. It is
   **private to its owner**: the list, accept and dismiss only ever select `user_id = caller`, another
   person's id is a 404 exactly like a missing one, and the finance address of an entry
   (`providerUrl`) is shown only to the person who booked it. `(connection, kind, ref)` is unique: a
@@ -514,6 +517,74 @@ suggestedPaymentCount}`, the caller's own place across all books with recorded p
   delete dialog points to archiving, which is respected. Housekeeping archives tasks
   settled for 90 days and those of a deleted connection.
 
+#### Tags, budgets and recurring costs
+
+All three are household data (no per-person scoping), reads need `read`, writes `costs:write`; they came with migration `0030`.
+
+- **Tags** (`cost_tags`, `cost_entry_tags`; `costs/tags.ts`; `GET|POST /cost-tags`, `GET|PATCH|DELETE /cost-tags/{id}`): a label on entries, `name` (40,
+  unique without regard to case, 409) and `color` (a key of `COST_TAG_COLORS` the client maps, default `gray`), at most 200 (the list is not paged), the DTO
+  carries `entryCount`. Entries take `tagIds` (create and PATCH; PATCH replaces, `[]` clears; each once, at most 10, an unknown id is a 400 on `tagIds`) and
+  carry `tags` (`{id, name, color}`, by name). `tagId` narrows `GET /costs`, `GET /costs/summary` (every number, the settlement too) and the CSV; an
+  unknown tag is a 404 there. The CSV's last column `tags` holds the names, by name, joined with `, `. Deleting a tag only untags (the links cascade). Accepting a
+  cost suggestion (`tagIds`) and a recurring cost's template take tags too.
+- **Budgets** (`cost_budgets`; `costs/budgets.ts`, pure `lib/costs/budget.ts`; `/cost-budgets`, `GET /costs/budgets/status?year=&month=`): for a book, a category or
+  both (a CHECK; 400 on `bookId` when it names neither), `period` `month|year`, `amountMinor` > 0, `currency` = the household's when it was set (the status counts
+  entries in the budget's own currency), `active`. One budget per book, category and period (409; three partial unique indexes, because a missing book or category is its
+  own kind); deleting a book deletes its budgets. **Status**: for every _active_ budget the entries that count as an expense (refunds netted) of its scope in the
+  month `year`/`month` or the whole year (`year` and `month` each default to today in the household zone), `spentMinor`, `entryCount`, `remainingMinor`, `percentUsed`
+  (rounded down, 0 while the net is zero or negative) and `state` `ok|warning|exceeded` from 80 % / 100 % worked out on the amounts, not on the rounded percentage.
+  **Not built**: a notification at 80 and 100 %. `generateNotifications` is task-centric, and a new kind needs entries in `NOTIFICATION_KINDS` and the title keys, four
+  messages (notification and push, both languages), the Home Assistant renderer (`TITLES`, `LEVELS`) and the icon and tone maps of the notification list; the status
+  carries what such a notice needs (a dedupe key of budget, period and threshold would be `budget:<id>:<period>:<80|100>`, household-wide rows).
+- **Recurring costs** (`cost_recurrences`, `cost_entries.recurrence_id` + `recurrence_date`; `costs/recurrences.ts`, `recurrence-scheduler.ts`, the rule in pure
+  `lib/costs/recurrence.ts`; `GET|POST /cost-recurrences`, `GET|PATCH|DELETE /cost-recurrences/{id}`, `POST /cost-recurrences/{id}/run-now`; at most 200): a template (the
+  fields of `POST /costs` without a date; `sharesJson` / `participantIdsJson` for the split, `tagIdsJson`) and a rule: `frequency` `monthly|quarterly|yearly`, `interval`
+  (1 to 12), `dayOfMonth` (1 to 31, default the day of `startDate`), `startDate`, optional `endDate` (included). Occurrences are counted from the start month, never from
+  the previous occurrence, so a 31st gives 31 January, 28 February, 31 March and 29 February falls back to the 28th; the first is the first on or after `startDate`.
+  Stored: `nextDate` (null once over), `lastOccurrenceDate`, `active`, `lastError` (`book_archived|failed`). The template is checked when saved as a booking would be
+  (`checkCostTemplate`; 400 on the field, on `endDate` when no occurrence is left); the split is frozen **when an entry is booked**, so a changed ownership share applies to
+  later entries only. **Booking** (`registerCostRecurrences()` in `init()`: 20 s after start, then every 5 minutes): `bookDueRecurrences` books for every active recurring
+  cost every occurrence up to and including today in the household zone, oldest first (a server that was down books each occurrence it missed), at most 120 per recurring
+  cost and run. One transaction per occurrence books the entry (source `recurring`, `recurrenceId`, `reviewNeeded` false, `createdBy` = whoever set it up) and moves
+  `nextDate`; the unique `(recurrence_id, recurrence_date)` and a look-before keep it to one entry, and deleting the entry does not book it again. A failure (the book was
+  archived: `book_archived`) is recorded on the recurring cost, keeps its place, does not hold the others up and is logged by code. Creating and PATCHing book what is
+  due at once (a start date in the past books everything since, up to the cap). PATCH: the template applies to entries from now on; a changed rule continues after
+  `lastOccurrenceDate`; `active: false` pauses, `active: true` resumes at the first occurrence on or after today (the paused time is skipped); the template is checked
+  again only when the request touches it, so one in an archived book can still be paused; any change clears `lastError`. `run-now` books exactly the next due occurrence
+  and answers `entry: null` when nothing is due or it is paused or over; a failure is recorded and thrown. Deleting keeps the entries (`recurrenceId` becomes null); a book
+  with recurring costs cannot be deleted (409 `details.recurrenceCount`).
+
+#### Matching with entries made by hand
+
+A transaction of a finance app and an entry somebody typed are the same expense. The core is generic (`finance/links.ts`, `store.ts`, `events.ts`, the rule in pure
+`lib/costs/match.ts`); the only adapter code is that `kept/sync.ts` does not auto-accept a `link` and counts `linkSuggestions`.
+
+- **The rule** (`transactionMatchesEntry`): the same amount, sign included (a refund never matches an expense), and currency; booking dates at most `MATCH_DAYS` = 3
+  days apart; the words of title and payee overlap by at least `MATCH_MIN_SIMILARITY` = 0.5 of the shorter side (overlap coefficient, so a short "Migros" is found inside a
+  long bank text). Words: lower case, `ä ö ü ß` spelled `ae oe ue ss`, other accents dropped, split at everything but letters and digits; single characters, numbers of up
+  to four digits and a few fillers and legal forms (`AG`, `GmbH`, `und`) carry no weight. No typo tolerance, no stemming ("E-55" is "e" and "55": both dropped).
+- **At offer time** (`recordSuggestion`, for every adapter): a _new_, _pending_ `cost` suggestion that matches an entry (`findMatchingEntry`) is recorded as a `link`
+  suggestion (same connection and reference, payload `{entryId, transaction}`, the bill references kept) instead of a cost. The entry must be `manual` or
+  `recurring`, **paid by the connection's owner**, not tied to a finance item (no `providerRef`, no `providerConnectionId`) and not the target of another pending link;
+  with several the most similar text wins, then the nearer date, then the entry made first. A transaction recorded as already decided is never linked; one that has a cost or
+  link suggestion already keeps it (a pending link takes the fresher transaction). Private like every suggestion (own rows only, 404 for others); the wire adds `entry`,
+  the entry as it is now (null once deleted). It counts in `pendingFinanceSuggestions`.
+- **Accepting** (`POST /finance/suggestions/{id}/accept {}`, no overrides): the entry remembers the transaction (`providerConnectionId`, `providerRef`; `providerUrl`
+  only when the entry was made by the connection's owner, since only its maker sees that; `providerLinkId` and `linkSyncedAt` null so the adapter writes the back-link
+  and `financeLinksPending` fires), `source` stays `manual`, nothing new is booked, the answer's entity is the entry. 409 when the entry was deleted, got tied
+  elsewhere or no longer has the amount and currency. The transaction is then never offered again (the accepted link answers a repeat).
+- **Dismissing** a link means "not that entry", not "ignore the transaction": the link is dismissed and the transaction **comes back as a normal cost suggestion**,
+  so it cannot drop out of the books, and a later read of it is not linked again. A deleted entry does the same for its pending links (`costEntryDeleted`, emitted by `deleteCost`
+  inside its transaction); an entry that gets tied to another transaction releases the links to it. An accepted link stays accepted whatever happens to the entry.
+- **Bills**: `suggestionsCoveringBill` also lists links that are pending or accepted, so a payment is still booked once: a pending bill offer, linked or not, gives way
+  to the transaction that pays it, and a decided one makes that transaction arrive dismissed. An automatic category does not accept a link by itself: a wrong link would
+  hide an expense.
+- **Entry form side**: `GET /finance/matches?amountMinor=&currency=&date=` (scope `read`) answers the caller's own pending _cost_ suggestions with that signed amount and
+  currency (default the household's) within 3 days, nearest date first, at most 20. `financeSuggestionId` on `POST /costs` and `PATCH /costs/{id}` ties the entry to
+  one of them in the same transaction (`claimSuggestion`, `tieSuggestion`): 404 unless it is the caller's own, 400 on the field when it is not a cost or the amount or currency
+  (the entry's after the change) differs, 409 when decided; PATCH answers 409 for an entry tied to another item and does nothing for the same suggestion again.
+  Nothing is written when the entry is refused.
+
 #### Kept adapter (`integrations/kept/`)
 
 - **Connection** per person (`kept`, `INTEGRATION_LEVELS` user): `PUT /integrations/kept` with `config`
@@ -527,7 +598,7 @@ map), billTasks, billCreditorFilter (case-insensitive exact creditor names; appl
   part runs on its own and the first failure becomes the connection's `lastError` code):
   - transactions of every mapped or purchase category since the cursor (`finance_sync_state`, per scope:
     a different category set, `syncFrom` or choice of books starts over; first run from `syncFrom` or 1 January) become `cost`
-    suggestions via `transactionToCostSeed`, or cost entries at once for automatic categories; outgoing payments
+    suggestions via `transactionToCostSeed` (or `link` suggestions to entries made by hand, counted as `linkSuggestions`, never booked at once), or cost entries at once for automatic categories; outgoing payments
     from purchase categories also `asset` suggestions. A failed item keeps the cursor where it was.
   - with `billTasks`: open and overdue bills (creditor filter) become bill tasks; tasks of bills that left the
     list are read individually (paid/cancelled/open again, 404 = archived).
@@ -1286,6 +1357,10 @@ tsconfig also includes `mcp/**` so `bun run check` type-checks it. The app impor
   1.32 implements protocol revisions up to 2025-11-25; a client that tries the stateless 2026-07-28
   revision first gets a 400 and falls back to `initialize`. OAuth (needed by the claude.ai web
   connectors) is not implemented.
+- **Tags, budgets and recurring costs** (`tools/cost-tags.ts`, `cost-budgets.ts`, `cost-recurrences.ts`, all read-only): `list_cost_tags`, `get_budget_status` (`year`, `month`; the
+  most used budgets first, amounts as decimals) and `list_cost_recurrences` (`active`; the schedule in words, `problem` when a booking failed). A tag is given by name or id
+  (`ctx.resolveTag`; an unknown one is an error listing the known ones, never a new tag): `create_cost`, `accept_finance_suggestion` take `tags`, `list_costs` and
+  `cost_summary` take `tag`; cost rows carry `tags` and, unless manual, `source`. Link suggestions show as `kind: link` with the transaction and the entry.
 - **Cost book tools** (`tools/cost-books.ts`): `list_cost_books` and `get_balances` (read; a book is given by name, slug
   or id, archived ones too - `ctx.resolveBook`), `record_settlement` (`costs:write`, `from` defaults to the token's
   user; sends a fresh idempotency key; answers with what is still open). `create_cost` takes `book` and `participants` (names, ids or `me`; they
@@ -1304,7 +1379,7 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
 - **Insurance and asset notes** (`tools/insurance.ts`, `tools/notes.ts`): `list_insurance_policies` and
   `get_insurance_policy` (read; a policy by id, title or policy number), `add_asset_note`, `list_asset_notes` and
   `resolve_asset_note` (the asset by id or name; resolving is idempotent). `add_service_log` takes `resolvedNoteIds`, task
-  rows carry `openNotes`, and documents can be linked to a policy by its title. 74 tools when the token holds every scope (the appointment tools are `tools/appointments.ts`, see "Appointments"; `list_calendar_targets` in `tools/calendar-targets.ts` is read-only, see "Calendar sync"; the four receipt queue tools are `tools/ai-tasks.ts`, see "Receipt queue").
+  rows carry `openNotes`, and documents can be linked to a policy by its title. 77 tools when the token holds every scope (the appointment tools are `tools/appointments.ts`, see "Appointments"; `list_calendar_targets` in `tools/calendar-targets.ts` is read-only, see "Calendar sync"; the four receipt queue tools are `tools/ai-tasks.ts`, see "Receipt queue").
 - **New tool**: add the endpoint to the registry first, then a ~15-line `defineTool` in
   `mcp/src/tools/` and an entry in `tools/index.ts` (which lists the planned extension points).
   Triggers go through `parseTrigger` (engine schema, per-type docs in `trigger-docs.ts`, a `Record`
