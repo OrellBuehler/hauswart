@@ -102,6 +102,19 @@ export const costEntrySchema = z
      * `details.fuelLogId`. Everything else stays editable here.
      */
     fuelLogId: z.string().nullable(),
+    /**
+     * True while a person still has to look at the entry: the receipt queue sets it on what an assistant booked from a
+     * receipt, `POST /costs/{id}/review` clears it. Nothing else depends on it (the entry counts in every total).
+     */
+    reviewNeeded: z.boolean(),
+    /** When and by whom the entry was last reviewed; null if it never was (or was flagged again since). */
+    reviewedAt: isoTimestampSchema.nullable(),
+    reviewedByUserId: z.string().nullable(),
+    /**
+     * The receipt task (`GET /ai-tasks/{id}`) the entry was booked for, when the booking named it (`receiptTaskId`);
+     * null for every other entry and once the task is deleted.
+     */
+    receiptTaskId: z.string().nullable(),
     commentCount: z.number().int(),
     createdBy: z.string().nullable(),
     createdAt: isoTimestampSchema,
@@ -124,6 +137,8 @@ export const listCostsQuerySchema = paginationQuerySchema.extend({
   defectId: idSchema.optional(),
   /** A user id, or `me`. */
   paidBy: idSchema.optional(),
+  /** `true`: only the entries a person still has to review; `false`: only the others. */
+  reviewNeeded: queryBooleanSchema.optional(),
   q: z.string().trim().min(1).max(100).optional(),
 });
 export type ListCostsQuery = z.output<typeof listCostsQuerySchema>;
@@ -155,6 +170,12 @@ const costFields = {
  * household's, `splitMode` to the book's default split, `countsAsExpense` to true (false for a mortgage repayment).
  * `shares` are required for `custom` and refused otherwise; `participantIds` narrow an `equal` split to those people
  * (everybody without it) and are refused for any other split. `deductible` other than `unknown` needs a tax relevant book.
+ * `receiptTaskId` names the receipt task (`/ai-tasks`) the entry is booked for: the entry is flagged `reviewNeeded` at
+ * once and recorded on the task (`bookedSoFar`) in the same transaction; an unknown task is a 400 on the field, a task that
+ * is not waiting any more a 409.
+ * `idempotencyKey` (8 to 128 characters, chosen by the caller, unique per person who books) makes a retried request return
+ * the first entry with status 200 instead of booking a second one; the same key for a different entry (amount, currency,
+ * category, title, and book, date or payer when the retry names them) is a 409.
  */
 export const createCostRequestSchema = z.strictObject({
   bookId: costFields.bookId.optional(),
@@ -175,6 +196,8 @@ export const createCostRequestSchema = z.strictObject({
   participantIds: costFields.participantIds.optional(),
   countsAsExpense: costFields.countsAsExpense.optional(),
   deductible: costFields.deductible.default("unknown"),
+  receiptTaskId: idSchema.optional(),
+  idempotencyKey: z.string().min(8).max(128).optional(),
 });
 export type CreateCostRequest = z.output<typeof createCostRequestSchema>;
 
@@ -329,6 +352,11 @@ export const costsSummarySchema = z
     ),
     /** Split entries without a payer: they cannot be settled until someone is named. */
     unassignedPayerCount: z.number().int(),
+    /**
+     * Entries of the summary's scope (the year, and the asset or book if one was asked for) a person still has to review,
+     * in any currency and whether or not they count as an expense.
+     */
+    reviewNeededCount: z.number().int(),
   })
   .meta({ id: "CostsSummary" });
 export type CostsSummary = z.infer<typeof costsSummarySchema>;
@@ -363,6 +391,35 @@ export const dashboardCostsSchema = z
     ),
   })
   .meta({ id: "DashboardCosts" });
+
+/** How many of the newest entries of each book `GET /costs/recent-categories` looks at. */
+export const RECENT_CATEGORY_ENTRIES = 100;
+
+export const recentCategoriesQuerySchema = z.object({
+  /** Only this book; without it every book is answered, each on its own. */
+  bookId: idSchema.optional(),
+});
+export type RecentCategoriesQuery = z.output<
+  typeof recentCategoriesQuerySchema
+>;
+
+export const recentCategoriesSchema = z
+  .object({
+    /** How many of the newest entries of each book were counted (`RECENT_CATEGORY_ENTRIES`). */
+    entriesPerBook: z.number().int(),
+    /**
+     * How often each category was used by those entries: per book in the order of the books, most used first (then by
+     * name). A category a book did not use lately is not listed; a book without entries has no rows.
+     */
+    items: z.array(
+      z.object({
+        bookId: z.string(),
+        category: costCategorySchema,
+        count: z.number().int(),
+      }),
+    ),
+  })
+  .meta({ id: "RecentCategories" });
 
 export const exportCostsQuerySchema = z.object({
   year: year.optional(),

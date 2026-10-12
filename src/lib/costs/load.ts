@@ -66,6 +66,29 @@ export async function tryLoadBalances(
   }
 }
 
+/**
+ * How many receipts wait in the queue, for a badge on the costs page: one count, not the tasks. When it cannot be read the
+ * page still opens, without the badge (logged by code). A signed-out session still goes to the login page.
+ */
+export async function tryLoadPendingReceipts(
+  client: ApiClient,
+  redirectTo: string,
+): Promise<number | null> {
+  try {
+    const { count } = await client.call(endpoints.aiTasksCount, {
+      query: { status: "pending" },
+    });
+    return count;
+  } catch (err) {
+    if (!isApiError(err)) throw err;
+    if (err.status === 401) {
+      redirect(303, `/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+    }
+    console.warn("pending receipts unavailable", err.code, err.status);
+    return null;
+  }
+}
+
 /** What the cost pages need around an entry: where it can belong, who can pay, today's date and currency. */
 export async function loadCostContext(
   client: ApiClient,

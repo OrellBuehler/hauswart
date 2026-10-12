@@ -5,18 +5,20 @@ import { toIso } from "$lib/api/schemas/common";
 import { costBalances } from "$lib/server/costs/balances";
 import { getCostBookRow } from "$lib/server/costs/books";
 import {
-  createCost,
   deleteCost,
   getCost,
   listCosts,
+  recordCost,
+  reviewCost,
   updateCost,
   type CostRecord,
 } from "$lib/server/costs/costs";
 import { costsCsv } from "$lib/server/costs/csv";
 import { moveCostsToBook } from "$lib/server/costs/move";
+import { recentCategories } from "$lib/server/costs/recent-categories";
 import { costsSummary } from "$lib/server/costs/summary";
 import { invalidField } from "$lib/server/service";
-import type { Handler } from "../bind";
+import { reply, type Handler } from "../bind";
 
 const yearOf = (today: string) => Number(today.slice(0, 4));
 
@@ -55,6 +57,10 @@ export function wireCost(
     // The address of the item in the person's own finance app is theirs alone.
     providerUrl: c.createdBy === viewerId ? c.providerUrl : null,
     fuelLogId: c.fuelLogId,
+    reviewNeeded: c.reviewNeeded,
+    reviewedAt: c.reviewedAt ? toIso(c.reviewedAt) : null,
+    reviewedByUserId: c.reviewedByUserId,
+    receiptTaskId: c.aiTaskId,
     commentCount: c.commentCount,
     createdBy: c.createdBy,
     createdAt: toIso(c.createdAt),
@@ -71,8 +77,14 @@ export const list: Handler<typeof endpoints.costsList> = ({ ctx, query }) => {
   };
 };
 
-export const create: Handler<typeof endpoints.costsCreate> = ({ ctx, body }) =>
-  wireCost(createCost(ctx, body, ctx.user.id), ctx.user.id);
+export const create: Handler<typeof endpoints.costsCreate> = ({
+  ctx,
+  body,
+}) => {
+  const { cost, replayed } = recordCost(ctx, body, ctx.user.id);
+  const out = wireCost(cost, ctx.user.id);
+  return replayed ? reply(200, out) : out;
+};
 
 export const get: Handler<typeof endpoints.costsGet> = ({ ctx, params }) =>
   wireCost(getCost(ctx, params.id), ctx.user.id);
@@ -91,6 +103,11 @@ export const remove: Handler<typeof endpoints.costsDelete> = ({
   return null;
 };
 
+export const review: Handler<typeof endpoints.costsReview> = ({
+  ctx,
+  params,
+}) => wireCost(reviewCost(ctx, params.id, ctx.user.id), ctx.user.id);
+
 export const moveToBook: Handler<typeof endpoints.costsMoveToBook> = ({
   ctx,
   body,
@@ -104,6 +121,10 @@ export const summary: Handler<typeof endpoints.costsSummary> = ({
     assetId: query.assetId,
     bookId: query.bookId,
   });
+
+export const recentCategoryCounts: Handler<
+  typeof endpoints.costsRecentCategories
+> = ({ ctx, query }) => recentCategories(ctx, query);
 
 export const balances: Handler<typeof endpoints.costsBalances> = ({
   ctx,

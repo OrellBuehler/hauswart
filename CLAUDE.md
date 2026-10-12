@@ -10,7 +10,7 @@ attachments, search, file backup), contacts, spare parts, the service log, care 
 a PDF export), the warranty overview, generic comments, iCal feeds, the emergency page data and guest
 links, costs (cost books, the split between the people, running balances with recorded payments and a CSV export), the per-person finance
 connection (Kept), insurance policies (with a cancellation reminder), appointments (see "Appointments"), asset notes and vehicles (details, odometer
-readings, tire sets, a fuel log with consumption, statistics, task templates; see "Vehicles") exist; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
+readings, tire sets, a fuel log with consumption, statistics, task templates; see "Vehicles"), and a receipt queue that an MCP client works through (see "Receipt queue", with a page and a quick entry for phones in the web app) exist; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
 push notifications with a "done" button, areas taken over as rooms, items pushed into its calendars; see "Signals, integrations and delivery" and "Calendar sync"); Paperless-ngx is wired as
 a per-person document provider (links, previews, warranty dates, pushing attachments; see "Documents and the
 document provider"); the MCP server covers the task core, documentation, defects, parts, contacts,
@@ -86,7 +86,8 @@ src/lib/server/<domain>/         services: plain functions, no HTTP types
 src/lib/server/docs/markdown*.ts markdown -> sanitized html; async variants run marked in a worker (see below)
 src/lib/server/docs/pages.ts     documentation pages: CRUD, rev concurrency, revisions, backlinks, cached renderings
 src/lib/server/docs/render.ts    page rendering for members/guests, link resolution, `{token}` placeholder
-src/lib/server/files/            content-addressed file store, image pipeline, sniffing, serving headers (see below)
+src/lib/server/files/            content-addressed file store, image pipeline, sniffing, serving headers (see below); preview.ts: the smaller copy of an
+                                 image an assistant reads (`previewSize`, `previewImage`)
 src/lib/server/attachments/      attachment rows, owner registry, orphan sweeper (see "Documentation" below)
 src/lib/server/search/           GET /search over the FTS5 index (`search_fts`, kept by triggers)
 src/lib/server/backup/           daily VACUUM INTO backup + incremental mirror of the files directory
@@ -122,6 +123,9 @@ src/lib/server/asset-notes/      asset notes: notes.ts (CRUD, to a defect), reso
 src/lib/server/costs/            cost entries: split.ts (frozen shares), costs.ts (CRUD, list), move.ts (bulk move to a book), books.ts (cost books), summary.ts (year totals,
                                  settlement), ledger.ts (paid/share/payments per person, shared by summary and balances), balances.ts (running
                                  balances), settlements.ts (recorded payments), csv.ts, totals.ts (cost sums on defects and service log entries)
+src/lib/server/ai-tasks/         the receipt queue: ai-tasks.ts (upload, list, count, complete, dismiss, claim, delete), booking.ts (booking for a task and the lease: a leaf
+                                 module the cost service imports), preview.ts (the task's file sized for an assistant);
+                                 see "Receipt queue"
 src/lib/server/finance/          generic finance-provider seam: providers.ts (registry), suggestions.ts (the private inbox, accept,
                                  dismiss), bill-tasks.ts (tasks that follow bills)
 src/lib/server/hints/            per-asset care hints (tip/rule/warning), pinned, ordered, optional signal reaction (stored only)
@@ -175,7 +179,10 @@ src/lib/server/schema.ts         Drizzle schema — one file, every table has cr
 src/lib/server/crypto.ts         AES-256-GCM for stored secrets (HAUSWART_SECRET_KEY)
 src/lib/money.ts                 minor-unit money type, parsing/formatting, ownership shares
 src/lib/costs/                   client-safe UI logic of the costs pages: books.ts (book choice, icons), book-memory.ts, filters.ts, form.ts (draft ->
-                                 request bodies), balances.ts (wording), settlements.ts (drafts, bodies, filters), load.ts; see "Costs in the web app"
+                                 request bodies), balances.ts (wording), settlements.ts (drafts, bodies, filters), load.ts, quick.ts (category ranking,
+                                 chips -> split, quick draft -> bodies), receipts.ts (queue page helpers); see "Costs in the web app" and "Quick entry, receipts and the review flag in the web app"
+src/lib/attachments/             client-safe upload logic: files.ts, list.svelte.ts, upload.ts (XHR with progress), receipt-file.ts (checks and the HEIC
+                                 decision), receipt-convert.ts (the canvas conversion, browser only)
 src/lib/testing/                 useTestDB, createTestUser/Token, createTestEvent, callRoute, fixtures/
 src/hooks.server.ts              init (secret key, time zone, migrations) + auth gate + Paraglide locale
 src/routes/api/v1/**             one-liner route files: export const GET = bind(endpoints.x, handler)
@@ -356,7 +363,17 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   "Cost books"), `source`
   (`manual|finance_transaction|finance_bill`). `countsAsExpense` defaults to false for
   `mortgage_principal` (equity, not a cost) and follows a category change unless the person overrode it.
-  Entries can be commented on and carry receipts (attachments, owner `cost`). The fuel log of a vehicle books its
+  Entries can be commented on and carry receipts (attachments, owner `cost`). `reviewNeeded` (with `reviewedAt` and
+  `reviewedByUserId`; migration `0028`) says that a person still has to look at the entry: the receipt queue sets it on what an
+  assistant booked, `POST /costs/{id}/review` (scope `costs:write`, any member) clears it and records who and when, and
+  reviewing an entry nobody has to review changes nothing (the first reviewer stays). It changes no total, split or balance.
+  `POST /costs` takes an optional `idempotencyKey` (8 to 128 characters, migration `0029`, unique per person who books whatever credential they
+  use, exactly like `POST /settlements`): a retry returns the first entry with 200 instead of 201, the same key for another entry (amount,
+  currency, category or title; book, date or payer when the retry names them; notes, payee and device do not count) is a 409, and the key is
+  free again once the entry is deleted (`recordCost`; `createCost` stays the plain booking, also used by the finance inbox and the fuel log).
+  `GET /costs?reviewNeeded=true|false` filters; `GET /costs/summary` carries `reviewNeededCount` (the entries of its own scope: the year
+  and the asset or book if one was asked for, any currency, expense or not) and the dashboard `reviewNeededCount` (every year and book).
+  The fuel log of a vehicle books its
   fills as `fuel` entries (see "Vehicles"); such an entry carries `fuelLogId` and keeps its amount, currency, date and
   device and its existence in step with that fill (`updateCost`/`deleteCost` refuse with 409 `conflict`,
   `details.fuelLogId`; everything else stays editable).
@@ -452,6 +469,10 @@ suggestedPaymentCount}`, the caller's own place across all books with recorded p
   last; the file of one book is named `hauswart-costs-<year>-<book slug>.csv`), amounts as plain decimals with a point, no
   thousands separator and the currency's own precision (`-12.50`, `1500` for JPY) so they parse the same
   everywhere; text cells that start with `= + - @` tab or CR get an apostrophe (formula injection).
+- **Recent categories** (`GET /costs/recent-categories?bookId=`, scope `read`; `costs/recent-categories.ts`): how often each category was used by the newest
+  100 entries of each book (`RECENT_CATEGORY_ENTRIES`, newest = the list's order, every entry, archived books too) as rows `{bookId, category, count}` per
+  book in the order of the books, most used first; with `bookId` that book alone (404 when it does not exist). It is what the quick entry ranks its category
+  chips by (`rankCategories` adds the counts) instead of reading a hundred whole entries.
 - **Defects and service log entries** carry `costs: {totalMinor, count}` (correlated subqueries in the
   list select, household currency, refunds netted); their legacy `costEntryId` column is unused.
 - **The inbox** (`finance_suggestions`): what a finance provider offers one person - `cost`, `asset` or
@@ -533,6 +554,101 @@ map), billTasks, billCreditorFilter (case-insensitive exact creditor names; appl
   is refused, an archived one is allowed (it counts as none when used, the form warns), and the choice for a category that
   is not mapped is dropped before the check. The web settings form has a book select under each mapped category (empty = the connection's default) and one for `defaultBookId` (empty = the household's default book); an archived choice shows a warning, a refused one `integration_kept_book_gone_error`; the accept dialog preselects the book offered with a suggestion.
 - Logs carry codes only (`kept.transaction_failed {code}`), never titles, amounts, creditors or tokens.
+
+### Receipt queue
+
+A work queue for an assistant: a person puts a photo or PDF of a receipt in the app, an MCP client reads it, books the cost
+entries with the tools that exist and closes the task. The web app has the page `/costs/receipts` and the receipt mode of the quick entry (see
+"Quick entry, receipts and the review flag in the web app").
+
+- **The table** (`ai_tasks`, migration `0028`, together with the review flag of cost entries; `ai-tasks/ai-tasks.ts`): `kind`, `status`
+  (`pending|done|dismissed`), `note` (the uploader's words, at most 1000 characters), `createdByUserId` (the uploader), the hints `bookId`
+  (an open cost book, else 400 on `bookId`) and `assetId` (set null when the book or device goes), `attachmentId` (set null when the file
+  goes), `resultJson`, `dismissReason`, `completedAt` (when the task left the queue, done or dismissed), `completedVia` (`session`, or the
+  kind of the API token) and `completedByUserId` (who closed it: the person in the browser or the owner of the token; set null with the
+  person; the DTO adds `completedByName`, the receipts page shows "Von Ben" and the tools' rows `closedBy`; the first closer stays when a
+  repeated call is answered with the task as it is). Migration `0029` adds to `ai_tasks` `idempotency_key` + `idempotency_digest` (unique per uploader), `completed_by_user_id`,
+  `claimed_by_user_id` and `claimed_at`, and to `cost_entries` `idempotency_key` (unique per creator) and `ai_task_id` (`SET NULL`, indexed). `kind` is `receipt` today, the only value `POST /ai-tasks` accepts; `fuel_receipt`, `service_invoice` and
+  `insurance_policy` are already in `AI_TASK_KINDS`, so another kind widens the request schema and the tools but not the table (the column
+  has no CHECK).
+- **Everybody sees everything.** Like cost entries the queue is household data: every member lists, reads, completes and dismisses every
+  task; deleting is for the uploader or an administrator (403 otherwise; a task whose uploader is gone, for an administrator). What is
+  booked from a receipt is paid by the **uploader** by default (the tool text and `get_ai_task`'s `defaults.paidBy` say so), not by the
+  token that processes it. Finance inboxes stay private, so `get_ai_task` lists bank transactions only when the token user is the uploader.
+- **The file** is an attachment of the owner type `ai_task` (registered with the domain owners). `createAiTask` checks the hints, stores the
+  file (`storeAttachmentFile`: type sniffing, images re-encoded, 25 MiB, the same `invalid_request` codes as an attachment upload), then writes
+  the attachment and the task in one transaction, so a task never lacks its file. `POST /attachments` with that owner is a 400 and
+  `DELETE /attachments/{id}` of its file a 409: the task owns it (owner type `ai_task` needs `costs:write` like `cost`).
+- **Booking for a task** (`receiptTaskId` on `POST /costs`, on accepting a finance suggestion - a cost only - and on `POST /assets/{id}/fuel-logs`;
+  column `cost_entries.ai_task_id`, `ON DELETE SET NULL`; `ai-tasks/booking.ts` `assertTaskOpenForBooking`, a leaf module the cost service may
+  import): the task must exist (400 on the field) and be pending (409 `conflict`, `details.status`; nothing is booked and a finance suggestion stays
+  pending), and the entry is **flagged `reviewNeeded` at once and recorded on the task in the same transaction**. `bookedSoFar` on the task DTO lists
+  the entries that exist and were booked for it (oldest first, `fuelLogId` when a fuel log entry booked one), whoever booked them and whatever
+  became of the task, so a client that was interrupted - or a second one - sees what is done and books only the rest. A fill that is free has no
+  cost entry to record it on: `receiptTaskId` is a 400 there. The cost entry DTO carries `receiptTaskId`. A replayed booking (see the key above)
+  is answered before the task is looked at, and the key now also stands for the receipt task.
+- **Complete** (`POST /ai-tasks/{id}/complete {createdCostIds?, createdFuelLogIds?, note?}`, scope `costs:write`, 200; at least one id): every
+  id must exist (400 on the field, naming the ids; nothing changes). The targets are the cost entries named plus the cost entry each named fuel
+  log entry booked (a free fill has none), each once. **They must be the task's result**: booked for this task, or created at or after the moment
+  the task was queued (a fuel log entry by its own `createdAt`); an entry that existed before the task and one booked for another task are a 400 on
+  `createdCostIds` (`createdFuelLogIds`), naming the ids and nothing changes - a payment booked twice is not what the receipt became. In one
+  transaction the targets not booked for this task and never reviewed are flagged `reviewNeeded` (`flagForReview`; **a review a person already did
+  is never undone**, and entries booked for the task were flagged when they were booked), the file **moves** to the first target (same attachment row, new owner `cost`; `attachmentId` still points at it) and every
+  further target gets a **copy** (`copyAttachment`: another row for the same stored file, which is deleted only with the last row), and the
+  task becomes `done` with `resultJson` `{createdCostIds, createdFuelLogIds, note}` as reported. With no target (only free fills) the file stays
+  with the task. The DTO's `result.costs` are the targets that still exist (title, amount, `reviewNeeded`).
+- **Uploading twice** (`POST /ai-tasks` takes an optional `idempotencyKey`, 8 to 128 characters, migration `0029`): the same rules as for
+  payments and cost entries - unique per uploader, a retry returns the first task with 200 (whatever became of it since: pending, done, even
+  with its book archived by now), nothing is stored or queued for it, the same key for a different receipt (a digest of kind, book, device
+  and the bytes uploaded; the note does not count) is a 409, and the key is free once the task is deleted (`recordAiTask`; the key is checked
+  before the file is stored).
+- **Idempotency** (decided so that a retry is safe and a mistake is not hidden): completing a done task with the same ids, in any order, is 200
+  with the task as it is (the note and `completedVia` of the first call stay); with other ids it is 409 `conflict` whose `details` carry the
+  recorded ids; completing a dismissed task is 409. `POST /ai-tasks/{id}/dismiss {reason?}` (send `{}`; a JSON body is required) closes a pending
+  task (the file stays with it); dismissing a dismissed task is 200 and the first reason stays; a done task is 409.
+- **Delete** removes the task and the file only while the task still owns it (pending or dismissed); after a completion the file is the receipt
+  of the cost entry and stays. Deleting the cost entry that holds the file clears `attachmentId` (the task shows no file).
+- **Counts** (`GET /ai-tasks/count?status=&kind=`, scope `read`, `{count}`; `countAiTasks`): the number of tasks without reading them. The costs page's
+  badge on "Belege" asks for `?status=pending` (exact, no more "50+"), and the dashboard carries `pendingReceiptCount` (the same number; a card links to
+  `/costs/receipts?status=pending` when it is above zero).
+- **Untrusted input**: the uploader's note, the dismiss reasons and result notes other clients wrote, and the text on a receipt image or PDF are
+  data to book from, never instructions. `list_ai_tasks`, `get_ai_task` and `dismiss_ai_task` say so in their descriptions and the MCP README in one
+  sentence each (a test pins them); nothing in the server reads those texts as commands.
+- **Several clients**: nothing locks a task. Two clients (or one that was restarted) can work on it, which `bookedSoFar` makes visible and the rules
+  above keep from double booking: the first to complete wins, a later `create`, `accept` or `fill` for the task is a 409, a later `complete` with other
+  ids a 409 naming what is recorded, and what the loser had booked stays flagged for a person to sort out. **The lease** is only a warning in front of
+  that (`claimed_by_user_id`, `claimed_at`; `POST /ai-tasks/{id}/claim`, scope `costs:write`, no body, answers the task; `ai-tasks/booking.ts`
+  `takeLease`, `AI_TASK_CLAIM_MINUTES` = 15): opening a pending task, and booking for it, records the person; their own lease is renewed, a lapsed
+  one is taken, one that somebody else holds **stays theirs** (the answer says whose it is) and a done or dismissed task is answered as it is. Setting it
+  is no change of the task (`updatedAt` stays). The DTO's `claim` `{byUserId, byName, at, expiresAt}` is set only while the task is pending and the lease
+  has not run out (computed with the request's clock, `wireAiTask(task, now)`); the receipts page says "Wird gerade bearbeitet von ...". `get_ai_task`
+  claims when the token holds `costs:write` (a read-only token only looks) and starts its answer with a warning when another member's client holds the
+  lease; `list_ai_tasks` rows carry `claim` `{by: you|name, minutesLeft}`.
+- **The preview** (`GET /ai-tasks/{id}/preview`, binary, scope `read`; `ai-tasks/preview.ts`, `files/preview.ts`): the file as an assistant
+  reads it. An image that fits (longest side at most 1600 px, at most 1.5 MB) is sent as stored; a larger one is drawn on white and re-encoded
+  as JPEG at `previewSize` (longest side 1600, except a long, narrow receipt, which keeps a short side of 600 px up to a long side of 3200),
+  with a lower quality and then a smaller size until it fits. A PDF is sent as stored. ETag from the stored file's sha256 (`-preview` added for the scaled copy), `Cache-Control: private, no-cache` (revalidated each
+  time, answered 304 on a matching `If-None-Match`: the copy can change with the scaling rules while the file does not).
+- **MCP** (`mcp/src/tools/ai-tasks.ts`): `list_ai_tasks` (read, pending by default), `get_ai_task` (scope `read` but mode `update`: it leaves the lease, so it is not annotated read-only), `complete_ai_task`
+  (`costs:write`, input `costIds`, `fuelLogIds`, `note`; refuses an empty list before calling the API) and `dismiss_ai_task` (`costs:write`,
+  mode `undo`: destructive and idempotent). `get_ai_task` answers with the text (summary and JSON: task, file, defaults, open cost books with
+  `default`/`taxRelevant`/`defaultSplit`, the cost categories, members with `ownershipPercent`, vehicles with plate, the uploader's pending
+  `cost` suggestions of the last 30 days, newest first, at most 20) followed by the receipt as MCP **image content** (`ToolOutput.content`
+  carries blocks after the text) or, for a PDF up to 4 MB, as an embedded `resource` with a blob; a larger PDF (`AI_TASK_PDF_READ_MAX_BYTES`, 4 MB, checked on the attachment's
+  size before anything is fetched) is not sent at all: `file.problem` tells the model to dismiss the task with the reason "PDF zu gross", and the queue
+  page's picker warns when such a PDF is chosen (`exceedsReadingLimit`, only where the file goes to the queue, not as the receipt of an entry). No dependency
+  of the project can render PDF pages (pdfmake only writes them; `@napi-rs/canvas` does not read them), so a page is not turned into an image. The members' ownership share comes from `GET /users/directory`, which now also carries `ownershipBps` (every member can
+  read it from the frozen shares of the cost entries anyway) and for that reason needs the `read` scope like the other reads (it used to be open to any
+  authenticated caller, a token without scopes included). `list_costs` takes `reviewNeeded` and its rows carry `needsReview` and `receiptTask`. `create_cost`, `accept_finance_suggestion` and `add_fuel_log` take
+  `receiptTaskId` (one shared zod description in `tools/costs.ts`) and `create_cost` sends a fresh `idempotencyKey` per call; `get_ai_task` lists `bookedSoFar`
+  (id, title, amount, `needsReview`, `fuelLogId`) and says in its summary how many entries are booked for the task already; task rows carry `closedBy` and
+  `claim`.
+- **Not built**: a notification for the uploader ("receipt processed"; it would need a new title key in both languages and the delivery
+  rules), reopening a dismissed task, retention of dismissed tasks, the other kinds, and a way to complete a task by hand in the web app.
+- **Tests**: `ai-tasks/ai-tasks.test.ts` and `preview.test.ts` (service), `ai-tasks/idempotency.test.ts`, `bookings.test.ts` (booking for a task, provenance, scenarios
+  A and B), `claims.test.ts`, `closers.test.ts`, `routes/api/v1/ai-tasks/ai-tasks.test.ts` (API, scopes, visibility,
+  review) with `idempotency`, `bookings`, `claims`, `closers` and `count` next to it, `mcp/src/ai-tasks-booking-tools.test.ts` and `ai-tasks-claim-tools.test.ts`, `files/preview.test.ts` (sizes and encoding, table-driven), `costs/review.test.ts`, `mcp/src/ai-tasks-tools.test.ts` (tools, image and
+  PDF content, the private inbox) and one through the HTTP endpoint in `routes/api/v1/mcp/mcp.test.ts`.
 
 ### Documents and the document provider
 
@@ -630,15 +746,15 @@ of the owner>` is added to the document unless an identical note exists (writes 
   flipping `guestVisible` re-renders the pages that embed it (`onAttachmentsChanged` listener,
   started in `init()` by `startAttachmentRerender`; only the two HTML caches change, guarded by `rev`).
 - **Attachments** (`attachments`): one row per upload, generic owner `ownerType` + `ownerId` without
-  foreign keys (`asset|room|page|task|defect|service_log|part|asset_hint|contact|cost|insurance_policy|asset_note|tire_set|appointment`), files stored
+  foreign keys (`asset|room|page|task|defect|service_log|part|asset_hint|contact|cost|insurance_policy|asset_note|tire_set|appointment|ai_task`), files stored
   once by sha256 in `HAUSWART_FILES_DIR` (`files/store.ts`: images re-encoded, metadata stripped,
   thumbnail; PDFs as uploaded; HEIC/SVG/HTML/GIF refused). Owner existence is checked through the
   registry in `attachments/owners.ts`: asset, room, page and task are built in; defect, service_log,
-  part, asset_hint, contact, cost, insurance_policy, asset_note, tire_set and appointment are registered by `registerDomainAttachmentOwners()`
+  part, asset_hint, contact, cost, insurance_policy, asset_note, tire_set, appointment and ai_task are registered by `registerDomainAttachmentOwners()`
   (`attachments/domain-owners.ts`, called from `registerDomainEventHandlers()`, so from `init()` and
   `useTestDB()`). A new owner type registers with `registerAttachmentOwner(type, existsFn)` **from
   `init()`** (never from a module that is only loaded with its routes) and calls
-  `removeOwnedAttachments(ctx, type, id)` from its delete service (done for all fourteen; deleting an
+  `removeOwnedAttachments(ctx, type, id)` from its delete service (done for all fifteen; deleting an
   asset also removes the attachments of its service log entries, hints, notes and tire sets, whose rows go by cascade
   without a foreign key to follow). A type nobody registered is a 400 field error on `ownerType`. Uploading, patching or deleting an attachment of a page needs `docs:write`,
   others `write`. `deleteIfUnreferenced` keeps files younger than a minute, so a daily orphan sweep
@@ -1188,7 +1304,7 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
 - **Insurance and asset notes** (`tools/insurance.ts`, `tools/notes.ts`): `list_insurance_policies` and
   `get_insurance_policy` (read; a policy by id, title or policy number), `add_asset_note`, `list_asset_notes` and
   `resolve_asset_note` (the asset by id or name; resolving is idempotent). `add_service_log` takes `resolvedNoteIds`, task
-  rows carry `openNotes`, and documents can be linked to a policy by its title. 70 tools when the token holds every scope (the appointment tools are `tools/appointments.ts`, see "Appointments"; `list_calendar_targets` in `tools/calendar-targets.ts` is read-only, see "Calendar sync").
+  rows carry `openNotes`, and documents can be linked to a policy by its title. 74 tools when the token holds every scope (the appointment tools are `tools/appointments.ts`, see "Appointments"; `list_calendar_targets` in `tools/calendar-targets.ts` is read-only, see "Calendar sync"; the four receipt queue tools are `tools/ai-tasks.ts`, see "Receipt queue").
 - **New tool**: add the endpoint to the registry first, then a ~15-line `defineTool` in
   `mcp/src/tools/` and an entry in `tools/index.ts` (which lists the planned extension points).
   Triggers go through `parseTrigger` (engine schema, per-type docs in `trigger-docs.ts`, a `Record`
@@ -1258,10 +1374,18 @@ build` moves `sw.js` (runtime inlined, one file) to `build/server/sw.js` (`scrip
 - **Absolute asset paths.** `kit.paths.relative` is `false` (pinned by `src/paths.test.ts`): the precached `/offline`
   page is served as the fallback on any URL, and relative `./_app/…` links would miss the cache on nested paths.
   `docker-smoke.sh` checks that the offline page links no relative assets and that every precache URL answers 200.
-- **Manifest extras and meta.** `shortcuts` (new task, record defect, emergency, search; names in the browser's
-  language), `color_scheme_dark`, `categories`; `format-detection: telephone=no`. No `viewport-fit=cover` and the
+- **Manifest extras and meta.** `shortcuts` (add expense `/costs/quick`, submit receipt `/costs/quick?mode=receipt`, new task, record defect,
+  emergency, search, in that order because Android launchers show about four; names in the browser's language), `color_scheme_dark`,
+  `categories`; `format-detection: telephone=no`. No `viewport-fit=cover` and the
   status bar stays `default` (iOS 26 draws an edge blur over `cover` pages), so safe-area insets are 0 except at the
   bottom where the shell adds them explicitly.
+- **No share target** (`share_target`; Chromium only, Safari ignores it): a shared file arrives as a multipart `POST` navigation to an address of the app.
+  Answering it takes either (a) a server route outside `/api/v1` (say `/costs/quick/share`): `isCrossSiteWrite` (`auth/origin.ts`) would refuse the
+  request, so that one path needs its own exemption and its own guard (the session cookie is SameSite=Lax, which is no substitute for the origin
+  check), and the route should only park the file for the signed-in person and open the quick page to confirm it, never book anything; or (b) a
+  service worker `fetch` handler for that one `POST` (which means `injectManifest` instead of `generateSW`) that keeps the file in the worker's
+  storage until the page uploads it, which the rule above ("never holds user data") would have to allow as a narrow, deliberate exception.
+  Neither is built.
 
 ### Authentication and the API spine
 
@@ -1515,6 +1639,36 @@ in dark mode. Every list has an empty state, every async action a pending and an
   **Moving entries**: "Auswählen" on the list (checkboxes in the cards and the table, a sticky bar with the count, at most 500) and, on a list narrowed to a device, "Alle Einträge dieses Geräts verschieben"
   open `MoveCostsDialog` (`POST /costs/move-to-book`; `moveSummary` words moved / unchanged / tax class reset, `moveFailure` the 400s; for a device it first asks a dry run for the chosen book, again whenever the book changes, and shows `movePreview` above the buttons - a failed preview is worded and does not block the move). **Vehicles**: the asset form's "Kostenbuch" picks `costBookId` (every save sends it, a PUT would clear it),
   `VehicleCard` names the book, the fuel dialog offers a book (the vehicle's while it takes entries, else the default; a new fill takes that book's split; no "Für wen", the fuel API has no participants) and the list shows each fill's `bookName`.
+- **Quick entry, receipts and the review flag in the web app**: `/costs/quick` is for one hand on a phone (no bottom bar, a sticky save bar of its
+  own; the costs page's round button leads there, the dashboard's costs card and the home screen shortcuts too; `?book=` names the book, `?mode=receipt`
+  opens on the receipt). The load reads nothing from the address (`untrack`), so the mode switch and `?book` fetch nothing again. **Expense**: a big
+  amount field (`inputmode="decimal"`, the household currency, "12." and "12,5" read as typed), book chips (`chooseQuickBook`: the address, then the
+  book of the last quick entry - `loadQuickBook`, kept apart from the costs page's remembered book -, then that one, then the default; up to five
+  open books as chips, else a select), category chips ranked by `rankCategories` (the book's recent entries first, then all recent entries, then a
+  fixed order, the apartment's for a tax relevant book; the form asks `GET /costs/recent-categories` once it is on screen - `loadRecentCategories`, not part of the page load,
+  and the chips keep their fixed order without it or once a category was picked), eight
+  shown and "more" for the rest, none chosen at the start; payer chips (default me); "für wen" chips: as the book has them (everybody, nobody for a
+  book that does not share) sends no split so the book's own applies, any other choice is `equal` among the ticked (`quickSplit`). **Nobody ticked is not guessed**: in a book that shares it is `unchosen`
+  (a warning under the chips, the save refused with an error on `participants`) until the person ticks somebody or taps the chip "Nicht teilen" (`notShared`, which
+  sends `none`; ticking a person ends it); in a book that does not share, nobody ticked is the book's own "not shared" and the chip is on. A sentence under the
+  chips says what the chips mean. Date, payee, title (empty = payee, else the category) and device sit behind "Datum, Titel und
+  mehr" (an error on any of them opens the section, `needsMoreSection`, and the device shows its error like the others). `POST /costs`, then `uploadAttachment` (owner `cost`): done = `/costs?book=` plus a 10 s toast with "Rückgängig" (`DELETE`) and "Noch eine";
+  a failed upload keeps the entry and offers retry, "ohne Beleg fertig" and undo. **Every draft has a key** (`newIdempotencyKey()`,
+  `lib/idempotency.ts`; sent as `idempotencyKey` with `POST /costs` and `POST /ai-tasks`): a save that got no answer is simply tried again with
+  the same key (the words say so: the entry is not booked twice), the key is renewed after the entry is booked and when the server answers
+  409 (the key stands for another entry: "look in the list"), and the receipt's key also when another photo is picked; the receipt's
+  network error says that nothing is booked and links to `/costs/receipts`. Mistakes are cleared as the field changes. **Receipt**: `ReceiptPicker` (camera button
+  with `capture="environment"` only on touch, in CSS so hydration does not move the page; any image or PDF in the file picker). A HEIC photo is
+  turned into a JPEG through a canvas where the browser decodes it (`prepareReceiptFile`, Safari; the decision `heicPlan` is tested, the canvas is
+  not) and refused with the server's `attach_error_heic` wording otherwise. **Receipt only** (`POST /ai-tasks`, multipart, optional note, book and
+  device hints) ends on the page `/costs/receipts` with a toast offering undo (`DELETE /ai-tasks/{id}`): open tasks are always read completely and
+  listed first (`mergePendingFirst`), the history comes 30 at a time ("Mehr laden"), `?status=` filters; each row shows the thumbnail (the lightbox
+  for pictures, a new tab for a PDF), uploader, note, hints, for a done task the booked entries as links with their "Zu prüfen" mark, for a dismissed one the
+  reason; anybody may dismiss (reason optional, final), deleting is for the uploader and administrators (`canDeleteTask`). The wording says receipts are
+  "über die MCP-Verbindung verbucht". **Review flag**: `CostFlags` shows "Zu prüfen", the detail page a notice with the button "Als geprüft markieren" (`POST /costs/{id}/review`; "Geprüft" stays the word for an entry that was reviewed)
+  and who reviewed when, the costs page a "Zu prüfen" chip (`?review=1`; `?year=all` lists every year and is only honoured with the review filter,
+  because that list is short), a notice under the summary that links to the entries it counts (`reviewFilters`) and the dashboard a card for
+  `reviewNeededCount` that opens `REVIEW_ALL_HREF` (every book and year).
 - **After a dialog, refresh with `invalidateAfterOverlay`** (`lib/overlays/use-overlay-history.svelte.ts`): closing a dialog pops its history
   entry, and the router drops an `invalidateAll()` that is still loading when that popstate arrives, so the page kept the old data. It waits
   for the entry to be gone first (`OverlayHistory.settled`); a dialog that navigates uses `gotoFromOverlay`. Menu items that start

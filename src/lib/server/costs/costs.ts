@@ -1,4 +1,14 @@
-import { and, desc, eq, inArray, lt, or, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  inArray,
+  lt,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 import {
@@ -14,6 +24,10 @@ import type {
   UpdateCostRequest,
 } from "$lib/api/schemas/costs";
 import { minor } from "$lib/money";
+import {
+  assertTaskOpenForBooking,
+  takeLease,
+} from "$lib/server/ai-tasks/booking";
 import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
 import { commentCountSql } from "$lib/server/comments/counts";
 import {
@@ -223,6 +237,9 @@ function whereOf(filter: ListCostsQuery, viewerId: string): SQL[] {
       ),
     );
   }
+  if (filter.reviewNeeded !== undefined) {
+    where.push(eq(costEntries.reviewNeeded, filter.reviewNeeded));
+  }
   if (filter.q) {
     const pattern = `%${escapeLike(filter.q.toLowerCase())}%`;
     where.push(
@@ -422,6 +439,7 @@ export function createCost(
     input.participantIds,
   );
   assertDeductible(book, input.deductible);
+  if (input.receiptTaskId) assertTaskOpenForBooking(ctx, input.receiptTaskId);
 
   let assetId = input.assetId ?? null;
   let roomId = input.roomId ?? null;
@@ -472,15 +490,34 @@ export function createCost(
           providerRef: origin?.ref ?? null,
           providerUrl: origin?.url ?? null,
           createdBy,
+          idempotencyKey: input.idempotencyKey ?? null,
+          // booked on the strength of a receipt somebody else read: a person confirms it once
+          reviewNeeded: input.receiptTaskId !== undefined,
+          aiTaskId: input.receiptTaskId ?? null,
           createdAt: new Date(ctx.now),
         })
         .returning({ id: costEntries.id })
         .get().id;
       writeShares(tx as unknown as DB, row, shares);
+      if (input.receiptTaskId) {
+        takeLease(
+          { db: tx as unknown as DB, now: ctx.now },
+          input.receiptTaskId,
+          createdBy,
+        );
+      }
       return row;
     });
   } catch (err) {
     if (isUniqueViolation(err)) {
+      // The key's own index is for `recordCost` to answer; the provider's index means the item is booked already.
+      if (
+        createdBy &&
+        input.idempotencyKey &&
+        findCostByKey(ctx, createdBy, input.idempotencyKey)
+      ) {
+        throw err;
+      }
       throw conflict("This item of the finance provider is already booked");
     }
     throw err;
@@ -492,6 +529,79 @@ export function createCost(
     });
   }
   return getCost(ctx, id);
+}
+
+/** The entry the person booked with this key, if any. */
+export function findCostByKey(
+  ctx: Db,
+  createdBy: string,
+  key: string,
+): CostRecord | undefined {
+  const row = selectCosts(ctx.db)
+    .where(
+      and(
+        eq(costEntries.createdBy, createdBy),
+        eq(costEntries.idempotencyKey, key),
+      ),
+    )
+    .get();
+  return row ? toRecords(ctx.db, [row])[0] : undefined;
+}
+
+/**
+ * A retry names the same entry: same amount, currency, category, title and receipt task, and the same book, date and
+ * payer when the retry names them (a request that left them to the defaults accepts whatever the first one got). Notes,
+ * payee, device and the other links do not count.
+ */
+function sameRequest(
+  ctx: Db,
+  existing: CostRecord,
+  input: CreateCostRequest,
+): boolean {
+  return (
+    existing.amountMinor === input.amountMinor &&
+    existing.currency === (input.currency ?? getHousehold(ctx).currency) &&
+    existing.category === input.category &&
+    existing.title === input.title &&
+    (input.bookId === undefined || existing.bookId === input.bookId) &&
+    (input.date === undefined || existing.date === input.date) &&
+    (input.paidByUserId === undefined ||
+      existing.paidByUserId === input.paidByUserId) &&
+    existing.aiTaskId === (input.receiptTaskId ?? null)
+  );
+}
+
+/**
+ * `createCost` for a request that may be sent twice. With an `idempotencyKey` the person's earlier entry with that key is
+ * returned (`replayed`) and nothing is booked; the same key for a different entry is a 409. Once the entry is deleted its
+ * key is free again. Without a key (or without a person) every call books an entry.
+ */
+export function recordCost(
+  ctx: ServiceContext,
+  input: CreateCostRequest,
+  createdBy: string | null,
+): { cost: CostRecord; replayed: boolean } {
+  const key = input.idempotencyKey;
+  const replay = () => {
+    if (!key || createdBy === null) return null;
+    const existing = findCostByKey(ctx, createdBy, key);
+    if (!existing) return null;
+    if (!sameRequest(ctx, existing, input)) {
+      throw conflict("This idempotency key was used for another cost entry");
+    }
+    return { cost: existing, replayed: true };
+  };
+  const first = replay();
+  if (first) return first;
+  try {
+    return { cost: createCost(ctx, input, createdBy), replayed: false };
+  } catch (err) {
+    if (key && isUniqueViolation(err)) {
+      const raced = replay();
+      if (raced) return raced;
+    }
+    throw err;
+  }
 }
 
 /**
@@ -669,4 +779,51 @@ export function deleteCost(ctx: ServiceContext, id: string): void {
       connectionId: current.providerConnectionId,
     });
   }
+}
+
+/** How many entries, in any book and year, a person still has to review. */
+export function countReviewNeeded(ctx: Db): number {
+  return (
+    ctx.db
+      .select({ n: count() })
+      .from(costEntries)
+      .where(eq(costEntries.reviewNeeded, true))
+      .get()?.n ?? 0
+  );
+}
+
+/**
+ * Asks for a look at these entries (those that exist): the flag is set, and who reviewed them before and when is
+ * forgotten. Entries are booked from a receipt somebody else read, so a person confirms them once.
+ */
+export function flagForReview(ctx: Db, ids: readonly string[]): void {
+  if (ids.length === 0) return;
+  ctx.db
+    .update(costEntries)
+    .set({ reviewNeeded: true, reviewedAt: null, reviewedByUserId: null })
+    .where(inArray(costEntries.id, [...ids]))
+    .run();
+}
+
+/**
+ * Marks an entry as reviewed by `userId` now. Reviewing an entry nobody has to review changes nothing (and keeps who
+ * reviewed it first), so a double click or a retry is harmless.
+ */
+export function reviewCost(
+  ctx: ServiceContext,
+  id: string,
+  userId: string,
+): CostRecord {
+  const current = getCost(ctx, id);
+  if (!current.reviewNeeded) return current;
+  ctx.db
+    .update(costEntries)
+    .set({
+      reviewNeeded: false,
+      reviewedAt: new Date(ctx.now),
+      reviewedByUserId: userId,
+    })
+    .where(and(eq(costEntries.id, id), eq(costEntries.reviewNeeded, true)))
+    .run();
+  return getCost(ctx, id);
 }

@@ -12,12 +12,17 @@ import type { ServiceContext } from "../../src/lib/server/service";
 import { putVehicle } from "../../src/lib/server/vehicles/vehicles";
 import { createHauswartServer, type ConnectOptions } from "./server";
 
+/** A block of a result that is not text: an image or an embedded resource. */
+export type MediaBlock = { type: string } & Record<string, unknown>;
+
 export interface Reply {
   isError: boolean;
   text: string;
   /** The JSON part of a result (after the summary line). */
   json: Record<string, unknown>;
   summary: string;
+  /** Everything after the text block: images, embedded resources. */
+  media: MediaBlock[];
 }
 
 /** Calls and replies are plain data; arrays of results are typed by the caller. */
@@ -27,14 +32,26 @@ export function parseReply(result: {
   isError?: boolean;
   content: unknown;
 }): Reply {
-  const content = result.content as { type: string; text: string }[];
-  const text = content.map((c) => c.text).join("\n");
+  const content = result.content as ({ type: string } & Record<
+    string,
+    unknown
+  >)[];
+  const text = content
+    .filter((c) => c.type === "text")
+    .map((c) => c.text as string)
+    .join("\n");
   const [summary, ...rest] = text.split("\n\n");
   let json: Record<string, unknown> = {};
   if (!result.isError && rest.length > 0) {
     json = JSON.parse(rest.join("\n\n"));
   }
-  return { isError: result.isError === true, text, json, summary };
+  return {
+    isError: result.isError === true,
+    text,
+    json,
+    summary,
+    media: content.filter((c) => c.type !== "text"),
+  };
 }
 
 /**
@@ -49,7 +66,9 @@ export function useMcp() {
     await Promise.all(clients.splice(0).map((c) => c.close()));
   });
 
-  async function connect(
+  /** A client connected to the in-process server as `user`, with a token of its own. */
+  async function attach(
+    user: Awaited<ReturnType<typeof createTestUser>>,
     opts: {
       scopes?: Scope[];
       tools?: ConnectOptions["tools"];
@@ -57,9 +76,7 @@ export function useMcp() {
       newKey?: () => string;
     } = {},
   ) {
-    const anna = await createTestUser({ displayName: "Anna", role: "admin" });
-    const ben = await createTestUser({ displayName: "Ben" });
-    const { token, record } = createTestToken(anna, {
+    const { token, record } = createTestToken(user, {
       kind: "mcp",
       scopes: opts.scopes ?? ["read", "write"],
     });
@@ -88,19 +105,30 @@ export function useMcp() {
       if (reply.isError) throw new Error(`${name} failed: ${reply.text}`);
       return reply.json as Json;
     }
-    const today = server.context.today();
+    return { client, server, call, ok, token, tokenId: record.id };
+  }
+
+  async function connect(
+    opts: {
+      scopes?: Scope[];
+      tools?: ConnectOptions["tools"];
+      fetch?: (inner: FetchLike) => FetchLike;
+      newKey?: () => string;
+    } = {},
+  ) {
+    const anna = await createTestUser({ displayName: "Anna", role: "admin" });
+    const ben = await createTestUser({ displayName: "Ben" });
+    const first = await attach(anna, opts);
+    const today = first.server.context.today();
     return {
       db,
-      client,
-      server,
-      call,
-      ok,
+      ...first,
       anna,
       ben,
-      token,
-      tokenId: record.id,
       today,
       day: (offset: number) => addDays(today, offset),
+      /** Another client of the same household, as one of its members (a second assistant, another person). */
+      attach,
     };
   }
 

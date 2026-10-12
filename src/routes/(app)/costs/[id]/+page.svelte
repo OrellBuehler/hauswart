@@ -1,20 +1,26 @@
 <script lang="ts">
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
+  import CircleCheckIcon from "@lucide/svelte/icons/circle-check";
   import ExternalLinkIcon from "@lucide/svelte/icons/external-link";
+  import EyeIcon from "@lucide/svelte/icons/eye";
   import FuelIcon from "@lucide/svelte/icons/fuel";
+  import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import PencilIcon from "@lucide/svelte/icons/pencil";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
+  import { invalidateAll } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
   import { api } from "$lib/api/browser";
   import { endpoints } from "$lib/api/registry";
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
+  import FormAlert from "$lib/components/app/form-alert.svelte";
   import Attachments from "$lib/components/attachments/attachments.svelte";
   import Comments from "$lib/components/comments/comments.svelte";
   import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
   import CostAmount from "$lib/components/costs/cost-amount.svelte";
   import CostFlags from "$lib/components/costs/cost-flags.svelte";
+  import * as Alert from "$lib/components/ui/alert/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import { apiErrorMessage } from "$lib/error-message";
@@ -47,7 +53,28 @@
     cost.createdBy ? data.people.get(cost.createdBy) : undefined,
   );
 
+  const reviewedBy = $derived(
+    cost.reviewedByUserId ? data.people.get(cost.reviewedByUserId) : undefined,
+  );
+
   let deleteOpen = $state(false);
+  let reviewing = $state(false);
+  let reviewError = $state<string | undefined>();
+
+  async function markReviewed() {
+    if (reviewing) return;
+    reviewing = true;
+    reviewError = undefined;
+    try {
+      await api.call(endpoints.costsReview, { params: { id: cost.id } });
+      toast.success(m.cost_review_done_toast({ title: cost.title }));
+      await invalidateAll();
+    } catch (err) {
+      reviewError = apiErrorMessage(err);
+    } finally {
+      reviewing = false;
+    }
+  }
 
   /** A fuel log entry booked this entry and deletes it with itself. */
   const fuelOwned = $derived(Boolean(cost.fuelLogId));
@@ -149,6 +176,33 @@
       </div>
     {/if}
   </header>
+
+  {#if cost.reviewNeeded}
+    <Alert.Root class="border-warning/40 bg-warning/5">
+      <EyeIcon class="text-warning" />
+      <Alert.Title class="text-warning">{m.cost_review_title()}</Alert.Title>
+      <Alert.Description>
+        <p class="text-pretty">{m.cost_review_body()}</p>
+        {#if canWrite}
+          <div class="mt-3 flex flex-col gap-3">
+            <FormAlert message={reviewError} />
+            <Button
+              size="lg"
+              class="self-start"
+              disabled={reviewing}
+              onclick={markReviewed}
+            >
+              {#if reviewing}
+                <LoaderCircleIcon class="animate-spin" />{m.common_saving()}
+              {:else}
+                <CircleCheckIcon />{m.cost_review_action()}
+              {/if}
+            </Button>
+          </div>
+        {/if}
+      </Alert.Description>
+    </Alert.Root>
+  {/if}
 
   <div
     class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
@@ -253,6 +307,21 @@
             <dt class="text-muted-foreground text-xs">{m.cost_source()}</dt>
             <dd class="mt-0.5">{sourceLabels[cost.source]()}</dd>
           </div>
+          {#if cost.reviewedAt && !cost.reviewNeeded}
+            <div class="min-w-0">
+              <dt class="text-muted-foreground text-xs">
+                {m.cost_reviewed()}
+              </dt>
+              <dd class="mt-0.5 wrap-anywhere tabular-nums">
+                {formatDateTime(cost.reviewedAt, { timeZone: data.timeZone })}
+                {#if reviewedBy}
+                  <span class="text-muted-foreground block text-xs"
+                    >{m.cost_created_by({ name: reviewedBy })}</span
+                  >
+                {/if}
+              </dd>
+            </div>
+          {/if}
           <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">{m.cost_created()}</dt>
             <dd class="mt-0.5 wrap-anywhere tabular-nums">

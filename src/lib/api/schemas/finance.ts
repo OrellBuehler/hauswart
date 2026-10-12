@@ -127,6 +127,8 @@ export const acceptFinanceSuggestionRequestSchema = z.strictObject({
   participantIds: costParticipantsInputSchema.optional(),
   countsAsExpense: z.boolean().optional(),
   deductible: costDeductibleSchema.optional(),
+  /** A cost only: the receipt task the entry is booked for (see `POST /costs`), 400 for an asset or a bill task. */
+  receiptTaskId: idSchema.optional(),
   name: z.string().trim().min(1).max(120).optional(),
   assetKind: z.enum(ASSET_KINDS).optional(),
 });

@@ -16,6 +16,8 @@ export const GET: RequestHandler = () =>
         description: m.app_tagline(),
         lang: getLocale(),
         shortcuts: {
+          quickExpense: m.pwa_shortcut_expense(),
+          submitReceipt: m.pwa_shortcut_receipt(),
           newTask: m.task_new(),
           newDefect: m.defect_new(),
           emergency: m.nav_emergency(),

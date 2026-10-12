@@ -33,6 +33,10 @@ const cost: CostEntry = {
   source: "manual",
   providerUrl: null,
   fuelLogId: null,
+  reviewNeeded: false,
+  reviewedAt: null,
+  reviewedByUserId: null,
+  receiptTaskId: null,
   commentCount: 0,
   createdBy: "u1",
   createdAt: "2026-10-01T08:00:00.000Z",
@@ -56,6 +60,12 @@ describe("CostRow", () => {
     expect(body).toContain("«Wasserhahn» auswählen");
     expect(body).toContain('aria-checked="true"');
     expect(body).toContain("Wasserhahn");
+  });
+
+  it("marks an entry that is waiting for a review", () => {
+    expect(html({})).not.toContain("Zu prüfen");
+    const body = html({ cost: { ...cost, reviewNeeded: true } });
+    expect(body).toContain("Zu prüfen");
   });
 
   it("shows an entry that is not picked as unticked", () => {

@@ -7,6 +7,7 @@
   import { formatDay } from "$lib/format";
   import { m } from "$lib/paraglide/messages";
   import CostAmount from "./cost-amount.svelte";
+  import { hasCostFlags } from "./cost-flags";
   import CostFlags from "./cost-flags.svelte";
 
   let {
@@ -63,7 +64,7 @@
       >
     </span>
   </span>
-  {#if cost.amountMinor < 0 || !cost.countsAsExpense || cost.source !== "manual" || cost.commentCount > 0}
+  {#if hasCostFlags(cost) || cost.commentCount > 0}
     <span class="flex flex-wrap items-center justify-between gap-2">
       <CostFlags {cost} />
       <CommentCount count={cost.commentCount} class="ms-auto" />

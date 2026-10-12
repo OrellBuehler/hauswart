@@ -155,11 +155,25 @@ describe("migrations", () => {
         "appointments",
         "calendar_targets",
         "calendar_links",
+        "ai_tasks",
       ]),
     );
     expect(
       rows(db, "select count(*) as n from __drizzle_migrations")[0].n,
     ).toBe(journal().entries.length);
+    expect(
+      rows(
+        db,
+        "select title, review_needed, reviewed_at, reviewed_by_user_id from cost_entries",
+      ),
+    ).toEqual([
+      {
+        title: "Dachrinne",
+        review_needed: 0,
+        reviewed_at: null,
+        reviewed_by_user_id: null,
+      },
+    ]);
     expect(rows(db, "select title, odometer from service_log")).toEqual([
       { title: "Entkalkt", odometer: null },
     ]);
@@ -368,7 +382,29 @@ describe("migrations", () => {
     )[0].id;
     const after = rows(db, "select * from cost_entries order by id");
     expect(after.map((r) => r.book_id)).toEqual([wohnung, wohnung, wohnung]);
-    expect(after.map(({ book_id: _book, ...rest }) => rest)).toEqual(before);
+    // Columns later migrations added start unset (0028: the review flag; 0029: the idempotency key and the receipt task).
+    expect(
+      after.map(
+        ({
+          book_id: _book,
+          review_needed: unflagged,
+          reviewed_at: reviewedAt,
+          reviewed_by_user_id: reviewedBy,
+          idempotency_key: key,
+          ai_task_id: task,
+          ...rest
+        }) => ({ unflagged, reviewedAt, reviewedBy, key, task, rest }),
+      ),
+    ).toEqual(
+      before.map((rest) => ({
+        unflagged: 0,
+        reviewedAt: null,
+        reviewedBy: null,
+        key: null,
+        task: null,
+        rest,
+      })),
+    );
 
     // The frozen shares, the fuel log links, the comments and the document links are all still there.
     expect(
@@ -408,13 +444,16 @@ describe("migrations", () => {
         "select name from sqlite_master where type = 'index' and tbl_name = 'cost_entries' and name like 'cost_entries_%' order by name",
       ).map((r) => r.name),
     ).toEqual([
+      "cost_entries_ai_task_idx",
       "cost_entries_asset_id_idx",
       "cost_entries_book_id_idx",
       "cost_entries_category_idx",
       "cost_entries_date_idx",
       "cost_entries_defect_id_idx",
+      "cost_entries_idempotency_idx",
       "cost_entries_paid_by_idx",
       "cost_entries_provider_idx",
+      "cost_entries_review_idx",
       "cost_entries_room_id_idx",
       "cost_entries_service_log_id_idx",
     ]);
@@ -453,6 +492,231 @@ describe("migrations", () => {
     expect(() =>
       db.$client.exec("delete from cost_books where slug = 'auto'"),
     ).not.toThrow();
+  });
+
+  it("add the receipt queue and the review flag: entries start unflagged, tasks keep their hints when book, asset or file go, and an open task needs a kind", () => {
+    const db = databaseAt("0027_cost_book_default_and_settlement_keys");
+    db.$client.exec(`
+      insert into users (id, username, password_hash) values ('u1', 'anna', 'x'), ('u2', 'ben', 'x');
+      insert into cost_entries (id, book_id, date, title, amount_minor, currency, category, created_by)
+        values ('k1', (select id from cost_books where slug = 'wohnung'), '2026-01-05', 'Dachrinne', 10001, 'CHF', 'maintenance', 'u1');
+    `);
+    migrateDatabase(db);
+
+    expect(
+      rows(
+        db,
+        "select review_needed, reviewed_at, reviewed_by_user_id from cost_entries where id = 'k1'",
+      ),
+    ).toEqual([
+      { review_needed: 0, reviewed_at: null, reviewed_by_user_id: null },
+    ]);
+    db.$client.exec(
+      "update cost_entries set review_needed = 1 where id = 'k1'",
+    );
+    expect(
+      rows(db, "select id from cost_entries where review_needed = 1"),
+    ).toEqual([{ id: "k1" }]);
+    // The partial index serves exactly that question.
+    expect(
+      JSON.stringify(
+        rows(
+          db,
+          "explain query plan select id from cost_entries where review_needed = 1",
+        ),
+      ),
+    ).toContain("cost_entries_review_idx");
+    db.$client.exec(
+      "update cost_entries set reviewed_by_user_id = 'u2', reviewed_at = 1700000000000, review_needed = 0 where id = 'k1'",
+    );
+    expect(() =>
+      db.$client.exec(
+        "update cost_entries set reviewed_by_user_id = 'nobody' where id = 'k1'",
+      ),
+    ).toThrow(/FOREIGN KEY/);
+
+    db.$client.exec(`
+      insert into assets (id, kind, name, slug, qr_slug) values ('a1', 'device', 'Backofen', 'backofen', 'aaaaaaaaaa');
+      insert into attachments (id, sha256, path, mime, size, filename, owner_type, owner_id)
+        values ('f1', 'aa', 'aa/aa', 'image/png', 10, 'beleg.png', 'ai_task', 't1');
+      insert into ai_tasks (id, kind, created_by_user_id, attachment_id, book_id, asset_id, note)
+        values ('t1', 'receipt', 'u1', 'f1', (select id from cost_books where slug = 'haushalt'), 'a1', 'Einkauf');
+    `);
+    expect(
+      rows(
+        db,
+        "select status, result_json, completed_at, dismiss_reason from ai_tasks",
+      ),
+    ).toEqual([
+      {
+        status: "pending",
+        result_json: null,
+        completed_at: null,
+        dismiss_reason: null,
+      },
+    ]);
+    expect(() =>
+      db.$client.exec(
+        "insert into ai_tasks (id, created_by_user_id) values ('t2', 'u1')",
+      ),
+    ).toThrow(/NOT NULL/);
+    expect(() =>
+      db.$client.exec(
+        "insert into ai_tasks (id, kind, attachment_id) values ('t2', 'receipt', 'nobody')",
+      ),
+    ).toThrow(/FOREIGN KEY/);
+
+    // Hints and the file go quietly: the task stays, without them.
+    db.$client.exec("delete from assets where id = 'a1'");
+    db.$client.exec("delete from attachments where id = 'f1'");
+    db.$client.exec("delete from cost_books where slug = 'haushalt'");
+    expect(
+      rows(db, "select id, attachment_id, book_id, asset_id from ai_tasks"),
+    ).toEqual([
+      { id: "t1", attachment_id: null, book_id: null, asset_id: null },
+    ]);
+    expect(rows(db, "pragma foreign_key_check")).toEqual([]);
+  });
+
+  it("add the request keys, the receipt task of an entry, the closer and the lease of a task: old rows stay as they were, a key is unique per person, and what points at a task or person lets go quietly", () => {
+    const db = databaseAt("0028_ai_tasks_cost_review");
+    db.$client.exec(`
+      insert into users (id, username, password_hash) values ('u1', 'anna', 'x'), ('u2', 'ben', 'x');
+      insert into cost_entries (id, book_id, date, title, amount_minor, currency, category, created_by, review_needed)
+        values ('k1', (select id from cost_books where slug = 'wohnung'), '2026-01-05', 'Dachrinne', 10001, 'CHF', 'maintenance', 'u1', 1);
+      insert into ai_tasks (id, kind, status, created_by_user_id, completed_at, completed_via)
+        values ('t1', 'receipt', 'done', 'u1', 1700000000000, 'mcp'), ('t2', 'receipt', 'pending', 'u2', null, null);
+    `);
+    migrateDatabase(db);
+
+    // What was there is untouched, and the new columns start unset.
+    expect(
+      rows(
+        db,
+        "select id, idempotency_key, ai_task_id, review_needed from cost_entries",
+      ),
+    ).toEqual([
+      { id: "k1", idempotency_key: null, ai_task_id: null, review_needed: 1 },
+    ]);
+    expect(
+      rows(
+        db,
+        `select id, status, completed_via, completed_by_user_id, idempotency_key, idempotency_digest, claimed_by_user_id, claimed_at
+           from ai_tasks order by id`,
+      ),
+    ).toEqual([
+      {
+        id: "t1",
+        status: "done",
+        completed_via: "mcp",
+        completed_by_user_id: null,
+        idempotency_key: null,
+        idempotency_digest: null,
+        claimed_by_user_id: null,
+        claimed_at: null,
+      },
+      {
+        id: "t2",
+        status: "pending",
+        completed_via: null,
+        completed_by_user_id: null,
+        idempotency_key: null,
+        idempotency_digest: null,
+        claimed_by_user_id: null,
+        claimed_at: null,
+      },
+    ]);
+
+    // A key is unique per person who made the row; no key, or another person's, is free.
+    const entry = (id: string, by: string, key: string | null) =>
+      db.$client.exec(
+        `insert into cost_entries (id, book_id, date, title, amount_minor, currency, category, created_by, idempotency_key)
+           values ('${id}', (select id from cost_books where slug = 'haushalt'), '2026-02-01', 'Einkauf', 2340, 'CHF', 'groceries', '${by}', ${key === null ? "null" : `'${key}'`})`,
+      );
+    entry("k2", "u1", "retry-key-0001");
+    expect(() => entry("k3", "u1", "retry-key-0001")).toThrow(/UNIQUE/);
+    entry("k3", "u2", "retry-key-0001");
+    entry("k4", "u1", null);
+    entry("k5", "u1", null);
+    db.$client.exec("delete from cost_entries where id = 'k2'");
+    entry("k2", "u1", "retry-key-0001");
+    expect(
+      JSON.stringify(
+        rows(
+          db,
+          "explain query plan select id from cost_entries where created_by = 'u1' and idempotency_key = 'retry-key-0001'",
+        ),
+      ),
+    ).toContain("cost_entries_idempotency_idx");
+
+    const task = (id: string, by: string, key: string | null) =>
+      db.$client.exec(
+        `insert into ai_tasks (id, kind, created_by_user_id, idempotency_key) values ('${id}', 'receipt', '${by}', ${key === null ? "null" : `'${key}'`})`,
+      );
+    task("t3", "u1", "retry-key-0002");
+    expect(() => task("t4", "u1", "retry-key-0002")).toThrow(/UNIQUE/);
+    task("t4", "u2", "retry-key-0002");
+    task("t5", "u1", null);
+    task("t6", "u1", null);
+    db.$client.exec("delete from ai_tasks where id = 't3'");
+    task("t3", "u1", "retry-key-0002");
+
+    // An entry points at the task it was booked for; the task going leaves the entry, unlinked.
+    db.$client.exec(
+      "update cost_entries set ai_task_id = 't2' where id = 'k4'",
+    );
+    expect(
+      JSON.stringify(
+        rows(
+          db,
+          "explain query plan select id from cost_entries where ai_task_id = 't2'",
+        ),
+      ),
+    ).toContain("cost_entries_ai_task_idx");
+    expect(() =>
+      db.$client.exec(
+        "update cost_entries set ai_task_id = 'nobody' where id = 'k5'",
+      ),
+    ).toThrow(/FOREIGN KEY/);
+    db.$client.exec("delete from ai_tasks where id = 't2'");
+    expect(
+      rows(db, "select ai_task_id from cost_entries where id = 'k4'"),
+    ).toEqual([{ ai_task_id: null }]);
+
+    // Who closed a task and who opened it last let go when the person does.
+    db.$client.exec(
+      "update ai_tasks set completed_by_user_id = 'u2', claimed_by_user_id = 'u2', claimed_at = 1700000000000 where id = 't1'",
+    );
+    expect(() =>
+      db.$client.exec(
+        "update ai_tasks set completed_by_user_id = 'nobody' where id = 't1'",
+      ),
+    ).toThrow(/FOREIGN KEY/);
+    expect(() =>
+      db.$client.exec(
+        "update ai_tasks set claimed_by_user_id = 'nobody' where id = 't1'",
+      ),
+    ).toThrow(/FOREIGN KEY/);
+    db.$client.exec(
+      "update cost_entries set created_by = null where created_by = 'u2'",
+    );
+    db.$client.exec(
+      "update ai_tasks set created_by_user_id = null where created_by_user_id = 'u2'",
+    );
+    db.$client.exec("delete from users where id = 'u2'");
+    expect(
+      rows(
+        db,
+        "select completed_by_user_id, claimed_by_user_id, claimed_at from ai_tasks where id = 't1'",
+      ),
+    ).toEqual([
+      {
+        completed_by_user_id: null,
+        claimed_by_user_id: null,
+        claimed_at: 1700000000000,
+      },
+    ]);
+    expect(rows(db, "pragma foreign_key_check")).toEqual([]);
   });
 
   it("add the settlements: positive amounts between two people, a book or none, tied to the people and books", () => {

@@ -2,9 +2,11 @@
   import ArrowRightIcon from "@lucide/svelte/icons/arrow-right";
   import CircleCheckIcon from "@lucide/svelte/icons/circle-check";
   import CoinsIcon from "@lucide/svelte/icons/coins";
+  import ZapIcon from "@lucide/svelte/icons/zap";
   import { resolve } from "$app/paths";
   import type { Dashboard } from "$lib/api/schemas/dashboard";
   import SuggestedPayments from "$lib/components/costs/suggested-payments.svelte";
+  import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import {
     dashboardBalanceState,
@@ -18,11 +20,14 @@
   let {
     costs,
     balances,
+    canWrite = false,
   }: {
     /** What the year has cost so far: all books together and per book. */
     costs: Dashboard["costsYearToDate"];
     /** Where the caller stands across all books, and the first payments that would square everybody; null when the server could not work it out. */
     balances: Dashboard["balances"];
+    /** The person may book costs: the card offers the quick entry. */
+    canWrite?: boolean;
   } = $props();
 
   const BOOKS_SHOWN = 4;
@@ -130,6 +135,17 @@
           {/if}
         {/if}
       </div>
+      {#if canWrite}
+        <Button
+          href={resolve("/costs/quick")}
+          variant="outline"
+          size="lg"
+          class="self-start"
+        >
+          <ZapIcon />
+          {m.dashboard_costs_quick()}
+        </Button>
+      {/if}
       <div class="flex flex-wrap gap-x-4">
         <a
           href={resolve("/costs/balances")}

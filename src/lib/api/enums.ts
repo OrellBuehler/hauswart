@@ -229,6 +229,7 @@ export const ATTACHMENT_OWNER_TYPES = [
   "asset_note",
   "tire_set",
   "appointment",
+  "ai_task",
 ] as const;
 export type AttachmentOwnerType = (typeof ATTACHMENT_OWNER_TYPES)[number];
 
@@ -603,3 +604,28 @@ export type InsurancePremiumPeriod = (typeof INSURANCE_PREMIUM_PERIODS)[number];
 /** `auto`: renews by itself unless cancelled in time. `fixed`: ends on its end date, nothing to cancel. */
 export const INSURANCE_RENEWALS = ["auto", "fixed"] as const;
 export type InsuranceRenewal = (typeof INSURANCE_RENEWALS)[number];
+
+/**
+ * The kinds of work the receipt queue (`ai_tasks`) holds. `receipt` is the only one a client can queue today; the
+ * others are named so that adding one is a change of the request schema and the tools, not of the table.
+ */
+export const AI_TASK_KINDS = [
+  "receipt",
+  "fuel_receipt",
+  "service_invoice",
+  "insurance_policy",
+] as const;
+export type AiTaskKind = (typeof AI_TASK_KINDS)[number];
+
+/** The kinds `POST /ai-tasks` accepts. */
+export const AI_TASK_QUEUEABLE_KINDS = [
+  "receipt",
+] as const satisfies readonly AiTaskKind[];
+
+/** `pending`: waiting to be processed. `done`: processed, its entries are marked for review. `dismissed`: nothing to book. */
+export const AI_TASK_STATUSES = ["pending", "done", "dismissed"] as const;
+export type AiTaskStatus = (typeof AI_TASK_STATUSES)[number];
+
+/** How a task was closed: by a person in the browser (`session`) or by an API token of this kind. */
+export const AI_TASK_CLOSED_VIA = ["session", ...TOKEN_KINDS] as const;
+export type AiTaskClosedVia = (typeof AI_TASK_CLOSED_VIA)[number];

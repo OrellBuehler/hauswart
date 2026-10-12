@@ -143,6 +143,21 @@ describe("bottom bar on phones", () => {
       expect(showsBottomNav(pathname), pathname).toBe(true);
     }
   });
+
+  it("gives way to the save bar of the quick entry of costs, and to nothing else under /costs", () => {
+    for (const pathname of ["/costs/quick", "/costs/quick/"]) {
+      expect(showsBottomNav(pathname), pathname).toBe(false);
+    }
+    for (const pathname of [
+      "/costs",
+      "/costs/receipts",
+      "/costs/balances",
+      "/costs/9",
+      "/quick",
+    ]) {
+      expect(showsBottomNav(pathname), pathname).toBe(true);
+    }
+  });
 });
 
 describe("header title", () => {

@@ -284,6 +284,7 @@ const ONLY: Record<FinanceSuggestionKind, readonly string[]> = {
     "participantIds",
     "countsAsExpense",
     "deductible",
+    "receiptTaskId",
   ],
   asset: ["name", "assetKind", "roomId"],
   bill_task: ["title"],
@@ -336,6 +337,7 @@ function costInput(
     participantIds: body.participantIds,
     countsAsExpense: body.countsAsExpense,
     deductible: body.deductible ?? "unknown",
+    receiptTaskId: body.receiptTaskId,
   };
 }
 

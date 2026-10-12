@@ -4,11 +4,14 @@
   import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
   import CoinsIcon from "@lucide/svelte/icons/coins";
   import DownloadIcon from "@lucide/svelte/icons/download";
+  import EyeIcon from "@lucide/svelte/icons/eye";
   import InboxIcon from "@lucide/svelte/icons/inbox";
   import ListChecksIcon from "@lucide/svelte/icons/list-checks";
   import FilterIcon from "@lucide/svelte/icons/list-filter";
   import PlusIcon from "@lucide/svelte/icons/plus";
+  import ReceiptTextIcon from "@lucide/svelte/icons/receipt-text";
   import SearchIcon from "@lucide/svelte/icons/search";
+  import ZapIcon from "@lucide/svelte/icons/zap";
   import { untrack } from "svelte";
   import { SvelteSet } from "svelte/reactivity";
   import { goto } from "$app/navigation";
@@ -46,7 +49,9 @@
     activeFilterCount,
     costFilterQuery,
     costsExportQuery,
+    isFiltered,
     parseCostFilters,
+    reviewFilters,
     yearOptions,
     type CostFilters,
   } from "$lib/costs/filters";
@@ -67,7 +72,19 @@
   const filters = $derived(data.filters);
   const canWrite = $derived(data.scopes.includes("costs:write"));
   const activeCount = $derived(activeFilterCount(filters));
-  const filtered = $derived(activeCount > 0 || filters.q !== "");
+  const filtered = $derived(isFiltered(filters));
+  /** The entries the summary counts as waiting for a review; not offered where that list is on screen already. */
+  const reviewHref = $derived(
+    filters.reviewNeeded
+      ? undefined
+      : resolve(
+          `/costs${costFilterQuery(reviewFilters(filters), data.defaultYear)}` as "/",
+        ),
+  );
+  const reviewCount = $derived(
+    filters.reviewNeeded ? data.costs.length : data.summary.reviewNeededCount,
+  );
+  const showReviewFilter = $derived(filters.reviewNeeded || reviewCount > 0);
   const csvHref = $derived(
     endpointUrl(endpoints.costsExport, { query: costsExportQuery(filters) }),
   );
@@ -75,6 +92,11 @@
   const newHref = $derived(
     resolve(
       `/costs/new${filters.bookId ? `?book=${encodeURIComponent(filters.bookId)}` : ""}` as "/",
+    ),
+  );
+  const quickHref = $derived(
+    resolve(
+      `/costs/quick${filters.bookId ? `?book=${encodeURIComponent(filters.bookId)}` : ""}` as "/",
     ),
   );
   const balancesHref = $derived(
@@ -217,6 +239,11 @@
       ),
       ...patch,
     };
+    // Every year is only offered for the review list, and a year or a month picked by hand ends it.
+    if (patch.allYears === undefined && (patch.year || patch.month)) {
+      next.allYears = false;
+    }
+    next.allYears = next.allYears && next.reviewNeeded;
     await goto(
       resolve(`/costs${costFilterQuery(next, data.defaultYear)}` as "/"),
       { keepFocus: true, noScroll: true, replaceState: replace },
@@ -253,16 +280,21 @@
       defectId: "",
       paidBy: "",
       month: "",
+      reviewNeeded: false,
+      allYears: false,
     });
   }
 
   const all = $derived({ value: "", label: m.costs_filter_all() });
-  const yearChoices = $derived(
-    yearOptions(data.defaultYear, filters.year).map((year) => ({
+  const yearChoices = $derived([
+    ...(filters.reviewNeeded
+      ? [{ value: "all", label: m.costs_year_all() }]
+      : []),
+    ...yearOptions(data.defaultYear, filters.year).map((year) => ({
       value: String(year),
       label: String(year),
     })),
-  );
+  ]);
   const categoryOptions = $derived([
     all,
     ...COST_CATEGORIES.map((c) => ({ value: c, label: categoryLabels[c]() })),
@@ -320,6 +352,21 @@
           {/if}
         </Button>
       {/if}
+      <Button href={resolve("/costs/receipts")} variant="outline" size="lg">
+        <ReceiptTextIcon />
+        {m.costs_receipts()}
+        {#if data.pendingReceipts !== null && data.pendingReceipts > 0}
+          <span
+            class="bg-warning/15 text-warning rounded-full px-1.5 text-xs tabular-nums"
+            aria-hidden="true">{data.pendingReceipts}</span
+          >
+          <span class="sr-only"
+            >{m.costs_receipts_pending({
+              count: data.pendingReceipts,
+            })}</span
+          >
+        {/if}
+      </Button>
       <Button
         href={csvHref}
         download
@@ -334,6 +381,15 @@
         {m.costs_csv({ year: filters.year })}
       </Button>
       {#if canWrite}
+        <Button
+          href={quickHref}
+          variant="outline"
+          size="lg"
+          class="max-md:hidden"
+        >
+          <ZapIcon />
+          {m.costs_quick()}
+        </Button>
         <Button href={newHref} size="lg" class="max-md:hidden">
           <PlusIcon />
           {m.cost_new()}
@@ -359,23 +415,24 @@
       variant="outline"
       size="icon-lg"
       aria-label={m.costs_year_prev()}
-      disabled={filters.year <= MIN_YEAR}
+      disabled={filters.allYears || filters.year <= MIN_YEAR}
       onclick={() => setYear(filters.year - 1)}
     >
       <ChevronLeftIcon />
     </Button>
     <OptionSelect
       id="costs-year"
-      class="w-28 font-medium tabular-nums"
-      value={String(filters.year)}
+      class={cn("w-28 font-medium tabular-nums", filters.allYears && "w-40")}
+      value={filters.allYears ? "all" : String(filters.year)}
       options={yearChoices}
-      onchange={(v) => setYear(Number(v))}
+      onchange={(v) =>
+        v === "all" ? void apply({ allYears: true }) : setYear(Number(v))}
     />
     <Button
       variant="outline"
       size="icon-lg"
       aria-label={m.costs_year_next()}
-      disabled={filters.year >= MAX_YEAR}
+      disabled={filters.allYears || filters.year >= MAX_YEAR}
       onclick={() => setYear(filters.year + 1)}
     >
       <ChevronRightIcon />
@@ -389,6 +446,7 @@
     {balancesHref}
     asset={summaryAsset}
     bookName={book?.name}
+    {reviewHref}
   />
 
   <Tabs.Root bind:value={tab} class="gap-4">
@@ -422,6 +480,22 @@
               oninput={onSearchInput}
             />
           </div>
+          {#if showReviewFilter}
+            <Button
+              variant="outline"
+              size="lg"
+              aria-pressed={filters.reviewNeeded}
+              class={cn(
+                filters.reviewNeeded &&
+                  "border-warning/50 bg-warning/10 text-warning hover:bg-warning/15 hover:text-warning",
+              )}
+              onclick={() => apply({ reviewNeeded: !filters.reviewNeeded })}
+            >
+              <EyeIcon />
+              {m.costs_filter_review()}
+              <span class="text-xs tabular-nums">{reviewCount}</span>
+            </Button>
+          {/if}
           <Button
             variant="outline"
             size="lg"
@@ -561,7 +635,19 @@
       {/if}
 
       {#if data.costs.length === 0}
-        {#if filtered}
+        {#if filters.reviewNeeded && activeCount === 0 && filters.q === ""}
+          <EmptyState
+            icon={EyeIcon}
+            title={m.costs_empty_review_title()}
+            description={m.costs_empty_review_body()}
+          >
+            {#snippet actions()}
+              <Button variant="outline" onclick={reset}>
+                {m.tasks_filter_reset()}
+              </Button>
+            {/snippet}
+          </EmptyState>
+        {:else if filtered}
           <EmptyState
             icon={SearchIcon}
             title={m.costs_empty_filtered_title()}
@@ -586,7 +672,11 @@
           >
             {#snippet actions()}
               {#if canWrite}
-                <Button href={newHref}>
+                <Button href={quickHref}>
+                  <ZapIcon />
+                  {m.costs_quick()}
+                </Button>
+                <Button href={newHref} variant="outline">
                   <PlusIcon />
                   {m.cost_new()}
                 </Button>
@@ -733,7 +823,7 @@
 
 {#if canWrite}
   {#if !selecting}
-    <Fab href={newHref} label={m.cost_new()} />
+    <Fab href={quickHref} label={m.quick_fab()} />
   {/if}
   <MoveCostsDialog
     bind:open={moveOpen}

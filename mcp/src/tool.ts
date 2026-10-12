@@ -42,10 +42,14 @@ const ANNOTATIONS: Record<ToolMode, ToolAnnotations> = {
   },
 };
 
-/** What a handler returns: one line for the reader, the data as JSON. */
+/** A block of a tool result beyond the text: an image, an embedded document. */
+export type ToolContent = CallToolResult["content"][number];
+
+/** What a handler returns: one line for the reader, the data as JSON, and optionally media (an image) that follows the text. */
 export interface ToolOutput {
   summary: string;
   data: unknown;
+  content?: readonly ToolContent[];
 }
 
 export interface ToolSpec<Shape extends z.ZodRawShape> {
@@ -70,9 +74,15 @@ export interface Tool {
   register(server: McpServer, ctx: ToolContext): void;
 }
 
-export function toolResult({ summary, data }: ToolOutput): CallToolResult {
+export function toolResult({
+  summary,
+  data,
+  content = [],
+}: ToolOutput): CallToolResult {
   const body = JSON.stringify(compact(data));
-  return { content: [{ type: "text", text: `${summary}\n\n${body}` }] };
+  return {
+    content: [{ type: "text", text: `${summary}\n\n${body}` }, ...content],
+  };
 }
 
 export function toolErrorResult(err: unknown): CallToolResult {

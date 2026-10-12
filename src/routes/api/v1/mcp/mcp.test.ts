@@ -3,6 +3,8 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { describe, expect, it } from "vitest";
 import type { TokenKind } from "$lib/api/enums";
 import type { Scope } from "$lib/api/scopes";
+import { createAiTask } from "$lib/server/ai-tasks/ai-tasks";
+import { plainPng } from "$lib/server/files/test-images";
 import { APP_VERSION } from "$lib/server/version";
 import { createInProcessFetch, errorCode } from "$lib/testing/api";
 import {
@@ -11,6 +13,8 @@ import {
   loginTestUser,
 } from "$lib/testing/auth";
 import { useTestDB } from "$lib/testing/db";
+import { ctxAt } from "$lib/testing/domain";
+import { useTestFilesDir } from "$lib/testing/files";
 import { callRoute, type CallOptions } from "$lib/testing/route";
 import { everyDays, parseReply } from "../../../../../mcp/src/test-harness";
 import { tools } from "../../../../../mcp/src/tools";
@@ -47,7 +51,8 @@ interface RpcBody {
 const rpcBody = (r: { body: unknown }) => r.body as RpcBody;
 
 describe("POST /api/v1/mcp", () => {
-  useTestDB();
+  const test = useTestDB();
+  useTestFilesDir();
 
   async function setup(
     opts: {
@@ -271,6 +276,44 @@ describe("POST /api/v1/mcp", () => {
       expect((r.body as { error: { message: string } }).error.message).toMatch(
         /unsupported protocol version/i,
       );
+    });
+  });
+
+  describe("receipts", () => {
+    it("carries the receipt of a task as image content in the JSON answer, read with the token's own scopes", async () => {
+      const { user, call } = await setup({ scopes: ["read"] });
+      const task = await createAiTask(
+        ctxAt(test.db),
+        {
+          kind: "receipt",
+          bytes: plainPng(40, 30),
+          filename: "beleg.png",
+          declaredMime: "image/png",
+          note: "Einkauf",
+        },
+        user.id,
+      );
+      const r = await call(callTool(1, "get_ai_task", { id: task.id }));
+      expect(r.res.status).toBe(200);
+      expect(r.res.headers.get("content-type")).toMatch(/^application\/json/);
+      const blocks = rpcBody(r).result?.content as {
+        type: string;
+        data?: string;
+        mimeType?: string;
+        text?: string;
+      }[];
+      expect(blocks.map((b) => b.type)).toEqual(["text", "image"]);
+      expect(blocks[0]?.text).toContain(`Receipt task ${task.id} (pending)`);
+      expect(blocks[1]?.mimeType).toBe("image/png");
+      expect([
+        ...Buffer.from(blocks[1]?.data ?? "", "base64").subarray(0, 4),
+      ]).toEqual([0x89, 0x50, 0x4e, 0x47]);
+      const refused = parseReply(
+        rpcBody(await call(callTool(2, "complete_ai_task", { id: task.id })))
+          .result as never,
+      );
+      expect(refused.isError).toBe(true);
+      expect(refused.text).toMatch(/complete_ai_task.*not found/i);
     });
   });
 

@@ -33,3 +33,29 @@ export function forgetBook(userId: string): void {
     console.warn("remembered cost book not cleared", err);
   }
 }
+
+const QUICK_PREFIX = "hauswart:quick-book";
+
+const quickKeyFor = (userId: string) => `${QUICK_PREFIX}:${userId}`;
+
+/**
+ * The book the last quick entry went to (`null` = never used, or the browser refuses storage). Kept apart from the book
+ * the costs page showed last: where an expense is typed in on a phone and what the list is opened on are two habits.
+ */
+export function loadQuickBook(userId: string): string | null {
+  try {
+    const id = localStorage.getItem(quickKeyFor(userId))?.trim();
+    return id ? id : null;
+  } catch (err) {
+    console.warn("quick entry book unreadable", err);
+    return null;
+  }
+}
+
+export function rememberQuickBook(userId: string, bookId: string): void {
+  try {
+    if (bookId) localStorage.setItem(quickKeyFor(userId), bookId);
+  } catch (err) {
+    console.warn("quick entry book not stored", err);
+  }
+}

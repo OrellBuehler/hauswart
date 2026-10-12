@@ -10,18 +10,20 @@ import {
   updateAttachment,
 } from "$lib/server/attachments/attachments";
 import { defaultDisposition, fileResponse } from "$lib/server/files/serve";
-import { notFound } from "$lib/server/service";
+import { conflict, invalidField, notFound } from "$lib/server/service";
 import type { AuthedContext } from "../context";
 import type { Handler } from "../bind";
 import { wireAttachment } from "../wire";
 
 /**
  * Files on a documentation page are documentation: they need the same scope as editing it. Receipts
- * on a cost entry are financial records: they need the costs scope.
+ * on a cost entry (or on a task of the receipt queue) are financial records: they need the costs scope.
  */
 function requireOwnerScope(ctx: AuthedContext, ownerType: AttachmentOwnerType) {
   if (ownerType === "page") requireScopes(ctx.principal, ["docs:write"]);
-  if (ownerType === "cost") requireScopes(ctx.principal, ["costs:write"]);
+  if (ownerType === "cost" || ownerType === "ai_task") {
+    requireScopes(ctx.principal, ["costs:write"]);
+  }
 }
 
 export const upload: Handler<typeof endpoints.attachmentsUpload> = async ({
@@ -29,6 +31,12 @@ export const upload: Handler<typeof endpoints.attachmentsUpload> = async ({
   body,
 }) => {
   requireOwnerScope(ctx, body.ownerType);
+  if (body.ownerType === "ai_task") {
+    throw invalidField(
+      "ownerType",
+      "A task of the receipt queue has its file already; put another receipt in the queue with POST /ai-tasks",
+    );
+  }
   const row = await createAttachment(ctx, {
     bytes: new Uint8Array(await body.file.arrayBuffer()),
     filename: body.file.name,
@@ -72,7 +80,13 @@ export const remove: Handler<typeof endpoints.attachmentsDelete> = async ({
   ctx,
   params,
 }) => {
-  requireOwnerScope(ctx, getAttachment(ctx, params.id).ownerType);
+  const { ownerType } = getAttachment(ctx, params.id);
+  requireOwnerScope(ctx, ownerType);
+  if (ownerType === "ai_task") {
+    throw conflict(
+      "This file belongs to a task of the receipt queue; delete the task instead (DELETE /ai-tasks/{id})",
+    );
+  }
   await deleteAttachment(ctx, params.id);
   return null;
 };

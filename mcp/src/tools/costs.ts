@@ -15,6 +15,16 @@ import { defineTool } from "../tool";
 const date = z.iso.date();
 const category = z.enum(COST_CATEGORIES);
 
+/** The receipt task a booking is for; the booking tools of the receipt queue share it. */
+export const receiptTaskId = z
+  .string()
+  .min(1)
+  .max(64)
+  .optional()
+  .describe(
+    "The id of the receipt task (list_ai_tasks) you are booking this for. Pass it for everything you book from a task: the entry is flagged for review at once and recorded on the task (get_ai_task lists it as bookedSoFar), so nothing is booked twice if you are interrupted or another client works on the same task. A task that is closed already is refused.",
+  );
+
 /** `12.50 CHF`, `-3 CHF`: the amount as a plain decimal in the currency's own precision. */
 export const money = (amountMinor: number, currency: string) =>
   `${toDecimalString(minor(amountMinor), currencyExponent(currency))} ${currency}`;
@@ -62,6 +72,8 @@ const costRow = (c: CostEntry) => ({
     c.defectNumber === null ? null : `#${c.defectNumber} ${c.defectTitle}`,
   countsAsExpense: c.countsAsExpense ? null : false,
   deductible: c.deductible === "unknown" ? null : c.deductible,
+  needsReview: c.reviewNeeded ? true : null,
+  receiptTask: c.receiptTaskId,
   notes: c.notes,
 });
 
@@ -69,7 +81,7 @@ export const listCosts = defineTool({
   name: "list_costs",
   title: "List costs",
   description:
-    "Cost entries of the household's books (the apartment, groceries and everyday spending, the car ...), newest first. Amounts are decimals in the entry's currency: positive = expense, negative = refund. Filters: book (a name or id, see list_cost_books), year or from/to, category, asset and room (id or name), paidBy (me, a name or id), q (text in title, payee, notes). Totals and who owes whom are in cost_summary and get_balances.",
+    "Cost entries of the household's books (the apartment, groceries and everyday spending, the car ...), newest first. Amounts are decimals in the entry's currency: positive = expense, negative = refund. Filters: book (a name or id, see list_cost_books), year or from/to, category, asset and room (id or name), paidBy (me, a name or id), q (text in title, payee, notes), reviewNeeded (true: only the entries a person still has to review, such as those booked from a receipt of the receipt queue; they carry needsReview). Totals and who owes whom are in cost_summary and get_balances.",
   mode: "read",
   input: {
     book: z.string().min(1).max(64).optional(),
@@ -81,10 +93,11 @@ export const listCosts = defineTool({
     room: z.string().min(1).max(100).optional(),
     paidBy: z.string().min(1).max(100).optional(),
     q: z.string().trim().min(1).max(100).optional(),
+    reviewNeeded: z.boolean().optional(),
     limit: z.number().int().min(1).max(100).default(30),
     cursor: z.string().min(1).max(512).optional(),
   },
-  async handler({ book, asset, room, paidBy, ...rest }, ctx) {
+  async handler({ book, asset, room, paidBy, reviewNeeded, ...rest }, ctx) {
     const [b, a, r, p] = await Promise.all([
       book ? ctx.resolveBook(book) : undefined,
       asset ? ctx.resolveAsset(asset) : undefined,
@@ -98,6 +111,12 @@ export const listCosts = defineTool({
         assetId: a?.id,
         roomId: r?.id,
         paidBy: p,
+        reviewNeeded:
+          reviewNeeded === undefined
+            ? undefined
+            : reviewNeeded
+              ? "true"
+              : "false",
       },
     });
     return {
@@ -179,7 +198,7 @@ export const createCost = defineTool({
   name: "create_cost",
   title: "Book a cost",
   description:
-    "Books an expense (or, with a negative amount, a refund). amount is a decimal such as '123.45' in the household currency unless currency is given. category is required. book is the cost book by name or id (list_cost_books; the default book when omitted). paidBy defaults to the token's user. split is 'ownership' (by the people's ownership shares), 'equal' or 'none' (not shared); omitted, the book's own default applies. participants (names, ids or 'me') split the amount equally among those members only, e.g. dinner for two of three; it implies 'equal'. date defaults to today. asset and room can be given by name. deductible: maintenance (value-preserving, tax deductible) or investment (value-increasing), only in books that are tax relevant; countsAsExpense is false for mortgage repayments by default. Check list_costs first to avoid booking twice.",
+    "Books an expense (or, with a negative amount, a refund). amount is a decimal such as '123.45' in the household currency unless currency is given. category is required. book is the cost book by name or id (list_cost_books; the default book when omitted). paidBy defaults to the token's user. split is 'ownership' (by the people's ownership shares), 'equal' or 'none' (not shared); omitted, the book's own default applies. participants (names, ids or 'me') split the amount equally among those members only, e.g. dinner for two of three; it implies 'equal'. date defaults to today. asset and room can be given by name. deductible: maintenance (value-preserving, tax deductible) or investment (value-increasing), only in books that are tax relevant; countsAsExpense is false for mortgage repayments by default. Check list_costs first to avoid booking twice. Working on a task of the receipt queue: pass its id as receiptTaskId.",
   mode: "create",
   scopes: ["costs:write"],
   input: {
@@ -206,6 +225,7 @@ export const createCost = defineTool({
     participants: z.array(z.string().min(1).max(100)).min(1).max(20).optional(),
     deductible: z.enum(COST_DEDUCTIBLE).optional(),
     countsAsExpense: z.boolean().optional(),
+    receiptTaskId,
   },
   async handler(args, ctx) {
     const {
@@ -240,6 +260,7 @@ export const createCost = defineTool({
         bookId: b?.id,
         splitMode: split ?? (who ? "equal" : undefined),
         participantIds: who,
+        idempotencyKey: ctx.newKey(),
       },
     });
     return {

@@ -19,6 +19,7 @@ import {
   loadCostContext,
   loadHouseholdToday,
   tryLoadBalances,
+  tryLoadPendingReceipts,
 } from "$lib/costs/load";
 import type { PageLoad } from "./$types";
 
@@ -49,32 +50,40 @@ export const load: PageLoad = async ({ fetch, url, parent }) => {
     redirect(307, `${url.pathname}${costFilterQuery(filters, defaultYear)}`);
   }
 
-  const [context, costs, summary, balances, suggestions, integrations] =
-    await Promise.all([
-      loadCostContext(client, redirectTo, { household, books }),
-      orFail(
-        fetchAll((cursor) =>
-          client.call(endpoints.costsList, {
-            query: costsQuery(filters, cursor),
-          }),
-        ),
-        redirectTo,
-      ),
-      orFail(
-        client.call(endpoints.costsSummary, {
-          query: costsSummaryQuery(filters),
+  const [
+    context,
+    costs,
+    summary,
+    balances,
+    suggestions,
+    integrations,
+    pendingReceipts,
+  ] = await Promise.all([
+    loadCostContext(client, redirectTo, { household, books }),
+    orFail(
+      fetchAll((cursor) =>
+        client.call(endpoints.costsList, {
+          query: costsQuery(filters, cursor),
         }),
-        redirectTo,
       ),
-      tryLoadBalances(client, filters.bookId, redirectTo),
-      orFail(
-        client.call(endpoints.financeSuggestionsList, {
-          query: { limit: 200 },
-        }),
-        redirectTo,
-      ),
-      orFail(client.call(endpoints.integrationsList), redirectTo),
-    ]);
+      redirectTo,
+    ),
+    orFail(
+      client.call(endpoints.costsSummary, {
+        query: costsSummaryQuery(filters),
+      }),
+      redirectTo,
+    ),
+    tryLoadBalances(client, filters.bookId, redirectTo),
+    orFail(
+      client.call(endpoints.financeSuggestionsList, {
+        query: { limit: 200 },
+      }),
+      redirectTo,
+    ),
+    orFail(client.call(endpoints.integrationsList), redirectTo),
+    tryLoadPendingReceipts(client, redirectTo),
+  ]);
   return {
     ...context,
     filters,
@@ -87,5 +96,6 @@ export const load: PageLoad = async ({ fetch, url, parent }) => {
     pendingSuggestions: suggestions.items.length,
     morePendingSuggestions: suggestions.nextCursor !== null,
     financeConnected: hasFinanceConnection(integrations.items),
+    pendingReceipts,
   };
 };

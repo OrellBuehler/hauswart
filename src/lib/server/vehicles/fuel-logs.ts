@@ -269,6 +269,7 @@ function costBody(
     paidByUserId: string | null;
     splitMode: CreateCostRequest["splitMode"];
     shares: CreateCostRequest["shares"];
+    receiptTaskId?: string | undefined;
   },
 ): CreateCostRequest {
   return {
@@ -284,6 +285,7 @@ function costBody(
     shares: booking.shares,
     paidByUserId: booking.paidByUserId,
     deductible: "unknown",
+    receiptTaskId: booking.receiptTaskId,
   };
 }
 
@@ -338,6 +340,12 @@ export function createFuelLog(
   userId: string | null,
 ): FuelLogRecord {
   const vehicle = vehicleOf(ctx, assetId);
+  if (input.receiptTaskId && input.amountMinor === 0) {
+    throw invalidField(
+      "receiptTaskId",
+      "A free fill books no cost entry, so there is nothing to record for a receipt task",
+    );
+  }
   const date = input.date ?? todayOf(ctx);
   assertNotFuture(ctx, date);
   const currency = input.currency ?? getHousehold(ctx).currency;
@@ -385,6 +393,7 @@ export function createFuelLog(
             input.paidByUserId === undefined ? userId : input.paidByUserId,
           splitMode: input.splitMode,
           shares: input.shares,
+          receiptTaskId: input.receiptTaskId,
         }),
         userId,
       );

@@ -92,6 +92,11 @@ export const createFuelLogRequestSchema = z.strictObject({
   paidByUserId: idSchema.nullable().optional(),
   splitMode: costSplitModeSchema.optional(),
   shares: costSharesInputSchema.optional(),
+  /**
+   * The receipt task (`/ai-tasks`) the fill is booked for: its cost entry is flagged for review and recorded on the task
+   * like `receiptTaskId` of `POST /costs`. A free fill has no cost entry to record it on, so the id is a 400 there.
+   */
+  receiptTaskId: idSchema.optional(),
 });
 export type CreateFuelLogRequest = z.output<typeof createFuelLogRequestSchema>;
 

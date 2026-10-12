@@ -6,16 +6,10 @@ import type { CompletionServiceLogRequest } from "$lib/api/schemas/service-log";
 import { formatDate } from "$lib/format";
 import { m } from "$lib/paraglide/messages";
 import { apiErrorMessage } from "$lib/error-message";
+import { newIdempotencyKey } from "$lib/idempotency";
 import { tireOffers } from "$lib/vehicles/tire-offer.svelte";
 
 const TOAST_MS = 8000;
-
-/** A random key for idempotent retries; `crypto.randomUUID` is missing on plain-HTTP origins. */
-export function newIdempotencyKey(): string {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-}
 
 export async function undoCompletion(completionId: string): Promise<void> {
   try {

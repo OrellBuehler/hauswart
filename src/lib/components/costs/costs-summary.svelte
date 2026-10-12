@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ArrowRightIcon from "@lucide/svelte/icons/arrow-right";
+  import EyeIcon from "@lucide/svelte/icons/eye";
   import InfoIcon from "@lucide/svelte/icons/info";
   import FilterIcon from "@lucide/svelte/icons/list-filter";
   import type { CostBalances, CostsSummary } from "$lib/api/schemas/costs";
@@ -16,6 +18,7 @@
     balancesHref,
     asset,
     bookName,
+    reviewHref,
   }: {
     summary: CostsSummary;
     /** Where everybody stands today (the book on screen, or every book); `null` when they could not be read. */
@@ -27,6 +30,11 @@
     asset?: { name: string | null } | undefined;
     /** Set when the summary was asked for one book only. */
     bookName?: string | undefined;
+    /**
+     * The list of the entries still to review in the summary's scope. The notice only shows while the summary counts
+     * some; leave it out where that list is on screen already.
+     */
+    reviewHref?: string | undefined;
   } = $props();
 
   const entryCount = $derived(
@@ -76,6 +84,23 @@
 {/snippet}
 
 <div class="flex flex-col gap-3">
+  {#if reviewHref && summary.reviewNeededCount > 0}
+    <!-- eslint-disable svelte/no-navigation-without-resolve -- the page hands over the resolved address -->
+    <a
+      href={reviewHref}
+      class="border-warning/40 bg-warning/10 text-warning hover:bg-warning/15 focus-visible:ring-ring/50 flex min-h-11 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium outline-none focus-visible:ring-[3px]"
+    >
+      <EyeIcon class="size-4 shrink-0" aria-hidden="true" />
+      <span class="min-w-0 flex-1 text-pretty">
+        {m.costs_review_banner({ count: summary.reviewNeededCount })}
+      </span>
+      <span class="flex shrink-0 items-center gap-1 text-xs">
+        {m.costs_review_open()}
+        <ArrowRightIcon class="size-3.5" aria-hidden="true" />
+      </span>
+    </a>
+    <!-- eslint-enable svelte/no-navigation-without-resolve -->
+  {/if}
   {#if asset || bookName}
     <p
       class="bg-muted/50 text-muted-foreground flex items-start gap-2 rounded-lg border px-3 py-2 text-sm text-pretty"

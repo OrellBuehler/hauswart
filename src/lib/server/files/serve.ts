@@ -22,8 +22,12 @@ export interface FileResponseOptions {
   /** Strong etag; enables conditional requests when `request` is given. */
   etag?: string;
   request?: Request;
-  /** Default `immutable`. */
-  cache?: "immutable" | "no-store";
+  /**
+   * Default `immutable`. `no-cache` is for a response that is not the stored file itself but something made from it (the
+   * preview a task hands out), which can change while the file does not: private, kept, but asked about every time (the
+   * etag makes that a 304).
+   */
+  cache?: "immutable" | "no-store" | "no-cache";
 }
 
 const BASE_CSP =
@@ -65,7 +69,9 @@ export function fileResponse(
     "Cache-Control":
       options.cache === "no-store"
         ? "no-store"
-        : "private, max-age=31536000, immutable",
+        : options.cache === "no-cache"
+          ? "private, no-cache"
+          : "private, max-age=31536000, immutable",
   });
   if (options.etag) headers.set("ETag", options.etag);
 

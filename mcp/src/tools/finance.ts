@@ -10,7 +10,7 @@ import { endpoints } from "../../../src/lib/api/registry";
 import type { FinanceSuggestion } from "../../../src/lib/api/schemas/finance";
 import { moreHint, plural } from "../format";
 import { defineTool } from "../tool";
-import { money } from "./costs";
+import { money, receiptTaskId } from "./costs";
 
 const suggestionId = z
   .string()
@@ -108,7 +108,7 @@ export const acceptFinanceSuggestion = defineTool({
   name: "accept_finance_suggestion",
   title: "Accept a finance suggestion",
   description:
-    "Turns one of the token user's pending suggestions into what it offers: a cost entry (paid by the token's user, in the default cost book and split as that book says), a device, or a payment task for a bill. Without overrides it is taken exactly as the finance app reported it; an accepted cost is never booked twice. Overrides for a 'cost': title, book (name or id, see list_cost_books), category, notes, asset and room (by name), paidBy, split (ownership, equal or none), participants (members the amount is split equally among), deductible (tax relevant books only), countsAsExpense. For an 'asset': name, assetKind, room. For a 'bill_task': title. An override of another kind is rejected. Deciding twice is a conflict. Look at list_finance_suggestions first.",
+    "Turns one of the token user's pending suggestions into what it offers: a cost entry (paid by the token's user, in the default cost book and split as that book says), a device, or a payment task for a bill. Without overrides it is taken exactly as the finance app reported it; an accepted cost is never booked twice. Overrides for a 'cost': title, book (name or id, see list_cost_books), category, notes, asset and room (by name), paidBy, split (ownership, equal or none), participants (members the amount is split equally among), deductible (tax relevant books only), countsAsExpense, receiptTaskId (the receipt task you are booking it for, see create_cost). For an 'asset': name, assetKind, room. For a 'bill_task': title. An override of another kind is rejected. Deciding twice is a conflict. Look at list_finance_suggestions first.",
   mode: "create",
   scopes: ["costs:write"],
   input: {
@@ -126,6 +126,7 @@ export const acceptFinanceSuggestion = defineTool({
     countsAsExpense: z.boolean().optional(),
     name: z.string().trim().min(1).max(120).optional(),
     assetKind: z.enum(ASSET_KINDS).optional(),
+    receiptTaskId,
   },
   async handler(
     { id, asset, room, paidBy, split, book, participants, ...rest },
