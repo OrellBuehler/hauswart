@@ -7,6 +7,7 @@ import {
   type CostTag,
   type CostTagRef,
 } from "$lib/api/schemas/cost-tags";
+import { nameKey } from "$lib/costs/names";
 import { m } from "$lib/paraglide/messages";
 
 /**
@@ -153,9 +154,9 @@ export function tagNameTaken(
   tags: readonly Pick<CostTag, "id" | "name">[],
   exceptId?: string,
 ): boolean {
-  const wanted = name.trim().toLocaleLowerCase();
+  const wanted = nameKey(name);
   return tags.some(
-    (tag) => tag.id !== exceptId && tag.name.toLocaleLowerCase() === wanted,
+    (tag) => tag.id !== exceptId && nameKey(tag.name) === wanted,
   );
 }
 

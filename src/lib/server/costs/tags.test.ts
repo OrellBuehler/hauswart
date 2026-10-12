@@ -80,6 +80,35 @@ describe("cost tags", () => {
       expect(() => tag("ferien")).toThrowError(/already exists/);
     });
 
+    it.each([
+      ["a lower case umlaut", "übernachtung"],
+      ["an upper case umlaut", "ÜBERNACHTUNG"],
+      ["a decomposed umlaut", "U\u0308bernachtung"],
+      ["a decomposed lower case umlaut", "u\u0308bernachtung"],
+    ])("refuses a second tag whose name differs only in %s", (_name, other) => {
+      tag("Übernachtung");
+      expect(() => tag(other)).toThrowError(/already exists/);
+      expect(listCostTags(ctx())).toHaveLength(1);
+    });
+
+    it("keeps the names of different letters apart", () => {
+      tag("Übernachtung");
+      expect(tag("Ubernachtung").name).toBe("Ubernachtung");
+      expect(tag("Strasse").name).toBe("Strasse");
+    });
+
+    it("compares a rename by the same key, and allows a change of case beyond ASCII in its own name", () => {
+      const t = tag("übernachtung");
+      expect(updateCostTag(ctx(), t.id, { name: "Übernachtung" }).name).toBe(
+        "Übernachtung",
+      );
+      const other = tag("Steuern");
+      expect(() =>
+        updateCostTag(ctx(), other.id, { name: "übernachtung" }),
+      ).toThrow(/already exists/);
+      expect(getCostTag(ctx(), other.id).name).toBe("Steuern");
+    });
+
     it("renames and recolours a tag, and allows a change of case in its own name", () => {
       const t = tag("ferien");
       expect(updateCostTag(ctx(), t.id, { name: "Ferien" }).name).toBe(

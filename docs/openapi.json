@@ -20126,7 +20126,7 @@
       "post": {
         "operationId": "costBooksCreate",
         "summary": "Create a cost book",
-        "description": "`slug` is derived from the name, `defaultSplitMode` is `ownership` (or `equal`, `none`), `taxRelevant` false (only a tax relevant book takes a `deductible` class on its entries) and the book goes to the end of the list. `isDefault: true` makes it the default book (the previous one stops being it). Names are unique without regard to case (409 `conflict`).",
+        "description": "`slug` is derived from the name, `defaultSplitMode` is `ownership` (or `equal`, `none`), `taxRelevant` false (only a tax relevant book takes a `deductible` class on its entries) and the book goes to the end of the list. `isDefault: true` makes it the default book (the previous one stops being it). Names are unique without regard to case, umlauts included (409 `conflict`).",
         "tags": [
           "costs"
         ],
@@ -20789,7 +20789,7 @@
       "post": {
         "operationId": "costTagsCreate",
         "summary": "Create a cost tag",
-        "description": "`color` is a key the client maps to a colour and defaults to `gray`. Names are unique without regard to case (409 `conflict`), and there are at most 200 tags (409).",
+        "description": "`color` is a key the client maps to a colour and defaults to `gray`. Names are unique without regard to case, umlauts included (409 `conflict`), and there are at most 200 tags (409).",
         "tags": [
           "costs"
         ],

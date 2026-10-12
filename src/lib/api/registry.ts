@@ -2248,7 +2248,7 @@ export const endpoints = {
     path: "/api/v1/cost-books",
     summary: "Create a cost book",
     description:
-      "`slug` is derived from the name, `defaultSplitMode` is `ownership` (or `equal`, `none`), `taxRelevant` false (only a tax relevant book takes a `deductible` class on its entries) and the book goes to the end of the list. `isDefault: true` makes it the default book (the previous one stops being it). Names are unique without regard to case (409 `conflict`).",
+      "`slug` is derived from the name, `defaultSplitMode` is `ownership` (or `equal`, `none`), `taxRelevant` false (only a tax relevant book takes a `deductible` class on its entries) and the book goes to the end of the list. `isDefault: true` makes it the default book (the previous one stops being it). Names are unique without regard to case, umlauts included (409 `conflict`).",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2322,7 +2322,7 @@ export const endpoints = {
     path: "/api/v1/cost-tags",
     summary: "Create a cost tag",
     description:
-      "`color` is a key the client maps to a colour and defaults to `gray`. Names are unique without regard to case (409 `conflict`), and there are at most 200 tags (409).",
+      "`color` is a key the client maps to a colour and defaults to `gray`. Names are unique without regard to case, umlauts included (409 `conflict`), and there are at most 200 tags (409).",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],

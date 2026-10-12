@@ -5,6 +5,7 @@ import {
   type CreateCostTagRequest,
   type UpdateCostTagRequest,
 } from "$lib/api/schemas/cost-tags";
+import { nameKey } from "$lib/costs/names";
 import { costEntryTags, costTags, type DB } from "$lib/server/db";
 import {
   conflict,
@@ -59,15 +60,18 @@ export function getCostTagRow(ctx: Db, id: string): CostTagRow {
   return row;
 }
 
+/**
+ * Whether another tag has the name, compared by `nameKey` (SQLite's `lower()` and so the unique index fold ASCII only,
+ * and "Übernachtung" would otherwise live next to "übernachtung"). At most `MAX_COST_TAGS` rows, read and compared at once
+ * with the insert that follows, in one synchronous step.
+ */
 function nameTaken(ctx: Db, name: string, exceptId?: string): boolean {
-  const same = sql`lower(${costTags.name}) = lower(${name})`;
-  return (
-    ctx.db
-      .select({ id: costTags.id })
-      .from(costTags)
-      .where(exceptId ? sql`${same} and ${costTags.id} <> ${exceptId}` : same)
-      .get() !== undefined
-  );
+  const wanted = nameKey(name);
+  return ctx.db
+    .select({ id: costTags.id, name: costTags.name })
+    .from(costTags)
+    .all()
+    .some((t) => t.id !== exceptId && nameKey(t.name) === wanted);
 }
 
 const taken = () => conflict("A tag with this name already exists");

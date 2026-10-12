@@ -181,7 +181,7 @@ src/lib/server/schema.ts         Drizzle schema — one file, every table has cr
 src/lib/server/crypto.ts         AES-256-GCM for stored secrets (HAUSWART_SECRET_KEY)
 src/lib/money.ts                 minor-unit money type, parsing/formatting, ownership shares
 src/lib/costs/                   client-safe: recurrence.ts (the rule of a recurring cost, pure), budget.ts (budget periods and usage, pure), match.ts (the
-                                 matching rule of a transaction and an entry, pure); client-safe UI logic of the costs pages: books.ts (book choice, icons), book-memory.ts, filters.ts, form.ts (draft ->
+                                 matching rule of a transaction and an entry, pure), names.ts (`nameKey`, how names of tags and books are compared); client-safe UI logic of the costs pages: books.ts (book choice, icons), book-memory.ts, filters.ts, form.ts (draft ->
                                  request bodies), balances.ts (wording), settlements.ts (drafts, bodies, filters), load.ts, quick.ts (category ranking,
                                  chips -> split, quick draft -> bodies), receipts.ts (queue page helpers), tags.ts (colours, choosing, names), budgets.ts
                                  (view, display, form), recurrences.ts (rule wording, preview, drafts, bodies), recurrence-controls.svelte.ts (pause, resume, book now),
@@ -395,7 +395,7 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   default split. PATCH with `splitMode` ownership/equal splits again by today's shares (`equal`: everybody);
   changing only the amount keeps the frozen shares.
 - **Cost books** (`cost_books`, migration `0026`; `costs/books.ts`; `/cost-books`, reads `read`, writes `costs:write`): the
-  ledgers entries are booked into. `name` (60, unique without regard to case), `slug`, `icon` (a key the client maps),
+  ledgers entries are booked into. `name` (60, unique without regard to case, umlauts included: `nameKey`), `slug`, `icon` (a key the client maps),
   `defaultSplitMode` (`ownership|equal|none`), `taxRelevant`, `archivedAt`, `sortOrder`. The migration creates Wohnung
   (tax relevant, `ownership`), Haushalt and Auto (`equal`) and puts every earlier entry into Wohnung. SQLite cannot
   add a NOT NULL reference to a table with rows, so it rebuilds `cost_entries`; it was written for a migrator with foreign
@@ -524,7 +524,7 @@ suggestedPaymentCount}`, the caller's own place across all books with recorded p
 All three are household data (no per-person scoping), reads need `read`, writes `costs:write`; they came with migration `0030`.
 
 - **Tags** (`cost_tags`, `cost_entry_tags`; `costs/tags.ts`; `GET|POST /cost-tags`, `GET|PATCH|DELETE /cost-tags/{id}`): a label on entries, `name` (40,
-  unique without regard to case, 409) and `color` (a key of `COST_TAG_COLORS` the client maps, default `gray`), at most 200 (the list is not paged), the DTO
+  unique without regard to case, umlauts included, 409; compared by `lib/costs/names.ts` `nameKey` = NFC + `toLocaleLowerCase("de")` in the service and the tag form, because SQLite's `lower()` and so the unique index fold ASCII only) and `color` (a key of `COST_TAG_COLORS` the client maps, default `gray`), at most 200 (the list is not paged), the DTO
   carries `entryCount`. Entries take `tagIds` (create and PATCH; PATCH replaces, `[]` clears; each once, at most 10, an unknown id is a 400 on `tagIds`) and
   carry `tags` (`{id, name, color}`, by name). `tagId` narrows `GET /costs`, `GET /costs/summary` (every number, the settlement too) and the CSV; an
   unknown tag is a 404 there. The CSV's last column `tags` holds the names, by name, joined with `, `. Deleting a tag only untags (the links cascade). Accepting a

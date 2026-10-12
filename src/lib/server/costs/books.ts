@@ -4,6 +4,7 @@ import type {
   ListCostBooksQuery,
   UpdateCostBookRequest,
 } from "$lib/api/schemas/cost-books";
+import { nameKey } from "$lib/costs/names";
 import { costBooks, costRecurrences, type DB } from "$lib/server/db";
 import { paginateArray } from "$lib/server/pagination";
 import {
@@ -214,16 +215,17 @@ const slugTaken = (ctx: Db, slug: string) =>
     .where(eq(costBooks.slug, slug))
     .get() !== undefined;
 
-/** Names are compared without regard to case, so "auto" cannot join an "Auto" a picker would show twice. */
+/**
+ * Names are compared without regard to case by `nameKey`, so "auto" cannot join an "Auto" a picker would show twice, and
+ * "übernachtung" cannot join "Übernachtung" (SQLite's `lower()`, and so the unique index, fold ASCII only).
+ */
 function nameTaken(ctx: Db, name: string, exceptId?: string): boolean {
-  const same = sql`lower(${costBooks.name}) = lower(${name})`;
-  return (
-    ctx.db
-      .select({ id: costBooks.id })
-      .from(costBooks)
-      .where(exceptId ? and(same, sql`${costBooks.id} <> ${exceptId}`) : same)
-      .get() !== undefined
-  );
+  const wanted = nameKey(name);
+  return ctx.db
+    .select({ id: costBooks.id, name: costBooks.name })
+    .from(costBooks)
+    .all()
+    .some((b) => b.id !== exceptId && nameKey(b.name) === wanted);
 }
 
 const activeCount = (ctx: Db) =>

@@ -116,6 +116,18 @@ describe("cost books", () => {
       },
     );
 
+    it.each([
+      ["a lower case umlaut", "übernachtung"],
+      ["an upper case umlaut", "ÜBERNACHTUNG"],
+      ["a decomposed umlaut", "U\u0308bernachtung"],
+    ])("refuses a book whose name differs only in %s", (_name, other) => {
+      create({ name: "Übernachtung" });
+      expect(() => create({ name: other })).toThrowError(
+        expect.objectContaining({ code: "conflict" }),
+      );
+      expect(list().filter((b) => /bernachtung/i.test(b.name))).toHaveLength(1);
+    });
+
     it("refuses an explicit slug that is taken", () => {
       expect(() => create({ slug: "wohnung" })).toThrowError(
         expect.objectContaining({ code: "conflict" }),
@@ -157,6 +169,18 @@ describe("cost books", () => {
       expect(() => update(ferien.id, { slug: "haushalt" })).toThrowError(
         expect.objectContaining({ code: "conflict" }),
       );
+    });
+
+    it("compares a rename by letters beyond ASCII as well, and allows a change of case in its own name", () => {
+      const nacht = create({ name: "übernachtung" });
+      expect(update(nacht.id, { name: "Übernachtung" }).name).toBe(
+        "Übernachtung",
+      );
+      const ferien = create();
+      expect(() => update(ferien.id, { name: "übernachtung" })).toThrowError(
+        expect.objectContaining({ code: "conflict" }),
+      );
+      expect(named("Ferien").id).toBe(ferien.id);
     });
 
     it("changes the options", () => {

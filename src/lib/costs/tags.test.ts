@@ -125,6 +125,15 @@ describe("tag names", () => {
     expect(tagNameTaken("Neu", tags)).toBe(false);
   });
 
+  it("finds a name that is taken beyond ASCII, whatever the case and the spelling of the umlaut", () => {
+    const umlauts = [tag("1", "Übernachtung")];
+    expect(tagNameTaken("übernachtung", umlauts)).toBe(true);
+    expect(tagNameTaken("ÜBERNACHTUNG", umlauts)).toBe(true);
+    expect(tagNameTaken("U\u0308bernachtung", umlauts)).toBe(true);
+    expect(tagNameTaken("Ubernachtung", umlauts)).toBe(false);
+    expect(tagNameTaken("Übernachtung", umlauts, "1")).toBe(false);
+  });
+
   it("says what is wrong with a name", () => {
     expect(tagNameProblem("", tags)).toBe("Pflichtfeld.");
     expect(tagNameProblem("   ", tags)).toBe("Pflichtfeld.");
