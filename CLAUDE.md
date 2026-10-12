@@ -549,7 +549,10 @@ All three are household data (no per-person scoping), reads need `read`, writes 
   cost every occurrence up to and including today in the household zone, oldest first (a server that was down books each occurrence it missed), at most 120 per recurring
   cost and run. One transaction per occurrence books the entry (source `recurring`, `recurrenceId`, `reviewNeeded` false, `createdBy` = whoever set it up) and moves
   `nextDate`; the unique `(recurrence_id, recurrence_date)` and a look-before keep it to one entry, and deleting the entry does not book it again. A failure (the book was
-  archived: `book_archived`) is recorded on the recurring cost, keeps its place, does not hold the others up and is logged by code. Creating and PATCHing book what is
+  archived: `book_archived`) is recorded on the recurring cost, keeps its place, does not hold the others up and is logged by code **once, when it begins or its reason
+  changes** (the run tries again every five minutes; a stuck series must not fill the log). A tax class the template carries is booked as `unknown` while its book is not
+  tax relevant (the template keeps it); a PATCH that moves the template into such a book resets it as for an entry, a different class there is a 400, and `splitMode: equal`
+  without `participantIds` widens a narrowed template to everybody, as for an entry. Creating and PATCHing book what is
   due at once (a start date in the past books everything since, up to the cap). PATCH: the template applies to entries from now on; a changed rule continues after
   `lastOccurrenceDate`; `active: false` pauses, `active: true` resumes at the first occurrence on or after today (the paused time is skipped); the template is checked
   again only when the request touches it, so one in an archived book can still be paused; any change clears `lastError`. `run-now` books exactly the next due occurrence

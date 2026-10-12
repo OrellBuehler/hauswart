@@ -152,7 +152,11 @@ const ruleOf = (r: CostRecurrenceRow): RecurrenceRule => ({
   endDate: r.endDate,
 });
 
-/** The entry an occurrence books: the template with the occurrence's date and the tags that still exist. */
+/**
+ * The entry an occurrence books: the template with the occurrence's date and the tags that still exist. A tax class means
+ * nothing in a book that is not tax relevant, which a book can become after the template was made (it keeps what its
+ * entries say), so the entry then says `unknown` and the template keeps its class for the day the book has one again.
+ */
 function entryOf(
   ctx: Db,
   r: CostRecurrenceRow,
@@ -161,6 +165,7 @@ function entryOf(
     (t) => t.id,
   ),
 ): CreateCostRequest {
+  const taxRelevant = findCostBookRow(ctx, r.bookId)?.taxRelevant ?? true;
   return {
     bookId: r.bookId,
     date,
@@ -178,7 +183,7 @@ function entryOf(
     participantIds:
       r.splitMode === "equal" ? (r.participantIdsJson ?? undefined) : undefined,
     countsAsExpense: r.countsAsExpense,
-    deductible: r.deductible,
+    deductible: taxRelevant ? r.deductible : "unknown",
     tagIds: [...tagIds],
   };
 }
@@ -360,11 +365,19 @@ export function updateCostRecurrence(
   const tagIdsJson =
     tagIds === undefined ? current.tagIdsJson : requireTagIds(ctx, tagIds);
 
+  // As for an entry: a tax class means nothing in a book that is not tax relevant, so a template moved there starts over.
+  const moved = bookId !== undefined && bookId !== current.bookId;
+  const target = findCostBookRow(ctx, bookId ?? current.bookId);
+  const deductible =
+    patch.deductible ??
+    (moved && target && !target.taxRelevant ? "unknown" : current.deductible);
+
   const merged: CostRecurrenceRow = {
     ...current,
     ...plain,
     bookId: bookId ?? current.bookId,
     amountMinor: (amountMinor ?? current.amountMinor) as never,
+    deductible,
     splitMode: mode,
     sharesJson,
     participantIdsJson,
@@ -387,7 +400,14 @@ export function updateCostRecurrence(
     );
   }
   if (TEMPLATE_FIELDS.some((key) => patch[key] !== undefined)) {
-    checkCostTemplate(ctx, entryOf(ctx, merged, merged.startDate, tagIdsJson));
+    checkCostTemplate(
+      ctx,
+      {
+        ...entryOf(ctx, merged, merged.startDate, tagIdsJson),
+        deductible: merged.deductible,
+      },
+      current.deductible,
+    );
   }
 
   const rule = ruleOf(merged);
@@ -419,6 +439,7 @@ export function updateCostRecurrence(
       ...plain,
       bookId: merged.bookId,
       amountMinor: merged.amountMinor,
+      deductible: merged.deductible,
       splitMode: merged.splitMode,
       sharesJson,
       participantIdsJson,
@@ -484,20 +505,26 @@ function failureOf(ctx: Db, rec: CostRecurrenceRow) {
   return book?.archivedAt ? ("book_archived" as const) : ("failed" as const);
 }
 
+/**
+ * Records why a recurring cost could not book. The scheduler tries again at every run, so the failure is logged when it
+ * begins or its reason changes (`lastError` differs), not every five minutes for as long as it lasts.
+ */
 function recordFailure(ctx: Db, rec: CostRecurrenceRow, err: unknown) {
   const code = failureOf(ctx, rec);
-  ctx.db
-    .update(costRecurrences)
-    .set({ lastError: code })
-    .where(eq(costRecurrences.id, rec.id))
-    .run();
-  console.error(
-    JSON.stringify({
-      event: "costs.recurrence_failed",
-      code,
-      name: err instanceof Error ? err.name : "NonError",
-    }),
-  );
+  if (rec.lastError !== code) {
+    ctx.db
+      .update(costRecurrences)
+      .set({ lastError: code })
+      .where(eq(costRecurrences.id, rec.id))
+      .run();
+    console.error(
+      JSON.stringify({
+        event: "costs.recurrence_failed",
+        code,
+        name: err instanceof Error ? err.name : "NonError",
+      }),
+    );
+  }
   return code;
 }
 

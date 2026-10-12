@@ -437,7 +437,11 @@ function writeShares(db: DB, entryId: string, shares: readonly Share[]) {
  * Everything a new entry is checked against before it is written: the references exist, the book takes entries, the
  * split and the tags are valid for the tax class. Answers what the entry is split by.
  */
-function prepareCost(ctx: Db, input: CreateCostRequest) {
+function prepareCost(
+  ctx: Db,
+  input: CreateCostRequest,
+  currentDeductible?: CostDeductible,
+) {
   assertRef(ctx, assets, input.assetId, "assetId", "Asset");
   assertRef(ctx, rooms, input.roomId, "roomId", "Room");
   assertRef(ctx, defects, input.defectId, "defectId", "Defect");
@@ -459,14 +463,21 @@ function prepareCost(ctx: Db, input: CreateCostRequest) {
     input.shares,
     input.participantIds,
   );
-  assertDeductible(book, input.deductible);
+  assertDeductible(book, input.deductible, currentDeductible);
   const tagIds = requireTagIds(ctx, input.tagIds ?? []);
   return { book, splitMode, shares, tagIds };
 }
 
-/** Checks a template of entries (a recurring cost) as booking it would, and writes nothing. */
-export function checkCostTemplate(ctx: Db, input: CreateCostRequest): void {
-  prepareCost(ctx, input);
+/**
+ * Checks a template of entries (a recurring cost) as booking it would, and writes nothing. `currentDeductible` is the tax
+ * class the template has already: repeating it is no change, so it passes even where the book has no tax class any more.
+ */
+export function checkCostTemplate(
+  ctx: Db,
+  input: CreateCostRequest,
+  currentDeductible?: CostDeductible,
+): void {
+  prepareCost(ctx, input, currentDeductible);
 }
 
 /**

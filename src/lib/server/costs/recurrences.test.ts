@@ -593,6 +593,96 @@ describe("recurring costs", () => {
       expect(getCostRecurrence(ctx(), r.id).lastError).toBe("failed");
       error.mockRestore();
     });
+
+    it("logs a failure when it begins, not at every run that fails the same way", () => {
+      const ferien = createCostBook(
+        ctx(),
+        createCostBookRequestSchema.parse({ name: "Ferien" }),
+      );
+      const stuck = make({ title: "Ferienhaus", bookId: ferien.id });
+      updateCostBook(ctx(), ferien.id, { archived: true });
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      for (const day of ["01", "02", "03"]) {
+        expect(run(`2026-01-${day}`)).toEqual({ booked: 0, failed: 1 });
+      }
+      expect(getCostRecurrence(ctx(), stuck.id).lastError).toBe(
+        "book_archived",
+      );
+      expect(error).toHaveBeenCalledTimes(1);
+      expect(String(error.mock.calls[0][0])).toContain("book_archived");
+      error.mockRestore();
+    });
+
+    it("logs again when the reason changes, and when it fails again after it worked", () => {
+      const ferien = createCostBook(
+        ctx(),
+        createCostBookRequestSchema.parse({ name: "Ferien" }),
+      );
+      const r = make({ title: "Ferienhaus", bookId: ferien.id });
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      const logged = () =>
+        error.mock.calls.map((c) => JSON.parse(String(c[0])).code);
+
+      test.db
+        .update(costRecurrences)
+        .set({ splitMode: "custom", sharesJson: null })
+        .where(eq(costRecurrences.id, r.id))
+        .run();
+      run("2026-01-01");
+      run("2026-01-01");
+      expect(logged()).toEqual(["failed"]);
+
+      updateCostBook(ctx(), ferien.id, { archived: true });
+      run("2026-01-01");
+      run("2026-01-01");
+      expect(logged()).toEqual(["failed", "book_archived"]);
+
+      updateCostBook(ctx(), ferien.id, { archived: false });
+      update(r.id, { splitMode: "none" });
+      expect(run("2026-01-01")).toEqual({ booked: 1, failed: 0 });
+      expect(getCostRecurrence(ctx(), r.id).lastError).toBeNull();
+
+      updateCostBook(ctx(), ferien.id, { archived: true });
+      run("2026-02-01");
+      run("2026-02-01");
+      expect(logged()).toEqual(["failed", "book_archived", "book_archived"]);
+      error.mockRestore();
+    });
+
+    it("logs a failure of run-now once as well, and throws it every time", () => {
+      const ferien = createCostBook(
+        ctx(),
+        createCostBookRequestSchema.parse({ name: "Ferien" }),
+      );
+      const r = make({ bookId: ferien.id });
+      updateCostBook(ctx(), ferien.id, { archived: true });
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      expect(() => runCostRecurrenceNow(ctx(), r.id)).toThrow();
+      expect(() => runCostRecurrenceNow(ctx(), r.id)).toThrow();
+      expect(run("2026-01-01").failed).toBe(1);
+      expect(error).toHaveBeenCalledTimes(1);
+      error.mockRestore();
+    });
+
+    it("books a template that still has a tax class into a book that stopped being tax relevant, without the class", () => {
+      const r = make({ category: "maintenance", deductible: "maintenance" });
+      updateCostBook(ctx(), book("Wohnung").id, { taxRelevant: false });
+      expect(run("2026-01-01")).toEqual({ booked: 1, failed: 0 });
+      expect(entries()[0]).toMatchObject({
+        deductible: "unknown",
+        bookTaxRelevant: false,
+        recurrenceId: r.id,
+      });
+      expect(getCostRecurrence(ctx(), r.id)).toMatchObject({
+        lastError: null,
+        deductible: "maintenance",
+        nextDate: "2026-02-01",
+      });
+      // Tax relevant again, the template's class applies again.
+      updateCostBook(ctx(), book("Wohnung").id, { taxRelevant: true });
+      run("2026-02-01");
+      expect(entries()[1].deductible).toBe("maintenance");
+    });
   });
 
   describe("updating", () => {
@@ -761,6 +851,45 @@ describe("recurring costs", () => {
       const same = update(r.id, { splitMode: "custom" });
       expect(same.sharesJson).toEqual(r.sharesJson);
       expect(same.splitMode).toBe("custom");
+    });
+
+    it("edits a template whose book lost its tax class and keeps the class it has, but refuses a new one there", () => {
+      const r = make({ category: "maintenance", deductible: "maintenance" });
+      updateCostBook(ctx(), book("Wohnung").id, { taxRelevant: false });
+      expect(update(r.id, { title: "Wartung" })).toMatchObject({
+        title: "Wartung",
+        deductible: "maintenance",
+      });
+      expect(update(r.id, { deductible: "maintenance" }).deductible).toBe(
+        "maintenance",
+      );
+      expect(() => update(r.id, { deductible: "investment" })).toThrow(
+        "Invalid request",
+      );
+      expect(getCostRecurrence(ctx(), r.id).deductible).toBe("maintenance");
+      expect(update(r.id, { deductible: "unknown" }).deductible).toBe(
+        "unknown",
+      );
+    });
+
+    it("resets the tax class of a template that moves to a book without one, as it does for an entry", () => {
+      const r = make({ category: "maintenance", deductible: "maintenance" });
+      const moved = update(r.id, { bookId: book("Haushalt").id });
+      expect(moved).toMatchObject({
+        bookName: "Haushalt",
+        deductible: "unknown",
+      });
+      expect(() => update(r.id, { deductible: "investment" })).toThrow(
+        "Invalid request",
+      );
+      const back = update(r.id, { bookId: book("Wohnung").id });
+      expect(back).toMatchObject({
+        bookName: "Wohnung",
+        deductible: "unknown",
+      });
+      expect(update(r.id, { deductible: "investment" }).deductible).toBe(
+        "investment",
+      );
     });
 
     it("replaces the tags", () => {
