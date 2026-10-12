@@ -1,3 +1,4 @@
+import { Database } from "bun:sqlite";
 import {
   copyFileSync,
   mkdirSync,
@@ -8,10 +9,11 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { migrateDatabase, openDatabase, type DB } from "./db";
+import { MIGRATIONS_WITH_FOREIGN_KEYS } from "./migrator";
 
 const FOLDER = join(process.cwd(), "drizzle");
 
@@ -830,7 +832,7 @@ CREATE TABLE \`linked\` (\`id\` text PRIMARY KEY NOT NULL, \`parent_id\` text, F
     }
   });
 
-  it("apply what is pending together or not at all", () => {
+  it("apply the pending migrations of a group together or not at all", () => {
     const db = emptyDatabase();
     const files: Record<string, string> = { "0000_start": PARENT_AND_CHILDREN };
     migrateDatabase(db, folderOf(files));
@@ -857,6 +859,38 @@ CREATE TABLE \`linked\` (\`id\` text PRIMARY KEY NOT NULL, \`parent_id\` text, F
     expect(foreignKeys(db)).toBe(1);
   });
 
+  it("commit the groups that came before the one that fails, and none of the failing group", () => {
+    const db = emptyDatabase();
+    const files: Record<string, string> = { "0000_start": PARENT_AND_CHILDREN };
+    migrateDatabase(db, folderOf(files));
+
+    // A group is a run of migrations that share the foreign key setting: 0001 runs with them off, 0002 on, 0003 off again.
+    MIGRATIONS_WITH_FOREIGN_KEYS.add("0002_with_foreign_keys");
+    try {
+      files["0001_off"] = "ALTER TABLE `parent` ADD `a` text;";
+      files["0002_with_foreign_keys"] = "ALTER TABLE `parent` ADD `b` text;";
+      files["0003_off_again"] =
+        "INSERT INTO `owned` (`id`, `parent_id`) VALUES ('o1', 'nobody');";
+      expect(() => migrateDatabase(db, folderOf(files))).toThrow(
+        /owned -> parent/,
+      );
+    } finally {
+      MIGRATIONS_WITH_FOREIGN_KEYS.delete("0002_with_foreign_keys");
+    }
+
+    expect(rows(db, "select name from pragma_table_info('parent')")).toEqual([
+      { name: "id" },
+      { name: "name" },
+      { name: "a" },
+      { name: "b" },
+    ]);
+    expect(rows(db, "select id from owned")).toEqual([]);
+    expect(
+      rows(db, "select count(*) as n from __drizzle_migrations")[0].n,
+    ).toBe(3);
+    expect(foreignKeys(db)).toBe(1);
+  });
+
   it("switch foreign keys on again when a migration fails for another reason", () => {
     const db = emptyDatabase();
     const files = {
@@ -877,6 +911,258 @@ CREATE TABLE \`linked\` (\`id\` text PRIMARY KEY NOT NULL, \`parent_id\` text, F
       migrateDatabase(db, folderOf({ "0000_start": PARENT_AND_CHILDREN })),
     ).toThrow(/transaction/);
     db.$client.exec("ROLLBACK");
+  });
+
+  it("run a migration that only changes data once, although a second instance had looked at the list before the first got in", () => {
+    const dir = mkdtempSync(join(tmpdir(), "hauswart-migrations-"));
+    cleanup.push(() => rmSync(dir, { recursive: true, force: true }));
+    const path = join(dir, "shared.db");
+    const first = openDatabase(path);
+    const second = openDatabase(path);
+    cleanup.push(() => first.$client.close());
+    cleanup.push(() => second.$client.close());
+
+    const files: Record<string, string> = {
+      "0000_start":
+        "CREATE TABLE `runs` (`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL, `note` text);",
+    };
+    migrateDatabase(first, folderOf(files));
+    files["0001_data_only"] = "INSERT INTO `runs` (`note`) VALUES ('once');";
+    const folder = folderOf(files);
+
+    // The second instance has seen 0001 pending; before it gets the database to itself the first one applies it.
+    let interleaved = 0;
+    const exec = second.$client.exec.bind(second.$client);
+    second.$client.exec = (statement: string) => {
+      if (/foreign_keys\s*=\s*OFF/i.test(statement) && interleaved++ === 0) {
+        migrateDatabase(first, folder);
+      }
+      return exec(statement);
+    };
+    migrateDatabase(second, folder);
+
+    expect(interleaved).toBeGreaterThan(0);
+    expect(rows(first, "select note from runs")).toEqual([{ note: "once" }]);
+    expect(
+      rows(first, "select count(*) as n from __drizzle_migrations")[0].n,
+    ).toBe(2);
+    expect(foreignKeys(second)).toBe(1);
+  });
+
+  describe("safety copy before migrating", () => {
+    const COPY = /^old\.db\.pre-migrate-\d{8}-\d{6}(-\d+)?\.db$/;
+    const fileOf = (db: DB) =>
+      (
+        rows(db, "pragma database_list").find((r) => r.name === "main") as {
+          file: string;
+        }
+      ).file;
+    const copiesNextTo = (db: DB, base = "old.db") =>
+      readdirSync(dirname(fileOf(db)))
+        .filter((f) => f.startsWith(`${base}.pre-migrate-`))
+        .sort();
+    const quiet = () =>
+      vi.spyOn(console, "info").mockImplementation(() => undefined);
+
+    afterEach(() => {
+      delete process.env.HAUSWART_MIGRATION_BACKUP;
+    });
+
+    it("is written next to a database that has data, before the first pending migration touches it", () => {
+      const db = databaseAt("0014_cost_document_link_cleanup");
+      db.$client.exec(
+        "insert into assets (id, kind, name, slug, qr_slug) values ('a1', 'device', 'Backofen', 'backofen', 'aaaaaaaaaa')",
+      );
+      const info = quiet();
+      try {
+        migrateDatabase(db);
+        const logged = info.mock.calls.map((c) => String(c[0]));
+        const written = logged.filter((l) => l.includes("migrations.safety"));
+        expect(written).toHaveLength(1);
+        expect(JSON.parse(written[0]!)).toEqual({
+          event: "migrations.safety_copy",
+          file: copiesNextTo(db)[0],
+        });
+        expect(written[0]).not.toContain(dirname(fileOf(db)));
+      } finally {
+        info.mockRestore();
+      }
+
+      const copies = copiesNextTo(db);
+      expect(copies).toHaveLength(1);
+      expect(copies[0]).toMatch(COPY);
+      expect(
+        readdirSync(dirname(fileOf(db))).filter((f) => f.endsWith(".partial")),
+      ).toEqual([]);
+
+      // The copy is the database as it was: its data, none of the new tables, the migrations of the release it came from.
+      const copy = new Database(join(dirname(fileOf(db)), copies[0]!), {
+        readonly: true,
+      });
+      try {
+        expect(copy.query("select name from assets").all()).toEqual([
+          { name: "Backofen" },
+        ]);
+        expect(
+          copy
+            .query("select name from sqlite_master where name = 'cost_books'")
+            .all(),
+        ).toEqual([]);
+        expect(
+          copy.query("select count(*) as n from __drizzle_migrations").get(),
+        ).toEqual({ n: 15 });
+        expect(copy.query("pragma integrity_check").get()).toEqual({
+          integrity_check: "ok",
+        });
+      } finally {
+        copy.close();
+      }
+      // The database itself went on to the end.
+      expect(
+        rows(db, "select count(*) as n from __drizzle_migrations")[0].n,
+      ).toBe(journal().entries.length);
+    });
+
+    it("is not written for a database without data, for one that is up to date, or for one in memory", () => {
+      const fresh = emptyDatabase();
+      migrateDatabase(fresh, folderOf({ "0000_start": PARENT_AND_CHILDREN }));
+      expect(
+        readdirSync(dirname(fileOf(fresh))).filter((f) =>
+          f.includes("pre-migrate"),
+        ),
+      ).toEqual([]);
+
+      const current = databaseAt("0014_cost_document_link_cleanup");
+      migrateDatabase(current);
+      expect(copiesNextTo(current)).toHaveLength(1);
+      migrateDatabase(current);
+      expect(copiesNextTo(current)).toHaveLength(1);
+
+      const memory = openDatabase(":memory:");
+      cleanup.push(() => memory.$client.close());
+      const files = { "0000_start": PARENT_AND_CHILDREN };
+      migrateDatabase(memory, folderOf(files));
+      expect(() =>
+        migrateDatabase(
+          memory,
+          folderOf({
+            ...files,
+            "0001_next": "ALTER TABLE `parent` ADD `a` text;",
+          }),
+        ),
+      ).not.toThrow();
+      expect(
+        rows(memory, "select name from pragma_table_info('parent')"),
+      ).toHaveLength(3);
+    });
+
+    it("can be turned off with HAUSWART_MIGRATION_BACKUP or by the caller, and a typo is not taken for off", () => {
+      process.env.HAUSWART_MIGRATION_BACKUP = "false";
+      const off = databaseAt("0014_cost_document_link_cleanup");
+      migrateDatabase(off);
+      expect(copiesNextTo(off)).toEqual([]);
+
+      delete process.env.HAUSWART_MIGRATION_BACKUP;
+      const option = databaseAt("0014_cost_document_link_cleanup");
+      migrateDatabase(option, join(process.cwd(), "drizzle"), {
+        safetyCopy: false,
+      });
+      expect(copiesNextTo(option)).toEqual([]);
+
+      process.env.HAUSWART_MIGRATION_BACKUP = "true";
+      const on = databaseAt("0014_cost_document_link_cleanup");
+      const info = quiet();
+      try {
+        migrateDatabase(on);
+      } finally {
+        info.mockRestore();
+      }
+      expect(copiesNextTo(on)).toHaveLength(1);
+
+      process.env.HAUSWART_MIGRATION_BACKUP = "flase";
+      const typo = databaseAt("0014_cost_document_link_cleanup");
+      expect(() => migrateDatabase(typo)).toThrow(/HAUSWART_MIGRATION_BACKUP/);
+      expect(
+        rows(typo, "select count(*) as n from __drizzle_migrations")[0].n,
+      ).toBe(15);
+    });
+
+    it("keeps the newest three, tells copies of the same second apart, and leaves other files alone", () => {
+      const db = emptyDatabase();
+      const dir = dirname(fileOf(db));
+      writeFileSync(join(dir, "empty.db.pre-migrate-notes.txt"), "mine");
+      writeFileSync(join(dir, "other.db.pre-migrate-20200101-000000.db"), "x");
+      const files: Record<string, string> = {
+        "0000_start": PARENT_AND_CHILDREN,
+      };
+      migrateDatabase(db, folderOf(files));
+      db.$client.exec("insert into parent (id, name) values ('p1', 'eins')");
+      expect(copiesNextTo(db, "empty.db")).toEqual([
+        "empty.db.pre-migrate-notes.txt",
+      ]);
+
+      const clock = (second: number) => () =>
+        new Date(Date.UTC(2026, 9, 12, 6, 30, second));
+      const info = quiet();
+      try {
+        for (const [i, second] of [1, 2, 3, 3, 3, 4].entries()) {
+          files[`000${i + 1}_next`] =
+            `ALTER TABLE \`parent\` ADD \`c${i}\` text;`;
+          migrateDatabase(db, folderOf(files), { now: clock(second) });
+        }
+      } finally {
+        info.mockRestore();
+      }
+
+      expect(
+        copiesNextTo(db, "empty.db").filter((f) => f.endsWith(".db")),
+      ).toEqual([
+        "empty.db.pre-migrate-20261012-063003-2.db",
+        "empty.db.pre-migrate-20261012-063003-3.db",
+        "empty.db.pre-migrate-20261012-063004.db",
+      ]);
+      expect(readdirSync(dir)).toEqual(
+        expect.arrayContaining([
+          "empty.db.pre-migrate-notes.txt",
+          "other.db.pre-migrate-20200101-000000.db",
+        ]),
+      );
+      // The newest copy is the database as it was before the last migration.
+      const newest = new Database(
+        join(dir, "empty.db.pre-migrate-20261012-063004.db"),
+        { readonly: true },
+      );
+      try {
+        expect(
+          newest
+            .query("select name from pragma_table_info('parent')")
+            .all()
+            .map((r) => (r as { name: string }).name),
+        ).toEqual(["id", "name", "c0", "c1", "c2", "c3", "c4"]);
+        expect(newest.query("select id from parent").all()).toEqual([
+          { id: "p1" },
+        ]);
+      } finally {
+        newest.close();
+      }
+    });
+
+    it("stops before changing anything when the copy cannot be written", () => {
+      const db = databaseAt("0014_cost_document_link_cleanup");
+      const dir = dirname(fileOf(db));
+      // A directory where the copy would be written first.
+      mkdirSync(join(dir, "old.db.pre-migrate-20261012-063000.db.partial"));
+      expect(() =>
+        migrateDatabase(db, join(process.cwd(), "drizzle"), {
+          now: () => new Date(Date.UTC(2026, 9, 12, 6, 30, 0)),
+        }),
+      ).toThrow(/HAUSWART_MIGRATION_BACKUP/);
+      expect(
+        rows(db, "select count(*) as n from __drizzle_migrations")[0].n,
+      ).toBe(15);
+      expect(basename(fileOf(db))).toBe("old.db");
+      expect(foreignKeys(db)).toBe(1);
+    });
   });
 
   it("run again on a database that is up to date without changing it", () => {

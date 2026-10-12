@@ -2,7 +2,10 @@ import { Database } from "bun:sqlite";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { migrateDatabase as applyMigrations } from "./migrator";
+import {
+  migrateDatabase as applyMigrations,
+  type MigrateOptions,
+} from "./migrator";
 import * as schema from "./schema";
 
 export type DB = ReturnType<typeof drizzle<typeof schema>>;
@@ -23,8 +26,9 @@ export function openDatabase(path: string): DB {
 export function migrateDatabase(
   target: DB,
   folder = join(process.cwd(), "drizzle"),
+  options?: MigrateOptions,
 ): void {
-  applyMigrations(target, folder);
+  applyMigrations(target, folder, options);
 }
 
 export function getDB(): DB {

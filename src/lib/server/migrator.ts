@@ -3,6 +3,11 @@ import { join } from "node:path";
 import { sql } from "drizzle-orm";
 import { readMigrationFiles } from "drizzle-orm/migrator";
 import type { DB } from "./db";
+import {
+  MIGRATION_BACKUP_SWITCH,
+  safetyCopyEnabled,
+  takeSafetyCopy,
+} from "./migration-copy";
 
 const TABLE = "__drizzle_migrations";
 
@@ -105,12 +110,22 @@ function tagsOf(folder: string): string[] {
   return journal.entries.map((e) => e.tag);
 }
 
-/** What is not applied yet, in order, each step knowing how it runs. */
-function pendingSteps(target: DB, folder: string): Step[] {
+/** Every migration of the folder, in order, each step knowing how it runs. */
+function stepsOf(folder: string): Step[] {
   const migrations = readMigrationFiles({ migrationsFolder: folder });
   // `readMigrationFiles` returns the journal's entries in order, so the tags line up with them.
   const tags = tagsOf(folder);
-  // The same text drizzle's own migrator writes, so a database looks alike whichever migrator created it.
+  return migrations.map((m, i) => ({
+    tag: tags[i]!,
+    statements: m.sql.filter((s) => s.trim() !== ""),
+    hash: m.hash,
+    folderMillis: m.folderMillis,
+    foreignKeys: MIGRATIONS_WITH_FOREIGN_KEYS.has(tags[i]!),
+  }));
+}
+
+/** The same text drizzle's own migrator writes, so a database looks alike whichever migrator created it. */
+function createLedger(target: DB): void {
   target.run(
     sql.raw(`CREATE TABLE IF NOT EXISTS "${TABLE}" (
 \t\t\t\tid SERIAL PRIMARY KEY,
@@ -118,36 +133,88 @@ function pendingSteps(target: DB, folder: string): Step[] {
 \t\t\t\tcreated_at numeric
 \t\t\t)`),
   );
-  const last = target.$client
-    .query(`SELECT created_at FROM "${TABLE}" ORDER BY created_at DESC LIMIT 1`)
-    .get() as { created_at: number | string } | null;
-  return migrations.flatMap((m, i) =>
-    last && Number(last.created_at) >= m.folderMillis
-      ? []
-      : [
-          {
-            tag: tags[i]!,
-            statements: m.sql.filter((s) => s.trim() !== ""),
-            hash: m.hash,
-            folderMillis: m.folderMillis,
-            foreignKeys: MIGRATIONS_WITH_FOREIGN_KEYS.has(tags[i]!),
-          },
-        ],
-  );
 }
 
-/** Runs consecutive steps that need the same setting in one transaction. */
-function runGroup(target: DB, group: readonly Step[], foreignKeys: boolean) {
+/** What is not applied yet, in order: everything newer than the newest applied migration. */
+function pendingOf(client: DB["$client"], steps: readonly Step[]): Step[] {
+  const row = client
+    .query(`SELECT max(created_at) AS last FROM "${TABLE}"`)
+    .get() as { last: number | string | null };
+  if (row.last === null) return [...steps];
+  const last = Number(row.last);
+  return steps.filter((s) => s.folderMillis > last);
+}
+
+function appliedCount(client: DB["$client"]): number {
+  const row = client.query(`SELECT count(*) AS n FROM "${TABLE}"`).get() as {
+    n: number;
+  };
+  return row.n;
+}
+
+export interface MigrateOptions {
+  /** Whether to write a copy of the database before the first migration; `HAUSWART_MIGRATION_BACKUP` decides when omitted. */
+  safetyCopy?: boolean;
+  /** The clock that names the copy. */
+  now?: () => Date;
+}
+
+/**
+ * Before a database that has data is migrated, a copy of it is written next to it: a migration cannot be undone, and
+ * the daily backup may be a day old or off. A fresh database (nothing applied yet) has nothing to lose.
+ */
+function copyBeforeMigrating(target: DB, options: MigrateOptions): void {
+  if (!(options.safetyCopy ?? safetyCopyEnabled())) return;
+  if (appliedCount(target.$client) === 0) return;
+  let name: string | null;
+  try {
+    name = takeSafetyCopy(
+      target.$client,
+      (options.now ?? (() => new Date()))(),
+    );
+  } catch (cause) {
+    throw new Error(
+      `The copy of the database that is written before migrating failed, so nothing was migrated; free some disk space, or set ${MIGRATION_BACKUP_SWITCH}=false to migrate without it`,
+      { cause },
+    );
+  }
+  if (name) {
+    console.info(
+      JSON.stringify({ event: "migrations.safety_copy", file: name }),
+    );
+  }
+}
+
+/**
+ * Runs, in one transaction, the steps at the head of what is pending that share the setting `foreignKeys`. The write
+ * lock is taken first (`BEGIN IMMEDIATE`) and the pending list worked out only then, so an instance that looked at it
+ * before another one got in does not run what has been applied meanwhile, which for a migration that only changes
+ * data would do it twice. Nothing to run any more (or a head that needs the other setting) leaves the caller to look
+ * again.
+ */
+function runGroup(
+  target: DB,
+  steps: readonly Step[],
+  foreignKeys: boolean,
+): void {
   const client = target.$client;
   const before = foreignKeysOf(client);
   setForeignKeys(client, foreignKeys);
   try {
-    // A database can already hold rows that point at nothing (a restore, an old bug): only what a migration adds is its fault.
-    const known = foreignKeys ? null : danglingReferences(client);
-    if (known) logKnownReferences(known);
-    target.run(sql`BEGIN`);
+    target.run(sql`BEGIN IMMEDIATE`);
     try {
-      for (const step of group) {
+      const pending = pendingOf(client, steps);
+      let end = 0;
+      while (end < pending.length && pending[end]!.foreignKeys === foreignKeys)
+        end++;
+      if (end === 0) {
+        target.run(sql`ROLLBACK`);
+        return;
+      }
+      // A database can already hold rows that point at nothing (a restore, an old bug): only what a migration adds is its fault.
+      const known = foreignKeys ? null : danglingReferences(client);
+      if (known) logKnownReferences(known);
+      for (const step of pending.slice(0, end)) {
         for (const statement of step.statements) {
           target.run(sql.raw(statement));
         }
@@ -176,18 +243,36 @@ function runGroup(target: DB, group: readonly Step[], foreignKeys: boolean) {
  * `PRAGMA foreign_keys=OFF` lines that do nothing inside a transaction, does not cascade-delete or null the rows that
  * refer to the table it drops. Before committing it runs `PRAGMA foreign_key_check` and compares with what it found
  * before the migrations: rows that already pointed at nothing are logged by table and count and left alone, but a
- * migration that adds to them (per pair of tables) fails with `MigrationIntegrityError`, everything pending is rolled
- * back and the app does not start.
+ * migration that adds to them (per pair of tables) fails with `MigrationIntegrityError`. Consecutive migrations that
+ * need the same foreign key setting form a group, and a group is applied together or not at all: when one fails the
+ * group is rolled back, groups before it stay applied, and the app does not start.
  * Foreign keys are back on afterwards, whatever happened. Migrations in `MIGRATIONS_WITH_FOREIGN_KEYS` run in a
  * transaction of their own with foreign keys on, as they were written.
+ * A database that already has data is copied first, next to itself (see `migration-copy.ts`).
  */
-export function migrateDatabase(target: DB, folder: string): void {
-  const steps = pendingSteps(target, folder);
-  for (let i = 0; i < steps.length;) {
-    const foreignKeys = steps[i]!.foreignKeys;
-    let end = i;
-    while (end < steps.length && steps[end]!.foreignKeys === foreignKeys) end++;
-    runGroup(target, steps.slice(i, end), foreignKeys);
-    i = end;
+export function migrateDatabase(
+  target: DB,
+  folder: string,
+  options: MigrateOptions = {},
+): void {
+  const client = target.$client;
+  const steps = stepsOf(folder);
+  createLedger(target);
+  let copied = false;
+  for (
+    let pending = pendingOf(client, steps);
+    pending.length > 0;
+    pending = pendingOf(client, steps)
+  ) {
+    if (client.inTransaction) {
+      throw new Error(
+        "Migrations must not run inside a transaction, where the foreign keys pragma does nothing",
+      );
+    }
+    if (!copied) {
+      copied = true;
+      copyBeforeMigrating(target, options);
+    }
+    runGroup(target, steps, pending[0]!.foreignKeys);
   }
 }

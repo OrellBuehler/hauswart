@@ -168,7 +168,9 @@ src/lib/server/integrations/     optional adapters (homeassistant/, paperless/, 
                                  wired by `registerPaperless()`; kept/ has client, mappers, fake-server plus config, adapter
                                  (settings, pickers), sync and scheduler, wired by `registerKept()` (see "Costs and finance providers")
 src/lib/server/db.ts             SQLite connection (WAL, foreign keys); migrations run on startup
-src/lib/server/migrator.ts       the migration runner: foreign keys off while migrations run, a differential `foreign_key_check` before commit
+src/lib/server/migrator.ts       the migration runner: foreign keys off while migrations run, a differential `foreign_key_check` before commit,
+                                 the pending list worked out under `BEGIN IMMEDIATE`, a safety copy first
+src/lib/server/migration-copy.ts the `VACUUM INTO` copy written next to a database that has data before it is migrated (newest 3 kept)
 src/lib/server/schema.ts         Drizzle schema — one file, every table has created_at/updated_at
 src/lib/server/crypto.ts         AES-256-GCM for stored secrets (HAUSWART_SECRET_KEY)
 src/lib/money.ts                 minor-unit money type, parsing/formatting, ownership shares
@@ -1355,7 +1357,15 @@ newPassword}`, 204; `auth/change-password.ts`, form in `settings/account`): the 
   `PRAGMA foreign_key_check` before committing and compares it with the same check taken before the migrations: references
   that already dangled are logged by table and count (`migrations.dangling_references`, no row data) and left alone, but a
   migration that adds to them (more rows for a pair of child and parent table) rolls back and the app refuses to start
-  (`MigrationIntegrityError`).
+  (`MigrationIntegrityError`). Consecutive migrations that need the same foreign key setting form a **group**, applied
+  together or not at all: a failing group rolls back, the groups before it stay applied. Each group starts with
+  `BEGIN IMMEDIATE` and works the pending list out only then, so a second instance that looked before the first got in
+  does not run a migration that only changes data twice. **Safety copy**: before the first pending migration of a
+  database that already has applied migrations (not a fresh one, not `:memory:`) `takeSafetyCopy` (`migration-copy.ts`)
+  writes `<database>.pre-migrate-<UTC>.db` next to it with `VACUUM INTO` (through a `.partial` file; a second one in the
+  same second gets `-2`), keeps the newest three and logs `migrations.safety_copy` with the file name only. A copy that
+  cannot be written stops the start before anything is migrated; `HAUSWART_MIGRATION_BACKUP=false` turns it off (a value
+  that is neither true nor false throws, so a typo is not taken for off).
 
 ## Svelte 5 and UI
 
