@@ -315,6 +315,14 @@ import {
   updateCostBookRequestSchema,
 } from "./schemas/cost-books";
 import {
+  costBudgetSchema,
+  costBudgetStatusQuerySchema,
+  costBudgetStatusSchema,
+  createCostBudgetRequestSchema,
+  listCostBudgetsResponseSchema,
+  updateCostBudgetRequestSchema,
+} from "./schemas/cost-budgets";
+import {
   costTagSchema,
   createCostTagRequestSchema,
   listCostTagsResponseSchema,
@@ -2348,6 +2356,92 @@ export const endpoints = {
     summary: "Delete a cost tag",
     description:
       "The entries (and recurring costs) that carried the tag stay, without it.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
+  costBudgetsList: defineEndpoint({
+    id: "costBudgetsList",
+    method: "GET",
+    path: "/api/v1/cost-budgets",
+    summary: "List cost budgets",
+    description:
+      "What the household wants to spend in a book, a category or both, per calendar month or year, in the order the budgets were made; inactive ones included. Where they stand is `GET /costs/budgets/status`.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    response: listCostBudgetsResponseSchema,
+  }),
+
+  costBudgetsCreate: defineEndpoint({
+    id: "costBudgetsCreate",
+    method: "POST",
+    path: "/api/v1/cost-budgets",
+    summary: "Set a cost budget",
+    description:
+      "For a book (`bookId`), a category (`category`) or both (400 on `bookId` when it names neither), per `month` or `year`, in the household currency of the day. One budget per book, category and period (409 `conflict`). Deleting a book deletes its budgets.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    body: createCostBudgetRequestSchema,
+    response: costBudgetSchema,
+    status: 201,
+    errors: ["conflict"],
+  }),
+
+  costBudgetsStatus: defineEndpoint({
+    id: "costBudgetsStatus",
+    method: "GET",
+    path: "/api/v1/costs/budgets/status",
+    summary: "Where the active budgets stand",
+    description:
+      "For every active budget: what the entries in its scope add up to (entries that count as an expense, refunds netted off, in the budget's currency) in the month `year`/`month` for a monthly budget or in the whole `year` for a yearly one, what is left, the whole percent used and a `state`: `ok`, `warning` from 80 % (`warningPercent`) or `exceeded` from 100 %. `year` and `month` default to today in the household zone, each on its own. Nothing is announced by a notification; a client shows the state.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    query: costBudgetStatusQuerySchema,
+    response: costBudgetStatusSchema,
+  }),
+
+  costBudgetsGet: defineEndpoint({
+    id: "costBudgetsGet",
+    method: "GET",
+    path: "/api/v1/cost-budgets/{id}",
+    summary: "Get a cost budget",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: costBudgetSchema,
+    errors: ["not_found"],
+  }),
+
+  costBudgetsUpdate: defineEndpoint({
+    id: "costBudgetsUpdate",
+    method: "PATCH",
+    path: "/api/v1/cost-budgets/{id}",
+    summary: "Change a cost budget",
+    description:
+      "`null` for `bookId` or `category` removes that half of the scope; what is left must name a book or a category (400 on `bookId`). `active: false` keeps the budget but leaves it out of the status. A change that makes it the same as another budget is a 409.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    body: updateCostBudgetRequestSchema,
+    response: costBudgetSchema,
+    errors: ["not_found", "conflict"],
+  }),
+
+  costBudgetsDelete: defineEndpoint({
+    id: "costBudgetsDelete",
+    method: "DELETE",
+    path: "/api/v1/cost-budgets/{id}",
+    summary: "Delete a cost budget",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
