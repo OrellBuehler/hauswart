@@ -1517,8 +1517,10 @@ in dark mode. Every list has an empty state, every async action a pending and an
   `VehicleCard` names the book, the fuel dialog offers a book (the vehicle's while it takes entries, else the default; a new fill takes that book's split; no "Für wen", the fuel API has no participants) and the list shows each fill's `bookName`.
 - **After a dialog, refresh with `invalidateAfterOverlay`** (`lib/overlays/use-overlay-history.svelte.ts`): closing a dialog pops its history
   entry, and the router drops an `invalidateAll()` that is still loading when that popstate arrives, so the page kept the old data. It waits
-  for the entry to be gone first (`OverlayHistory.settled`); a dialog that navigates uses `gotoFromOverlay`. Menu items that start an action do
-  not disable themselves while it runs: bits-ui then does not close the menu and the page stays locked.
+  for the entry to be gone first (`OverlayHistory.settled`); a dialog that navigates uses `gotoFromOverlay`. Menu items that start
+  an action with `onclick` do not disable themselves while it runs: bits-ui checks `disabled` after `onclick`, so the
+  item no longer selects, the menu does not close and the page stays locked. Items that use `onSelect` are fine (the
+  check comes before it runs).
 
 ## Testing
 
