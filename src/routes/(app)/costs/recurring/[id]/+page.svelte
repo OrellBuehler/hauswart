@@ -16,6 +16,7 @@
   import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
   import CostAmount from "$lib/components/costs/cost-amount.svelte";
   import RecurrenceStatus from "$lib/components/costs/recurrence-status.svelte";
+  import RecurrenceUpcoming from "$lib/components/costs/recurrence-upcoming.svelte";
   import TagChips from "$lib/components/costs/tag-chips.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
@@ -33,9 +34,8 @@
     recurrenceState,
     ruleOf,
     ruleWording,
-    upcomingDates,
   } from "$lib/costs/recurrences";
-  import { formatDateShort, formatDay } from "$lib/format";
+  import { formatDay } from "$lib/format";
   import { assetHref, roomHref } from "$lib/links";
   import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
   import { m } from "$lib/paraglide/messages";
@@ -51,7 +51,6 @@
   const due = $derived(isDue(recurrence, data.today));
   const error = $derived(recurrenceErrorMessage(recurrence));
   const clamp = $derived(clampNote(rule));
-  const upcoming = $derived(upcomingDates(rule, data.today));
   const CategoryIcon = $derived(categoryIcons[recurrence.category]);
 
   const controls = new RecurrenceControls({
@@ -268,27 +267,7 @@
     <aside
       class="flex min-w-0 flex-col gap-6 lg:col-start-2 lg:row-span-3 lg:row-start-1"
     >
-      <Card.Root>
-        <Card.Header>
-          <Card.Title class="text-base">{m.recurrence_upcoming()}</Card.Title>
-        </Card.Header>
-        <Card.Content>
-          {#if upcoming.length === 0}
-            <p class="text-muted-foreground text-sm text-pretty">
-              {m.recurrence_upcoming_none()}
-            </p>
-          {:else}
-            <ol class="flex flex-col gap-1.5 text-sm tabular-nums">
-              {#each upcoming as date (date)}
-                <li>{formatDateShort(date, { today: data.today })}</li>
-              {/each}
-            </ol>
-          {/if}
-          <p class="text-muted-foreground mt-4 text-xs text-pretty">
-            {m.recurrence_entries_note()}
-          </p>
-        </Card.Content>
-      </Card.Root>
+      <RecurrenceUpcoming {recurrence} {rule} today={data.today} />
     </aside>
 
     <Card.Root class="min-w-0 lg:col-start-1">

@@ -2680,6 +2680,7 @@
   "recurrence_rule_label": "Rhythmus",
   "recurrence_upcoming": "Nächste Buchungen",
   "recurrence_upcoming_none": "Keine weitere Buchung: Die Wiederholung ist beendet.",
+  "recurrence_upcoming_paused": "Pausiert: Beim Fortsetzen geht es ab dem nächsten Termin weiter.",
   "recurrence_entries_note": "Gebuchte Einträge tragen «Wiederkehrend» und führen hierher. Änderungen an der Vorlage gelten für Einträge, die ab jetzt gebucht werden.",
   "recurrence_start_label": "Beginn",
   "recurrence_end_label": "Ende",

@@ -22,6 +22,7 @@ import {
   ruleWording,
   runNowMessage,
   upcomingDates,
+  upcomingView,
   withStartDate,
   type RecurrenceDraft,
 } from "./recurrences";
@@ -292,6 +293,47 @@ describe("the preview of the next dates", () => {
       "2027-03-31",
       "2027-04-30",
     ]);
+  });
+
+  it("shows the next dates of one that books, a note for a paused one and nothing for a finished one", () => {
+    const monthly = rule({ dayOfMonth: 15 });
+    expect(
+      upcomingView(recurrence({ nextDate: "2026-10-15" }), monthly, TODAY),
+    ).toEqual({
+      kind: "dates",
+      dates: ["2026-10-15", "2026-11-15", "2026-12-15"],
+    });
+    expect(
+      upcomingView(
+        recurrence({ active: false, nextDate: "2026-10-15" }),
+        monthly,
+        TODAY,
+      ),
+    ).toEqual({ kind: "paused" });
+    expect(
+      upcomingView(recurrence({ nextDate: null }), monthly, TODAY),
+    ).toEqual({ kind: "none" });
+    expect(
+      upcomingView(
+        recurrence({ active: false, nextDate: null }),
+        monthly,
+        TODAY,
+      ),
+    ).toEqual({ kind: "none" });
+    expect(
+      upcomingView(
+        recurrence({ nextDate: "2026-10-15" }),
+        rule({ dayOfMonth: 15, endDate: "2026-10-15" }),
+        TODAY,
+      ),
+    ).toEqual({ kind: "dates", dates: ["2026-10-15"] });
+    expect(
+      upcomingView(
+        recurrence({ nextDate: "2026-10-15" }),
+        rule({ dayOfMonth: 15, endDate: "2026-10-01" }),
+        TODAY,
+      ),
+    ).toEqual({ kind: "none" });
   });
 
   it("stops at the end date", () => {

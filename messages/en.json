@@ -2680,6 +2680,7 @@
   "recurrence_rule_label": "Rhythm",
   "recurrence_upcoming": "Next bookings",
   "recurrence_upcoming_none": "No further booking: the recurring cost is finished.",
+  "recurrence_upcoming_paused": "Paused: when resumed, it goes on from the next date.",
   "recurrence_entries_note": "Booked entries carry “Recurring” and lead here. Changes to the template apply to entries booked from now on.",
   "recurrence_start_label": "Start",
   "recurrence_end_label": "End",

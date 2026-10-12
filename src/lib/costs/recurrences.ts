@@ -208,6 +208,25 @@ export function upcomingDates(
   return dates;
 }
 
+export type UpcomingView =
+  { kind: "dates"; dates: string[] } | { kind: "paused" } | { kind: "none" };
+
+/**
+ * What the card of the next bookings shows: the dates of a recurring cost that books, a note for a paused one (it books
+ * nothing, and resuming skips what fell due meanwhile, so dates would promise bookings that only start after a resume) and
+ * nothing for a finished one.
+ */
+export function upcomingView(
+  recurrence: Pick<CostRecurrence, "active" | "nextDate">,
+  rule: RecurrenceRule,
+  today: string,
+): UpcomingView {
+  const state = recurrenceState(recurrence);
+  if (state === "paused") return { kind: "paused" };
+  const dates = state === "active" ? upcomingDates(rule, today) : [];
+  return dates.length === 0 ? { kind: "none" } : { kind: "dates", dates };
+}
+
 export type ImmediateBookings = {
   /** How many entries are booked at once (at most `RECURRENCE_BOOKING_CAP`). */
   count: number;
