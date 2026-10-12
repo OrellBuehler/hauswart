@@ -1609,8 +1609,11 @@ in dark mode. Every list has an empty state, every async action a pending and an
   book that does not share) sends no split so the book's own applies, any other choice is `equal` among the ticked (`quickSplit`), nobody ticked is
   `none`, and a sentence under the chips says which. Date, payee, title (empty = payee, else the category) and device sit behind "Datum, Titel und
   mehr". `POST /costs`, then `uploadAttachment` (owner `cost`): done = `/costs?book=` plus a 10 s toast with "Rückgängig" (`DELETE`) and "Noch eine";
-  a failed upload keeps the entry and offers retry, "ohne Beleg fertig" and undo; a request that got no answer says to look in the list before
-  trying again (`POST /costs` has no idempotency key). Mistakes are cleared as the field changes. **Receipt**: `ReceiptPicker` (camera button
+  a failed upload keeps the entry and offers retry, "ohne Beleg fertig" and undo. **Every draft has a key** (`newIdempotencyKey()`,
+  `lib/idempotency.ts`; sent as `idempotencyKey` with `POST /costs` and `POST /ai-tasks`): a save that got no answer is simply tried again with
+  the same key (the words say so: the entry is not booked twice), the key is renewed after the entry is booked and when the server answers
+  409 (the key stands for another entry: "look in the list"), and the receipt's key also when another photo is picked; the receipt's
+  network error says that nothing is booked and links to `/costs/receipts`. Mistakes are cleared as the field changes. **Receipt**: `ReceiptPicker` (camera button
   with `capture="environment"` only on touch, in CSS so hydration does not move the page; any image or PDF in the file picker). A HEIC photo is
   turned into a JPEG through a canvas where the browser decodes it (`prepareReceiptFile`, Safari; the decision `heicPlan` is tested, the canvas is
   not) and refused with the server's `attach_error_heic` wording otherwise. **Receipt only** (`POST /ai-tasks`, multipart, optional note, book and

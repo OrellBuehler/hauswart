@@ -33,6 +33,7 @@
     chipCategories,
     chooseQuickBook,
     cleanAmount,
+    isKeyConflict,
     newQuickDraft,
     quickErrorMessage,
     quickSplit,
@@ -46,6 +47,7 @@
   import { addDays } from "$lib/dates";
   import { apiErrorMessage } from "$lib/error-message";
   import { formatMoney } from "$lib/format-money";
+  import { newIdempotencyKey } from "$lib/idempotency";
   import { m } from "$lib/paraglide/messages";
   import { apiFieldErrors } from "$lib/tasks/field-errors";
   import { cn } from "$lib/utils";
@@ -97,6 +99,11 @@
       }),
     ),
   );
+  /**
+   * Names this draft's save. The same save sent again (a request that got no answer) returns the entry the first one
+   * booked; a new key is taken after the entry is booked, and when the server says another entry has this one.
+   */
+  let idempotencyKey = $state(newIdempotencyKey());
   let file = $state<File | null>(null);
   let errors = $state<Record<string, string>>({});
   let formError = $state<string | undefined>();
@@ -288,6 +295,7 @@
       userIds,
       books,
       categoryLabel: (category) => categoryLabels[category](),
+      idempotencyKey,
     });
     errors = built.errors;
     if (!built.body) {
@@ -302,10 +310,13 @@
     } catch (err) {
       errors = apiFieldErrors(err);
       formError = quickErrorMessage(err);
+      // Only a key that stands for another entry is spent; for every other failure the same key is right for the retry.
+      if (isKeyConflict(err)) idempotencyKey = newIdempotencyKey();
       busy = null;
       focusFirstError();
       return;
     }
+    idempotencyKey = newIdempotencyKey();
     rememberQuickBook(currentUserId, saved.bookId);
     if (file) {
       await attach(saved, file);

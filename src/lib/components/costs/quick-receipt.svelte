@@ -1,6 +1,7 @@
 <script lang="ts">
   import InfoIcon from "@lucide/svelte/icons/info";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
+  import { untrack } from "svelte";
   import { goto, invalidateAll } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
@@ -19,11 +20,13 @@
   import { bookIconFor, openBooks } from "$lib/costs/books";
   import {
     buildReceiptTaskBody,
+    isKeyConflict,
     quickErrorMessage,
     type ReceiptDraft,
   } from "$lib/costs/quick";
   import { apiErrorMessage } from "$lib/error-message";
   import { isApiError } from "$lib/api/errors";
+  import { newIdempotencyKey } from "$lib/idempotency";
   import { m } from "$lib/paraglide/messages";
   import { apiFieldErrors } from "$lib/tasks/field-errors";
   import { cn } from "$lib/utils";
@@ -46,9 +49,24 @@
   let draft = $state<ReceiptDraft>({ note: "", bookId: "", assetId: "" });
   let bookChoice = $state<string>(OPEN);
   let file = $state<File | null>(null);
+  /**
+   * Names this receipt's upload. The same upload sent again (a request that got no answer) returns the task the first one
+   * queued; a new key is taken after the task is queued, when another photo is picked, and when the server says another
+   * receipt has this key.
+   */
+  let idempotencyKey = $state(newIdempotencyKey());
   let errors = $state<Record<string, string>>({});
   let formError = $state<string | undefined>();
+  /** The upload got no answer: nothing is known about the task, and the receipt list is where to look. */
+  let noAnswer = $state(false);
   let busy = $state(false);
+
+  $effect(() => {
+    void file;
+    untrack(() => {
+      idempotencyKey = newIdempotencyKey();
+    });
+  });
 
   const open = $derived(openBooks(books));
   const bookOptions = $derived([
@@ -92,9 +110,11 @@
     event.preventDefault();
     if (busy) return;
     formError = undefined;
+    noAnswer = false;
     const built = buildReceiptTaskBody(
       { ...draft, bookId: bookChoice === OPEN ? "" : bookChoice },
       file,
+      idempotencyKey,
     );
     errors = built.errors;
     if (!built.body) {
@@ -115,12 +135,17 @@
           onClick: () => void goto(resolve("/costs/quick?mode=receipt" as "/")),
         },
       });
+      idempotencyKey = newIdempotencyKey();
       await goto(resolve("/costs/receipts"), { invalidateAll: true });
     } catch (err) {
       errors = apiFieldErrors(err);
-      formError = isApiError(err)
-        ? uploadErrorMessage(err)
-        : quickErrorMessage(err);
+      noAnswer = !isApiError(err) && err instanceof TypeError;
+      formError =
+        isApiError(err) && !isKeyConflict(err)
+          ? uploadErrorMessage(err)
+          : quickErrorMessage(err, "receipt");
+      // Only a key that stands for another receipt is spent; for every other failure the same key is right for the retry.
+      if (isKeyConflict(err)) idempotencyKey = newIdempotencyKey();
       focusFirstError();
     } finally {
       busy = false;
@@ -224,6 +249,13 @@
     )}
   >
     <FormAlert message={formError} />
+    {#if noAnswer}
+      <a
+        href={resolve("/costs/receipts?status=pending" as "/")}
+        class="text-foreground focus-visible:ring-ring/50 inline-flex min-h-10 w-fit items-center rounded text-sm font-medium underline underline-offset-4 outline-none focus-visible:ring-[3px]"
+        >{m.quick_receipt_check_list()}</a
+      >
+    {/if}
     <div class="flex gap-2">
       <Button
         href={resolve("/costs")}

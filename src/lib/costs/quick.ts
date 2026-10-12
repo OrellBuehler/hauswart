@@ -307,6 +307,8 @@ export type QuickContext = {
   userIds: readonly string[];
   books: readonly CostBook[];
   categoryLabel: (category: CostCategory) => string;
+  /** The key of this draft: the same save sent again returns the entry it booked the first time. */
+  idempotencyKey?: string | undefined;
 };
 
 /** The request for a quick entry, or the errors that stop it (keyed by field: `amountMinor`, `category`, `date`, ...). */
@@ -341,6 +343,9 @@ export function buildQuickCostBody(
     ...(draft.assetId ? { assetId: draft.assetId } : {}),
     ...(payee ? { payee } : {}),
     paidByUserId: draft.paidByUserId || null,
+    ...(context.idempotencyKey
+      ? { idempotencyKey: context.idempotencyKey }
+      : {}),
     ...(split.kind === "none" ? { splitMode: "none" as const } : {}),
     ...(split.kind === "equal"
       ? {
@@ -374,6 +379,7 @@ export type ReceiptTaskInput = z.input<typeof createAiTaskRequestSchema>;
 export function buildReceiptTaskBody(
   draft: ReceiptDraft,
   file: File | null,
+  idempotencyKey?: string,
 ): BuiltBody<ReceiptTaskInput> {
   const errors: Record<string, string> = {};
   if (!file) errors.file = m.quick_receipt_required();
@@ -390,18 +396,36 @@ export function buildReceiptTaskBody(
       ...(note ? { note } : {}),
       ...(draft.bookId ? { bookId: draft.bookId } : {}),
       ...(draft.assetId ? { assetId: draft.assetId } : {}),
+      ...(idempotencyKey ? { idempotencyKey } : {}),
     },
     errors,
   };
 }
 
+/** Whether the API refused because the draft's key already stands for another entry or receipt (a 409). */
+export function isKeyConflict(err: unknown): boolean {
+  return isApiError(err) && err.code === "conflict";
+}
+
 /**
- * Why a save failed. A request that never got an answer (the browser's own `TypeError`) may still have been booked, so
- * that message says to look in the list before trying again.
+ * Why a save failed. A request that never got an answer (the browser's own `TypeError`) may or may not have arrived, but
+ * the key it carried makes sending it again safe, and the words say so. A key that stands for something else by now
+ * (the draft was changed after a first attempt that did arrive) says where to look. A receipt only queues a photo, so
+ * nothing is booked and the words point to the receipt list instead of the cost list.
  */
-export function quickErrorMessage(err: unknown): string {
+export function quickErrorMessage(
+  err: unknown,
+  mode: QuickMode = "expense",
+): string {
   if (!isApiError(err) && err instanceof TypeError) {
-    return m.quick_error_network();
+    return mode === "receipt"
+      ? m.quick_error_network_receipt()
+      : m.quick_error_network();
+  }
+  if (isKeyConflict(err)) {
+    return mode === "receipt"
+      ? m.quick_error_key_used_receipt()
+      : m.quick_error_key_used();
   }
   return apiErrorMessage(err);
 }

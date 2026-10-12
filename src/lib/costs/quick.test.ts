@@ -11,6 +11,7 @@ import {
   chooseQuickBook,
   cleanAmount,
   defaultParticipants,
+  isKeyConflict,
   newQuickDraft,
   parseQuickMode,
   quickErrorMessage,
@@ -510,6 +511,14 @@ describe("the request for a quick entry", () => {
   it("sends no book id when none is known, so the server takes its default", () => {
     expect(build({ bookId: "" }).body).not.toHaveProperty("bookId");
   });
+
+  it("carries the key of the draft, so a retry of the same save is not booked twice", () => {
+    const key = "draft-of-this-save";
+    expect(
+      buildQuickCostBody(draft(), { ...context, idempotencyKey: key }).body,
+    ).toMatchObject({ idempotencyKey: key });
+    expect(build().body).not.toHaveProperty("idempotencyKey");
+  });
 });
 
 describe("the request for a receipt in the queue", () => {
@@ -538,6 +547,17 @@ describe("the request for a receipt in the queue", () => {
     });
   });
 
+  it("carries the key of the draft", () => {
+    const key = "draft-of-this-save";
+    expect(buildReceiptTaskBody(empty, file, key).body).toEqual({
+      file,
+      idempotencyKey: key,
+    });
+    expect(buildReceiptTaskBody(empty, file).body).not.toHaveProperty(
+      "idempotencyKey",
+    );
+  });
+
   it("refuses a note the API would", () => {
     const result = buildReceiptTaskBody(
       { ...empty, note: "x".repeat(1001) },
@@ -552,10 +572,27 @@ describe("the request for a receipt in the queue", () => {
 });
 
 describe("the words for a failed save", () => {
-  it("warns about a save that got no answer, since it may have been booked", () => {
-    const message = quickErrorMessage(new TypeError("Failed to fetch"));
+  const noAnswer = () => new TypeError("Failed to fetch");
+
+  it("says a save that got no answer can simply be tried again, since the key keeps it from being booked twice", () => {
+    const message = quickErrorMessage(noAnswer());
     expect(message).toContain("Verbindung");
-    expect(message).toContain("Liste");
+    expect(message).toContain("noch einmal");
+    expect(message).not.toContain("Liste");
+  });
+
+  it("tells a receipt that got no answer that nothing is booked and where to look", () => {
+    const message = quickErrorMessage(noAnswer(), "receipt");
+    expect(message).toContain("Verbindung");
+    expect(message).toContain("nichts gebucht");
+    expect(message).toContain("Belege");
+  });
+
+  it("words a key that another entry or receipt used, and what to look at", () => {
+    const conflict = new ApiError("conflict", "key used", { status: 409 });
+    expect(quickErrorMessage(conflict)).toContain("Liste");
+    expect(quickErrorMessage(conflict, "receipt")).toContain("Belege");
+    expect(quickErrorMessage(conflict)).not.toContain("Verbindung");
   });
 
   it("words an answer of the API like everywhere else", () => {
@@ -565,6 +602,20 @@ describe("the words for a failed save", () => {
       ),
     ).not.toContain("Verbindung");
     expect(quickErrorMessage(new Error("boom"))).not.toContain("Verbindung");
+  });
+
+  it("takes only a 409 for a key that is used up; every other failure keeps the key for the retry", () => {
+    expect(isKeyConflict(new ApiError("conflict", "x", { status: 409 }))).toBe(
+      true,
+    );
+    expect(isKeyConflict(new ApiError("not_found", "x", { status: 404 }))).toBe(
+      false,
+    );
+    expect(isKeyConflict(new ApiError("internal", "x", { status: 500 }))).toBe(
+      false,
+    );
+    expect(isKeyConflict(noAnswer())).toBe(false);
+    expect(isKeyConflict(new Error("boom"))).toBe(false);
   });
 });
 
