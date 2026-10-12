@@ -44,6 +44,12 @@ import {
   type DB,
 } from "$lib/server/db";
 import { emitEvent } from "$lib/server/events";
+import {
+  claimSuggestion,
+  isTiedTo,
+  tieSuggestion,
+  type TiedOrigin,
+} from "$lib/server/finance/links";
 import { getHousehold } from "$lib/server/household/household";
 import { decodeCursor, pageOf } from "$lib/server/pagination";
 import {
@@ -356,7 +362,8 @@ function assertUser(ctx: Db, id: string | null | undefined) {
 
 /** What a finance provider adds to an entry booked from one of its items. */
 export interface ProviderOrigin {
-  source: Exclude<CostSource, "manual" | "recurring">;
+  /** Where the entry came from; absent for an entry made by hand and tied to a suggestion afterwards. */
+  source?: Exclude<CostSource, "manual" | "recurring">;
   connectionId: string;
   ref: string;
   url: string | null;
@@ -475,6 +482,16 @@ export function createCost(
 ): CostRecord {
   const { book, splitMode, shares, tagIds } = prepareCost(ctx, input);
   if (input.receiptTaskId) assertTaskOpenForBooking(ctx, input.receiptTaskId);
+  const currency = input.currency ?? getHousehold(ctx).currency;
+  const tied: TiedOrigin | undefined = input.financeSuggestionId
+    ? claimSuggestion(ctx, createdBy, input.financeSuggestionId, {
+        amountMinor: input.amountMinor,
+        currency,
+        createdBy,
+      }).origin
+    : undefined;
+  const provider: ProviderOrigin | undefined =
+    origin ?? (tied ? { ...tied } : undefined);
 
   let assetId = input.assetId ?? null;
   let roomId = input.roomId ?? null;
@@ -506,7 +523,7 @@ export function createCost(
           date: input.date ?? clockAt(ctx.now).today,
           title: input.title,
           amountMinor: minor(input.amountMinor),
-          currency: input.currency ?? getHousehold(ctx).currency,
+          currency,
           category: input.category,
           assetId,
           roomId,
@@ -520,12 +537,12 @@ export function createCost(
             input.countsAsExpense ??
             COST_CATEGORY_COUNTS_AS_EXPENSE[input.category],
           deductible: input.deductible,
-          source: origin?.source ?? (recurrence ? "recurring" : "manual"),
+          source: provider?.source ?? (recurrence ? "recurring" : "manual"),
           recurrenceId: recurrence?.id ?? null,
           recurrenceDate: recurrence?.date ?? null,
-          providerConnectionId: origin?.connectionId ?? null,
-          providerRef: origin?.ref ?? null,
-          providerUrl: origin?.url ?? null,
+          providerConnectionId: provider?.connectionId ?? null,
+          providerRef: provider?.ref ?? null,
+          providerUrl: provider?.url ?? null,
           createdBy,
           idempotencyKey: input.idempotencyKey ?? null,
           // booked on the strength of a receipt somebody else read: a person confirms it once
@@ -537,6 +554,13 @@ export function createCost(
         .get().id;
       writeShares(tx as unknown as DB, row, shares);
       writeEntryTags(tx as unknown as DB, row, tagIds);
+      if (input.financeSuggestionId) {
+        tieSuggestion(
+          { db: tx as unknown as DB },
+          input.financeSuggestionId,
+          row,
+        );
+      }
       if (input.receiptTaskId) {
         takeLease(
           { db: tx as unknown as DB, now: ctx.now },
@@ -561,10 +585,10 @@ export function createCost(
     }
     throw err;
   }
-  if (origin) {
+  if (provider) {
     emitEvent("financeLinksPending", {
       ctx,
-      connectionId: origin.connectionId,
+      connectionId: provider.connectionId,
     });
   }
   return getCost(ctx, id);
@@ -654,7 +678,7 @@ export function updateCost(
   ctx: ServiceContext,
   id: string,
   patch: UpdateCostRequest,
-  options: { fuelLogId?: string } = {},
+  options: { fuelLogId?: string; userId?: string } = {},
 ): CostRecord {
   const current = getCost(ctx, id);
   if (
@@ -711,10 +735,28 @@ export function updateCost(
     splitMode,
     amountMinor,
     tagIds: tagIdsPatch,
+    financeSuggestionId,
     ...fields
   } = patch;
   const tagIds =
     tagIdsPatch === undefined ? undefined : requireTagIds(ctx, tagIdsPatch);
+  let tied: TiedOrigin | undefined;
+  if (
+    financeSuggestionId !== undefined &&
+    !(
+      options.userId !== undefined &&
+      isTiedTo(ctx, options.userId, financeSuggestionId, id)
+    )
+  ) {
+    if (current.providerRef !== null || current.providerConnectionId !== null) {
+      throw conflict("This cost entry is tied to a finance item already");
+    }
+    tied = claimSuggestion(ctx, options.userId ?? null, financeSuggestionId, {
+      amountMinor: patch.amountMinor ?? current.amountMinor,
+      currency: patch.currency ?? current.currency,
+      createdBy: current.createdBy,
+    }).origin;
+  }
   let nextShares: Share[] | undefined;
   if (customShares !== undefined) {
     if ((splitMode ?? current.splitMode) !== "custom") {
@@ -771,18 +813,42 @@ export function updateCost(
       ? {}
       : { countsAsExpense: defaultExpense }),
     ...(linkAffected ? { linkSyncedAt: null } : {}),
+    ...(tied
+      ? {
+          providerConnectionId: tied.connectionId,
+          providerRef: tied.ref,
+          providerUrl: tied.url,
+          providerLinkId: null,
+          linkSyncedAt: null,
+        }
+      : {}),
   };
-  ctx.db.transaction((tx) => {
-    // A change of the tags alone still counts as a change of the entry.
-    tx.update(costEntries)
-      .set(
-        Object.keys(set).length === 0 ? { updatedAt: new Date(ctx.now) } : set,
-      )
-      .where(eq(costEntries.id, id))
-      .run();
-    if (nextShares) writeShares(tx as unknown as DB, id, nextShares);
-    if (tagIds) writeEntryTags(tx as unknown as DB, id, tagIds);
-  });
+  try {
+    ctx.db.transaction((tx) => {
+      // A change of the tags alone still counts as a change of the entry.
+      tx.update(costEntries)
+        .set(
+          Object.keys(set).length === 0
+            ? { updatedAt: new Date(ctx.now) }
+            : set,
+        )
+        .where(eq(costEntries.id, id))
+        .run();
+      if (nextShares) writeShares(tx as unknown as DB, id, nextShares);
+      if (tagIds) writeEntryTags(tx as unknown as DB, id, tagIds);
+      if (tied && financeSuggestionId) {
+        tieSuggestion({ db: tx as unknown as DB }, financeSuggestionId, id);
+      }
+    });
+  } catch (err) {
+    if (tied && isUniqueViolation(err)) {
+      throw conflict("This item of the finance provider is already booked");
+    }
+    throw err;
+  }
+  if (tied) {
+    emitEvent("financeLinksPending", { ctx, connectionId: tied.connectionId });
+  }
   if (linkAffected && current.providerConnectionId) {
     emitEvent("financeLinksPending", {
       ctx,
@@ -816,6 +882,10 @@ export function deleteCost(ctx: ServiceContext, id: string): void {
         .run();
     }
     tx.delete(costEntries).where(eq(costEntries.id, id)).run();
+    emitEvent("costEntryDeleted", {
+      ctx: { db: tx as unknown as DB, now: ctx.now },
+      costId: id,
+    });
   });
   removeOwnedAttachments(ctx, "cost", id);
   if (current.providerConnectionId && current.providerLinkId) {

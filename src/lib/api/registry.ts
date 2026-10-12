@@ -346,6 +346,8 @@ import {
 import {
   acceptFinanceSuggestionRequestSchema,
   acceptFinanceSuggestionResponseSchema,
+  financeMatchesQuerySchema,
+  financeMatchesResponseSchema,
   financeSyncResponseSchema,
   listFinanceAccountsResponseSchema,
   listFinanceCategoriesResponseSchema,
@@ -2080,7 +2082,7 @@ export const endpoints = {
     path: "/api/v1/costs",
     summary: "Book a cost",
     description:
-      "`bookId` defaults to the default book (`isDefault` in `GET /cost-books`; an archived book is a 400 on `bookId`), `currency` to the household's, `date` to today. `splitMode` defaults to the book's default split: `ownership` divides by the people's current ownership shares, `equal` equally among everybody or, with `participantIds`, among those household members only (each listed once), `custom` by `shares` (basis points, sum 10000), `none` does not split; `participantIds` with any other split and `shares` with any other than `custom` are a 400. The shares are frozen with the entry; the parts add up to the amount exactly (largest remainder, ties to the earlier user id). `countsAsExpense` defaults to false for a mortgage repayment (equity), else true. `deductible` other than `unknown` needs a tax relevant book (400 on `deductible` otherwise). `tagIds` label the entry with tags (`/cost-tags`; 400 on `tagIds` for one that does not exist). Entries cannot be created for a finance provider's transaction here: accept the suggestion instead. `receiptTaskId` books the entry for a task of the receipt queue (`/ai-tasks`): in the same transaction the entry is flagged `reviewNeeded` and recorded on the task (`bookedSoFar` of `GET /ai-tasks/{id}`, `receiptTaskId` on the entry), so an interrupted client or another one sees what is booked already; an unknown task is a 400 on the field, a task that is done or dismissed a 409 `conflict` (`details.status`). A repeated `idempotencyKey` (8 to 128 characters; unique per person who books, whatever credential they use) returns the first entry with status 200 and books nothing; the same key for a different entry (amount, currency, category, title or receipt task, or book, date or payer when the retry names them) is a 409 `conflict`; once the entry is deleted its key is free again. Send one per attempt to save, and keep it for a retry that got no answer.",
+      "`bookId` defaults to the default book (`isDefault` in `GET /cost-books`; an archived book is a 400 on `bookId`), `currency` to the household's, `date` to today. `splitMode` defaults to the book's default split: `ownership` divides by the people's current ownership shares, `equal` equally among everybody or, with `participantIds`, among those household members only (each listed once), `custom` by `shares` (basis points, sum 10000), `none` does not split; `participantIds` with any other split and `shares` with any other than `custom` are a 400. The shares are frozen with the entry; the parts add up to the amount exactly (largest remainder, ties to the earlier user id). `countsAsExpense` defaults to false for a mortgage repayment (equity), else true. `deductible` other than `unknown` needs a tax relevant book (400 on `deductible` otherwise). `tagIds` label the entry with tags (`/cost-tags`; 400 on `tagIds` for one that does not exist). A finance provider's transaction is booked by accepting its suggestion; `financeSuggestionId` instead ties an entry you book by hand to one of your own pending cost suggestions from the finance app (`GET /finance/matches` finds them): in the same transaction the suggestion is accepted and the entry remembers the transaction, so it is never booked twice and its back-link is written (404 for a suggestion that is not yours, 400 on the field when it is not a cost or its amount or currency differs from the entry's, 409 when it is decided already). `receiptTaskId` books the entry for a task of the receipt queue (`/ai-tasks`): in the same transaction the entry is flagged `reviewNeeded` and recorded on the task (`bookedSoFar` of `GET /ai-tasks/{id}`, `receiptTaskId` on the entry), so an interrupted client or another one sees what is booked already; an unknown task is a 400 on the field, a task that is done or dismissed a 409 `conflict` (`details.status`). A repeated `idempotencyKey` (8 to 128 characters; unique per person who books, whatever credential they use) returns the first entry with status 200 and books nothing; the same key for a different entry (amount, currency, category, title or receipt task, or book, date or payer when the retry names them) is a 409 `conflict`; once the entry is deleted its key is free again. Send one per attempt to save, and keep it for a retry that got no answer.",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2170,7 +2172,7 @@ export const endpoints = {
     path: "/api/v1/costs/{id}",
     summary: "Change a cost entry",
     description:
-      "Setting `splitMode` to `ownership` or `equal` splits again by the people's current shares (`equal` among everybody); `shares` need `custom`; `participantIds` need an `equal` split (the entry's, or the one set in the same request) and split again among those members. Changing only the amount keeps the frozen shares. `tagIds` replaces the entry's tags (an empty list removes them all). `bookId` moves the entry to another book that is not archived (an entry may stay in an archived book); moving it to a book that is not tax relevant resets its `deductible` to `unknown` unless the request sets it, and `deductible` other than `unknown` (and other than the entry's own) is a 400 there. An entry booked from a finance provider keeps its source; its back-link in the provider is refreshed. An entry a fuel log entry booked (`fuelLogId` is set) keeps its amount, currency, date and device as that entry has them: asking for other values is a 409 `conflict` with `details.fuelLogId` (the first three change with `PATCH /fuel-logs/{id}`, the device is the vehicle and stays); sending the current values is fine, and category, title, notes, payee, payer, split, deductibility, room, defect and service log entry stay editable here.",
+      "Setting `splitMode` to `ownership` or `equal` splits again by the people's current shares (`equal` among everybody); `shares` need `custom`; `participantIds` need an `equal` split (the entry's, or the one set in the same request) and split again among those members. Changing only the amount keeps the frozen shares. `tagIds` replaces the entry's tags (an empty list removes them all). `financeSuggestionId` ties the entry to one of your own pending cost suggestions from the finance app as when booking (checked against the amount and currency the entry has after the change; 409 for an entry that is tied to a finance item already, unless it is that very suggestion, which changes nothing). `bookId` moves the entry to another book that is not archived (an entry may stay in an archived book); moving it to a book that is not tax relevant resets its `deductible` to `unknown` unless the request sets it, and `deductible` other than `unknown` (and other than the entry's own) is a 400 there. An entry booked from a finance provider keeps its source; its back-link in the provider is refreshed. An entry a fuel log entry booked (`fuelLogId` is set) keeps its amount, currency, date and device as that entry has them: asking for other values is a 409 `conflict` with `details.fuelLogId` (the first three change with `PATCH /fuel-logs/{id}`, the device is the vehicle and stays); sending the current values is fine, and category, title, notes, payee, payer, split, deductibility, room, defect and service log entry stay editable here.",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2628,7 +2630,7 @@ export const endpoints = {
     path: "/api/v1/finance/suggestions",
     summary: "Your suggestions from the connected finance app",
     description:
-      "Costs, assets and bill tasks the finance provider offers, waiting for a decision (`status` defaults to `pending`). Strictly your own: no other member sees them, and other members' suggestions are never listed or reachable by id.",
+      "Costs, assets, bill tasks and links the finance provider offers, waiting for a decision (`status` defaults to `pending`). A `link` is a transaction that looks like a cost entry somebody booked by hand (same amount and currency, booked at most 3 days from the entry's date, similar payee or title, paid by you, not tied to a finance item yet): its payload carries the `entryId`, the `entry` as it is now (null if it was deleted) and the `transaction`. Accepting it ties the entry to the transaction instead of booking a second entry; dismissing it offers the transaction as a normal cost suggestion. Strictly your own: no other member sees them, and other members' suggestions are never listed or reachable by id.",
     tags: ["finance"],
     auth: "both",
     scopes: ["read"],
@@ -2642,7 +2644,7 @@ export const endpoints = {
     path: "/api/v1/finance/suggestions/{id}/accept",
     summary: "Accept a suggestion",
     description:
-      "Creates the cost entry (paid by you, in the book the body names with `bookId`, else the one offered with the suggestion (`payload.bookId`, set by the connection's settings) while it is open, else the default book; split as that book says unless the body says otherwise), the asset or the bill task. The body may override book, category, title, split (`participantIds` narrow an equal split), asset link and so on; fields of another kind are a 400. `receiptTaskId` (a cost only) books the entry for a task of the receipt queue like `POST /costs` does; a task that is not waiting any more is a 409 and the suggestion stays pending. Accepting twice is a 409.",
+      "Creates the cost entry (paid by you, in the book the body names with `bookId`, else the one offered with the suggestion (`payload.bookId`, set by the connection's settings) while it is open, else the default book; split as that book says unless the body says otherwise), the asset or the bill task. The body may override book, category, title, split (`participantIds` narrow an equal split), asset link and so on; fields of another kind are a 400. `tagIds` (a cost only) label the entry. `receiptTaskId` (a cost only) books the entry for a task of the receipt queue like `POST /costs` does; a task that is not waiting any more is a 409 and the suggestion stays pending. Accepting a `link` takes no body fields: the entry named in its payload remembers the transaction (so it is never booked twice and the finance app gets its back-link), nothing new is booked, and the answer's entity is that entry; 409 when the entry was deleted, is tied to a finance item already or no longer has the transaction's amount and currency (dismiss the link then). Accepting twice is a 409.",
     tags: ["finance"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2658,13 +2660,27 @@ export const endpoints = {
     path: "/api/v1/finance/suggestions/{id}/dismiss",
     summary: "Dismiss a suggestion",
     description:
-      "A dismissed suggestion is never offered again. Dismissing an accepted one is a 409.",
+      'A dismissed suggestion is never offered again, except a `link`: dismissing it means "not that entry", so its transaction comes back as a normal cost suggestion. Dismissing an accepted one is a 409.',
     tags: ["finance"],
     auth: "both",
     scopes: ["costs:write"],
     params: idParamsSchema,
     response: financeSuggestionSchema,
     errors: ["not_found", "conflict"],
+  }),
+
+  financeMatches: defineEndpoint({
+    id: "financeMatches",
+    method: "GET",
+    path: "/api/v1/finance/matches",
+    summary: "Your pending cost suggestions that match an entry being typed",
+    description:
+      'For the cost form: `amountMinor` (signed like `POST /costs`), `currency` (default: the household\'s) and `date` of the entry being typed. Answers your own pending cost suggestions from the finance app with the same amount and currency booked at most 3 days from `date`, nearest date first (at most 20), so the form can offer "tie to bank transaction"; send the chosen id as `financeSuggestionId` to `POST /costs` or `PATCH /costs/{id}`. Strictly your own.',
+    tags: ["finance"],
+    auth: "both",
+    scopes: ["read"],
+    query: financeMatchesQuerySchema,
+    response: financeMatchesResponseSchema,
   }),
 
   financeSync: defineEndpoint({

@@ -10,7 +10,10 @@ import {
   billTaskSuggestionPayloadSchema,
   costSuggestionPayloadSchema,
   type AcceptFinanceSuggestionRequest,
+  type FinanceMatchesQuery,
 } from "$lib/api/schemas/finance";
+import { MATCH_DAYS } from "$lib/costs/match";
+import { addDays, diffDays } from "$lib/dates";
 import { createAssetRequestSchema } from "$lib/api/schemas/assets";
 import { createAsset } from "$lib/server/assets/assets";
 import { openCostBookId } from "$lib/server/costs/books";
@@ -21,7 +24,6 @@ import {
   financeSuggestions,
   type DB,
 } from "$lib/server/db";
-import { parseStored } from "$lib/server/json";
 import { decodeCursor, pageOf } from "$lib/server/pagination";
 import {
   conflict,
@@ -31,22 +33,25 @@ import {
 } from "$lib/server/service";
 import { clockAt } from "$lib/server/tasks/evaluator";
 import { upsertFinanceBillTask } from "./bill-tasks";
+import {
+  acceptLink,
+  dismissLink,
+  findMatchingEntry,
+  insertLinkSuggestion,
+} from "./links";
+import {
+  findSuggestion,
+  getOwnSuggestion,
+  markAccepted,
+  payloadOf,
+  type SuggestionRow,
+} from "./store";
 
-export type SuggestionRow = typeof financeSuggestions.$inferSelect;
+export { findSuggestion, getOwnSuggestion, markAccepted, payloadOf };
+export type { SuggestionRow };
 
 /** `assets.externalSource` of assets created from a suggestion of a transaction. */
 export const FINANCE_ASSET_SOURCE = "finance_transaction";
-
-const PAYLOADS = {
-  cost: costSuggestionPayloadSchema,
-  asset: assetSuggestionPayloadSchema,
-  bill_task: billTaskSuggestionPayloadSchema,
-} as const;
-
-/** The payload of a stored suggestion, checked against the shape of its kind. */
-export function payloadOf(row: SuggestionRow) {
-  return parseStored(PAYLOADS[row.kind], row.payloadJson, "finance suggestion");
-}
 
 export interface SuggestionInput {
   connectionId: string;
@@ -62,23 +67,24 @@ export interface SuggestionInput {
  * item seen before keeps its status (a dismissed one stays dismissed, an
  * accepted one stays accepted) and only a pending one takes the fresh
  * payload, so a corrected description reaches the inbox.
+ *
+ * A new pending **cost** that looks like an entry somebody booked by hand (`findMatchingEntry`: the same amount and
+ * currency, at most 3 days apart, similar text, paid by this person, not tied to a finance item yet) is recorded as a
+ * `link` suggestion instead, so accepting it ties the entry to the transaction and books nothing twice; dismissing the
+ * link offers the transaction as a cost after all. An item that is a link already stays one (its transaction is
+ * refreshed while it waits). Something recorded as already decided is never linked.
  */
 export function recordSuggestion(
   ctx: Pick<ServiceContext, "db">,
   input: SuggestionInput,
   status: FinanceSuggestionStatus = "pending",
 ): { row: SuggestionRow; created: boolean } {
-  const existing = ctx.db
-    .select()
-    .from(financeSuggestions)
-    .where(
-      and(
-        eq(financeSuggestions.connectionId, input.connectionId),
-        eq(financeSuggestions.kind, input.kind),
-        eq(financeSuggestions.providerRef, input.providerRef),
-      ),
-    )
-    .get();
+  const existing = findSuggestion(
+    ctx,
+    input.connectionId,
+    input.kind,
+    input.providerRef,
+  );
   if (existing) {
     if (existing.status !== "pending") return { row: existing, created: false };
     const row = ctx.db
@@ -91,6 +97,32 @@ export function recordSuggestion(
       .returning()
       .get();
     return { row, created: false };
+  }
+  if (input.kind === "cost") {
+    const tied = findSuggestion(
+      ctx,
+      input.connectionId,
+      "link",
+      input.providerRef,
+    );
+    if (tied) return { row: refreshLink(ctx, tied, input), created: false };
+    const payload = costSuggestionPayloadSchema.safeParse(input.payload);
+    if (status === "pending" && payload.success) {
+      const entry = findMatchingEntry(ctx, input.userId, payload.data);
+      if (entry) {
+        return {
+          row: insertLinkSuggestion(ctx, {
+            connectionId: input.connectionId,
+            userId: input.userId,
+            providerRef: input.providerRef,
+            entryId: entry.id,
+            transaction: payload.data,
+            billRefs: input.billRefs ?? [],
+          }),
+          created: true,
+        };
+      }
+    }
   }
   const row = ctx.db
     .insert(financeSuggestions)
@@ -108,7 +140,30 @@ export function recordSuggestion(
   return { row, created: true };
 }
 
-/** The cost suggestions (any status) of the connection that name this bill as settled by them. */
+/** A pending link takes the transaction as the provider reports it now; a decided one stays as it is. */
+function refreshLink(
+  ctx: Pick<ServiceContext, "db">,
+  link: SuggestionRow,
+  input: SuggestionInput,
+): SuggestionRow {
+  const payload = costSuggestionPayloadSchema.safeParse(input.payload);
+  if (link.status !== "pending" || !payload.success) return link;
+  const { entryId } = payloadOf(link) as { entryId: string };
+  return ctx.db
+    .update(financeSuggestions)
+    .set({
+      payloadJson: { entryId, transaction: payload.data },
+      billRefsJson: input.billRefs ?? [],
+    })
+    .where(eq(financeSuggestions.id, link.id))
+    .returning()
+    .get();
+}
+
+/**
+ * The cost suggestions (any status) of the connection that name this bill as settled by them, and the links of
+ * transactions that do (pending or accepted ones; a dismissed link was replaced by a cost suggestion).
+ */
 export function suggestionsCoveringBill(
   ctx: Pick<ServiceContext, "db">,
   connectionId: string,
@@ -120,43 +175,17 @@ export function suggestionsCoveringBill(
     .where(
       and(
         eq(financeSuggestions.connectionId, connectionId),
-        eq(financeSuggestions.kind, "cost"),
+        or(
+          eq(financeSuggestions.kind, "cost"),
+          and(
+            eq(financeSuggestions.kind, "link"),
+            sql`${financeSuggestions.status} <> 'dismissed'`,
+          ),
+        ),
         sql`exists (select 1 from json_each(${financeSuggestions.billRefsJson}) where json_each.value = ${billRef})`,
       ),
     )
     .all();
-}
-
-export function findSuggestion(
-  ctx: Pick<ServiceContext, "db">,
-  connectionId: string,
-  kind: FinanceSuggestionKind,
-  providerRef: string,
-): SuggestionRow | undefined {
-  return ctx.db
-    .select()
-    .from(financeSuggestions)
-    .where(
-      and(
-        eq(financeSuggestions.connectionId, connectionId),
-        eq(financeSuggestions.kind, kind),
-        eq(financeSuggestions.providerRef, providerRef),
-      ),
-    )
-    .get();
-}
-
-export function markAccepted(
-  ctx: Pick<ServiceContext, "db">,
-  id: string,
-  entityId: string,
-): SuggestionRow {
-  return ctx.db
-    .update(financeSuggestions)
-    .set({ status: "accepted", acceptedEntityId: entityId })
-    .where(eq(financeSuggestions.id, id))
-    .returning()
-    .get();
 }
 
 /** Drops a pending suggestion that another one made redundant. */
@@ -233,23 +262,6 @@ export function countPendingSuggestions(
   );
 }
 
-/** One of the person's own suggestions; another person's is a 404, exactly like a missing one. */
-export function getOwnSuggestion(
-  ctx: Pick<ServiceContext, "db">,
-  userId: string,
-  id: string,
-): SuggestionRow {
-  const row = ctx.db
-    .select()
-    .from(financeSuggestions)
-    .where(
-      and(eq(financeSuggestions.id, id), eq(financeSuggestions.userId, userId)),
-    )
-    .get();
-  if (!row) throw notFound("Suggestion");
-  return row;
-}
-
 export function dismissSuggestion(
   ctx: Pick<ServiceContext, "db">,
   userId: string,
@@ -260,6 +272,11 @@ export function dismissSuggestion(
     throw conflict("This suggestion was accepted already");
   }
   if (row.status === "dismissed") return row;
+  if (row.kind === "link") {
+    return ctx.db.transaction((tx) =>
+      dismissLink({ db: tx as unknown as DB }, row),
+    );
+  }
   return ctx.db
     .update(financeSuggestions)
     .set({ status: "dismissed" })
@@ -284,10 +301,12 @@ const ONLY: Record<FinanceSuggestionKind, readonly string[]> = {
     "participantIds",
     "countsAsExpense",
     "deductible",
+    "tagIds",
     "receiptTaskId",
   ],
   asset: ["name", "assetKind", "roomId"],
   bill_task: ["title"],
+  link: [],
 };
 
 function assertOverrides(
@@ -337,6 +356,7 @@ function costInput(
     participantIds: body.participantIds,
     countsAsExpense: body.countsAsExpense,
     deductible: body.deductible ?? "unknown",
+    tagIds: body.tagIds,
     receiptTaskId: body.receiptTaskId,
   };
 }
@@ -361,6 +381,11 @@ export async function acceptSuggestion(
     );
   }
   assertOverrides(row.kind, body);
+
+  if (row.kind === "link") {
+    const { row: accepted, entryId } = acceptLink(ctx, row);
+    return { row: accepted, entity: { type: "cost", id: entryId } };
+  }
 
   if (row.kind === "bill_task") {
     const p = payloadOf(row) as z.output<
@@ -480,4 +505,49 @@ function attachAssetToCost(
       updateCost(ctx, entry.id, { assetId });
     }
   }
+}
+
+/** How many suggestions `matchingCostSuggestions` answers at most. */
+export const MATCHES_LIMIT = 20;
+
+/**
+ * The person's own pending cost suggestions that could be the entry being typed: the same amount and currency, booked at
+ * most 3 days from `date`. Nearest date first, then the newest offer. Strictly the caller's own.
+ */
+export function matchingCostSuggestions(
+  ctx: Pick<ServiceContext, "db">,
+  userId: string,
+  query: Required<FinanceMatchesQuery>,
+): SuggestionRow[] {
+  const field = (name: string) =>
+    sql`json_extract(${financeSuggestions.payloadJson}, ${`$.${name}`})`;
+  return ctx.db
+    .select()
+    .from(financeSuggestions)
+    .where(
+      and(
+        eq(financeSuggestions.userId, userId),
+        eq(financeSuggestions.kind, "cost"),
+        eq(financeSuggestions.status, "pending"),
+        sql`${field("amountMinor")} = ${query.amountMinor}`,
+        sql`${field("currency")} = ${query.currency}`,
+        sql`${field("date")} >= ${addDays(query.date, -MATCH_DAYS)}`,
+        sql`${field("date")} <= ${addDays(query.date, MATCH_DAYS)}`,
+      ),
+    )
+    .all()
+    .map((row) => ({
+      row,
+      days: Math.abs(
+        diffDays((payloadOf(row) as { date: string }).date, query.date),
+      ),
+    }))
+    .sort(
+      (a, b) =>
+        a.days - b.days ||
+        b.row.createdAt.getTime() - a.row.createdAt.getTime() ||
+        b.row.id.localeCompare(a.row.id),
+    )
+    .slice(0, MATCHES_LIMIT)
+    .map((m) => m.row);
 }

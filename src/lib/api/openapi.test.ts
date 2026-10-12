@@ -131,6 +131,7 @@ describe("openapi document", () => {
       "ExternalTag",
       "FinanceAccount",
       "FinanceCategory",
+      "FinanceLinkedEntry",
       "FinanceSuggestion",
       "FinanceSuggestionAccepted",
       "FinanceSync",

@@ -8,6 +8,7 @@ import HammerIcon from "@lucide/svelte/icons/hammer";
 import HeartPulseIcon from "@lucide/svelte/icons/heart-pulse";
 import HouseIcon from "@lucide/svelte/icons/house";
 import LandmarkIcon from "@lucide/svelte/icons/landmark";
+import LinkIcon from "@lucide/svelte/icons/link";
 import PartyPopperIcon from "@lucide/svelte/icons/party-popper";
 import PiggyBankIcon from "@lucide/svelte/icons/piggy-bank";
 import PlaneIcon from "@lucide/svelte/icons/plane";
@@ -110,10 +111,12 @@ export const suggestionKindLabels: Record<FinanceSuggestionKind, () => string> =
     cost: () => m.finance_kind_cost(),
     asset: () => m.finance_kind_asset(),
     bill_task: () => m.finance_kind_bill_task(),
+    link: () => m.finance_kind_link(),
   };
 
 export const suggestionKindIcons: Record<FinanceSuggestionKind, Component> = {
   cost: BanknoteIcon,
   asset: ShoppingBagIcon,
   bill_task: ReceiptIcon,
+  link: LinkIcon,
 };

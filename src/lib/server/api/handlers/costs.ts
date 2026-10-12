@@ -58,6 +58,7 @@ export function wireCost(
     // The address of the item in the person's own finance app is theirs alone.
     providerUrl: c.createdBy === viewerId ? c.providerUrl : null,
     fuelLogId: c.fuelLogId,
+    financeLinked: c.providerRef !== null,
     reviewNeeded: c.reviewNeeded,
     reviewedAt: c.reviewedAt ? toIso(c.reviewedAt) : null,
     reviewedByUserId: c.reviewedByUserId,
@@ -95,7 +96,11 @@ export const update: Handler<typeof endpoints.costsUpdate> = ({
   ctx,
   params,
   body,
-}) => wireCost(updateCost(ctx, params.id, body), ctx.user.id);
+}) =>
+  wireCost(
+    updateCost(ctx, params.id, body, { userId: ctx.user.id }),
+    ctx.user.id,
+  );
 
 export const remove: Handler<typeof endpoints.costsDelete> = ({
   ctx,

@@ -44,7 +44,9 @@
   let syncing = $state(false);
   let syncError = $state<string | undefined>();
 
-  let adjustTarget = $state<FinanceSuggestion | undefined>();
+  let adjustTarget = $state<
+    Exclude<FinanceSuggestion, { kind: "link" }> | undefined
+  >();
   let adjustOpen = $state(false);
   let dismissTarget = $state<FinanceSuggestion | undefined>();
   let dismissOpen = $state(false);
@@ -52,7 +54,9 @@
   function titleOf(suggestion: FinanceSuggestion): string {
     return suggestion.kind === "asset"
       ? suggestion.payload.name
-      : suggestion.payload.title;
+      : suggestion.kind === "link"
+        ? suggestion.payload.transaction.title
+        : suggestion.payload.title;
   }
 
   async function failed(err: unknown) {
@@ -77,11 +81,15 @@
           ? assetHref(entity.id)
           : taskHref(entity.id);
     toast.success(
-      entity.type === "cost"
-        ? m.finance_accepted_cost_toast({ title: titleOf(suggestion) })
-        : entity.type === "asset"
-          ? m.finance_accepted_asset_toast({ title: titleOf(suggestion) })
-          : m.finance_accepted_bill_task_toast({ title: titleOf(suggestion) }),
+      suggestion.kind === "link"
+        ? m.finance_accepted_link_toast({ title: titleOf(suggestion) })
+        : entity.type === "cost"
+          ? m.finance_accepted_cost_toast({ title: titleOf(suggestion) })
+          : entity.type === "asset"
+            ? m.finance_accepted_asset_toast({ title: titleOf(suggestion) })
+            : m.finance_accepted_bill_task_toast({
+                title: titleOf(suggestion),
+              }),
       {
         action: { label: m.finance_view(), onClick: () => void goto(target) },
       },
@@ -102,6 +110,7 @@
   }
 
   function adjust(suggestion: FinanceSuggestion) {
+    if (suggestion.kind === "link") return;
     adjustTarget = suggestion;
     adjustOpen = true;
   }
@@ -274,11 +283,13 @@
 <ConfirmDialog
   bind:open={dismissOpen}
   title={m.finance_dismiss_title()}
-  description={m.finance_dismiss_description({
-    title: dismissTarget ? titleOf(dismissTarget) : "",
-  })}
+  description={dismissTarget?.kind === "link"
+    ? m.finance_dismiss_link_description({ title: titleOf(dismissTarget) })
+    : m.finance_dismiss_description({
+        title: dismissTarget ? titleOf(dismissTarget) : "",
+      })}
   confirmLabel={m.finance_dismiss()}
   pendingLabel={m.finance_dismissing()}
-  destructive
+  destructive={dismissTarget?.kind !== "link"}
   onconfirm={dismiss}
 />

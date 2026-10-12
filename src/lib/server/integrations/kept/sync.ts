@@ -49,6 +49,7 @@ export const LINKS_PER_RUN = 50;
 
 export interface SyncStats extends Record<string, number> {
   suggestions: number;
+  linkSuggestions: number;
   autoAccepted: number;
   assetSuggestions: number;
   tasksCreated: number;
@@ -64,6 +65,7 @@ export interface SyncStats extends Record<string, number> {
 
 const emptyStats = (): SyncStats => ({
   suggestions: 0,
+  linkSuggestions: 0,
   autoAccepted: 0,
   assetSuggestions: 0,
   tasksCreated: 0,
@@ -191,7 +193,10 @@ async function offerTransaction(run: Run, tx: KeptTransaction): Promise<void> {
       decided ? "dismissed" : "pending",
     );
     if (decided && created) stats.skipped++;
-    if (suggestion.status === "pending") {
+    if (suggestion.kind === "link") {
+      // Looks like an entry somebody booked by hand: the person decides whether it is that entry, even in an automatic category.
+      if (created) stats.linkSuggestions++;
+    } else if (suggestion.status === "pending") {
       if (
         tx.categoryId !== null &&
         config.autoAcceptCategoryIds.includes(tx.categoryId)
@@ -436,7 +441,7 @@ async function syncPaidBills(run: Run): Promise<void> {
           (s) => s.providerRef !== own,
         );
         if (covered) continue;
-        const { created } = recordSuggestion(ctx, {
+        const { row: suggestion, created } = recordSuggestion(ctx, {
           connectionId: row.id,
           userId: ownerId,
           kind: "cost",
@@ -455,7 +460,10 @@ async function syncPaidBills(run: Run): Promise<void> {
             ...(bookId === null ? {} : { bookId }),
           },
         });
-        if (created) stats.suggestions++;
+        if (created) {
+          if (suggestion.kind === "link") stats.linkSuggestions++;
+          else stats.suggestions++;
+        }
       } catch (err) {
         firstError ??= err;
         log("kept.bill_failed", err);

@@ -52,7 +52,7 @@
     onaccept,
   }: {
     open?: boolean;
-    suggestion: FinanceSuggestion;
+    suggestion: Exclude<FinanceSuggestion, { kind: "link" }>;
     rooms: Room[];
     assets: Asset[];
     people: DirectoryUser[];

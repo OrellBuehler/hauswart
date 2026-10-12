@@ -9,45 +9,78 @@ import {
   runOperation,
 } from "$lib/server/connections/connections";
 import { openCostBookIds } from "$lib/server/costs/books";
+import {
+  linkedEntries,
+  type LinkedEntrySummary,
+} from "$lib/server/finance/links";
 import { financeProviders } from "$lib/server/finance/providers";
 import {
   acceptSuggestion,
   dismissSuggestion,
   listSuggestions,
+  matchingCostSuggestions,
   payloadOf,
   type SuggestionRow,
 } from "$lib/server/finance/suggestions";
+import { getHousehold } from "$lib/server/household/household";
 import { notFound } from "$lib/server/service";
 import type { AuthedContext } from "../context";
 import type { Handler } from "../bind";
 
+/** A book offered with a cost suggestion that has been archived or deleted since is shown as no book. */
+const offeredBook = (bookId: string | null, openBooks: ReadonlySet<string>) =>
+  bookId && openBooks.has(bookId) ? bookId : null;
+
 /**
  * `openBooks` are the books that are not archived: a book offered with a cost suggestion that has been archived or
- * deleted since is shown as no book, so a client never preselects one it cannot book into.
+ * deleted since is shown as no book, so a client never preselects one it cannot book into. `entries` are the cost
+ * entries link suggestions point at, as they are now (see `linkedEntries`).
  */
 export function wireSuggestion(
   row: SuggestionRow,
   openBooks: ReadonlySet<string>,
+  entries: ReadonlyMap<string, LinkedEntrySummary> = new Map(),
 ): z.input<typeof financeSuggestionSchema> {
   const payload = payloadOf(row);
+  const wired =
+    row.kind === "cost" && "bookId" in payload
+      ? { ...payload, bookId: offeredBook(payload.bookId, openBooks) }
+      : row.kind === "link" && "transaction" in payload
+        ? {
+            entryId: payload.entryId,
+            entry: entries.get(payload.entryId) ?? null,
+            transaction: {
+              ...payload.transaction,
+              bookId: offeredBook(payload.transaction.bookId, openBooks),
+            },
+          }
+        : payload;
   return {
     id: row.id,
     kind: row.kind,
     status: row.status,
     acceptedEntityId: row.acceptedEntityId,
-    payload:
-      row.kind === "cost" && "bookId" in payload
-        ? {
-            ...payload,
-            bookId:
-              payload.bookId && openBooks.has(payload.bookId)
-                ? payload.bookId
-                : null,
-          }
-        : payload,
+    payload: wired,
     createdAt: toIso(row.createdAt),
     updatedAt: toIso(row.updatedAt),
   } as z.input<typeof financeSuggestionSchema>;
+}
+
+/** Several suggestions at once: the entries their links point at are read together. */
+export function wireSuggestions(
+  ctx: AuthedContext,
+  rows: readonly SuggestionRow[],
+) {
+  const openBooks = openCostBookIds(ctx);
+  const entries = linkedEntries(
+    ctx,
+    rows.flatMap((row) =>
+      row.kind === "link"
+        ? [(payloadOf(row) as { entryId: string }).entryId]
+        : [],
+    ),
+  );
+  return rows.map((row) => wireSuggestion(row, openBooks, entries));
 }
 
 export const listAll: Handler<typeof endpoints.financeSuggestionsList> = ({
@@ -61,12 +94,25 @@ export const listAll: Handler<typeof endpoints.financeSuggestionsList> = ({
     { kind, status },
     { cursor, limit },
   );
-  const openBooks = openCostBookIds(ctx);
   return {
-    items: page.items.map((row) => wireSuggestion(row, openBooks)),
+    items: wireSuggestions(ctx, page.items),
     nextCursor: page.nextCursor,
   };
 };
+
+export const matches: Handler<typeof endpoints.financeMatches> = ({
+  ctx,
+  query,
+}) => ({
+  items: wireSuggestions(
+    ctx,
+    matchingCostSuggestions(ctx, ctx.user.id, {
+      amountMinor: query.amountMinor,
+      currency: query.currency ?? getHousehold(ctx).currency,
+      date: query.date,
+    }),
+  ) as never,
+});
 
 export const accept: Handler<
   typeof endpoints.financeSuggestionsAccept
@@ -77,17 +123,13 @@ export const accept: Handler<
     params.id,
     body,
   );
-  return { suggestion: wireSuggestion(row, openCostBookIds(ctx)), entity };
+  return { suggestion: wireSuggestions(ctx, [row])[0], entity };
 };
 
 export const dismiss: Handler<typeof endpoints.financeSuggestionsDismiss> = ({
   ctx,
   params,
-}) =>
-  wireSuggestion(
-    dismissSuggestion(ctx, ctx.user.id, params.id),
-    openCostBookIds(ctx),
-  );
+}) => wireSuggestions(ctx, [dismissSuggestion(ctx, ctx.user.id, params.id)])[0];
 
 export const sync: Handler<typeof endpoints.financeSync> = async ({ ctx }) => {
   for (const provider of financeProviders()) {

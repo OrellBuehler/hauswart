@@ -70,6 +70,26 @@
           url: suggestion.payload.url,
           accept: m.finance_accept_bill_task(),
         };
+      case "link":
+        return {
+          title: suggestion.payload.transaction.title,
+          meta: [
+            formatDay(suggestion.payload.transaction.date),
+            suggestion.payload.entry
+              ? m.finance_link_meta({
+                  entry: suggestion.payload.entry.title,
+                  date: formatDay(suggestion.payload.entry.date),
+                })
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · "),
+          amountMinor: suggestion.payload.transaction.amountMinor as
+            number | null,
+          currency: suggestion.payload.transaction.currency,
+          url: suggestion.payload.transaction.url,
+          accept: m.finance_accept_link(),
+        };
     }
   });
   const url = $derived(
@@ -115,9 +135,11 @@
         {facts.accept}
       {/if}
     </Button>
-    <Button variant="outline" size="lg" {disabled} onclick={onadjust}>
-      {m.finance_adjust()}
-    </Button>
+    {#if suggestion.kind !== "link"}
+      <Button variant="outline" size="lg" {disabled} onclick={onadjust}>
+        {m.finance_adjust()}
+      </Button>
+    {/if}
     <Button variant="ghost" size="lg" {disabled} onclick={ondismiss}>
       {#if busy === "dismiss"}
         <LoaderCircleIcon class="animate-spin" />{m.finance_dismissing()}

@@ -42,6 +42,14 @@ describe("cost flags", () => {
     );
   });
 
+  it("calls an entry a recurring cost booked recurring, not imported", () => {
+    expect(hasCostFlags({ ...plain, source: "recurring" })).toBe(true);
+    const body = html({ source: "recurring" });
+    expect(body).toContain("Wiederkehrend");
+    expect(body).not.toContain("Aus Finanz-App");
+    expect(html({ source: "finance_bill" })).toContain("Aus Finanz-App");
+  });
+
   it("keeps the other badges as they were", () => {
     expect(hasCostFlags({ ...plain, amountMinor: -1 })).toBe(true);
     expect(hasCostFlags({ ...plain, countsAsExpense: false })).toBe(true);

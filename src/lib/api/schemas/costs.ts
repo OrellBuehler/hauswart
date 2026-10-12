@@ -119,6 +119,11 @@ export const costEntrySchema = z
      */
     receiptTaskId: z.string().nullable(),
     /**
+     * Whether the entry is tied to an item of a finance app (booked from it, or linked to it with `financeSuggestionId`);
+     * the address of that item is shown only to the person it belongs to (`providerUrl`).
+     */
+    financeLinked: z.boolean(),
+    /**
      * The recurring cost (`GET /cost-recurrences/{id}`) that booked the entry (`source` is then `recurring`); null for
      * every other entry and once the recurring cost is deleted.
      */
@@ -185,6 +190,11 @@ export const costFields = {
  * once and recorded on the task (`bookedSoFar`) in the same transaction; an unknown task is a 400 on the field, a task that
  * is not waiting any more a 409.
  * `tagIds` are the tags (`GET /cost-tags`) the entry carries, each once (400 on `tagIds` for one that does not exist).
+ * `financeSuggestionId` ties the new entry to one of the caller's own pending cost suggestions from the finance app
+ * (`GET /finance/matches` finds them): in the same transaction the suggestion is accepted and the entry remembers the
+ * transaction, so it is never booked a second time and its back-link is written. 404 for a suggestion that is not the
+ * caller's, 400 on the field when it is not a cost or its amount or currency differs from the entry's, 409 when it is
+ * decided already.
  * `idempotencyKey` (8 to 128 characters, chosen by the caller, unique per person who books) makes a retried request return
  * the first entry with status 200 instead of booking a second one; the same key for a different entry (amount, currency,
  * category, title, and book, date or payer when the retry names them) is a 409.
@@ -209,6 +219,7 @@ export const createCostRequestSchema = z.strictObject({
   countsAsExpense: costFields.countsAsExpense.optional(),
   deductible: costFields.deductible.default("unknown"),
   tagIds: costFields.tagIds.optional(),
+  financeSuggestionId: idSchema.optional(),
   receiptTaskId: idSchema.optional(),
   idempotencyKey: z.string().min(8).max(128).optional(),
 });
@@ -219,6 +230,9 @@ export type CreateCostRequest = z.output<typeof createCostRequestSchema>;
  * current shares; sending `shares` needs `custom`, `participantIds` an `equal` split (the entry's, or the one set in
  * the same request) and split again among those people. Changing only the amount keeps the frozen shares.
  * `bookId` moves the entry to another book that is not archived. `tagIds` replaces the entry's tags (an empty list removes them all).
+ * `financeSuggestionId` ties the entry to one of the caller's own pending cost suggestions from the finance app, as when
+ * booking (checked against the amount and currency the entry has after the change); 409 for an entry that is tied to a
+ * finance item already, unless it is that very suggestion (a repeated request changes nothing).
  */
 export const updateCostRequestSchema = atLeastOne(
   z.strictObject({
@@ -241,6 +255,7 @@ export const updateCostRequestSchema = atLeastOne(
     countsAsExpense: costFields.countsAsExpense.optional(),
     deductible: costFields.deductible.optional(),
     tagIds: costFields.tagIds.optional(),
+    financeSuggestionId: idSchema.optional(),
   }),
 );
 export type UpdateCostRequest = z.output<typeof updateCostRequestSchema>;

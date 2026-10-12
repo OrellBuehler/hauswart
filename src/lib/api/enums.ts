@@ -586,7 +586,16 @@ export type CostRecurrenceError = (typeof COST_RECURRENCE_ERRORS)[number];
 /** `tasks.externalSource` of the tasks that follow a bill in a finance system. */
 export const FINANCE_BILL_TASK_SOURCE = "finance_bill";
 
-export const FINANCE_SUGGESTION_KINDS = ["cost", "bill_task", "asset"] as const;
+/**
+ * `link`: a transaction of the finance system that looks like a cost entry somebody booked by hand; accepting it ties the
+ * entry to the transaction instead of booking a second one.
+ */
+export const FINANCE_SUGGESTION_KINDS = [
+  "cost",
+  "bill_task",
+  "asset",
+  "link",
+] as const;
 export type FinanceSuggestionKind = (typeof FINANCE_SUGGESTION_KINDS)[number];
 
 export const FINANCE_SUGGESTION_STATUSES = [

@@ -285,6 +285,7 @@ describe("registry", () => {
         "GET /api/v1/finance/suggestions both",
         "POST /api/v1/finance/suggestions/{id}/accept both",
         "POST /api/v1/finance/suggestions/{id}/dismiss both",
+        "GET /api/v1/finance/matches both",
         "POST /api/v1/finance/sync both",
         "GET /api/v1/integrations/{kind}/categories both",
         "GET /api/v1/integrations/{kind}/accounts both",

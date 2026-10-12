@@ -33,7 +33,9 @@
     {#if !cost.countsAsExpense}
       <Badge variant="secondary">{m.cost_badge_equity()}</Badge>
     {/if}
-    {#if cost.source !== "manual"}
+    {#if cost.source === "recurring"}
+      <Badge variant="outline">{m.cost_badge_recurring()}</Badge>
+    {:else if cost.source !== "manual"}
       <Badge variant="outline">{m.cost_badge_imported()}</Badge>
     {/if}
   </span>
