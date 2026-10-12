@@ -233,7 +233,7 @@
               {/if}
             </dd>
           </div>
-          {#if data.book.taxRelevant || cost.deductible !== "unknown"}
+          {#if cost.bookTaxRelevant || cost.deductible !== "unknown"}
             <div class="min-w-0">
               <dt class="text-muted-foreground text-xs">
                 {m.cost_deductible()}

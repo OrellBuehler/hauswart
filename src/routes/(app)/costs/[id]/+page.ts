@@ -10,17 +10,12 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
     client.call(endpoints.costsGet, { params: { id: params.id } }),
     url.pathname,
   );
-  const [book, household, people] = await Promise.all([
-    orFail(
-      client.call(endpoints.costBooksGet, { params: { id: cost.bookId } }),
-      url.pathname,
-    ),
+  const [household, people] = await Promise.all([
     loadHousehold(client, url.pathname),
     loadDirectory(client, url.pathname),
   ]);
   return {
     cost,
-    book,
     timeZone: household.timeZone,
     people: new Map(people.map((p) => [p.id, p.displayName])),
   };
