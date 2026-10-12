@@ -49,7 +49,8 @@
     onsaved: (saved: Settlement) => void | Promise<void>;
   } = $props();
 
-  /* Seeded again each time the dialog opens. */
+  /* Seeded each time the dialog opens, and only then: the page hands over a new `defaults` object whenever its data is
+     loaded again, which must not start the form over while somebody is typing. */
   let draft = $state<SettlementDraft>(
     untrack(() => emptySettlementDraft(defaults)),
   );
@@ -59,10 +60,12 @@
 
   $effect(() => {
     if (!open) return;
-    draft = settlement
-      ? draftFromSettlement(settlement)
-      : (prefill ?? emptySettlementDraft(defaults));
-    errors = {};
+    untrack(() => {
+      draft = settlement
+        ? draftFromSettlement(settlement)
+        : (prefill ?? emptySettlementDraft(defaults));
+      errors = {};
+    });
   });
 
   const personOptions = $derived(
