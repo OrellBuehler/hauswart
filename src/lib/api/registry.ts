@@ -2241,12 +2241,13 @@ export const endpoints = {
     path: "/api/v1/settlements",
     summary: "List recorded payments between the people",
     description:
-      "Newest first by date. Filter by book (`bookId`; payments across all books are not listed then), year or a date range, and by a person who made or received them (`userId`, a user id or `me`).",
+      "Newest first by date. Filter by book (`bookId`; payments across all books are not listed then; a book that does not exist is a 404, not an empty list), year or a date range, and by a person who made or received them (`userId`, a user id or `me`).",
     tags: ["costs"],
     auth: "both",
     scopes: ["read"],
     query: listSettlementsQuerySchema,
     response: listSettlementsResponseSchema,
+    errors: ["not_found"],
   }),
 
   settlementsCreate: defineEndpoint({

@@ -165,7 +165,12 @@ describe("settlements API", () => {
     expect(await notes("?from=2026-01-15")).toEqual(["zwei"]);
     expect(await notes(`?userId=${ben.id}`)).toEqual(["zwei", "eins", "drei"]);
     expect(await notes("?userId=me")).toEqual(["zwei", "eins", "drei"]);
-    expect(await notes("?bookId=missing")).toEqual([]);
+    const books = (await call("GET", "/api/v1/cost-books")).body as {
+      items: { id: string }[];
+    };
+    expect(await notes(`?bookId=${books.items[0]!.id}`)).toEqual([]);
+    const unknown = await call("GET", "/api/v1/settlements?bookId=missing");
+    expect(unknown.res.status).toBe(404);
     const first = (await call("GET", "/api/v1/settlements?limit=2"))
       .body as Page;
     expect(first.items).toHaveLength(2);

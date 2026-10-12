@@ -20374,7 +20374,7 @@
       "get": {
         "operationId": "settlementsList",
         "summary": "List recorded payments between the people",
-        "description": "Newest first by date. Filter by book (`bookId`; payments across all books are not listed then), year or a date range, and by a person who made or received them (`userId`, a user id or `me`).",
+        "description": "Newest first by date. Filter by book (`bookId`; payments across all books are not listed then; a book that does not exist is a 404, not an empty list), year or a date range, and by a person who made or received them (`userId`, a user id or `me`).",
         "tags": [
           "costs"
         ],
@@ -20514,6 +20514,16 @@
           },
           "403": {
             "description": "Error: `forbidden`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: `not_found`",
             "content": {
               "application/json": {
                 "schema": {

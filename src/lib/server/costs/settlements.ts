@@ -27,7 +27,7 @@ import {
   type ServiceContext,
 } from "$lib/server/service";
 import { clockAt } from "$lib/server/tasks/evaluator";
-import { requireCostBook } from "./books";
+import { getCostBookRow, requireCostBook } from "./books";
 import { yearRange } from "./costs";
 
 type Db = Pick<ServiceContext, "db">;
@@ -89,7 +89,10 @@ const cursorSchema = z.object({
   r: z.number().int(),
 });
 
-/** Newest first by date, then by when it was entered; keyset pages on (date, createdAt, rowid). */
+/**
+ * Newest first by date, then by when it was entered; keyset pages on (date, createdAt, rowid). A `bookId` that names no
+ * book is a 404 like everywhere else a book is read, never an empty list.
+ */
 export function listSettlements(
   ctx: Db,
   filter: Omit<ListSettlementsQuery, "cursor" | "limit">,
@@ -97,7 +100,10 @@ export function listSettlements(
   viewerId: string,
 ) {
   const where: SQL[] = [];
-  if (filter.bookId) where.push(eq(settlements.bookId, filter.bookId));
+  if (filter.bookId) {
+    getCostBookRow(ctx, filter.bookId);
+    where.push(eq(settlements.bookId, filter.bookId));
+  }
   if (filter.year !== undefined) {
     const range = yearRange(filter.year);
     where.push(

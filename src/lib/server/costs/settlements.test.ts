@@ -271,6 +271,14 @@ describe("settlements service", () => {
       ]);
     });
 
+    it("404s for a book that does not exist, instead of an empty list", async () => {
+      await seed();
+      expect(errorCode(() => notes({ bookId: "missing" }))).toBe("not_found");
+      // A book that exists but has no payments, or is archived, is an empty list.
+      updateCostBook(ctx(), book("Auto").id, { archived: true });
+      expect(notes({ bookId: book("Auto").id })).toEqual([]);
+    });
+
     it("pages with a cursor without skipping or repeating", async () => {
       await seed();
       const seen: (string | null)[] = [];

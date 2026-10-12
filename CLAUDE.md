@@ -395,7 +395,7 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   may be repeated); moving an entry into such a book resets it to `unknown` unless the request sets it; switching
   `taxRelevant` off keeps what entries say, and `byDeductible` of the summary counts tax relevant books only. `bookId`
   filters the list, `GET /costs/summary` (every number is then that book's) and the CSV; a `bookId` that names no book is
-  a 404 on all of them (and on the balances), never an empty answer. The entry DTO carries `bookName` and
+  a 404 on all of them (and on the balances and on `GET /settlements`), never an empty answer. The entry DTO carries `bookName` and
   `bookTaxRelevant` (whether `deductible` means anything for it). **Moving entries**: `PATCH /costs/{id}` with `bookId` moves one; `POST /costs/move-to-book {bookId, ids | assetId}`
   (scope `costs:write`, `costs/move.ts`) moves up to 500 named entries or every entry of a device, all or nothing in one
   transaction (an unknown id is a 400 on `ids`, an unknown device on `assetId`, an unknown or archived target on

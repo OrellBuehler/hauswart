@@ -57,6 +57,7 @@ describe("reading costs by book", () => {
       ["the summary of a year", "/api/v1/costs/summary?year=2026&bookId=nope"],
       ["the CSV", "/api/v1/costs/export.csv?bookId=nope"],
       ["the balances", "/api/v1/costs/balances?bookId=nope"],
+      ["the list of payments", "/api/v1/settlements?bookId=nope"],
     ])("for %s", async (_what, path) => {
       const { call } = await setup();
       const answer = await call("GET", path);
@@ -77,6 +78,9 @@ describe("reading costs by book", () => {
         (await call("GET", `/api/v1/costs/export.csv?bookId=${auto}`)).res
           .status,
       ).toBe(200);
+      const payments = await call("GET", `/api/v1/settlements?bookId=${auto}`);
+      expect(payments.res.status).toBe(200);
+      expect((payments.body as { items: unknown[] }).items).toEqual([]);
     });
 
     it("also for an archived book, which still has its entries", async () => {
