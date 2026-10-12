@@ -35,41 +35,47 @@ const html = (suggestion: FinanceSuggestion) =>
   }).body;
 
 describe("SuggestionCard", () => {
+  const entry = {
+    id: "e1",
+    title: "Einkauf Migros",
+    date: "2026-06-09",
+    amountMinor: 4250,
+    currency: "CHF",
+    payee: null,
+    bookId: "b1",
+    bookName: "Wohnung",
+  };
+
   it("shows a link with the transaction, the entry it looks like and a button to tie them", () => {
     const body = html({
       ...common,
       kind: "link",
-      payload: {
-        entryId: "e1",
-        entry: {
-          id: "e1",
-          title: "Einkauf Migros",
-          date: "2026-06-09",
-          amountMinor: 4250,
-          currency: "CHF",
-          payee: null,
-          bookId: "b1",
-          bookName: "Wohnung",
-        },
-        transaction,
-      },
+      payload: { entryId: "e1", entry, transaction },
     });
     expect(body).toContain("MIGROS ZUERICH");
+    expect(body).toContain("Banktransaktion vom");
+    expect(body).toContain("Passender Eintrag");
     expect(body).toContain("Einkauf Migros");
+    expect(body).toContain('href="/costs/e1"');
+    expect(body).toContain("Wohnung");
+    expect(body).toContain("nichts wird doppelt gebucht");
     expect(body).toContain("Mit Eintrag verknüpfen");
-    expect(body).toContain("Verwerfen");
+    expect(body).toContain("Nicht verknüpfen");
+    expect(body).not.toContain("Verwerfen");
     expect(body).not.toContain("Anpassen");
     expect(body).toContain("42.50");
   });
 
-  it("copes with an entry that is gone", () => {
+  it("copes with an entry that is gone: nothing to tie, only the way back to an ordinary suggestion", () => {
     const body = html({
       ...common,
       kind: "link",
       payload: { entryId: "e1", entry: null, transaction },
     });
     expect(body).toContain("MIGROS ZUERICH");
-    expect(body).not.toContain("Sieht aus wie");
+    expect(body).toContain("Der Eintrag wurde gelöscht");
+    expect(body).not.toContain("Mit Eintrag verknüpfen");
+    expect(body).toContain("Nicht verknüpfen");
   });
 
   it("still offers to adjust a cost", () => {

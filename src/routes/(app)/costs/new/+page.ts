@@ -1,5 +1,5 @@
 import { createApiClient } from "$lib/api/client";
-import { loadCostContext } from "$lib/costs/load";
+import { loadCostContext, tryLoadFinanceConnected } from "$lib/costs/load";
 import type { PageLoad } from "./$types";
 
 /** A prefill from the address only counts when it names something that exists. */
@@ -8,9 +8,14 @@ function known(id: string | null, items: { id: string }[]): string | undefined {
 }
 
 export const load: PageLoad = async ({ fetch, url }) => {
-  const context = await loadCostContext(createApiClient(fetch), url.pathname);
+  const client = createApiClient(fetch);
+  const [context, financeConnected] = await Promise.all([
+    loadCostContext(client, url.pathname),
+    tryLoadFinanceConnected(client, url.pathname),
+  ]);
   return {
     ...context,
+    financeConnected,
     defaults: {
       bookId: known(url.searchParams.get("book"), context.books),
       assetId: known(url.searchParams.get("asset"), context.assets),

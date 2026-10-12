@@ -6,6 +6,7 @@ type Page = { items: unknown[]; nextCursor: string | null };
 const state = vi.hoisted(() => ({
   calls: [] as string[],
   failBooks: null as unknown,
+  failIntegrations: null as unknown,
 }));
 
 const empty: Page = { items: [], nextCursor: null };
@@ -28,6 +29,18 @@ vi.mock("$lib/api/client", () => ({
           return { items: [book], nextCursor: null };
         case "costTagsList":
           return { items: [tag] };
+        case "integrationsList":
+          if (state.failIntegrations) throw state.failIntegrations;
+          return {
+            items: [
+              {
+                available: true,
+                configured: true,
+                enabled: true,
+                capabilities: ["categories"],
+              },
+            ],
+          };
         case "usersDirectory":
           return { items: [{ id: "u1", displayName: "Anna Beispiel" }] };
         case "assetsList":
@@ -90,6 +103,7 @@ describe("loading the quick entry", () => {
   beforeEach(() => {
     state.calls = [];
     state.failBooks = null;
+    state.failIntegrations = null;
     vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
@@ -115,11 +129,25 @@ describe("loading the quick entry", () => {
     expect(state.calls).not.toContain("costsList");
   });
 
-  it("hands over the tags", async () => {
+  it("hands over the tags and whether bank transactions can be looked up", async () => {
     const data = (await load(
       pageEvent("http://localhost/costs/quick").event,
     )) as Record<string, unknown>;
     expect(data.tags).toEqual([tag]);
+    expect(data.financeConnected).toBe(true);
+  });
+
+  it("opens the form without the bank lookup when the connections cannot be read", async () => {
+    state.failIntegrations = new ApiError("internal", "boom", { status: 500 });
+    const data = (await load(
+      pageEvent("http://localhost/costs/quick").event,
+    )) as Record<string, unknown>;
+    expect(data.financeConnected).toBe(false);
+    expect(console.warn).toHaveBeenCalledWith(
+      "finance connection unavailable",
+      "internal",
+      500,
+    );
   });
 
   it("sends a signed-out session to the login page and does not hide any other failure", async () => {

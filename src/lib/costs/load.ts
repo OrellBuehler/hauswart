@@ -90,6 +90,28 @@ export async function tryLoadPendingReceipts(
   }
 }
 
+/**
+ * Whether the person has a working finance connection, for a form that looks for bank transactions that fit the entry
+ * being typed. It is only a convenience, so when the connections cannot be read the form opens without it (logged by
+ * code). A signed-out session still goes to the login page.
+ */
+export async function tryLoadFinanceConnected(
+  client: ApiClient,
+  redirectTo: string,
+): Promise<boolean> {
+  try {
+    const { items } = await client.call(endpoints.integrationsList);
+    return hasFinanceConnection(items);
+  } catch (err) {
+    if (!isApiError(err)) throw err;
+    if (err.status === 401) {
+      redirect(303, `/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+    }
+    console.warn("finance connection unavailable", err.code, err.status);
+    return false;
+  }
+}
+
 /** Every cost tag of the household, by name, with how many entries carry it. */
 export async function loadCostTags(client: ApiClient, redirectTo: string) {
   const { items } = await orFail(

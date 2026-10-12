@@ -281,6 +281,8 @@ export type QuickDraft = {
   assetId: string;
   /** The tags of the entry (ids), at most ten. */
   tagIds: string[];
+  /** The bank transaction (a pending cost suggestion) the entry is tied to; empty for none. */
+  financeSuggestionId: string;
 };
 
 export function newQuickDraft(input: {
@@ -304,6 +306,7 @@ export function newQuickDraft(input: {
     notShared: false,
     assetId: "",
     tagIds: [],
+    financeSuggestionId: "",
   };
 }
 
@@ -421,6 +424,9 @@ export function buildQuickCostBody(
     ...(draft.assetId ? { assetId: draft.assetId } : {}),
     ...(payee ? { payee } : {}),
     ...(draft.tagIds.length > 0 ? { tagIds: draft.tagIds } : {}),
+    ...(draft.financeSuggestionId
+      ? { financeSuggestionId: draft.financeSuggestionId }
+      : {}),
     paidByUserId: draft.paidByUserId || null,
     ...(context.idempotencyKey
       ? { idempotencyKey: context.idempotencyKey }
@@ -495,6 +501,7 @@ export function isKeyConflict(err: unknown): boolean {
 export function quickErrorMessage(
   err: unknown,
   mode: QuickMode = "expense",
+  options: { tiedToTransaction?: boolean } = {},
 ): string {
   if (!isApiError(err) && err instanceof TypeError) {
     return mode === "receipt"
@@ -502,6 +509,7 @@ export function quickErrorMessage(
       : m.quick_error_network();
   }
   if (isKeyConflict(err)) {
+    if (options.tiedToTransaction) return m.quick_error_transaction_conflict();
     return mode === "receipt"
       ? m.quick_error_key_used_receipt()
       : m.quick_error_key_used();

@@ -389,6 +389,7 @@ describe("the quick draft", () => {
       notShared: false,
       assetId: "",
       tagIds: [],
+      financeSuggestionId: "",
     });
     expect(
       newQuickDraft({
@@ -518,6 +519,7 @@ describe("the request for a quick entry", () => {
     notShared: false,
     assetId: "",
     tagIds: [],
+    financeSuggestionId: "",
     ...over,
   });
   const build = (over: Partial<QuickDraft> = {}) =>
@@ -536,6 +538,16 @@ describe("the request for a quick entry", () => {
       paidByUserId: "u2",
       deductible: "unknown",
     });
+  });
+
+  it("sends the tags and the bank transaction that were chosen, and nothing otherwise", () => {
+    const withBoth = build({ tagIds: ["t1", "t2"], financeSuggestionId: "s1" });
+    expect(withBoth.body).toMatchObject({
+      tagIds: ["t1", "t2"],
+      financeSuggestionId: "s1",
+    });
+    expect(build().body).not.toHaveProperty("tagIds");
+    expect(build().body).not.toHaveProperty("financeSuggestionId");
   });
 
   it("refuses more than ten tags", () => {
@@ -722,6 +734,20 @@ describe("the words for a failed save", () => {
     expect(quickErrorMessage(conflict)).toContain("Liste");
     expect(quickErrorMessage(conflict, "receipt")).toContain("Belege");
     expect(quickErrorMessage(conflict)).not.toContain("Verbindung");
+  });
+
+  it("words a 409 for an entry tied to a bank transaction as that transaction no longer being open", () => {
+    const conflict = new ApiError("conflict", "decided", { status: 409 });
+    const tied = quickErrorMessage(conflict, "expense", {
+      tiedToTransaction: true,
+    });
+    expect(tied).toContain("Banktransaktion");
+    expect(tied).not.toBe(quickErrorMessage(conflict));
+    expect(
+      quickErrorMessage(new TypeError("x"), "expense", {
+        tiedToTransaction: true,
+      }),
+    ).toContain("Verbindung");
   });
 
   it("words an answer of the API like everywhere else", () => {

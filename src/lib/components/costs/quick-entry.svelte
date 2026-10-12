@@ -28,6 +28,7 @@
   import { bookIconFor, openBooks } from "$lib/costs/books";
   import { categoryIcons, categoryLabels } from "$lib/costs/labels";
   import { parseDraftAmount } from "$lib/costs/form";
+  import { matchQuery, tieFailure, tieRefused } from "$lib/costs/matches";
   import {
     buildQuickCostBody,
     chipCategories,
@@ -56,6 +57,7 @@
   import { apiFieldErrors } from "$lib/tasks/field-errors";
   import { cn } from "$lib/utils";
   import ChoiceChips from "./choice-chips.svelte";
+  import FinanceMatches from "./finance-matches.svelte";
   import ReceiptPicker from "./receipt-picker.svelte";
   import TagPicker from "./tag-picker.svelte";
 
@@ -64,6 +66,7 @@
     people,
     assets,
     tags,
+    financeConnected = false,
     currency,
     today,
     currentUserId,
@@ -75,6 +78,8 @@
     assets: Asset[];
     /** Every cost tag; the chips only show when there are any (new tags are made in the full form). */
     tags: CostTag[];
+    /** The person has a working finance connection: the form looks for bank transactions that fit the amount. */
+    financeConnected?: boolean;
     /** The household's currency: a quick entry is always in it. */
     currency: string;
     today: string;
@@ -125,6 +130,8 @@
   let orphanBusy = $state<"retry" | "skip" | "undo" | null>(null);
   let formEl = $state<HTMLFormElement | null>(null);
   let amountEl = $state<HTMLInputElement | null>(null);
+  /** Counts up when the bank transactions are to be asked for again (the chosen one was refused). */
+  let matchRefresh = $state(0);
 
   const open = $derived(openBooks(books));
   const book = $derived(books.find((b) => b.id === draft.bookId));
@@ -190,6 +197,15 @@
   const amount = $derived(
     parseDraftAmount(cleanAmount(draft.amount), false, currency),
   );
+  const matchFor = $derived(
+    financeConnected
+      ? matchQuery({
+          amountMinor: amount.ok ? amount.amountMinor : undefined,
+          currency,
+          date: draft.date,
+        })
+      : null,
+  );
 
   onMount(() => {
     amountEl?.focus();
@@ -247,6 +263,10 @@
   $effect(() => {
     void draft.tagIds;
     untrack(() => clearError("tagIds"));
+  });
+  $effect(() => {
+    void draft.financeSuggestionId;
+    untrack(() => clearError("financeSuggestionId"));
   });
 
   function pickBook(next: string) {
@@ -341,12 +361,25 @@
       return;
     }
     busy = "saving";
+    const sentTie = draft.financeSuggestionId !== "";
     let saved: CostEntry;
     try {
       saved = await api.call(endpoints.costsCreate, { body: built.body });
     } catch (err) {
       errors = apiFieldErrors(err);
-      formError = quickErrorMessage(err);
+      formError = quickErrorMessage(err, "expense", {
+        tiedToTransaction: sentTie,
+      });
+      if (tieRefused(err, sentTie)) {
+        // The transaction was refused: let go of it and ask for the list again.
+        draft.financeSuggestionId = "";
+        matchRefresh += 1;
+        const tie = isKeyConflict(err) ? undefined : tieFailure(err, sentTie);
+        if (tie) {
+          errors.financeSuggestionId = tie;
+          formError = m.form_check_fields();
+        }
+      }
       // Only a key that stands for another entry is spent; for every other failure the same key is right for the retry.
       if (isKeyConflict(err)) idempotencyKey = newIdempotencyKey();
       busy = null;
@@ -490,6 +523,15 @@
         </div>
       {/snippet}
     </Field>
+
+    <FinanceMatches
+      id="quick-matches"
+      query={matchFor}
+      bind:value={draft.financeSuggestionId}
+      refresh={matchRefresh}
+      disabled={busy !== null}
+      error={errors.financeSuggestionId}
+    />
 
     {#if open.length > 1}
       <div class="flex min-w-0 flex-col gap-2">

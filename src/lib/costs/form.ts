@@ -63,6 +63,11 @@ export type CostDraft = {
   deductible: CostDeductible;
   /** The tags of the entry (ids), at most ten. */
   tagIds: string[];
+  /**
+   * The bank transaction (a pending cost suggestion of the person's finance app) the entry is tied to, picked in the
+   * form; empty for none. It only goes along while it still fits the amount, currency and date of the draft.
+   */
+  financeSuggestionId: string;
 };
 
 export type NewDraftDefaults = {
@@ -163,6 +168,7 @@ export function newDraft(defaults: NewDraftDefaults): CostDraft {
     countsTouched: false,
     deductible: "unknown",
     tagIds: [...(defaults.tagIds ?? [])],
+    financeSuggestionId: "",
   };
 }
 
@@ -212,6 +218,7 @@ export function draftFromEntry(
       entry.countsAsExpense !== COST_CATEGORY_COUNTS_AS_EXPENSE[entry.category],
     deductible: entry.deductible,
     tagIds: tagIdsOf(entry.tags),
+    financeSuggestionId: "",
   };
 }
 
@@ -462,6 +469,9 @@ export function buildCreateBody(
     // A book that is not tax relevant refuses a tax class, whatever the form held before the book was changed.
     deductible: taxClassApplies(draft, books) ? draft.deductible : "unknown",
     ...(draft.tagIds.length > 0 ? { tagIds: draft.tagIds } : {}),
+    ...(draft.financeSuggestionId
+      ? { financeSuggestionId: draft.financeSuggestionId }
+      : {}),
   };
   const result = createCostRequestSchema.safeParse(body);
   if (!result.success) {
@@ -570,6 +580,10 @@ export function buildUpdateBody(
   // The tags are replaced as a whole, so they go only when the set changed.
   if (!sameTagIds(draft.tagIds, tagIdsOf(entry.tags))) {
     patch.tagIds = draft.tagIds;
+  }
+  // An entry that is tied to a finance item already cannot be tied again.
+  if (draft.financeSuggestionId && !entry.financeLinked) {
+    patch.financeSuggestionId = draft.financeSuggestionId;
   }
 
   if (Object.keys(patch).length === 0) return { body: {}, errors };

@@ -941,3 +941,41 @@ describe("tags", () => {
     });
   });
 });
+
+describe("tying an entry to a bank transaction", () => {
+  it("sends the chosen suggestion with a new entry, and nothing without a choice", () => {
+    expect(
+      buildCreateBody(draft({ financeSuggestionId: "s1" }), USERS).body,
+    ).toMatchObject({ financeSuggestionId: "s1" });
+    expect(buildCreateBody(draft(), USERS).body).not.toHaveProperty(
+      "financeSuggestionId",
+    );
+  });
+
+  it("sends it with an edit of an entry that is not tied yet", () => {
+    const e = entry();
+    expect(
+      buildUpdateBody(
+        { ...draftFromEntry(e, USERS), financeSuggestionId: "s1" },
+        e,
+        USERS,
+      ).body,
+    ).toEqual({ financeSuggestionId: "s1" });
+  });
+
+  it("leaves it out for an entry that is tied already, which the server would refuse", () => {
+    const e = entry({ financeLinked: true });
+    expect(
+      buildUpdateBody(
+        { ...draftFromEntry(e, USERS), financeSuggestionId: "s1" },
+        e,
+        USERS,
+      ).body,
+    ).toEqual({});
+  });
+
+  it("starts without a choice", () => {
+    expect(draft().financeSuggestionId).toBe("");
+    expect(draftFromEntry(entry(), USERS).financeSuggestionId).toBe("");
+  });
+});

@@ -309,6 +309,14 @@
             <dt class="text-muted-foreground text-xs">{m.cost_source()}</dt>
             <dd class="mt-0.5">{sourceLabels[cost.source]()}</dd>
           </div>
+          {#if cost.financeLinked && cost.source !== "finance_transaction" && cost.source !== "finance_bill"}
+            <div class="min-w-0">
+              <dt class="text-muted-foreground text-xs">
+                {m.cost_bank_linked()}
+              </dt>
+              <dd class="mt-0.5">{m.common_yes()}</dd>
+            </div>
+          {/if}
           {#if cost.reviewedAt && !cost.reviewNeeded}
             <div class="min-w-0">
               <dt class="text-muted-foreground text-xs">
