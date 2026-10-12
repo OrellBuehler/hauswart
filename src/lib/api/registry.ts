@@ -2054,13 +2054,14 @@ export const endpoints = {
     path: "/api/v1/costs",
     summary: "Book a cost",
     description:
-      "`bookId` defaults to the default book (`isDefault` in `GET /cost-books`; an archived book is a 400 on `bookId`), `currency` to the household's, `date` to today. `splitMode` defaults to the book's default split: `ownership` divides by the people's current ownership shares, `equal` equally among everybody or, with `participantIds`, among those household members only (each listed once), `custom` by `shares` (basis points, sum 10000), `none` does not split; `participantIds` with any other split and `shares` with any other than `custom` are a 400. The shares are frozen with the entry; the parts add up to the amount exactly (largest remainder, ties to the earlier user id). `countsAsExpense` defaults to false for a mortgage repayment (equity), else true. `deductible` other than `unknown` needs a tax relevant book (400 on `deductible` otherwise). Entries cannot be created for a finance provider's transaction here: accept the suggestion instead.",
+      "`bookId` defaults to the default book (`isDefault` in `GET /cost-books`; an archived book is a 400 on `bookId`), `currency` to the household's, `date` to today. `splitMode` defaults to the book's default split: `ownership` divides by the people's current ownership shares, `equal` equally among everybody or, with `participantIds`, among those household members only (each listed once), `custom` by `shares` (basis points, sum 10000), `none` does not split; `participantIds` with any other split and `shares` with any other than `custom` are a 400. The shares are frozen with the entry; the parts add up to the amount exactly (largest remainder, ties to the earlier user id). `countsAsExpense` defaults to false for a mortgage repayment (equity), else true. `deductible` other than `unknown` needs a tax relevant book (400 on `deductible` otherwise). Entries cannot be created for a finance provider's transaction here: accept the suggestion instead. A repeated `idempotencyKey` (8 to 128 characters; unique per person who books, whatever credential they use) returns the first entry with status 200 and books nothing; the same key for a different entry (amount, currency, category or title, or book, date or payer when the retry names them) is a 409 `conflict`; once the entry is deleted its key is free again. Send one per attempt to save, and keep it for a retry that got no answer.",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
     body: createCostRequestSchema,
     response: costEntrySchema,
     status: 201,
+    errors: ["conflict"],
   }),
 
   costsSummary: defineEndpoint({
@@ -3925,7 +3926,7 @@ export const endpoints = {
     path: "/api/v1/ai-tasks",
     summary: "Put a receipt in the queue for an assistant to book",
     description:
-      "multipart/form-data with `file` (an image or a PDF, like an attachment: JPEG, PNG and WebP images are re-encoded and lose their metadata, PDFs are stored as uploaded, at most 25 MiB; the same `invalid_request` errors with `details.code` as `POST /attachments`), optional `kind` (only `receipt` today, the default), `note` (the uploader's own words, at most 1000 characters) and the hints `bookId` (an open cost book, else a 400 on `bookId`) and `assetId`. The task starts `pending` and is shared by the whole household; the caller is its uploader, who is the default payer of what is booked from it. An assistant (the MCP tools `list_ai_tasks`, `get_ai_task`, `complete_ai_task`, `dismiss_ai_task`) reads the receipt, books the entries and completes the task. Needs `costs:write` because the outcome is cost entries.",
+      "multipart/form-data with `file` (an image or a PDF, like an attachment: JPEG, PNG and WebP images are re-encoded and lose their metadata, PDFs are stored as uploaded, at most 25 MiB; the same `invalid_request` errors with `details.code` as `POST /attachments`), optional `kind` (only `receipt` today, the default), `note` (the uploader's own words, at most 1000 characters) and the hints `bookId` (an open cost book, else a 400 on `bookId`) and `assetId`. The task starts `pending` and is shared by the whole household; the caller is its uploader, who is the default payer of what is booked from it. An assistant (the MCP tools `list_ai_tasks`, `get_ai_task`, `complete_ai_task`, `dismiss_ai_task`) reads the receipt, books the entries and completes the task. Needs `costs:write` because the outcome is cost entries. A repeated `idempotencyKey` (8 to 128 characters; unique per person who uploads, whatever credential they use) returns the first task with status 200 and stores and queues nothing; the same key for a different receipt (another file, or another kind, book or device; the note does not count) is a 409 `conflict`; once the task is deleted its key is free again. Send one per receipt and keep it for a retry that got no answer.",
     tags: ["ai-tasks"],
     auth: "both",
     scopes: ["costs:write"],
@@ -3934,6 +3935,7 @@ export const endpoints = {
     maxBodyBytes: MAX_UPLOAD_REQUEST_BYTES,
     response: aiTaskSchema,
     status: 201,
+    errors: ["conflict"],
   }),
 
   aiTasksList: defineEndpoint({

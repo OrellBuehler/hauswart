@@ -165,6 +165,9 @@ const costFields = {
  * household's, `splitMode` to the book's default split, `countsAsExpense` to true (false for a mortgage repayment).
  * `shares` are required for `custom` and refused otherwise; `participantIds` narrow an `equal` split to those people
  * (everybody without it) and are refused for any other split. `deductible` other than `unknown` needs a tax relevant book.
+ * `idempotencyKey` (8 to 128 characters, chosen by the caller, unique per person who books) makes a retried request return
+ * the first entry with status 200 instead of booking a second one; the same key for a different entry (amount, currency,
+ * category, title, and book, date or payer when the retry names them) is a 409.
  */
 export const createCostRequestSchema = z.strictObject({
   bookId: costFields.bookId.optional(),
@@ -185,6 +188,7 @@ export const createCostRequestSchema = z.strictObject({
   participantIds: costFields.participantIds.optional(),
   countsAsExpense: costFields.countsAsExpense.optional(),
   deductible: costFields.deductible.default("unknown"),
+  idempotencyKey: z.string().min(8).max(128).optional(),
 });
 export type CreateCostRequest = z.output<typeof createCostRequestSchema>;
 

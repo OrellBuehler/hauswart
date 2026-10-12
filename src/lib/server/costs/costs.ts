@@ -485,6 +485,7 @@ export function createCost(
           providerRef: origin?.ref ?? null,
           providerUrl: origin?.url ?? null,
           createdBy,
+          idempotencyKey: input.idempotencyKey ?? null,
           createdAt: new Date(ctx.now),
         })
         .returning({ id: costEntries.id })
@@ -494,6 +495,14 @@ export function createCost(
     });
   } catch (err) {
     if (isUniqueViolation(err)) {
+      // The key's own index is for `recordCost` to answer; the provider's index means the item is booked already.
+      if (
+        createdBy &&
+        input.idempotencyKey &&
+        findCostByKey(ctx, createdBy, input.idempotencyKey)
+      ) {
+        throw err;
+      }
       throw conflict("This item of the finance provider is already booked");
     }
     throw err;
@@ -505,6 +514,78 @@ export function createCost(
     });
   }
   return getCost(ctx, id);
+}
+
+/** The entry the person booked with this key, if any. */
+export function findCostByKey(
+  ctx: Db,
+  createdBy: string,
+  key: string,
+): CostRecord | undefined {
+  const row = selectCosts(ctx.db)
+    .where(
+      and(
+        eq(costEntries.createdBy, createdBy),
+        eq(costEntries.idempotencyKey, key),
+      ),
+    )
+    .get();
+  return row ? toRecords(ctx.db, [row])[0] : undefined;
+}
+
+/**
+ * A retry names the same entry: same amount, currency, category and title, and the same book, date and payer when the
+ * retry names them (a request that left them to the defaults accepts whatever the first one got). Notes, payee, device and
+ * the other links do not count.
+ */
+function sameRequest(
+  ctx: Db,
+  existing: CostRecord,
+  input: CreateCostRequest,
+): boolean {
+  return (
+    existing.amountMinor === input.amountMinor &&
+    existing.currency === (input.currency ?? getHousehold(ctx).currency) &&
+    existing.category === input.category &&
+    existing.title === input.title &&
+    (input.bookId === undefined || existing.bookId === input.bookId) &&
+    (input.date === undefined || existing.date === input.date) &&
+    (input.paidByUserId === undefined ||
+      existing.paidByUserId === input.paidByUserId)
+  );
+}
+
+/**
+ * `createCost` for a request that may be sent twice. With an `idempotencyKey` the person's earlier entry with that key is
+ * returned (`replayed`) and nothing is booked; the same key for a different entry is a 409. Once the entry is deleted its
+ * key is free again. Without a key (or without a person) every call books an entry.
+ */
+export function recordCost(
+  ctx: ServiceContext,
+  input: CreateCostRequest,
+  createdBy: string | null,
+): { cost: CostRecord; replayed: boolean } {
+  const key = input.idempotencyKey;
+  const replay = () => {
+    if (!key || createdBy === null) return null;
+    const existing = findCostByKey(ctx, createdBy, key);
+    if (!existing) return null;
+    if (!sameRequest(ctx, existing, input)) {
+      throw conflict("This idempotency key was used for another cost entry");
+    }
+    return { cost: existing, replayed: true };
+  };
+  const first = replay();
+  if (first) return first;
+  try {
+    return { cost: createCost(ctx, input, createdBy), replayed: false };
+  } catch (err) {
+    if (key && isUniqueViolation(err)) {
+      const raced = replay();
+      if (raced) return raced;
+    }
+    throw err;
+  }
 }
 
 /**

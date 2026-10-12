@@ -248,6 +248,7 @@ export const createCost = defineTool({
         bookId: b?.id,
         splitMode: split ?? (who ? "equal" : undefined),
         participantIds: who,
+        idempotencyKey: ctx.newKey(),
       },
     });
     return {

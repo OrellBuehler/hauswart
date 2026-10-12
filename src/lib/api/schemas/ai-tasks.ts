@@ -87,13 +87,19 @@ export const aiTaskSchema = z
   .meta({ id: "AiTask" });
 export type AiTask = z.infer<typeof aiTaskSchema>;
 
-/** Multipart form fields (all values arrive as strings except `file`). */
+/**
+ * Multipart form fields (all values arrive as strings except `file`). `idempotencyKey` (8 to 128 characters, chosen by
+ * the caller, unique per person who uploads) makes a retried upload return the first task with status 200 instead of
+ * queueing a second; the same key for a different receipt (another file, kind, book or device; the note does not count)
+ * is a 409.
+ */
 export const createAiTaskRequestSchema = z.strictObject({
   file: z.file(),
   kind: z.enum(AI_TASK_QUEUEABLE_KINDS).default("receipt"),
   note: nullableText(AI_TASK_NOTE_MAX).optional(),
   bookId: idSchema.optional(),
   assetId: idSchema.optional(),
+  idempotencyKey: z.string().min(8).max(128).optional(),
 });
 export type CreateAiTaskRequest = z.output<typeof createAiTaskRequestSchema>;
 

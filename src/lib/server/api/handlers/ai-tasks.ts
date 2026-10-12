@@ -5,17 +5,17 @@ import type { aiTaskSchema } from "$lib/api/schemas/ai-tasks";
 import { toIso } from "$lib/api/schemas/common";
 import {
   completeAiTask,
-  createAiTask,
   deleteAiTask,
   dismissAiTask,
   getAiTask,
   listAiTasks,
+  recordAiTask,
   type AiTaskRecord,
 } from "$lib/server/ai-tasks/ai-tasks";
 import { taskPreview } from "$lib/server/ai-tasks/preview";
 import { fileResponse } from "$lib/server/files/serve";
 import type { Principal } from "$lib/server/auth/types";
-import type { Handler } from "../bind";
+import { reply, type Handler } from "../bind";
 import { wireAttachment } from "../wire";
 
 /** `session` for a person in the browser, else the kind of the API token. */
@@ -57,22 +57,24 @@ export function wireAiTask(t: AiTaskRecord): z.input<typeof aiTaskSchema> {
 export const create: Handler<typeof endpoints.aiTasksCreate> = async ({
   ctx,
   body,
-}) =>
-  wireAiTask(
-    await createAiTask(
-      ctx,
-      {
-        kind: body.kind,
-        bytes: new Uint8Array(await body.file.arrayBuffer()),
-        filename: body.file.name,
-        declaredMime: body.file.type,
-        note: body.note,
-        bookId: body.bookId,
-        assetId: body.assetId,
-      },
-      ctx.user.id,
-    ),
+}) => {
+  const { task, replayed } = await recordAiTask(
+    ctx,
+    {
+      kind: body.kind,
+      bytes: new Uint8Array(await body.file.arrayBuffer()),
+      filename: body.file.name,
+      declaredMime: body.file.type,
+      note: body.note,
+      bookId: body.bookId,
+      assetId: body.assetId,
+      idempotencyKey: body.idempotencyKey,
+    },
+    ctx.user.id,
   );
+  const out = wireAiTask(task);
+  return replayed ? reply(200, out) : out;
+};
 
 export const list: Handler<typeof endpoints.aiTasksList> = ({ ctx, query }) => {
   const { cursor, limit, ...filter } = query;

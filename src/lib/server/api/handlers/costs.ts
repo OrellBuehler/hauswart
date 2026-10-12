@@ -5,10 +5,10 @@ import { toIso } from "$lib/api/schemas/common";
 import { costBalances } from "$lib/server/costs/balances";
 import { getCostBookRow } from "$lib/server/costs/books";
 import {
-  createCost,
   deleteCost,
   getCost,
   listCosts,
+  recordCost,
   reviewCost,
   updateCost,
   type CostRecord,
@@ -17,7 +17,7 @@ import { costsCsv } from "$lib/server/costs/csv";
 import { moveCostsToBook } from "$lib/server/costs/move";
 import { costsSummary } from "$lib/server/costs/summary";
 import { invalidField } from "$lib/server/service";
-import type { Handler } from "../bind";
+import { reply, type Handler } from "../bind";
 
 const yearOf = (today: string) => Number(today.slice(0, 4));
 
@@ -75,8 +75,14 @@ export const list: Handler<typeof endpoints.costsList> = ({ ctx, query }) => {
   };
 };
 
-export const create: Handler<typeof endpoints.costsCreate> = ({ ctx, body }) =>
-  wireCost(createCost(ctx, body, ctx.user.id), ctx.user.id);
+export const create: Handler<typeof endpoints.costsCreate> = ({
+  ctx,
+  body,
+}) => {
+  const { cost, replayed } = recordCost(ctx, body, ctx.user.id);
+  const out = wireCost(cost, ctx.user.id);
+  return replayed ? reply(200, out) : out;
+};
 
 export const get: Handler<typeof endpoints.costsGet> = ({ ctx, params }) =>
   wireCost(getCost(ctx, params.id), ctx.user.id);

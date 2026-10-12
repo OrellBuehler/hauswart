@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { and, desc, eq, inArray, lt, or, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import type { AiTaskClosedVia, AiTaskKind, UserRole } from "$lib/api/enums";
@@ -28,6 +29,7 @@ import {
   conflict,
   forbidden,
   invalidField,
+  isUniqueViolation,
   notFound,
   type ServiceContext,
 } from "$lib/server/service";
@@ -195,8 +197,27 @@ export interface NewAiTask {
   note?: string | null;
   bookId?: string;
   assetId?: string;
+  /** Chosen by the caller; see `recordAiTask`. */
+  idempotencyKey?: string;
   /** Files directory; defaults to `HAUSWART_FILES_DIR`. */
   root?: string;
+}
+
+/** What an idempotency key stands for: the kind, the hints and the bytes uploaded (the note does not count). */
+function digestOf(
+  input: Pick<NewAiTask, "kind" | "bookId" | "assetId" | "bytes">,
+): string {
+  const file = createHash("sha256").update(input.bytes).digest("hex");
+  return createHash("sha256")
+    .update(
+      JSON.stringify([
+        input.kind,
+        input.bookId ?? null,
+        input.assetId ?? null,
+        file,
+      ]),
+    )
+    .digest("hex");
 }
 
 /**
@@ -238,11 +259,60 @@ export async function createAiTask(
         attachmentId: file.id,
         bookId: input.bookId ?? null,
         assetId: input.assetId ?? null,
+        idempotencyKey: input.idempotencyKey ?? null,
+        idempotencyDigest: input.idempotencyKey ? digestOf(input) : null,
         createdAt: new Date(ctx.now),
       })
       .run();
   });
   return getAiTask(ctx, id);
+}
+
+/** The task the person queued with this key, if any. */
+function findByKey(
+  ctx: Db,
+  userId: string,
+  key: string,
+): AiTaskRecord | undefined {
+  const row = selectTasks(ctx.db)
+    .where(
+      and(eq(aiTasks.createdByUserId, userId), eq(aiTasks.idempotencyKey, key)),
+    )
+    .get();
+  return row ? hydrate(ctx.db, [row])[0] : undefined;
+}
+
+/**
+ * `createAiTask` for an upload that may be sent twice. With an `idempotencyKey` the person's earlier task with that key is
+ * returned (`replayed`, whatever became of it since) and nothing is stored or queued; the same key for a different receipt
+ * is a 409. Once the task is deleted its key is free again. Without a key every call queues a task.
+ */
+export async function recordAiTask(
+  ctx: ServiceContext,
+  input: NewAiTask,
+  userId: string,
+): Promise<{ task: AiTaskRecord; replayed: boolean }> {
+  const key = input.idempotencyKey;
+  const replay = () => {
+    if (!key) return null;
+    const existing = findByKey(ctx, userId, key);
+    if (!existing) return null;
+    if (existing.idempotencyDigest !== digestOf(input)) {
+      throw conflict("This idempotency key was used for another receipt");
+    }
+    return { task: existing, replayed: true };
+  };
+  const first = replay();
+  if (first) return first;
+  try {
+    return { task: await createAiTask(ctx, input, userId), replayed: false };
+  } catch (err) {
+    if (key && isUniqueViolation(err)) {
+      const raced = replay();
+      if (raced) return raced;
+    }
+    throw err;
+  }
 }
 
 export interface CompleteAiTaskInput {

@@ -366,6 +366,10 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   `reviewedByUserId`; migration `0028`) says that a person still has to look at the entry: the receipt queue sets it on what an
   assistant booked, `POST /costs/{id}/review` (scope `costs:write`, any member) clears it and records who and when, and
   reviewing an entry nobody has to review changes nothing (the first reviewer stays). It changes no total, split or balance.
+  `POST /costs` takes an optional `idempotencyKey` (8 to 128 characters, migration `0029`, unique per person who books whatever credential they
+  use, exactly like `POST /settlements`): a retry returns the first entry with 200 instead of 201, the same key for another entry (amount,
+  currency, category or title; book, date or payer when the retry names them; notes, payee and device do not count) is a 409, and the key is
+  free again once the entry is deleted (`recordCost`; `createCost` stays the plain booking, also used by the finance inbox and the fuel log).
   `GET /costs?reviewNeeded=true|false` filters; `GET /costs/summary` carries `reviewNeededCount` (the entries of its own scope: the year
   and the asset or book if one was asked for, any currency, expense or not) and the dashboard `reviewNeededCount` (every year and book).
   The fuel log of a vehicle books its
@@ -574,6 +578,11 @@ entries with the tools that exist and closes the task. The web app has the page 
   further target gets a **copy** (`copyAttachment`: another row for the same stored file, which is deleted only with the last row), and the
   task becomes `done` with `resultJson` `{createdCostIds, createdFuelLogIds, note}` as reported. With no target (only free fills) the file stays
   with the task. The DTO's `result.costs` are the targets that still exist (title, amount, `reviewNeeded`).
+- **Uploading twice** (`POST /ai-tasks` takes an optional `idempotencyKey`, 8 to 128 characters, migration `0029`): the same rules as for
+  payments and cost entries - unique per uploader, a retry returns the first task with 200 (whatever became of it since: pending, done, even
+  with its book archived by now), nothing is stored or queued for it, the same key for a different receipt (a digest of kind, book, device
+  and the bytes uploaded; the note does not count) is a 409, and the key is free once the task is deleted (`recordAiTask`; the key is checked
+  before the file is stored).
 - **Idempotency** (decided so that a retry is safe and a mistake is not hidden): completing a done task with the same ids, in any order, is 200
   with the task as it is (the note and `completedVia` of the first call stay); with other ids it is 409 `conflict` whose `details` carry the
   recorded ids; completing a dismissed task is 409. `POST /ai-tasks/{id}/dismiss {reason?}` (send `{}`; a JSON body is required) closes a pending
