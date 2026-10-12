@@ -254,8 +254,8 @@
 
 <Card.Root>
   <Card.Header>
-    <Card.Title>{m.costbook_settings_title()}</Card.Title>
-    <Card.Description>
+    <Card.Title class="col-start-1">{m.costbook_settings_title()}</Card.Title>
+    <Card.Description class="col-start-1">
       {m.costbook_settings_description()}
       {#if !canWrite}{m.costbook_settings_readonly()}{/if}
     </Card.Description>
