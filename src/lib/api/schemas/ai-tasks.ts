@@ -38,6 +38,8 @@ export const aiTaskCostSchema = z
     currency: z.string(),
     /** Whether a person still has to look at the entry (`POST /costs/{id}/review`). */
     reviewNeeded: z.boolean(),
+    /** The fuel log entry that booked this entry, which a task is completed with as `createdFuelLogIds`. */
+    fuelLogId: z.string().nullable(),
   })
   .meta({ id: "AiTaskCost" });
 
@@ -73,6 +75,12 @@ export const aiTaskSchema = z
     bookName: z.string().nullable(),
     assetId: z.string().nullable(),
     assetName: z.string().nullable(),
+    /**
+     * The cost entries that exist and were booked for this task (`receiptTaskId` of `POST /costs`, of accepting a finance
+     * suggestion and of logging a fill), oldest first, whoever booked them and whatever became of the task. A client that
+     * opens a pending task reads this to see what an earlier attempt already booked, and books only the rest.
+     */
+    bookedSoFar: z.array(aiTaskCostSchema),
     /** Set when the task is done. */
     result: aiTaskResultSchema.nullable(),
     /** Set when the task was dismissed and a reason was given. */

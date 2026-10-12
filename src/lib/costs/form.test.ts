@@ -85,6 +85,7 @@ function entry(over: Partial<CostEntry> = {}): CostEntry {
     reviewNeeded: false,
     reviewedAt: null,
     reviewedByUserId: null,
+    receiptTaskId: null,
     commentCount: 0,
     createdBy: "u1",
     createdAt: "2026-10-01T08:00:00.000Z",

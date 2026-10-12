@@ -573,10 +573,21 @@ entries with the tools that exist and closes the task. The web app has the page 
   file (`storeAttachmentFile`: type sniffing, images re-encoded, 25 MiB, the same `invalid_request` codes as an attachment upload), then writes
   the attachment and the task in one transaction, so a task never lacks its file. `POST /attachments` with that owner is a 400 and
   `DELETE /attachments/{id}` of its file a 409: the task owns it (owner type `ai_task` needs `costs:write` like `cost`).
+- **Booking for a task** (`receiptTaskId` on `POST /costs`, on accepting a finance suggestion - a cost only - and on `POST /assets/{id}/fuel-logs`;
+  column `cost_entries.ai_task_id`, `ON DELETE SET NULL`; `ai-tasks/booking.ts` `assertTaskOpenForBooking`, a leaf module the cost service may
+  import): the task must exist (400 on the field) and be pending (409 `conflict`, `details.status`; nothing is booked and a finance suggestion stays
+  pending), and the entry is **flagged `reviewNeeded` at once and recorded on the task in the same transaction**. `bookedSoFar` on the task DTO lists
+  the entries that exist and were booked for it (oldest first, `fuelLogId` when a fuel log entry booked one), whoever booked them and whatever
+  became of the task, so a client that was interrupted - or a second one - sees what is done and books only the rest. A fill that is free has no
+  cost entry to record it on: `receiptTaskId` is a 400 there. The cost entry DTO carries `receiptTaskId`. A replayed booking (see the key above)
+  is answered before the task is looked at, and the key now also stands for the receipt task.
 - **Complete** (`POST /ai-tasks/{id}/complete {createdCostIds?, createdFuelLogIds?, note?}`, scope `costs:write`, 200; at least one id): every
   id must exist (400 on the field, naming the ids; nothing changes). The targets are the cost entries named plus the cost entry each named fuel
-  log entry booked (a free fill has none), each once. In one transaction they are flagged `reviewNeeded` (`flagForReview`, which also forgets an
-  earlier review), the file **moves** to the first target (same attachment row, new owner `cost`; `attachmentId` still points at it) and every
+  log entry booked (a free fill has none), each once. **They must be the task's result**: booked for this task, or created at or after the moment
+  the task was queued (a fuel log entry by its own `createdAt`); an entry that existed before the task and one booked for another task are a 400 on
+  `createdCostIds` (`createdFuelLogIds`), naming the ids and nothing changes - a payment booked twice is not what the receipt became. In one
+  transaction the targets not booked for this task and never reviewed are flagged `reviewNeeded` (`flagForReview`; **a review a person already did
+  is never undone**, and entries booked for the task were flagged when they were booked), the file **moves** to the first target (same attachment row, new owner `cost`; `attachmentId` still points at it) and every
   further target gets a **copy** (`copyAttachment`: another row for the same stored file, which is deleted only with the last row), and the
   task becomes `done` with `resultJson` `{createdCostIds, createdFuelLogIds, note}` as reported. With no target (only free fills) the file stays
   with the task. The DTO's `result.costs` are the targets that still exist (title, amount, `reviewNeeded`).
@@ -591,6 +602,9 @@ entries with the tools that exist and closes the task. The web app has the page 
   task (the file stays with it); dismissing a dismissed task is 200 and the first reason stays; a done task is 409.
 - **Delete** removes the task and the file only while the task still owns it (pending or dismissed); after a completion the file is the receipt
   of the cost entry and stays. Deleting the cost entry that holds the file clears `attachmentId` (the task shows no file).
+- **Several clients**: nothing locks a task. Two clients (or one that was restarted) can work on it, which `bookedSoFar` makes visible and the rules
+  above keep from double booking: the first to complete wins, a later `create`, `accept` or `fill` for the task is a 409, a later `complete` with other
+  ids a 409 naming what is recorded, and what the loser had booked stays flagged for a person to sort out.
 - **The preview** (`GET /ai-tasks/{id}/preview`, binary, scope `read`; `ai-tasks/preview.ts`, `files/preview.ts`): the file as an assistant
   reads it. An image that fits (longest side at most 1600 px, at most 1.5 MB) is sent as stored; a larger one is drawn on white and re-encoded
   as JPEG at `previewSize` (longest side 1600, except a long, narrow receipt, which keeps a short side of 600 px up to a long side of 3200),
@@ -604,8 +618,7 @@ entries with the tools that exist and closes the task. The web app has the page 
   its download address. The members' ownership share comes from `GET /users/directory`, which now also carries `ownershipBps` (every member can
   read it from the frozen shares of the cost entries anyway). `list_costs` takes `reviewNeeded` and its rows carry `needsReview`.
 - **Not built**: a notification for the uploader ("receipt processed"; it would need a new title key in both languages and the delivery
-  rules), reopening a dismissed task, a claim or lock while an assistant works on a task (two assistants can book the same receipt twice;
-  `list_costs` is the check the tool text asks for), retention of dismissed tasks, the other kinds, a count of waiting receipts on the dashboard (the costs page reads one page of `GET /ai-tasks?status=pending`
+  rules), reopening a dismissed task, retention of dismissed tasks, the other kinds, a count of waiting receipts on the dashboard (the costs page reads one page of `GET /ai-tasks?status=pending`
   for its badge), and a way to complete a task by hand in the web app.
 - **Tests**: `ai-tasks/ai-tasks.test.ts` and `preview.test.ts` (service), `routes/api/v1/ai-tasks/ai-tasks.test.ts` (API, scopes, visibility,
   review), `files/preview.test.ts` (sizes and encoding, table-driven), `costs/review.test.ts`, `mcp/src/ai-tasks-tools.test.ts` (tools, image and

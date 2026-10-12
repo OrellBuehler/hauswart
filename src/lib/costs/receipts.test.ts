@@ -42,6 +42,7 @@ function task(over: Partial<AiTask> = {}): AiTask {
     bookName: null,
     assetId: null,
     assetName: null,
+    bookedSoFar: [],
     result: null,
     dismissReason: null,
     completedAt: null,

@@ -38,6 +38,7 @@ export function wireAiTask(t: AiTaskRecord): z.input<typeof aiTaskSchema> {
     bookName: t.bookName,
     assetId: t.assetId,
     assetName: t.assetName,
+    bookedSoFar: t.bookedSoFar,
     result: t.resultJson
       ? {
           createdCostIds: t.resultJson.createdCostIds,

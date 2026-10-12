@@ -1,5 +1,15 @@
 import { createHash } from "node:crypto";
-import { and, desc, eq, inArray, lt, or, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  inArray,
+  lt,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 import type { AiTaskClosedVia, AiTaskKind, UserRole } from "$lib/api/enums";
@@ -47,6 +57,8 @@ export interface AiTaskCostRecord {
   amountMinor: number;
   currency: string;
   reviewNeeded: boolean;
+  /** The fuel log entry that booked this entry, if one did. */
+  fuelLogId: string | null;
 }
 
 export interface AiTaskRecord extends AiTaskRow {
@@ -59,6 +71,8 @@ export interface AiTaskRecord extends AiTaskRow {
   attachment: AttachmentRecord | null;
   /** The cost entries the result names (and those of its fuel log entries) that still exist. */
   resultCosts: AiTaskCostRecord[];
+  /** The cost entries booked for this task (`receiptTaskId`) that still exist, oldest first. */
+  bookedSoFar: AiTaskCostRecord[];
 }
 
 const closer = alias(users, "closer");
@@ -98,6 +112,18 @@ function fuelCostEntries(db: DB, fuelLogIds: readonly string[]) {
   );
 }
 
+const costRecordColumns = {
+  id: costEntries.id,
+  date: costEntries.date,
+  title: costEntries.title,
+  amountMinor: costEntries.amountMinor,
+  currency: costEntries.currency,
+  reviewNeeded: costEntries.reviewNeeded,
+  fuelLogId: sql<
+    string | null
+  >`(select fuel_logs.id from fuel_logs where fuel_logs.cost_entry_id = ${costEntries}.id limit 1)`,
+};
+
 function hydrate(db: DB, joined: readonly Joined[]): AiTaskRecord[] {
   const files = attachmentsById(
     { db },
@@ -122,19 +148,25 @@ function hydrate(db: DB, joined: readonly Joined[]): AiTaskRecord[] {
     (wanted.length === 0
       ? []
       : db
-          .select({
-            id: costEntries.id,
-            date: costEntries.date,
-            title: costEntries.title,
-            amountMinor: costEntries.amountMinor,
-            currency: costEntries.currency,
-            reviewNeeded: costEntries.reviewNeeded,
-          })
+          .select(costRecordColumns)
           .from(costEntries)
           .where(inArray(costEntries.id, wanted))
           .all()
     ).map((e) => [e.id, e satisfies AiTaskCostRecord]),
   );
+  const taskIds = joined.map((j) => j.task.id);
+  const booked = new Map<string, AiTaskCostRecord[]>();
+  if (taskIds.length > 0) {
+    const rows = db
+      .select({ ...costRecordColumns, taskId: costEntries.aiTaskId })
+      .from(costEntries)
+      .where(inArray(costEntries.aiTaskId, taskIds))
+      .orderBy(asc(costEntries.createdAt), asc(sql`${costEntries}.rowid`))
+      .all();
+    for (const { taskId, ...entry } of rows) {
+      booked.set(taskId!, [...(booked.get(taskId!) ?? []), entry]);
+    }
+  }
   return joined.map((j) => ({
     ...j.task,
     createdByName: j.createdByName,
@@ -150,6 +182,7 @@ function hydrate(db: DB, joined: readonly Joined[]): AiTaskRecord[] {
           return entry ? [entry] : [];
         })
       : [],
+    bookedSoFar: booked.get(j.task.id) ?? [],
   }));
 }
 
@@ -336,12 +369,35 @@ const sameIds = (a: readonly string[], b: readonly string[]) =>
   a.length === b.length &&
   [...a].sort().join("\n") === [...b].sort().join("\n");
 
+/** The fuel log entries among `ids` with when they were made and the cost entry each booked. */
+function fuelLogRows(db: DB, ids: readonly string[]) {
+  if (ids.length === 0) {
+    return new Map<string, { createdAt: Date; costEntryId: string | null }>();
+  }
+  return new Map(
+    db
+      .select({
+        id: fuelLogs.id,
+        createdAt: fuelLogs.createdAt,
+        costEntryId: fuelLogs.costEntryId,
+      })
+      .from(fuelLogs)
+      .where(inArray(fuelLogs.id, [...ids]))
+      .all()
+      .map((row) => [row.id, row]),
+  );
+}
+
 /**
- * Closes a pending task as done with the entries it produced, in one transaction: every cost entry named (and the cost
- * entry each named fuel log entry booked) is flagged for review, the file moves to the first of them as its receipt
- * and the others get a copy, and the task keeps the result. Entries that do not exist are a 400 on their field and
- * nothing changes. Completing a done task with the same entries changes nothing and returns it; with other entries it
- * is a 409, as is completing a dismissed task.
+ * Closes a pending task as done with the entries it produced, in one transaction. Every cost entry named (and the cost
+ * entry each named fuel log entry booked) has to be the task's result: booked for this task (`receiptTaskId`, flagged for
+ * review already) or created since the task was queued. An entry that existed before the task cannot be what the receipt
+ * became (it is probably the same payment, booked twice) and one booked for another task is not this one's: both are a
+ * 400 on the field, naming the ids, and nothing changes. What was not flagged yet is flagged for review now (a review a
+ * person already did is never undone), the file moves to the first of the entries as its receipt and the others get a
+ * copy, and the task keeps the result. Entries that do not exist are a 400 on their field too. Completing a done task
+ * with the same entries changes nothing and returns it; with other entries it is a 409, as is completing a dismissed
+ * task.
  */
 export function completeAiTask(
   ctx: ServiceContext,
@@ -390,8 +446,8 @@ export function completeAiTask(
       `Unknown cost entries: ${missingCosts.join(", ")}`,
     );
   }
-  const booked = fuelCostEntries(ctx.db, fuelLogIds);
-  const missingFuel = fuelLogIds.filter((fuel) => !booked.has(fuel));
+  const fuel = fuelLogRows(ctx.db, fuelLogIds);
+  const missingFuel = fuelLogIds.filter((log) => !fuel.has(log));
   if (missingFuel.length > 0) {
     throw invalidField(
       "createdFuelLogIds",
@@ -400,15 +456,82 @@ export function completeAiTask(
   }
   const targets = unique([
     ...costIds,
-    ...fuelLogIds.flatMap((fuel) => {
-      const entry = booked.get(fuel);
+    ...fuelLogIds.flatMap((log) => {
+      const entry = fuel.get(log)?.costEntryId;
       return entry ? [entry] : [];
     }),
   ]);
 
+  const entries = new Map(
+    targets.length === 0
+      ? []
+      : ctx.db
+          .select({
+            id: costEntries.id,
+            aiTaskId: costEntries.aiTaskId,
+            createdAt: costEntries.createdAt,
+            reviewedAt: costEntries.reviewedAt,
+          })
+          .from(costEntries)
+          .where(inArray(costEntries.id, targets))
+          .all()
+          .map((row) => [row.id, row]),
+  );
+  const elsewhere = (ids: readonly string[]) =>
+    ids.filter((entry) => {
+      const owner = entries.get(entry)?.aiTaskId;
+      return owner !== null && owner !== undefined && owner !== task.id;
+    });
+  const earlier = (ids: readonly string[]) =>
+    ids.filter((entry) => {
+      const row = entries.get(entry);
+      return (
+        row !== undefined &&
+        row.aiTaskId === null &&
+        row.createdAt.getTime() < task.createdAt.getTime()
+      );
+    });
+  const refuse = (field: string, ids: readonly string[], why: string) => {
+    if (ids.length > 0) {
+      throw invalidField(field, `${why}: ${ids.join(", ")}`);
+    }
+  };
+  refuse(
+    "createdCostIds",
+    elsewhere(costIds),
+    "Cost entries that were booked for another receipt task",
+  );
+  refuse(
+    "createdCostIds",
+    earlier(costIds),
+    "Cost entries that existed before this task was queued, so they cannot be what this receipt became (a payment booked twice? check list_costs and dismiss the task if it was booked already; book what is missing with receiptTaskId)",
+  );
+  // A fill is the task's when its cost entry was booked for the task, else when it was made after the task was queued.
+  refuse(
+    "createdFuelLogIds",
+    fuelLogIds.filter((log) => {
+      const row = fuel.get(log)!;
+      const owner = row.costEntryId
+        ? entries.get(row.costEntryId)?.aiTaskId
+        : null;
+      if (owner === task.id) return false;
+      if (owner) return true;
+      return row.createdAt.getTime() < task.createdAt.getTime();
+    }),
+    "Fuel log entries that were made before this task was queued, or booked for another receipt task, so they cannot be what this receipt became",
+  );
+
+  // Booked for this task they were flagged then, and a review since is a person's work; the others are flagged now.
+  const toFlag = targets.filter((entry) => {
+    const row = entries.get(entry);
+    return (
+      row !== undefined && row.aiTaskId !== task.id && row.reviewedAt === null
+    );
+  });
+
   ctx.db.transaction((tx) => {
     const inner: Db = { db: tx as unknown as DB };
-    flagForReview(inner, targets);
+    flagForReview(inner, toFlag);
     const file = task.attachment ?? undefined;
     if (
       file &&

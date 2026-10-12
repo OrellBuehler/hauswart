@@ -53,6 +53,15 @@ function taskRow(task: AiTask) {
           needsReview: c.reviewNeeded ? true : null,
         }))
       : null,
+    bookedSoFar: task.bookedSoFar.length
+      ? task.bookedSoFar.map((c) => ({
+          id: c.id,
+          title: c.title,
+          amount: money(c.amountMinor, c.currency),
+          needsReview: c.reviewNeeded ? true : null,
+          fuelLogId: c.fuelLogId,
+        }))
+      : null,
     resultNote: task.result?.note,
     dismissReason: task.dismissReason,
     closedAt: task.completedAt,
@@ -205,7 +214,7 @@ export const getAiTask = defineTool({
   name: "get_ai_task",
   title: "Open a receipt task",
   description:
-    "Opens one task of the receipt queue: its note and hints, the receipt itself (an image scaled to at most 1600 px, which is plenty to read it; a PDF is attached as a document when it is not too large) and what you need to book it: the open cost books (default, tax relevant), the cost categories, the household members with their ownership shares, the vehicles and, when you are the uploader, their recent pending bank transactions (any of them may be the same payment). How to work: read the receipt; book it with create_cost (several entries when it mixes books or categories; add_fuel_log for the fuel receipt of a vehicle; accept_finance_suggestion when a listed bank transaction is the payment); the uploader pays unless the note or the receipt says otherwise (paidBy); use the uploader's hints for book and asset when they fit; then close the task with complete_ai_task and the ids of everything you booked. Every entry you book is flagged for a person to review, so say in complete_ai_task's note what you were unsure of. A file that is no receipt, unreadable or already booked (check list_costs) is closed with dismiss_ai_task and a reason. Look before you book: a task that is not pending was processed already.",
+    "Opens one task of the receipt queue: its note and hints, the receipt itself (an image scaled to at most 1600 px, which is plenty to read it; a PDF is attached as a document when it is not too large) and what you need to book it: the open cost books (default, tax relevant), the cost categories, the household members with their ownership shares, the vehicles and, when you are the uploader, their recent pending bank transactions (any of them may be the same payment). How to work: read the receipt; book it with create_cost (several entries when it mixes books or categories; add_fuel_log for the fuel receipt of a vehicle; accept_finance_suggestion when a listed bank transaction is the payment) and pass this task's id as receiptTaskId every time, so that what you book is recorded on the task and flagged for review at once; bookedSoFar lists what is recorded already (by an earlier attempt of yours or by somebody else's client): do not book those again; the uploader pays unless the note or the receipt says otherwise (paidBy); use the uploader's hints for book and asset when they fit; then close the task with complete_ai_task and the ids of everything you booked. Every entry you book is flagged for a person to review, so say in complete_ai_task's note what you were unsure of. A file that is no receipt, unreadable or already booked (check list_costs) is closed with dismiss_ai_task and a reason. Look before you book: a task that is not pending was processed already.",
   mode: "read",
   input: { id: taskId },
   async handler({ id }, ctx) {
@@ -221,9 +230,12 @@ export const getAiTask = defineTool({
     ]);
     const uploader = task.createdByName ?? "nobody";
     const when = task.createdAt.slice(0, 10);
+    const booked = task.bookedSoFar.length;
     const state =
       task.status === "pending"
-        ? ""
+        ? booked
+          ? ` ${plural(booked, "cost entry", "cost entries")} ${booked === 1 ? "was" : "were"} booked for this task already (bookedSoFar): do not book ${booked === 1 ? "it" : "them"} again, book only what is missing.`
+          : ""
         : ` It is ${task.status} already${task.status === "done" ? ": do not book it again" : ""}.`;
     return {
       summary: `Receipt task ${task.id} (${task.status}), uploaded by ${uploader} on ${when}${
@@ -277,7 +289,7 @@ export const completeAiTask = defineTool({
   name: "complete_ai_task",
   title: "Finish a receipt task",
   description:
-    "Closes a receipt task as done once you have booked what it shows: costIds are the cost entries you created for it (create_cost, accept_finance_suggestion), fuelLogIds the fuel log entries (add_fuel_log); at least one. All of them must exist. The receipt moves onto the first cost entry (the others get a copy) and every entry is flagged for a person to review. note is for those people: what you were unsure of (a date you guessed, a category you chose, an item you could not read). Repeating the call with the same ids changes nothing; with other ids it is a conflict, and so is a task that was dismissed. Nothing booked? Use dismiss_ai_task.",
+    "Closes a receipt task as done once you have booked what it shows: costIds are the cost entries you created for it (create_cost, accept_finance_suggestion), fuelLogIds the fuel log entries (add_fuel_log); at least one. All of them must exist. The receipt moves onto the first cost entry (the others get a copy) and every entry is flagged for a person to review. note is for those people: what you were unsure of (a date you guessed, a category you chose, an item you could not read). Entries booked for this task (receiptTaskId) are always accepted; an entry that existed before the task was queued is refused (it is not what this receipt became: check list_costs, and dismiss the task if it was booked already), and so is one booked for another task. Repeating the call with the same ids changes nothing; with other ids it is a conflict, and so is a task that was dismissed. Nothing booked? Use dismiss_ai_task.",
   mode: "update",
   scopes: ["costs:write"],
   input: {

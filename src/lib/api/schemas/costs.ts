@@ -110,6 +110,11 @@ export const costEntrySchema = z
     /** When and by whom the entry was last reviewed; null if it never was (or was flagged again since). */
     reviewedAt: isoTimestampSchema.nullable(),
     reviewedByUserId: z.string().nullable(),
+    /**
+     * The receipt task (`GET /ai-tasks/{id}`) the entry was booked for, when the booking named it (`receiptTaskId`);
+     * null for every other entry and once the task is deleted.
+     */
+    receiptTaskId: z.string().nullable(),
     commentCount: z.number().int(),
     createdBy: z.string().nullable(),
     createdAt: isoTimestampSchema,
@@ -165,6 +170,9 @@ const costFields = {
  * household's, `splitMode` to the book's default split, `countsAsExpense` to true (false for a mortgage repayment).
  * `shares` are required for `custom` and refused otherwise; `participantIds` narrow an `equal` split to those people
  * (everybody without it) and are refused for any other split. `deductible` other than `unknown` needs a tax relevant book.
+ * `receiptTaskId` names the receipt task (`/ai-tasks`) the entry is booked for: the entry is flagged `reviewNeeded` at
+ * once and recorded on the task (`bookedSoFar`) in the same transaction; an unknown task is a 400 on the field, a task that
+ * is not waiting any more a 409.
  * `idempotencyKey` (8 to 128 characters, chosen by the caller, unique per person who books) makes a retried request return
  * the first entry with status 200 instead of booking a second one; the same key for a different entry (amount, currency,
  * category, title, and book, date or payer when the retry names them) is a 409.
@@ -188,6 +196,7 @@ export const createCostRequestSchema = z.strictObject({
   participantIds: costFields.participantIds.optional(),
   countsAsExpense: costFields.countsAsExpense.optional(),
   deductible: costFields.deductible.default("unknown"),
+  receiptTaskId: idSchema.optional(),
   idempotencyKey: z.string().min(8).max(128).optional(),
 });
 export type CreateCostRequest = z.output<typeof createCostRequestSchema>;

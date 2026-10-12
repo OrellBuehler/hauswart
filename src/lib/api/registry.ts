@@ -1824,7 +1824,7 @@ export const endpoints = {
     method: "POST",
     path: "/api/v1/assets/{id}/fuel-logs",
     summary: "Log a fill-up or charge",
-    description: `In one transaction: the odometer becomes a reading of the vehicle (source fuel_log; a value lower than the reading before is a 400 on odometer) and, unless amountMinor is 0, a cost entry of the category fuel is booked for the vehicle (title like "Tanken <station>", paid by paidByUserId, default the caller, split by splitMode, default the split of its book). The book is bookId (an open book, else 400 on bookId), else the vehicle's own book (costBookId of its details, while that book is open), else the default book. The cost entry is the fuel log entry's own: its amount, currency and date change through PATCH /fuel-logs/{id} only, and its device stays the vehicle. It needs costs:write because it books money. ${odometerRefusal("odometer")} ${VEHICLE_ONLY_WRITE}`,
+    description: `In one transaction: the odometer becomes a reading of the vehicle (source fuel_log; a value lower than the reading before is a 400 on odometer) and, unless amountMinor is 0, a cost entry of the category fuel is booked for the vehicle (title like "Tanken <station>", paid by paidByUserId, default the caller, split by splitMode, default the split of its book). The book is bookId (an open book, else 400 on bookId), else the vehicle's own book (costBookId of its details, while that book is open), else the default book. The cost entry is the fuel log entry's own: its amount, currency and date change through PATCH /fuel-logs/{id} only, and its device stays the vehicle. It needs costs:write because it books money. \`receiptTaskId\` books the fill for a task of the receipt queue: its cost entry is flagged \`reviewNeeded\` and recorded on the task (\`bookedSoFar\`), as for \`POST /costs\` (400 on the field for an unknown task or a free fill, which has no cost entry; 409 for a task that is not waiting any more). ${odometerRefusal("odometer")} ${VEHICLE_ONLY_WRITE}`,
     tags: ["vehicles", "assets"],
     auth: "both",
     scopes: ["costs:write"],
@@ -1832,7 +1832,7 @@ export const endpoints = {
     body: createFuelLogRequestSchema,
     response: fuelLogSchema,
     status: 201,
-    errors: ["not_found"],
+    errors: ["not_found", "conflict"],
   }),
 
   fuelLogsGet: defineEndpoint({
@@ -2054,7 +2054,7 @@ export const endpoints = {
     path: "/api/v1/costs",
     summary: "Book a cost",
     description:
-      "`bookId` defaults to the default book (`isDefault` in `GET /cost-books`; an archived book is a 400 on `bookId`), `currency` to the household's, `date` to today. `splitMode` defaults to the book's default split: `ownership` divides by the people's current ownership shares, `equal` equally among everybody or, with `participantIds`, among those household members only (each listed once), `custom` by `shares` (basis points, sum 10000), `none` does not split; `participantIds` with any other split and `shares` with any other than `custom` are a 400. The shares are frozen with the entry; the parts add up to the amount exactly (largest remainder, ties to the earlier user id). `countsAsExpense` defaults to false for a mortgage repayment (equity), else true. `deductible` other than `unknown` needs a tax relevant book (400 on `deductible` otherwise). Entries cannot be created for a finance provider's transaction here: accept the suggestion instead. A repeated `idempotencyKey` (8 to 128 characters; unique per person who books, whatever credential they use) returns the first entry with status 200 and books nothing; the same key for a different entry (amount, currency, category or title, or book, date or payer when the retry names them) is a 409 `conflict`; once the entry is deleted its key is free again. Send one per attempt to save, and keep it for a retry that got no answer.",
+      "`bookId` defaults to the default book (`isDefault` in `GET /cost-books`; an archived book is a 400 on `bookId`), `currency` to the household's, `date` to today. `splitMode` defaults to the book's default split: `ownership` divides by the people's current ownership shares, `equal` equally among everybody or, with `participantIds`, among those household members only (each listed once), `custom` by `shares` (basis points, sum 10000), `none` does not split; `participantIds` with any other split and `shares` with any other than `custom` are a 400. The shares are frozen with the entry; the parts add up to the amount exactly (largest remainder, ties to the earlier user id). `countsAsExpense` defaults to false for a mortgage repayment (equity), else true. `deductible` other than `unknown` needs a tax relevant book (400 on `deductible` otherwise). Entries cannot be created for a finance provider's transaction here: accept the suggestion instead. `receiptTaskId` books the entry for a task of the receipt queue (`/ai-tasks`): in the same transaction the entry is flagged `reviewNeeded` and recorded on the task (`bookedSoFar` of `GET /ai-tasks/{id}`, `receiptTaskId` on the entry), so an interrupted client or another one sees what is booked already; an unknown task is a 400 on the field, a task that is done or dismissed a 409 `conflict` (`details.status`). A repeated `idempotencyKey` (8 to 128 characters; unique per person who books, whatever credential they use) returns the first entry with status 200 and books nothing; the same key for a different entry (amount, currency, category, title or receipt task, or book, date or payer when the retry names them) is a 409 `conflict`; once the entry is deleted its key is free again. Send one per attempt to save, and keep it for a retry that got no answer.",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2353,7 +2353,7 @@ export const endpoints = {
     path: "/api/v1/finance/suggestions/{id}/accept",
     summary: "Accept a suggestion",
     description:
-      "Creates the cost entry (paid by you, in the book the body names with `bookId`, else the one offered with the suggestion (`payload.bookId`, set by the connection's settings) while it is open, else the default book; split as that book says unless the body says otherwise), the asset or the bill task. The body may override book, category, title, split (`participantIds` narrow an equal split), asset link and so on; fields of another kind are a 400. Accepting twice is a 409.",
+      "Creates the cost entry (paid by you, in the book the body names with `bookId`, else the one offered with the suggestion (`payload.bookId`, set by the connection's settings) while it is open, else the default book; split as that book says unless the body says otherwise), the asset or the bill task. The body may override book, category, title, split (`participantIds` narrow an equal split), asset link and so on; fields of another kind are a 400. `receiptTaskId` (a cost only) books the entry for a task of the receipt queue like `POST /costs` does; a task that is not waiting any more is a 409 and the suggestion stays pending. Accepting twice is a 409.",
     tags: ["finance"],
     auth: "both",
     scopes: ["costs:write"],
@@ -3958,7 +3958,7 @@ export const endpoints = {
     path: "/api/v1/ai-tasks/{id}",
     summary: "Get a task of the receipt queue",
     description:
-      "With the file (`attachment`, whose `url` and `thumbUrl` serve it), the uploader's note and hints and, once processed, the result: the ids the processor reported and the cost entries that still exist (`result.costs`).",
+      "With the file (`attachment`, whose `url` and `thumbUrl` serve it), the uploader's note and hints, `bookedSoFar` (the cost entries that exist and were booked for the task with `receiptTaskId`, oldest first: what an interrupted client or somebody else's client already did) and, once processed, the result: the ids the processor reported and the cost entries that still exist (`result.costs`).",
     tags: ["ai-tasks"],
     auth: "both",
     scopes: ["read"],
@@ -3990,7 +3990,7 @@ export const endpoints = {
     path: "/api/v1/ai-tasks/{id}/complete",
     summary: "Close a task as done with the entries it produced",
     description:
-      "`createdCostIds` and `createdFuelLogIds` name entries that must exist (400 on the field otherwise); at least one is needed (a receipt that produced nothing is dismissed instead). In one transaction every cost entry named, and the cost entry each named fuel log entry booked, is flagged `reviewNeeded` (it was booked from a receipt somebody else read), the file moves to the first of those cost entries as its receipt (the others get a copy; a free fuel fill has no cost entry) and the task becomes `done` with the result, `completedAt`, `completedVia` (`session` or the token kind) and who closed it (`completedByUserId`, `completedByName`: the person in the browser, or the owner of the token). `note` is for the people reading the entries (what was unsure). Idempotent: completing a done task with the same entries (in any order) answers 200 with the task as it is (the first closer stays); with other entries it is a 409 `conflict`, and so is completing a dismissed task. Send a JSON body.",
+      "`createdCostIds` and `createdFuelLogIds` name entries that must exist (400 on the field otherwise) and must be the task's result: booked for this task (`receiptTaskId`) or created after the task was queued. An entry that existed before the task, a fuel log entry made before it and an entry booked for another task are a 400 on the field, naming the ids (a payment booked twice is not what the receipt became; dismiss the task if it was booked already). At least one entry is needed (a receipt that produced nothing is dismissed instead). In one transaction every cost entry named, and the cost entry each named fuel log entry booked, is flagged `reviewNeeded` (it was booked from a receipt somebody else read; entries booked for the task were flagged then, and a review a person did since is never undone), the file moves to the first of those cost entries as its receipt (the others get a copy; a free fuel fill has no cost entry) and the task becomes `done` with the result, `completedAt`, `completedVia` (`session` or the token kind) and who closed it (`completedByUserId`, `completedByName`: the person in the browser, or the owner of the token). `note` is for the people reading the entries (what was unsure). Idempotent: completing a done task with the same entries (in any order) answers 200 with the task as it is (the first closer stays); with other entries it is a 409 `conflict`, and so is completing a dismissed task. Send a JSON body.",
     tags: ["ai-tasks"],
     auth: "both",
     scopes: ["costs:write"],

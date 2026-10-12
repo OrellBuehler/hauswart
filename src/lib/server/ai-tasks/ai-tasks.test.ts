@@ -333,6 +333,7 @@ describe("receipt queue", () => {
           amountMinor: 2_340,
           currency: "CHF",
           reviewNeeded: true,
+          fuelLogId: null,
         },
       ]);
       expect(getCost(ctx(), entry.id)).toMatchObject({
@@ -496,7 +497,7 @@ describe("receipt queue", () => {
       expect(done.resultCosts).toHaveLength(1);
     });
 
-    it("flags an entry again that somebody had reviewed", async () => {
+    it("keeps the review of an entry somebody had confirmed already instead of asking for it again", async () => {
       const { ben, upload, cost } = await world();
       const entry = cost();
       test.db
@@ -516,9 +517,8 @@ describe("receipt queue", () => {
         null,
       );
       expect(getCost(ctx(), entry.id)).toMatchObject({
-        reviewNeeded: true,
-        reviewedAt: null,
-        reviewedByUserId: null,
+        reviewNeeded: false,
+        reviewedByUserId: ben.id,
       });
     });
 

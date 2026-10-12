@@ -59,6 +59,7 @@ export function wireCost(
     reviewNeeded: c.reviewNeeded,
     reviewedAt: c.reviewedAt ? toIso(c.reviewedAt) : null,
     reviewedByUserId: c.reviewedByUserId,
+    receiptTaskId: c.aiTaskId,
     commentCount: c.commentCount,
     createdBy: c.createdBy,
     createdAt: toIso(c.createdAt),

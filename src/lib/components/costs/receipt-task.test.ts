@@ -32,6 +32,7 @@ function task(over: Partial<AiTask> = {}): AiTask {
     bookName: "Haushalt",
     assetId: null,
     assetName: null,
+    bookedSoFar: [],
     result: null,
     dismissReason: null,
     completedAt: null,
@@ -75,6 +76,7 @@ const done = (over: Partial<AiTask> = {}) =>
           amountMinor: 2670,
           currency: "CHF",
           reviewNeeded: true,
+          fuelLogId: null,
         },
         {
           id: "c2",
@@ -83,6 +85,7 @@ const done = (over: Partial<AiTask> = {}) =>
           amountMinor: -250,
           currency: "CHF",
           reviewNeeded: false,
+          fuelLogId: null,
         },
       ],
     },

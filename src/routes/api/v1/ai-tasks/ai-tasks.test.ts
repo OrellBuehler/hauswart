@@ -421,6 +421,7 @@ describe("receipt queue API", () => {
           json: { name: "Auto", kind: "vehicle" },
         })
       ).body as { id: string };
+      const task = await upload(asAnna);
       const fill = (
         await asAnna("POST", `/api/v1/assets/${car.id}/fuel-logs`, {
           json: {
@@ -431,7 +432,6 @@ describe("receipt queue API", () => {
           },
         })
       ).body as { id: string; costEntryId: string };
-      const task = await upload(asAnna);
       const r = await asAnna("POST", `/api/v1/ai-tasks/${task.id}/complete`, {
         json: { createdFuelLogIds: [fill.id] },
       });

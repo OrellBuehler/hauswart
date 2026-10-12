@@ -24,6 +24,7 @@ import type {
   UpdateCostRequest,
 } from "$lib/api/schemas/costs";
 import { minor } from "$lib/money";
+import { assertTaskOpenForBooking } from "$lib/server/ai-tasks/booking";
 import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
 import { commentCountSql } from "$lib/server/comments/counts";
 import {
@@ -435,6 +436,7 @@ export function createCost(
     input.participantIds,
   );
   assertDeductible(book, input.deductible);
+  if (input.receiptTaskId) assertTaskOpenForBooking(ctx, input.receiptTaskId);
 
   let assetId = input.assetId ?? null;
   let roomId = input.roomId ?? null;
@@ -486,6 +488,9 @@ export function createCost(
           providerUrl: origin?.url ?? null,
           createdBy,
           idempotencyKey: input.idempotencyKey ?? null,
+          // booked on the strength of a receipt somebody else read: a person confirms it once
+          reviewNeeded: input.receiptTaskId !== undefined,
+          aiTaskId: input.receiptTaskId ?? null,
           createdAt: new Date(ctx.now),
         })
         .returning({ id: costEntries.id })
@@ -534,7 +539,7 @@ export function findCostByKey(
 }
 
 /**
- * A retry names the same entry: same amount, currency, category and title, and the same book, date and payer when the
+ * A retry names the same entry: same amount, currency, category, title and receipt task, and the same book, date and payer when the
  * retry names them (a request that left them to the defaults accepts whatever the first one got). Notes, payee, device and
  * the other links do not count.
  */
@@ -551,7 +556,8 @@ function sameRequest(
     (input.bookId === undefined || existing.bookId === input.bookId) &&
     (input.date === undefined || existing.date === input.date) &&
     (input.paidByUserId === undefined ||
-      existing.paidByUserId === input.paidByUserId)
+      existing.paidByUserId === input.paidByUserId) &&
+    existing.aiTaskId === (input.receiptTaskId ?? null)
   );
 }
 
