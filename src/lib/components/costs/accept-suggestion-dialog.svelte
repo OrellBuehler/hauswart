@@ -25,7 +25,7 @@
   import OptionSelect from "$lib/components/tasks/option-select.svelte";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { defaultBook, openBooks } from "$lib/costs/books";
+  import { acceptBook, openBooks } from "$lib/costs/books";
   import {
     chosenParticipants,
     equalShares,
@@ -84,10 +84,11 @@
   let paidByUserId = $state(
     untrack(() => (userIds.includes(currentUserId) ? currentUserId : "")),
   );
-  const fallbackBook = untrack(() => defaultBook(books));
-  let bookId = $state(fallbackBook?.id ?? "");
+  /** The book the person's settings offered with the suggestion, else the default book. */
+  const startBook = untrack(() => acceptBook(books, cost?.bookId));
+  let bookId = $state(startBook?.id ?? "");
   let splitMode = $state<CostSplitMode>(
-    fallbackBook?.defaultSplitMode ?? "ownership",
+    startBook?.defaultSplitMode ?? "ownership",
   );
   let splitTouched = $state(false);
   let participants = $state<string[]>(untrack(() => [...userIds]));
@@ -169,7 +170,10 @@
       const defaultPayer = userIds.includes(currentUserId) ? currentUserId : "";
       if (paidByUserId !== defaultPayer)
         body.paidByUserId = paidByUserId || null;
-      if (bookId && bookId !== defaultBook(books)?.id) body.bookId = bookId;
+      // Without a book the server takes the offered one (or the default book), which is where this dialog started.
+      if (bookId && bookId !== acceptBook(books, cost.bookId)?.id) {
+        body.bookId = bookId;
+      }
       // Without a split the book's own applies.
       const bookSplit = book?.defaultSplitMode ?? "ownership";
       if (splitMode !== bookSplit) body.splitMode = splitMode;
@@ -307,6 +311,7 @@
     {#if selectableBooks.length > 1}
       <BookPicker
         id="accept-book"
+        compact
         books={selectableBooks}
         bind:value={bookId}
         onchange={pickBook}

@@ -135,6 +135,20 @@ export function fuelBook(
   );
 }
 
+/**
+ * The book to start from when a finance suggestion is accepted: the book the person's settings offered with it while
+ * that takes entries, else the default book (what the server does when the request names none).
+ */
+export function acceptBook(
+  books: readonly CostBook[],
+  offeredBookId: string | null | undefined,
+): CostBook | undefined {
+  return (
+    openBooks(books).find((book) => book.id === offeredBookId) ??
+    defaultBook(books)
+  );
+}
+
 export type BookIconEntry = { icon: Component; label: () => string };
 
 /** The icons a book can carry, keyed by the Lucide name stored on the book. */

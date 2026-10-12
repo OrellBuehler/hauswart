@@ -39,8 +39,13 @@
 
   type TestResult = z.infer<typeof testIntegrationResponseSchema>;
 
-  let { integration, canEdit, timeZone, onchanged }: IntegrationCardProps =
-    $props();
+  let {
+    integration,
+    canEdit,
+    timeZone,
+    books,
+    onchanged,
+  }: IntegrationCardProps = $props();
 
   const meta = kindMeta.kept;
   const KIND = "kept" as const;
@@ -457,6 +462,7 @@
         <Separator />
         <KeptSettingsForm
           {integration}
+          {books}
           bind:settings
           dirty={settingsDirty}
           {refreshKey}

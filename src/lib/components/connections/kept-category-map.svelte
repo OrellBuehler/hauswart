@@ -3,6 +3,7 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import SearchIcon from "@lucide/svelte/icons/search";
   import { COST_CATEGORIES, type CostCategory } from "$lib/api/enums";
+  import type { CostBook } from "$lib/api/schemas/cost-books";
   import OptionSelect from "$lib/components/tasks/option-select.svelte";
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Badge } from "$lib/components/ui/badge/index.js";
@@ -13,18 +14,22 @@
   import { Skeleton } from "$lib/components/ui/skeleton/index.js";
   import {
     categoryRows,
+    keptBookOptions,
     readCategoryCount,
     withAutoAccept,
+    withCategoryBook,
     withCostCategory,
     withPurchase,
     type KeptCategory,
     type KeptSettings,
   } from "$lib/connections/kept";
+  import { defaultBook } from "$lib/costs/books";
   import { categoryLabels } from "$lib/costs/labels";
   import { m } from "$lib/paraglide/messages";
 
   let {
     settings = $bindable(),
+    books,
     categories,
     loading,
     error,
@@ -32,6 +37,8 @@
     onretry,
   }: {
     settings: KeptSettings;
+    /** Every cost book: a category may be booked into one of them. */
+    books: CostBook[];
     /** The list from Kept; undefined while it is not there (loading, failed, paused). */
     categories: KeptCategory[] | undefined;
     loading: boolean;
@@ -49,6 +56,16 @@
       label: categoryLabels[category](),
     })),
   ]);
+
+  /** The book a category without a book of its own goes to: the connection's default, else the household's. */
+  const fallbackBookName = $derived(
+    books.find((book) => book.id === settings.defaultBookId)?.name ??
+      defaultBook(books)?.name ??
+      "",
+  );
+  const inheritLabel = $derived(
+    m.integration_kept_book_inherit({ name: fallbackBookName }),
+  );
 
   const rows = $derived(categoryRows(categories ?? [], settings));
   let q = $state("");
@@ -186,7 +203,7 @@
                     {/if}
                   </span>
                 </div>
-                <div class="min-w-0">
+                <div class="flex min-w-0 flex-col gap-2">
                   <Label for={selectId} class="sr-only">
                     {m.integration_kept_category_select_aria({
                       name: row.name,
@@ -203,6 +220,22 @@
                         next === NONE ? null : (next as CostCategory),
                       ))}
                   />
+                  {#if mapped !== undefined}
+                    <Label for={`${selectId}-book`} class="sr-only">
+                      {m.integration_kept_book_select_aria({ name: row.name })}
+                    </Label>
+                    <OptionSelect
+                      id={`${selectId}-book`}
+                      value={settings.categoryBookMap[row.id] ?? ""}
+                      options={keptBookOptions(
+                        books,
+                        settings.categoryBookMap[row.id] ?? "",
+                        inheritLabel,
+                      )}
+                      onchange={(next) =>
+                        (settings = withCategoryBook(settings, row.id, next))}
+                    />
+                  {/if}
                 </div>
                 <div class="flex flex-wrap gap-x-5 lg:contents">
                   <label

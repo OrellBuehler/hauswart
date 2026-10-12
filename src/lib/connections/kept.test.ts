@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "$lib/api/errors";
+import type { CostBook } from "$lib/api/schemas/cost-books";
 import {
   KEPT_LIMITS,
   categoryRows,
+  keptBookOptions,
   keptConfigOf,
   keptErrorMessage,
   keptSaveError,
@@ -13,8 +15,10 @@ import {
   readKeptTestInfo,
   syncStatLines,
   withAutoAccept,
+  withCategoryBook,
   withCostCategory,
   withCreditor,
+  withDefaultBook,
   withPurchase,
   withoutCreditor,
   type KeptCategory,
@@ -245,6 +249,102 @@ describe("editing helpers", () => {
       settings = withCreditor(settings, `Creditor ${i}`);
     }
     expect(settings.billCreditorFilter).toHaveLength(KEPT_LIMITS.creditors);
+  });
+});
+
+describe("books of the Kept settings", () => {
+  const mapped = withCostCategory(
+    withCostCategory(empty, "c1", "groceries"),
+    "c2",
+    "travel",
+  );
+
+  it("names a book for a mapped category and leaves the others to the connection's default", () => {
+    const next = withDefaultBook(
+      withCategoryBook(mapped, "c1", "b-haushalt"),
+      "b-ferien",
+    );
+    expect(next.categoryBookMap).toEqual({ c1: "b-haushalt" });
+    expect(next.defaultBookId).toBe("b-ferien");
+  });
+
+  it("takes a book away again with null or an empty id", () => {
+    const named = withCategoryBook(mapped, "c1", "b-haushalt");
+    expect(withCategoryBook(named, "c1", null).categoryBookMap).toEqual({});
+    expect(withCategoryBook(named, "c1", "").categoryBookMap).toEqual({});
+    expect(
+      withDefaultBook(withDefaultBook(empty, "b1"), null).defaultBookId,
+    ).toBe("");
+  });
+
+  it("names no book for a category that is not read", () => {
+    expect(withCategoryBook(mapped, "other", "b1")).toBe(mapped);
+  });
+
+  it("does not change the other settings", () => {
+    const next = withDefaultBook(withCategoryBook(mapped, "c1", "b1"), "b2");
+    expect(next.categoryMap).toEqual(mapped.categoryMap);
+    expect(next.defaultBookId).toBe("b2");
+  });
+
+  it("goes to the connection's settings and counts as a change", () => {
+    const next = withDefaultBook(withCategoryBook(mapped, "c1", "b1"), "b2");
+    expect(keptConfigOf(next)).toMatchObject({
+      categoryBookMap: { c1: "b1" },
+      defaultBookId: "b2",
+    });
+    expect(keptSettingsSignature(next)).not.toBe(keptSettingsSignature(mapped));
+  });
+});
+
+describe("keptBookOptions", () => {
+  const book = (over: Partial<CostBook>): CostBook => ({
+    id: "b1",
+    name: "Wohnung",
+    slug: "wohnung",
+    icon: null,
+    defaultSplitMode: "ownership",
+    taxRelevant: true,
+    archivedAt: null,
+    sortOrder: 0,
+    isDefault: true,
+    entryCount: 0,
+    settlementCount: 0,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    ...over,
+  });
+  const books = [
+    book({}),
+    book({ id: "b2", name: "Haushalt", isDefault: false }),
+    book({
+      id: "b3",
+      name: "Alt",
+      isDefault: false,
+      archivedAt: "2026-06-01T00:00:00.000Z",
+    }),
+  ];
+
+  it("offers none and the books that take entries", () => {
+    expect(keptBookOptions(books, "", "Standard")).toEqual([
+      { value: "", label: "Standard" },
+      { value: "b1", label: "Wohnung" },
+      { value: "b2", label: "Haushalt" },
+    ]);
+  });
+
+  it("keeps an archived book that is chosen already, so it can be seen", () => {
+    expect(
+      keptBookOptions(books, "b3", "Standard").map((o) => o.label),
+    ).toEqual(["Standard", "Wohnung", "Haushalt", "Alt (archiviert)"]);
+  });
+
+  it("stands in for a book that no longer exists", () => {
+    const options = keptBookOptions(books, "gone", "Standard");
+    expect(options.at(-1)).toEqual({
+      value: "gone",
+      label: "Buch nicht mehr vorhanden",
+    });
   });
 });
 

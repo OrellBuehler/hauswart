@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ApiError } from "$lib/api/errors";
 import type { CostBook } from "$lib/api/schemas/cost-books";
 import {
+  acceptBook,
   bookChoices,
   bookConflictMessage,
   bookDefaultMessage,
@@ -312,5 +313,17 @@ describe("fuelBook", () => {
 
   it("is nothing without books", () => {
     expect(fuelBook([], null)).toBeUndefined();
+  });
+});
+
+describe("acceptBook", () => {
+  it("is the book offered with the suggestion while it takes entries", () => {
+    expect(acceptBook(books, "b2")?.id).toBe("b2");
+  });
+
+  it("is the default book without an offer, or when the offered book is archived or gone", () => {
+    expect(acceptBook(books, null)?.id).toBe("b1");
+    expect(acceptBook(books, "b3")?.id).toBe("b1");
+    expect(acceptBook(books, "gone")?.id).toBe("b1");
   });
 });

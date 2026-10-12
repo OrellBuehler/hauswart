@@ -1,7 +1,9 @@
 import type { z } from "zod";
 import { COST_CATEGORIES, type CostCategory } from "$lib/api/enums";
 import { isApiError } from "$lib/api/errors";
+import type { CostBook } from "$lib/api/schemas/cost-books";
 import type { financeCategorySchema } from "$lib/api/schemas/finance";
+import { bookChoices } from "$lib/costs/books";
 import { apiErrorMessage } from "$lib/error-message";
 import { m } from "$lib/paraglide/messages";
 import { hostOf, integrationErrorMessage } from "./errors";
@@ -19,9 +21,9 @@ export type KeptSettings = {
   purchaseCategoryIds: string[];
   /** Mapped category ids whose transactions are booked without asking. */
   autoAcceptCategoryIds: string[];
-  /** Kept category id -> the cost book id its transactions go to. No picker yet: kept as it is. */
+  /** Kept category id -> the cost book id its transactions go to; a category without an entry takes `defaultBookId`. */
   categoryBookMap: Record<string, string>;
-  /** The cost book id for mapped categories without a book of their own and for paid invoices; empty = none. */
+  /** The cost book id for mapped categories without a book of their own and for paid invoices; empty = the household's default book. */
   defaultBookId: string;
   billTasks: boolean;
   /** Creditor names; empty means all creditors. */
@@ -172,6 +174,52 @@ export function withCostCategory(
         ? without(settings.autoAcceptCategoryIds, id)
         : settings.autoAcceptCategoryIds,
   };
+}
+
+/** Names the cost book a mapped category goes to; `null` (or an empty id) leaves it to the default. A category that is not read has none. */
+export function withCategoryBook(
+  settings: KeptSettings,
+  id: string,
+  bookId: string | null,
+): KeptSettings {
+  if (!(id in settings.categoryMap)) return settings;
+  const categoryBookMap = { ...settings.categoryBookMap };
+  if (bookId) categoryBookMap[id] = bookId;
+  else delete categoryBookMap[id];
+  return { ...settings, categoryBookMap };
+}
+
+/** The book of a mapped category without a book of its own and of paid invoices; `null` (or empty) = the household's default book. */
+export function withDefaultBook(
+  settings: KeptSettings,
+  bookId: string | null,
+): KeptSettings {
+  return { ...settings, defaultBookId: bookId ?? "" };
+}
+
+/**
+ * The choices for a book in the connection's settings: "none" first (the default applies), the books that take
+ * entries, the book chosen already even when it is archived, and a stand-in for one that no longer exists, so the
+ * select never shows a choice that is not in the settings.
+ */
+export function keptBookOptions(
+  books: readonly CostBook[],
+  currentId: string,
+  noneLabel: string,
+): { value: string; label: string }[] {
+  const options = [
+    { value: "", label: noneLabel },
+    ...bookChoices(books, currentId).map((book) => ({
+      value: book.id,
+      label: book.archivedAt
+        ? m.cost_book_archived_option({ name: book.name })
+        : book.name,
+    })),
+  ];
+  if (currentId !== "" && !books.some((book) => book.id === currentId)) {
+    options.push({ value: currentId, label: m.integration_kept_book_gone() });
+  }
+  return options;
 }
 
 export function withAutoAccept(

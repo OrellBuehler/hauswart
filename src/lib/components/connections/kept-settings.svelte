@@ -6,6 +6,7 @@
   import { api } from "$lib/api/browser";
   import { COST_CATEGORIES, type CostCategory } from "$lib/api/enums";
   import { endpoints } from "$lib/api/registry";
+  import type { CostBook } from "$lib/api/schemas/cost-books";
   import type { Integration } from "$lib/api/schemas/integrations";
   import FormAlert from "$lib/components/app/form-alert.svelte";
   import SwitchField from "$lib/components/app/switch-field.svelte";
@@ -17,15 +18,18 @@
   import { forgetIntegrations } from "$lib/connections/connection";
   import {
     KEPT_LIMITS,
+    keptBookOptions,
     keptConfigOf,
     keptForbiddenMessage,
     keptPickerErrorMessage,
     readKeptSettings,
     withCreditor,
+    withDefaultBook,
     withoutCreditor,
     type KeptCategory,
     type KeptSettings,
   } from "$lib/connections/kept";
+  import { defaultBook } from "$lib/costs/books";
   import { categoryLabels } from "$lib/costs/labels";
   import { apiErrorMessage } from "$lib/error-message";
   import { m } from "$lib/paraglide/messages";
@@ -34,12 +38,15 @@
 
   let {
     integration,
+    books,
     settings = $bindable(),
     dirty,
     refreshKey,
     onchanged,
   }: {
     integration: Integration;
+    /** Every cost book: what is read from Kept is booked into one of them. */
+    books: CostBook[];
     settings: KeptSettings;
     /** The settings differ from the saved ones. */
     dirty: boolean;
@@ -57,6 +64,19 @@
   let categoriesLoading = $state(false);
   let categoriesError = $state<string | undefined>();
   let loadSeq = 0;
+
+  const householdBook = $derived(defaultBook(books));
+  const defaultBookOptions = $derived(
+    keptBookOptions(
+      books,
+      settings.defaultBookId,
+      householdBook
+        ? m.integration_kept_book_household_default({
+            name: householdBook.name,
+          })
+        : m.integration_kept_book_household_default_plain(),
+    ),
+  );
 
   const billCostOptions = $derived([
     { value: NONE, label: m.integration_kept_bill_cost_none() },
@@ -158,8 +178,24 @@
           {m.integration_kept_categories_hint()}
         </p>
       </div>
+      <Field
+        id="kept-default-book"
+        label={m.integration_kept_default_book()}
+        hint={m.integration_kept_default_book_hint()}
+      >
+        {#snippet children({ describedby })}
+          <OptionSelect
+            id="kept-default-book"
+            value={settings.defaultBookId}
+            options={defaultBookOptions}
+            {describedby}
+            onchange={(next) => (settings = withDefaultBook(settings, next))}
+          />
+        {/snippet}
+      </Field>
       <KeptCategoryMap
         bind:settings
+        {books}
         {categories}
         loading={categoriesLoading}
         error={categoriesError}

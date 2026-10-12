@@ -1,5 +1,6 @@
 import type { Component } from "svelte";
 import type { IntegrationKind } from "$lib/api/enums";
+import type { CostBook } from "$lib/api/schemas/cost-books";
 import type { Integration } from "$lib/api/schemas/integrations";
 import GenericCard from "./generic-card.svelte";
 import HomeAssistantCard from "./home-assistant-card.svelte";
@@ -14,6 +15,8 @@ export type IntegrationCardProps = {
   isAdmin: boolean;
   /** Household time zone, for times shown to people. */
   timeZone: string;
+  /** Every cost book, for connections that book what they read (a finance app). */
+  books: CostBook[];
   /** Called after the connection changed; reloads the list. */
   onchanged: () => Promise<void>;
 };
