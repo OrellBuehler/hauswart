@@ -279,6 +279,8 @@ export type QuickDraft = {
   /** The person chose "not shared" (nobody ticked, on purpose); in a book that shares, nobody ticked is no choice. */
   notShared: boolean;
   assetId: string;
+  /** The tags of the entry (ids), at most ten. */
+  tagIds: string[];
 };
 
 export function newQuickDraft(input: {
@@ -301,6 +303,7 @@ export function newQuickDraft(input: {
     participantsTouched: false,
     notShared: false,
     assetId: "",
+    tagIds: [],
   };
 }
 
@@ -417,6 +420,7 @@ export function buildQuickCostBody(
     category: draft.category,
     ...(draft.assetId ? { assetId: draft.assetId } : {}),
     ...(payee ? { payee } : {}),
+    ...(draft.tagIds.length > 0 ? { tagIds: draft.tagIds } : {}),
     paidByUserId: draft.paidByUserId || null,
     ...(context.idempotencyKey
       ? { idempotencyKey: context.idempotencyKey }

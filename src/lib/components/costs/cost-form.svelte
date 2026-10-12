@@ -15,6 +15,7 @@
   import { endpoints } from "$lib/api/registry";
   import type { Asset } from "$lib/api/schemas/assets";
   import type { CostBook } from "$lib/api/schemas/cost-books";
+  import type { CostTag } from "$lib/api/schemas/cost-tags";
   import type { CostEntry } from "$lib/api/schemas/costs";
   import type { Defect } from "$lib/api/schemas/defects";
   import type { Room } from "$lib/api/schemas/rooms";
@@ -52,6 +53,7 @@
   import { cn } from "$lib/utils";
   import BookPicker from "./book-picker.svelte";
   import SplitEditor from "./split-editor.svelte";
+  import TagPicker from "./tag-picker.svelte";
 
   let {
     entry,
@@ -60,6 +62,7 @@
     defects,
     people,
     books,
+    tags,
     currency,
     today,
     currentUserId,
@@ -72,6 +75,8 @@
     people: DirectoryUser[];
     /** Every cost book, archived ones included. */
     books: CostBook[];
+    /** Every cost tag of the household. */
+    tags: CostTag[];
     /** The household's currency. */
     currency: string;
     today: string;
@@ -491,6 +496,15 @@
           {/snippet}
         </Field>
       </div>
+
+      <TagPicker
+        id="cost-tags"
+        {tags}
+        bind:value={draft.tagIds}
+        creatable
+        disabled={pending}
+        error={errors.tagIds}
+      />
 
       <Field
         id="cost-notes"

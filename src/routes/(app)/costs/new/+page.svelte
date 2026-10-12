@@ -32,6 +32,7 @@
     defects={data.defects}
     people={data.people}
     books={data.books}
+    tags={data.tags}
     currency={data.currency}
     today={data.today}
     currentUserId={data.user.id}

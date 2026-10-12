@@ -33,6 +33,7 @@
   import CostsReport from "$lib/components/costs/costs-report.svelte";
   import CostsSummary from "$lib/components/costs/costs-summary.svelte";
   import MoveCostsDialog from "$lib/components/costs/move-costs-dialog.svelte";
+  import TagChips from "$lib/components/costs/tag-chips.svelte";
   import OptionSelect from "$lib/components/tasks/option-select.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
@@ -89,6 +90,20 @@
     endpointUrl(endpoints.costsExport, { query: costsExportQuery(filters) }),
   );
   const book = $derived(data.books.find((b) => b.id === filters.bookId));
+  const tag = $derived(data.tags.find((t) => t.id === filters.tagId));
+  const csvHint = $derived(
+    tag
+      ? book
+        ? m.costs_csv_hint_book_tag({
+            year: filters.year,
+            name: book.name,
+            tag: tag.name,
+          })
+        : m.costs_csv_hint_tag({ year: filters.year, tag: tag.name })
+      : book
+        ? m.costs_csv_hint_book({ year: filters.year, name: book.name })
+        : m.costs_csv_hint({ year: filters.year }),
+  );
   const newHref = $derived(
     resolve(
       `/costs/new${filters.bookId ? `?book=${encodeURIComponent(filters.bookId)}` : ""}` as "/",
@@ -279,6 +294,7 @@
       roomId: "",
       defectId: "",
       paidBy: "",
+      tagId: "",
       month: "",
       reviewNeeded: false,
       allYears: false,
@@ -317,6 +333,10 @@
       value: d.id,
       label: `#${d.number} ${d.title}`,
     })),
+  ]);
+  const tagOptions = $derived([
+    all,
+    ...data.tags.map((t) => ({ value: t.id, label: t.name })),
   ]);
   const monthOptions = $derived([
     { value: "", label: m.costs_filter_whole_year() },
@@ -373,9 +393,7 @@
         data-sveltekit-reload
         variant="outline"
         size="lg"
-        title={book
-          ? m.costs_csv_hint_book({ year: filters.year, name: book.name })
-          : m.costs_csv_hint({ year: filters.year })}
+        title={csvHint}
       >
         <DownloadIcon />
         {m.costs_csv({ year: filters.year })}
@@ -446,6 +464,7 @@
     {balancesHref}
     asset={summaryAsset}
     bookName={book?.name}
+    tagName={tag?.name}
     {reviewHref}
   />
 
@@ -574,6 +593,17 @@
                 onchange={(v) => apply({ defectId: v })}
               />
             </div>
+            {#if data.tags.length > 0}
+              <div class="flex flex-col gap-2">
+                <Label for="f-tag">{m.costs_filter_tag()}</Label>
+                <OptionSelect
+                  id="f-tag"
+                  value={filters.tagId}
+                  options={tagOptions}
+                  onchange={(v) => apply({ tagId: v })}
+                />
+              </div>
+            {/if}
             {#if filtered}
               <div class="sm:col-span-2 lg:col-span-3">
                 <Button variant="ghost" size="lg" onclick={reset}>
@@ -768,6 +798,7 @@
                       >
                     {/if}
                     <CostFlags {cost} class="mt-1.5" />
+                    <TagChips tags={cost.tags} limit={4} class="mt-1.5" />
                   </Table.Cell>
                   <Table.Cell class="whitespace-normal"
                     >{categoryLabels[cost.category]()}</Table.Cell

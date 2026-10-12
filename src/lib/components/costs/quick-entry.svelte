@@ -9,6 +9,7 @@
   import { endpoints } from "$lib/api/registry";
   import type { Asset } from "$lib/api/schemas/assets";
   import type { CostBook } from "$lib/api/schemas/cost-books";
+  import type { CostTag } from "$lib/api/schemas/cost-tags";
   import { COST_TITLE_MAX, type CostEntry } from "$lib/api/schemas/costs";
   import type { DirectoryUser } from "$lib/api/schemas/users";
   import { uploadErrorMessage } from "$lib/attachments/errors";
@@ -56,11 +57,13 @@
   import { cn } from "$lib/utils";
   import ChoiceChips from "./choice-chips.svelte";
   import ReceiptPicker from "./receipt-picker.svelte";
+  import TagPicker from "./tag-picker.svelte";
 
   let {
     books,
     people,
     assets,
+    tags,
     currency,
     today,
     currentUserId,
@@ -70,6 +73,8 @@
     books: CostBook[];
     people: DirectoryUser[];
     assets: Asset[];
+    /** Every cost tag; the chips only show when there are any (new tags are made in the full form). */
+    tags: CostTag[];
     /** The household's currency: a quick entry is always in it. */
     currency: string;
     today: string;
@@ -238,6 +243,10 @@
   });
   $effect(() => {
     if (split.kind !== "unchosen") untrack(() => clearError("participants"));
+  });
+  $effect(() => {
+    void draft.tagIds;
+    untrack(() => clearError("tagIds"));
   });
 
   function pickBook(next: string) {
@@ -593,6 +602,16 @@
         {splitText}
       </p>
     </div>
+
+    {#if tags.length > 0}
+      <TagPicker
+        id="quick-tags"
+        {tags}
+        bind:value={draft.tagIds}
+        disabled={busy !== null}
+        error={errors.tagIds}
+      />
+    {/if}
 
     <Collapsible.Root bind:open={moreOpen} class="flex flex-col gap-5">
       <Collapsible.Trigger

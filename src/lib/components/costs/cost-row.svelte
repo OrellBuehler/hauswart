@@ -9,6 +9,7 @@
   import CostAmount from "./cost-amount.svelte";
   import { hasCostFlags } from "./cost-flags";
   import CostFlags from "./cost-flags.svelte";
+  import TagChips from "./tag-chips.svelte";
 
   let {
     cost,
@@ -52,6 +53,7 @@
           >{place}</span
         >
       {/if}
+      <TagChips tags={cost.tags} class="mt-1.5" />
     </span>
     <span class="shrink-0 text-end">
       <CostAmount

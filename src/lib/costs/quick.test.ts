@@ -388,6 +388,7 @@ describe("the quick draft", () => {
       participantsTouched: false,
       notShared: false,
       assetId: "",
+      tagIds: [],
     });
     expect(
       newQuickDraft({
@@ -516,6 +517,7 @@ describe("the request for a quick entry", () => {
     participantsTouched: false,
     notShared: false,
     assetId: "",
+    tagIds: [],
     ...over,
   });
   const build = (over: Partial<QuickDraft> = {}) =>
@@ -534,6 +536,13 @@ describe("the request for a quick entry", () => {
       paidByUserId: "u2",
       deductible: "unknown",
     });
+  });
+
+  it("refuses more than ten tags", () => {
+    const many = Array.from({ length: 11 }, (_, i) => `t${i}`);
+    const { body, errors } = build({ tagIds: many });
+    expect(body).toBeUndefined();
+    expect(errors.tagIds).toBeTruthy();
   });
 
   it("reads Swiss and German decimals and a dangling separator", () => {

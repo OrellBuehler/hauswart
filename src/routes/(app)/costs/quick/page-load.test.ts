@@ -10,6 +10,7 @@ const state = vi.hoisted(() => ({
 
 const empty: Page = { items: [], nextCursor: null };
 const book = { id: "b1", name: "Wohnung", archivedAt: null };
+const tag = { id: "t1", name: "Ferien", color: "blue", entryCount: 2 };
 
 vi.mock("$lib/api/client", () => ({
   createApiClient: () => ({
@@ -25,6 +26,8 @@ vi.mock("$lib/api/client", () => ({
         case "costBooksList":
           if (state.failBooks) throw state.failBooks;
           return { items: [book], nextCursor: null };
+        case "costTagsList":
+          return { items: [tag] };
         case "usersDirectory":
           return { items: [{ id: "u1", displayName: "Anna Beispiel" }] };
         case "assetsList":
@@ -110,6 +113,13 @@ describe("loading the quick entry", () => {
     expect(data).not.toHaveProperty("history");
     expect(state.calls).not.toContain("costsRecentCategories");
     expect(state.calls).not.toContain("costsList");
+  });
+
+  it("hands over the tags", async () => {
+    const data = (await load(
+      pageEvent("http://localhost/costs/quick").event,
+    )) as Record<string, unknown>;
+    expect(data.tags).toEqual([tag]);
   });
 
   it("sends a signed-out session to the login page and does not hide any other failure", async () => {

@@ -11,6 +11,7 @@ import {
   narrowsBeyondBook,
   parseCostFilters,
   reviewFilters,
+  withKnownTag,
   withYear,
   yearOptions,
 } from "./filters";
@@ -30,6 +31,7 @@ describe("cost filters", () => {
       roomId: "",
       defectId: "",
       paidBy: "",
+      tagId: "",
       month: "",
       reviewNeeded: false,
       allYears: false,
@@ -40,13 +42,14 @@ describe("cost filters", () => {
 
   it("round-trips a selection through the URL", () => {
     const filters = parse(
-      "book=b1&year=2025&q=lampe&category=repair&asset=a1&room=r1&defect=d1&paidBy=u1&month=03",
+      "book=b1&year=2025&q=lampe&category=repair&asset=a1&room=r1&defect=d1&paidBy=u1&tag=t1&month=03",
     );
     expect(filters.year).toBe(2025);
     expect(filters.bookId).toBe("b1");
     expect(filters.category).toBe("repair");
+    expect(filters.tagId).toBe("t1");
     expect(filters.month).toBe("03");
-    expect(activeFilterCount(filters)).toBe(6);
+    expect(activeFilterCount(filters)).toBe(7);
     expect(parse(costFilterQuery(filters, 2026).slice(1))).toEqual(filters);
   });
 
@@ -99,6 +102,8 @@ describe("cost filters", () => {
     expect(narrows("month=03")).toBe(true);
     expect(narrows("q=%20")).toBe(false);
     expect(narrows("paidBy=me")).toBe(true);
+    expect(narrows("tag=t1")).toBe(true);
+    expect(narrows("tag=%20")).toBe(false);
   });
 
   it("asks the list endpoint for the year and what is filtered", () => {
@@ -122,27 +127,70 @@ describe("cost filters", () => {
     });
   });
 
-  it("asks the summary for the year, the book and the device: nothing else narrows its totals", () => {
+  it("asks the summary for the year, the book, the device and the tag: nothing else narrows its totals", () => {
     expect(costsSummaryQuery(parse(""))).toEqual({
       year: 2026,
       assetId: undefined,
       bookId: undefined,
+      tagId: undefined,
     });
     expect(
       costsSummaryQuery(
-        parse("book=b7&year=2025&asset=a1&category=repair&month=05"),
+        parse("book=b7&year=2025&asset=a1&category=repair&month=05&tag=t1"),
       ),
-    ).toEqual({ year: 2025, assetId: "a1", bookId: "b7" });
+    ).toEqual({ year: 2025, assetId: "a1", bookId: "b7", tagId: "t1" });
   });
 
-  it("exports the year of the book on screen", () => {
+  it("exports the year of the book and the tag on screen", () => {
     expect(costsExportQuery(parse("year=2025"))).toEqual({
       year: 2025,
       bookId: undefined,
+      tagId: undefined,
     });
-    expect(costsExportQuery(parse("book=b7&year=2025&q=x"))).toEqual({
+    expect(costsExportQuery(parse("book=b7&year=2025&q=x&tag=t1"))).toEqual({
       year: 2025,
       bookId: "b7",
+      tagId: "t1",
+    });
+  });
+
+  describe("the tag filter", () => {
+    it("is part of the address and of every query that follows it", () => {
+      const filters = parse("book=b7&year=2025&tag=t1");
+      expect(filters.tagId).toBe("t1");
+      expect(costFilterQuery(filters, 2026)).toBe("?book=b7&year=2025&tag=t1");
+      expect(costsQuery(filters)).toEqual({
+        limit: 200,
+        year: 2025,
+        bookId: "b7",
+        tagId: "t1",
+      });
+      expect(costsSummaryQuery(filters).tagId).toBe("t1");
+      expect(costsExportQuery(filters).tagId).toBe("t1");
+      expect(isFiltered(filters)).toBe(true);
+      expect(activeFilterCount(filters)).toBe(1);
+    });
+
+    it("leaves the tag out of a list without one", () => {
+      expect(costsQuery(parse(""))).not.toHaveProperty("tagId");
+      expect(costFilterQuery(parse(""), 2026)).not.toContain("tag");
+      expect(parse("tag=%20%20").tagId).toBe("");
+    });
+
+    it("is dropped when the tag does not exist any more, which the server would answer with a 404", () => {
+      const tags = [{ id: "t1" }, { id: "t2" }];
+      expect(withKnownTag(parse("tag=t2"), tags).tagId).toBe("t2");
+      expect(withKnownTag(parse("tag=t9"), tags).tagId).toBe("");
+      expect(withKnownTag(parse(""), tags).tagId).toBe("");
+      expect(withKnownTag(parse("tag=t1&book=b7"), []).bookId).toBe("b7");
+    });
+
+    it("keeps the summary's scope when the entries to review are opened", () => {
+      const scope = reviewFilters(parse("book=b7&year=2025&tag=t1&q=x"));
+      expect(scope.tagId).toBe("t1");
+      expect(costFilterQuery(scope, 2026)).toBe(
+        "?book=b7&year=2025&review=1&tag=t1",
+      );
     });
   });
 
@@ -204,6 +252,7 @@ describe("cost filters", () => {
         year: 2026,
         assetId: undefined,
         bookId: "b7",
+        tagId: undefined,
       });
     });
 

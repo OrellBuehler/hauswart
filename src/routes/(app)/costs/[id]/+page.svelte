@@ -20,6 +20,7 @@
   import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
   import CostAmount from "$lib/components/costs/cost-amount.svelte";
   import CostFlags from "$lib/components/costs/cost-flags.svelte";
+  import TagChips from "$lib/components/costs/tag-chips.svelte";
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
@@ -132,6 +133,7 @@
         />
         <CostFlags {cost} />
       </div>
+      <TagChips tags={cost.tags} limit={10} />
     </div>
 
     {#if canWrite}

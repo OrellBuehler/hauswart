@@ -5,6 +5,7 @@ import { fetchAll } from "$lib/api/fetch-all";
 import { orFail } from "$lib/api/load";
 import { endpoints } from "$lib/api/registry";
 import type { CostBook } from "$lib/api/schemas/cost-books";
+import type { CostTag } from "$lib/api/schemas/cost-tags";
 import type { CostBalances } from "$lib/api/schemas/costs";
 import type { Household } from "$lib/api/schemas/household";
 import { todayIn } from "$lib/dates";
@@ -89,6 +90,15 @@ export async function tryLoadPendingReceipts(
   }
 }
 
+/** Every cost tag of the household, by name, with how many entries carry it. */
+export async function loadCostTags(client: ApiClient, redirectTo: string) {
+  const { items } = await orFail(
+    client.call(endpoints.costTagsList),
+    redirectTo,
+  );
+  return items;
+}
+
 /** What the cost pages need around an entry: where it can belong, who can pay, today's date and currency. */
 export async function loadCostContext(
   client: ApiClient,
@@ -97,11 +107,13 @@ export async function loadCostContext(
     household?: Household;
     /** The cost books, when the page has read them already. */
     books?: CostBook[];
+    /** The cost tags, when the page has read them already. */
+    tags?: CostTag[];
     keepAssetId?: string | null;
   } = {},
 ) {
   const { keepAssetId } = options;
-  const [places, defects, people, household, books] = await Promise.all([
+  const [places, defects, people, household, books, tags] = await Promise.all([
     loadPlaces(client, redirectTo),
     orFail(
       fetchAll((cursor) =>
@@ -115,6 +127,7 @@ export async function loadCostContext(
     options.household ??
       orFail(client.call(endpoints.householdGet), redirectTo),
     options.books ?? loadCostBooks(client, redirectTo),
+    options.tags ?? loadCostTags(client, redirectTo),
   ]);
   return {
     rooms: [...places.rooms].sort(
@@ -124,6 +137,7 @@ export async function loadCostContext(
     defects,
     people,
     books,
+    tags,
     currency: household.currency,
     timeZone: household.timezone,
     today: todayIn(household.timezone, Date.now()),

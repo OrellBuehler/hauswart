@@ -28,6 +28,7 @@ import {
 import { m } from "$lib/paraglide/messages";
 import { issuesToErrors } from "$lib/tasks/field-errors";
 import { defaultBook, openBooks } from "./books";
+import { sameTagIds, tagIdsOf } from "./tags";
 
 export type CostShareItem = { userId: string; shareBps: number };
 
@@ -60,6 +61,8 @@ export type CostDraft = {
   /** The switch was set by hand (or the stored value differs from the category's default). */
   countsTouched: boolean;
   deductible: CostDeductible;
+  /** The tags of the entry (ids), at most ten. */
+  tagIds: string[];
 };
 
 export type NewDraftDefaults = {
@@ -75,6 +78,7 @@ export type NewDraftDefaults = {
   roomId?: string | undefined;
   defectId?: string | undefined;
   serviceLogId?: string | undefined;
+  tagIds?: readonly string[] | undefined;
 };
 
 /** Percent texts that split 100% over the people as evenly as possible (the remainder goes to the first ones). */
@@ -158,6 +162,7 @@ export function newDraft(defaults: NewDraftDefaults): CostDraft {
     countsAsExpense: COST_CATEGORY_COUNTS_AS_EXPENSE.other,
     countsTouched: false,
     deductible: "unknown",
+    tagIds: [...(defaults.tagIds ?? [])],
   };
 }
 
@@ -206,6 +211,7 @@ export function draftFromEntry(
     countsTouched:
       entry.countsAsExpense !== COST_CATEGORY_COUNTS_AS_EXPENSE[entry.category],
     deductible: entry.deductible,
+    tagIds: tagIdsOf(entry.tags),
   };
 }
 
@@ -455,6 +461,7 @@ export function buildCreateBody(
     countsAsExpense: draft.countsAsExpense,
     // A book that is not tax relevant refuses a tax class, whatever the form held before the book was changed.
     deductible: taxClassApplies(draft, books) ? draft.deductible : "unknown",
+    ...(draft.tagIds.length > 0 ? { tagIds: draft.tagIds } : {}),
   };
   const result = createCostRequestSchema.safeParse(body);
   if (!result.success) {
@@ -559,6 +566,10 @@ export function buildUpdateBody(
   // In a book that is not tax relevant the class is not offered, and the server keeps or resets it by itself.
   if (draft.deductible !== entry.deductible && taxClassApplies(draft, books)) {
     patch.deductible = draft.deductible;
+  }
+  // The tags are replaced as a whole, so they go only when the set changed.
+  if (!sameTagIds(draft.tagIds, tagIdsOf(entry.tags))) {
+    patch.tagIds = draft.tagIds;
   }
 
   if (Object.keys(patch).length === 0) return { body: {}, errors };

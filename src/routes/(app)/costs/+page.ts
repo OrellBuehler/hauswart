@@ -12,11 +12,13 @@ import {
   costsSummaryQuery,
   narrowsBeyondBook,
   parseCostFilters,
+  withKnownTag,
 } from "$lib/costs/filters";
 import {
   hasFinanceConnection,
   loadCostBooks,
   loadCostContext,
+  loadCostTags,
   loadHouseholdToday,
   tryLoadBalances,
   tryLoadPendingReceipts,
@@ -27,9 +29,10 @@ export const load: PageLoad = async ({ fetch, url, parent }) => {
   const client = createApiClient(fetch);
   const redirectTo = url.pathname + url.search;
   const { user } = await parent();
-  const [{ household, today }, books] = await Promise.all([
+  const [{ household, today }, books, tags] = await Promise.all([
     loadHouseholdToday(client, redirectTo),
     loadCostBooks(client, redirectTo),
+    loadCostTags(client, redirectTo),
   ]);
   const defaultYear = Number(today.slice(0, 4));
 
@@ -41,10 +44,14 @@ export const load: PageLoad = async ({ fetch, url, parent }) => {
     narrowed: narrowsBeyondBook(url.searchParams),
   });
   if (browser && choice.staleMemory) forgetBook(user.id);
-  const filters = {
-    ...parseCostFilters(url.searchParams, defaultYear),
-    bookId: choice.bookId,
-  };
+  // A tag that was deleted since the link was made would be a 404 on every call below: it is left out.
+  const filters = withKnownTag(
+    {
+      ...parseCostFilters(url.searchParams, defaultYear),
+      bookId: choice.bookId,
+    },
+    tags,
+  );
   if (choice.fromMemory) {
     // The book the person looked at last becomes the address, so the page can be shared and Back leads here.
     redirect(307, `${url.pathname}${costFilterQuery(filters, defaultYear)}`);
@@ -59,7 +66,7 @@ export const load: PageLoad = async ({ fetch, url, parent }) => {
     integrations,
     pendingReceipts,
   ] = await Promise.all([
-    loadCostContext(client, redirectTo, { household, books }),
+    loadCostContext(client, redirectTo, { household, books, tags }),
     orFail(
       fetchAll((cursor) =>
         client.call(endpoints.costsList, {
