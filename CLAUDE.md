@@ -168,7 +168,7 @@ src/lib/server/integrations/     optional adapters (homeassistant/, paperless/, 
                                  wired by `registerPaperless()`; kept/ has client, mappers, fake-server plus config, adapter
                                  (settings, pickers), sync and scheduler, wired by `registerKept()` (see "Costs and finance providers")
 src/lib/server/db.ts             SQLite connection (WAL, foreign keys); migrations run on startup
-src/lib/server/migrator.ts       the migration runner: foreign keys off while migrations run, `foreign_key_check` before commit
+src/lib/server/migrator.ts       the migration runner: foreign keys off while migrations run, a differential `foreign_key_check` before commit
 src/lib/server/schema.ts         Drizzle schema — one file, every table has created_at/updated_at
 src/lib/server/crypto.ts         AES-256-GCM for stored secrets (HAUSWART_SECRET_KEY)
 src/lib/money.ts                 minor-unit money type, parsing/formatting, ownership shares
@@ -1352,8 +1352,10 @@ newPassword}`, 204; `auth/change-password.ts`, form in `settings/account`): the 
   edit an existing migration, never use `drizzle-kit push`. The migrator (`migrator.ts`) runs migrations with foreign
   keys **off**, set before the transaction because the `PRAGMA foreign_keys=OFF` lines drizzle-kit writes around a table
   rebuild do nothing inside it, so a rebuilt parent table keeps its children (no stash and restore needed), and it runs
-  `PRAGMA foreign_key_check` before committing: a migration that leaves a dangling reference rolls back and the app
-  refuses to start (`MigrationIntegrityError`).
+  `PRAGMA foreign_key_check` before committing and compares it with the same check taken before the migrations: references
+  that already dangled are logged by table and count (`migrations.dangling_references`, no row data) and left alone, but a
+  migration that adds to them (more rows for a pair of child and parent table) rolls back and the app refuses to start
+  (`MigrationIntegrityError`).
 
 ## Svelte 5 and UI
 

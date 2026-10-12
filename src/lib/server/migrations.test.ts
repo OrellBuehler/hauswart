@@ -10,7 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { migrateDatabase, openDatabase, type DB } from "./db";
 
 const FOLDER = join(process.cwd(), "drizzle");
@@ -690,6 +690,144 @@ CREATE TABLE \`linked\` (\`id\` text PRIMARY KEY NOT NULL, \`parent_id\` text, F
     expect(foreignKeys(db)).toBe(1);
     // It is refused again at the next start, not forgotten.
     expect(() => migrateDatabase(db, folder)).toThrow();
+  });
+
+  /** Puts in a row the database itself would refuse, the way a restore or an old bug can have left one. */
+  function plantOrphan(db: DB, statement: string) {
+    db.$client.exec("PRAGMA foreign_keys = OFF");
+    try {
+      db.$client.exec(statement);
+    } finally {
+      db.$client.exec("PRAGMA foreign_keys = ON");
+    }
+  }
+
+  it("upgrade a database that already had a row pointing at nothing, leave the row alone and name it by table and count only", () => {
+    const db = emptyDatabase();
+    const files: Record<string, string> = { "0000_start": PARENT_AND_CHILDREN };
+    migrateDatabase(db, folderOf(files));
+    plantOrphan(
+      db,
+      "insert into owned (id, parent_id) values ('orphan-row', 'missing-parent')",
+    );
+    files["0001_later"] = "ALTER TABLE `parent` ADD `later` text;";
+
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    try {
+      migrateDatabase(db, folderOf(files));
+      const logged = JSON.stringify(warn.mock.calls);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(logged).toContain("owned");
+      expect(logged).toContain("parent");
+      expect(logged).not.toContain("orphan-row");
+      expect(logged).not.toContain("missing-parent");
+    } finally {
+      warn.mockRestore();
+    }
+
+    expect(rows(db, "select name from pragma_table_info('parent')")).toEqual([
+      { name: "id" },
+      { name: "name" },
+      { name: "later" },
+    ]);
+    expect(rows(db, "select id from owned")).toEqual([{ id: "orphan-row" }]);
+    expect(
+      rows(db, "select count(*) as n from __drizzle_migrations")[0].n,
+    ).toBe(2);
+    expect(foreignKeys(db)).toBe(1);
+  });
+
+  it("bring a database of the last release up to date although a row of it already pointed at nothing", () => {
+    const db = databaseAt("0014_cost_document_link_cleanup");
+    plantOrphan(
+      db,
+      "insert into service_log (id, asset_id, date, kind, title) values ('s1', 'no-such-asset', '2026-01-02', 'maintenance', 'Entkalkt')",
+    );
+    expect(rows(db, "pragma foreign_key_check")).toHaveLength(1);
+
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    try {
+      migrateDatabase(db);
+    } finally {
+      warn.mockRestore();
+    }
+
+    expect(
+      rows(db, "select count(*) as n from __drizzle_migrations")[0].n,
+    ).toBe(journal().entries.length);
+    expect(rows(db, "select title from service_log")).toEqual([
+      { title: "Entkalkt" },
+    ]);
+    expect(
+      rows(db, "select name from sqlite_master where name = 'cost_books'"),
+    ).toHaveLength(1);
+    expect(rows(db, "pragma foreign_key_check")).toHaveLength(1);
+    expect(foreignKeys(db)).toBe(1);
+  });
+
+  it("still refuse a migration that adds to the rows pointing at nothing when the database already had some, and accept one that removes them", () => {
+    const db = emptyDatabase();
+    const files: Record<string, string> = { "0000_start": PARENT_AND_CHILDREN };
+    migrateDatabase(db, folderOf(files));
+    plantOrphan(
+      db,
+      "insert into owned (id, parent_id) values ('o1', 'missing-one')",
+    );
+    const quiet = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    try {
+      // One more in the same pair of tables: the count grew.
+      files["0001_one_more"] =
+        "INSERT INTO `owned` (`id`, `parent_id`) VALUES ('o2', 'missing-two');";
+      const more = folderOf(files);
+      expect(() => migrateDatabase(db, more)).toThrow(/owned -> parent/);
+      expect(rows(db, "select id from owned")).toEqual([{ id: "o1" }]);
+      expect(
+        rows(db, "select count(*) as n from __drizzle_migrations")[0].n,
+      ).toBe(1);
+
+      // The same count in another pair is new as well.
+      files["0001_one_more"] =
+        "INSERT INTO `linked` (`id`, `parent_id`) VALUES ('l1', 'missing-three');";
+      const other = folderOf(files);
+      expect(() => migrateDatabase(db, other)).toThrow(/linked -> parent/);
+      expect(rows(db, "select id from linked")).toEqual([]);
+
+      // A migration that cleans up after an old bug is welcome.
+      files["0001_one_more"] =
+        "DELETE FROM `owned` WHERE `parent_id` NOT IN (SELECT `id` FROM `parent`);";
+      migrateDatabase(db, folderOf(files));
+      expect(rows(db, "select id from owned")).toEqual([]);
+      expect(rows(db, "pragma foreign_key_check")).toEqual([]);
+    } finally {
+      quiet.mockRestore();
+    }
+  });
+
+  it("word the refusal by the pairs of tables and how many rows are new, with no row in it", () => {
+    const db = emptyDatabase();
+    const files: Record<string, string> = { "0000_start": PARENT_AND_CHILDREN };
+    migrateDatabase(db, folderOf(files));
+    plantOrphan(
+      db,
+      "insert into owned (id, parent_id) values ('o1', 'missing-one')",
+    );
+    files["0001_more"] =
+      "INSERT INTO `owned` (`id`, `parent_id`) VALUES ('o2', 'missing-two'), ('o3', 'missing-three');";
+    const quiet = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    try {
+      let message = "";
+      try {
+        migrateDatabase(db, folderOf(files));
+      } catch (err) {
+        message = (err as Error).message;
+        expect((err as Error).name).toBe("MigrationIntegrityError");
+      }
+      expect(message).toContain("owned -> parent (2 new)");
+      expect(message).not.toMatch(/missing-|o[123]\b/);
+      expect(message).toMatch(/rolled back/);
+    } finally {
+      quiet.mockRestore();
+    }
   });
 
   it("apply what is pending together or not at all", () => {
