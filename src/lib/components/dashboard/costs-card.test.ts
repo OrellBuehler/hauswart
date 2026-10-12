@@ -45,9 +45,9 @@ const balances = (over: Partial<Balances> = {}): Balances => ({
   ...over,
 });
 
-function html(c: Costs, b: Balances | null): string {
+function html(c: Costs, b: Balances | null, canWrite = false): string {
   return render(CostsCard as never, {
-    props: { costs: c, balances: b } as never,
+    props: { costs: c, balances: b, canWrite } as never,
   }).body.replace(/[\u00a0\u202f]/g, " ");
 }
 
@@ -57,6 +57,12 @@ describe("the dashboard's costs card", () => {
     expect(body).toContain("Du bekommst CHF 25.00");
     expect(body).toContain("Ben Muster schuldet Anna Beispiel");
     expect(body).toContain("Saldo über alle Bücher");
+  });
+
+  it("offers the quick entry to people who may book costs", () => {
+    expect(html(costs(), balances(), true)).toContain('href="/costs/quick"');
+    expect(html(costs(), balances(), true)).toContain("Ausgabe erfassen");
+    expect(html(costs(), balances())).not.toContain("/costs/quick");
   });
 
   it("still shows the year and says so when the balances could not be worked out", () => {

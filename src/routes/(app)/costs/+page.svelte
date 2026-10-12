@@ -9,7 +9,9 @@
   import ListChecksIcon from "@lucide/svelte/icons/list-checks";
   import FilterIcon from "@lucide/svelte/icons/list-filter";
   import PlusIcon from "@lucide/svelte/icons/plus";
+  import ReceiptTextIcon from "@lucide/svelte/icons/receipt-text";
   import SearchIcon from "@lucide/svelte/icons/search";
+  import ZapIcon from "@lucide/svelte/icons/zap";
   import { untrack } from "svelte";
   import { SvelteSet } from "svelte/reactivity";
   import { goto } from "$app/navigation";
@@ -90,6 +92,11 @@
   const newHref = $derived(
     resolve(
       `/costs/new${filters.bookId ? `?book=${encodeURIComponent(filters.bookId)}` : ""}` as "/",
+    ),
+  );
+  const quickHref = $derived(
+    resolve(
+      `/costs/quick${filters.bookId ? `?book=${encodeURIComponent(filters.bookId)}` : ""}` as "/",
     ),
   );
   const balancesHref = $derived(
@@ -345,6 +352,24 @@
           {/if}
         </Button>
       {/if}
+      <Button href={resolve("/costs/receipts")} variant="outline" size="lg">
+        <ReceiptTextIcon />
+        {m.costs_receipts()}
+        {#if data.pendingReceipts && data.pendingReceipts.count > 0}
+          <span
+            class="bg-warning/15 text-warning rounded-full px-1.5 text-xs tabular-nums"
+            aria-hidden="true"
+            >{data.pendingReceipts.count}{data.pendingReceipts.more
+              ? "+"
+              : ""}</span
+          >
+          <span class="sr-only"
+            >{m.costs_receipts_pending({
+              count: data.pendingReceipts.count,
+            })}</span
+          >
+        {/if}
+      </Button>
       <Button
         href={csvHref}
         download
@@ -359,6 +384,15 @@
         {m.costs_csv({ year: filters.year })}
       </Button>
       {#if canWrite}
+        <Button
+          href={quickHref}
+          variant="outline"
+          size="lg"
+          class="max-md:hidden"
+        >
+          <ZapIcon />
+          {m.costs_quick()}
+        </Button>
         <Button href={newHref} size="lg" class="max-md:hidden">
           <PlusIcon />
           {m.cost_new()}
@@ -641,7 +675,11 @@
           >
             {#snippet actions()}
               {#if canWrite}
-                <Button href={newHref}>
+                <Button href={quickHref}>
+                  <ZapIcon />
+                  {m.costs_quick()}
+                </Button>
+                <Button href={newHref} variant="outline">
                   <PlusIcon />
                   {m.cost_new()}
                 </Button>
@@ -788,7 +826,7 @@
 
 {#if canWrite}
   {#if !selecting}
-    <Fab href={newHref} label={m.cost_new()} />
+    <Fab href={quickHref} label={m.quick_fab()} />
   {/if}
   <MoveCostsDialog
     bind:open={moveOpen}
