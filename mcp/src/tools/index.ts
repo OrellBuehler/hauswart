@@ -1,4 +1,5 @@
 import type { Tool } from "../tool";
+import { aiTaskTools } from "./ai-tasks";
 import { appointmentTools } from "./appointments";
 import { assetTools } from "./assets";
 import { assetCareTools } from "./asset-care";
@@ -65,4 +66,5 @@ export const tools: readonly Tool[] = [
   ...tireTools,
   ...appointmentTools,
   listCalendarTargets,
+  ...aiTaskTools,
 ];

@@ -45,6 +45,8 @@ const READ_TOOLS = [
   "list_tire_sets",
   "list_appointments",
   "list_calendar_targets",
+  "list_ai_tasks",
+  "get_ai_task",
 ];
 const WRITE_TOOLS = [
   "create_task",
@@ -80,6 +82,8 @@ const COSTS_WRITE_TOOLS = [
   "sync_finance",
   "add_fuel_log",
   "record_settlement",
+  "complete_ai_task",
+  "dismiss_ai_task",
 ];
 
 describe("tool registration", () => {
