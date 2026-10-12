@@ -571,6 +571,11 @@ A transaction of a finance app and an entry somebody typed are the same expense.
   with several the most similar text wins, then the nearer date, then the entry made first. A transaction recorded as already decided is never linked; one that has a cost or
   link suggestion already keeps it (a pending link takes the fresher transaction). Private like every suggestion (own rows only, 404 for others); the wire adds `entry`,
   the entry as it is now (null once deleted). It counts in `pendingFinanceSuggestions`.
+- **When the entry comes second** (`linkWaitingOffer`, called by `createCost` inside the booking's transaction for an entry that has no finance origin: a `POST /costs`
+  without `financeSuggestionId`, a recurring booking, a fuel fill): the payer's pending `cost` suggestions that match the entry (`transactionMatchesEntry`) are looked up
+  and when **exactly one** does, it becomes a `link` in place (same id, connection, reference, bill references and place in the inbox; payload `{entryId, transaction}`).
+  Never accepted by itself. Several fitting offers are ambiguous and change nothing; a transaction that has a link row already (turned down before, or accepted) is not
+  linked again; a booking that rolls back leaves the offer as it was. Editing an entry does not look: a `PATCH` ties by `financeSuggestionId` only.
 - **Accepting** (`POST /finance/suggestions/{id}/accept {}`, no overrides): the entry remembers the transaction (`providerConnectionId`, `providerRef`; `providerUrl`
   only when the entry was made by the connection's owner, since only its maker sees that; `providerLinkId` and `linkSyncedAt` null so the adapter writes the back-link
   and `financeLinksPending` fires), `source` stays `manual`, nothing new is booked, the answer's entity is the entry. 409 when the entry was deleted, got tied

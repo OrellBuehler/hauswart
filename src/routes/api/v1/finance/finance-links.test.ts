@@ -118,6 +118,54 @@ describe("tying entries made by hand to transactions, through the API", () => {
     expect(dashboard.pendingFinanceSuggestions).toBe(1);
   });
 
+  it("turns a waiting offer into a link when an entry made by hand arrives later, and counts it once", async () => {
+    const anna = await member("Anna");
+    const ben = await member("Ben");
+    const waiting = anna.offer("tx:1");
+    const theirs = ben.offer("tx:1");
+    expect((await anna.suggestions())[0]).toMatchObject({ kind: "cost" });
+    const e = await anna.entry();
+    const [link] = await anna.suggestions();
+    expect(link).toMatchObject({
+      id: waiting.id,
+      kind: "link",
+      status: "pending",
+      payload: { entryId: e.id, entry: { id: e.id } },
+    });
+    expect(await anna.suggestions("?kind=cost")).toEqual([]);
+    const dashboard = (await anna.call("GET", "/api/v1/dashboard")).body as {
+      pendingFinanceSuggestions: number;
+    };
+    expect(dashboard.pendingFinanceSuggestions).toBe(1);
+    expect(
+      (await ben.suggestions()).map((s) => [s.id, s.kind, s.status]),
+    ).toEqual([[theirs.id, "cost", "pending"]]);
+
+    const accepted = await anna.call(
+      "POST",
+      `/api/v1/finance/suggestions/${link.id}/accept`,
+      { json: {} },
+    );
+    expect(accepted.body).toMatchObject({ entity: { type: "cost", id: e.id } });
+    const list = (await anna.call("GET", "/api/v1/costs")).body as {
+      items: Cost[];
+    };
+    expect(list.items.map((c) => [c.id, c.financeLinked])).toEqual([
+      [e.id, true],
+    ]);
+  });
+
+  it("leaves a waiting offer alone when the entry names the transaction itself", async () => {
+    const anna = await member("Anna");
+    const first = anna.offer("tx:1");
+    const second = anna.offer("tx:2");
+    const e = await anna.entry({ financeSuggestionId: first.id });
+    expect(e.financeLinked).toBe(true);
+    expect(
+      (await anna.suggestions()).map((s) => [s.id, s.kind, s.status]),
+    ).toEqual([[second.id, "cost", "pending"]]);
+  });
+
   it("shows the entry as it changes, and no entry once it is deleted", async () => {
     const anna = await member("Anna");
     const e = await anna.entry();

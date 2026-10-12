@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { createCostRequestSchema } from "$lib/api/schemas/costs";
 import { updateCostRequestSchema } from "$lib/api/schemas/costs";
+import { createCostRecurrenceRequestSchema } from "$lib/api/schemas/cost-recurrences";
 import { saveConnection } from "$lib/server/connections/connections";
 import {
   createCost,
@@ -10,10 +11,15 @@ import {
   listCosts,
   updateCost,
 } from "$lib/server/costs/costs";
-import { costEntries, financeSuggestions } from "$lib/server/db";
+import {
+  bookDueRecurrences,
+  createCostRecurrence,
+  runCostRecurrenceNow,
+} from "$lib/server/costs/recurrences";
+import { costEntries, financeSuggestions, type DB } from "$lib/server/db";
 import { onEvent } from "$lib/server/events";
 import { createTestUser } from "$lib/testing/auth";
-import { ctxAt } from "$lib/testing/domain";
+import { at, ctxAt } from "$lib/testing/domain";
 import { useTestDB } from "$lib/testing/db";
 import { createCostTag } from "$lib/server/costs/tags";
 import {
@@ -270,9 +276,11 @@ describe("tying cost entries to transactions", () => {
 
     it("does not link again what already has a cost suggestion", async () => {
       const a = await owner();
-      const { row: cost } = offer(a);
+      const { row: cost } = offer(a, { providerRef: "tx:1" });
+      offer(a, { providerRef: "tx:2" });
+      // Two offers fit the entry, so it is taken for neither of them.
       entry(a);
-      const again = offer(a);
+      const again = offer(a, { providerRef: "tx:1" });
       expect(again.created).toBe(false);
       expect(again.row.id).toBe(cost.id);
       expect(rows("link")).toEqual([]);
@@ -283,6 +291,363 @@ describe("tying cost entries to transactions", () => {
       entry(a);
       const { row } = offer(a, { payload: { title: "no amount" } });
       expect(row.kind).toBe("cost");
+    });
+  });
+
+  describe("an entry that is booked after the offer", () => {
+    it("turns the waiting cost suggestion into a link to the entry, where it was", async () => {
+      const a = await owner();
+      const { row: cost } = offer(a, { billRefs: ["b1"] });
+      const e = entry(a);
+      expect(rows("cost")).toEqual([]);
+      const [link] = rows("link");
+      expect(link).toMatchObject({
+        id: cost.id,
+        kind: "link",
+        status: "pending",
+        providerRef: "tx:1",
+        userId: a.user.id,
+        connectionId: a.connection.id,
+        billRefsJson: ["b1"],
+        createdAt: cost.createdAt,
+      });
+      expect(payloadOf(link)).toEqual({
+        entryId: e.id,
+        transaction: { ...txPayload(), bookId: null },
+      });
+      expect(getCost(ctx(), e.id).providerRef).toBeNull();
+    });
+
+    it("never accepts it by itself: accepting the link ties the entry and books nothing more", async () => {
+      const a = await owner();
+      offer(a);
+      const e = entry(a);
+      expect(getCost(ctx(), e.id)).toMatchObject({
+        providerRef: null,
+        providerConnectionId: null,
+      });
+      const [link] = rows("link");
+      expect(link.status).toBe("pending");
+      const { entity } = await acceptSuggestion(ctx(), a.user.id, link.id, {});
+      expect(entity).toEqual({ type: "cost", id: e.id });
+      expect(getCost(ctx(), e.id)).toMatchObject({
+        providerConnectionId: a.connection.id,
+        providerRef: "tx:1",
+      });
+      expect(listCosts(ctx(), {}, { limit: 10 }, a.user.id).items).toHaveLength(
+        1,
+      );
+    });
+
+    it("gives the transaction back as a cost when the link is dismissed", async () => {
+      const a = await owner();
+      offer(a, { billRefs: ["b1"] });
+      entry(a);
+      const [link] = rows("link");
+      dismissSuggestion(ctx(), a.user.id, link.id);
+      const [cost] = rows("cost");
+      expect(cost).toMatchObject({
+        status: "pending",
+        providerRef: "tx:1",
+        billRefsJson: ["b1"],
+      });
+      expect(payloadOf(cost)).toMatchObject({
+        title: "BEISPIEL MARKT ZUERICH",
+        amountMinor: 4250,
+      });
+    });
+
+    it("keeps the link a link when the provider reports the transaction again", async () => {
+      const a = await owner();
+      offer(a);
+      const e = entry(a);
+      const again = offer(a, {
+        payload: txPayload({ title: "BEISPIEL MARKT ZUERICH HB" }),
+      });
+      expect(again.created).toBe(false);
+      expect(again.row).toMatchObject({ kind: "link", status: "pending" });
+      expect(payloadOf(again.row)).toMatchObject({
+        entryId: e.id,
+        transaction: { title: "BEISPIEL MARKT ZUERICH HB" },
+      });
+      expect(rows("cost")).toEqual([]);
+    });
+
+    it("also finds an entry whose payer is somebody else than the one who made it", async () => {
+      const a = await owner();
+      const b = await owner("Ben");
+      offer(b);
+      const e = entry(a, { paidByUserId: b.user.id }, a.user.id);
+      const [link] = rows("link");
+      expect(link.userId).toBe(b.user.id);
+      expect(payloadOf(link)).toMatchObject({ entryId: e.id });
+    });
+
+    it.each<[string, Record<string, unknown>]>([
+      ["another amount", { amountMinor: 4251 }],
+      ["another currency", { currency: "EUR" }],
+      ["a refund of the same amount", { amountMinor: -4250 }],
+      ["four days earlier", { date: "2026-06-06" }],
+      ["four days later", { date: "2026-06-14" }],
+      ["another shop", { title: "MUSTER LADEN", payee: "Muster Laden" }],
+      ["no payer", { paidByUserId: null }],
+    ])("leaves the offer alone for an entry with %s", async (_name, over) => {
+      const a = await owner();
+      offer(a);
+      entry(a, over);
+      expect(rows("link")).toEqual([]);
+      expect(rows("cost").map((r) => r.status)).toEqual(["pending"]);
+    });
+
+    it("leaves the offer alone for an entry somebody else paid", async () => {
+      const a = await owner();
+      const b = await owner("Ben");
+      offer(a);
+      entry(a, { paidByUserId: b.user.id }, a.user.id);
+      expect(rows("link")).toEqual([]);
+      expect(rows("cost").map((r) => r.userId)).toEqual([a.user.id]);
+    });
+
+    it("leaves other people's offers alone", async () => {
+      const a = await owner();
+      const b = await owner("Ben");
+      offer(b, { providerRef: "tx:theirs" });
+      entry(a);
+      expect(rows("link")).toEqual([]);
+      expect(rows("cost").map((r) => r.userId)).toEqual([b.user.id]);
+    });
+
+    it("leaves decided offers and offers of other kinds alone", async () => {
+      const a = await owner();
+      offer(a, { providerRef: "tx:done" }, "dismissed");
+      const accepted = offer(a, { providerRef: "tx:accepted" }).row;
+      await acceptSuggestion(ctx(), a.user.id, accepted.id, {});
+      offer(a, {
+        providerRef: "tx:asset",
+        kind: "asset",
+        payload: {
+          name: "Herd",
+          purchaseDate: "2026-06-10",
+          priceMinor: 4250,
+          currency: "CHF",
+          url: null,
+        },
+      });
+      entry(a);
+      expect(rows("link")).toEqual([]);
+      expect(rows().map((r) => [r.kind, r.status])).toEqual([
+        ["cost", "dismissed"],
+        ["cost", "accepted"],
+        ["asset", "pending"],
+      ]);
+    });
+
+    it("takes the entry for none of two offers that both fit it", async () => {
+      const a = await owner();
+      offer(a, { providerRef: "tx:1" });
+      offer(a, { providerRef: "tx:2" });
+      entry(a);
+      expect(rows("link")).toEqual([]);
+      expect(rows("cost")).toHaveLength(2);
+    });
+
+    it("does not touch the other offers when the entry is tied to a transaction while it is typed", async () => {
+      const a = await owner();
+      const { row } = offer(a, { providerRef: "tx:1" });
+      offer(a, { providerRef: "tx:2" });
+      const e = createCost(
+        ctx(),
+        createCostRequestSchema.parse({
+          title: "Einkauf Beispiel Markt",
+          amountMinor: 4250,
+          category: "groceries",
+          date: "2026-06-10",
+          paidByUserId: a.user.id,
+          financeSuggestionId: row.id,
+          splitMode: "none",
+        }),
+        a.user.id,
+      );
+      expect(e.providerRef).toBe("tx:1");
+      expect(rows("link")).toEqual([]);
+      expect(rows("cost").map((r) => [r.providerRef, r.status])).toEqual([
+        ["tx:1", "accepted"],
+        ["tx:2", "pending"],
+      ]);
+    });
+
+    it("does not touch the other offers when an entry is booked from the inbox", async () => {
+      const a = await owner();
+      const { row } = offer(a, { providerRef: "tx:1" });
+      offer(a, { providerRef: "tx:2" });
+      await acceptSuggestion(ctx(), a.user.id, row.id, {});
+      expect(rows("link")).toEqual([]);
+      expect(rows("cost").map((r) => [r.providerRef, r.status])).toEqual([
+        ["tx:1", "accepted"],
+        ["tx:2", "pending"],
+      ]);
+    });
+
+    it("does not link a transaction again whose link was turned down, and books the entry all the same", async () => {
+      const a = await owner();
+      offer(a);
+      entry(a);
+      const [link] = rows("link");
+      dismissSuggestion(ctx(), a.user.id, link.id);
+      const second = entry(a, { title: "Einkauf Beispiel Markt Nachtrag" });
+      expect(getCost(ctx(), second.id).providerRef).toBeNull();
+      expect(rows("link").map((r) => r.status)).toEqual(["dismissed"]);
+      expect(rows("cost").map((r) => r.status)).toEqual(["pending"]);
+    });
+
+    it("books an entry that fits nothing as it always did", async () => {
+      const a = await owner();
+      const e = entry(a);
+      expect(getCost(ctx(), e.id).source).toBe("manual");
+      expect(rows()).toEqual([]);
+    });
+
+    it("works inside the booking: nothing is left of the link when the booking is rolled back", async () => {
+      const a = await owner();
+      offer(a);
+      const now = ctx().now;
+      expect(() =>
+        test.db.transaction((tx) => {
+          createCost(
+            { db: tx as unknown as DB, now },
+            createCostRequestSchema.parse({
+              title: "Einkauf Beispiel Markt",
+              amountMinor: 4250,
+              category: "groceries",
+              date: "2026-06-10",
+              paidByUserId: a.user.id,
+              splitMode: "none",
+            }),
+            a.user.id,
+          );
+          expect(rows("link")).toHaveLength(1);
+          throw new Error("rolled back");
+        }),
+      ).toThrow("rolled back");
+      expect(rows("link")).toEqual([]);
+      expect(rows("cost").map((r) => r.status)).toEqual(["pending"]);
+      expect(listCosts(ctx(), {}, { limit: 10 }, a.user.id).items).toEqual([]);
+    });
+
+    describe("by a recurring cost", () => {
+      const rent = (a: Owner, over: Record<string, unknown> = {}) =>
+        createCostRecurrence(
+          ctx(),
+          createCostRecurrenceRequestSchema.parse({
+            title: "Miete",
+            amountMinor: 150000,
+            category: "other",
+            frequency: "monthly",
+            startDate: "2026-02-05",
+            paidByUserId: a.user.id,
+            splitMode: "none",
+            ...over,
+          }),
+          a.user.id,
+        );
+      const rentOffer = (a: Owner, over: Record<string, unknown> = {}) =>
+        offer(a, {
+          providerRef: "tx:rent",
+          payload: txPayload({
+            date: "2026-02-03",
+            amountMinor: 150000,
+            title: "MIETE FEBRUAR BEISPIEL VERWALTUNG",
+            payee: "Beispiel Verwaltung",
+            category: "other",
+            ...over,
+          }),
+        }).row;
+      const bookOn = (date: string) =>
+        bookDueRecurrences(ctxAt(test.db, at(date)));
+
+      it("turns the offer that came first into a link, and accepting it ties the booked entry instead of booking another", async () => {
+        const a = await owner();
+        const waiting = rentOffer(a);
+        expect(waiting.kind).toBe("cost");
+        rent(a);
+        expect(bookOn("2026-02-05")).toEqual({ booked: 1, failed: 0 });
+        const [entryRow] = test.db.select().from(costEntries).all();
+        expect(entryRow).toMatchObject({
+          source: "recurring",
+          providerRef: null,
+        });
+        expect(rows("cost")).toEqual([]);
+        const [link] = rows("link");
+        expect(link).toMatchObject({ id: waiting.id, status: "pending" });
+        expect(payloadOf(link)).toMatchObject({ entryId: entryRow.id });
+
+        const { entity } = await acceptSuggestion(
+          ctx(),
+          a.user.id,
+          link.id,
+          {},
+        );
+        expect(entity).toEqual({ type: "cost", id: entryRow.id });
+        expect(test.db.select().from(costEntries).all()).toHaveLength(1);
+        expect(getCost(ctx(), entryRow.id)).toMatchObject({
+          source: "recurring",
+          providerRef: "tx:rent",
+          providerConnectionId: a.connection.id,
+        });
+        // The provider reporting the payment again changes nothing.
+        expect(rentOffer(a)).toMatchObject({
+          kind: "link",
+          status: "accepted",
+        });
+        expect(rows("cost")).toEqual([]);
+      });
+
+      it("does the same when the booking is made by hand with run-now", async () => {
+        const a = await owner();
+        rentOffer(a);
+        const r = rent(a);
+        runCostRecurrenceNow(ctxAt(test.db, at("2026-02-05")), r.id);
+        expect(rows("cost")).toEqual([]);
+        expect(rows("link")).toHaveLength(1);
+      });
+
+      it("links the occurrence it books to the offer, not the ones it books later", async () => {
+        const a = await owner();
+        rentOffer(a);
+        rent(a);
+        bookOn("2026-04-05");
+        const entriesBooked = test.db.select().from(costEntries).all();
+        expect(entriesBooked.map((e) => e.date).sort()).toEqual([
+          "2026-02-05",
+          "2026-03-05",
+          "2026-04-05",
+        ]);
+        const [link] = rows("link");
+        const target = entriesBooked.find(
+          (e) => e.id === (payloadOf(link) as { entryId: string }).entryId,
+        );
+        expect(target?.date).toBe("2026-02-05");
+      });
+
+      it("leaves an offer for another payer or another amount to be booked as a cost", async () => {
+        const a = await owner();
+        const b = await owner("Ben");
+        rentOffer(a, { amountMinor: 150001 });
+        offer(b, {
+          providerRef: "tx:rent-b",
+          payload: txPayload({
+            date: "2026-02-03",
+            amountMinor: 150000,
+            title: "MIETE FEBRUAR",
+            payee: null,
+            category: "other",
+          }),
+        });
+        rent(a);
+        bookOn("2026-02-05");
+        expect(rows("link")).toEqual([]);
+        expect(rows("cost")).toHaveLength(2);
+      });
     });
   });
 

@@ -8,6 +8,7 @@ import {
   MATCH_DAYS,
   MATCH_MIN_SIMILARITY,
   matchSimilarity,
+  transactionMatchesEntry,
   type MatchSide,
 } from "$lib/costs/match";
 import { addDays, diffDays } from "$lib/dates";
@@ -60,6 +61,9 @@ const transactionSide = (t: CostPayload): MatchSide => ({
   payee: t.payee,
 });
 
+/** The sources of an entry a transaction can be tied to: made by a person or by a recurring cost, never booked from a finance item. */
+const LINKABLE_SOURCES = ["manual", "recurring"] as const;
+
 /**
  * The entry a transaction offered to `userId` most likely is, if any (see `transactionMatchesEntry` for the rule): same
  * amount and currency, booked by hand or by a recurring cost, paid by that person, not tied to a finance item and not
@@ -81,7 +85,7 @@ export function findMatchingEntry(
         eq(costEntries.paidByUserId, userId),
         gte(costEntries.date, addDays(transaction.date, -MATCH_DAYS)),
         lte(costEntries.date, addDays(transaction.date, MATCH_DAYS)),
-        inArray(costEntries.source, ["manual", "recurring"]),
+        inArray(costEntries.source, [...LINKABLE_SOURCES]),
         isNull(costEntries.providerRef),
         isNull(costEntries.providerConnectionId),
         sql`not exists (select 1 from finance_suggestions where finance_suggestions.kind = 'link' and finance_suggestions.status = 'pending' and json_extract(finance_suggestions.payload_json, '$.entryId') = cost_entries.id)`,
@@ -103,6 +107,92 @@ export function findMatchingEntry(
         a.entry.createdAt.getTime() - b.entry.createdAt.getTime() ||
         a.entry.id.localeCompare(b.entry.id),
     )[0]?.entry;
+}
+
+/** Whether a pending link points at the entry already. */
+function isLinkTarget(ctx: Db, entryId: string): boolean {
+  return (
+    ctx.db
+      .select({ id: financeSuggestions.id })
+      .from(financeSuggestions)
+      .where(
+        and(
+          eq(financeSuggestions.kind, "link"),
+          eq(financeSuggestions.status, "pending"),
+          sql`json_extract(${financeSuggestions.payloadJson}, '$.entryId') = ${entryId}`,
+        ),
+      )
+      .get() !== undefined
+  );
+}
+
+/**
+ * The other direction of `findMatchingEntry`: an entry was just booked (by hand without naming a transaction, or by a
+ * recurring cost) while the transaction it stands for was already waiting as a cost suggestion. When exactly one pending
+ * cost suggestion of the entry's payer matches it (`transactionMatchesEntry`), that suggestion becomes a `link` to the
+ * entry in place (same id, connection, reference, bill references and position in the inbox), so accepting it ties the two
+ * and the expense is not booked a second time. Nothing is accepted: a person decides. Several fitting offers are
+ * ambiguous and change nothing, and neither does a transaction that has a link row already (turned down before, or
+ * accepted): its reference is unique among links. Runs in the booking's transaction (`db`), so a booking that is rolled
+ * back leaves the offer as it was. Answers the new link, or undefined.
+ */
+export function linkWaitingOffer(
+  ctx: Db,
+  entry: EntryRow,
+): SuggestionRow | undefined {
+  if (
+    entry.paidByUserId === null ||
+    entry.providerRef !== null ||
+    entry.providerConnectionId !== null ||
+    !(LINKABLE_SOURCES as readonly string[]).includes(entry.source)
+  ) {
+    return undefined;
+  }
+  const field = (name: string) =>
+    sql`json_extract(${financeSuggestions.payloadJson}, ${`$.${name}`})`;
+  const hits = ctx.db
+    .select()
+    .from(financeSuggestions)
+    .where(
+      and(
+        eq(financeSuggestions.userId, entry.paidByUserId),
+        eq(financeSuggestions.kind, "cost"),
+        eq(financeSuggestions.status, "pending"),
+        sql`${field("amountMinor")} = ${entry.amountMinor}`,
+        sql`${field("currency")} = ${entry.currency}`,
+        sql`${field("date")} >= ${addDays(entry.date, -MATCH_DAYS)}`,
+        sql`${field("date")} <= ${addDays(entry.date, MATCH_DAYS)}`,
+      ),
+    )
+    .all()
+    .flatMap((row) => {
+      const parsed = costSuggestionPayloadSchema.safeParse(row.payloadJson);
+      return parsed.success &&
+        transactionMatchesEntry(entrySide(entry), transactionSide(parsed.data))
+        ? [{ row, transaction: parsed.data }]
+        : [];
+    });
+  if (hits.length !== 1) return undefined;
+  const [{ row, transaction }] = hits;
+  if (
+    findSuggestion(ctx, row.connectionId, "link", row.providerRef) ||
+    isLinkTarget(ctx, entry.id)
+  ) {
+    return undefined;
+  }
+  const payload: StoredLinkPayload = { entryId: entry.id, transaction };
+  return ctx.db
+    .update(financeSuggestions)
+    .set({ kind: "link", payloadJson: payload })
+    .where(
+      and(
+        eq(financeSuggestions.id, row.id),
+        eq(financeSuggestions.kind, "cost"),
+        eq(financeSuggestions.status, "pending"),
+      ),
+    )
+    .returning()
+    .get();
 }
 
 export function insertLinkSuggestion(

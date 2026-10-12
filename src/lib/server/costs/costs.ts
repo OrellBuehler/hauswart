@@ -47,6 +47,7 @@ import { emitEvent } from "$lib/server/events";
 import {
   claimSuggestion,
   isTiedTo,
+  linkWaitingOffer,
   tieSuggestion,
   type TiedOrigin,
 } from "$lib/server/finance/links";
@@ -516,7 +517,7 @@ export function createCost(
   let id: string;
   try {
     id = ctx.db.transaction((tx) => {
-      const row = tx
+      const inserted = tx
         .insert(costEntries)
         .values({
           bookId: book.id,
@@ -550,10 +551,13 @@ export function createCost(
           aiTaskId: input.receiptTaskId ?? null,
           createdAt: new Date(ctx.now),
         })
-        .returning({ id: costEntries.id })
-        .get().id;
+        .returning()
+        .get();
+      const row = inserted.id;
       writeShares(tx as unknown as DB, row, shares);
       writeEntryTags(tx as unknown as DB, row, tagIds);
+      // The transaction this entry stands for may be waiting in the payer's inbox already.
+      if (!provider) linkWaitingOffer({ db: tx as unknown as DB }, inserted);
       if (input.financeSuggestionId) {
         tieSuggestion(
           { db: tx as unknown as DB },
