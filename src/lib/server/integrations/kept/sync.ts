@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { and, asc, eq, isNotNull, isNull } from "drizzle-orm";
 import {
   assets,
@@ -232,6 +233,25 @@ async function offerTransaction(run: Run, tx: KeptTransaction): Promise<void> {
 const scopeOf = (parts: Array<string | undefined>) =>
   parts.map((p) => p ?? "").join("|");
 
+/**
+ * A short digest of the books the settings name, for the cursor's scope. Which book an offer carries comes from the
+ * settings, not from Kept, so a transaction that did not change in Kept would never be asked for again after the
+ * mapping changed. Another choice of book is another scope: everything is read again, the offers still waiting take the
+ * new book (`recordSuggestion` rewrites pending ones only) and decided ones stay as they were.
+ */
+function booksScope(
+  categoryBookMap: Record<string, string>,
+  defaultBookId: string | undefined,
+): string {
+  const entries = Object.entries(categoryBookMap).sort(([a], [b]) =>
+    a < b ? -1 : a > b ? 1 : 0,
+  );
+  return createHash("sha256")
+    .update(JSON.stringify([entries, defaultBookId ?? ""]))
+    .digest("hex")
+    .slice(0, 12);
+}
+
 /** Transactions of the mapped and purchase categories since the last run. */
 async function syncTransactions(run: Run): Promise<void> {
   const { ctx, row, client, config } = run;
@@ -243,7 +263,11 @@ async function syncTransactions(run: Run): Promise<void> {
   ].sort();
   if (ids.length === 0) return;
   const from = config.syncFrom ?? `${clockAt(ctx.now).today.slice(0, 4)}-01-01`;
-  const scope = scopeOf([from, ...ids]);
+  const scope = scopeOf([
+    from,
+    booksScope(config.categoryBookMap, config.defaultBookId),
+    ...ids,
+  ]);
   const state = stateOf(ctx, row.id);
   const since =
     state?.transactionsScope === scope ? state.transactionsSince : null;
@@ -379,8 +403,8 @@ async function syncPaidBills(run: Run): Promise<void> {
   const category = config.billCostCategory;
   if (category === undefined) return;
   const from = config.syncFrom ?? `${clockAt(ctx.now).today.slice(0, 4)}-01-01`;
-  const scope = scopeOf([from, category]);
-  // Invoices have no Kept category of their own: they go to the connection's default book.
+  // Invoices have no Kept category of their own: they go to the connection's default book, so only that is in the scope.
+  const scope = scopeOf([from, category, booksScope({}, config.defaultBookId)]);
   const bookId = bookFor(ctx, config, null);
   const state = stateOf(ctx, row.id);
   const since = state?.billsScope === scope ? state.billsSince : null;

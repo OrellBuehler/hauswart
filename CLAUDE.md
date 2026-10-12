@@ -499,7 +499,7 @@ map), billTasks, billCreditorFilter (case-insensitive exact creditor names; appl
   health, immediately when a connection is saved, overlap guard per connection and in the scheduler; each
   part runs on its own and the first failure becomes the connection's `lastError` code):
   - transactions of every mapped or purchase category since the cursor (`finance_sync_state`, per scope:
-    a different category set or `syncFrom` starts over; first run from `syncFrom` or 1 January) become `cost`
+    a different category set, `syncFrom` or choice of books starts over; first run from `syncFrom` or 1 January) become `cost`
     suggestions via `transactionToCostSeed`, or cost entries at once for automatic categories; outgoing payments
     from purchase categories also `asset` suggestions. A failed item keeps the cursor where it was.
   - with `billTasks`: open and overdue bills (creditor filter) become bill tasks; tasks of bills that left the
@@ -517,7 +517,10 @@ map), billTasks, billCreditorFilter (case-insensitive exact creditor names; appl
   the category's book, else the default, else none; a book that is deleted or archived counts as none and the next choice
   is tried, none meaning the household's default book. The id goes into the suggestion's payload (`bookId`, left out when
   none) and, in an automatic category, to `acceptSuggestion` as the body's `bookId` (the adapter passes it, the core
-  knows no Kept). Book ids are not checked when the settings are saved (the adapter's `validate` has no database), only
+  knows no Kept). The cursors of the transactions and of the paid invoices carry a digest of the books the settings
+  name (`booksScope`: the category map and the default book for transactions, the default book alone for invoices), so
+  a changed choice reads everything since `syncFrom` again and the offers still waiting take the new `bookId` (a
+  decided one never changes: `recordSuggestion` rewrites pending ones only). Book ids are not checked when the settings are saved (the adapter's `validate` has no database), only
   when they are used. The web settings form has a book select under each mapped category (empty = the connection's default) and one for `defaultBookId` (empty = the household's default book); the accept dialog preselects the book offered with a suggestion.
 - Logs carry codes only (`kept.transaction_failed {code}`), never titles, amounts, creditors or tokens.
 
