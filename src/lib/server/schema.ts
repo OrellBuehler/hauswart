@@ -10,6 +10,9 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import {
+  AI_TASK_CLOSED_VIA,
+  AI_TASK_KINDS,
+  AI_TASK_STATUSES,
   ASSET_CONTACT_ROLES,
   ASSET_KINDS,
   ASSET_NOTE_STATUSES,
@@ -1776,10 +1779,21 @@ export const costEntries = sqliteTable(
     createdBy: text("created_by").references(() => users.id, {
       onDelete: "set null",
     }),
+    /** Booked on the strength of a receipt somebody else read: a person should look at it once. */
+    reviewNeeded: integer("review_needed", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    reviewedAt: integer("reviewed_at", { mode: "timestamp_ms" }),
+    reviewedByUserId: text("reviewed_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     ...timestamps,
   },
   (t) => [
     index("cost_entries_date_idx").on(sql`${t.date} desc`),
+    index("cost_entries_review_idx")
+      .on(t.reviewNeeded)
+      .where(sql`${t.reviewNeeded} = 1`),
     index("cost_entries_book_id_idx").on(t.bookId),
     index("cost_entries_category_idx").on(t.category),
     index("cost_entries_asset_id_idx").on(t.assetId),
@@ -1926,4 +1940,54 @@ export const costLinkRemovals = sqliteTable(
     ...timestamps,
   },
   (t) => [index("cost_link_removals_connection_idx").on(t.connectionId)],
+);
+
+/** What processing a task produced; kept as the caller reported it (the entries may have been deleted since). */
+export interface AiTaskResult {
+  createdCostIds: string[];
+  createdFuelLogIds: string[];
+  /** What the processor wants a person to know (what it was unsure of). */
+  note: string | null;
+}
+
+/**
+ * The work queue: a receipt (later an invoice, a policy) somebody uploaded for an assistant to read, with the entries
+ * it was turned into. Domain data shared by the household (every member sees every task); the uploader is the default
+ * payer of what is booked from it. The file is an attachment (owner type `ai_task` while the task is open; on
+ * completion it moves to the first cost entry created and the others get a copy, so `attachmentId` keeps pointing at it).
+ */
+export const aiTasks = sqliteTable(
+  "ai_tasks",
+  {
+    id: id(),
+    kind: text("kind", { enum: AI_TASK_KINDS }).notNull(),
+    status: text("status", { enum: AI_TASK_STATUSES })
+      .notNull()
+      .default("pending"),
+    /** The uploader's own words about the receipt. */
+    note: text("note"),
+    createdByUserId: text("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    attachmentId: text("attachment_id").references(() => attachments.id, {
+      onDelete: "set null",
+    }),
+    /** Hints from the uploader; the processor may book elsewhere. */
+    bookId: text("book_id").references(() => costBooks.id, {
+      onDelete: "set null",
+    }),
+    assetId: text("asset_id").references(() => assets.id, {
+      onDelete: "set null",
+    }),
+    resultJson: text("result_json", { mode: "json" }).$type<AiTaskResult>(),
+    dismissReason: text("dismiss_reason"),
+    /** When the task left the queue, done or dismissed. */
+    completedAt: integer("completed_at", { mode: "timestamp_ms" }),
+    completedVia: text("completed_via", { enum: AI_TASK_CLOSED_VIA }),
+    ...timestamps,
+  },
+  (t) => [
+    index("ai_tasks_status_idx").on(t.status, sql`${t.createdAt} desc`),
+    index("ai_tasks_attachment_id_idx").on(t.attachmentId),
+  ],
 );

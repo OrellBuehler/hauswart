@@ -116,6 +116,8 @@ export const dashboardSchema = z
     balances: dashboardBalancesSchema.nullable(),
     /** The caller's own offers from a connected finance app that wait for a decision; other members' offers are never counted. */
     pendingFinanceSuggestions: z.number().int().min(0),
+    /** Cost entries, in any book and year, that a person still has to review (`GET /costs?reviewNeeded=true`). */
+    reviewNeededCount: z.number().int().min(0),
   })
   .meta({ id: "Dashboard" });
 export type Dashboard = z.infer<typeof dashboardSchema>;

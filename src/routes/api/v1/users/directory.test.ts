@@ -1,4 +1,6 @@
+import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
+import { getDB, users } from "$lib/server/db";
 import { createCaller } from "$lib/testing/api";
 import {
   createTestToken,
@@ -10,7 +12,7 @@ import { useTestDB } from "$lib/testing/db";
 describe("users directory API", () => {
   useTestDB();
 
-  it("gives every member the id and display name of everyone, nothing else", async () => {
+  it("gives every member the id, display name and ownership share of everyone, nothing else", async () => {
     const anna = await createTestUser({
       username: "anna",
       displayName: "Anna Muster",
@@ -21,14 +23,29 @@ describe("users directory API", () => {
       displayName: "Ben",
     });
     const cleo = await createTestUser({ username: "cleo" });
+    getDB()
+      .update(users)
+      .set({ ownershipBps: 7000 })
+      .where(eq(users.id, anna.id))
+      .run();
+    getDB()
+      .update(users)
+      .set({ ownershipBps: 3000 })
+      .where(eq(users.id, ben.id))
+      .run();
+    getDB()
+      .update(users)
+      .set({ ownershipBps: 0 })
+      .where(eq(users.id, cleo.id))
+      .run();
     const call = createCaller({ session: loginTestUser(anna).token });
     const r = await call("GET", "/api/v1/users/directory");
     expect(r.res.status).toBe(200);
     expect(r.body).toEqual({
       items: [
-        { id: anna.id, displayName: "Anna Muster" },
-        { id: ben.id, displayName: "Ben" },
-        { id: cleo.id, displayName: "cleo" },
+        { id: anna.id, displayName: "Anna Muster", ownershipBps: 7000 },
+        { id: ben.id, displayName: "Ben", ownershipBps: 3000 },
+        { id: cleo.id, displayName: "cleo", ownershipBps: 0 },
       ],
       nextCursor: null,
     });

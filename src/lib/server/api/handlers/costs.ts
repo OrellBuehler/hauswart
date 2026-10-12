@@ -9,6 +9,7 @@ import {
   deleteCost,
   getCost,
   listCosts,
+  reviewCost,
   updateCost,
   type CostRecord,
 } from "$lib/server/costs/costs";
@@ -55,6 +56,9 @@ export function wireCost(
     // The address of the item in the person's own finance app is theirs alone.
     providerUrl: c.createdBy === viewerId ? c.providerUrl : null,
     fuelLogId: c.fuelLogId,
+    reviewNeeded: c.reviewNeeded,
+    reviewedAt: c.reviewedAt ? toIso(c.reviewedAt) : null,
+    reviewedByUserId: c.reviewedByUserId,
     commentCount: c.commentCount,
     createdBy: c.createdBy,
     createdAt: toIso(c.createdAt),
@@ -90,6 +94,11 @@ export const remove: Handler<typeof endpoints.costsDelete> = ({
   deleteCost(ctx, params.id);
   return null;
 };
+
+export const review: Handler<typeof endpoints.costsReview> = ({
+  ctx,
+  params,
+}) => wireCost(reviewCost(ctx, params.id, ctx.user.id), ctx.user.id);
 
 export const moveToBook: Handler<typeof endpoints.costsMoveToBook> = ({
   ctx,

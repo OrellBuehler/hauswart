@@ -102,6 +102,14 @@ export const costEntrySchema = z
      * `details.fuelLogId`. Everything else stays editable here.
      */
     fuelLogId: z.string().nullable(),
+    /**
+     * True while a person still has to look at the entry: the receipt queue sets it on what an assistant booked from a
+     * receipt, `POST /costs/{id}/review` clears it. Nothing else depends on it (the entry counts in every total).
+     */
+    reviewNeeded: z.boolean(),
+    /** When and by whom the entry was last reviewed; null if it never was (or was flagged again since). */
+    reviewedAt: isoTimestampSchema.nullable(),
+    reviewedByUserId: z.string().nullable(),
     commentCount: z.number().int(),
     createdBy: z.string().nullable(),
     createdAt: isoTimestampSchema,
@@ -124,6 +132,8 @@ export const listCostsQuerySchema = paginationQuerySchema.extend({
   defectId: idSchema.optional(),
   /** A user id, or `me`. */
   paidBy: idSchema.optional(),
+  /** `true`: only the entries a person still has to review; `false`: only the others. */
+  reviewNeeded: queryBooleanSchema.optional(),
   q: z.string().trim().min(1).max(100).optional(),
 });
 export type ListCostsQuery = z.output<typeof listCostsQuerySchema>;
@@ -329,6 +339,11 @@ export const costsSummarySchema = z
     ),
     /** Split entries without a payer: they cannot be settled until someone is named. */
     unassignedPayerCount: z.number().int(),
+    /**
+     * Entries of the summary's scope (the year, and the asset or book if one was asked for) a person still has to review,
+     * in any currency and whether or not they count as an expense.
+     */
+    reviewNeededCount: z.number().int(),
   })
   .meta({ id: "CostsSummary" });
 export type CostsSummary = z.infer<typeof costsSummarySchema>;

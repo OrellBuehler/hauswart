@@ -281,6 +281,15 @@ import {
 } from "./schemas/share";
 
 import {
+  AI_TASK_PREVIEW_CONTENT_TYPES,
+  aiTaskSchema,
+  completeAiTaskRequestSchema,
+  createAiTaskRequestSchema,
+  dismissAiTaskRequestSchema,
+  listAiTasksQuerySchema,
+  listAiTasksResponseSchema,
+} from "./schemas/ai-tasks";
+import {
   costBalancesQuerySchema,
   costBalancesSchema,
   costEntrySchema,
@@ -1289,7 +1298,7 @@ export const endpoints = {
     path: "/api/v1/users/directory",
     summary: "Names of everyone in the household",
     description:
-      "Id and display name only, for assignee pickers and activity lines. Open to every authenticated caller.",
+      "Id, display name and ownership share (`ownershipBps`, basis points of the shared costs the person bears; every member can read it from the frozen shares of the cost entries anyway), for assignee pickers, activity lines and split previews. Nothing else about a user. Open to every authenticated caller.",
     tags: ["users"],
     auth: "both",
     scopes: [],
@@ -2030,7 +2039,7 @@ export const endpoints = {
     path: "/api/v1/costs",
     summary: "List cost entries",
     description:
-      "Newest first by date. Filter by book (`bookId`; an unknown book is a 404, not an empty list), year or a date range (`from`/`to`), category, asset, room, defect, who paid (`paidBy`, a user id or `me`) and a search text over title, payee and notes. Amounts are minor units of the entry's currency: positive = expense, negative = refund. Every entry carries its book and whether that book is tax relevant (`bookTaxRelevant`).",
+      "Newest first by date. Filter by book (`bookId`; an unknown book is a 404, not an empty list), year or a date range (`from`/`to`), category, asset, room, defect, who paid (`paidBy`, a user id or `me`), whether a person still has to review the entry (`reviewNeeded=true|false`) and a search text over title, payee and notes. Amounts are minor units of the entry's currency: positive = expense, negative = refund. Every entry carries its book and whether that book is tax relevant (`bookTaxRelevant`).",
     tags: ["costs"],
     auth: "both",
     scopes: ["read"],
@@ -2143,6 +2152,21 @@ export const endpoints = {
     response: emptySchema,
     status: 204,
     errors: ["not_found", "conflict"],
+  }),
+
+  costsReview: defineEndpoint({
+    id: "costsReview",
+    method: "POST",
+    path: "/api/v1/costs/{id}/review",
+    summary: "Mark a cost entry as reviewed",
+    description:
+      "Clears `reviewNeeded` and records who looked at the entry and when (`reviewedByUserId`, `reviewedAt`). Entries booked from a receipt in the receipt queue (`/ai-tasks`) are flagged until somebody does this. Reviewing an entry nobody has to review changes nothing and answers 200 with the entry as it is (the first reviewer stays), so a retry is harmless. No request body.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    response: costEntrySchema,
+    errors: ["not_found"],
   }),
 
   costsBalances: defineEndpoint({
@@ -3086,7 +3110,7 @@ export const endpoints = {
     path: "/api/v1/attachments",
     summary: "Upload a file to an owner",
     description:
-      "multipart/form-data with `file`, `ownerType`, `ownerId`, optional `caption` and `guestVisible`. JPEG, PNG and WebP images are re-encoded (metadata removed, orientation applied, longest side capped) and get a thumbnail; PDFs are stored as uploaded. At most 25 MiB. Errors are 400/413/415 `invalid_request` with `details.code`: `empty`, `too_large` (413), `unsupported_type` (415), `unsupported_heic` (415), `corrupt_image`, `image_too_large` (413); an unknown or unsupported owner is a field error on `ownerId` or `ownerType`. Attaching to a page needs the `docs:write` scope.",
+      "multipart/form-data with `file`, `ownerType`, `ownerId`, optional `caption` and `guestVisible`. JPEG, PNG and WebP images are re-encoded (metadata removed, orientation applied, longest side capped) and get a thumbnail; PDFs are stored as uploaded. At most 25 MiB. Errors are 400/413/415 `invalid_request` with `details.code`: `empty`, `too_large` (413), `unsupported_type` (415), `unsupported_heic` (415), `corrupt_image`, `image_too_large` (413); an unknown or unsupported owner is a field error on `ownerId` or `ownerType`. Attaching to a page needs the `docs:write` scope, to a cost entry `costs:write`. The owner type `ai_task` is refused (400 on `ownerType`): a task of the receipt queue gets its file from `POST /ai-tasks`.",
     tags: ["attachments"],
     auth: "both",
     scopes: ["write"],
@@ -3145,14 +3169,14 @@ export const endpoints = {
     path: "/api/v1/attachments/{id}",
     summary: "Delete an attachment",
     description:
-      "Removes the row and, when nothing else uses the stored file, the file (a file stored less than a minute ago is kept until the next cleanup). An asset photo pointing at it is cleared. Pages that embed it are rendered again. Needs `docs:write` when the owner is a page.",
+      "Removes the row and, when nothing else uses the stored file, the file (a file stored less than a minute ago is kept until the next cleanup). An asset photo pointing at it is cleared. Pages that embed it are rendered again. Needs `docs:write` when the owner is a page. The file of an open task of the receipt queue (owner type `ai_task`) is a 409 `conflict`: delete the task instead.",
     tags: ["attachments"],
     auth: "both",
     scopes: ["write"],
     params: idParamsSchema,
     response: emptySchema,
     status: 204,
-    errors: ["not_found"],
+    errors: ["not_found", "conflict"],
   }),
 
   attachmentsContent: defineEndpoint({
@@ -3893,6 +3917,117 @@ export const endpoints = {
     params: idParamsSchema,
     response: createdGuestLinkSchema,
     errors: ["not_found", "conflict"],
+  }),
+
+  aiTasksCreate: defineEndpoint({
+    id: "aiTasksCreate",
+    method: "POST",
+    path: "/api/v1/ai-tasks",
+    summary: "Put a receipt in the queue for an assistant to book",
+    description:
+      "multipart/form-data with `file` (an image or a PDF, like an attachment: JPEG, PNG and WebP images are re-encoded and lose their metadata, PDFs are stored as uploaded, at most 25 MiB; the same `invalid_request` errors with `details.code` as `POST /attachments`), optional `kind` (only `receipt` today, the default), `note` (the uploader's own words, at most 1000 characters) and the hints `bookId` (an open cost book, else a 400 on `bookId`) and `assetId`. The task starts `pending` and is shared by the whole household; the caller is its uploader, who is the default payer of what is booked from it. An assistant (the MCP tools `list_ai_tasks`, `get_ai_task`, `complete_ai_task`, `dismiss_ai_task`) reads the receipt, books the entries and completes the task. Needs `costs:write` because the outcome is cost entries.",
+    tags: ["ai-tasks"],
+    auth: "both",
+    scopes: ["costs:write"],
+    body: createAiTaskRequestSchema,
+    bodyType: "multipart",
+    maxBodyBytes: MAX_UPLOAD_REQUEST_BYTES,
+    response: aiTaskSchema,
+    status: 201,
+  }),
+
+  aiTasksList: defineEndpoint({
+    id: "aiTasksList",
+    method: "GET",
+    path: "/api/v1/ai-tasks",
+    summary: "List the tasks of the receipt queue",
+    description:
+      "Every member sees every task (the queue is household data, like cost entries). Newest first; filter by `status` (`pending|done|dismissed`) and `kind`. Without a filter all statuses are listed.",
+    tags: ["ai-tasks"],
+    auth: "both",
+    scopes: ["read"],
+    query: listAiTasksQuerySchema,
+    response: listAiTasksResponseSchema,
+  }),
+
+  aiTasksGet: defineEndpoint({
+    id: "aiTasksGet",
+    method: "GET",
+    path: "/api/v1/ai-tasks/{id}",
+    summary: "Get a task of the receipt queue",
+    description:
+      "With the file (`attachment`, whose `url` and `thumbUrl` serve it), the uploader's note and hints and, once processed, the result: the ids the processor reported and the cost entries that still exist (`result.costs`).",
+    tags: ["ai-tasks"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: aiTaskSchema,
+    errors: ["not_found"],
+  }),
+
+  aiTasksPreview: defineEndpoint({
+    id: "aiTasksPreview",
+    method: "GET",
+    path: "/api/v1/ai-tasks/{id}/preview",
+    summary: "The task's file sized for an assistant to read",
+    description:
+      "The receipt as an image of at most 1600 px on the longest side and about 1.5 MB: an image that is smaller is sent as stored, a larger one is scaled down and sent as JPEG (a very long, narrow receipt may keep up to 3200 px on its long side so that its text stays legible). A PDF is sent as stored. 404 when the task has no file any more. Sent with `nosniff` and `Cache-Control: private`; use `GET /attachments/{id}/content` (the task's `attachment.url`) for the original.",
+    tags: ["ai-tasks"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: binaryResponseSchema,
+    responseType: "binary",
+    contentTypes: AI_TASK_PREVIEW_CONTENT_TYPES,
+    errors: ["not_found"],
+  }),
+
+  aiTasksComplete: defineEndpoint({
+    id: "aiTasksComplete",
+    method: "POST",
+    path: "/api/v1/ai-tasks/{id}/complete",
+    summary: "Close a task as done with the entries it produced",
+    description:
+      "`createdCostIds` and `createdFuelLogIds` name entries that must exist (400 on the field otherwise); at least one is needed (a receipt that produced nothing is dismissed instead). In one transaction every cost entry named, and the cost entry each named fuel log entry booked, is flagged `reviewNeeded` (it was booked from a receipt somebody else read), the file moves to the first of those cost entries as its receipt (the others get a copy; a free fuel fill has no cost entry) and the task becomes `done` with the result, `completedAt` and `completedVia` (`session` or the token kind). `note` is for the people reading the entries (what was unsure). Idempotent: completing a done task with the same entries (in any order) answers 200 with the task as it is; with other entries it is a 409 `conflict`, and so is completing a dismissed task. Send a JSON body.",
+    tags: ["ai-tasks"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    body: completeAiTaskRequestSchema,
+    response: aiTaskSchema,
+    errors: ["not_found", "conflict"],
+  }),
+
+  aiTasksDismiss: defineEndpoint({
+    id: "aiTasksDismiss",
+    method: "POST",
+    path: "/api/v1/ai-tasks/{id}/dismiss",
+    summary: "Close a task without booking anything",
+    description:
+      "For a file that is no receipt, unreadable or already booked; `reason` (at most 500 characters) tells the uploader why. The file stays with the task until the task is deleted. Idempotent: dismissing a dismissed task answers 200 with the task as it is (the first reason stays); a done task is a 409 `conflict`. Send a JSON body (`{}` is enough).",
+    tags: ["ai-tasks"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    body: dismissAiTaskRequestSchema,
+    response: aiTaskSchema,
+    errors: ["not_found", "conflict"],
+  }),
+
+  aiTasksDelete: defineEndpoint({
+    id: "aiTasksDelete",
+    method: "DELETE",
+    path: "/api/v1/ai-tasks/{id}",
+    summary: "Delete a task",
+    description:
+      "Only the uploader or an administrator (403 `forbidden` otherwise). Removes the task and the file while it still belongs to the task (pending or dismissed); a file that moved to a cost entry stays there as that entry's receipt. The cost entries are not touched.",
+    tags: ["ai-tasks"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found", "forbidden"],
   }),
 };
 

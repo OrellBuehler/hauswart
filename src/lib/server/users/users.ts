@@ -260,12 +260,15 @@ export function findUserById(id: string) {
   return getDB().select().from(users).where(eq(users.id, id)).get();
 }
 
-/** Everyone's id and display name (username when they have none): for assignee pickers and activity lines. */
-export function listDirectory(db: DB): { id: string; displayName: string }[] {
+/** Everyone's id, display name (username when they have none) and ownership share: for assignee pickers and activity lines. */
+export function listDirectory(
+  db: DB,
+): { id: string; displayName: string; ownershipBps: number }[] {
   return db
     .select({
       id: users.id,
       displayName: sql<string>`coalesce(${users.displayName}, ${users.username})`,
+      ownershipBps: users.ownershipBps,
     })
     .from(users)
     .orderBy(asc(sql`lower(coalesce(${users.displayName}, ${users.username}))`))

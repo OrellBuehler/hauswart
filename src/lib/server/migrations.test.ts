@@ -155,11 +155,25 @@ describe("migrations", () => {
         "appointments",
         "calendar_targets",
         "calendar_links",
+        "ai_tasks",
       ]),
     );
     expect(
       rows(db, "select count(*) as n from __drizzle_migrations")[0].n,
     ).toBe(journal().entries.length);
+    expect(
+      rows(
+        db,
+        "select title, review_needed, reviewed_at, reviewed_by_user_id from cost_entries",
+      ),
+    ).toEqual([
+      {
+        title: "Dachrinne",
+        review_needed: 0,
+        reviewed_at: null,
+        reviewed_by_user_id: null,
+      },
+    ]);
     expect(rows(db, "select title, odometer from service_log")).toEqual([
       { title: "Entkalkt", odometer: null },
     ]);
@@ -368,7 +382,25 @@ describe("migrations", () => {
     )[0].id;
     const after = rows(db, "select * from cost_entries order by id");
     expect(after.map((r) => r.book_id)).toEqual([wohnung, wohnung, wohnung]);
-    expect(after.map(({ book_id: _book, ...rest }) => rest)).toEqual(before);
+    // Columns later migrations added start unset (0028: the review flag).
+    expect(
+      after.map(
+        ({
+          book_id: _book,
+          review_needed: unflagged,
+          reviewed_at: reviewedAt,
+          reviewed_by_user_id: reviewedBy,
+          ...rest
+        }) => ({ unflagged, reviewedAt, reviewedBy, rest }),
+      ),
+    ).toEqual(
+      before.map((rest) => ({
+        unflagged: 0,
+        reviewedAt: null,
+        reviewedBy: null,
+        rest,
+      })),
+    );
 
     // The frozen shares, the fuel log links, the comments and the document links are all still there.
     expect(
@@ -415,6 +447,7 @@ describe("migrations", () => {
       "cost_entries_defect_id_idx",
       "cost_entries_paid_by_idx",
       "cost_entries_provider_idx",
+      "cost_entries_review_idx",
       "cost_entries_room_id_idx",
       "cost_entries_service_log_id_idx",
     ]);
@@ -453,6 +486,90 @@ describe("migrations", () => {
     expect(() =>
       db.$client.exec("delete from cost_books where slug = 'auto'"),
     ).not.toThrow();
+  });
+
+  it("add the receipt queue and the review flag: entries start unflagged, tasks keep their hints when book, asset or file go, and an open task needs a kind", () => {
+    const db = databaseAt("0027_cost_book_default_and_settlement_keys");
+    db.$client.exec(`
+      insert into users (id, username, password_hash) values ('u1', 'anna', 'x'), ('u2', 'ben', 'x');
+      insert into cost_entries (id, book_id, date, title, amount_minor, currency, category, created_by)
+        values ('k1', (select id from cost_books where slug = 'wohnung'), '2026-01-05', 'Dachrinne', 10001, 'CHF', 'maintenance', 'u1');
+    `);
+    migrateDatabase(db);
+
+    expect(
+      rows(
+        db,
+        "select review_needed, reviewed_at, reviewed_by_user_id from cost_entries where id = 'k1'",
+      ),
+    ).toEqual([
+      { review_needed: 0, reviewed_at: null, reviewed_by_user_id: null },
+    ]);
+    db.$client.exec(
+      "update cost_entries set review_needed = 1 where id = 'k1'",
+    );
+    expect(
+      rows(db, "select id from cost_entries where review_needed = 1"),
+    ).toEqual([{ id: "k1" }]);
+    // The partial index serves exactly that question.
+    expect(
+      JSON.stringify(
+        rows(
+          db,
+          "explain query plan select id from cost_entries where review_needed = 1",
+        ),
+      ),
+    ).toContain("cost_entries_review_idx");
+    db.$client.exec(
+      "update cost_entries set reviewed_by_user_id = 'u2', reviewed_at = 1700000000000, review_needed = 0 where id = 'k1'",
+    );
+    expect(() =>
+      db.$client.exec(
+        "update cost_entries set reviewed_by_user_id = 'nobody' where id = 'k1'",
+      ),
+    ).toThrow(/FOREIGN KEY/);
+
+    db.$client.exec(`
+      insert into assets (id, kind, name, slug, qr_slug) values ('a1', 'device', 'Backofen', 'backofen', 'aaaaaaaaaa');
+      insert into attachments (id, sha256, path, mime, size, filename, owner_type, owner_id)
+        values ('f1', 'aa', 'aa/aa', 'image/png', 10, 'beleg.png', 'ai_task', 't1');
+      insert into ai_tasks (id, kind, created_by_user_id, attachment_id, book_id, asset_id, note)
+        values ('t1', 'receipt', 'u1', 'f1', (select id from cost_books where slug = 'haushalt'), 'a1', 'Einkauf');
+    `);
+    expect(
+      rows(
+        db,
+        "select status, result_json, completed_at, dismiss_reason from ai_tasks",
+      ),
+    ).toEqual([
+      {
+        status: "pending",
+        result_json: null,
+        completed_at: null,
+        dismiss_reason: null,
+      },
+    ]);
+    expect(() =>
+      db.$client.exec(
+        "insert into ai_tasks (id, created_by_user_id) values ('t2', 'u1')",
+      ),
+    ).toThrow(/NOT NULL/);
+    expect(() =>
+      db.$client.exec(
+        "insert into ai_tasks (id, kind, attachment_id) values ('t2', 'receipt', 'nobody')",
+      ),
+    ).toThrow(/FOREIGN KEY/);
+
+    // Hints and the file go quietly: the task stays, without them.
+    db.$client.exec("delete from assets where id = 'a1'");
+    db.$client.exec("delete from attachments where id = 'f1'");
+    db.$client.exec("delete from cost_books where slug = 'haushalt'");
+    expect(
+      rows(db, "select id, attachment_id, book_id, asset_id from ai_tasks"),
+    ).toEqual([
+      { id: "t1", attachment_id: null, book_id: null, asset_id: null },
+    ]);
+    expect(rows(db, "pragma foreign_key_check")).toEqual([]);
   });
 
   it("add the settlements: positive amounts between two people, a book or none, tied to the people and books", () => {

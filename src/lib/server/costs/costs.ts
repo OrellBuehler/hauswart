@@ -1,4 +1,14 @@
-import { and, desc, eq, inArray, lt, or, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  inArray,
+  lt,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 import {
@@ -222,6 +232,9 @@ function whereOf(filter: ListCostsQuery, viewerId: string): SQL[] {
         filter.paidBy === "me" ? viewerId : filter.paidBy,
       ),
     );
+  }
+  if (filter.reviewNeeded !== undefined) {
+    where.push(eq(costEntries.reviewNeeded, filter.reviewNeeded));
   }
   if (filter.q) {
     const pattern = `%${escapeLike(filter.q.toLowerCase())}%`;
@@ -669,4 +682,51 @@ export function deleteCost(ctx: ServiceContext, id: string): void {
       connectionId: current.providerConnectionId,
     });
   }
+}
+
+/** How many entries, in any book and year, a person still has to review. */
+export function countReviewNeeded(ctx: Db): number {
+  return (
+    ctx.db
+      .select({ n: count() })
+      .from(costEntries)
+      .where(eq(costEntries.reviewNeeded, true))
+      .get()?.n ?? 0
+  );
+}
+
+/**
+ * Asks for a look at these entries (those that exist): the flag is set, and who reviewed them before and when is
+ * forgotten. Entries are booked from a receipt somebody else read, so a person confirms them once.
+ */
+export function flagForReview(ctx: Db, ids: readonly string[]): void {
+  if (ids.length === 0) return;
+  ctx.db
+    .update(costEntries)
+    .set({ reviewNeeded: true, reviewedAt: null, reviewedByUserId: null })
+    .where(inArray(costEntries.id, [...ids]))
+    .run();
+}
+
+/**
+ * Marks an entry as reviewed by `userId` now. Reviewing an entry nobody has to review changes nothing (and keeps who
+ * reviewed it first), so a double click or a retry is harmless.
+ */
+export function reviewCost(
+  ctx: ServiceContext,
+  id: string,
+  userId: string,
+): CostRecord {
+  const current = getCost(ctx, id);
+  if (!current.reviewNeeded) return current;
+  ctx.db
+    .update(costEntries)
+    .set({
+      reviewNeeded: false,
+      reviewedAt: new Date(ctx.now),
+      reviewedByUserId: userId,
+    })
+    .where(and(eq(costEntries.id, id), eq(costEntries.reviewNeeded, true)))
+    .run();
+  return getCost(ctx, id);
 }

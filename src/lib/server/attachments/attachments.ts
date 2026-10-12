@@ -9,6 +9,7 @@ import {
   deleteIfUnreferenced,
   openFile,
   putFile,
+  type StoredFile,
 } from "$lib/server/files/store";
 import { paginateArray } from "$lib/server/pagination";
 import {
@@ -99,20 +100,25 @@ export async function sweepStoredFile(
   );
 }
 
-export async function createAttachment(
-  ctx: Now,
-  input: NewAttachment,
-): Promise<AttachmentRecord> {
-  if (!isOwnerTypeSupported(input.ownerType)) {
-    throw invalidField("ownerType", "Attachments are not available for this");
-  }
-  if (!ownerExists(ctx, input.ownerType, input.ownerId)) {
-    throw invalidField("ownerId", "Owner does not exist");
-  }
-  const stored = await putFile(input.root ?? defaultFilesRoot(), input.bytes, {
+/** Validates, sanitizes and stores an upload's bytes (see `putFile`); no row is written. */
+export function storeAttachmentFile(
+  input: Pick<NewAttachment, "bytes" | "filename" | "declaredMime" | "root">,
+): Promise<StoredFile> {
+  return putFile(input.root ?? defaultFilesRoot(), input.bytes, {
     filename: input.filename,
     declaredMime: input.declaredMime,
   });
+}
+
+/** The row for a file `storeAttachmentFile` stored; the owner is not checked here (the caller creates it in the same transaction). */
+export function insertAttachment(
+  ctx: Db,
+  stored: StoredFile,
+  input: Pick<
+    NewAttachment,
+    "ownerType" | "ownerId" | "caption" | "guestVisible" | "uploadedBy"
+  >,
+): AttachmentRecord {
   return ctx.db
     .insert(attachments)
     .values({
@@ -132,6 +138,59 @@ export async function createAttachment(
     })
     .returning()
     .get();
+}
+
+export async function createAttachment(
+  ctx: Now,
+  input: NewAttachment,
+): Promise<AttachmentRecord> {
+  if (!isOwnerTypeSupported(input.ownerType)) {
+    throw invalidField("ownerType", "Attachments are not available for this");
+  }
+  if (!ownerExists(ctx, input.ownerType, input.ownerId)) {
+    throw invalidField("ownerId", "Owner does not exist");
+  }
+  return insertAttachment(ctx, await storeAttachmentFile(input), input);
+}
+
+/** Another row for the same stored file, on another owner (the file is kept as long as one row uses it). */
+export function copyAttachment(
+  ctx: Db,
+  source: AttachmentRecord,
+  owner: { ownerType: AttachmentOwnerType; ownerId: string },
+): AttachmentRecord {
+  return ctx.db
+    .insert(attachments)
+    .values({
+      sha256: source.sha256,
+      path: source.path,
+      thumbPath: source.thumbPath,
+      mime: source.mime,
+      size: source.size,
+      width: source.width,
+      height: source.height,
+      filename: source.filename,
+      caption: source.caption,
+      guestVisible: false,
+      ownerType: owner.ownerType,
+      ownerId: owner.ownerId,
+      uploadedBy: source.uploadedBy,
+    })
+    .returning()
+    .get();
+}
+
+/** Hands an attachment to another owner (the file and the row stay). */
+export function moveAttachment(
+  ctx: Db,
+  id: string,
+  owner: { ownerType: AttachmentOwnerType; ownerId: string },
+): void {
+  ctx.db
+    .update(attachments)
+    .set({ ownerType: owner.ownerType, ownerId: owner.ownerId })
+    .where(eq(attachments.id, id))
+    .run();
 }
 
 export function findAttachment(
