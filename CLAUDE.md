@@ -171,6 +171,8 @@ src/lib/server/db.ts             SQLite connection (WAL, foreign keys); migratio
 src/lib/server/schema.ts         Drizzle schema — one file, every table has created_at/updated_at
 src/lib/server/crypto.ts         AES-256-GCM for stored secrets (HAUSWART_SECRET_KEY)
 src/lib/money.ts                 minor-unit money type, parsing/formatting, ownership shares
+src/lib/costs/                   client-safe UI logic of the costs pages: books.ts (book choice, icons), book-memory.ts, filters.ts, form.ts (draft ->
+                                 request bodies), balances.ts (wording), settlements.ts (drafts, bodies, filters), load.ts; see "Costs in the web app"
 src/lib/testing/                 useTestDB, createTestUser/Token, createTestEvent, callRoute, fixtures/
 src/hooks.server.ts              init (secret key, time zone, migrations) + auth gate + Paraglide locale
 src/routes/api/v1/**             one-liner route files: export const GET = bind(endpoints.x, handler)
@@ -1412,6 +1414,29 @@ in dark mode. Every list has an empty state, every async action a pending and an
   totals) and says so above it. A cost entry with `fuelLogId` has its amount, currency, date and device locked in the form (never sent by
   `buildUpdateBody`) with a link to `#fuel-log`, and the detail page offers that link instead of delete; a 409 with
   `details.fuelLogId` that still arrives is worded (`fuelLogOfConflict`).
+- **Costs in the web app** (books, balances, settlements): the address carries the book, `/costs?book=<id>|all`. The address wins; without
+  one the book the person looked at last applies (localStorage `hauswart:cost-book:<user id>`, `book-memory.ts`, written by an effect once the
+  address names a book). `chooseBook` (`lib/costs/books.ts`) decides in the load, which `redirect(307)`s to the explicit address (on a hard
+  reload that is a native navigation, SvelteKit's own rule for a redirect that only the browser can make); an address that narrows by device,
+  room, search ... (`narrowsBeyondBook`) ignores the memory, so `/costs?asset=` still shows that device's costs. `book` goes to the list,
+  summary, CSV and balances (`costsQuery`, `costsSummaryQuery`, `costsExportQuery`, `balancesQuery`). `BookSwitcher` is a row of links (a
+  scrolling row on phones that keeps the book on screen in view), the second summary card is the running balance (`BalanceOverview`, from
+  `GET /costs/balances`; the year's settlement of the summary is no longer shown, it ignores recorded payments). `/costs/balances` is the Saldo
+  page: balance per person with paid / share / payments sent / received, suggested payments with "Als bezahlt erfassen" (opens
+  `SettlementDialog` prefilled by `draftFromSuggestion`: book = the one on screen or all books, so the person only confirms or edits), a
+  dismissible note "settled before?" while no payment was ever recorded, and the recorded payments (year and person filters, edit, delete).
+  Balances are worded, never signed (`balanceWording`, `youWording`, `viewerLine`: "bekommt" / "schuldet"). Books are managed under
+  `/settings/cost-books` (create, edit, icon, default split, tax relevant, move, archive, restore, delete; a 409 is worded from `details`
+  by `bookConflictMessage`), "new book" is also a chip on the costs page. The cost form picks the book first (`BookPicker`: buttons up to
+  four books, else a select); a new entry takes the book's default split until the person chose a split (`withBook`, `splitAfterBook`); "Für wen"
+  are member checkboxes of an equal split (`participants`, sent as `participantIds` only when narrowed, and a PATCH sends `splitMode: "equal"`
+  again when the set changed); the tax class is only offered, and sent, for a tax relevant book (`taxClassApplies`). The inbox's accept dialog
+  has the same picker and checkboxes. The dashboard's `CostsCard` shows "Du bekommst / Du schuldest" across all books plus the year total;
+  `tryLoadBalances` lets a page open when only the balances fail (the card says so).
+- **After a dialog, refresh with `invalidateAfterOverlay`** (`lib/overlays/use-overlay-history.svelte.ts`): closing a dialog pops its history
+  entry, and the router drops an `invalidateAll()` that is still loading when that popstate arrives, so the page kept the old data. It waits
+  for the entry to be gone first (`OverlayHistory.settled`); a dialog that navigates uses `gotoFromOverlay`. Menu items that start an action do
+  not disable themselves while it runs: bits-ui then does not close the menu and the page stays locked.
 
 ## Testing
 
