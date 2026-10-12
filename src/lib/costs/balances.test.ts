@@ -4,6 +4,7 @@ import {
   balanceState,
   balanceTone,
   balanceWording,
+  crossBookNote,
   hasBalanceData,
   paymentSentence,
   personName,
@@ -186,5 +187,32 @@ describe("viewerLine", () => {
       tone: "even",
       text: "Du bist ausgeglichen",
     });
+  });
+});
+
+describe("crossBookNote", () => {
+  const view = (
+    crossBookSettlements: CostBalances["crossBookSettlements"],
+  ): Pick<CostBalances, "crossBookSettlements" | "currency"> => ({
+    crossBookSettlements,
+    currency: "CHF",
+  });
+
+  it("says how many payments across all books a single book's balances leave out, and what they add up to", () => {
+    expect(
+      plain(crossBookNote(view({ count: 1, totalMinor: 5000 })) ?? ""),
+    ).toBe(
+      "1 Zahlung über alle Bücher (CHF 50.00) ist hier nicht eingerechnet.",
+    );
+    expect(
+      plain(crossBookNote(view({ count: 3, totalMinor: 12550 })) ?? ""),
+    ).toBe(
+      "3 Zahlungen über alle Bücher (zusammen CHF 125.50) sind hier nicht eingerechnet.",
+    );
+  });
+
+  it("has nothing to say in the view of all books, or when there are no such payments", () => {
+    expect(crossBookNote(view(null))).toBeNull();
+    expect(crossBookNote(view({ count: 0, totalMinor: 0 }))).toBeNull();
   });
 });

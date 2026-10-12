@@ -3565,6 +3565,8 @@
   "balances_record_for": "Mark as paid: {from} to {to}",
   "balances_record_new": "Record a payment",
   "balances_scope_book": "Only entries and payments of the book “{name}”. Payments for all books do not count here.",
+  "balances_scope_book_only": "Only entries and payments of the book “{name}”.",
+  "balances_cross_book": "{count, plural, one {1 payment across all books ({amount}) is not included here.} other {{count} payments across all books ({amount} in total) are not included here.}}",
   "balances_sent": "Payments sent",
   "balances_share": "Share",
   "balances_square": "All square. Nobody owes anybody anything.",

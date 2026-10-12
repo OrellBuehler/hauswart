@@ -106,3 +106,19 @@ export function viewerLine(
   if (!person || balanceState(balances) === "empty") return null;
   return youWording(person.balanceMinor, balances.currency);
 }
+
+/**
+ * The note of a single book's balances about the recorded payments across all books, which they cannot attribute and so
+ * leave out: how many there are and what they add up to. `null` for the view of all books, which includes them, and
+ * when there are none.
+ */
+export function crossBookNote(
+  balances: Pick<CostBalances, "crossBookSettlements" | "currency">,
+): string | null {
+  const cross = balances.crossBookSettlements;
+  if (!cross || cross.count <= 0) return null;
+  return m.balances_cross_book({
+    count: cross.count,
+    amount: formatMoney(cross.totalMinor, balances.currency),
+  });
+}

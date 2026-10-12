@@ -6,6 +6,7 @@
   import type { CostBalances } from "$lib/api/schemas/costs";
   import {
     balanceState,
+    crossBookNote,
     viewerLine,
     type BalanceTone,
   } from "$lib/costs/balances";
@@ -33,6 +34,7 @@
 
   const status = $derived(balances ? balanceState(balances) : "empty");
   const you = $derived(balances ? viewerLine(balances, userId) : null);
+  const crossBook = $derived(balances ? crossBookNote(balances) : null);
   const tones: Record<BalanceTone, string> = {
     credit: "text-success",
     debit: "text-destructive",
@@ -81,6 +83,14 @@
             count: balances.unassignedPayerCount,
           })}</span
         >
+      </p>
+    {/if}
+    {#if crossBook}
+      <p
+        class="text-muted-foreground flex items-start gap-2 border-t pt-3 text-xs text-pretty"
+      >
+        <InfoIcon class="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+        <span>{crossBook}</span>
       </p>
     {/if}
   {/if}

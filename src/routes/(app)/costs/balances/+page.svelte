@@ -33,6 +33,7 @@
   import {
     balanceState,
     balanceWording,
+    crossBookNote,
     personName,
     viewerLine,
     type BalanceTone,
@@ -60,6 +61,7 @@
   const balances = $derived(data.balances);
   const canWrite = $derived(data.scopes.includes("costs:write"));
   const book = $derived(data.books.find((b) => b.id === filters.bookId));
+  const crossBook = $derived(crossBookNote(balances));
   const status = $derived(balanceState(balances));
   const you = $derived(viewerLine(balances, data.user.id));
   const money = (value: number) => formatMoney(value, balances.currency);
@@ -204,7 +206,9 @@
     >
       <InfoIcon class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
       <span class="min-w-0 wrap-anywhere"
-        >{m.balances_scope_book({ name: book.name })}</span
+        >{crossBook
+          ? `${m.balances_scope_book_only({ name: book.name })} ${crossBook}`
+          : m.balances_scope_book({ name: book.name })}</span
       >
     </p>
   {/if}

@@ -3565,6 +3565,8 @@
   "balances_record_for": "Als bezahlt erfassen: {from} an {to}",
   "balances_record_new": "Ausgleich erfassen",
   "balances_scope_book": "Nur Einträge und Zahlungen des Buchs «{name}». Zahlungen für alle Bücher zählen hier nicht.",
+  "balances_scope_book_only": "Nur Einträge und Zahlungen des Buchs «{name}».",
+  "balances_cross_book": "{count, plural, one {1 Zahlung über alle Bücher ({amount}) ist hier nicht eingerechnet.} other {{count} Zahlungen über alle Bücher (zusammen {amount}) sind hier nicht eingerechnet.}}",
   "balances_sent": "Ausgleich gezahlt",
   "balances_share": "Anteil",
   "balances_square": "Alles ausgeglichen. Niemand schuldet jemandem etwas.",
