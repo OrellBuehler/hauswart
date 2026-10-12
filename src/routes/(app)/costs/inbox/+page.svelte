@@ -264,6 +264,7 @@
       rooms={data.rooms}
       assets={data.assets}
       people={data.people}
+      books={data.books}
       currentUserId={data.user.id}
       onaccept={(body) => accept(adjustTarget as FinanceSuggestion, body)}
     />

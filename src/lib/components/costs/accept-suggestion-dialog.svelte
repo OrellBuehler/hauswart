@@ -11,6 +11,7 @@
     type CostSplitMode,
   } from "$lib/api/enums";
   import type { Asset } from "$lib/api/schemas/assets";
+  import type { CostBook } from "$lib/api/schemas/cost-books";
   import { COST_NOTES_MAX, COST_TITLE_MAX } from "$lib/api/schemas/costs";
   import type {
     AcceptFinanceSuggestionRequest,
@@ -24,12 +25,20 @@
   import OptionSelect from "$lib/components/tasks/option-select.svelte";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { equalShares, validateShares } from "$lib/costs/form";
+  import { defaultBook, openBooks } from "$lib/costs/books";
+  import {
+    chosenParticipants,
+    equalShares,
+    narrowedParticipants,
+    splitAfterBook,
+    validateShares,
+  } from "$lib/costs/form";
   import { kindLabels } from "$lib/assets/kinds";
   import { categoryLabels, deductibleLabels } from "$lib/costs/labels";
   import { formatDay } from "$lib/format";
   import { formatMoney } from "$lib/format-money";
   import { m } from "$lib/paraglide/messages";
+  import BookPicker from "./book-picker.svelte";
   import SplitEditor from "./split-editor.svelte";
 
   let {
@@ -38,6 +47,7 @@
     rooms,
     assets,
     people,
+    books,
     currentUserId,
     onaccept,
   }: {
@@ -46,6 +56,8 @@
     rooms: Room[];
     assets: Asset[];
     people: DirectoryUser[];
+    /** Every cost book; the suggestion goes to one that takes entries. */
+    books: CostBook[];
     currentUserId: string;
     /** Books the suggestion with the overrides; a thrown API error is shown in the dialog. */
     onaccept: (body: AcceptFinanceSuggestionRequest) => Promise<void>;
@@ -72,7 +84,13 @@
   let paidByUserId = $state(
     untrack(() => (userIds.includes(currentUserId) ? currentUserId : "")),
   );
-  let splitMode = $state<CostSplitMode>("ownership");
+  const fallbackBook = untrack(() => defaultBook(books));
+  let bookId = $state(fallbackBook?.id ?? "");
+  let splitMode = $state<CostSplitMode>(
+    fallbackBook?.defaultSplitMode ?? "ownership",
+  );
+  let splitTouched = $state(false);
+  let participants = $state<string[]>(untrack(() => [...userIds]));
   let shares = $state<Record<string, string>>(
     untrack(() => equalShares(userIds)),
   );
@@ -95,6 +113,10 @@
     value: k,
     label: kindLabels[k](),
   }));
+  const selectableBooks = $derived(openBooks(books));
+  const book = $derived(books.find((b) => b.id === bookId));
+  const taxApplies = $derived(book?.taxRelevant ?? true);
+
   const roomOptions = $derived([
     { value: "", label: m.cost_no_room() },
     ...rooms.map((r) => ({ value: r.id, label: r.name })),
@@ -110,6 +132,13 @@
     { value: "", label: m.cost_payer_none() },
     ...people.map((p) => ({ value: p.id, label: p.displayName })),
   ]);
+
+  function pickBook(next: string) {
+    const picked = books.find((b) => b.id === next);
+    if (!picked) return;
+    bookId = picked.id;
+    splitMode = splitAfterBook({ splitMode, splitTouched }, picked, true);
+  }
 
   function pickCategory(next: string) {
     category = next as CostCategory;
@@ -140,7 +169,22 @@
       const defaultPayer = userIds.includes(currentUserId) ? currentUserId : "";
       if (paidByUserId !== defaultPayer)
         body.paidByUserId = paidByUserId || null;
-      if (splitMode !== "ownership") body.splitMode = splitMode;
+      if (bookId && bookId !== defaultBook(books)?.id) body.bookId = bookId;
+      // Without a split the book's own applies.
+      const bookSplit = book?.defaultSplitMode ?? "ownership";
+      if (splitMode !== bookSplit) body.splitMode = splitMode;
+      if (splitMode === "equal") {
+        const chosen = chosenParticipants({ participants }, userIds);
+        if (chosen.length === 0) {
+          errors.participantIds = m.cost_for_whom_none();
+          return m.form_check_fields();
+        }
+        const narrowed = narrowedParticipants(chosen, userIds);
+        if (narrowed) {
+          body.splitMode = "equal";
+          body.participantIds = narrowed;
+        }
+      }
       if (splitMode === "custom") {
         const checked = validateShares(shares, userIds);
         if (checked.error) {
@@ -152,7 +196,7 @@
       if (countsTouched || category !== cost.category) {
         body.countsAsExpense = countsAsExpense;
       }
-      if (deductible !== "unknown") body.deductible = deductible;
+      if (taxApplies && deductible !== "unknown") body.deductible = deductible;
     }
     await onaccept(body);
   }
@@ -260,6 +304,14 @@
       </Field>
     </div>
   {:else if suggestion.kind === "cost" && cost}
+    {#if selectableBooks.length > 1}
+      <BookPicker
+        id="accept-book"
+        books={selectableBooks}
+        bind:value={bookId}
+        onchange={pickBook}
+      />
+    {/if}
     <div class="grid gap-5 sm:grid-cols-2">
       <Field id="accept-category" label={m.cost_category()}>
         {#snippet children({ describedby, invalid })}
@@ -312,10 +364,13 @@
       id="accept-split"
       bind:mode={splitMode}
       bind:shares
+      bind:participants
       {people}
       amountMinor={cost.amountMinor}
       currency={cost.currency}
       error={errors.shares}
+      participantsError={errors.participantIds}
+      onmodechange={() => (splitTouched = true)}
     />
 
     <SwitchField
@@ -326,18 +381,20 @@
       onchange={() => (countsTouched = true)}
     />
 
-    <Field id="accept-deductible" label={m.cost_deductible()}>
-      {#snippet children({ describedby, invalid })}
-        <OptionSelect
-          id="accept-deductible"
-          value={deductible}
-          onchange={(v) => (deductible = v as CostDeductible)}
-          options={deductibleOptions}
-          {invalid}
-          {describedby}
-        />
-      {/snippet}
-    </Field>
+    {#if taxApplies}
+      <Field id="accept-deductible" label={m.cost_deductible()}>
+        {#snippet children({ describedby, invalid })}
+          <OptionSelect
+            id="accept-deductible"
+            value={deductible}
+            onchange={(v) => (deductible = v as CostDeductible)}
+            options={deductibleOptions}
+            {invalid}
+            {describedby}
+          />
+        {/snippet}
+      </Field>
+    {/if}
 
     <Field id="accept-notes" label={m.cost_notes()} optional>
       {#snippet children({ describedby, invalid })}
