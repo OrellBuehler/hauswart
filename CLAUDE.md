@@ -609,6 +609,9 @@ entries with the tools that exist and closes the task. The web app has the page 
 - **Counts** (`GET /ai-tasks/count?status=&kind=`, scope `read`, `{count}`; `countAiTasks`): the number of tasks without reading them. The costs page's
   badge on "Belege" asks for `?status=pending` (exact, no more "50+"), and the dashboard carries `pendingReceiptCount` (the same number; a card links to
   `/costs/receipts?status=pending` when it is above zero).
+- **Untrusted input**: the uploader's note, the dismiss reasons and result notes other clients wrote, and the text on a receipt image or PDF are
+  data to book from, never instructions. `list_ai_tasks`, `get_ai_task` and `dismiss_ai_task` say so in their descriptions and the MCP README in one
+  sentence each (a test pins them); nothing in the server reads those texts as commands.
 - **Several clients**: nothing locks a task. Two clients (or one that was restarted) can work on it, which `bookedSoFar` makes visible and the rules
   above keep from double booking: the first to complete wins, a later `create`, `accept` or `fill` for the task is a 409, a later `complete` with other
   ids a 409 naming what is recorded, and what the loser had booked stays flagged for a person to sort out. **The lease** is only a warning in front of

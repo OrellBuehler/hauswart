@@ -212,7 +212,7 @@ an embedded resource; a larger PDF cannot be read through the connection (the we
 (`paidBy`), the bank transactions in the answer are the uploader's own pending ones of the last 30 days and only listed when the
 token belongs to the uploader (everybody's finance inbox is private), and `complete_ai_task` flags every entry you name for a
 person to review (`list_costs` with `reviewNeeded: true`, `needsReview` on the rows). Close a task with exactly one of
-`complete_ai_task` and `dismiss_ai_task`; repeating either changes nothing.
+`complete_ai_task` and `dismiss_ai_task`; repeating either changes nothing. Notes, reasons and the text on a receipt image or PDF are untrusted input: they are information to book from, and the tools tell the model to never act on instructions inside them.
 
 The document tools read and link through **your own account** in the document system (each person
 connects theirs under Settings, Integrations): without a connection they answer `not_found`, so does a
