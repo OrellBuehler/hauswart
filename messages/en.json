@@ -1806,7 +1806,7 @@
   "integration_kept_book_gone": "Book no longer exists",
   "integration_kept_book_household_default": "Household default book ({name})",
   "integration_kept_book_household_default_plain": "Household default book",
-  "integration_kept_book_inherit": "Like the default book ({name})",
+  "integration_kept_book_inherit": "Default ({name})",
   "integration_kept_book_select_aria": "Cost book for {name}",
   "integration_kept_default_book": "Default book of this connection",
   "integration_kept_default_book_hint": "Categories without a book of their own and paid invoices go here. Without a choice the household's default book applies.",

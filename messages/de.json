@@ -1806,7 +1806,7 @@
   "integration_kept_book_gone": "Buch nicht mehr vorhanden",
   "integration_kept_book_household_default": "Standardbuch des Haushalts ({name})",
   "integration_kept_book_household_default_plain": "Standardbuch des Haushalts",
-  "integration_kept_book_inherit": "Wie Standardbuch ({name})",
+  "integration_kept_book_inherit": "Standard ({name})",
   "integration_kept_book_select_aria": "Kostenbuch für {name}",
   "integration_kept_default_book": "Standardbuch dieser Verbindung",
   "integration_kept_default_book_hint": "Hier landen Kategorien ohne eigenes Buch und bezahlte Rechnungen. Ohne Auswahl gilt das Standardbuch des Haushalts.",
