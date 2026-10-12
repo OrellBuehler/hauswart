@@ -483,6 +483,96 @@ describe("migrations", () => {
     expect(rows(db, "pragma foreign_key_check")).toEqual([]);
   });
 
+  it("make the book that is the default today the default book, wherever it sits in the order", () => {
+    const db = databaseAt("0026_cost_books_settlements");
+    // The first book that is not archived, by sort order, then creation, is where entries went without a book.
+    db.$client.exec(`
+      update cost_books set sort_order = 5 where slug = 'wohnung';
+      update cost_books set sort_order = 0, archived_at = 1700000000000 where slug = 'haushalt';
+      update cost_books set sort_order = 1 where slug = 'auto';
+    `);
+    migrateDatabase(db);
+    expect(
+      rows(db, "select slug from cost_books where is_default = 1"),
+    ).toEqual([{ slug: "auto" }]);
+    expect(
+      rows(db, "select count(*) as n from cost_books where is_default = 0")[0]
+        .n,
+    ).toBe(2);
+    expect(rows(db, "pragma foreign_key_check")).toEqual([]);
+  });
+
+  it("flag exactly one cost book as the default, and keep payments, entries and vehicles with their books", () => {
+    const db = databaseAt("0026_cost_books_settlements");
+    db.$client.exec(`
+      insert into users (id, username, password_hash) values ('u1', 'anna', 'x'), ('u2', 'ben', 'x');
+      insert into assets (id, kind, name, slug, qr_slug) values ('v1', 'vehicle', 'Auto', 'auto-1', 'dddddddddd');
+      insert into vehicle_details (asset_id, plate) values ('v1', 'ZH 000000');
+      insert into settlements (id, book_id, from_user_id, to_user_id, amount_minor, currency, date, created_by)
+        values ('s1', null, 'u2', 'u1', 500, 'CHF', '2026-04-01', 'u1');
+    `);
+    migrateDatabase(db);
+    expect(
+      rows(db, "select slug from cost_books where is_default = 1"),
+    ).toEqual([{ slug: "wohnung" }]);
+    expect(
+      rows(
+        db,
+        "select cost_book_id from vehicle_details where asset_id = 'v1'",
+      ),
+    ).toEqual([{ cost_book_id: null }]);
+    expect(rows(db, "select id, idempotency_key from settlements")).toEqual([
+      { id: "s1", idempotency_key: null },
+    ]);
+
+    // A second default is refused by the database; clearing the flag first is fine.
+    expect(() =>
+      db.$client.exec(
+        "update cost_books set is_default = 1 where slug = 'auto'",
+      ),
+    ).toThrow(/UNIQUE/);
+    db.$client.exec(
+      "update cost_books set is_default = 0 where slug = 'wohnung'; update cost_books set is_default = 1 where slug = 'auto'",
+    );
+
+    // A vehicle remembers a book; deleting the book lets it go.
+    const ferien = "b-ferien";
+    db.$client.exec(
+      `insert into cost_books (id, name, slug) values ('${ferien}', 'Ferien', 'ferien')`,
+    );
+    db.$client.exec(
+      `update vehicle_details set cost_book_id = '${ferien}' where asset_id = 'v1'`,
+    );
+    expect(() =>
+      db.$client.exec(
+        "update vehicle_details set cost_book_id = 'missing' where asset_id = 'v1'",
+      ),
+    ).toThrow(/FOREIGN KEY/);
+    db.$client.exec(`delete from cost_books where id = '${ferien}'`);
+    expect(
+      rows(
+        db,
+        "select cost_book_id from vehicle_details where asset_id = 'v1'",
+      ),
+    ).toEqual([{ cost_book_id: null }]);
+
+    // The key of a payment is unique per person who recorded it; payments without a key are never in conflict.
+    const pay = (id: string, creator: string | null, key: string | null) =>
+      db.$client
+        .query(
+          "insert into settlements (id, from_user_id, to_user_id, amount_minor, currency, date, created_by, idempotency_key) values (?, 'u2', 'u1', 100, 'CHF', '2026-04-02', ?, ?)",
+        )
+        .run(id, creator as never, key as never);
+    pay("s2", "u1", "key-aaaaaaaa");
+    pay("s3", "u2", "key-aaaaaaaa");
+    pay("s4", "u1", null);
+    pay("s5", "u1", null);
+    pay("s6", null, "key-aaaaaaaa");
+    pay("s7", null, "key-aaaaaaaa");
+    expect(() => pay("s8", "u1", "key-aaaaaaaa")).toThrow(/UNIQUE/);
+    expect(rows(db, "pragma foreign_key_check")).toEqual([]);
+  });
+
   it("keep book names and slugs unique, whatever the case", () => {
     const db = databaseAt("0025_calendar_target_remote_name");
     migrateDatabase(db);

@@ -2147,7 +2147,7 @@ export const endpoints = {
     path: "/api/v1/cost-books",
     summary: "List cost books",
     description:
-      "The ledgers entries are booked into (by default `Wohnung`, `Haushalt` and `Auto`). Active books by sort order; archived ones only with `includeArchived=true`, after the active ones. `isDefault` marks the book an entry without `bookId` goes to.",
+      "The ledgers entries are booked into (by default `Wohnung`, `Haushalt` and `Auto`). Active books by sort order; archived ones only with `includeArchived=true`, after the active ones. `isDefault` marks the book an entry without `bookId` goes to: exactly one book has it, never an archived one, and reordering the books does not move it.",
     tags: ["costs"],
     auth: "both",
     scopes: ["read"],
@@ -2161,7 +2161,7 @@ export const endpoints = {
     path: "/api/v1/cost-books",
     summary: "Create a cost book",
     description:
-      "`slug` is derived from the name, `defaultSplitMode` is `ownership` (or `equal`, `none`), `taxRelevant` false (only a tax relevant book takes a `deductible` class on its entries) and the book goes to the end of the list. Names are unique without regard to case (409 `conflict`).",
+      "`slug` is derived from the name, `defaultSplitMode` is `ownership` (or `equal`, `none`), `taxRelevant` false (only a tax relevant book takes a `deductible` class on its entries) and the book goes to the end of the list. `isDefault: true` makes it the default book (the previous one stops being it). Names are unique without regard to case (409 `conflict`).",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2190,7 +2190,7 @@ export const endpoints = {
     path: "/api/v1/cost-books/{id}",
     summary: "Change, archive or restore a cost book",
     description:
-      "`archived` archives (closed to new entries; its entries and payments stay and still count in the balances) or restores. The last book that is not archived cannot be archived (409 `conflict`). Switching `taxRelevant` off keeps what its entries say about their tax class; it stays out of the tax breakdown.",
+      "`archived` archives (closed to new entries; its entries and payments stay and still count in the balances) or restores. The last book that is not archived cannot be archived (409 `conflict`). `isDefault: true` makes the book the default in the same step the previous default loses it (400 on `isDefault` for an archived book that stays archived; restore and default may be sent together); `isDefault: false` on the default book is a 409, name another default instead. Archiving the default book hands the default to the first book that is still open (by sort order); restoring a book never makes it the default. Switching `taxRelevant` off keeps what its entries say about their tax class; it stays out of the tax breakdown.",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2206,7 +2206,7 @@ export const endpoints = {
     path: "/api/v1/cost-books/{id}",
     summary: "Delete an empty cost book",
     description:
-      "Only a book without entries and payments can be deleted; otherwise 409 `conflict` with `details.entryCount` and `details.settlementCount`: archive it instead. The last book that is not archived cannot be deleted either.",
+      "Only a book without entries and payments can be deleted; otherwise 409 `conflict` with `details.entryCount` and `details.settlementCount`: archive it instead. The last book that is not archived cannot be deleted either. Deleting the default book hands the default to the first book that is still open.",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],

@@ -378,8 +378,13 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   restored and the delete triggers are created again. It is the one migration that still runs with foreign keys on
   (`MIGRATIONS_WITH_FOREIGN_KEYS` in `migrator.ts`); every other one runs with them off (see "Migrations" below), and
   `migrations.test.ts` pins both. `cost_entries.book_id` is NOT NULL, `ON DELETE RESTRICT`. **The default book** (`defaultCostBook`,
-  `isDefault` in the DTO) is the first book that is not archived by sort order, where an entry without `bookId` goes
-  (so does an accepted finance suggestion and a fuel log's cost entry). The last book that is not archived can be
+  `isDefault` in the DTO) is the book flagged `cost_books.is_default` (migration `0027`, which flagged the book that was
+  the first one not archived), where an entry without `bookId` goes (so does an accepted finance suggestion and a fuel
+  log's cost entry of a vehicle that remembers no book). Exactly one book that is not archived has the flag (a partial
+  unique index and the service keep it so): `PATCH /cost-books/{id}` with `isDefault: true` (also on create) moves it in one
+  transaction, `isDefault: false` on the default is a 409, an archived book that stays archived cannot get it (400 on
+  `isDefault`), archiving or deleting the default hands it to the first book that is still open, restoring a book does not
+  give it back and **reordering never moves it**. The last book that is not archived can be
   neither archived nor deleted (409), so there always is one. A book with entries or payments cannot be deleted (409,
   `details.entryCount`/`settlementCount`): archive it, which closes it to new entries (400 on `bookId` when creating
   or moving into it; an entry may stay and be edited) while it still counts in the balances. **Tax class**:

@@ -4,7 +4,7 @@ import type {
   ListCostBooksQuery,
   UpdateCostBookRequest,
 } from "$lib/api/schemas/cost-books";
-import { costBooks } from "$lib/server/db";
+import { costBooks, type DB } from "$lib/server/db";
 import { paginateArray } from "$lib/server/pagination";
 import {
   conflict,
@@ -41,12 +41,27 @@ const firstOpen = (ctx: Db) =>
     .limit(1)
     .get();
 
+/** The book that carries the default flag, if it is open. */
+const flaggedDefault = (ctx: Db) =>
+  ctx.db
+    .select()
+    .from(costBooks)
+    .where(and(eq(costBooks.isDefault, true), isNull(costBooks.archivedAt)))
+    .get();
+
 /**
- * The book an entry or a settlement goes to when the request names none: the first one that is not archived, by sort
- * order. There is always one, because the last active book can be neither archived nor deleted.
+ * The flagged book, else (a database nobody flagged, which the service never leaves behind) the first one that is not
+ * archived, by sort order.
+ */
+const currentDefault = (ctx: Db) => flaggedDefault(ctx) ?? firstOpen(ctx);
+
+/**
+ * The book an entry goes to when the request names none: the one flagged as the default. Reordering the books does not
+ * move it; archiving or deleting it hands the flag to the first book that is still open (`ensureDefault`). There is
+ * always one, because the last active book can be neither archived nor deleted.
  */
 export function defaultCostBook(ctx: Db): CostBookRow {
-  const book = firstOpen(ctx);
+  const book = currentDefault(ctx);
   if (!book) {
     throw invalidField(
       "bookId",
@@ -113,6 +128,28 @@ function recordOf(
   };
 }
 
+/** Gives the flag to one book and takes it from every other. */
+function makeDefault(db: DB, id: string) {
+  db.update(costBooks)
+    .set({ isDefault: false })
+    .where(eq(costBooks.isDefault, true))
+    .run();
+  db.update(costBooks)
+    .set({ isDefault: true })
+    .where(eq(costBooks.id, id))
+    .run();
+}
+
+/**
+ * After a book was archived or deleted: when the flagged book is gone or closed, the first book that is still open
+ * becomes the default.
+ */
+function ensureDefault(db: DB) {
+  if (flaggedDefault({ db })) return;
+  const first = firstOpen({ db });
+  if (first) makeDefault(db, first.id);
+}
+
 export function listCostBooks(
   ctx: Db,
   filter: Pick<ListCostBooksQuery, "includeArchived">,
@@ -122,7 +159,7 @@ export function listCostBooks(
     .where(filter.includeArchived ? undefined : isNull(costBooks.archivedAt))
     .orderBy(...ordering)
     .all();
-  const first = firstOpen(ctx)?.id;
+  const first = currentDefault(ctx)?.id;
   return paginateArray(
     rows.map((row) => recordOf(row, first)),
     page.cursor,
@@ -132,7 +169,7 @@ export function listCostBooks(
 
 export function findCostBook(ctx: Db, id: string): CostBookRecord | undefined {
   const row = select(ctx).where(eq(costBooks.id, id)).get();
-  return row ? recordOf(row, firstOpen(ctx)?.id) : undefined;
+  return row ? recordOf(row, currentDefault(ctx)?.id) : undefined;
 }
 
 export function getCostBook(ctx: Db, id: string): CostBookRecord {
@@ -186,19 +223,24 @@ export function createCostBook(
       .from(costBooks)
       .get()?.m ?? -1) + 1;
   try {
-    const row = ctx.db
-      .insert(costBooks)
-      .values({
-        name: input.name,
-        slug,
-        icon: input.icon ?? null,
-        defaultSplitMode: input.defaultSplitMode ?? "ownership",
-        taxRelevant: input.taxRelevant ?? false,
-        sortOrder: input.sortOrder ?? next,
-      })
-      .returning({ id: costBooks.id })
-      .get();
-    return getCostBook(ctx, row.id);
+    const id = ctx.db.transaction((tx) => {
+      const db = tx as unknown as DB;
+      const row = tx
+        .insert(costBooks)
+        .values({
+          name: input.name,
+          slug,
+          icon: input.icon ?? null,
+          defaultSplitMode: input.defaultSplitMode ?? "ownership",
+          taxRelevant: input.taxRelevant ?? false,
+          sortOrder: input.sortOrder ?? next,
+        })
+        .returning({ id: costBooks.id })
+        .get();
+      if (input.isDefault) makeDefault(db, row.id);
+      return row.id;
+    });
+    return getCostBook(ctx, id);
   } catch (err) {
     if (isUniqueViolation(err)) {
       throw conflict("A cost book with this name or slug already exists");
@@ -210,7 +252,9 @@ export function createCostBook(
 /**
  * Changes a book. Archiving closes it to new entries (its entries and payments stay and still count in the balances) and
  * restoring reopens it; the last book that is not archived cannot be archived. Switching `taxRelevant` off keeps what its
- * entries say about their tax class, which then stays out of the tax breakdown.
+ * entries say about their tax class, which then stays out of the tax breakdown. `isDefault: true` makes it the default
+ * book in the same step the previous one loses the flag; the default book that gets archived hands the flag to the first
+ * book that is still open, and it cannot be switched off otherwise (409): name another default instead.
  */
 export function updateCostBook(
   ctx: ServiceContext,
@@ -233,22 +277,38 @@ export function updateCostBook(
       "This is the last cost book that is not archived; create another one first",
     );
   }
-  const { archived, ...fields } = patch;
+  const { archived, isDefault, ...fields } = patch;
+  const staysArchived = archived ?? current.archivedAt !== null;
+  if (isDefault === true && staysArchived) {
+    throw invalidField(
+      "isDefault",
+      "An archived cost book cannot be the default; restore it first",
+    );
+  }
+  if (isDefault === false && current.isDefault && !staysArchived) {
+    throw conflict(
+      "This is the default cost book; make another one the default instead",
+    );
+  }
+  const set = {
+    ...fields,
+    ...(archived === undefined
+      ? {}
+      : {
+          archivedAt: archived
+            ? (current.archivedAt ?? new Date(ctx.now))
+            : null,
+        }),
+  };
   try {
-    ctx.db
-      .update(costBooks)
-      .set({
-        ...fields,
-        ...(archived === undefined
-          ? {}
-          : {
-              archivedAt: archived
-                ? (current.archivedAt ?? new Date(ctx.now))
-                : null,
-            }),
-      })
-      .where(eq(costBooks.id, id))
-      .run();
+    ctx.db.transaction((tx) => {
+      const db = tx as unknown as DB;
+      if (Object.keys(set).length > 0) {
+        tx.update(costBooks).set(set).where(eq(costBooks.id, id)).run();
+      }
+      if (isDefault === true) makeDefault(db, id);
+      ensureDefault(db);
+    });
   } catch (err) {
     if (isUniqueViolation(err)) {
       throw conflict("A cost book with this name or slug already exists");
@@ -278,5 +338,8 @@ export function deleteCostBook(ctx: Db, id: string): void {
       "This is the last cost book that is not archived; create another one first",
     );
   }
-  ctx.db.delete(costBooks).where(eq(costBooks.id, id)).run();
+  ctx.db.transaction((tx) => {
+    tx.delete(costBooks).where(eq(costBooks.id, id)).run();
+    ensureDefault(tx as unknown as DB);
+  });
 }

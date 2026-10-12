@@ -29,7 +29,10 @@ export const costBookSchema = z
     /** Set while the book is archived: closed to new entries, still counted in the balances. */
     archivedAt: isoTimestampSchema.nullable(),
     sortOrder: z.number().int(),
-    /** Where an entry or a settlement without `bookId` goes: the first book that is not archived. */
+    /**
+     * Where an entry without `bookId` goes (a fuel fill of a vehicle that remembers no book, an accepted finance suggestion
+     * that names none ...). Exactly one book has it, never an archived one; reordering the books does not move it.
+     */
     isDefault: z.boolean(),
     entryCount: z.number().int(),
     settlementCount: z.number().int(),
@@ -57,7 +60,7 @@ const bookFields = {
 
 /**
  * `slug` is derived from the name when omitted, `defaultSplitMode` is `ownership`, `taxRelevant` false and the book
- * goes to the end of the list.
+ * goes to the end of the list. `isDefault: true` makes it the default book (the previous one stops being it).
  */
 export const createCostBookRequestSchema = z.strictObject({
   name: bookFields.name,
@@ -66,12 +69,17 @@ export const createCostBookRequestSchema = z.strictObject({
   defaultSplitMode: bookFields.defaultSplitMode.optional(),
   taxRelevant: bookFields.taxRelevant.optional(),
   sortOrder: bookFields.sortOrder.optional(),
+  isDefault: z.boolean().optional(),
 });
 export type CreateCostBookRequest = z.output<
   typeof createCostBookRequestSchema
 >;
 
-/** `archived` archives or restores. */
+/**
+ * `archived` archives or restores. `isDefault: true` makes the book the default (the previous default stops being it
+ * in the same step; 400 on `isDefault` for an archived book that stays archived); `false` is a 409 for the default
+ * book itself, since there is always exactly one: make another book the default instead.
+ */
 export const updateCostBookRequestSchema = atLeastOne(
   z.strictObject({
     name: bookFields.name.optional(),
@@ -81,6 +89,7 @@ export const updateCostBookRequestSchema = atLeastOne(
     taxRelevant: bookFields.taxRelevant.optional(),
     sortOrder: bookFields.sortOrder.optional(),
     archived: z.boolean().optional(),
+    isDefault: z.boolean().optional(),
   }),
 );
 export type UpdateCostBookRequest = z.output<

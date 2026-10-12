@@ -266,6 +266,10 @@ export const vehicleDetails = sqliteTable("vehicle_details", {
     .notNull()
     .default("km"),
   notes: text("notes"),
+  /** The cost book the fuel fills of this vehicle go to when a fill names none; null = the default book. */
+  costBookId: text("cost_book_id").references(() => costBooks.id, {
+    onDelete: "set null",
+  }),
   ...timestamps,
 });
 
@@ -1691,12 +1695,23 @@ export const costBooks = sqliteTable(
       .default(false),
     archivedAt: integer("archived_at", { mode: "timestamp_ms" }),
     sortOrder: integer("sort_order").notNull().default(0),
+    /**
+     * The book an entry without `bookId` goes to. Exactly one book that is not archived has it (kept by the service:
+     * setting it elsewhere clears it here, archiving or deleting the default hands it to the first book that is
+     * still open; the partial unique index allows no second one). Reordering books never moves it.
+     */
+    isDefault: integer("is_default", { mode: "boolean" })
+      .notNull()
+      .default(false),
     ...timestamps,
   },
   (t) => [
     uniqueIndex("cost_books_slug_idx").on(t.slug),
     uniqueIndex("cost_books_name_idx").on(sql`lower(${t.name})`),
     index("cost_books_sort_idx").on(t.archivedAt, t.sortOrder),
+    uniqueIndex("cost_books_default_idx")
+      .on(t.isDefault)
+      .where(sql`${t.isDefault} = 1`),
   ],
 );
 
@@ -1824,9 +1839,14 @@ export const settlements = sqliteTable(
     createdBy: text("created_by").references(() => users.id, {
       onDelete: "set null",
     }),
+    /** Chosen by the caller so a retried request returns the first payment instead of recording a second; unique per creator. */
+    idempotencyKey: text("idempotency_key"),
     ...timestamps,
   },
   (t) => [
+    uniqueIndex("settlements_idempotency_idx")
+      .on(t.createdBy, t.idempotencyKey)
+      .where(sql`${t.idempotencyKey} is not null`),
     index("settlements_date_idx").on(sql`${t.date} desc`),
     index("settlements_book_id_idx").on(t.bookId),
     index("settlements_from_user_idx").on(t.fromUserId),

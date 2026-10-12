@@ -214,17 +214,118 @@ describe("cost books", () => {
   });
 
   describe("the default book", () => {
-    it("is the first book that is not archived, by sort order", () => {
-      const wohnung = named("Wohnung");
-      const haushalt = named("Haushalt");
-      update(wohnung.id, { archived: true });
-      expect(defaultCostBook(ctx()).id).toBe(haushalt.id);
-      expect(list().find((b) => b.isDefault)?.name).toBe("Haushalt");
+    const defaults = () => list(true).filter((b) => b.isDefault);
+
+    it("is Wohnung to begin with, flagged on the book and not worked out from the order", () => {
+      expect(defaults().map((b) => b.name)).toEqual(["Wohnung"]);
+      expect(defaultCostBook(ctx()).name).toBe("Wohnung");
+    });
+
+    it("stays where it is when the books are reordered", () => {
       update(named("Auto").id, { sortOrder: 0 });
-      update(haushalt.id, { sortOrder: 5 });
+      update(named("Wohnung").id, { sortOrder: 9 });
+      update(named("Haushalt").id, { sortOrder: 1 });
+      expect(list().map((b) => b.name)).toEqual([
+        "Auto",
+        "Haushalt",
+        "Wohnung",
+      ]);
+      expect(defaults().map((b) => b.name)).toEqual(["Wohnung"]);
+      expect(defaultCostBook(ctx()).name).toBe("Wohnung");
+    });
+
+    it("moves when another book is made the default, and there is still only one", () => {
+      const haushalt = named("Haushalt");
+      expect(update(haushalt.id, { isDefault: true }).isDefault).toBe(true);
+      expect(defaults().map((b) => b.name)).toEqual(["Haushalt"]);
+      expect(defaultCostBook(ctx()).id).toBe(haushalt.id);
+      expect(getCostBook(ctx(), named("Wohnung").id).isDefault).toBe(false);
+      // asking again changes nothing
+      expect(update(haushalt.id, { isDefault: true }).isDefault).toBe(true);
+      expect(defaults()).toHaveLength(1);
+    });
+
+    it("can be set on a new book", () => {
+      const ferien = create({ isDefault: true });
+      expect(ferien.isDefault).toBe(true);
+      expect(defaults().map((b) => b.name)).toEqual(["Ferien"]);
+      expect(create({ name: "Garten" }).isDefault).toBe(false);
+      expect(defaults().map((b) => b.name)).toEqual(["Ferien"]);
+    });
+
+    it("is where an entry without a book goes", async () => {
+      await createTestUser();
+      update(named("Auto").id, { isDefault: true });
+      const cost = createCost(
+        ctx(),
+        createCostRequestSchema.parse({
+          title: "Waschen",
+          amountMinor: 1000,
+          category: "other",
+        }),
+        null,
+      );
+      expect(cost.bookName).toBe("Auto");
+      expect(cost.splitMode).toBe("equal");
+    });
+
+    it("cannot be switched off without naming another one", () => {
+      const wohnung = named("Wohnung");
+      expect(() => update(wohnung.id, { isDefault: false })).toThrowError(
+        expect.objectContaining({ code: "conflict" }),
+      );
+      expect(defaults().map((b) => b.name)).toEqual(["Wohnung"]);
+      // on a book that is not the default it asks for what already is
+      expect(update(named("Auto").id, { isDefault: false }).isDefault).toBe(
+        false,
+      );
+      expect(defaults().map((b) => b.name)).toEqual(["Wohnung"]);
+    });
+
+    it("goes to the first book that is still open, by sort order, when the default is archived", () => {
+      update(named("Auto").id, { sortOrder: 0 });
+      update(named("Wohnung").id, { sortOrder: 5 });
+      expect(update(named("Wohnung").id, { archived: true })).toMatchObject({
+        isDefault: false,
+      });
+      expect(defaults().map((b) => b.name)).toEqual(["Auto"]);
       expect(defaultCostBook(ctx()).name).toBe("Auto");
-      expect(getCostBook(ctx(), named("Auto").id).isDefault).toBe(true);
-      expect(getCostBook(ctx(), haushalt.id).isDefault).toBe(false);
+    });
+
+    it("goes to the first book that is still open when the default is deleted", () => {
+      const ferien = create({ isDefault: true, sortOrder: 7 });
+      deleteCostBook(ctx(), ferien.id);
+      expect(defaults().map((b) => b.name)).toEqual(["Wohnung"]);
+      deleteCostBook(ctx(), named("Wohnung").id);
+      expect(defaults().map((b) => b.name)).toEqual(["Haushalt"]);
+    });
+
+    it("is not given back to a restored book", () => {
+      const wohnung = named("Wohnung");
+      update(wohnung.id, { archived: true });
+      update(wohnung.id, { archived: false });
+      expect(defaults().map((b) => b.name)).toEqual(["Haushalt"]);
+    });
+
+    it("cannot be an archived book, but a book can be restored and made the default together", () => {
+      const ferien = create();
+      update(ferien.id, { archived: true });
+      expect(() => update(ferien.id, { isDefault: true })).toThrowError(
+        expect.objectContaining({ code: "invalid_request" }),
+      );
+      expect(() =>
+        update(named("Auto").id, { archived: true, isDefault: true }),
+      ).toThrowError(expect.objectContaining({ code: "invalid_request" }));
+      expect(defaults().map((b) => b.name)).toEqual(["Wohnung"]);
+      expect(
+        update(ferien.id, { archived: false, isDefault: true }),
+      ).toMatchObject({ isDefault: true, archivedAt: null });
+      expect(defaults().map((b) => b.name)).toEqual(["Ferien"]);
+    });
+
+    it("archiving the default and asking for it to stop being the default is fine together", () => {
+      update(named("Wohnung").id, { archived: true, isDefault: false });
+      expect(defaults().map((b) => b.name)).toEqual(["Haushalt"]);
     });
 
     it("always exists: the last book that is not archived cannot be archived or deleted", () => {
@@ -243,6 +344,21 @@ describe("cost books", () => {
       create();
       update(wohnung.id, { archived: true });
       expect(defaultCostBook(ctx()).name).toBe("Ferien");
+      expect(defaults().map((b) => b.name)).toEqual(["Ferien"]);
+    });
+
+    it("falls back to the first book that is open when no book is flagged", () => {
+      test.db.$client.exec("update cost_books set is_default = 0");
+      expect(defaultCostBook(ctx()).name).toBe("Wohnung");
+      expect(list().find((b) => b.isDefault)?.name).toBe("Wohnung");
+    });
+
+    it("is refused by the database for a second book", () => {
+      expect(() =>
+        test.db.$client.exec(
+          `update cost_books set is_default = 1 where slug = 'haushalt'`,
+        ),
+      ).toThrow(/UNIQUE/);
     });
   });
 

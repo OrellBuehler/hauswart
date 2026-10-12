@@ -40,6 +40,7 @@ function toRecord(
     location: row?.location ?? null,
     odometerUnit: unit,
     notes: row?.notes ?? null,
+    costBookId: row?.costBookId ?? null,
     odometer: odometerSummary(ctx.db, assetId, unit),
     updatedAt: row?.updatedAt ?? null,
   };

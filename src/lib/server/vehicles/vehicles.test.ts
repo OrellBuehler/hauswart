@@ -42,6 +42,7 @@ describe("vehicle details", () => {
       location: null,
       odometerUnit: "km",
       notes: null,
+      costBookId: null,
       odometer: null,
       updatedAt: null,
     });

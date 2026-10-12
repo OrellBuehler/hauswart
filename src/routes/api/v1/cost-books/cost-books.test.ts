@@ -284,6 +284,75 @@ describe("cost books API", () => {
     });
   });
 
+  describe("the default book", () => {
+    const patch = (
+      call: ReturnType<typeof createCaller>,
+      id: string,
+      json: Record<string, unknown>,
+    ) => call("PATCH", `/api/v1/cost-books/${id}`, { json });
+    const defaults = async (call: ReturnType<typeof createCaller>) =>
+      (await books(call, "?includeArchived=true"))
+        .filter((b) => b.isDefault)
+        .map((b) => b.name);
+
+    it("moves with isDefault, one at a time, and reordering leaves it alone", async () => {
+      const { call } = await setup();
+      const [wohnung, haushalt, auto] = await books(call);
+      const moved = await patch(call, haushalt.id, { isDefault: true });
+      expect(moved.res.status).toBe(200);
+      expect((moved.body as Book).isDefault).toBe(true);
+      expect(await defaults(call)).toEqual(["Haushalt"]);
+
+      await patch(call, auto.id, { sortOrder: 0 });
+      await patch(call, wohnung.id, { sortOrder: 9 });
+      expect(await defaults(call)).toEqual(["Haushalt"]);
+    });
+
+    it("answers 409 for switching the default off and 400 for an archived book", async () => {
+      const { call } = await setup();
+      const [wohnung, haushalt] = await books(call);
+      const off = await patch(call, wohnung.id, { isDefault: false });
+      expect(off.res.status).toBe(409);
+      expect(errorCode(off)).toBe("conflict");
+
+      await patch(call, haushalt.id, { archived: true });
+      const archived = await patch(call, haushalt.id, { isDefault: true });
+      expect(archived.res.status).toBe(400);
+      expect(errorCode(archived)).toBe("invalid_request");
+      expect(await defaults(call)).toEqual(["Wohnung"]);
+    });
+
+    it("is handed on when the default is archived", async () => {
+      const { call } = await setup();
+      const [wohnung] = await books(call);
+      expect(
+        (await patch(call, wohnung.id, { archived: true })).res.status,
+      ).toBe(200);
+      expect(await defaults(call)).toEqual(["Haushalt"]);
+    });
+
+    it("can be set when a book is created", async () => {
+      const { call } = await setup();
+      const created = await call("POST", "/api/v1/cost-books", {
+        json: { name: "Ferien", isDefault: true },
+      });
+      expect(created.res.status).toBe(201);
+      expect((created.body as Book).isDefault).toBe(true);
+      expect(await defaults(call)).toEqual(["Ferien"]);
+    });
+
+    it("needs the costs:write scope like any change", async () => {
+      const { anna } = await setup();
+      const call = createCaller({
+        bearer: createTestToken(anna, { scopes: ["read"] }).token,
+      });
+      const [haushalt] = (await books(call)).slice(1);
+      expect(
+        (await patch(call, haushalt.id, { isDefault: true })).res.status,
+      ).toBe(403);
+    });
+  });
+
   it("works through the typed client", async () => {
     const user = await createTestUser();
     const client = createApiClient(
