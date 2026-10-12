@@ -1274,6 +1274,93 @@ describe("Kept sync", () => {
       expect(pending(user.id, "cost")).toHaveLength(1);
     });
 
+    it("books a payment once when its invoice was linked to an entry first: the transaction that pays it arrives dismissed", async () => {
+      const { user } = await setup({
+        ...CONFIG,
+        billCostCategory: "utilities",
+      });
+      byHand(user.id, {
+        title: "Rechnung Strom",
+        payee: "Beispiel Energie AG",
+        amountMinor: 33000,
+        category: "utilities",
+        date: "2026-04-21",
+      });
+      fake.bills = [
+        fakeBill({
+          id: "b1",
+          status: "paid",
+          creditorName: "Beispiel Energie AG",
+          invoiceNumber: "E-55",
+          amount: 33000,
+          remainingAmount: 0,
+          lastPaymentDate: "2026-04-20",
+        }),
+      ];
+      await run(user.id);
+      await acceptSuggestion(ctx(), user.id, links(user.id)[0].id, {});
+      fake.transactions = [
+        tx({
+          id: "t1",
+          categoryId: "cat-utilities",
+          amount: -33000,
+          billIds: ["b1"],
+          counterpartyName: "Beispiel Energie AG",
+          bookingDate: "2026-04-20",
+        }),
+      ];
+      const result = await run(user.id);
+      expect(result.stats).toMatchObject({
+        suggestions: 0,
+        linkSuggestions: 0,
+        skipped: 1,
+      });
+      expect(pending(user.id)).toEqual([]);
+      expect(test.db.select().from(costEntries).all()).toHaveLength(1);
+    });
+
+    it("withdraws a pending link made from a bill when the transaction that pays it shows up, and links that instead", async () => {
+      const { user } = await setup({
+        ...CONFIG,
+        billCostCategory: "utilities",
+      });
+      const entry = byHand(user.id, {
+        title: "Rechnung Strom",
+        payee: "Beispiel Energie AG",
+        amountMinor: 33000,
+        category: "utilities",
+        date: "2026-04-21",
+      });
+      fake.bills = [
+        fakeBill({
+          id: "b1",
+          status: "paid",
+          creditorName: "Beispiel Energie AG",
+          amount: 33000,
+          remainingAmount: 0,
+          lastPaymentDate: "2026-04-20",
+        }),
+      ];
+      await run(user.id);
+      expect(links(user.id).map((r) => r.providerRef)).toEqual(["bill:b1"]);
+      fake.transactions = [
+        tx({
+          id: "t1",
+          categoryId: "cat-utilities",
+          amount: -33000,
+          billIds: ["b1"],
+          counterpartyName: "Beispiel Energie AG",
+          bookingDate: "2026-04-20",
+          updatedAt: "2026-09-21T10:00:00.000Z",
+        }),
+      ];
+      await run(user.id);
+      const [link] = links(user.id);
+      expect(link.providerRef).toBe("tx:t1");
+      expect(payload(link)).toMatchObject({ entryId: entry.id });
+      expect(links(user.id)).toHaveLength(1);
+    });
+
     it("links a paid invoice to an entry, and writes the link in Kept on the bill", async () => {
       const { user } = await setup({
         ...CONFIG,
