@@ -38,7 +38,7 @@ const common = {
 
 /** An expense (positive) or refund (negative) the finance provider saw and the person may book as a cost. */
 export const costSuggestionPayloadSchema = z.object({
-  source: costSourceSchema,
+  source: costSourceSchema.exclude(["manual", "recurring"]),
   date: dateSchema,
   amountMinor: z.number().int(),
   currency: z.string(),

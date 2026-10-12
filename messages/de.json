@@ -2446,6 +2446,7 @@
   "cost_source_finance_bill": "Rechnung aus der Finanz-App",
   "cost_source_finance_transaction": "Buchung aus der Finanz-App",
   "cost_source_manual": "Von Hand erfasst",
+  "cost_source_recurring": "Wiederkehrend gebucht",
   "cost_split": "Aufteilung",
   "cost_split_custom": "Individuell",
   "cost_split_custom_hint": "Lege für jede Person einen Prozentanteil fest. Zusammen müssen es 100 % sein.",

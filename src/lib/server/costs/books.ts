@@ -4,7 +4,7 @@ import type {
   ListCostBooksQuery,
   UpdateCostBookRequest,
 } from "$lib/api/schemas/cost-books";
-import { costBooks, type DB } from "$lib/server/db";
+import { costBooks, costRecurrences, type DB } from "$lib/server/db";
 import { paginateArray } from "$lib/server/pagination";
 import {
   conflict,
@@ -349,7 +349,8 @@ export function updateCostBook(
 
 /**
  * Deletes an empty book. One with entries or payments is a 409 that says how many (`details.entryCount`,
- * `details.settlementCount`): archive it instead. The last book that is not archived stays.
+ * `details.settlementCount`): archive it instead; so is one that still has recurring costs (`details.recurrenceCount`).
+ * The last book that is not archived stays. Its budgets go with it.
  */
 export function deleteCostBook(ctx: Db, id: string): void {
   const current = getCostBook(ctx, id);
@@ -360,6 +361,18 @@ export function deleteCostBook(ctx: Db, id: string): void {
         entryCount: current.entryCount,
         settlementCount: current.settlementCount,
       },
+    );
+  }
+  const recurrenceCount =
+    ctx.db
+      .select({ n: sql<number>`count(*)` })
+      .from(costRecurrences)
+      .where(eq(costRecurrences.bookId, id))
+      .get()?.n ?? 0;
+  if (recurrenceCount > 0) {
+    throw conflict(
+      "This cost book still has recurring costs; delete them or move them to another book first",
+      { recurrenceCount },
     );
   }
   if (current.archivedAt === null && activeCount(ctx) <= 1) {

@@ -548,6 +548,7 @@ export const COST_SOURCES = [
   "manual",
   "finance_transaction",
   "finance_bill",
+  "recurring",
 ] as const;
 export type CostSource = (typeof COST_SOURCES)[number];
 

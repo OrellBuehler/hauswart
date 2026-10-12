@@ -85,6 +85,8 @@ describe("openapi document", () => {
       "CostBudgetStatus",
       "CostBudgetStatusItem",
       "CostEntry",
+      "CostRecurrence",
+      "CostRecurrenceRun",
       "CostShare",
       "CostTag",
       "CostTagRef",

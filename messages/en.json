@@ -2446,6 +2446,7 @@
   "cost_source_finance_bill": "Bill from the finance app",
   "cost_source_finance_transaction": "Transaction from the finance app",
   "cost_source_manual": "Entered by hand",
+  "cost_source_recurring": "Booked as recurring",
   "cost_split": "Split",
   "cost_split_custom": "Custom",
   "cost_split_custom_hint": "Set a percentage for each person. Together they must add up to 100%.",

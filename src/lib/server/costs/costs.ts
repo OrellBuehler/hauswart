@@ -356,7 +356,7 @@ function assertUser(ctx: Db, id: string | null | undefined) {
 
 /** What a finance provider adds to an entry booked from one of its items. */
 export interface ProviderOrigin {
-  source: Exclude<CostSource, "manual">;
+  source: Exclude<CostSource, "manual" | "recurring">;
   connectionId: string;
   ref: string;
   url: string | null;
@@ -426,16 +426,10 @@ function writeShares(db: DB, entryId: string, shares: readonly Share[]) {
 }
 
 /**
- * Books a cost. The split is frozen with the entry. Defaults: today, the
- * household currency, and the asset or room of the linked service log entry
- * or defect.
+ * Everything a new entry is checked against before it is written: the references exist, the book takes entries, the
+ * split and the tags are valid for the tax class. Answers what the entry is split by.
  */
-export function createCost(
-  ctx: ServiceContext,
-  input: CreateCostRequest,
-  createdBy: string | null,
-  origin?: ProviderOrigin,
-): CostRecord {
+function prepareCost(ctx: Db, input: CreateCostRequest) {
   assertRef(ctx, assets, input.assetId, "assetId", "Asset");
   assertRef(ctx, rooms, input.roomId, "roomId", "Room");
   assertRef(ctx, defects, input.defectId, "defectId", "Defect");
@@ -459,6 +453,27 @@ export function createCost(
   );
   assertDeductible(book, input.deductible);
   const tagIds = requireTagIds(ctx, input.tagIds ?? []);
+  return { book, splitMode, shares, tagIds };
+}
+
+/** Checks a template of entries (a recurring cost) as booking it would, and writes nothing. */
+export function checkCostTemplate(ctx: Db, input: CreateCostRequest): void {
+  prepareCost(ctx, input);
+}
+
+/**
+ * Books a cost. The split is frozen with the entry. Defaults: today, the
+ * household currency, and the asset or room of the linked service log entry
+ * or defect.
+ */
+export function createCost(
+  ctx: ServiceContext,
+  input: CreateCostRequest,
+  createdBy: string | null,
+  origin?: ProviderOrigin,
+  recurrence?: { id: string; date: string },
+): CostRecord {
+  const { book, splitMode, shares, tagIds } = prepareCost(ctx, input);
   if (input.receiptTaskId) assertTaskOpenForBooking(ctx, input.receiptTaskId);
 
   let assetId = input.assetId ?? null;
@@ -505,7 +520,9 @@ export function createCost(
             input.countsAsExpense ??
             COST_CATEGORY_COUNTS_AS_EXPENSE[input.category],
           deductible: input.deductible,
-          source: origin?.source ?? "manual",
+          source: origin?.source ?? (recurrence ? "recurring" : "manual"),
+          recurrenceId: recurrence?.id ?? null,
+          recurrenceDate: recurrence?.date ?? null,
           providerConnectionId: origin?.connectionId ?? null,
           providerRef: origin?.ref ?? null,
           providerUrl: origin?.url ?? null,
@@ -539,6 +556,7 @@ export function createCost(
       ) {
         throw err;
       }
+      if (recurrence) throw conflict("This occurrence is already booked");
       throw conflict("This item of the finance provider is already booked");
     }
     throw err;

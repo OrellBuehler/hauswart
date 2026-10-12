@@ -102,6 +102,7 @@ export const sourceLabels: Record<CostSource, () => string> = {
   manual: () => m.cost_source_manual(),
   finance_transaction: () => m.cost_source_finance_transaction(),
   finance_bill: () => m.cost_source_finance_bill(),
+  recurring: () => m.cost_source_recurring(),
 };
 
 export const suggestionKindLabels: Record<FinanceSuggestionKind, () => string> =

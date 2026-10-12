@@ -71,6 +71,7 @@ const costRow = (c: CostEntry) => ({
   defect:
     c.defectNumber === null ? null : `#${c.defectNumber} ${c.defectTitle}`,
   tags: c.tags.length ? c.tags.map((t) => t.name) : null,
+  source: c.source === "manual" ? null : c.source,
   countsAsExpense: c.countsAsExpense ? null : false,
   deductible: c.deductible === "unknown" ? null : c.deductible,
   needsReview: c.reviewNeeded ? true : null,
@@ -82,7 +83,7 @@ export const listCosts = defineTool({
   name: "list_costs",
   title: "List costs",
   description:
-    "Cost entries of the household's books (the apartment, groceries and everyday spending, the car ...), newest first. Amounts are decimals in the entry's currency: positive = expense, negative = refund. Filters: book (a name or id, see list_cost_books), year or from/to, category, asset and room (id or name), paidBy (me, a name or id), tag (a tag name or id, see list_cost_tags), q (text in title, payee, notes), reviewNeeded (true: only the entries a person still has to review, such as those booked from a receipt of the receipt queue; they carry needsReview). Totals and who owes whom are in cost_summary and get_balances.",
+    "Cost entries of the household's books (the apartment, groceries and everyday spending, the car ...), newest first. Amounts are decimals in the entry's currency: positive = expense, negative = refund. Filters: book (a name or id, see list_cost_books), year or from/to, category, asset and room (id or name), paidBy (me, a name or id), tag (a tag name or id, see list_cost_tags), q (text in title, payee, notes), reviewNeeded (true: only the entries a person still has to review, such as those booked from a receipt of the receipt queue; they carry needsReview). Entries with source recurring were booked by a recurring cost (list_cost_recurrences) and finance_transaction or finance_bill ones from a finance app; the others were entered by hand. Totals and who owes whom are in cost_summary and get_balances.",
   mode: "read",
   input: {
     book: z.string().min(1).max(64).optional(),

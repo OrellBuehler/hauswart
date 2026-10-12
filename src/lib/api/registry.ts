@@ -323,6 +323,14 @@ import {
   updateCostBudgetRequestSchema,
 } from "./schemas/cost-budgets";
 import {
+  costRecurrenceSchema,
+  createCostRecurrenceRequestSchema,
+  listCostRecurrencesQuerySchema,
+  listCostRecurrencesResponseSchema,
+  runCostRecurrenceResultSchema,
+  updateCostRecurrenceRequestSchema,
+} from "./schemas/cost-recurrences";
+import {
   costTagSchema,
   createCostTagRequestSchema,
   listCostTagsResponseSchema,
@@ -2283,7 +2291,7 @@ export const endpoints = {
     path: "/api/v1/cost-books/{id}",
     summary: "Delete an empty cost book",
     description:
-      "Only a book without entries and payments can be deleted; otherwise 409 `conflict` with `details.entryCount` and `details.settlementCount`: archive it instead. The last book that is not archived cannot be deleted either. Deleting the default book hands the default to the first book that is still open.",
+      "Only a book without entries, payments and recurring costs can be deleted; otherwise 409 `conflict` with `details.entryCount` and `details.settlementCount` (or `details.recurrenceCount`): archive it instead. The last book that is not archived cannot be deleted either. Deleting the default book hands the default to the first book that is still open. The book's budgets go with it.",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2448,6 +2456,96 @@ export const endpoints = {
     params: idParamsSchema,
     response: emptySchema,
     status: 204,
+    errors: ["not_found"],
+  }),
+
+  costRecurrencesList: defineEndpoint({
+    id: "costRecurrencesList",
+    method: "GET",
+    path: "/api/v1/cost-recurrences",
+    summary: "List recurring costs",
+    description:
+      "The costs that repeat (rent, insurance, a subscription): the ones that book first, soonest `nextDate` first, then the paused and finished ones by title. `active=true` lists the ones that book, `active=false` the paused and finished ones; `bookId` narrows to one book. Not paged: there are at most 200.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    query: listCostRecurrencesQuerySchema,
+    response: listCostRecurrencesResponseSchema,
+  }),
+
+  costRecurrencesCreate: defineEndpoint({
+    id: "costRecurrencesCreate",
+    method: "POST",
+    path: "/api/v1/cost-recurrences",
+    summary: "Set up a recurring cost",
+    description:
+      "The template of an entry (the fields of `POST /costs` without a date) and a rule: every `interval` months (`monthly`), quarters or years, counted from the month of `startDate`, on `dayOfMonth` (default: the day of `startDate`; a day a shorter month does not have means its last day, so 31 gives 31 January, 28 February, 31 March). The first occurrence is the first one on or after `startDate`; `endDate` (included) closes the series. The template is checked as booking would be (400 on the field for an unknown book, asset, room, payer or tag, a book that is archived, a split that does not fit, a tax class in a book without one; 400 on `endDate` when it leaves no occurrence). A scheduler books each occurrence that falls due, on its date in the household time zone, as an entry with `source: recurring`, `recurrenceId` set and no review flag; an occurrence is booked once even if the run is repeated, and a server that was down books each occurrence it missed. A `startDate` in the past is therefore booked right away, up to 120 occurrences per call. The split is worked out when an entry is booked, so a changed ownership share applies to later entries only.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    body: createCostRecurrenceRequestSchema,
+    response: costRecurrenceSchema,
+    status: 201,
+    errors: ["conflict"],
+  }),
+
+  costRecurrencesGet: defineEndpoint({
+    id: "costRecurrencesGet",
+    method: "GET",
+    path: "/api/v1/cost-recurrences/{id}",
+    summary: "Get a recurring cost",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: costRecurrenceSchema,
+    errors: ["not_found"],
+  }),
+
+  costRecurrencesUpdate: defineEndpoint({
+    id: "costRecurrencesUpdate",
+    method: "PATCH",
+    path: "/api/v1/cost-recurrences/{id}",
+    summary: "Change, pause or resume a recurring cost",
+    description:
+      "Changes the template for the entries booked from now on (the ones booked already stay as they are) and the rule. After a change of the rule the series continues after the newest occurrence that was booked. `active: false` pauses it; `active: true` on a paused one resumes it at the first occurrence on or after today, skipping what fell due meanwhile. Touching the template asks for an open book (400 on `bookId` for an archived one: move it to another); pausing or changing only the rule does not. Occurrences already due after the change are booked right away. Any change clears `lastError`.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    body: updateCostRecurrenceRequestSchema,
+    response: costRecurrenceSchema,
+    errors: ["not_found"],
+  }),
+
+  costRecurrencesDelete: defineEndpoint({
+    id: "costRecurrencesDelete",
+    method: "DELETE",
+    path: "/api/v1/cost-recurrences/{id}",
+    summary: "Delete a recurring cost",
+    description:
+      "The entries it booked stay (with `source: recurring`, but no longer tied to it: `recurrenceId` becomes null).",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
+  costRecurrencesRun: defineEndpoint({
+    id: "costRecurrencesRun",
+    method: "POST",
+    path: "/api/v1/cost-recurrences/{id}/run-now",
+    summary: "Book the next due occurrence now",
+    description:
+      "Books the next occurrence if it is due (on or before today in the household time zone), exactly one, so a series that is behind needs several calls; `entry` is the new entry. Nothing is booked, and `entry` is null, for a paused or finished recurring cost or one whose next occurrence is still ahead. A booking that fails (the book is archived: 400 on `bookId`) is also recorded as `lastError`. No request body.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    response: runCostRecurrenceResultSchema,
     errors: ["not_found"],
   }),
 

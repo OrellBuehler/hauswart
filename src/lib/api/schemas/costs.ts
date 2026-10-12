@@ -118,6 +118,11 @@ export const costEntrySchema = z
      * null for every other entry and once the task is deleted.
      */
     receiptTaskId: z.string().nullable(),
+    /**
+     * The recurring cost (`GET /cost-recurrences/{id}`) that booked the entry (`source` is then `recurring`); null for
+     * every other entry and once the recurring cost is deleted.
+     */
+    recurrenceId: z.string().nullable(),
     commentCount: z.number().int(),
     createdBy: z.string().nullable(),
     createdAt: isoTimestampSchema,
@@ -149,7 +154,7 @@ export const listCostsQuerySchema = paginationQuerySchema.extend({
 export type ListCostsQuery = z.output<typeof listCostsQuerySchema>;
 export const listCostsResponseSchema = paginated(costEntrySchema);
 
-const costFields = {
+export const costFields = {
   bookId: idSchema,
   date: dateSchema,
   title: z.string().trim().min(1).max(COST_TITLE_MAX),

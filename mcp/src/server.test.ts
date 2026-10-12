@@ -39,6 +39,7 @@ const READ_TOOLS = [
   "list_cost_books",
   "list_cost_tags",
   "get_budget_status",
+  "list_cost_recurrences",
   "get_balances",
   "search_documents",
   "get_document",

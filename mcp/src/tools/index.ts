@@ -8,6 +8,7 @@ import { commentTools } from "./comments";
 import { contactTools } from "./contacts";
 import { costBookTools } from "./cost-books";
 import { costBudgetTools } from "./cost-budgets";
+import { costRecurrenceTools } from "./cost-recurrences";
 import { costTagTools } from "./cost-tags";
 import { costTools } from "./costs";
 import { defectTools } from "./defects";
@@ -60,6 +61,7 @@ export const tools: readonly Tool[] = [
   ...costBookTools,
   ...costTagTools,
   ...costBudgetTools,
+  ...costRecurrenceTools,
   ...assetCareTools,
   ...insuranceTools,
   ...noteTools,
