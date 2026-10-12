@@ -143,6 +143,16 @@ export const listAiTasksQuerySchema = paginationQuerySchema.extend({
 export type ListAiTasksQuery = z.output<typeof listAiTasksQuerySchema>;
 export const listAiTasksResponseSchema = paginated(aiTaskSchema);
 
+/** The same filters as the list, for counting without reading the tasks. */
+export const countAiTasksQuerySchema = z.object({
+  status: aiTaskStatusSchema.optional(),
+  kind: aiTaskKindSchema.optional(),
+});
+export type CountAiTasksQuery = z.output<typeof countAiTasksQuerySchema>;
+export const aiTaskCountSchema = z
+  .object({ count: z.number().int().min(0) })
+  .meta({ id: "AiTaskCount" });
+
 /**
  * Closes a task as done. The entries must exist (400 on the field otherwise); at least one entry is needed: a receipt
  * that produced nothing is dismissed instead. A fuel log entry stands for the cost entry it booked.

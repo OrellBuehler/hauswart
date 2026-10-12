@@ -5,7 +5,7 @@ type Page = { items: unknown[]; nextCursor: string | null };
 
 const state = vi.hoisted(() => ({
   calls: [] as string[],
-  failCosts: null as unknown,
+  failBooks: null as unknown,
 }));
 
 const empty: Page = { items: [], nextCursor: null };
@@ -23,6 +23,7 @@ vi.mock("$lib/api/client", () => ({
             settings: { dueSoonDays: 3 },
           };
         case "costBooksList":
+          if (state.failBooks) throw state.failBooks;
           return { items: [book], nextCursor: null };
         case "usersDirectory":
           return { items: [{ id: "u1", displayName: "Anna Beispiel" }] };
@@ -31,15 +32,6 @@ vi.mock("$lib/api/client", () => ({
             items: [
               { id: "a1", name: "Waschmaschine", archivedAt: null },
               { id: "a2", name: "Alter Ofen", archivedAt: "2026-01-01" },
-            ],
-            nextCursor: null,
-          };
-        case "costsList":
-          if (state.failCosts) throw state.failCosts;
-          return {
-            items: [
-              { id: "c1", bookId: "b1", category: "repair", title: "Hahn" },
-              { id: "c2", bookId: "b1", category: "groceries", title: "Brot" },
             ],
             nextCursor: null,
           };
@@ -94,7 +86,7 @@ function pageEvent(address: string) {
 describe("loading the quick entry", () => {
   beforeEach(() => {
     state.calls = [];
-    state.failCosts = null;
+    state.failBooks = null;
     vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
@@ -106,7 +98,7 @@ describe("loading the quick entry", () => {
     expect(read).toEqual([]);
   });
 
-  it("hands over what the form needs: books, people, today's devices, the household currency and a slim history", async () => {
+  it("hands over what the form needs and does not wait for the recent categories", async () => {
     const { event } = pageEvent("http://localhost/costs/quick");
     const data = (await load(event)) as Record<string, unknown>;
     expect(data.currency).toBe("CHF");
@@ -114,34 +106,21 @@ describe("loading the quick entry", () => {
     expect(data.today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     // archived devices are not offered
     expect((data.assets as { id: string }[]).map((a) => a.id)).toEqual(["a1"]);
-    // only what ranks the categories travels to the page
-    expect(data.history).toEqual([
-      { bookId: "b1", category: "repair" },
-      { bookId: "b1", category: "groceries" },
-    ]);
-  });
-
-  it("still opens when the recent entries cannot be read, with the fixed order of categories", async () => {
-    state.failCosts = new ApiError("internal", "boom", { status: 500 });
-    const { event } = pageEvent("http://localhost/costs/quick");
-    const data = (await load(event)) as { history: unknown[] };
-    expect(data.history).toEqual([]);
-    expect(console.warn).toHaveBeenCalledWith(
-      "recent costs unavailable",
-      "internal",
-      500,
-    );
+    // the form fetches the categories itself, once it is on screen
+    expect(data).not.toHaveProperty("history");
+    expect(state.calls).not.toContain("costsRecentCategories");
+    expect(state.calls).not.toContain("costsList");
   });
 
   it("sends a signed-out session to the login page and does not hide any other failure", async () => {
-    state.failCosts = new ApiError("unauthenticated", "no", { status: 401 });
+    state.failBooks = new ApiError("unauthenticated", "no", { status: 401 });
     await expect(
       load(pageEvent("http://localhost/costs/quick?mode=receipt").event),
     ).rejects.toMatchObject({
       status: 303,
       location: "/login?redirectTo=%2Fcosts%2Fquick%3Fmode%3Dreceipt",
     });
-    state.failCosts = new TypeError("not an API error");
+    state.failBooks = new TypeError("not an API error");
     await expect(
       load(pageEvent("http://localhost/costs/quick").event),
     ).rejects.toThrow("not an API error");

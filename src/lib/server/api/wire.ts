@@ -448,6 +448,7 @@ export function wireDashboard(
     balances: z.input<typeof dashboardSchema>["balances"];
     pendingFinanceSuggestions: number;
     reviewNeededCount: number;
+    pendingReceiptCount: number;
   },
 ): z.input<typeof dashboardSchema> {
   return {
@@ -480,6 +481,7 @@ export function wireDashboard(
     balances: extras.balances,
     pendingFinanceSuggestions: extras.pendingFinanceSuggestions,
     reviewNeededCount: extras.reviewNeededCount,
+    pendingReceiptCount: extras.pendingReceiptCount,
   };
 }
 

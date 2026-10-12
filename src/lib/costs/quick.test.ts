@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { COST_CATEGORIES, type CostCategory } from "$lib/api/enums";
 import { ApiError } from "$lib/api/errors";
 import type { CostBook } from "$lib/api/schemas/cost-books";
@@ -12,6 +12,7 @@ import {
   cleanAmount,
   defaultParticipants,
   isKeyConflict,
+  loadRecentCategories,
   needsMoreSection,
   newQuickDraft,
   parseQuickMode,
@@ -114,6 +115,32 @@ describe("category ranking", () => {
     expect(rankCategories(history, { bookId: "b1" })[0]).toBe("repair");
     // without a book only the total counts
     expect(rankCategories(history)[0]).toBe("repair");
+  });
+
+  it("takes the counts of the recent categories the server answers with", () => {
+    const counted = [
+      { bookId: "b1", category: "repair" as const, count: 4 },
+      { bookId: "b2", category: "dining" as const, count: 3 },
+      { bookId: "b2", category: "gifts" as const, count: 1 },
+    ];
+    expect(rankCategories(counted, { bookId: "b2" }).slice(0, 3)).toEqual([
+      "dining",
+      "gifts",
+      "repair",
+    ]);
+    expect(rankCategories(counted, { bookId: "b1" })[0]).toBe("repair");
+    // without a book only the total counts: 4 repairs beat 3 dinners
+    expect(rankCategories(counted).slice(0, 2)).toEqual(["repair", "dining"]);
+    // an entry without a count is one use, as before
+    expect(
+      rankCategories(
+        [
+          ...used("b2", "gifts"),
+          { bookId: "b2", category: "dining", count: 2 },
+        ],
+        { bookId: "b2" },
+      ).slice(0, 2),
+    ).toEqual(["dining", "gifts"]);
   });
 
   it("breaks a tie by the total, then by the fixed order", () => {
@@ -741,5 +768,51 @@ describe("the part of the form that is folded away", () => {
     expect(needsMoreSection({ amountMinor: "x", payee: "y" })).toBe(true);
     expect(needsMoreSection({ amountMinor: "x", category: "y" })).toBe(false);
     expect(needsMoreSection({})).toBe(false);
+  });
+});
+
+describe("loading the recent categories for the chips", () => {
+  const rows = [
+    { bookId: "b1", category: "repair", count: 4 },
+    { bookId: "b2", category: "dining", count: 2 },
+  ];
+  const client = (answer: () => unknown) =>
+    ({
+      call: async () => answer(),
+    }) as never;
+
+  it("hands over the rows of the server", async () => {
+    expect(
+      await loadRecentCategories(
+        client(() => ({ entriesPerBook: 100, items: rows })),
+      ),
+    ).toEqual(rows);
+  });
+
+  it("goes without when they cannot be read, so the chips keep their fixed order", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(
+      await loadRecentCategories(
+        client(() => {
+          throw new ApiError("internal", "boom", { status: 500 });
+        }),
+      ),
+    ).toEqual([]);
+    expect(warn).toHaveBeenCalledWith(
+      "recent categories unavailable",
+      "internal",
+    );
+    expect(
+      await loadRecentCategories(
+        client(() => {
+          throw new TypeError("Failed to fetch");
+        }),
+      ),
+    ).toEqual([]);
+    expect(warn).toHaveBeenCalledWith(
+      "recent categories unavailable",
+      "TypeError",
+    );
+    warn.mockRestore();
   });
 });

@@ -33,6 +33,7 @@
     chooseQuickBook,
     cleanAmount,
     isKeyConflict,
+    loadRecentCategories,
     needsMoreSection,
     newQuickDraft,
     quickErrorMessage,
@@ -63,7 +64,6 @@
     currency,
     today,
     currentUserId,
-    history,
     requestedBook,
   }: {
     /** Every cost book, archived ones included (only open ones are offered). */
@@ -74,8 +74,6 @@
     currency: string;
     today: string;
     currentUserId: string;
-    /** The recent entries, to rank the category chips. */
-    history: CategoryHistory[];
     /** The book the address names, if it does. */
     requestedBook: string | null;
   } = $props();
@@ -106,6 +104,8 @@
    * booked; a new key is taken after the entry is booked, and when the server says another entry has this one.
    */
   let idempotencyKey = $state(newIdempotencyKey());
+  /** What the recent entries used, to rank the category chips; read after the page opened (see `onMount`). */
+  let history = $state.raw<CategoryHistory[]>([]);
   let file = $state<File | null>(null);
   let errors = $state<Record<string, string>>({});
   let formError = $state<string | undefined>();
@@ -188,6 +188,10 @@
 
   onMount(() => {
     amountEl?.focus();
+    // The chips are in their fixed order until this arrives; once somebody picked a category they stay as they are.
+    void loadRecentCategories(api).then((rows) => {
+      if (draft.category === "") history = rows;
+    });
     // The address did not name a book: the last quick entry's book, then the one the costs page showed last.
     if (requestedBook) return;
     const chosen = chooseQuickBook({

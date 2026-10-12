@@ -468,6 +468,10 @@ suggestedPaymentCount}`, the caller's own place across all books with recorded p
   last; the file of one book is named `hauswart-costs-<year>-<book slug>.csv`), amounts as plain decimals with a point, no
   thousands separator and the currency's own precision (`-12.50`, `1500` for JPY) so they parse the same
   everywhere; text cells that start with `= + - @` tab or CR get an apostrophe (formula injection).
+- **Recent categories** (`GET /costs/recent-categories?bookId=`, scope `read`; `costs/recent-categories.ts`): how often each category was used by the newest
+  100 entries of each book (`RECENT_CATEGORY_ENTRIES`, newest = the list's order, every entry, archived books too) as rows `{bookId, category, count}` per
+  book in the order of the books, most used first; with `bookId` that book alone (404 when it does not exist). It is what the quick entry ranks its category
+  chips by (`rankCategories` adds the counts) instead of reading a hundred whole entries.
 - **Defects and service log entries** carry `costs: {totalMinor, count}` (correlated subqueries in the
   list select, household currency, refunds netted); their legacy `costEntryId` column is unused.
 - **The inbox** (`finance_suggestions`): what a finance provider offers one person - `cost`, `asset` or
@@ -602,6 +606,9 @@ entries with the tools that exist and closes the task. The web app has the page 
   task (the file stays with it); dismissing a dismissed task is 200 and the first reason stays; a done task is 409.
 - **Delete** removes the task and the file only while the task still owns it (pending or dismissed); after a completion the file is the receipt
   of the cost entry and stays. Deleting the cost entry that holds the file clears `attachmentId` (the task shows no file).
+- **Counts** (`GET /ai-tasks/count?status=&kind=`, scope `read`, `{count}`; `countAiTasks`): the number of tasks without reading them. The costs page's
+  badge on "Belege" asks for `?status=pending` (exact, no more "50+"), and the dashboard carries `pendingReceiptCount` (the same number; a card links to
+  `/costs/receipts?status=pending` when it is above zero).
 - **Several clients**: nothing locks a task. Two clients (or one that was restarted) can work on it, which `bookedSoFar` makes visible and the rules
   above keep from double booking: the first to complete wins, a later `create`, `accept` or `fill` for the task is a 409, a later `complete` with other
   ids a 409 naming what is recorded, and what the loser had booked stays flagged for a person to sort out. **The lease** is only a warning in front of
@@ -627,8 +634,7 @@ entries with the tools that exist and closes the task. The web app has the page 
   of the project can render PDF pages (pdfmake only writes them; `@napi-rs/canvas` does not read them), so a page is not turned into an image. The members' ownership share comes from `GET /users/directory`, which now also carries `ownershipBps` (every member can
   read it from the frozen shares of the cost entries anyway). `list_costs` takes `reviewNeeded` and its rows carry `needsReview`.
 - **Not built**: a notification for the uploader ("receipt processed"; it would need a new title key in both languages and the delivery
-  rules), reopening a dismissed task, retention of dismissed tasks, the other kinds, a count of waiting receipts on the dashboard (the costs page reads one page of `GET /ai-tasks?status=pending`
-  for its badge), and a way to complete a task by hand in the web app.
+  rules), reopening a dismissed task, retention of dismissed tasks, the other kinds, and a way to complete a task by hand in the web app.
 - **Tests**: `ai-tasks/ai-tasks.test.ts` and `preview.test.ts` (service), `routes/api/v1/ai-tasks/ai-tasks.test.ts` (API, scopes, visibility,
   review), `files/preview.test.ts` (sizes and encoding, table-driven), `costs/review.test.ts`, `mcp/src/ai-tasks-tools.test.ts` (tools, image and
   PDF content, the private inbox) and one through the HTTP endpoint in `routes/api/v1/mcp/mcp.test.ts`.
@@ -1628,7 +1634,8 @@ in dark mode. Every list has an empty state, every async action a pending and an
   amount field (`inputmode="decimal"`, the household currency, "12." and "12,5" read as typed), book chips (`chooseQuickBook`: the address, then the
   book of the last quick entry - `loadQuickBook`, kept apart from the costs page's remembered book -, then that one, then the default; up to five
   open books as chips, else a select), category chips ranked by `rankCategories` (the book's recent entries first, then all recent entries, then a
-  fixed order, the apartment's for a tax relevant book; the load reads the last 100 entries only for this and goes without when it cannot), eight
+  fixed order, the apartment's for a tax relevant book; the form asks `GET /costs/recent-categories` once it is on screen - `loadRecentCategories`, not part of the page load,
+  and the chips keep their fixed order without it or once a category was picked), eight
   shown and "more" for the rest, none chosen at the start; payer chips (default me); "für wen" chips: as the book has them (everybody, nobody for a
   book that does not share) sends no split so the book's own applies, any other choice is `equal` among the ticked (`quickSplit`). **Nobody ticked is not guessed**: in a book that shares it is `unchosen`
   (a warning under the chips, the save refused with an error on `participants`) until the person ticks somebody or taps the chip "Nicht teilen" (`notShared`, which

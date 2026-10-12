@@ -10,6 +10,7 @@ import {
   claimAiTask,
   claimIsActive,
   completeAiTask,
+  countAiTasks,
   deleteAiTask,
   dismissAiTask,
   getAiTask,
@@ -109,6 +110,11 @@ export const list: Handler<typeof endpoints.aiTasksList> = ({ ctx, query }) => {
     nextCursor: page.nextCursor,
   };
 };
+
+export const count: Handler<typeof endpoints.aiTasksCount> = ({
+  ctx,
+  query,
+}) => ({ count: countAiTasks(ctx, query) });
 
 export const get: Handler<typeof endpoints.aiTasksGet> = ({ ctx, params }) =>
   wireAiTask(getAiTask(ctx, params.id), ctx.now);

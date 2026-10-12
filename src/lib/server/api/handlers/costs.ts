@@ -15,6 +15,7 @@ import {
 } from "$lib/server/costs/costs";
 import { costsCsv } from "$lib/server/costs/csv";
 import { moveCostsToBook } from "$lib/server/costs/move";
+import { recentCategories } from "$lib/server/costs/recent-categories";
 import { costsSummary } from "$lib/server/costs/summary";
 import { invalidField } from "$lib/server/service";
 import { reply, type Handler } from "../bind";
@@ -120,6 +121,10 @@ export const summary: Handler<typeof endpoints.costsSummary> = ({
     assetId: query.assetId,
     bookId: query.bookId,
   });
+
+export const recentCategoryCounts: Handler<
+  typeof endpoints.costsRecentCategories
+> = ({ ctx, query }) => recentCategories(ctx, query);
 
 export const balances: Handler<typeof endpoints.costsBalances> = ({
   ctx,

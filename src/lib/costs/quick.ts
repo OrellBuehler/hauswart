@@ -1,6 +1,8 @@
 import type { z } from "zod";
 import type { CostCategory, CostSplitMode } from "$lib/api/enums";
+import type { ApiClient } from "$lib/api/client";
 import { isApiError } from "$lib/api/errors";
+import { endpoints } from "$lib/api/registry";
 import {
   AI_TASK_NOTE_MAX,
   createAiTaskRequestSchema,
@@ -28,8 +30,34 @@ export function parseQuickMode(value: string | null | undefined): QuickMode {
   return value === "receipt" ? "receipt" : "expense";
 }
 
-/** What the quick entry reads of the recent entries to rank the categories. */
-export type CategoryHistory = Pick<CostEntry, "bookId" | "category">;
+/**
+ * What ranks the categories: a row of `GET /costs/recent-categories` (the book, the category, how often the newest entries
+ * of the book used it). An entry without a count is one use.
+ */
+export type CategoryHistory = Pick<CostEntry, "bookId" | "category"> & {
+  count?: number;
+};
+
+/**
+ * The recent categories for the chips. They only order the chips, so when they cannot be read (logged by code) the chips
+ * keep their fixed order and the form works as it is.
+ */
+export async function loadRecentCategories(
+  client: Pick<ApiClient, "call">,
+): Promise<CategoryHistory[]> {
+  try {
+    const recent = await client.call(endpoints.costsRecentCategories, {
+      query: {},
+    });
+    return recent.items;
+  } catch (err) {
+    console.warn(
+      "recent categories unavailable",
+      isApiError(err) ? err.code : err instanceof Error ? err.name : "unknown",
+    );
+    return [];
+  }
+}
 
 /** Everyday spending first, for a book that has no history of its own yet. */
 const EVERYDAY_ORDER: readonly CostCategory[] = [
@@ -105,9 +133,10 @@ export function rankCategories(
   const inBook = new Map<CostCategory, number>();
   const overall = new Map<CostCategory, number>();
   for (const entry of history) {
-    overall.set(entry.category, (overall.get(entry.category) ?? 0) + 1);
+    const uses = entry.count ?? 1;
+    overall.set(entry.category, (overall.get(entry.category) ?? 0) + uses);
     if (options.bookId !== undefined && entry.bookId === options.bookId) {
-      inBook.set(entry.category, (inBook.get(entry.category) ?? 0) + 1);
+      inBook.set(entry.category, (inBook.get(entry.category) ?? 0) + uses);
     }
   }
   const order = options.taxRelevant ? APARTMENT_ORDER : EVERYDAY_ORDER;

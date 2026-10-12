@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import {
   and,
   asc,
+  count,
   desc,
   eq,
   inArray,
@@ -239,6 +240,23 @@ export function listAiTasks(
     r: r.rowid,
   }));
   return { items: hydrate(ctx.db, paged.items), nextCursor: paged.nextCursor };
+}
+
+/** How many tasks there are, with the filters of the list and without reading any of them. */
+export function countAiTasks(
+  ctx: Db,
+  filter: Pick<ListAiTasksQuery, "status" | "kind">,
+): number {
+  const where: SQL[] = [];
+  if (filter.status) where.push(eq(aiTasks.status, filter.status));
+  if (filter.kind) where.push(eq(aiTasks.kind, filter.kind));
+  return (
+    ctx.db
+      .select({ n: count() })
+      .from(aiTasks)
+      .where(and(...where))
+      .get()?.n ?? 0
+  );
 }
 
 export interface NewAiTask {

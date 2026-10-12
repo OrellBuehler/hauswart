@@ -66,22 +66,19 @@ export async function tryLoadBalances(
   }
 }
 
-/** How many receipts wait in the queue: at most one page is counted, `more` says there are further ones. */
-export type PendingReceipts = { count: number; more: boolean };
-
 /**
- * The receipts waiting to be booked, for a badge on the costs page. When they cannot be read the page still opens, without
- * the badge (logged by code). A signed-out session still goes to the login page.
+ * How many receipts wait in the queue, for a badge on the costs page: one count, not the tasks. When it cannot be read the
+ * page still opens, without the badge (logged by code). A signed-out session still goes to the login page.
  */
 export async function tryLoadPendingReceipts(
   client: ApiClient,
   redirectTo: string,
-): Promise<PendingReceipts | null> {
+): Promise<number | null> {
   try {
-    const page = await client.call(endpoints.aiTasksList, {
-      query: { status: "pending", limit: 50 },
+    const { count } = await client.call(endpoints.aiTasksCount, {
+      query: { status: "pending" },
     });
-    return { count: page.items.length, more: page.nextCursor !== null };
+    return count;
   } catch (err) {
     if (!isApiError(err)) throw err;
     if (err.status === 401) {

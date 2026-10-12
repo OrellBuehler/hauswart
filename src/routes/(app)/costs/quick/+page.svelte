@@ -86,7 +86,6 @@
         currency={data.currency}
         today={data.today}
         currentUserId={data.user.id}
-        history={data.history}
         {requestedBook}
       />
     </div>

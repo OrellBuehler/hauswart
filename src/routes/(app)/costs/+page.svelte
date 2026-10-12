@@ -355,17 +355,14 @@
       <Button href={resolve("/costs/receipts")} variant="outline" size="lg">
         <ReceiptTextIcon />
         {m.costs_receipts()}
-        {#if data.pendingReceipts && data.pendingReceipts.count > 0}
+        {#if data.pendingReceipts !== null && data.pendingReceipts > 0}
           <span
             class="bg-warning/15 text-warning rounded-full px-1.5 text-xs tabular-nums"
-            aria-hidden="true"
-            >{data.pendingReceipts.count}{data.pendingReceipts.more
-              ? "+"
-              : ""}</span
+            aria-hidden="true">{data.pendingReceipts}</span
           >
           <span class="sr-only"
             >{m.costs_receipts_pending({
-              count: data.pendingReceipts.count,
+              count: data.pendingReceipts,
             })}</span
           >
         {/if}

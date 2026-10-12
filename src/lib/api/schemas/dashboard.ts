@@ -118,6 +118,8 @@ export const dashboardSchema = z
     pendingFinanceSuggestions: z.number().int().min(0),
     /** Cost entries, in any book and year, that a person still has to review (`GET /costs?reviewNeeded=true`). */
     reviewNeededCount: z.number().int().min(0),
+    /** Tasks of the receipt queue that wait to be booked (`GET /ai-tasks/count?status=pending`), whoever uploaded them. */
+    pendingReceiptCount: z.number().int().min(0),
   })
   .meta({ id: "Dashboard" });
 export type Dashboard = z.infer<typeof dashboardSchema>;

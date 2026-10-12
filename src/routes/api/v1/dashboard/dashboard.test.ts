@@ -49,6 +49,7 @@ describe("dashboard API", () => {
       openDefects: [],
       expiringWarranties: [],
       orderNow: [],
+      pendingReceiptCount: 0,
     });
   });
 

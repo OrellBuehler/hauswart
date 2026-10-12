@@ -283,7 +283,9 @@ import {
 import {
   AI_TASK_PREVIEW_CONTENT_TYPES,
   aiTaskSchema,
+  aiTaskCountSchema,
   completeAiTaskRequestSchema,
+  countAiTasksQuerySchema,
   createAiTaskRequestSchema,
   dismissAiTaskRequestSchema,
   listAiTasksQuerySchema,
@@ -301,6 +303,8 @@ import {
   listCostsResponseSchema,
   moveCostsToBookRequestSchema,
   moveCostsToBookResultSchema,
+  recentCategoriesQuerySchema,
+  recentCategoriesSchema,
   updateCostRequestSchema,
 } from "./schemas/costs";
 import {
@@ -2076,6 +2080,21 @@ export const endpoints = {
     scopes: ["read"],
     query: costsSummaryQuerySchema,
     response: costsSummarySchema,
+    errors: ["not_found"],
+  }),
+
+  costsRecentCategories: defineEndpoint({
+    id: "costsRecentCategories",
+    method: "GET",
+    path: "/api/v1/costs/recent-categories",
+    summary: "The categories the newest entries used",
+    description:
+      "How often each category was used by the newest 100 entries of each book (`entriesPerBook`), as rows `{bookId, category, count}` per book in the order of the books, most used first: what a form needs to offer the likely categories first without reading whole entries. Every entry counts, refunds and other currencies too; archived books are included. With `bookId` only that book is answered (a book that does not exist is a 404). Read scope.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    query: recentCategoriesQuerySchema,
+    response: recentCategoriesSchema,
     errors: ["not_found"],
   }),
 
@@ -3950,6 +3969,20 @@ export const endpoints = {
     scopes: ["read"],
     query: listAiTasksQuerySchema,
     response: listAiTasksResponseSchema,
+  }),
+
+  aiTasksCount: defineEndpoint({
+    id: "aiTasksCount",
+    method: "GET",
+    path: "/api/v1/ai-tasks/count",
+    summary: "Count the tasks of the receipt queue",
+    description:
+      "`{count}` with the filters of the list (`status`, `kind`) and without reading the tasks, for a badge: `?status=pending` is how many receipts wait to be booked. Every member sees the same number (the queue is household data). The dashboard carries the pending count as `pendingReceiptCount`.",
+    tags: ["ai-tasks"],
+    auth: "both",
+    scopes: ["read"],
+    query: countAiTasksQuerySchema,
+    response: aiTaskCountSchema,
   }),
 
   aiTasksGet: defineEndpoint({

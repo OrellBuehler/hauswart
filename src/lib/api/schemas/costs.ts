@@ -392,6 +392,35 @@ export const dashboardCostsSchema = z
   })
   .meta({ id: "DashboardCosts" });
 
+/** How many of the newest entries of each book `GET /costs/recent-categories` looks at. */
+export const RECENT_CATEGORY_ENTRIES = 100;
+
+export const recentCategoriesQuerySchema = z.object({
+  /** Only this book; without it every book is answered, each on its own. */
+  bookId: idSchema.optional(),
+});
+export type RecentCategoriesQuery = z.output<
+  typeof recentCategoriesQuerySchema
+>;
+
+export const recentCategoriesSchema = z
+  .object({
+    /** How many of the newest entries of each book were counted (`RECENT_CATEGORY_ENTRIES`). */
+    entriesPerBook: z.number().int(),
+    /**
+     * How often each category was used by those entries: per book in the order of the books, most used first (then by
+     * name). A category a book did not use lately is not listed; a book without entries has no rows.
+     */
+    items: z.array(
+      z.object({
+        bookId: z.string(),
+        category: costCategorySchema,
+        count: z.number().int(),
+      }),
+    ),
+  })
+  .meta({ id: "RecentCategories" });
+
 export const exportCostsQuerySchema = z.object({
   year: year.optional(),
   /** Only the entries of this book. */
