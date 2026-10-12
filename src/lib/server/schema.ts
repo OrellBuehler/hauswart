@@ -1787,6 +1787,12 @@ export const costEntries = sqliteTable(
     reviewedByUserId: text("reviewed_by_user_id").references(() => users.id, {
       onDelete: "set null",
     }),
+    /** Chosen by the caller so a retried request returns the first entry instead of booking a second; unique per creator. */
+    idempotencyKey: text("idempotency_key"),
+    /** The receipt task the entry was booked for, recorded in the transaction that booked it; cleared when the task goes. */
+    aiTaskId: text("ai_task_id").references(() => aiTasks.id, {
+      onDelete: "set null",
+    }),
     ...timestamps,
   },
   (t) => [
@@ -1794,6 +1800,12 @@ export const costEntries = sqliteTable(
     index("cost_entries_review_idx")
       .on(t.reviewNeeded)
       .where(sql`${t.reviewNeeded} = 1`),
+    uniqueIndex("cost_entries_idempotency_idx")
+      .on(t.createdBy, t.idempotencyKey)
+      .where(sql`${t.idempotencyKey} is not null`),
+    index("cost_entries_ai_task_idx")
+      .on(t.aiTaskId)
+      .where(sql`${t.aiTaskId} is not null`),
     index("cost_entries_book_id_idx").on(t.bookId),
     index("cost_entries_category_idx").on(t.category),
     index("cost_entries_asset_id_idx").on(t.assetId),
@@ -1984,10 +1996,26 @@ export const aiTasks = sqliteTable(
     /** When the task left the queue, done or dismissed. */
     completedAt: integer("completed_at", { mode: "timestamp_ms" }),
     completedVia: text("completed_via", { enum: AI_TASK_CLOSED_VIA }),
+    /** Who closed it, done or dismissed (the owner of the token for an API client). */
+    completedByUserId: text("completed_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    /** Chosen by the caller so a retried upload returns the first task instead of queueing a second; unique per uploader. */
+    idempotencyKey: text("idempotency_key"),
+    /** What the key stands for (kind, hints, the bytes uploaded), so the same key for another receipt is told apart. */
+    idempotencyDigest: text("idempotency_digest"),
+    /** The lease: who opened the task last to work on it, and when. Only a soft warning for other clients. */
+    claimedByUserId: text("claimed_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    claimedAt: integer("claimed_at", { mode: "timestamp_ms" }),
     ...timestamps,
   },
   (t) => [
     index("ai_tasks_status_idx").on(t.status, sql`${t.createdAt} desc`),
     index("ai_tasks_attachment_id_idx").on(t.attachmentId),
+    uniqueIndex("ai_tasks_idempotency_idx")
+      .on(t.createdByUserId, t.idempotencyKey)
+      .where(sql`${t.idempotencyKey} is not null`),
   ],
 );
