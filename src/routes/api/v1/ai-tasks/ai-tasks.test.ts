@@ -354,7 +354,7 @@ describe("receipt queue API", () => {
     it("books the receipt onto the cost entry for review and the whole household sees the result", async () => {
       const { anna, asAnna, asBen, upload, cost } = await world();
       const task = await upload(asAnna);
-      const entry = await cost(asBen, { title: "Migros Beispiel" });
+      const entry = await cost(asBen, { title: "Beispiel AG" });
       const r = await asBen("POST", `/api/v1/ai-tasks/${task.id}/complete`, {
         json: { createdCostIds: [entry.id], note: "Datum geschätzt" },
       });
@@ -377,7 +377,7 @@ describe("receipt queue API", () => {
           costs: [
             {
               id: entry.id,
-              title: "Migros Beispiel",
+              title: "Beispiel AG",
               amountMinor: 2340,
               currency: "CHF",
               date: "2026-06-10",

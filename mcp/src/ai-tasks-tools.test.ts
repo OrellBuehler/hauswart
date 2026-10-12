@@ -326,7 +326,7 @@ describe("receipt queue tools", () => {
       const s = await mcp.connect({ scopes: [...ALL] });
       const task = await queue(s);
       const cost = await s.ok("create_cost", {
-        title: "Migros",
+        title: "Beispiel AG",
         amount: "23.40",
         category: "groceries",
       });
@@ -341,7 +341,7 @@ describe("receipt queue tools", () => {
         bookedAs: [
           {
             id: cost.id,
-            title: "Migros",
+            title: "Beispiel AG",
             amount: "23.40 CHF",
             needsReview: true,
           },
@@ -420,7 +420,7 @@ describe("receipt queue tools", () => {
       const s = await mcp.connect({ scopes: [...ALL] });
       const task = await queue(s, "ben");
       const cost = await s.ok("create_cost", {
-        title: "Migros Beispiel",
+        title: "Beispiel AG",
         amount: "23.40",
         category: "groceries",
         paidBy: "Ben",
