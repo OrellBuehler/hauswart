@@ -704,7 +704,8 @@ describe("receipt queue API", () => {
       expect(r.res.status).toBe(200);
       expect(r.res.headers.get("content-type")).toBe("image/png");
       expect(r.res.headers.get("x-content-type-options")).toBe("nosniff");
-      expect(r.res.headers.get("cache-control")).toContain("private");
+      expect(r.res.headers.get("cache-control")).toBe("private, no-cache");
+      expect(r.res.headers.get("etag")).toBeTruthy();
       expect(
         Buffer.from(r.body as Uint8Array).equals(
           Buffer.from(stored.body as Uint8Array),
@@ -742,6 +743,18 @@ describe("receipt queue API", () => {
         },
       );
       expect(second.res.status).toBe(304);
+      // revalidated each time, never kept for a year: the preview can change while the file does not
+      expect(second.res.headers.get("cache-control")).toBe("private, no-cache");
+      expect(second.res.headers.get("etag")).toBe(etag);
+    });
+
+    it("answers 200 again for another etag", async () => {
+      const { asAnna, upload } = await world();
+      const task = await upload(asAnna);
+      const r = await asAnna("GET", `/api/v1/ai-tasks/${task.id}/preview`, {
+        headers: { "if-none-match": '"something-else"' },
+      });
+      expect(r.res.status).toBe(200);
     });
 
     it("sends a PDF as stored", async () => {

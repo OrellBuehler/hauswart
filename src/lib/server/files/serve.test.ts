@@ -43,6 +43,28 @@ describe("fileResponse", () => {
     );
   });
 
+  it("supports revalidating on every request, private, with the etag and its 304", () => {
+    const options = {
+      mime: "image/png",
+      filename: "a.png",
+      disposition: "inline" as const,
+      cache: "no-cache" as const,
+      etag: '"abc"',
+    };
+    const first = fileResponse(body(), options);
+    expect(first.headers.get("Cache-Control")).toBe("private, no-cache");
+    expect(first.headers.get("ETag")).toBe('"abc"');
+    const again = fileResponse(body(), {
+      ...options,
+      request: new Request("http://localhost/x", {
+        headers: { "If-None-Match": '"abc"' },
+      }),
+    });
+    expect(again.status).toBe(304);
+    expect(again.headers.get("Cache-Control")).toBe("private, no-cache");
+    expect(again.headers.get("ETag")).toBe('"abc"');
+  });
+
   it("supports no-store", () => {
     const response = fileResponse(body(), {
       mime: "image/png",

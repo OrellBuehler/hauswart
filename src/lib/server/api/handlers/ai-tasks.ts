@@ -129,6 +129,7 @@ export const preview: Handler<typeof endpoints.aiTasksPreview> = async ({
     mime: file.mime,
     filename: file.filename,
     disposition: "inline",
+    cache: "no-cache",
     etag: file.etag,
     request: event.request,
   });

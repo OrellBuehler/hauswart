@@ -4006,7 +4006,7 @@ export const endpoints = {
     path: "/api/v1/ai-tasks/{id}/preview",
     summary: "The task's file sized for an assistant to read",
     description:
-      "The receipt as an image of at most 1600 px on the longest side and about 1.5 MB: an image that is smaller is sent as stored, a larger one is scaled down and sent as JPEG (a very long, narrow receipt may keep up to 3200 px on its long side so that its text stays legible). A PDF is sent as stored. 404 when the task has no file any more. Sent with `nosniff` and `Cache-Control: private`; use `GET /attachments/{id}/content` (the task's `attachment.url`) for the original.",
+      "The receipt as an image of at most 1600 px on the longest side and about 1.5 MB: an image that is smaller is sent as stored, a larger one is scaled down and sent as JPEG (a very long, narrow receipt may keep up to 3200 px on its long side so that its text stays legible). A PDF is sent as stored. 404 when the task has no file any more. Sent with `nosniff`, an `ETag` and `Cache-Control: private, no-cache` (a copy is kept but asked about every time, since the scaled copy can change while the file does not: `If-None-Match` answers 304); use `GET /attachments/{id}/content` (the task's `attachment.url`) for the original.",
     tags: ["ai-tasks"],
     auth: "both",
     scopes: ["read"],
