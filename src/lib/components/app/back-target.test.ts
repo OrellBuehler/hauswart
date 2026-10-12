@@ -15,6 +15,8 @@ describe("the back arrow in the header", () => {
     ["/costs/9/edit", "/costs/9"],
     ["/costs/new", "/costs"],
     ["/costs/inbox", "/costs"],
+    ["/costs/quick", "/costs"],
+    ["/costs/receipts", "/costs"],
     ["/docs/wifi", "/docs"],
     ["/docs/wifi/edit", "/docs/wifi"],
     ["/docs/new", "/docs"],

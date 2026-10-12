@@ -228,11 +228,14 @@ export function isMoreActive(pathname: string): boolean {
 }
 
 /**
- * Whether the bottom bar is shown on this page. Forms (`/new`, `/edit`) keep their save bar at the
- * bottom of the screen.
+ * Whether the bottom bar is shown on this page. Forms (`/new`, `/edit`) and the quick entry of costs
+ * keep their save bar at the bottom of the screen.
  */
 export function showsBottomNav(pathname: string): boolean {
-  return !/\/(?:new|edit)\/?$/.test(pathname);
+  return (
+    !/\/(?:new|edit)\/?$/.test(pathname) &&
+    !/^\/costs\/quick\/?$/.test(pathname)
+  );
 }
 
 /** Pages reached from the header, not from the navigation. */
