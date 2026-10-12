@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { COST_DEDUCTIBLE, type CostCategory } from "$lib/api/enums";
 import type { CostsSummary, DashboardCosts } from "$lib/api/schemas/costs";
 import {
@@ -267,7 +267,6 @@ export function costsYearToDate(
     .innerJoin(costBooks, eq(costBooks.id, costEntries.bookId))
     .where(expense)
     .groupBy(costBooks.id)
-    .orderBy(asc(costBooks.name))
     .all()
     .map((b) => ({
       bookId: b.bookId,
