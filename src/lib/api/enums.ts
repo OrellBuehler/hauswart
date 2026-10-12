@@ -551,6 +551,37 @@ export const COST_SOURCES = [
 ] as const;
 export type CostSource = (typeof COST_SOURCES)[number];
 
+/** Colour keys of a cost tag; the client maps them to classes. */
+export const COST_TAG_COLORS = [
+  "gray",
+  "red",
+  "orange",
+  "amber",
+  "green",
+  "teal",
+  "blue",
+  "violet",
+  "pink",
+] as const;
+export type CostTagColor = (typeof COST_TAG_COLORS)[number];
+
+/** What a budget covers: one calendar month or one calendar year. */
+export const COST_BUDGET_PERIODS = ["month", "year"] as const;
+export type CostBudgetPeriod = (typeof COST_BUDGET_PERIODS)[number];
+
+/** How often a recurring cost falls due; `interval` stretches it ("every 2 months"). */
+export const COST_RECURRENCE_FREQUENCIES = [
+  "monthly",
+  "quarterly",
+  "yearly",
+] as const;
+export type CostRecurrenceFrequency =
+  (typeof COST_RECURRENCE_FREQUENCIES)[number];
+
+/** Why the last attempt to book a recurring cost failed; null while it works. */
+export const COST_RECURRENCE_ERRORS = ["book_archived", "failed"] as const;
+export type CostRecurrenceError = (typeof COST_RECURRENCE_ERRORS)[number];
+
 /** `tasks.externalSource` of the tasks that follow a bill in a finance system. */
 export const FINANCE_BILL_TASK_SOURCE = "finance_bill";
 
