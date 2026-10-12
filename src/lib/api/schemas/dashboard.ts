@@ -109,8 +109,11 @@ export const dashboardSchema = z
     orderNow: z.array(orderNowItemSchema),
     /** The year's expenses, in total and per book. */
     costsYearToDate: dashboardCostsSchema,
-    /** Where the caller stands across all books: the balance and the first payments that would square everybody. */
-    balances: dashboardBalancesSchema,
+    /**
+     * Where the caller stands across all books: the balance and the first payments that would square everybody. Null
+     * when it could not be worked out right now (logged), so the rest of the dashboard still opens.
+     */
+    balances: dashboardBalancesSchema.nullable(),
     /** The caller's own offers from a connected finance app that wait for a decision; other members' offers are never counted. */
     pendingFinanceSuggestions: z.number().int().min(0),
   })

@@ -21,24 +21,28 @@
   }: {
     /** What the year has cost so far: all books together and per book. */
     costs: Dashboard["costsYearToDate"];
-    /** Where the caller stands across all books, and the first payments that would square everybody. */
+    /** Where the caller stands across all books, and the first payments that would square everybody; null when the server could not work it out. */
     balances: Dashboard["balances"];
   } = $props();
 
   const BOOKS_SHOWN = 4;
 
-  const status = $derived(dashboardBalanceState(balances));
-  const you = $derived(dashboardYouLine(balances));
+  const status = $derived(
+    balances === null ? "unavailable" : dashboardBalanceState(balances),
+  );
+  const you = $derived(balances === null ? null : dashboardYouLine(balances));
   const tones: Record<BalanceTone, string> = {
     credit: "text-success",
     debit: "text-destructive",
     even: "",
   };
   const morePayments = $derived(
-    Math.max(
-      0,
-      balances.suggestedPaymentCount - balances.suggestedPayments.length,
-    ),
+    balances === null
+      ? 0
+      : Math.max(
+          0,
+          balances.suggestedPaymentCount - balances.suggestedPayments.length,
+        ),
   );
   const books = $derived(costs.byBook.slice(0, BOOKS_SHOWN));
   const moreBooks = $derived(Math.max(0, costs.byBook.length - BOOKS_SHOWN));
@@ -63,7 +67,11 @@
           {you.text}
         </p>
       {/if}
-      {#if status === "open"}
+      {#if balances === null}
+        <p class="text-muted-foreground text-sm text-pretty">
+          {m.balances_unavailable()}
+        </p>
+      {:else if status === "open"}
         <SuggestedPayments
           class="text-sm"
           payments={balances.suggestedPayments}

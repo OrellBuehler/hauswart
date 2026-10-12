@@ -421,7 +421,10 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   knows nothing of recorded payments, so it would have disagreed with the balance. **`balances`** answers "where do I
   stand": `{currency, myBalanceMinor, hasActivity, suggestedPayments (the first three, between any two people),
 suggestedPaymentCount}`, the caller's own place across all books with recorded payments included, from one read of the
-  same ledger as `GET /costs/balances` (four queries however many entries there are; a test pins that).
+  same ledger as `GET /costs/balances` (four queries however many entries there are; a test pins that). It is the one
+  part of the dashboard that may fail on its own: when it cannot be worked out the handler answers `balances: null`
+  (the schema is nullable) and logs `dashboard.balances_failed` with the error's name and code, so the tasks and the
+  rest of the dashboard still open.
 - **Settlements and balances** (`settlements`, migration `0026`; `costs/settlements.ts`, `balances.ts`, `ledger.ts`;
   `/settlements`, `GET /costs/balances`): a settlement is a payment between two members ("Ben paid Anna 50"):
   `fromUserId` differs from `toUserId` (both members, else 400 on the field), `amountMinor` is positive (also a CHECK),
@@ -1495,7 +1498,7 @@ in dark mode. Every list has an empty state, every async action a pending and an
   four books, else a select); a new entry takes the book's default split until the person chose a split (`withBook`, `splitAfterBook`); "Für wen"
   are member checkboxes of an equal split (`participants`, sent as `participantIds` only when narrowed, and a PATCH sends `splitMode: "equal"`
   again when the set changed); the tax class is only offered, and sent, for a tax relevant book (`taxClassApplies`). The inbox's accept dialog
-  has the same picker and checkboxes. The dashboard's `CostsCard` reads `dashboard.balances` ("Du bekommst / Du schuldest" across all books, the first three payments and how many more there are, no request of its own) and labels the year total "Ausgaben 2026, alle Bücher" with the per-book list of `costsYearToDate.byBook` under it;
+  has the same picker and checkboxes. The dashboard's `CostsCard` reads `dashboard.balances` ("Du bekommst / Du schuldest" across all books, the first three payments and how many more there are, no request of its own; `null` shows "Der Saldo konnte nicht geladen werden." under the year's costs) and labels the year total "Ausgaben 2026, alle Bücher" with the per-book list of `costsYearToDate.byBook` under it;
   `tryLoadBalances` lets a page open when only the balances fail (the card says so).
   `chooseBook` never hands on an id the server would 404 on; a remembered book that was deleted comes back as `staleMemory`, and the loads forget it (`forgetBook`).
   The single-book balance cards and the Saldo page name the payments across all books they leave out (`crossBookNote`, from `crossBookSettlements`). The tax card measures its rows against

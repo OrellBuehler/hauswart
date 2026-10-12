@@ -45,7 +45,7 @@ const balances = (over: Partial<Balances> = {}): Balances => ({
   ...over,
 });
 
-function html(c: Costs, b: Balances): string {
+function html(c: Costs, b: Balances | null): string {
   return render(CostsCard as never, {
     props: { costs: c, balances: b } as never,
   }).body.replace(/[\u00a0\u202f]/g, " ");
@@ -57,6 +57,22 @@ describe("the dashboard's costs card", () => {
     expect(body).toContain("Du bekommst CHF 25.00");
     expect(body).toContain("Ben Muster schuldet Anna Beispiel");
     expect(body).toContain("Saldo über alle Bücher");
+  });
+
+  it("still shows the year and says so when the balances could not be worked out", () => {
+    const body = html(costs(), null);
+    expect(body).toContain("Ausgaben 2026, alle Bücher");
+    expect(body).toContain("CHF 420.00");
+    expect(body).toContain("Der Saldo konnte nicht geladen werden.");
+    expect(body).not.toContain("Du bekommst");
+    expect(body).not.toContain("Du schuldest");
+    expect(body).not.toContain("schuldet");
+    expect(body).toContain("/costs/balances");
+  });
+
+  it("shows the notice for the balances even when nothing was spent this year", () => {
+    const body = html(costs({ totalMinor: 0, byBook: [] }), null);
+    expect(body).toContain("Der Saldo konnte nicht geladen werden.");
   });
 
   it("labels the year as all books together and lists the books under it", () => {
