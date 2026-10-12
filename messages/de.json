@@ -2515,7 +2515,7 @@
   "costs_filter_tag": "Tag",
   "costs_summary_tag": "Die Ausgaben zählen nur Einträge mit dem Tag «{name}». Der Saldo gilt weiterhin für alle Einträge.",
   "match_title": "Mit Banktransaktion verknüpfen",
-  "match_description": "{count, plural, one {Eine Buchung} other {{count} Buchungen}} deiner Finanz-App {count, plural, one {hat} other {haben}} denselben Betrag. Verknüpfe sie mit diesem Eintrag, damit sie nicht noch einmal vorgeschlagen wird. Tippe sie erneut an, um sie nicht zu verknüpfen.",
+  "match_description": "{count, plural, one {Eine Buchung} other {{count} Buchungen}} deiner Finanz-App {count, plural, one {hat} other {haben}} denselben Betrag. {count, plural, one {Verknüpfe sie} other {Verknüpfe die passende}} mit diesem Eintrag, damit sie nicht noch einmal vorgeschlagen wird. Tippe sie erneut an, um sie nicht zu verknüpfen.",
   "match_chosen": "Wird verknüpft",
   "match_choose": "Mit «{title}» verknüpfen",
   "match_same_day": "am selben Tag",

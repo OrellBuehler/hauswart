@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "$lib/api/errors";
+import { m } from "$lib/paraglide/messages";
 import {
   chosenId,
   fittingMatches,
@@ -173,5 +174,36 @@ describe("why tying an entry was refused", () => {
       ),
     ).toBeUndefined();
     expect(tieFailure(new Error("x"), true)).toBeUndefined();
+  });
+});
+
+describe("the wording of the offer to link", () => {
+  it("agrees in number in German", () => {
+    expect(m.match_description({ count: 1 }, { locale: "de" })).toBe(
+      "Eine Buchung deiner Finanz-App hat denselben Betrag. Verknüpfe sie mit diesem Eintrag, damit sie nicht noch einmal vorgeschlagen wird. Tippe sie erneut an, um sie nicht zu verknüpfen.",
+    );
+    expect(m.match_description({ count: 3 }, { locale: "de" })).toBe(
+      "3 Buchungen deiner Finanz-App haben denselben Betrag. Verknüpfe die passende mit diesem Eintrag, damit sie nicht noch einmal vorgeschlagen wird. Tippe sie erneut an, um sie nicht zu verknüpfen.",
+    );
+  });
+
+  it("names the one to link in English as well", () => {
+    expect(m.match_description({ count: 1 }, { locale: "en" })).toBe(
+      "A booking in your finance app has the same amount. Link it to this entry so it is not suggested again. Tap it again to leave it unlinked.",
+    );
+    expect(m.match_description({ count: 2 }, { locale: "en" })).toBe(
+      "2 bookings in your finance app have the same amount. Link the matching one to this entry so it is not suggested again. Tap it again to leave it unlinked.",
+    );
+  });
+
+  it("quotes titles with typographic quotes in English, as the other finance messages do", () => {
+    expect(
+      m.finance_accepted_link_toast({ title: "X" }, { locale: "en" }),
+    ).toBe("“X” linked to the entry.");
+    expect(
+      m.finance_dismiss_link_description({ title: "X" }, { locale: "en" }),
+    ).toBe(
+      "“X” will not be linked to the entry; it is offered as a booking again instead.",
+    );
   });
 });
