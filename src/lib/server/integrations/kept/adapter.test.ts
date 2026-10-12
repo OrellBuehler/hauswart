@@ -335,5 +335,113 @@ describe("Kept adapter settings", () => {
       });
       expect(getConnectionRow({ db: test.db }, "kept", ben.id)).toBeUndefined();
     });
+
+    describe("the cost books the settings name", () => {
+      const KEPT = "/api/v1/integrations/kept";
+      async function setup() {
+        const user = await createTestUser();
+        allowIntegrationHosts(test.db, "127.0.0.1");
+        const call = createCaller({ session: loginTestUser(user).token });
+        const books = async () =>
+          (
+            (await call("GET", "/api/v1/cost-books")).body as {
+              items: { id: string; name: string }[];
+            }
+          ).items;
+        const book = async (name: string) =>
+          (await books()).find((b) => b.name === name)!.id;
+        const save = (config: Record<string, unknown>) =>
+          call("PUT", KEPT, {
+            json: { baseUrl: fake.baseUrl, token: fake.token, config },
+          });
+        return { user, call, book, save };
+      }
+      const MAP = { categoryMap: { "cat-1": "repair", "cat-2": "utilities" } };
+      const fieldErrors = (r: { body: unknown }) =>
+        (
+          r.body as {
+            error: {
+              details: { body: { fieldErrors: Record<string, string[]> } };
+            };
+          }
+        ).error.details.body.fieldErrors;
+
+      it("are checked when the settings are saved: a book that does not exist is a 400 on config and saves nothing", async () => {
+        const { user, book, save } = await setup();
+        for (const config of [
+          { ...MAP, categoryBookMap: { "cat-1": "no-such-book" } },
+          { ...MAP, defaultBookId: "no-such-book" },
+          {
+            ...MAP,
+            categoryBookMap: { "cat-1": await book("Auto") },
+            defaultBookId: "no-such-book",
+          },
+        ]) {
+          const refused = await save(config);
+          expect(refused.res.status).toBe(400);
+          expect(errorCode(refused)).toBe("invalid_request");
+          expect(fieldErrors(refused).config?.[0]).toContain("no-such-book");
+        }
+        expect(
+          getConnectionRow({ db: test.db }, "kept", user.id),
+        ).toBeUndefined();
+      });
+
+      it("accept books that exist, an archived one included, and drop the choice of a category that is not read", async () => {
+        const { call, book, save } = await setup();
+        const auto = await book("Auto");
+        const haushalt = await book("Haushalt");
+        await call("PATCH", `/api/v1/cost-books/${auto}`, {
+          json: { archived: true },
+        });
+        const ok = await save({
+          ...MAP,
+          categoryBookMap: {
+            "cat-1": auto,
+            "cat-2": haushalt,
+            "cat-not-read": "no-such-book",
+          },
+          defaultBookId: auto,
+        });
+        expect(ok.res.status).toBe(200);
+        expect(ok.body).toMatchObject({
+          config: {
+            categoryBookMap: { "cat-1": auto, "cat-2": haushalt },
+            defaultBookId: auto,
+          },
+        });
+      });
+
+      it("are not checked again by a save that sends no settings, so a connection can still be switched off", async () => {
+        const { user, call, book, save } = await setup();
+        const ferien = (
+          await call("POST", "/api/v1/cost-books", { json: { name: "Ferien" } })
+        ).body as { id: string };
+        expect(
+          (await save({ ...MAP, categoryBookMap: { "cat-1": ferien.id } })).res
+            .status,
+        ).toBe(200);
+        expect(
+          (await call("DELETE", `/api/v1/cost-books/${ferien.id}`)).res.status,
+        ).toBe(204);
+        expect(await book("Haushalt")).toBeTruthy();
+
+        const off = await call("PUT", KEPT, {
+          json: { baseUrl: fake.baseUrl, enabled: false },
+        });
+        expect(off.res.status).toBe(200);
+        expect(off.body).toMatchObject({ enabled: false });
+
+        // Settings sent again are checked, whatever was stored before.
+        const again = await save({
+          ...MAP,
+          categoryBookMap: { "cat-1": ferien.id },
+        });
+        expect(again.res.status).toBe(400);
+        expect(
+          getConnectionRow({ db: test.db }, "kept", user.id)?.configJson,
+        ).toMatchObject({ categoryBookMap: { "cat-1": ferien.id } });
+      });
+    });
   });
 });

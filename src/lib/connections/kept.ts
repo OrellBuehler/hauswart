@@ -222,6 +222,14 @@ export function keptBookOptions(
   return options;
 }
 
+/** Whether the book chosen is archived: it takes no entries, so the next choice applies instead (the settings say so). */
+export function isArchivedBook(
+  books: readonly CostBook[],
+  id: string,
+): boolean {
+  return id !== "" && books.some((b) => b.id === id && b.archivedAt !== null);
+}
+
 export function withAutoAccept(
   settings: KeptSettings,
   id: string,
@@ -467,6 +475,21 @@ export function keptSaveError(
     }
   }
   return { message: apiErrorMessage(err), fields: {} };
+}
+
+/** Why saving the settings failed: the host rule, a book that does not exist (a 400 on `config`), or the generic wording. */
+export function keptSettingsError(err: unknown, baseUrl: string): string {
+  const forbidden = keptForbiddenMessage(err, baseUrl);
+  if (forbidden) return forbidden;
+  if (isApiError(err) && err.code === "invalid_request") {
+    const fields = (
+      err.details as
+        { body?: { fieldErrors?: Record<string, unknown> } } | undefined
+    )?.body?.fieldErrors;
+    if (fields && "config" in fields)
+      return m.integration_kept_book_gone_error();
+  }
+  return apiErrorMessage(err);
 }
 
 const STAT_LINES: ReadonlyArray<[string, (count: number) => string]> = [

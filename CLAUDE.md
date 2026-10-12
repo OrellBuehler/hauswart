@@ -296,7 +296,7 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   `PUT|DELETE /integrations/{kind}` and `POST .../test` (household kinds need an administrator; a
   changed address needs the token again), pickers `GET /integrations/{kind}/{entities,notify-services,
 calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` with `details.code`). An
-  adapter registers `registerIntegration({kind, validate?, test, describe, operations})`; it throws
+  adapter registers `registerIntegration({kind, validate?, checkReferences?, test, describe, operations})`; it throws
   `IntegrationError(code, message)`. Health (`status`, `lastError` code, `consecutiveFailures`) is
   recorded by the adapter; `dueForAttempt`/`backoffMs` give the 1, 2, 4 ... 15 minute backoff.
 - **Where a connection may point** (`connections.ts` `vetConnectionTarget`, `net/host-policy.ts`, `integrations/http.ts`
@@ -526,8 +526,12 @@ map), billTasks, billCreditorFilter (case-insensitive exact creditor names; appl
   knows no Kept). The cursors of the transactions and of the paid invoices carry a digest of the books the settings
   name (`booksScope`: the category map and the default book for transactions, the default book alone for invoices), so
   a changed choice reads everything since `syncFrom` again and the offers still waiting take the new `bookId` (a
-  decided one never changes: `recordSuggestion` rewrites pending ones only). Book ids are not checked when the settings are saved (the adapter's `validate` has no database), only
-  when they are used. The web settings form has a book select under each mapped category (empty = the connection's default) and one for `defaultBookId` (empty = the household's default book); the accept dialog preselects the book offered with a suggestion.
+  decided one never changes: `recordSuggestion` rewrites pending ones only). Book ids are checked when settings are saved: the adapter's `checkReferences` (a generic hook of
+  `IntegrationAdapter`, run by `saveConnection` with the database after `validate`, and only when the request sends
+  `config`, so a save that leaves the stored settings alone never trips over a book deleted since) throws an
+  `IntegrationError` with `field: "config"`, which becomes a 400 on `config` naming the book. A book that does not exist
+  is refused, an archived one is allowed (it counts as none when used, the form warns), and the choice for a category that
+  is not mapped is dropped before the check. The web settings form has a book select under each mapped category (empty = the connection's default) and one for `defaultBookId` (empty = the household's default book); an archived choice shows a warning, a refused one `integration_kept_book_gone_error`; the accept dialog preselects the book offered with a suggestion.
 - Logs carry codes only (`kept.transaction_failed {code}`), never titles, amounts, creditors or tokens.
 
 ### Documents and the document provider

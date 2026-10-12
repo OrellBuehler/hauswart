@@ -19,9 +19,10 @@
   import {
     KEPT_LIMITS,
     keptBookOptions,
+    isArchivedBook,
     keptConfigOf,
-    keptForbiddenMessage,
     keptPickerErrorMessage,
+    keptSettingsError,
     readKeptSettings,
     withCreditor,
     withDefaultBook,
@@ -31,7 +32,6 @@
   } from "$lib/connections/kept";
   import { defaultBook } from "$lib/costs/books";
   import { categoryLabels } from "$lib/costs/labels";
-  import { apiErrorMessage } from "$lib/error-message";
   import { m } from "$lib/paraglide/messages";
   import KeptCategoryMap from "./kept-category-map.svelte";
   import NameListInput from "./name-list-input.svelte";
@@ -76,6 +76,12 @@
           })
         : m.integration_kept_book_household_default_plain(),
     ),
+  );
+
+  const defaultBookHint = $derived(
+    isArchivedBook(books, settings.defaultBookId)
+      ? `${m.integration_kept_default_book_hint()} ${m.integration_kept_book_archived_default()}`
+      : m.integration_kept_default_book_hint(),
   );
 
   const billCostOptions = $derived([
@@ -144,9 +150,7 @@
       toast.success(m.integration_kept_settings_saved());
       saved = true;
     } catch (err) {
-      error =
-        keptForbiddenMessage(err, integration.baseUrl ?? "") ??
-        apiErrorMessage(err);
+      error = keptSettingsError(err, integration.baseUrl ?? "");
     }
     if (saved) await onchanged();
     saving = false;
@@ -181,7 +185,7 @@
       <Field
         id="kept-default-book"
         label={m.integration_kept_default_book()}
-        hint={m.integration_kept_default_book_hint()}
+        hint={defaultBookHint}
       >
         {#snippet children({ describedby })}
           <OptionSelect

@@ -3,6 +3,8 @@ import type {
   IntegrationAdapter,
   IntegrationOperation,
 } from "$lib/server/connections/registry";
+import type { ServiceContext } from "$lib/server/service";
+import { findCostBookRow } from "$lib/server/costs/books";
 import { normalizeBaseUrl } from "./client";
 import { parseConfig } from "./config";
 import { KIND, appOrigin, clientFor, toIntegrationError } from "./connection";
@@ -29,6 +31,31 @@ export function validateInput(input: {
     throw toIntegrationError(err);
   }
   return { baseUrl, config: parseConfig(input.config) };
+}
+
+/**
+ * The cost books the settings name must exist (an archived one is allowed: it counts as none when used, and the
+ * settings page says so). `validate` has no database, so the core calls this with one when settings are saved.
+ */
+export function checkBookReferences(
+  ctx: ServiceContext,
+  config: Record<string, unknown>,
+): void {
+  const { categoryBookMap, defaultBookId } = parseConfig(config);
+  const named = [
+    ...new Set([
+      ...Object.values(categoryBookMap),
+      ...(defaultBookId === undefined ? [] : [defaultBookId]),
+    ]),
+  ];
+  const missing = named.filter((id) => !findCostBookRow(ctx, id));
+  if (missing.length > 0) {
+    throw new IntegrationError(
+      "invalid_input",
+      `Cost book ${missing.join(", ")} does not exist. Choose another book, or none.`,
+      { field: "config" },
+    );
+  }
 }
 
 const categories: IntegrationOperation = async (connection) => {
@@ -71,6 +98,7 @@ const accounts: IntegrationOperation = async (connection) => {
 export const keptIntegration: IntegrationAdapter = {
   kind: KIND,
   validate: validateInput,
+  checkReferences: checkBookReferences,
   async test(connection) {
     try {
       const me = await clientFor(connection).me();

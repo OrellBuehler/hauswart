@@ -5,9 +5,11 @@ import {
   KEPT_LIMITS,
   categoryRows,
   keptBookOptions,
+  isArchivedBook,
   keptConfigOf,
   keptErrorMessage,
   keptSaveError,
+  keptSettingsError,
   keptSettingsSignature,
   offersWaiting,
   readCategoryCount,
@@ -345,6 +347,48 @@ describe("keptBookOptions", () => {
       value: "gone",
       label: "Buch nicht mehr vorhanden",
     });
+  });
+
+  it("knows an archived book, so the settings can warn that it takes nothing", () => {
+    expect(isArchivedBook(books, "b3")).toBe(true);
+    expect(isArchivedBook(books, "b1")).toBe(false);
+    // no choice, and a book that does not exist (the select says so on its own), are not archived
+    expect(isArchivedBook(books, "")).toBe(false);
+    expect(isArchivedBook(books, "gone")).toBe(false);
+  });
+});
+
+describe("keptSettingsError", () => {
+  it("says a chosen book no longer exists for a 400 on the settings", () => {
+    const message = keptSettingsError(
+      new ApiError("invalid_request", "Invalid request", {
+        details: { body: { fieldErrors: { config: ["Cost book x"] } } },
+      }),
+      "https://kept.example.org",
+    );
+    expect(message).toContain("Buch");
+    expect(message).toContain("nicht mehr");
+  });
+
+  it("explains the host rule, and words anything else generically", () => {
+    expect(
+      keptSettingsError(
+        new ApiError("forbidden", "The host is not on the list"),
+        "https://kept.example.org/path",
+      ),
+    ).toContain("kept.example.org");
+    const other = keptSettingsError(new ApiError("internal", "boom"), "");
+    expect(other).toBeTruthy();
+    expect(other).not.toContain("Buch");
+    // a 400 about something else is not mistaken for the books
+    expect(
+      keptSettingsError(
+        new ApiError("invalid_request", "Invalid request", {
+          details: { body: { fieldErrors: { baseUrl: ["bad"] } } },
+        }),
+        "",
+      ),
+    ).not.toContain("nicht mehr");
   });
 });
 

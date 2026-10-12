@@ -203,6 +203,23 @@ function normalise(
   };
 }
 
+/** The adapter's check of what the submitted settings point at (see `IntegrationAdapter.checkReferences`). */
+function checkReferences(
+  ctx: ServiceContext,
+  kind: IntegrationKind,
+  config: Record<string, unknown>,
+): void {
+  const adapter = getIntegration(kind);
+  try {
+    adapter?.checkReferences?.(ctx, config);
+  } catch (err) {
+    if (err instanceof IntegrationError) {
+      throw invalidField(err.field ?? "config", err.message);
+    }
+    throw err;
+  }
+}
+
 /**
  * Where a person may point a connection, checked when it is saved (the request-time check in
  * `integrations/http.ts` repeats the address rules). Members of the household may only use hosts
@@ -266,6 +283,7 @@ export function saveConnection(
     baseUrl: input.baseUrl,
     config: input.config ?? existing?.configJson ?? {},
   });
+  if (input.config !== undefined) checkReferences(ctx, kind, config);
   const token = input.token?.trim() ? input.token.trim() : null;
   if (token !== null && !TOKEN_PATTERN.test(token)) {
     throw invalidField(

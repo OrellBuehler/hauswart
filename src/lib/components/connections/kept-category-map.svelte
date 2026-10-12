@@ -14,6 +14,7 @@
   import { Skeleton } from "$lib/components/ui/skeleton/index.js";
   import {
     categoryRows,
+    isArchivedBook,
     keptBookOptions,
     readCategoryCount,
     withAutoAccept,
@@ -235,6 +236,11 @@
                       onchange={(next) =>
                         (settings = withCategoryBook(settings, row.id, next))}
                     />
+                    {#if isArchivedBook(books, settings.categoryBookMap[row.id] ?? "")}
+                      <p class="text-warning text-xs text-pretty">
+                        {m.integration_kept_book_archived_category()}
+                      </p>
+                    {/if}
                   {/if}
                 </div>
                 <div class="flex flex-wrap gap-x-5 lg:contents">
