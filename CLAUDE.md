@@ -183,7 +183,9 @@ src/lib/money.ts                 minor-unit money type, parsing/formatting, owne
 src/lib/costs/                   client-safe: recurrence.ts (the rule of a recurring cost, pure), budget.ts (budget periods and usage, pure), match.ts (the
                                  matching rule of a transaction and an entry, pure); client-safe UI logic of the costs pages: books.ts (book choice, icons), book-memory.ts, filters.ts, form.ts (draft ->
                                  request bodies), balances.ts (wording), settlements.ts (drafts, bodies, filters), load.ts, quick.ts (category ranking,
-                                 chips -> split, quick draft -> bodies), receipts.ts (queue page helpers); see "Costs in the web app" and "Quick entry, receipts and the review flag in the web app"
+                                 chips -> split, quick draft -> bodies), receipts.ts (queue page helpers), tags.ts (colours, choosing, names), budgets.ts
+                                 (view, display, form), recurrences.ts (rule wording, preview, drafts, bodies), recurrence-controls.svelte.ts (pause, resume, book now),
+                                 matches.ts (what the form asks the bank for); see "Costs in the web app", "Quick entry, receipts and the review flag in the web app" and "Tags, budgets, recurring costs and bank matching in the web app"
 src/lib/attachments/             client-safe upload logic: files.ts, list.svelte.ts, upload.ts (XHR with progress), receipt-file.ts (checks and the HEIC
                                  decision), receipt-convert.ts (the canvas conversion, browser only)
 src/lib/testing/                 useTestDB, createTestUser/Token, createTestEvent, callRoute, fixtures/
@@ -1744,6 +1746,19 @@ in dark mode. Every list has an empty state, every async action a pending and an
   and who reviewed when, the costs page a "Zu prüfen" chip (`?review=1`; `?year=all` lists every year and is only honoured with the review filter,
   because that list is short), a notice under the summary that links to the entries it counts (`reviewFilters`) and the dashboard a card for
   `reviewNeededCount` that opens `REVIEW_ALL_HREF` (every book and year).
+- **Tags, budgets, recurring costs and bank matching in the web app**: **Tags** are managed under `/settings/cost-tags` (name and one of the nine palette colours, `TAG_COLOR_STYLES`;
+  deleting names the entry count) and carried as `tagIds`. `TagPicker` (toggle chips, at most 10; `creatable` makes a tag by name on the spot in the least used colour) sits in the cost form, the
+  recurring cost form and the accept dialog; the quick entry shows it only when tags exist. `TagChips` shows them on rows and the detail page. The costs page filters by `?tag=` (`CostFilters.tagId`;
+  `withKnownTag` drops a tag that no longer exists, which the API answers with a 404): list, summary and CSV follow it, the balances do not (the note under the summary says so). **Budgets** have their own
+  page, `/costs/budgets?period=month|year&year=&month=` (it measures a month or a year by itself, not the list's filters): active budgets of one period type, the ones needing attention first
+  (`itemsForPeriod`), each with a bar, the state as a word and an icon (never colour alone), what is left or the overspend, and a link to the entries it measured (`budgetEntriesQuery`). The dashboard's
+  costs card adds one line when a budget is almost used up or exceeded (`tryLoadBudgetAlerts`, silent when it fails). **Recurring costs**: `/costs/recurring` (active, paused, finished), `/[id]` (rhythm,
+  next three dates, template) and `/new`, `/[id]/edit` with `RecurrenceForm` (the entry's draft without date plus the rule; `splitPatch` is shared with the entry form; the payer defaults to the person).
+  `RecurrenceControls` runs pause, resume and "Jetzt buchen" (enabled only for a due booking, `isDue`: the API never books ahead). `ruleWording` words the rule, `clampNote` explains month-end clamping, and
+  `RecurrencePreview` adds the next three dates and, while saving books something, "Bucht sofort n Einträge seit ..." (`immediateBookings`, at most `RECURRENCE_BOOKING_CAP` = 120 per run). An entry's
+  "Wiederkehrend" badge links to its recurring cost on the detail page. **Bank matching**: `FinanceMatches` (cost form, quick entry) asks `GET /finance/matches` 400 ms after amount, currency and date are
+  valid (`matchQuery`), only for a person with a working finance connection (`tryLoadFinanceConnected`); the chosen transaction goes along as `financeSuggestionId` and is released when the entry stops fitting
+  it (`matchFits`) or the server refuses it (`tieRefused`), which asks again and says why. In the inbox a `link` suggestion shows the transaction and the matching entry; "Nicht verknüpfen" dismisses it.
 - **After a dialog, refresh with `invalidateAfterOverlay`** (`lib/overlays/use-overlay-history.svelte.ts`): closing a dialog pops its history
   entry, and the router drops an `invalidateAll()` that is still loading when that popstate arrives, so the page kept the old data. It waits
   for the entry to be gone first (`OverlayHistory.settled`); a dialog that navigates uses `gotoFromOverlay`. Menu items that start
