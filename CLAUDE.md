@@ -1654,9 +1654,9 @@ in dark mode. Every list has an empty state, every async action a pending and an
   not) and refused with the server's `attach_error_heic` wording otherwise. **Receipt only** (`POST /ai-tasks`, multipart, optional note, book and
   device hints) ends on the page `/costs/receipts` with a toast offering undo (`DELETE /ai-tasks/{id}`): open tasks are always read completely and
   listed first (`mergePendingFirst`), the history comes 30 at a time ("Mehr laden"), `?status=` filters; each row shows the thumbnail (the lightbox
-  for pictures, a new tab for a PDF), uploader, note, hints, for a done task the booked entries as links with their "Prüfen" mark, for a dismissed one the
+  for pictures, a new tab for a PDF), uploader, note, hints, for a done task the booked entries as links with their "Zu prüfen" mark, for a dismissed one the
   reason; anybody may dismiss (reason optional, final), deleting is for the uploader and administrators (`canDeleteTask`). The wording says receipts are
-  "über die MCP-Verbindung verbucht". **Review flag**: `CostFlags` shows "Prüfen", the detail page a notice with "Geprüft" (`POST /costs/{id}/review`)
+  "über die MCP-Verbindung verbucht". **Review flag**: `CostFlags` shows "Zu prüfen", the detail page a notice with the button "Als geprüft markieren" (`POST /costs/{id}/review`; "Geprüft" stays the word for an entry that was reviewed)
   and who reviewed when, the costs page a "Zu prüfen" chip (`?review=1`; `?year=all` lists every year and is only honoured with the review filter,
   because that list is short), a notice under the summary that links to the entries it counts (`reviewFilters`) and the dashboard a card for
   `reviewNeededCount` that opens `REVIEW_ALL_HREF` (every book and year).

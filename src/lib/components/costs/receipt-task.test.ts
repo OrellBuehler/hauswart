@@ -120,7 +120,7 @@ describe("a receipt in the queue", () => {
     expect(body).toContain('href="/costs/c2"');
     expect(body).toContain("CHF 26.70");
     expect(body).toContain("-2.50");
-    expect(body.match(/Prüfen/g)).toHaveLength(1);
+    expect(body.match(/Zu prüfen/g)).toHaveLength(1);
     expect(body).toContain("Hinweis zur Buchung");
     expect(body).toContain("über die MCP-Verbindung abgeschlossen");
     // a task that is done cannot be dismissed any more

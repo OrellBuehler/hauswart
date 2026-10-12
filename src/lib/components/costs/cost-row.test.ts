@@ -63,9 +63,9 @@ describe("CostRow", () => {
   });
 
   it("marks an entry that is waiting for a review", () => {
-    expect(html({})).not.toContain("Prüfen");
+    expect(html({})).not.toContain("Zu prüfen");
     const body = html({ cost: { ...cost, reviewNeeded: true } });
-    expect(body).toContain("Prüfen");
+    expect(body).toContain("Zu prüfen");
   });
 
   it("shows an entry that is not picked as unticked", () => {
