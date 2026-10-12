@@ -52,8 +52,8 @@ describe("tying entries made by hand to transactions, through the API", () => {
           date: DAY,
           amountMinor: 4250,
           currency: "CHF",
-          title: "MIGROS ZUERICH",
-          payee: "Migros",
+          title: "BEISPIEL MARKT ZUERICH",
+          payee: "Beispiel Markt",
           category: "groceries",
           url: `https://${name.toLowerCase()}-finance.example.org/tx/${providerRef}`,
           assetId: null,
@@ -64,7 +64,7 @@ describe("tying entries made by hand to transactions, through the API", () => {
       (
         await call("POST", "/api/v1/costs", {
           json: {
-            title: "Einkauf Migros",
+            title: "Einkauf Beispiel Markt",
             amountMinor: 4250,
             category: "groceries",
             date: DAY,
@@ -93,7 +93,7 @@ describe("tying entries made by hand to transactions, through the API", () => {
         entryId: e.id,
         entry: {
           id: e.id,
-          title: "Einkauf Migros",
+          title: "Einkauf Beispiel Markt",
           date: DAY,
           amountMinor: 4250,
           currency: "CHF",
@@ -101,7 +101,7 @@ describe("tying entries made by hand to transactions, through the API", () => {
           bookName: "Wohnung",
         },
         transaction: {
-          title: "MIGROS ZUERICH",
+          title: "BEISPIEL MARKT ZUERICH",
           amountMinor: 4250,
           bookId: null,
           url: "https://anna-finance.example.org/tx/tx:1",
@@ -123,10 +123,10 @@ describe("tying entries made by hand to transactions, through the API", () => {
     const e = await anna.entry();
     anna.offer("tx:1");
     await anna.call("PATCH", `/api/v1/costs/${e.id}`, {
-      json: { title: "Migros Wocheneinkauf" },
+      json: { title: "Beispiel Markt Wocheneinkauf" },
     });
     expect((await anna.suggestions())[0].payload.entry.title).toBe(
-      "Migros Wocheneinkauf",
+      "Beispiel Markt Wocheneinkauf",
     );
     await anna.call("DELETE", `/api/v1/costs/${e.id}`);
     // Deleting the entry gives the transaction back as a cost suggestion.
@@ -219,7 +219,7 @@ describe("tying entries made by hand to transactions, through the API", () => {
     expect(cost).toMatchObject({
       kind: "cost",
       status: "pending",
-      payload: { title: "MIGROS ZUERICH", amountMinor: 4250 },
+      payload: { title: "BEISPIEL MARKT ZUERICH", amountMinor: 4250 },
     });
     const accepted = await anna.call(
       "POST",

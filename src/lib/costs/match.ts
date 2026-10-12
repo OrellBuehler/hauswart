@@ -6,7 +6,7 @@ import { diffDays } from "../dates";
  * 1. the same amount (sign included: a refund never matches an expense) in the same currency,
  * 2. a booking date at most `MATCH_DAYS` days from the entry's date (a bank books a day or two after the purchase),
  * 3. similar text: the words of title and payee on both sides share at least `MATCH_MIN_SIMILARITY` of the words of the
- *    shorter side (the overlap coefficient, so a short "Migros" is found inside a long bank text).
+ *    shorter side (the overlap coefficient, so a short "Beispiel Markt" is found inside a long bank text).
  *
  * Words are lower case with umlauts spelled as people and banks write them (`Zürich`, `Zuerich`), other accents
  * removed, split at everything that is not a letter or digit. Single characters, numbers of up to four digits (years,

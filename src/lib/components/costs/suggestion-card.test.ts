@@ -8,8 +8,8 @@ const transaction = {
   date: "2026-06-10",
   amountMinor: 4250,
   currency: "CHF",
-  title: "MIGROS ZUERICH",
-  payee: "Migros",
+  title: "BEISPIEL MARKT ZUERICH",
+  payee: "Beispiel Markt",
   category: "groceries" as const,
   url: "https://finance.example.org/tx/1",
   assetId: null,
@@ -37,7 +37,7 @@ const html = (suggestion: FinanceSuggestion) =>
 describe("SuggestionCard", () => {
   const entry = {
     id: "e1",
-    title: "Einkauf Migros",
+    title: "Einkauf Beispiel Markt",
     date: "2026-06-09",
     amountMinor: 4250,
     currency: "CHF",
@@ -52,10 +52,10 @@ describe("SuggestionCard", () => {
       kind: "link",
       payload: { entryId: "e1", entry, transaction },
     });
-    expect(body).toContain("MIGROS ZUERICH");
+    expect(body).toContain("BEISPIEL MARKT ZUERICH");
     expect(body).toContain("Banktransaktion vom");
     expect(body).toContain("Passender Eintrag");
-    expect(body).toContain("Einkauf Migros");
+    expect(body).toContain("Einkauf Beispiel Markt");
     expect(body).toContain('href="/costs/e1"');
     expect(body).toContain("Wohnung");
     expect(body).toContain("nichts wird doppelt gebucht");
@@ -72,7 +72,7 @@ describe("SuggestionCard", () => {
       kind: "link",
       payload: { entryId: "e1", entry: null, transaction },
     });
-    expect(body).toContain("MIGROS ZUERICH");
+    expect(body).toContain("BEISPIEL MARKT ZUERICH");
     expect(body).toContain("Der Eintrag wurde gelöscht");
     expect(body).not.toContain("Mit Eintrag verknüpfen");
     expect(body).toContain("Nicht verknüpfen");

@@ -10,7 +10,11 @@ import {
 
 describe("matchTokens", () => {
   it.each<[string, string, string[]]>([
-    ["lower case words", "Migros Zürich", ["migros", "zuerich"]],
+    [
+      "lower case words",
+      "Beispiel Markt Zürich",
+      ["beispiel", "markt", "zuerich"],
+    ],
     [
       "umlauts as people and banks write them",
       "Käse Café Größe",
@@ -18,8 +22,8 @@ describe("matchTokens", () => {
     ],
     [
       "punctuation and repeated spaces split words",
-      "COOP-Pronto,  Bern/HB",
-      ["coop", "pronto", "bern", "hb"],
+      "MUSTER-Laden,  Bern/HB",
+      ["muster", "laden", "bern", "hb"],
     ],
     ["single characters are dropped", "a b Müller", ["mueller"]],
     [
@@ -32,7 +36,7 @@ describe("matchTokens", () => {
       "Muster AG und Söhne GmbH",
       ["muster", "soehne"],
     ],
-    ["every word once", "Migros migros MIGROS", ["migros"]],
+    ["every word once", "Markt markt MARKT", ["markt"]],
     ["nothing at all", "  ", []],
   ])("%s", (_name, text, expected) => {
     expect([...matchTokens(text)].sort()).toEqual([...expected].sort());
@@ -41,20 +45,20 @@ describe("matchTokens", () => {
 
 describe("textSimilarity", () => {
   it.each<[string, string, string, number]>([
-    ["the same text", "Migros Zürich", "Migros Zürich", 1],
+    ["the same text", "Beispiel Markt Zürich", "Beispiel Markt Zürich", 1],
     ["another spelling of the same text", "Café Zürich", "CAFE ZUERICH", 1],
     [
       "a short text inside a long bank text",
-      "Migros",
-      "MIGROS ZUERICH HB 1234 CH",
+      "Beispiel Markt",
+      "BEISPIEL MARKT ZUERICH HB 1234 CH",
       1,
     ],
-    ["one of two words on both sides", "Einkauf Migros", "MIGROS ZH", 0.5],
-    ["one of two and three words", "Einkauf Migros", "Migros Zürich HB", 0.5],
+    ["one of two words on both sides", "Einkauf Markt", "MARKT ZH", 0.5],
+    ["one of two and three words", "Einkauf Markt", "Markt Zürich HB", 0.5],
     [
       "one of three words on both sides",
-      "Einkauf Migros Bern",
-      "Migros Zürich HB",
+      "Einkauf Markt Bern",
+      "Markt Zürich HB",
       1 / 3,
     ],
     ["nothing in common", "Elektro Müller", "Beispiel Energie", 0],
@@ -66,7 +70,7 @@ describe("textSimilarity", () => {
       "Zahlung 20260412",
       0.5,
     ],
-    ["no text on one side", "", "Migros", 0],
+    ["no text on one side", "", "Beispiel Markt", 0],
     ["no text on either side", "", "", 0],
   ])("%s", (_name, a, b, expected) => {
     expect(textSimilarity(a, b)).toBeCloseTo(expected, 10);
@@ -78,7 +82,7 @@ const side = (over: Partial<MatchSide> = {}): MatchSide => ({
   amountMinor: 4250,
   currency: "CHF",
   date: "2026-06-10",
-  title: "Einkauf Migros",
+  title: "Einkauf Beispiel Markt",
   payee: null,
   ...over,
 });
@@ -122,18 +126,23 @@ describe("transactionMatchesEntry", () => {
       { amountMinor: -4250 },
       true,
     ],
-    ["text at the threshold", {}, { title: "Migros Zürich HB" }, true],
+    ["text at the threshold", {}, { title: "Markt Zürich" }, true],
     [
       "text below the threshold",
-      { title: "Einkauf Migros Bern" },
-      { title: "Migros Zürich HB" },
+      { title: "Einkauf Beispiel Markt Bern" },
+      { title: "Markt Zürich HB" },
       false,
     ],
-    ["another shop", {}, { title: "Coop Pronto", payee: "Coop" }, false],
+    [
+      "another shop",
+      {},
+      { title: "Muster Laden", payee: "Muster Laden" },
+      false,
+    ],
     [
       "the payee carries the match",
       {},
-      { title: "Karte 1234", payee: "Einkauf Migros" },
+      { title: "Karte 1234", payee: "Einkauf Beispiel Markt" },
       true,
     ],
     ["no text on the bank side", {}, { title: "", payee: null }, false],
@@ -144,7 +153,7 @@ describe("transactionMatchesEntry", () => {
 
   it("is symmetric in its two sides", () => {
     const a = side();
-    const b = side({ date: "2026-06-12", title: "MIGROS ZUERICH" });
+    const b = side({ date: "2026-06-12", title: "BEISPIEL MARKT ZUERICH" });
     expect(transactionMatchesEntry(a, b)).toBe(transactionMatchesEntry(b, a));
   });
 });

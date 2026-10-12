@@ -562,7 +562,7 @@ A transaction of a finance app and an entry somebody typed are the same expense.
 `lib/costs/match.ts`); the only adapter code is that `kept/sync.ts` does not auto-accept a `link` and counts `linkSuggestions`.
 
 - **The rule** (`transactionMatchesEntry`): the same amount, sign included (a refund never matches an expense), and currency; booking dates at most `MATCH_DAYS` = 3
-  days apart; the words of title and payee overlap by at least `MATCH_MIN_SIMILARITY` = 0.5 of the shorter side (overlap coefficient, so a short "Migros" is found inside a
+  days apart; the words of title and payee overlap by at least `MATCH_MIN_SIMILARITY` = 0.5 of the shorter side (overlap coefficient, so a short "Beispiel Markt" is found inside a
   long bank text). Words: lower case, `ä ö ü ß` spelled `ae oe ue ss`, other accents dropped, split at everything but letters and digits; single characters, numbers of up
   to four digits and a few fillers and legal forms (`AG`, `GmbH`, `und`) carry no weight. No typo tolerance, no stemming ("E-55" is "e" and "55": both dropped).
 - **At offer time** (`recordSuggestion`, for every adapter): a _new_, _pending_ `cost` suggestion that matches an entry (`findMatchingEntry`) is recorded as a `link`

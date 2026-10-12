@@ -48,8 +48,8 @@ describe("tying cost entries to transactions", () => {
     date: "2026-06-10",
     amountMinor: 4250,
     currency: "CHF",
-    title: "MIGROS ZUERICH",
-    payee: "Migros",
+    title: "BEISPIEL MARKT ZUERICH",
+    payee: "Beispiel Markt",
     category: "groceries",
     url: "https://finance.example.org/tx/1",
     assetId: null,
@@ -82,7 +82,7 @@ describe("tying cost entries to transactions", () => {
     createCost(
       ctxAt(test.db, ctx().now + ++minutes * 60_000),
       createCostRequestSchema.parse({
-        title: "Einkauf Migros",
+        title: "Einkauf Beispiel Markt",
         amountMinor: 4250,
         category: "groceries",
         date: "2026-06-10",
@@ -128,7 +128,7 @@ describe("tying cost entries to transactions", () => {
       ["a refund of the same amount", {}, { amountMinor: -4250 }],
       ["four days earlier", {}, { date: "2026-06-06" }],
       ["four days later", {}, { date: "2026-06-14" }],
-      ["another shop", {}, { title: "COOP PRONTO", payee: "Coop" }],
+      ["another shop", {}, { title: "MUSTER LADEN", payee: "Muster Laden" }],
       ["an entry without a payer", { paidByUserId: null }, {}],
     ])("records a cost for %s", async (_name, entryOver, txOver) => {
       const a = await owner();
@@ -142,7 +142,7 @@ describe("tying cost entries to transactions", () => {
       ["three days later", { date: "2026-06-13" }],
       [
         "the payee carrying the words",
-        { title: "Karte 1234", payee: "Migros" },
+        { title: "Karte 1234", payee: "Beispiel Markt" },
       ],
     ])("links %s", async (_name, txOver) => {
       const a = await owner();
@@ -197,25 +197,28 @@ describe("tying cost entries to transactions", () => {
 
     it("picks the entry with the most similar text first", async () => {
       const a = await owner();
-      entry(a, { title: "Einkauf Migros", date: "2026-06-10" });
-      const best = entry(a, { title: "MIGROS ZUERICH", date: "2026-06-12" });
-      entry(a, { title: "Einkauf Migros", date: "2026-06-10" });
+      entry(a, { title: "Einkauf Beispiel Markt", date: "2026-06-10" });
+      const best = entry(a, {
+        title: "BEISPIEL MARKT ZUERICH",
+        date: "2026-06-12",
+      });
+      entry(a, { title: "Einkauf Beispiel Markt", date: "2026-06-10" });
       expect(payloadOf(offer(a).row)).toMatchObject({ entryId: best.id });
     });
 
     it("then the nearer date", async () => {
       const a = await owner();
-      entry(a, { title: "Migros", date: "2026-06-09" });
-      entry(a, { title: "Migros", date: "2026-06-11" });
-      const closer = entry(a, { title: "Migros", date: "2026-06-10" });
-      entry(a, { title: "Migros", date: "2026-06-12" });
+      entry(a, { title: "Beispiel Markt", date: "2026-06-09" });
+      entry(a, { title: "Beispiel Markt", date: "2026-06-11" });
+      const closer = entry(a, { title: "Beispiel Markt", date: "2026-06-10" });
+      entry(a, { title: "Beispiel Markt", date: "2026-06-12" });
       expect(payloadOf(offer(a).row)).toMatchObject({ entryId: closer.id });
     });
 
     it("then the entry that was made first", async () => {
       const a = await owner();
-      const older = entry(a, { title: "Migros", date: "2026-06-11" });
-      entry(a, { title: "Migros", date: "2026-06-09" });
+      const older = entry(a, { title: "Beispiel Markt", date: "2026-06-11" });
+      entry(a, { title: "Beispiel Markt", date: "2026-06-09" });
       expect(payloadOf(offer(a).row)).toMatchObject({ entryId: older.id });
     });
 
@@ -251,14 +254,14 @@ describe("tying cost entries to transactions", () => {
       const e = entry(a);
       const first = offer(a).row;
       const again = offer(a, {
-        payload: txPayload({ title: "MIGROS ZUERICH HB" }),
+        payload: txPayload({ title: "BEISPIEL MARKT ZUERICH HB" }),
         billRefs: ["b9"],
       });
       expect(again.created).toBe(false);
       expect(again.row.id).toBe(first.id);
       expect(payloadOf(again.row)).toMatchObject({
         entryId: e.id,
-        transaction: { title: "MIGROS ZUERICH HB" },
+        transaction: { title: "BEISPIEL MARKT ZUERICH HB" },
       });
       expect(again.row.billRefsJson).toEqual(["b9"]);
       expect(rows("cost")).toEqual([]);
@@ -342,7 +345,7 @@ describe("tying cost entries to transactions", () => {
         providerUrl: "https://finance.example.org/tx/1",
         providerLinkId: null,
         linkSyncedAt: null,
-        title: "Einkauf Migros",
+        title: "Einkauf Beispiel Markt",
       });
       expect(seen).toEqual([a.connection.id]);
       expect(listCosts(ctx(), {}, { limit: 10 }, a.user.id).items).toHaveLength(
@@ -394,8 +397,8 @@ describe("tying cost entries to transactions", () => {
     it("answers 409 when the entry is gone, tied to something else or changed, and leaves the link pending", async () => {
       const a = await owner();
       const gone = entry(a);
-      const tied = entry(a, { title: "Einkauf Migros 2" });
-      const changed = entry(a, { title: "Einkauf Migros 3" });
+      const tied = entry(a, { title: "Einkauf Beispiel Markt 2" });
+      const changed = entry(a, { title: "Einkauf Beispiel Markt 3" });
       const l1 = offer(a, { providerRef: "tx:1" }).row;
       const l2 = offer(a, { providerRef: "tx:2" }).row;
       const l3 = offer(a, { providerRef: "tx:3" }).row;
@@ -449,7 +452,7 @@ describe("tying cost entries to transactions", () => {
         billRefsJson: ["b1"],
       });
       expect(payloadOf(cost)).toMatchObject({
-        title: "MIGROS ZUERICH",
+        title: "BEISPIEL MARKT ZUERICH",
         amountMinor: 4250,
       });
       expect(getCost(ctx(), e.id).providerRef).toBeNull();
@@ -460,7 +463,9 @@ describe("tying cost entries to transactions", () => {
       entry(a);
       const { row } = offer(a);
       dismissSuggestion(ctx(), a.user.id, row.id);
-      const again = offer(a, { payload: txPayload({ title: "MIGROS HB" }) });
+      const again = offer(a, {
+        payload: txPayload({ title: "BEISPIEL MARKT HB" }),
+      });
       expect(again.created).toBe(false);
       expect(again.row.kind).toBe("cost");
       expect(rows("link")).toHaveLength(1);
