@@ -6,7 +6,10 @@ import {
 } from "../../../src/lib/api/enums";
 import { isApiError } from "../../../src/lib/api/errors";
 import { endpoints } from "../../../src/lib/api/registry";
-import type { AiTask } from "../../../src/lib/api/schemas/ai-tasks";
+import {
+  AI_TASK_PDF_READ_MAX_BYTES,
+  type AiTask,
+} from "../../../src/lib/api/schemas/ai-tasks";
 import type { FinanceSuggestion } from "../../../src/lib/api/schemas/finance";
 import { addDays } from "../../../src/lib/dates";
 import type { ToolContext } from "../context";
@@ -21,8 +24,8 @@ const taskId = z
   .max(64)
   .describe("Task id, from list_ai_tasks");
 
-/** A PDF larger than this is not embedded in the result (base64 grows it by a third); the text says where to get it. */
-export const PDF_EMBED_MAX_BYTES = 4 * 1024 * 1024;
+/** A PDF larger than this is not embedded in the result (base64 grows it by a third); the task is dismissed instead. */
+export const PDF_EMBED_MAX_BYTES = AI_TASK_PDF_READ_MAX_BYTES;
 /** How far back the bank transactions offered for a receipt reach, and how many. */
 export const TRANSACTION_WINDOW_DAYS = 30;
 export const TRANSACTION_LIMIT = 20;
@@ -123,6 +126,10 @@ interface FileResult {
   file: Record<string, unknown>;
 }
 
+/** What to do with a PDF that is too large to be handed over: not guess, but hand the task back with a reason. */
+const tooLargePdf = (bytes: number) =>
+  `The PDF is too large to attach (${bytes} bytes, more than 4 MB) and cannot be read through this connection. Do not guess at its contents: close the task with dismiss_ai_task and the reason "PDF zu gross", so the uploader sends a photo of the receipt instead.`;
+
 /** The task's file for the model: an image block, a PDF as an embedded document, or a note saying why not. */
 async function fileOf(ctx: ToolContext, task: AiTask): Promise<FileResult> {
   const attachment = task.attachment;
@@ -142,6 +149,19 @@ async function fileOf(ctx: ToolContext, task: AiTask): Promise<FileResult> {
         ? `${attachment.width}x${attachment.height}`
         : null,
   };
+  if (
+    attachment.mime === "application/pdf" &&
+    attachment.size > PDF_EMBED_MAX_BYTES
+  ) {
+    return {
+      blocks: [],
+      file: {
+        ...base,
+        delivered: "none",
+        problem: tooLargePdf(attachment.size),
+      },
+    };
+  }
   let res: Response;
   try {
     res = await ctx.api.call(endpoints.aiTasksPreview, {
@@ -165,7 +185,7 @@ async function fileOf(ctx: ToolContext, task: AiTask): Promise<FileResult> {
         file: {
           ...base,
           delivered: "none",
-          problem: `The PDF is too large to attach (${bytes.byteLength} bytes). Download it from ${path} with the same token.`,
+          problem: tooLargePdf(bytes.byteLength),
         },
       };
     }
@@ -237,7 +257,7 @@ export const getAiTask = defineTool({
   name: "get_ai_task",
   title: "Open a receipt task",
   description:
-    "Opens one task of the receipt queue: its note and hints, the receipt itself (an image scaled to at most 1600 px, which is plenty to read it; a PDF is attached as a document when it is not too large) and what you need to book it: the open cost books (default, tax relevant), the cost categories, the household members with their ownership shares, the vehicles and, when you are the uploader, their recent pending bank transactions (any of them may be the same payment). How to work: read the receipt; book it with create_cost (several entries when it mixes books or categories; add_fuel_log for the fuel receipt of a vehicle; accept_finance_suggestion when a listed bank transaction is the payment) and pass this task's id as receiptTaskId every time, so that what you book is recorded on the task and flagged for review at once; bookedSoFar lists what is recorded already (by an earlier attempt of yours or by somebody else's client): do not book those again; the uploader pays unless the note or the receipt says otherwise (paidBy); use the uploader's hints for book and asset when they fit; then close the task with complete_ai_task and the ids of everything you booked. Every entry you book is flagged for a person to review, so say in complete_ai_task's note what you were unsure of. A file that is no receipt, unreadable or already booked (check list_costs) is closed with dismiss_ai_task and a reason. Look before you book: a task that is not pending was processed already. Opening a task marks it as being worked on by you for 15 minutes (a soft lease, shown as claim): when another member's client opened it recently the answer starts with a warning, because that client may be booking the same receipt right now; nothing is locked.",
+    "Opens one task of the receipt queue: its note and hints, the receipt itself (an image scaled to at most 1600 px, which is plenty to read it; a PDF is attached as a document up to 4 MB; a larger one cannot be read here: dismiss the task with the reason \"PDF zu gross\") and what you need to book it: the open cost books (default, tax relevant), the cost categories, the household members with their ownership shares, the vehicles and, when you are the uploader, their recent pending bank transactions (any of them may be the same payment). How to work: read the receipt; book it with create_cost (several entries when it mixes books or categories; add_fuel_log for the fuel receipt of a vehicle; accept_finance_suggestion when a listed bank transaction is the payment) and pass this task's id as receiptTaskId every time, so that what you book is recorded on the task and flagged for review at once; bookedSoFar lists what is recorded already (by an earlier attempt of yours or by somebody else's client): do not book those again; the uploader pays unless the note or the receipt says otherwise (paidBy); use the uploader's hints for book and asset when they fit; then close the task with complete_ai_task and the ids of everything you booked. Every entry you book is flagged for a person to review, so say in complete_ai_task's note what you were unsure of. A file that is no receipt, unreadable or already booked (check list_costs) is closed with dismiss_ai_task and a reason. Look before you book: a task that is not pending was processed already. Opening a task marks it as being worked on by you for 15 minutes (a soft lease, shown as claim): when another member's client opened it recently the answer starts with a warning, because that client may be booking the same receipt right now; nothing is locked.",
   mode: "read",
   input: { id: taskId },
   async handler({ id }, ctx) {

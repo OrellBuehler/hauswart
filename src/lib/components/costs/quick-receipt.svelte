@@ -175,6 +175,7 @@
       bind:file
       disabled={busy}
       error={errors.file}
+      warnLargePdf
     />
   </div>
 

@@ -208,7 +208,7 @@ of suggestion it names (a cost, a device or a bill).
 The receipt queue tools work through what the household uploads in the app (`POST /ai-tasks`). `get_ai_task` is the one
 tool whose answer is more than text: after the text comes the receipt itself as MCP image content (images are scaled down to
 at most 1600 px and about 1.5 MB, a very long till receipt keeps up to 3200 px on its long side) or, for a PDF up to 4 MB, as
-an embedded resource; a larger PDF is named by its download address instead. The uploader is the default payer of what you book
+an embedded resource; a larger PDF cannot be read through the connection (the web app warns when it is picked), and the answer says to dismiss the task with the reason "PDF zu gross" instead of guessing. The uploader is the default payer of what you book
 (`paidBy`), the bank transactions in the answer are the uploader's own pending ones of the last 30 days and only listed when the
 token belongs to the uploader (everybody's finance inbox is private), and `complete_ai_task` flags every entry you name for a
 person to review (`list_costs` with `reviewNeeded: true`, `needsReview` on the rows). Close a task with exactly one of

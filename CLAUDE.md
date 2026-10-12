@@ -621,8 +621,10 @@ entries with the tools that exist and closes the task. The web app has the page 
   mode `undo`: destructive and idempotent). `get_ai_task` answers with the text (summary and JSON: task, file, defaults, open cost books with
   `default`/`taxRelevant`/`defaultSplit`, the cost categories, members with `ownershipPercent`, vehicles with plate, the uploader's pending
   `cost` suggestions of the last 30 days, newest first, at most 20) followed by the receipt as MCP **image content** (`ToolOutput.content`
-  carries blocks after the text) or, for a PDF up to 4 MB, as an embedded `resource` with a blob; a larger PDF is described in `file.problem` with
-  its download address. The members' ownership share comes from `GET /users/directory`, which now also carries `ownershipBps` (every member can
+  carries blocks after the text) or, for a PDF up to 4 MB, as an embedded `resource` with a blob; a larger PDF (`AI_TASK_PDF_READ_MAX_BYTES`, 4 MB, checked on the attachment's
+  size before anything is fetched) is not sent at all: `file.problem` tells the model to dismiss the task with the reason "PDF zu gross", and the queue
+  page's picker warns when such a PDF is chosen (`exceedsReadingLimit`, only where the file goes to the queue, not as the receipt of an entry). No dependency
+  of the project can render PDF pages (pdfmake only writes them; `@napi-rs/canvas` does not read them), so a page is not turned into an image. The members' ownership share comes from `GET /users/directory`, which now also carries `ownershipBps` (every member can
   read it from the frozen shares of the cost entries anyway). `list_costs` takes `reviewNeeded` and its rows carry `needsReview`.
 - **Not built**: a notification for the uploader ("receipt processed"; it would need a new title key in both languages and the delivery
   rules), reopening a dismissed task, retention of dismissed tasks, the other kinds, a count of waiting receipts on the dashboard (the costs page reads one page of `GET /ai-tasks?status=pending`

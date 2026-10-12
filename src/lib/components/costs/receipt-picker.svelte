@@ -9,6 +9,8 @@
   import {
     RECEIPT_CAMERA_ACCEPT,
     RECEIPT_PICK_ACCEPT,
+    exceedsReadingLimit,
+    largePdfMessage,
     prepareReceiptFile,
     receiptProblemMessage,
   } from "$lib/attachments/receipt-file";
@@ -25,11 +27,14 @@
     file = $bindable(null),
     disabled = false,
     error,
+    warnLargePdf = false,
     class: className,
   }: {
     id: string;
     file?: File | null;
     disabled?: boolean;
+    /** The file goes to the receipt queue, where an assistant reads it: a PDF it cannot be handed is warned about. */
+    warnLargePdf?: boolean;
     /** A problem from the page (the receipt is required, the upload failed ...). */
     error?: string | undefined;
     class?: string;
@@ -43,6 +48,9 @@
 
   const isImage = $derived(file?.type.startsWith("image/") ?? false);
   const shownError = $derived(problem ?? error);
+  const unreadable = $derived(
+    warnLargePdf && file !== null && exceedsReadingLimit(file),
+  );
 
   let previewUrl = $state<string | null>(null);
   $effect(() => {
@@ -181,6 +189,16 @@
         {m.quick_receipt_choose()}
       </Button>
     </div>
+  {/if}
+
+  {#if unreadable}
+    <p
+      id={`${id}-warning`}
+      class="text-warning text-xs text-pretty"
+      role="status"
+    >
+      {largePdfMessage()}
+    </p>
   {/if}
 
   {#if shownError}

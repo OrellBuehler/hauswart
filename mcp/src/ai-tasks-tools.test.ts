@@ -245,7 +245,7 @@ describe("receipt queue tools", () => {
       });
     });
 
-    it("does not attach a PDF that is too large, and names where to get it", async () => {
+    it("does not attach a PDF that is too large, and says to dismiss the task with the reason 'PDF zu gross'", async () => {
       const s = await mcp.connect({ scopes: [...ALL] });
       const big = Buffer.concat([
         samplePdf(),
@@ -259,12 +259,46 @@ describe("receipt queue tools", () => {
       const reply = await s.call("get_ai_task", { id: task.id });
       expect(reply.media).toEqual([]);
       expect(reply.summary).toContain("No receipt could be attached");
-      expect(reply.json.file).toMatchObject({
+      const file = reply.json.file as Json;
+      expect(file).toMatchObject({
         delivered: "none",
-        problem: expect.stringContaining(
-          `/api/v1/attachments/${task.attachment?.id}/content`,
-        ),
+        originalSize: big.byteLength,
+        problem: expect.stringContaining("dismiss_ai_task"),
       });
+      expect(file.problem).toContain('"PDF zu gross"');
+      expect(file.problem).not.toContain("/api/v1/attachments");
+      expect(file.download).toBeUndefined();
+      // and it works as the text says
+      const dismissed = await s.call("dismiss_ai_task", {
+        id: task.id,
+        reason: "PDF zu gross",
+      });
+      expect(dismissed.json).toMatchObject({
+        status: "dismissed",
+        dismissReason: "PDF zu gross",
+      });
+    });
+
+    it("does not even fetch a PDF that is too large", async () => {
+      const paths: string[] = [];
+      const s = await mcp.connect({
+        scopes: [...ALL],
+        fetch: (inner) => async (input, init) => {
+          paths.push(input);
+          return inner(input, init);
+        },
+      });
+      const big = Buffer.concat([
+        samplePdf(),
+        Buffer.alloc(PDF_EMBED_MAX_BYTES + 1024, 32),
+      ]);
+      const task = await queue(s, "anna", {
+        bytes: big,
+        filename: "gross.pdf",
+        declaredMime: "application/pdf",
+      });
+      await s.call("get_ai_task", { id: task.id });
+      expect(paths.some((p) => p.endsWith("/preview"))).toBe(false);
     });
 
     it("says so when the task has no file any more", async () => {

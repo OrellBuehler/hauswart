@@ -1,5 +1,12 @@
+import { AI_TASK_PDF_READ_MAX_BYTES } from "$lib/api/schemas/ai-tasks";
 import { m } from "$lib/paraglide/messages";
-import { MAX_ATTACHMENT_BYTES, isHeic, matchesAccept } from "./files";
+import {
+  MAX_ATTACHMENT_BYTES,
+  fileType,
+  formatBytes,
+  isHeic,
+  matchesAccept,
+} from "./files";
 
 /** What the server stores as a receipt: the types of any attachment. */
 export const RECEIPT_TYPES = "image/jpeg,image/png,image/webp,application/pdf";
@@ -116,4 +123,21 @@ export function receiptProblemMessage(problem: ReceiptProblem): string {
     case "heic":
       return m.attach_error_heic();
   }
+}
+
+/** Whether a receipt for the queue is a PDF an assistant cannot read through the MCP connection (above 4 MB). */
+export function exceedsReadingLimit(
+  file: Pick<File, "name" | "type" | "size">,
+): boolean {
+  return (
+    fileType(file) === "application/pdf" &&
+    file.size > AI_TASK_PDF_READ_MAX_BYTES
+  );
+}
+
+/** The warning for such a PDF: it can still be sent, but a photo would be read. */
+export function largePdfMessage(): string {
+  return m.quick_receipt_pdf_too_large({
+    max: formatBytes(AI_TASK_PDF_READ_MAX_BYTES),
+  });
 }

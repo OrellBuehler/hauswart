@@ -1,10 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
+import { AI_TASK_PDF_READ_MAX_BYTES } from "$lib/api/schemas/ai-tasks";
 import { MAX_ATTACHMENT_BYTES } from "./files";
 import {
   CONVERTED_MAX_SIDE,
+  exceedsReadingLimit,
   fitWithin,
   heicPlan,
   jpegName,
+  largePdfMessage,
   prepareReceiptFile,
   receiptProblemMessage,
   type JpegConverter,
@@ -152,5 +155,37 @@ describe("preparing a receipt file", () => {
     const words = problems.map(receiptProblemMessage);
     expect(new Set(words).size).toBe(problems.length);
     for (const text of words) expect(text.length).toBeGreaterThan(10);
+  });
+});
+
+describe("a PDF the assistant cannot read", () => {
+  const limit = AI_TASK_PDF_READ_MAX_BYTES;
+
+  it("is a PDF above 4 MB", () => {
+    expect(limit).toBe(4 * 1024 * 1024);
+    expect(exceedsReadingLimit(file("a.pdf", "application/pdf", limit))).toBe(
+      false,
+    );
+    expect(
+      exceedsReadingLimit(file("a.pdf", "application/pdf", limit + 1)),
+    ).toBe(true);
+  });
+
+  it("goes by the extension when the browser names no type", () => {
+    expect(exceedsReadingLimit(file("A.PDF", "", limit + 1))).toBe(true);
+  });
+
+  it("is never a photo, however large", () => {
+    expect(exceedsReadingLimit(file("a.jpg", "image/jpeg", limit * 3))).toBe(
+      false,
+    );
+    expect(exceedsReadingLimit(file("a.png", "", limit * 3))).toBe(false);
+  });
+
+  it("is worded with the limit and the advice to send a photo", () => {
+    const text = largePdfMessage();
+    expect(text).toContain("4 MB");
+    expect(text).toContain("MCP-Verbindung");
+    expect(text).toContain("Foto");
   });
 });

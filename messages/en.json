@@ -2498,6 +2498,7 @@
   "quick_receipt_choose": "Choose a file",
   "quick_receipt_converting": "Converting the photo …",
   "quick_receipt_converted": "converted to JPEG",
+  "quick_receipt_pdf_too_large": "This PDF is larger than {max} and cannot be read through the MCP connection. Better send a photo of the receipt.",
   "quick_receipt_remove": "Remove the receipt",
   "quick_receipt_preview_alt": "Preview of the receipt",
   "quick_receipt_uploading": "Uploading the receipt … {percent} %",

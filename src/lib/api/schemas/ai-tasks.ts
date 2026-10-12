@@ -181,6 +181,13 @@ export const AI_TASK_PREVIEW_CONTENT_TYPES = [
   "application/pdf",
 ] as const;
 
+/**
+ * The largest PDF an assistant is handed through the MCP connection (it is embedded in the answer, and base64 makes it a
+ * third larger). A bigger one cannot be read there: the queue page warns about it when the file is picked, and the tool
+ * tells the assistant to dismiss the task with the reason "PDF zu gross".
+ */
+export const AI_TASK_PDF_READ_MAX_BYTES = 4 * 1024 * 1024;
+
 /** The longest side of the scaled copy an assistant reads, in pixels (more for a very long, narrow receipt). */
 export const AI_TASK_PREVIEW_MAX_SIDE = 1600;
 /** The most bytes of that copy. */

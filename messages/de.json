@@ -2498,6 +2498,7 @@
   "quick_receipt_choose": "Datei wählen",
   "quick_receipt_converting": "Foto wird umgewandelt …",
   "quick_receipt_converted": "als JPEG umgewandelt",
+  "quick_receipt_pdf_too_large": "Diese PDF-Datei ist grösser als {max} und kann über die MCP-Verbindung nicht gelesen werden. Besser ein Foto des Belegs senden.",
   "quick_receipt_remove": "Beleg entfernen",
   "quick_receipt_preview_alt": "Vorschau des Belegs",
   "quick_receipt_uploading": "Beleg wird hochgeladen … {percent} %",
