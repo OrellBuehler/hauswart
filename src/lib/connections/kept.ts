@@ -19,6 +19,10 @@ export type KeptSettings = {
   purchaseCategoryIds: string[];
   /** Mapped category ids whose transactions are booked without asking. */
   autoAcceptCategoryIds: string[];
+  /** Kept category id -> the cost book id its transactions go to. No picker yet: kept as it is. */
+  categoryBookMap: Record<string, string>;
+  /** The cost book id for mapped categories without a book of their own and for paid invoices; empty = none. */
+  defaultBookId: string;
   billTasks: boolean;
   /** Creditor names; empty means all creditors. */
   billCreditorFilter: string[];
@@ -62,12 +66,28 @@ export function readKeptSettings(
       if (isCostCategory(category)) categoryMap[id] = category;
     }
   }
+  const categoryBookMap: Record<string, string> = {};
+  const rawBooks = config.categoryBookMap;
+  if (
+    rawBooks !== null &&
+    typeof rawBooks === "object" &&
+    !Array.isArray(rawBooks)
+  ) {
+    for (const [id, book] of Object.entries(rawBooks)) {
+      if (id in categoryMap && typeof book === "string" && book !== "") {
+        categoryBookMap[id] = book;
+      }
+    }
+  }
   return {
     categoryMap,
     purchaseCategoryIds: strings(config.purchaseCategoryIds),
     autoAcceptCategoryIds: strings(config.autoAcceptCategoryIds).filter(
       (id) => id in categoryMap,
     ),
+    categoryBookMap,
+    defaultBookId:
+      typeof config.defaultBookId === "string" ? config.defaultBookId : "",
     billTasks: config.billTasks === true,
     billCreditorFilter: strings(config.billCreditorFilter),
     billCostCategory: isCostCategory(config.billCostCategory)
@@ -88,6 +108,14 @@ export function keptConfigOf(settings: KeptSettings): Record<string, unknown> {
     autoAcceptCategoryIds: settings.autoAcceptCategoryIds.filter(
       (id) => id in settings.categoryMap,
     ),
+    categoryBookMap: Object.fromEntries(
+      Object.entries(settings.categoryBookMap).filter(
+        ([id]) => id in settings.categoryMap,
+      ),
+    ),
+    ...(settings.defaultBookId === ""
+      ? {}
+      : { defaultBookId: settings.defaultBookId }),
     billTasks: settings.billTasks,
     billCreditorFilter: settings.billCreditorFilter,
     ...(settings.billCostCategory === null
@@ -108,6 +136,10 @@ export function keptSettingsSignature(settings: KeptSettings): string {
     auto: sorted(
       settings.autoAcceptCategoryIds.filter((id) => id in settings.categoryMap),
     ),
+    books: Object.entries(settings.categoryBookMap)
+      .filter(([id]) => id in settings.categoryMap)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+    defaultBook: settings.defaultBookId,
     billTasks: settings.billTasks,
     creditors: sorted(settings.billCreditorFilter),
     billCost: settings.billCostCategory,
@@ -126,11 +158,15 @@ export function withCostCategory(
   category: CostCategory | null,
 ): KeptSettings {
   const categoryMap = { ...settings.categoryMap };
-  if (category === null) delete categoryMap[id];
-  else categoryMap[id] = category;
+  const categoryBookMap = { ...settings.categoryBookMap };
+  if (category === null) {
+    delete categoryMap[id];
+    delete categoryBookMap[id];
+  } else categoryMap[id] = category;
   return {
     ...settings,
     categoryMap,
+    categoryBookMap,
     autoAcceptCategoryIds:
       category === null
         ? without(settings.autoAcceptCategoryIds, id)

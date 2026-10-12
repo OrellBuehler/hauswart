@@ -19,6 +19,7 @@ import {
   findSuggestion,
   getOwnSuggestion,
   listSuggestions,
+  payloadOf,
   recordSuggestion,
   suggestionsCoveringBill,
   type SuggestionInput,
@@ -368,6 +369,51 @@ describe("finance suggestions", () => {
         {},
       );
       expect(getCost(ctx(), next.entity.id).bookId).toBe(haushalt.id);
+    });
+
+    it("books into the book offered with the suggestion while it is open, else into the default book; the body wins", async () => {
+      const a = await owner();
+      const books = listCostBooks(ctx(), {}, { limit: 50 }).items;
+      const wohnung = books.find((b) => b.name === "Wohnung")!;
+      const haushalt = books.find((b) => b.name === "Haushalt")!;
+      const auto = books.find((b) => b.name === "Auto")!;
+      const offered = (ref: string, bookId: string | null) =>
+        record(a, {
+          providerRef: ref,
+          payload: costPayload(bookId === null ? {} : { bookId }),
+        }).row.id;
+      const accept = async (id: string, body: Record<string, unknown> = {}) =>
+        getCost(
+          ctx(),
+          (await acceptSuggestion(ctx(), a.user.id, id, body)).entity.id,
+        );
+
+      expect(await accept(offered("tx:20", haushalt.id))).toMatchObject({
+        bookId: haushalt.id,
+        splitMode: "equal",
+      });
+      expect(
+        await accept(offered("tx:21", haushalt.id), { bookId: auto.id }),
+      ).toMatchObject({ bookId: auto.id });
+      expect((await accept(offered("tx:22", null))).bookId).toBe(wohnung.id);
+
+      // an offered book that is archived or gone since is not used
+      expect((await accept(offered("tx:23", "gone"))).bookId).toBe(wohnung.id);
+      const late = offered("tx:24", haushalt.id);
+      updateCostBook(ctx(), haushalt.id, { archived: true });
+      expect((await accept(late)).bookId).toBe(wohnung.id);
+      // asking for it explicitly is refused, as for any archived book
+      await expect(
+        acceptSuggestion(ctx(), a.user.id, offered("tx:25", haushalt.id), {
+          bookId: haushalt.id,
+        }),
+      ).rejects.toMatchObject({ code: "invalid_request" });
+    });
+
+    it("reads a suggestion stored before books were offered as one without a book", async () => {
+      const a = await owner();
+      const { row } = record(a);
+      expect(payloadOf(row)).toMatchObject({ bookId: null });
     });
 
     it("refuses a book that is missing or archived, or a tax class the book does not have, and books nothing", async () => {

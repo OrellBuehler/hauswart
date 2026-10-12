@@ -85,6 +85,18 @@ export function openCostBookId(
   return book && book.archivedAt === null ? book.id : undefined;
 }
 
+/** The ids of the books that are not archived. */
+export function openCostBookIds(ctx: Db): Set<string> {
+  return new Set(
+    ctx.db
+      .select({ id: costBooks.id })
+      .from(costBooks)
+      .where(isNull(costBooks.archivedAt))
+      .all()
+      .map((row) => row.id),
+  );
+}
+
 /** A book a request points at; a missing one is a 400 on the field that named it. */
 export function requireCostBook(
   ctx: Db,

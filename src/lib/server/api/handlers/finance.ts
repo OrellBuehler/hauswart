@@ -8,6 +8,7 @@ import {
   ownerFor,
   runOperation,
 } from "$lib/server/connections/connections";
+import { openCostBookIds } from "$lib/server/costs/books";
 import { financeProviders } from "$lib/server/finance/providers";
 import {
   acceptSuggestion,
@@ -20,15 +21,30 @@ import { notFound } from "$lib/server/service";
 import type { AuthedContext } from "../context";
 import type { Handler } from "../bind";
 
+/**
+ * `openBooks` are the books that are not archived: a book offered with a cost suggestion that has been archived or
+ * deleted since is shown as no book, so a client never preselects one it cannot book into.
+ */
 export function wireSuggestion(
   row: SuggestionRow,
+  openBooks: ReadonlySet<string>,
 ): z.input<typeof financeSuggestionSchema> {
+  const payload = payloadOf(row);
   return {
     id: row.id,
     kind: row.kind,
     status: row.status,
     acceptedEntityId: row.acceptedEntityId,
-    payload: payloadOf(row),
+    payload:
+      row.kind === "cost" && "bookId" in payload
+        ? {
+            ...payload,
+            bookId:
+              payload.bookId && openBooks.has(payload.bookId)
+                ? payload.bookId
+                : null,
+          }
+        : payload,
     createdAt: toIso(row.createdAt),
     updatedAt: toIso(row.updatedAt),
   } as z.input<typeof financeSuggestionSchema>;
@@ -45,7 +61,11 @@ export const listAll: Handler<typeof endpoints.financeSuggestionsList> = ({
     { kind, status },
     { cursor, limit },
   );
-  return { items: page.items.map(wireSuggestion), nextCursor: page.nextCursor };
+  const openBooks = openCostBookIds(ctx);
+  return {
+    items: page.items.map((row) => wireSuggestion(row, openBooks)),
+    nextCursor: page.nextCursor,
+  };
 };
 
 export const accept: Handler<
@@ -57,13 +77,17 @@ export const accept: Handler<
     params.id,
     body,
   );
-  return { suggestion: wireSuggestion(row), entity };
+  return { suggestion: wireSuggestion(row, openCostBookIds(ctx)), entity };
 };
 
 export const dismiss: Handler<typeof endpoints.financeSuggestionsDismiss> = ({
   ctx,
   params,
-}) => wireSuggestion(dismissSuggestion(ctx, ctx.user.id, params.id));
+}) =>
+  wireSuggestion(
+    dismissSuggestion(ctx, ctx.user.id, params.id),
+    openCostBookIds(ctx),
+  );
 
 export const sync: Handler<typeof endpoints.financeSync> = async ({ ctx }) => {
   for (const provider of financeProviders()) {

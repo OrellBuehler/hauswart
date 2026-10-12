@@ -33,6 +33,8 @@ describe("readKeptSettings", () => {
       categoryMap: {},
       purchaseCategoryIds: [],
       autoAcceptCategoryIds: [],
+      categoryBookMap: {},
+      defaultBookId: "",
       billTasks: false,
       billCreditorFilter: [],
       billCostCategory: null,
@@ -55,11 +57,24 @@ describe("readKeptSettings", () => {
       categoryMap: { c1: "repair" },
       purchaseCategoryIds: ["c1"],
       autoAcceptCategoryIds: ["c1"],
+      categoryBookMap: {},
+      defaultBookId: "",
       billTasks: true,
       billCreditorFilter: ["Muster Verwaltung AG"],
       billCostCategory: "utilities",
       syncFrom: "2026-01-01",
     });
+  });
+
+  it("reads the cost books: those of mapped categories and the default one", () => {
+    const settings = readKeptSettings({
+      categoryMap: { c1: "repair", c2: "utilities" },
+      categoryBookMap: { c1: "book-1", c3: "book-3", c2: "", c4: 7 },
+      defaultBookId: "book-2",
+    });
+    expect(settings.categoryBookMap).toEqual({ c1: "book-1" });
+    expect(settings.defaultBookId).toBe("book-2");
+    expect(readKeptSettings({ defaultBookId: 4 }).defaultBookId).toBe("");
   });
 
   it("ignores values of the wrong type", () => {
@@ -97,17 +112,48 @@ describe("keptConfigOf", () => {
     });
   });
 
+  it("sends the books of mapped categories and the default book, and none that nothing maps", () => {
+    const settings: KeptSettings = {
+      ...empty,
+      categoryMap: { c1: "repair" },
+      categoryBookMap: { c1: "book-1", c2: "book-2" },
+      defaultBookId: "book-3",
+    };
+    expect(keptConfigOf(settings)).toMatchObject({
+      categoryBookMap: { c1: "book-1" },
+      defaultBookId: "book-3",
+    });
+    expect(keptConfigOf(empty)).not.toHaveProperty("defaultBookId");
+  });
+
   it("round-trips through readKeptSettings", () => {
     const settings: KeptSettings = {
       categoryMap: { c1: "repair", c2: "utilities" },
       purchaseCategoryIds: ["c2"],
       autoAcceptCategoryIds: ["c2"],
+      categoryBookMap: { c1: "book-1" },
+      defaultBookId: "book-2",
       billTasks: true,
       billCreditorFilter: ["Beispiel Strom AG"],
       billCostCategory: "utilities",
       syncFrom: "2026-02-01",
     };
     expect(readKeptSettings(keptConfigOf(settings))).toEqual(settings);
+  });
+});
+
+describe("withCostCategory", () => {
+  it("lets go of the book of a category that is not read any more", () => {
+    const settings = {
+      ...withCostCategory(empty, "c1", "repair"),
+      categoryBookMap: { c1: "book-1" },
+    };
+    expect(
+      withCostCategory(settings, "c1", "utilities").categoryBookMap,
+    ).toEqual({
+      c1: "book-1",
+    });
+    expect(withCostCategory(settings, "c1", null).categoryBookMap).toEqual({});
   });
 });
 
@@ -127,6 +173,11 @@ describe("keptSettingsSignature", () => {
       withCreditor(empty, "Muster AG"),
       { ...empty, billCostCategory: "other" },
       { ...empty, syncFrom: "2026-01-01" },
+      { ...empty, defaultBookId: "book-1" },
+      {
+        ...withCostCategory(empty, "c1", "repair"),
+        categoryBookMap: { c1: "book-1" },
+      },
     ];
     for (const settings of changed) {
       expect(keptSettingsSignature(settings)).not.toBe(base);

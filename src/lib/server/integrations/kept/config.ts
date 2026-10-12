@@ -4,6 +4,7 @@ import { dateSchema } from "$lib/api/schemas/common";
 import { IntegrationError } from "$lib/server/connections/errors";
 
 const categoryId = z.string().trim().min(1).max(128);
+const bookId = z.string().trim().min(1).max(64);
 
 /**
  * What a person decides about their Kept connection. Everything is opt-in:
@@ -20,6 +21,17 @@ export const keptConfigSchema = z.object({
   purchaseCategoryIds: z.array(categoryId).max(100).default([]),
   /** Mapped categories whose transactions become cost entries without asking. */
   autoAcceptCategoryIds: z.array(categoryId).max(200).default([]),
+  /**
+   * Kept category id -> the cost book its transactions are offered with and, in an automatic category, booked into.
+   * Entries for a category that is not mapped are dropped; a book that no longer exists or is archived counts as no
+   * book (`defaultBookId`, else the household's default book).
+   */
+  categoryBookMap: z
+    .record(categoryId, bookId)
+    .refine((m) => Object.keys(m).length <= 200, "At most 200 categories")
+    .default({}),
+  /** The book of a mapped category that has none of its own, and of paid invoices offered as costs. */
+  defaultBookId: bookId.optional(),
   /**
    * Open bills become tasks of this person. The task shows creditor,
    * invoice number, amount and due date to the whole household: switching
@@ -55,6 +67,9 @@ export function parseConfig(raw: Record<string, unknown>): KeptConfig {
   }
   return {
     ...config,
+    categoryBookMap: Object.fromEntries(
+      Object.entries(config.categoryBookMap).filter(([id]) => mapped.has(id)),
+    ),
     purchaseCategoryIds: [...new Set(config.purchaseCategoryIds)],
     autoAcceptCategoryIds: [...new Set(config.autoAcceptCategoryIds)],
     billCreditorFilter: [...new Set(config.billCreditorFilter)],

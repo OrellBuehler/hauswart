@@ -33,6 +33,7 @@ describe("Kept adapter settings", () => {
           categoryMap: {},
           purchaseCategoryIds: [],
           autoAcceptCategoryIds: [],
+          categoryBookMap: {},
           billTasks: false,
           billCreditorFilter: [],
           assignBillTasksTo: "owner",
@@ -58,11 +59,27 @@ describe("Kept adapter settings", () => {
         categoryMap: { "cat-1": "repair", "cat-2": "utilities" },
         purchaseCategoryIds: ["cat-3"],
         autoAcceptCategoryIds: ["cat-2"],
+        categoryBookMap: {},
         billTasks: true,
         billCreditorFilter: ["Muster Verwaltung AG"],
         billCostCategory: "other",
         assignBillTasksTo: "owner",
         syncFrom: "2026-01-01",
+      });
+    });
+
+    it("keeps the books of mapped categories and the default book", () => {
+      const out = validateInput({
+        baseUrl: "https://finance.example.org",
+        config: {
+          categoryMap: { "cat-1": "repair" },
+          categoryBookMap: { "cat-1": "book-1", "cat-9": "book-2" },
+          defaultBookId: "book-3",
+        },
+      });
+      expect(out.config).toMatchObject({
+        categoryBookMap: { "cat-1": "book-1" },
+        defaultBookId: "book-3",
       });
     });
 

@@ -71,6 +71,36 @@ describe("finance suggestions API", () => {
     });
   });
 
+  it("shows the book offered with a suggestion, and no book once that is archived", async () => {
+    const anna = await member("Anna");
+    const books = (
+      (await anna.call("GET", "/api/v1/cost-books")).body as {
+        items: { id: string; name: string }[];
+      }
+    ).items;
+    const haushalt = books.find((b) => b.name === "Haushalt")!;
+    const row = anna.offer("tx:1");
+    recordSuggestion(ctx(), {
+      connectionId: anna.connection.id,
+      userId: anna.user.id,
+      kind: "cost",
+      providerRef: "tx:1",
+      payload: { ...(row.payloadJson as object), bookId: haushalt.id },
+    });
+    anna.offer("tx:2", "Andere");
+    const bookIds = async () =>
+      Object.fromEntries(
+        (
+          (await anna.call("GET", "/api/v1/finance/suggestions")).body as Page
+        ).items.map((s) => [s.payload.title, s.payload.bookId]),
+      );
+    expect(await bookIds()).toEqual({ Reparatur: haushalt.id, Andere: null });
+    await anna.call("PATCH", `/api/v1/cost-books/${haushalt.id}`, {
+      json: { archived: true },
+    });
+    expect(await bookIds()).toEqual({ Reparatur: null, Andere: null });
+  });
+
   it("never shows a suggestion to another household member", async () => {
     const anna = await member("Anna");
     const ben = await member("Ben");

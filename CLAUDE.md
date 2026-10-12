@@ -439,7 +439,10 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   person's id is a 404 exactly like a missing one, and the finance address of an entry
   (`providerUrl`) is shown only to the person who booked it. `(connection, kind, ref)` is unique: a
   seen item keeps its status (a dismissed one stays dismissed, an accepted one never changes, only a
-  pending one takes a fresher payload). Accepting books the cost (paid by the owner, into the default book and
+  pending one takes a fresher payload). A cost suggestion's payload may carry `bookId`, the cost book the
+  connection's settings offer for it (the accept dialog preselects it; the API shows null once that book is archived or
+  deleted, and legacy payloads without it read as null). Accepting books the cost (paid by the owner, into the book the body
+  names, else the one offered with the suggestion while it is open, else the default book, and
   split as it says unless the body overrides book (`bookId`), category, title, asset/room/defect/service log,
   payer, split, participants, expense flag, deductible), creates the asset (with `externalSource: finance_transaction`; the cost of the same
   transaction gets the asset, in either order) or the bill task, in one transaction. A cost booked from a
@@ -493,6 +496,14 @@ map), billTasks, billCreditorFilter (case-insensitive exact creditor names; appl
     (+ asset), url `ORIGIN/costs/<id>`; skipped without `ORIGIN`), a deleted one gets `deleteLink`; a failing
     call is logged by code and retried next sync, an item Kept does not know (404, 409, 400) is given up on. A
     links-only round also runs shortly after a cost from Kept is booked, edited or deleted.
+- **Books**: `config.categoryBookMap` `{keptCategoryId: bookId}` names the cost book of a mapped category (an entry
+  for a category that is not mapped is dropped when the settings are saved) and `config.defaultBookId` the book of a mapped
+  category without one and of paid invoices (`billCostCategory`; they have no Kept category). `bookFor` (sync.ts) takes
+  the category's book, else the default, else none; a book that is deleted or archived counts as none and the next choice
+  is tried, none meaning the household's default book. The id goes into the suggestion's payload (`bookId`, left out when
+  none) and, in an automatic category, to `acceptSuggestion` as the body's `bookId` (the adapter passes it, the core
+  knows no Kept). Book ids are not checked when the settings are saved (the adapter's `validate` has no database), only
+  when they are used; the web settings form carries both fields through unchanged until it gets a picker.
 - Logs carry codes only (`kept.transaction_failed {code}`), never titles, amounts, creditors or tokens.
 
 ### Documents and the document provider
