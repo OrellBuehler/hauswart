@@ -123,7 +123,8 @@ src/lib/server/asset-notes/      asset notes: notes.ts (CRUD, to a defect), reso
 src/lib/server/costs/            cost entries: split.ts (frozen shares), costs.ts (CRUD, list), move.ts (bulk move to a book), books.ts (cost books), summary.ts (year totals,
                                  settlement), ledger.ts (paid/share/payments per person, shared by summary and balances), balances.ts (running
                                  balances), settlements.ts (recorded payments), csv.ts, totals.ts (cost sums on defects and service log entries)
-src/lib/server/ai-tasks/         the receipt queue: ai-tasks.ts (upload, list, complete, dismiss, delete), preview.ts (the task's file sized for an assistant);
+src/lib/server/ai-tasks/         the receipt queue: ai-tasks.ts (upload, list, count, complete, dismiss, claim, delete), booking.ts (booking for a task and the lease: a leaf
+                                 module the cost service imports), preview.ts (the task's file sized for an assistant);
                                  see "Receipt queue"
 src/lib/server/finance/          generic finance-provider seam: providers.ts (registry), suggestions.ts (the private inbox, accept,
                                  dismiss), bill-tasks.ts (tasks that follow bills)
@@ -566,7 +567,8 @@ entries with the tools that exist and closes the task. The web app has the page 
   goes), `resultJson`, `dismissReason`, `completedAt` (when the task left the queue, done or dismissed), `completedVia` (`session`, or the
   kind of the API token) and `completedByUserId` (who closed it: the person in the browser or the owner of the token; set null with the
   person; the DTO adds `completedByName`, the receipts page shows "Von Ben" and the tools' rows `closedBy`; the first closer stays when a
-  repeated call is answered with the task as it is). `kind` is `receipt` today, the only value `POST /ai-tasks` accepts; `fuel_receipt`, `service_invoice` and
+  repeated call is answered with the task as it is). Migration `0029` adds to `ai_tasks` `idempotency_key` + `idempotency_digest` (unique per uploader), `completed_by_user_id`,
+  `claimed_by_user_id` and `claimed_at`, and to `cost_entries` `idempotency_key` (unique per creator) and `ai_task_id` (`SET NULL`, indexed). `kind` is `receipt` today, the only value `POST /ai-tasks` accepts; `fuel_receipt`, `service_invoice` and
   `insurance_policy` are already in `AI_TASK_KINDS`, so another kind widens the request schema and the tools but not the table (the column
   has no CHECK).
 - **Everybody sees everything.** Like cost entries the queue is household data: every member lists, reads, completes and dismisses every
@@ -637,11 +639,15 @@ entries with the tools that exist and closes the task. The web app has the page 
   page's picker warns when such a PDF is chosen (`exceedsReadingLimit`, only where the file goes to the queue, not as the receipt of an entry). No dependency
   of the project can render PDF pages (pdfmake only writes them; `@napi-rs/canvas` does not read them), so a page is not turned into an image. The members' ownership share comes from `GET /users/directory`, which now also carries `ownershipBps` (every member can
   read it from the frozen shares of the cost entries anyway) and for that reason needs the `read` scope like the other reads (it used to be open to any
-  authenticated caller, a token without scopes included). `list_costs` takes `reviewNeeded` and its rows carry `needsReview`.
+  authenticated caller, a token without scopes included). `list_costs` takes `reviewNeeded` and its rows carry `needsReview` and `receiptTask`. `create_cost`, `accept_finance_suggestion` and `add_fuel_log` take
+  `receiptTaskId` (one shared zod description in `tools/costs.ts`) and `create_cost` sends a fresh `idempotencyKey` per call; `get_ai_task` lists `bookedSoFar`
+  (id, title, amount, `needsReview`, `fuelLogId`) and says in its summary how many entries are booked for the task already; task rows carry `closedBy` and
+  `claim`.
 - **Not built**: a notification for the uploader ("receipt processed"; it would need a new title key in both languages and the delivery
   rules), reopening a dismissed task, retention of dismissed tasks, the other kinds, and a way to complete a task by hand in the web app.
-- **Tests**: `ai-tasks/ai-tasks.test.ts` and `preview.test.ts` (service), `routes/api/v1/ai-tasks/ai-tasks.test.ts` (API, scopes, visibility,
-  review), `files/preview.test.ts` (sizes and encoding, table-driven), `costs/review.test.ts`, `mcp/src/ai-tasks-tools.test.ts` (tools, image and
+- **Tests**: `ai-tasks/ai-tasks.test.ts` and `preview.test.ts` (service), `ai-tasks/idempotency.test.ts`, `bookings.test.ts` (booking for a task, provenance, scenarios
+  A and B), `claims.test.ts`, `closers.test.ts`, `routes/api/v1/ai-tasks/ai-tasks.test.ts` (API, scopes, visibility,
+  review) with `idempotency`, `bookings`, `claims`, `closers` and `count` next to it, `mcp/src/ai-tasks-booking-tools.test.ts` and `ai-tasks-claim-tools.test.ts`, `files/preview.test.ts` (sizes and encoding, table-driven), `costs/review.test.ts`, `mcp/src/ai-tasks-tools.test.ts` (tools, image and
   PDF content, the private inbox) and one through the HTTP endpoint in `routes/api/v1/mcp/mcp.test.ts`.
 
 ### Documents and the document provider
