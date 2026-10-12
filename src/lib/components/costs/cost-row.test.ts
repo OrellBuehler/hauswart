@@ -61,6 +61,12 @@ describe("CostRow", () => {
     expect(body).toContain("Wasserhahn");
   });
 
+  it("marks an entry that is waiting for a review", () => {
+    expect(html({})).not.toContain("Prüfen");
+    const body = html({ cost: { ...cost, reviewNeeded: true } });
+    expect(body).toContain("Prüfen");
+  });
+
   it("shows an entry that is not picked as unticked", () => {
     expect(html({ selecting: true })).toContain('aria-checked="false"');
   });

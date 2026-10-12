@@ -8,6 +8,7 @@
   import EmptyState from "$lib/components/app/empty-state.svelte";
   import PageHeader from "$lib/components/app/page-header.svelte";
   import CostsCard from "$lib/components/dashboard/costs-card.svelte";
+  import ReviewCostsCard from "$lib/components/dashboard/review-costs-card.svelte";
   import DefectsCard from "$lib/components/dashboard/defects-card.svelte";
   import FinanceInboxCard from "$lib/components/dashboard/finance-inbox-card.svelte";
   import OrderNowCard from "$lib/components/dashboard/order-now-card.svelte";
@@ -298,6 +299,9 @@
 
       {#if dashboard.pendingFinanceSuggestions > 0}
         <FinanceInboxCard count={dashboard.pendingFinanceSuggestions} />
+      {/if}
+      {#if dashboard.reviewNeededCount > 0}
+        <ReviewCostsCard count={dashboard.reviewNeededCount} />
       {/if}
       <CostsCard
         costs={dashboard.costsYearToDate}

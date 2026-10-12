@@ -1,20 +1,30 @@
 <script lang="ts">
+  import EyeIcon from "@lucide/svelte/icons/eye";
   import type { CostEntry } from "$lib/api/schemas/costs";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { m } from "$lib/paraglide/messages";
   import { cn } from "$lib/utils";
+  import { hasCostFlags } from "./cost-flags";
 
   let {
     cost,
     class: className,
   }: {
-    cost: Pick<CostEntry, "amountMinor" | "countsAsExpense" | "source">;
+    cost: Pick<
+      CostEntry,
+      "amountMinor" | "countsAsExpense" | "source" | "reviewNeeded"
+    >;
     class?: string;
   } = $props();
 </script>
 
-{#if cost.amountMinor < 0 || !cost.countsAsExpense || cost.source !== "manual"}
+{#if hasCostFlags(cost)}
   <span class={cn("flex flex-wrap items-center gap-1.5", className)}>
+    {#if cost.reviewNeeded}
+      <Badge variant="outline" class="border-warning/50 text-warning">
+        <EyeIcon aria-hidden="true" />{m.cost_badge_review()}
+      </Badge>
+    {/if}
     {#if cost.amountMinor < 0}
       <Badge variant="outline" class="border-success/40 text-success"
         >{m.cost_badge_refund()}</Badge

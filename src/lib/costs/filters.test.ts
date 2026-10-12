@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
+  REVIEW_ALL_HREF,
   activeFilterCount,
   costFilterQuery,
   costsExportQuery,
   costsQuery,
   costsSummaryQuery,
+  isFiltered,
   monthRange,
   narrowsBeyondBook,
   parseCostFilters,
+  reviewFilters,
   withYear,
   yearOptions,
 } from "./filters";
@@ -28,6 +31,8 @@ describe("cost filters", () => {
       defectId: "",
       paidBy: "",
       month: "",
+      reviewNeeded: false,
+      allYears: false,
     });
     expect(costFilterQuery(filters, 2026)).toBe("?book=all");
     expect(activeFilterCount(filters)).toBe(0);
@@ -146,6 +151,79 @@ describe("cost filters", () => {
       year: 2025,
       month: "",
       category: "repair",
+    });
+  });
+
+  describe("the review filter", () => {
+    it("is part of the address and of the list query", () => {
+      const filters = parse("book=b7&year=2025&review=1");
+      expect(filters).toMatchObject({ reviewNeeded: true, allYears: false });
+      expect(costFilterQuery(filters, 2026)).toBe(
+        "?book=b7&year=2025&review=1",
+      );
+      expect(costsQuery(filters)).toEqual({
+        limit: 200,
+        year: 2025,
+        bookId: "b7",
+        reviewNeeded: "true",
+      });
+      expect(isFiltered(filters)).toBe(true);
+      expect(activeFilterCount(filters)).toBe(0);
+    });
+
+    it("lists every year when the address says so, and only together with the review filter", () => {
+      const all = parse("book=all&year=all&review=1");
+      expect(all).toMatchObject({ reviewNeeded: true, allYears: true });
+      expect(costFilterQuery(all, 2026)).toBe("?book=all&year=all&review=1");
+      expect(costFilterQuery(all, 2026)).toBe(
+        REVIEW_ALL_HREF.slice("/costs".length),
+      );
+      expect(costsQuery(all)).toEqual({
+        limit: 200,
+        reviewNeeded: "true",
+      });
+      // The unbounded list is never offered without the filter.
+      expect(parse("year=all")).toMatchObject({
+        year: 2026,
+        allYears: false,
+      });
+    });
+
+    it("ignores a month while every year is listed", () => {
+      const all = parse("year=all&review=1&month=05");
+      expect(costsQuery(all)).toEqual({ limit: 200, reviewNeeded: "true" });
+      expect(costFilterQuery(all, 2026)).toBe("?book=all&year=all&review=1");
+    });
+
+    it("keeps a link that carries it from falling back to the remembered book", () => {
+      expect(narrowsBeyondBook(new URLSearchParams("review=1"))).toBe(true);
+    });
+
+    it("leaves the year alone for the summary", () => {
+      expect(costsSummaryQuery(parse("book=b7&year=all&review=1"))).toEqual({
+        year: 2026,
+        assetId: undefined,
+        bookId: "b7",
+      });
+    });
+
+    it("opens the entries a summary counted: its year, book and device, nothing else", () => {
+      const summaryScope = reviewFilters(
+        parse(
+          "book=b7&year=2025&asset=a1&category=repair&q=x&month=05&paidBy=u1",
+        ),
+      );
+      expect(costFilterQuery(summaryScope, 2026)).toBe(
+        "?book=b7&year=2025&review=1&asset=a1",
+      );
+    });
+
+    it("leaves every-year mode when a year is picked", () => {
+      expect(withYear(parse("year=all&review=1"), 2025)).toMatchObject({
+        year: 2025,
+        allYears: false,
+        reviewNeeded: true,
+      });
     });
   });
 

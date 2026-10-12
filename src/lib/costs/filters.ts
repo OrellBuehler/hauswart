@@ -18,6 +18,10 @@ export type CostFilters = {
   paidBy: string;
   /** `01` to `12` of the selected year, or empty for the whole year. */
   month: string;
+  /** Only the entries a person still has to review (`?review=1`). */
+  reviewNeeded: boolean;
+  /** With the review filter: the entries of every year (`?year=all`), the way the dashboard counts them. */
+  allYears: boolean;
 };
 
 const MONTHS = Array.from({ length: 12 }, (_, i) =>
@@ -37,6 +41,7 @@ export function parseCostFilters(
 ): CostFilters {
   const category = params.get("category");
   const month = params.get("month") ?? "";
+  const reviewNeeded = params.get("review") === "1";
   return {
     bookId: parseBookParam(params.get("book")) ?? "",
     year: parseYear(params.get("year"), defaultYear),
@@ -47,6 +52,9 @@ export function parseCostFilters(
     defectId: params.get("defect") ?? "",
     paidBy: params.get("paidBy") ?? "",
     month: MONTHS.includes(month) ? month : "",
+    reviewNeeded,
+    // Every year of the whole list would be unbounded; the review list is short.
+    allYears: reviewNeeded && params.get("year") === "all",
   };
 }
 
@@ -56,14 +64,18 @@ export function costFilterQuery(
 ): string {
   const params = new URLSearchParams();
   params.set("book", bookParam(filters.bookId));
-  if (filters.year !== defaultYear) params.set("year", String(filters.year));
+  if (filters.allYears && filters.reviewNeeded) params.set("year", "all");
+  else if (filters.year !== defaultYear) {
+    params.set("year", String(filters.year));
+  }
+  if (filters.reviewNeeded) params.set("review", "1");
   if (filters.q) params.set("q", filters.q);
   if (filters.category) params.set("category", filters.category);
   if (filters.assetId) params.set("asset", filters.assetId);
   if (filters.roomId) params.set("room", filters.roomId);
   if (filters.defectId) params.set("defect", filters.defectId);
   if (filters.paidBy) params.set("paidBy", filters.paidBy);
-  if (filters.month) params.set("month", filters.month);
+  if (filters.month && !filters.allYears) params.set("month", filters.month);
   const qs = params.toString();
   return qs ? `?${qs}` : "";
 }
@@ -73,9 +85,16 @@ export function costFilterQuery(
  * a link shows what it was made to show, whichever book the person looked at last.
  */
 export function narrowsBeyondBook(params: URLSearchParams): boolean {
-  return ["q", "category", "asset", "room", "defect", "paidBy", "month"].some(
-    (key) => (params.get(key) ?? "").trim() !== "",
-  );
+  return [
+    "q",
+    "category",
+    "asset",
+    "room",
+    "defect",
+    "paidBy",
+    "month",
+    "review",
+  ].some((key) => (params.get(key) ?? "").trim() !== "");
 }
 
 /** Filters set in the panel (the year and the search box are counted apart). */
@@ -88,6 +107,13 @@ export function activeFilterCount(filters: CostFilters): number {
     filters.paidBy,
     filters.month,
   ].filter(Boolean).length;
+}
+
+/** Whether anything but the year and the book narrows the list: the panel's filters, the search or the review filter. */
+export function isFiltered(filters: CostFilters): boolean {
+  return (
+    activeFilterCount(filters) > 0 || filters.q !== "" || filters.reviewNeeded
+  );
 }
 
 /** The first and last day of a month of `year`. */
@@ -107,10 +133,13 @@ export function monthRange(
 export function costsQuery(filters: CostFilters, cursor?: string) {
   return {
     limit: 200,
-    year: filters.year,
+    ...(filters.allYears ? {} : { year: filters.year }),
     ...(filters.bookId ? { bookId: filters.bookId } : {}),
     ...(cursor ? { cursor } : {}),
-    ...(filters.month ? monthRange(filters.year, filters.month) : {}),
+    ...(filters.month && !filters.allYears
+      ? monthRange(filters.year, filters.month)
+      : {}),
+    ...(filters.reviewNeeded ? { reviewNeeded: "true" as const } : {}),
     ...(filters.q ? { q: filters.q } : {}),
     ...(filters.category ? { category: filters.category } : {}),
     ...(filters.assetId ? { assetId: filters.assetId } : {}),
@@ -136,8 +165,29 @@ export function costsExportQuery(filters: CostFilters) {
 
 /** The same filters one year later or earlier, keeping everything else but the month. */
 export function withYear(filters: CostFilters, year: number): CostFilters {
-  return { ...filters, year, month: "" };
+  return { ...filters, year, month: "", allYears: false };
 }
+
+/**
+ * The entries `GET /costs/summary` counted as waiting for a review: its year, book and device, nothing else. The
+ * summary's `reviewNeededCount` and the list this opens agree.
+ */
+export function reviewFilters(filters: CostFilters): CostFilters {
+  return {
+    ...filters,
+    q: "",
+    category: "",
+    roomId: "",
+    defectId: "",
+    paidBy: "",
+    month: "",
+    reviewNeeded: true,
+    allYears: false,
+  };
+}
+
+/** The costs page for the entries to review in every book and year: what the dashboard's count is about. */
+export const REVIEW_ALL_HREF = "/costs?book=all&year=all&review=1";
 
 /** The years the selector offers: next year back to ten years ago, plus the selected one. */
 export function yearOptions(currentYear: number, selected: number): number[] {
