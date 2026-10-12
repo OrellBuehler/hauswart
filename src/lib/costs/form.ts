@@ -13,6 +13,7 @@ import {
   type CreateCostRequest,
   type UpdateCostRequest,
 } from "$lib/api/schemas/costs";
+import type { CostBook } from "$lib/api/schemas/cost-books";
 import { currencySchema } from "$lib/api/schemas/household";
 import { isValidDate } from "$lib/dates";
 import { formatMoney, readMoney } from "$lib/format-money";
@@ -26,11 +27,14 @@ import {
 } from "$lib/money";
 import { m } from "$lib/paraglide/messages";
 import { issuesToErrors } from "$lib/tasks/field-errors";
+import { defaultBook, openBooks } from "./books";
 
 export type CostShareItem = { userId: string; shareBps: number };
 
 /** What the form edits. Text fields stay text until they are checked on submit. */
 export type CostDraft = {
+  /** The book the entry is booked into; empty only when no book is known (the server then takes its default). */
+  bookId: string;
   title: string;
   /** The amount as typed. The sign comes from `refund`, or from a minus in the text. */
   amount: string;
@@ -46,6 +50,10 @@ export type CostDraft = {
   notes: string;
   paidByUserId: string;
   splitMode: CostSplitMode;
+  /** The person chose the split by hand, so picking another book no longer changes it. */
+  splitTouched: boolean;
+  /** Who shares an equal split (user ids); everybody unless the person narrows it. */
+  participants: string[];
   /** Percent as typed, per user id. Blank or 0 means the person bears nothing. */
   shares: Record<string, string>;
   countsAsExpense: boolean;
@@ -60,6 +68,9 @@ export type NewDraftDefaults = {
   /** The person adding the cost, who is most likely the one who paid. */
   paidByUserId: string;
   userIds: string[];
+  /** Every cost book; the entry goes to `bookId` when that one takes entries, else to the default book. */
+  books?: readonly CostBook[] | undefined;
+  bookId?: string | undefined;
   assetId?: string | undefined;
   roomId?: string | undefined;
   defectId?: string | undefined;
@@ -93,8 +104,40 @@ export function sharesToInputs(
   );
 }
 
-export function newDraft(defaults: NewDraftDefaults): CostDraft {
+/**
+ * The split after a book was picked. A new entry takes the book's default split unless the person already chose a
+ * split by hand; an entry that exists keeps the split it has.
+ */
+export function splitAfterBook(
+  current: Pick<CostDraft, "splitMode" | "splitTouched">,
+  book: Pick<CostBook, "defaultSplitMode"> | undefined,
+  isNew: boolean,
+): CostSplitMode {
+  return book && isNew && !current.splitTouched
+    ? book.defaultSplitMode
+    : current.splitMode;
+}
+
+/** The draft after a book was picked (see `splitAfterBook`). */
+export function withBook(
+  draft: CostDraft,
+  book: Pick<CostBook, "id" | "defaultSplitMode"> | undefined,
+  isNew: boolean,
+): CostDraft {
+  if (!book) return draft;
   return {
+    ...draft,
+    bookId: book.id,
+    splitMode: splitAfterBook(draft, book, isNew),
+  };
+}
+
+export function newDraft(defaults: NewDraftDefaults): CostDraft {
+  const books = defaults.books ?? [];
+  const wanted = openBooks(books).find((b) => b.id === defaults.bookId);
+  const book = wanted ?? defaultBook(books);
+  return {
+    bookId: book?.id ?? "",
     title: "",
     amount: "",
     refund: false,
@@ -108,7 +151,9 @@ export function newDraft(defaults: NewDraftDefaults): CostDraft {
     payee: "",
     notes: "",
     paidByUserId: defaults.paidByUserId,
-    splitMode: "ownership",
+    splitMode: book?.defaultSplitMode ?? "ownership",
+    splitTouched: false,
+    participants: [...defaults.userIds],
     shares: equalShares(defaults.userIds),
     countsAsExpense: COST_CATEGORY_COUNTS_AS_EXPENSE.other,
     countsTouched: false,
@@ -116,11 +161,24 @@ export function newDraft(defaults: NewDraftDefaults): CostDraft {
   };
 }
 
+/** The people an equal split is among: those that carry a share of it; everybody for any other split. */
+export function entryParticipants(
+  entry: Pick<CostEntry, "splitMode" | "shares">,
+  userIds: readonly string[],
+): string[] {
+  if (entry.splitMode !== "equal" || entry.shares.length === 0) {
+    return [...userIds];
+  }
+  const sharing = new Set(entry.shares.map((share) => share.userId));
+  return userIds.filter((id) => sharing.has(id));
+}
+
 export function draftFromEntry(
   entry: CostEntry,
   userIds: readonly string[],
 ): CostDraft {
   return {
+    bookId: entry.bookId,
     title: entry.title,
     amount: toDecimalString(
       minor(Math.abs(entry.amountMinor)),
@@ -138,6 +196,8 @@ export function draftFromEntry(
     notes: entry.notes ?? "",
     paidByUserId: entry.paidByUserId ?? "",
     splitMode: entry.splitMode,
+    splitTouched: true,
+    participants: entryParticipants(entry, userIds),
     shares:
       entry.shares.length > 0
         ? sharesToInputs(entry.shares, userIds)
@@ -251,10 +311,33 @@ export function sharePreview(
   return new Map(sorted.map((s, i) => [s.userId, parts[i] as number]));
 }
 
+/**
+ * Each ticked person's part of an equal split, the way the server books it: the 10000 basis points are divided first
+ * (largest remainder, the people in id order, so the first by id takes a leftover basis point), then the amount by those
+ * shares. Dividing the amount by head count directly would show 100.00 three times for 300.00 where the entry gets
+ * 100.02, 99.99 and 99.99.
+ */
+export function equalPreview(
+  amountMinor: number,
+  participantIds: readonly string[],
+): Map<string, number> {
+  const ids = [...participantIds].sort((a, b) => a.localeCompare(b));
+  if (ids.length === 0) return new Map();
+  const bps = allocate(
+    minor(SHARE_BPS_TOTAL),
+    ids.map(() => 1),
+  );
+  return sharePreview(
+    amountMinor,
+    ids.map((userId, i) => ({ userId, shareBps: bps[i] as number })),
+  );
+}
+
 type Checked = {
   errors: Record<string, string>;
   amountMinor: number | undefined;
   shares: CostShareItem[];
+  participants: string[];
 };
 
 function check(draft: CostDraft, userIds: readonly string[]): Checked {
@@ -274,11 +357,58 @@ function check(draft: CostDraft, userIds: readonly string[]): Checked {
     shares = checked.items;
     if (checked.error) errors.shares = checked.error;
   }
+  const participants = chosenParticipants(draft, userIds);
+  if (draft.splitMode === "equal" && participants.length === 0) {
+    errors.participantIds = m.cost_for_whom_none();
+  }
   return {
     errors,
     amountMinor: amount.ok ? amount.amountMinor : undefined,
     shares,
+    participants,
   };
+}
+
+/** The people ticked in "Für wen", in the order of the household. */
+export function chosenParticipants(
+  draft: Pick<CostDraft, "participants">,
+  userIds: readonly string[],
+): string[] {
+  const ticked = new Set(draft.participants);
+  return userIds.filter((id) => ticked.has(id));
+}
+
+/** `participantIds` of an equal split: only when it is narrowed, everybody otherwise (and so everybody who joins later). */
+export function narrowedParticipants(
+  participants: readonly string[],
+  userIds: readonly string[],
+): string[] | undefined {
+  return participants.length > 0 && participants.length < userIds.length
+    ? [...participants]
+    : undefined;
+}
+
+function sameIds(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((id) => b.includes(id));
+}
+
+/** The book a draft goes to: the one it names, else the one the server would pick (unknown when no books are loaded). */
+function bookOf(
+  draft: Pick<CostDraft, "bookId">,
+  books: readonly CostBook[],
+): CostBook | undefined {
+  return (
+    books.find((book) => book.id === draft.bookId) ??
+    (draft.bookId === "" ? defaultBook(books) : undefined)
+  );
+}
+
+/** Whether the tax class means anything for the draft's book; when the book is not known, the draft says. */
+export function taxClassApplies(
+  draft: Pick<CostDraft, "bookId">,
+  books: readonly CostBook[],
+): boolean {
+  return bookOf(draft, books)?.taxRelevant ?? true;
 }
 
 export type BuiltBody<T> = {
@@ -295,12 +425,18 @@ function nullable(text: string): string | null {
 export function buildCreateBody(
   draft: CostDraft,
   userIds: readonly string[],
+  books: readonly CostBook[] = [],
 ): BuiltBody<CreateCostRequest> {
-  const { errors, amountMinor, shares } = check(draft, userIds);
+  const { errors, amountMinor, shares, participants } = check(draft, userIds);
   if (amountMinor === undefined || Object.keys(errors).length > 0) {
     return { body: undefined, errors };
   }
+  const narrowed =
+    draft.splitMode === "equal"
+      ? narrowedParticipants(participants, userIds)
+      : undefined;
   const body = {
+    ...(draft.bookId ? { bookId: draft.bookId } : {}),
     date: draft.date,
     title: draft.title.trim(),
     amountMinor,
@@ -315,8 +451,10 @@ export function buildCreateBody(
     paidByUserId: draft.paidByUserId || null,
     splitMode: draft.splitMode,
     ...(draft.splitMode === "custom" ? { shares } : {}),
+    ...(narrowed ? { participantIds: narrowed } : {}),
     countsAsExpense: draft.countsAsExpense,
-    deductible: draft.deductible,
+    // A book that is not tax relevant refuses a tax class, whatever the form held before the book was changed.
+    deductible: taxClassApplies(draft, books) ? draft.deductible : "unknown",
   };
   const result = createCostRequestSchema.safeParse(body);
   if (!result.success) {
@@ -348,8 +486,9 @@ export function buildUpdateBody(
   draft: CostDraft,
   entry: CostEntry,
   userIds: readonly string[],
+  books: readonly CostBook[] = [],
 ): BuiltBody<UpdateCostRequest> {
-  const { errors, amountMinor, shares } = check(draft, userIds);
+  const { errors, amountMinor, shares, participants } = check(draft, userIds);
   if (amountMinor === undefined || Object.keys(errors).length > 0) {
     return { body: undefined, errors };
   }
@@ -357,6 +496,9 @@ export function buildUpdateBody(
   const title = draft.title.trim();
   // A fuel log entry owns the date, amount, currency and device of the entry it booked: they stay with it.
   const owned = Boolean(entry.fuelLogId);
+  if (draft.bookId && draft.bookId !== entry.bookId) {
+    patch.bookId = draft.bookId;
+  }
   if (!owned && draft.date !== entry.date) patch.date = draft.date;
   if (title !== entry.title) patch.title = title;
   if (!owned && amountMinor !== entry.amountMinor) {
@@ -385,14 +527,26 @@ export function buildUpdateBody(
   if ((draft.paidByUserId || null) !== entry.paidByUserId) {
     patch.paidByUserId = draft.paidByUserId || null;
   }
+  const narrowed =
+    draft.splitMode === "equal"
+      ? narrowedParticipants(participants, userIds)
+      : undefined;
   if (draft.splitMode !== entry.splitMode) {
     patch.splitMode = draft.splitMode;
     if (draft.splitMode === "custom") patch.shares = shares;
+    if (narrowed) patch.participantIds = narrowed;
   } else if (
     draft.splitMode === "custom" &&
     !sameShares(shares, entry.shares)
   ) {
     patch.shares = shares;
+  } else if (
+    draft.splitMode === "equal" &&
+    !sameIds(participants, entryParticipants(entry, userIds))
+  ) {
+    // An equal split is divided again among the people now ticked; without `participantIds` that is everybody.
+    patch.splitMode = "equal";
+    if (narrowed) patch.participantIds = narrowed;
   }
   // The server moves the flag along with a category change unless it is sent,
   // so a category change always carries what the person sees.
@@ -402,8 +556,10 @@ export function buildUpdateBody(
   ) {
     patch.countsAsExpense = draft.countsAsExpense;
   }
-  if (draft.deductible !== entry.deductible)
+  // In a book that is not tax relevant the class is not offered, and the server keeps or resets it by itself.
+  if (draft.deductible !== entry.deductible && taxClassApplies(draft, books)) {
     patch.deductible = draft.deductible;
+  }
 
   if (Object.keys(patch).length === 0) return { body: {}, errors };
   const result = updateCostRequestSchema.safeParse(patch);

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { and, asc, eq, isNotNull, isNull } from "drizzle-orm";
 import {
   assets,
@@ -5,6 +6,7 @@ import {
   costLinkRemovals,
   financeSyncState,
 } from "$lib/server/db";
+import { openCostBookId } from "$lib/server/costs/books";
 import {
   recordConnectionFailure,
   recordConnectionOk,
@@ -123,6 +125,27 @@ function saveState(
 // ---- transactions -----------------------------------------------------------
 
 /**
+ * The book a category's transactions go to: the one the settings name for the category, else the connection's default
+ * book, else none (the household's default book takes it). A book that was deleted or archived since counts as none, so
+ * the next one is tried.
+ */
+function bookFor(
+  ctx: Pick<ServiceContext, "db">,
+  config: KeptConfig,
+  categoryId: string | null,
+): string | null {
+  const own =
+    categoryId !== null && Object.hasOwn(config.categoryBookMap, categoryId)
+      ? config.categoryBookMap[categoryId]
+      : undefined;
+  return (
+    openCostBookId(ctx, own) ??
+    openCostBookId(ctx, config.defaultBookId) ??
+    null
+  );
+}
+
+/**
  * One transaction of a mapped category becomes a cost suggestion (or, in an
  * automatic category, a cost entry at once); one in a purchase category may
  * also become an asset suggestion. The payment of a bill is booked once: an
@@ -134,6 +157,7 @@ async function offerTransaction(run: Run, tx: KeptTransaction): Promise<void> {
   const seed =
     tx.amount === 0 ? null : transactionToCostSeed(tx, config.categoryMap);
   if (seed) {
+    const bookId = bookFor(ctx, config, tx.categoryId);
     const covering = seed.billIds.flatMap((billId) =>
       suggestionsCoveringBill(ctx, row.id, billId).filter((s) =>
         s.providerRef.startsWith(BILL_PREFIX),
@@ -161,6 +185,7 @@ async function offerTransaction(run: Run, tx: KeptTransaction): Promise<void> {
           category: seed.category,
           url: seed.url,
           assetId: null,
+          ...(bookId === null ? {} : { bookId }),
         },
       },
       decided ? "dismissed" : "pending",
@@ -171,7 +196,12 @@ async function offerTransaction(run: Run, tx: KeptTransaction): Promise<void> {
         tx.categoryId !== null &&
         config.autoAcceptCategoryIds.includes(tx.categoryId)
       ) {
-        await acceptSuggestion(ctx, ownerId, suggestion.id, {});
+        await acceptSuggestion(
+          ctx,
+          ownerId,
+          suggestion.id,
+          bookId === null ? {} : { bookId },
+        );
         stats.autoAccepted++;
       } else if (created) {
         stats.suggestions++;
@@ -203,6 +233,25 @@ async function offerTransaction(run: Run, tx: KeptTransaction): Promise<void> {
 const scopeOf = (parts: Array<string | undefined>) =>
   parts.map((p) => p ?? "").join("|");
 
+/**
+ * A short digest of the books the settings name, for the cursor's scope. Which book an offer carries comes from the
+ * settings, not from Kept, so a transaction that did not change in Kept would never be asked for again after the
+ * mapping changed. Another choice of book is another scope: everything is read again, the offers still waiting take the
+ * new book (`recordSuggestion` rewrites pending ones only) and decided ones stay as they were.
+ */
+function booksScope(
+  categoryBookMap: Record<string, string>,
+  defaultBookId: string | undefined,
+): string {
+  const entries = Object.entries(categoryBookMap).sort(([a], [b]) =>
+    a < b ? -1 : a > b ? 1 : 0,
+  );
+  return createHash("sha256")
+    .update(JSON.stringify([entries, defaultBookId ?? ""]))
+    .digest("hex")
+    .slice(0, 12);
+}
+
 /** Transactions of the mapped and purchase categories since the last run. */
 async function syncTransactions(run: Run): Promise<void> {
   const { ctx, row, client, config } = run;
@@ -214,7 +263,11 @@ async function syncTransactions(run: Run): Promise<void> {
   ].sort();
   if (ids.length === 0) return;
   const from = config.syncFrom ?? `${clockAt(ctx.now).today.slice(0, 4)}-01-01`;
-  const scope = scopeOf([from, ...ids]);
+  const scope = scopeOf([
+    from,
+    booksScope(config.categoryBookMap, config.defaultBookId),
+    ...ids,
+  ]);
   const state = stateOf(ctx, row.id);
   const since =
     state?.transactionsScope === scope ? state.transactionsSince : null;
@@ -350,7 +403,9 @@ async function syncPaidBills(run: Run): Promise<void> {
   const category = config.billCostCategory;
   if (category === undefined) return;
   const from = config.syncFrom ?? `${clockAt(ctx.now).today.slice(0, 4)}-01-01`;
-  const scope = scopeOf([from, category]);
+  // Invoices have no Kept category of their own: they go to the connection's default book, so only that is in the scope.
+  const scope = scopeOf([from, category, booksScope({}, config.defaultBookId)]);
+  const bookId = bookFor(ctx, config, null);
   const state = stateOf(ctx, row.id);
   const since = state?.billsScope === scope ? state.billsSince : null;
   let newest = since;
@@ -397,6 +452,7 @@ async function syncPaidBills(run: Run): Promise<void> {
             category,
             url: bill.url,
             assetId: null,
+            ...(bookId === null ? {} : { bookId }),
           },
         });
         if (created) stats.suggestions++;

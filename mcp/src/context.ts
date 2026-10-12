@@ -3,6 +3,7 @@ import { isApiError } from "../../src/lib/api/errors";
 import { endpoints } from "../../src/lib/api/registry";
 import type { Scope } from "../../src/lib/api/scopes";
 import type { Asset } from "../../src/lib/api/schemas/assets";
+import type { CostBook } from "../../src/lib/api/schemas/cost-books";
 import type { Household } from "../../src/lib/api/schemas/household";
 import type { Room } from "../../src/lib/api/schemas/rooms";
 import { todayIn } from "../../src/lib/dates";
@@ -34,6 +35,8 @@ export interface ToolContext {
   resolveAsset(ref: string): Promise<Asset>;
   /** A household member by `me`, id, display name or username. */
   resolveUser(ref: string): Promise<string>;
+  /** A cost book by id, slug or name, archived ones included. */
+  resolveBook(ref: string): Promise<CostBook>;
 }
 
 export interface ContextOptions {
@@ -149,6 +152,33 @@ export function createContext(options: ContextOptions): ToolContext {
         );
       }
       throw new ToolError("not_found", `No asset matches "${ref}".`);
+    },
+
+    async resolveBook(ref) {
+      const books: CostBook[] = [];
+      let cursor: string | undefined;
+      do {
+        const page = await api.call(endpoints.costBooksList, {
+          query: { cursor, limit: 200, includeArchived: "true" },
+        });
+        books.push(...page.items);
+        cursor = page.nextCursor ?? undefined;
+      } while (cursor);
+      const hits = books.filter(
+        (b) => b.id === ref || same(b.slug, ref) || same(b.name, ref),
+      );
+      if (hits.length === 1) return hits[0];
+      if (hits.length > 1) {
+        throw ambiguous(
+          "Cost book",
+          ref,
+          hits.map((b) => `${b.name} (${b.id})`),
+        );
+      }
+      throw new ToolError(
+        "not_found",
+        `No cost book "${ref}". Known cost books: ${books.map((b) => b.name).join(", ") || "none"}.`,
+      );
     },
 
     async resolveUser(ref) {

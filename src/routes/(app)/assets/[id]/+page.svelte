@@ -265,6 +265,7 @@
         <VehicleCard
           assetId={asset.id}
           vehicle={data.vehicle.details}
+          books={data.vehicle.books}
           today={data.today}
           {canWrite}
         />
@@ -291,6 +292,7 @@
           nextCursor={data.vehicle.fuelLogs.nextCursor}
           stats={data.vehicle.stats}
           vehicle={data.vehicle.details}
+          books={data.vehicle.books}
           currency={data.currency}
           today={data.today}
           people={data.vehicle.people}

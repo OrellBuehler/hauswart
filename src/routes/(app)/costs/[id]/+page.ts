@@ -6,11 +6,11 @@ import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ fetch, params, url }) => {
   const client = createApiClient(fetch);
-  const [cost, household, people] = await Promise.all([
-    orFail(
-      client.call(endpoints.costsGet, { params: { id: params.id } }),
-      url.pathname,
-    ),
+  const cost = await orFail(
+    client.call(endpoints.costsGet, { params: { id: params.id } }),
+    url.pathname,
+  );
+  const [household, people] = await Promise.all([
     loadHousehold(client, url.pathname),
     loadDirectory(client, url.pathname),
   ]);

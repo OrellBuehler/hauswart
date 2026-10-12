@@ -1,8 +1,11 @@
 import { Database } from "bun:sqlite";
 import { drizzle } from "drizzle-orm/bun-sqlite";
-import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
+import {
+  migrateDatabase as applyMigrations,
+  type MigrateOptions,
+} from "./migrator";
 import * as schema from "./schema";
 
 export type DB = ReturnType<typeof drizzle<typeof schema>>;
@@ -19,8 +22,13 @@ export function openDatabase(path: string): DB {
   return drizzle({ client, schema });
 }
 
-export function migrateDatabase(target: DB): void {
-  migrate(target, { migrationsFolder: join(process.cwd(), "drizzle") });
+/** Applies the pending migrations; see `migrator.ts` for how foreign keys are handled while they run. */
+export function migrateDatabase(
+  target: DB,
+  folder = join(process.cwd(), "drizzle"),
+  options?: MigrateOptions,
+): void {
+  applyMigrations(target, folder, options);
 }
 
 export function getDB(): DB {

@@ -5,11 +5,14 @@
  */
 export class IntegrationError extends Error {
   override name = "IntegrationError";
+  /** The request field a check of the settings is about (`config`), when it is about one. */
+  readonly field: string | undefined;
   constructor(
     readonly code: string,
     message: string,
-    options?: { cause?: unknown },
+    options?: { cause?: unknown; field?: string },
   ) {
     super(message, options);
+    this.field = options?.field;
   }
 }

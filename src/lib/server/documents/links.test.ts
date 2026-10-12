@@ -16,6 +16,7 @@ import {
 } from "$lib/server/db";
 import { minor } from "$lib/money";
 import { deleteAsset } from "$lib/server/assets/assets";
+import { defaultCostBook } from "$lib/server/costs/books";
 import { deleteRoom } from "$lib/server/rooms/rooms";
 import { createTestUser } from "$lib/testing/auth";
 import { useTestDB } from "$lib/testing/db";
@@ -192,6 +193,7 @@ describe("document links", () => {
         const c = test.db
           .insert(costEntries)
           .values({
+            bookId: defaultCostBook({ db: test.db }).id,
             date: "2026-01-01",
             title: "Repair",
             amountMinor: minor(1000),

@@ -4,6 +4,7 @@ import { loadHousehold } from "$lib/api/household";
 import { orFail } from "$lib/api/load";
 import { endpoints } from "$lib/api/registry";
 import { sortTasks } from "$lib/assets/tasks";
+import { loadCostBooks } from "$lib/costs/load";
 import { loadDirectory } from "$lib/tasks/load";
 import type { PageLoad } from "./$types";
 
@@ -14,27 +15,36 @@ async function loadVehicleExtras(
   redirectTo: string,
 ) {
   const year = Number(today.slice(0, 4));
-  const [details, readings, tireSets, fuelLogs, stats, yearStats, people] =
-    await Promise.all([
-      api.call(endpoints.vehiclesGet, { params: { id } }),
-      api.call(endpoints.odometerList, {
+  const [
+    details,
+    readings,
+    tireSets,
+    fuelLogs,
+    stats,
+    yearStats,
+    people,
+    books,
+  ] = await Promise.all([
+    api.call(endpoints.vehiclesGet, { params: { id } }),
+    api.call(endpoints.odometerList, {
+      params: { id },
+      query: { limit: 20 },
+    }),
+    fetchAll((cursor) =>
+      api.call(endpoints.tireSetsList, {
         params: { id },
-        query: { limit: 20 },
+        query: { cursor, limit: 200, includeRetired: "true" },
       }),
-      fetchAll((cursor) =>
-        api.call(endpoints.tireSetsList, {
-          params: { id },
-          query: { cursor, limit: 200, includeRetired: "true" },
-        }),
-      ),
-      api.call(endpoints.fuelLogsList, {
-        params: { id },
-        query: { limit: 20 },
-      }),
-      api.call(endpoints.vehicleStats, { params: { id }, query: {} }),
-      api.call(endpoints.vehicleStats, { params: { id }, query: { year } }),
-      loadDirectory(api, redirectTo),
-    ]);
+    ),
+    api.call(endpoints.fuelLogsList, {
+      params: { id },
+      query: { limit: 20 },
+    }),
+    api.call(endpoints.vehicleStats, { params: { id }, query: {} }),
+    api.call(endpoints.vehicleStats, { params: { id }, query: { year } }),
+    loadDirectory(api, redirectTo),
+    loadCostBooks(api, redirectTo),
+  ]);
   return {
     details,
     readings,
@@ -44,6 +54,7 @@ async function loadVehicleExtras(
     year,
     yearStats,
     people,
+    books,
   };
 }
 

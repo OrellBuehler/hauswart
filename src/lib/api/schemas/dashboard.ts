@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { DUE_KINDS, PREPARATION_STATES, TASK_CATEGORIES } from "../enums";
 import { dateSchema, isoTimestampSchema } from "./common";
-import { dashboardCostsSchema } from "./costs";
+import { dashboardBalancesSchema, dashboardCostsSchema } from "./costs";
 import { defectSeveritySchema, defectStatusSchema } from "./defects";
 import { orderNowItemSchema } from "./parts";
 import { warrantyStatusSchema } from "./warranties";
@@ -107,7 +107,13 @@ export const dashboardSchema = z
     openDefects: z.array(dashboardDefectSchema),
     expiringWarranties: z.array(dashboardWarrantySchema),
     orderNow: z.array(orderNowItemSchema),
+    /** The year's expenses, in total and per book. */
     costsYearToDate: dashboardCostsSchema,
+    /**
+     * Where the caller stands across all books: the balance and the first payments that would square everybody. Null
+     * when it could not be worked out right now (logged), so the rest of the dashboard still opens.
+     */
+    balances: dashboardBalancesSchema.nullable(),
     /** The caller's own offers from a connected finance app that wait for a decision; other members' offers are never counted. */
     pendingFinanceSuggestions: z.number().int().min(0),
   })

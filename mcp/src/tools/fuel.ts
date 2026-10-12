@@ -43,13 +43,14 @@ const fillRow = (f: FuelLog) => ({
       ? null
       : rate(f.costPerDistanceMinor, f.currency, f.odometerUnit),
   costEntryId: f.costEntryId,
+  book: f.bookName,
 });
 
 export const addFuelLog = defineTool({
   name: "add_fuel_log",
   title: "Log a fill-up or charge",
   description:
-    "Logs a fill-up (litres) or a charge (kWh) of a vehicle (id, name or plate). odometer is what the display shows when filling up, in the vehicle's own unit (km or mi); quantity is the litres or kWh; amount is the total price as a decimal such as '78.50' in the household currency unless currency is given ('0' for a free charge). It also records the odometer reading (a value lower than the reading before is refused as a typo) and, unless the amount is 0, books a cost entry of the category fuel for the vehicle, paid by the token's user unless paidBy says otherwise and split by ownership unless split is equal or none. unit defaults to kWh for an electric vehicle and litres otherwise. Consumption is worked out between two full fills: fullTank (default true) says the tank was filled up completely, pass false for a partial fill, and missedPrevious: true when an earlier fill was never logged, so no consumption is worked out across the gap. date defaults to today. The result shows the price per unit and, for a full fill that closes a stretch, the distance and consumption per 100.",
+    "Logs a fill-up (litres) or a charge (kWh) of a vehicle (id, name or plate). odometer is what the display shows when filling up, in the vehicle's own unit (km or mi); quantity is the litres or kWh; amount is the total price as a decimal such as '78.50' in the household currency unless currency is given ('0' for a free charge). It also records the odometer reading (a value lower than the reading before is refused as a typo) and, unless the amount is 0, books a cost entry of the category fuel for the vehicle, in the cost book given by book (name, slug or id, see list_cost_books; an archived book is refused), else the vehicle's own book if it has one, else the default book, paid by the token's user unless paidBy says otherwise and split as that book says unless split is ownership, equal or none. unit defaults to kWh for an electric vehicle and litres otherwise. Consumption is worked out between two full fills: fullTank (default true) says the tank was filled up completely, pass false for a partial fill, and missedPrevious: true when an earlier fill was never logged, so no consumption is worked out across the gap. date defaults to today. The result shows the price per unit and, for a full fill that closes a stretch, the distance and consumption per 100.",
   mode: "create",
   scopes: ["costs:write"],
   input: {
@@ -77,18 +78,29 @@ export const addFuelLog = defineTool({
     station: z.string().trim().min(1).max(120).optional(),
     notes: z.string().trim().min(1).max(2000).optional(),
     paidBy: z.string().min(1).max(100).optional(),
+    book: z.string().min(1).max(64).optional(),
     split: z.enum(["ownership", "equal", "none"]).optional(),
   },
   async handler(
-    { vehicle: ref, amount, currency, paidBy, split, ...rest },
+    { vehicle: ref, amount, currency, paidBy, book, split, ...rest },
     ctx,
   ) {
     const asset = await resolveVehicle(ctx, ref);
     const amountMinor = toMinor(amount, currency ?? ctx.household.currency);
-    const paidByUserId = paidBy ? await ctx.resolveUser(paidBy) : undefined;
+    const [paidByUserId, b] = await Promise.all([
+      paidBy ? ctx.resolveUser(paidBy) : undefined,
+      book ? ctx.resolveBook(book) : undefined,
+    ]);
     const fill = await ctx.api.call(endpoints.fuelLogsCreate, {
       params: { id: asset.id },
-      body: { ...rest, amountMinor, currency, paidByUserId, splitMode: split },
+      body: {
+        ...rest,
+        amountMinor,
+        currency,
+        paidByUserId,
+        bookId: b?.id,
+        splitMode: split,
+      },
     });
     const stretch = stretchText(fill);
     return {

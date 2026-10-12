@@ -16,6 +16,7 @@ const vehicle: Vehicle = {
   location: null,
   odometerUnit: "km",
   notes: null,
+  costBookId: null,
   odometer: { value: 44420, date: "2026-10-08", unit: "km" },
   updatedAt: "2026-01-01T00:00:00.000Z",
 };

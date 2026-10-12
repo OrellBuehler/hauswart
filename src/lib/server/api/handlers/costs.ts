@@ -2,6 +2,8 @@ import type { z } from "zod";
 import type { endpoints } from "$lib/api/registry";
 import type { costEntrySchema } from "$lib/api/schemas/costs";
 import { toIso } from "$lib/api/schemas/common";
+import { costBalances } from "$lib/server/costs/balances";
+import { getCostBookRow } from "$lib/server/costs/books";
 import {
   createCost,
   deleteCost,
@@ -11,7 +13,9 @@ import {
   type CostRecord,
 } from "$lib/server/costs/costs";
 import { costsCsv } from "$lib/server/costs/csv";
+import { moveCostsToBook } from "$lib/server/costs/move";
 import { costsSummary } from "$lib/server/costs/summary";
+import { invalidField } from "$lib/server/service";
 import type { Handler } from "../bind";
 
 const yearOf = (today: string) => Number(today.slice(0, 4));
@@ -22,6 +26,9 @@ export function wireCost(
 ): z.input<typeof costEntrySchema> {
   return {
     id: c.id,
+    bookId: c.bookId,
+    bookName: c.bookName,
+    bookTaxRelevant: c.bookTaxRelevant,
     date: c.date,
     title: c.title,
     amountMinor: c.amountMinor,
@@ -84,23 +91,46 @@ export const remove: Handler<typeof endpoints.costsDelete> = ({
   return null;
 };
 
+export const moveToBook: Handler<typeof endpoints.costsMoveToBook> = ({
+  ctx,
+  body,
+}) => moveCostsToBook(ctx, body);
+
 export const summary: Handler<typeof endpoints.costsSummary> = ({
   ctx,
   query,
 }) =>
   costsSummary(ctx, query.year ?? yearOf(ctx.today), {
     assetId: query.assetId,
+    bookId: query.bookId,
   });
+
+export const balances: Handler<typeof endpoints.costsBalances> = ({
+  ctx,
+  query,
+}) => {
+  if (query.bookId && query.all === true) {
+    throw invalidField("all", "Give a book or all=true, not both", "query");
+  }
+  if (!query.bookId && query.all === false) {
+    throw invalidField("bookId", "A book is needed when all=false", "query");
+  }
+  return costBalances(ctx, { bookId: query.bookId });
+};
 
 export const exportCsv: Handler<typeof endpoints.costsExport> = ({
   ctx,
   query,
 }) => {
   const year = query.year ?? yearOf(ctx.today);
-  return new Response(costsCsv(ctx, year), {
+  const book = query.bookId ? getCostBookRow(ctx, query.bookId) : undefined;
+  const name = book
+    ? `hauswart-costs-${year}-${book.slug}`
+    : `hauswart-costs-${year}`;
+  return new Response(costsCsv(ctx, year, { bookId: query.bookId }), {
     headers: {
       "content-type": "text/csv; charset=utf-8",
-      "content-disposition": `attachment; filename="hauswart-costs-${year}.csv"`,
+      "content-disposition": `attachment; filename="${name}.csv"`,
     },
   });
 };

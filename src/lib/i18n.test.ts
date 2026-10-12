@@ -25,4 +25,16 @@ describe("messages", () => {
       }
     }
   });
+
+  it("has no plural branch for an exact number, which a count passed as a number never reaches", () => {
+    // Paraglide compares the count with the string "0", so `=0 {...}` is skipped for the number 0 and "other" is shown.
+    for (const locale of ["de", "en"]) {
+      const messages = JSON.parse(
+        readFileSync(`messages/${locale}.json`, "utf8"),
+      ) as Record<string, string>;
+      for (const [key, value] of Object.entries(messages)) {
+        expect(value, `${locale}:${key}`).not.toMatch(/\bplural,[^{]*=\d/);
+      }
+    }
+  });
 });

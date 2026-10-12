@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { getDB } from "$lib/server/db";
 import { createCaller, errorCode } from "$lib/testing/api";
 import {
   createTestToken,
@@ -48,6 +49,56 @@ describe("dashboard API", () => {
       openDefects: [],
       expiringWarranties: [],
       orderNow: [],
+    });
+  });
+
+  describe("the balances", () => {
+    it("are the caller's place across all books", async () => {
+      const { call, user } = await member();
+      const r = await call("GET", "/api/v1/dashboard");
+      expect(r.body).toMatchObject({
+        balances: {
+          currency: "CHF",
+          myBalanceMinor: 0,
+          hasActivity: false,
+          suggestedPayments: [],
+          suggestedPaymentCount: 0,
+        },
+      });
+      expect(user.id).toBeTruthy();
+    });
+
+    it("are null when they cannot be worked out, and the rest of the dashboard is still there", async () => {
+      const { call } = await member();
+      await call("POST", "/api/v1/costs", {
+        json: { title: "Einkauf", amountMinor: 10000, category: "groceries" },
+      });
+      // Payments are what the balances read and the rest of the dashboard does not.
+      getDB().$client.exec("drop table settlements");
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        const r = await call("GET", "/api/v1/dashboard");
+        expect(r.res.status).toBe(200);
+        expect(r.body).toMatchObject({
+          balances: null,
+          today: today(),
+          counts: { overdue: 0, today: 0, thisWeek: 0, preparations: 0 },
+          costsYearToDate: { totalMinor: 10000 },
+          pendingFinanceSuggestions: 0,
+        });
+
+        // Logged by error name and code, with nothing the error says (it names a table here).
+        const lines = error.mock.calls.map((c) => String(c[0]));
+        expect(lines).toHaveLength(1);
+        expect(JSON.parse(lines[0]!)).toEqual({
+          event: "dashboard.balances_failed",
+          name: "SQLiteError",
+          code: "SQLITE_ERROR",
+        });
+        expect(lines[0]).not.toContain("settlements");
+      } finally {
+        error.mockRestore();
+      }
     });
   });
 

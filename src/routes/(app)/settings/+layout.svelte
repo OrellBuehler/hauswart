@@ -5,6 +5,7 @@
   import CalendarDaysIcon from "@lucide/svelte/icons/calendar-days";
   import HouseIcon from "@lucide/svelte/icons/house";
   import KeyRoundIcon from "@lucide/svelte/icons/key-round";
+  import LibraryIcon from "@lucide/svelte/icons/library";
   import LinkIcon from "@lucide/svelte/icons/link-2";
   import PlugIcon from "@lucide/svelte/icons/plug";
   import SmartphoneIcon from "@lucide/svelte/icons/smartphone";
@@ -30,6 +31,11 @@
       href: "/settings/household",
       label: () => m.settings_tab_household(),
       icon: HouseIcon,
+    },
+    {
+      href: "/settings/cost-books",
+      label: () => m.settings_tab_cost_books(),
+      icon: LibraryIcon,
     },
     {
       href: "/settings/integrations",

@@ -17,6 +17,7 @@ const vehicle: Vehicle = {
   location: null,
   odometerUnit: "km",
   notes: null,
+  costBookId: null,
   odometer: { value: 44300, date: "2026-10-04", unit: "km" },
   updatedAt: null,
 };
@@ -36,6 +37,8 @@ const log = (over: Partial<FuelLog>): FuelLog => ({
   station: "Beispiel-Tankstelle",
   notes: null,
   costEntryId: "c1",
+  bookId: null,
+  bookName: null,
   paidByUserId: null,
   pricePerUnitMinor: 194.1,
   distance: 540,
@@ -122,6 +125,21 @@ describe("FuelLogCard", () => {
     expect(body).toMatch(/über 6 Strecken/);
     expect(body).toMatch(/CHF.1[.,]941\/l/);
     expect(body.match(/role="img"/g)).toHaveLength(2);
+  });
+
+  it("names the book a fill was booked into next to its station", () => {
+    const body = html([log({ bookId: "b1", bookName: "Auto" })]);
+    expect(body).toContain("Beispiel-Tankstelle · Auto");
+  });
+
+  it("names no book for a fill that booked nothing", () => {
+    const body = html([log({ bookId: null, bookName: null })]);
+    expect(body).toContain("Beispiel-Tankstelle");
+    expect(body).not.toContain("Beispiel-Tankstelle ·");
+    const noStation = html([
+      log({ station: null, bookId: "b1", bookName: "Haushalt" }),
+    ]);
+    expect(noStation).toContain("Haushalt");
   });
 
   it("describes the price chart in words", () => {

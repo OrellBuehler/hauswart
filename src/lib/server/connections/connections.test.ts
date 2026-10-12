@@ -65,6 +65,62 @@ describe("connections", () => {
       });
     });
 
+    it("lets the adapter check the submitted settings against the database, and not a save that leaves them alone", () => {
+      let reject = false;
+      const seen: unknown[] = [];
+      stops.push(
+        registerIntegration({
+          kind: "homeassistant",
+          test: async () => ({ ok: true }),
+          describe: () => ({ capabilities: [] }),
+          checkReferences: (check, config) => {
+            seen.push([typeof check.db, config]);
+            if (reject) {
+              throw new IntegrationError(
+                "invalid_input",
+                "Thing gone does not exist",
+                { field: "config" },
+              );
+            }
+          },
+        }),
+      );
+      saveConnection(
+        ctx(),
+        "homeassistant",
+        null,
+        input({ config: { thing: "fine" } }),
+      );
+      expect(seen).toEqual([["object", { thing: "fine" }]]);
+
+      reject = true;
+      const details = fieldErrors(() =>
+        saveConnection(
+          ctx(),
+          "homeassistant",
+          null,
+          input({ config: { thing: "gone" } }),
+        ),
+      );
+      expect(details?.body.fieldErrors).toEqual({
+        config: ["Thing gone does not exist"],
+      });
+      expect(
+        getConnectionRow(ctx(), "homeassistant", null)?.configJson,
+      ).toEqual({ thing: "fine" });
+
+      // The address or the token changes, the settings are the stored ones: nothing to check.
+      expect(
+        saveConnection(
+          ctx(),
+          "homeassistant",
+          null,
+          input({ allowInsecureTls: true }),
+        ).allowInsecureTls,
+      ).toBe(true);
+      expect(seen).toHaveLength(2);
+    });
+
     it("needs a token for a new connection", () => {
       expect(
         fieldErrors(() =>

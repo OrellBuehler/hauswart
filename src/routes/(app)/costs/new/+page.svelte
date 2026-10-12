@@ -31,6 +31,7 @@
     assets={data.assets}
     defects={data.defects}
     people={data.people}
+    books={data.books}
     currency={data.currency}
     today={data.today}
     currentUserId={data.user.id}

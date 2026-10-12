@@ -1,28 +1,49 @@
 <script lang="ts">
-  import CircleCheckIcon from "@lucide/svelte/icons/circle-check";
   import InfoIcon from "@lucide/svelte/icons/info";
   import FilterIcon from "@lucide/svelte/icons/list-filter";
-  import type { CostsSummary } from "$lib/api/schemas/costs";
+  import type { CostBalances, CostsSummary } from "$lib/api/schemas/costs";
   import * as Card from "$lib/components/ui/card/index.js";
-  import { hasSettlementData } from "$lib/costs/summary";
+  import { viewerLine } from "$lib/costs/balances";
   import { formatMoney } from "$lib/format-money";
   import { m } from "$lib/paraglide/messages";
+  import { cn } from "$lib/utils";
+  import BalanceOverview from "./balance-overview.svelte";
 
   let {
     summary,
+    balances,
+    userId,
+    balancesHref,
     asset,
+    bookName,
   }: {
     summary: CostsSummary;
+    /** Where everybody stands today (the book on screen, or every book); `null` when they could not be read. */
+    balances: CostBalances | null;
+    userId: string;
+    /** The Saldo page, with the same book. */
+    balancesHref: string;
     /** Set when the summary was asked for one device only; `name` is null when that device is not known here. */
     asset?: { name: string | null } | undefined;
+    /** Set when the summary was asked for one book only. */
+    bookName?: string | undefined;
   } = $props();
 
   const entryCount = $derived(
     summary.byMonth.reduce((sum, month) => sum + month.count, 0),
   );
-  const hasData = $derived(hasSettlementData(summary));
   const money = (value: number) => formatMoney(value, summary.currency);
-  const name = (value: string | null) => value ?? m.cost_person_unknown();
+  const you = $derived(balances ? viewerLine(balances, userId) : null);
+  const tones = {
+    credit: "text-success",
+    debit: "text-destructive",
+    even: "",
+  } as const;
+  const balanceTitle = $derived(
+    bookName
+      ? `${m.balances_teaser_title()} · ${bookName}`
+      : m.balances_teaser_title(),
+  );
 </script>
 
 {#snippet extras()}
@@ -54,60 +75,20 @@
   {/if}
 {/snippet}
 
-{#snippet settlement()}
-  {#if summary.settlement.length > 0}
-    <ul
-      class="flex flex-col gap-2.5"
-      aria-label={m.costs_settlement_subtitle()}
-    >
-      {#each summary.settlement as payment (`${payment.fromUserId}:${payment.toUserId}`)}
-        <li class="flex items-baseline justify-between gap-3">
-          <span class="min-w-0 break-words"
-            >{m.costs_settlement_who({
-              from: name(payment.fromName),
-              to: name(payment.toName),
-            })}</span
-          >
-          <span class="shrink-0 font-semibold whitespace-nowrap tabular-nums"
-            >{money(payment.amountMinor)}</span
-          >
-        </li>
-      {/each}
-    </ul>
-  {:else if !hasData}
-    <p class="text-muted-foreground flex items-start gap-2 text-pretty">
-      <InfoIcon class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-      {m.costs_settlement_nothing()}
-    </p>
-  {:else}
-    <p class="flex items-start gap-2 text-pretty">
-      <CircleCheckIcon
-        class="text-success mt-0.5 size-4 shrink-0"
-        aria-hidden="true"
-      />
-      {m.costs_settlement_even()}
-    </p>
-  {/if}
-  {#if summary.unassignedPayerCount > 0}
-    <p
-      class="text-muted-foreground flex items-start gap-2 border-t pt-3 text-xs text-pretty"
-    >
-      <InfoIcon class="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-      <span>{m.costs_unassigned({ count: summary.unassignedPayerCount })}</span>
-    </p>
-  {/if}
-{/snippet}
-
 <div class="flex flex-col gap-3">
-  {#if asset}
+  {#if asset || bookName}
     <p
       class="bg-muted/50 text-muted-foreground flex items-start gap-2 rounded-lg border px-3 py-2 text-sm text-pretty"
     >
       <FilterIcon class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
       <span class="min-w-0 wrap-anywhere">
-        {asset.name
-          ? m.costs_summary_asset({ name: asset.name })
-          : m.costs_summary_asset_unknown()}
+        {#if asset}
+          {asset.name
+            ? m.costs_summary_asset({ name: asset.name })
+            : m.costs_summary_asset_unknown()}
+        {:else if bookName}
+          {m.costs_summary_book({ name: bookName })}
+        {/if}
       </span>
     </p>
   {/if}
@@ -126,10 +107,21 @@
     <Card.Content class="flex flex-col gap-3 text-sm">
       {@render extras()}
       <section class="flex flex-col gap-2.5 border-t pt-3">
-        <h3 class="text-sm font-medium">
-          {m.costs_settlement_title({ year: summary.year })}
-        </h3>
-        {@render settlement()}
+        <h3 class="text-sm font-medium">{balanceTitle}</h3>
+        <p class="text-muted-foreground -mt-1.5 text-xs">
+          {m.balances_teaser_hint()}
+        </p>
+        {#if you}
+          <p class={cn("text-lg font-semibold tabular-nums", tones[you.tone])}>
+            {you.text}
+          </p>
+        {/if}
+        <BalanceOverview
+          {balances}
+          {userId}
+          href={balancesHref}
+          showYou={false}
+        />
       </section>
     </Card.Content>
   </Card.Root>
@@ -154,15 +146,26 @@
 
     <Card.Root class="gap-4">
       <Card.Header>
-        <Card.Description>
-          {m.costs_settlement_title({ year: summary.year })}
-        </Card.Description>
-        <Card.Title class="text-base"
-          >{m.costs_settlement_subtitle()}</Card.Title
+        <Card.Description>{balanceTitle}</Card.Description>
+        <Card.Title
+          class={cn(
+            "text-3xl font-semibold tabular-nums",
+            you ? tones[you.tone] : "text-muted-foreground",
+          )}
         >
+          {you ? you.text : m.balances_teaser_title()}
+        </Card.Title>
       </Card.Header>
       <Card.Content class="flex flex-col gap-3 text-sm">
-        {@render settlement()}
+        <p class="text-muted-foreground -mt-1 text-xs">
+          {m.balances_teaser_hint()}
+        </p>
+        <BalanceOverview
+          {balances}
+          {userId}
+          href={balancesHref}
+          showYou={false}
+        />
       </Card.Content>
     </Card.Root>
   </div>

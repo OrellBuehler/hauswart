@@ -44,6 +44,9 @@ export const fuelLogSchema = z
     notes: z.string().nullable(),
     /** The cost entry (category fuel) this fill booked; null for a free charge or after the entry was deleted. */
     costEntryId: z.string().nullable(),
+    /** The cost book of that cost entry (`GET /cost-books`); null while there is no cost entry. */
+    bookId: z.string().nullable(),
+    bookName: z.string().nullable(),
     paidByUserId: z.string().nullable(),
     /** Minor units per litre or kWh: a rate, not an amount (184.7 is 1.847 per litre). */
     pricePerUnitMinor: z.number().nullable(),
@@ -68,8 +71,11 @@ export const listFuelLogsResponseSchema = paginated(fuelLogSchema);
 /**
  * `date` defaults to today (never in the future), `unit` to kWh for an electric vehicle and litres
  * otherwise, `currency` to the household's, `fullTank` to true. The booking follows the costs:
- * `paidByUserId` defaults to the caller (null = nobody), `splitMode` to ownership, `shares` only with
- * `custom`.
+ * `paidByUserId` defaults to the caller (null = nobody), `shares` only with `custom`. `bookId` is the cost
+ * book of the cost entry (an open book, else 400 on `bookId`); without it the vehicle's own book
+ * (`costBookId` of its details) applies while that book is open, else the default book. `splitMode`
+ * defaults to the split of the book it lands in. A free fill (amount 0) books nothing, so
+ * `paidByUserId`, `splitMode`, `shares` and `bookId` mean nothing for it (a bad `bookId` is still refused).
  */
 export const createFuelLogRequestSchema = z.strictObject({
   date: dateSchema.optional(),
@@ -82,13 +88,18 @@ export const createFuelLogRequestSchema = z.strictObject({
   missedPrevious: z.boolean().default(false),
   station: nullableText(120).optional(),
   notes: nullableText(2000).optional(),
+  bookId: idSchema.optional(),
   paidByUserId: idSchema.nullable().optional(),
   splitMode: costSplitModeSchema.optional(),
   shares: costSharesInputSchema.optional(),
 });
 export type CreateFuelLogRequest = z.output<typeof createFuelLogRequestSchema>;
 
-/** The cost entry follows a change of amount, currency, date, station, payer and split. */
+/**
+ * The cost entry follows a change of amount, currency, date, station, payer, split and book. `bookId` moves it to
+ * another open book (400 on `bookId` otherwise; the book it is in already is always fine); on a free fill, which has
+ * no cost entry, it changes nothing, and a fill that starts costing money in the same request is booked into it.
+ */
 export const updateFuelLogRequestSchema = atLeastOne(
   z.strictObject({
     date: dateSchema.optional(),
@@ -101,6 +112,7 @@ export const updateFuelLogRequestSchema = atLeastOne(
     missedPrevious: z.boolean().optional(),
     station: nullableText(120).optional(),
     notes: nullableText(2000).optional(),
+    bookId: idSchema.optional(),
     paidByUserId: idSchema.nullable().optional(),
     splitMode: costSplitModeSchema.optional(),
     shares: costSharesInputSchema.optional(),

@@ -8,7 +8,7 @@ optional adapters, never requirements. Status: early development — authenticat
 the task core (rooms, assets, tasks, completions, notifications, dashboard), documentation (pages,
 attachments, search, file backup), contacts, spare parts, the service log, care hints, defects (with
 a PDF export), the warranty overview, generic comments, iCal feeds, the emergency page data and guest
-links, costs (with the settlement between the people and a CSV export), the per-person finance
+links, costs (cost books, the split between the people, running balances with recorded payments and a CSV export), the per-person finance
 connection (Kept), insurance policies (with a cancellation reminder), appointments (see "Appointments"), asset notes and vehicles (details, odometer
 readings, tire sets, a fuel log with consumption, statistics, task templates; see "Vehicles") exist; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
 push notifications with a "done" button, areas taken over as rooms, items pushed into its calendars; see "Signals, integrations and delivery" and "Calendar sync"); Paperless-ngx is wired as
@@ -119,8 +119,9 @@ src/lib/server/insurance/        insurance policies: policies.ts (CRUD, filters,
                                  reminder task); see "Insurance policies and asset notes"
 src/lib/server/asset-notes/      asset notes: notes.ts (CRUD, to a defect), resolve.ts (service log resolution), events.ts (undo
                                  reopens), counts.ts (openNoteCount)
-src/lib/server/costs/            cost entries: split.ts (frozen shares), costs.ts (CRUD, list), summary.ts (year totals, settlement),
-                                 csv.ts, totals.ts (cost sums on defects and service log entries)
+src/lib/server/costs/            cost entries: split.ts (frozen shares), costs.ts (CRUD, list), move.ts (bulk move to a book), books.ts (cost books), summary.ts (year totals,
+                                 settlement), ledger.ts (paid/share/payments per person, shared by summary and balances), balances.ts (running
+                                 balances), settlements.ts (recorded payments), csv.ts, totals.ts (cost sums on defects and service log entries)
 src/lib/server/finance/          generic finance-provider seam: providers.ts (registry), suggestions.ts (the private inbox, accept,
                                  dismiss), bill-tasks.ts (tasks that follow bills)
 src/lib/server/hints/            per-asset care hints (tip/rule/warning), pinned, ordered, optional signal reaction (stored only)
@@ -167,9 +168,14 @@ src/lib/server/integrations/     optional adapters (homeassistant/, paperless/, 
                                  wired by `registerPaperless()`; kept/ has client, mappers, fake-server plus config, adapter
                                  (settings, pickers), sync and scheduler, wired by `registerKept()` (see "Costs and finance providers")
 src/lib/server/db.ts             SQLite connection (WAL, foreign keys); migrations run on startup
+src/lib/server/migrator.ts       the migration runner: foreign keys off while migrations run, a differential `foreign_key_check` before commit,
+                                 the pending list worked out under `BEGIN IMMEDIATE`, a safety copy first
+src/lib/server/migration-copy.ts the `VACUUM INTO` copy written next to a database that has data before it is migrated (newest 3 kept)
 src/lib/server/schema.ts         Drizzle schema — one file, every table has created_at/updated_at
 src/lib/server/crypto.ts         AES-256-GCM for stored secrets (HAUSWART_SECRET_KEY)
 src/lib/money.ts                 minor-unit money type, parsing/formatting, ownership shares
+src/lib/costs/                   client-safe UI logic of the costs pages: books.ts (book choice, icons), book-memory.ts, filters.ts, form.ts (draft ->
+                                 request bodies), balances.ts (wording), settlements.ts (drafts, bodies, filters), load.ts; see "Costs in the web app"
 src/lib/testing/                 useTestDB, createTestUser/Token, createTestEvent, callRoute, fixtures/
 src/hooks.server.ts              init (secret key, time zone, migrations) + auth gate + Paraglide locale
 src/routes/api/v1/**             one-liner route files: export const GET = bind(endpoints.x, handler)
@@ -237,7 +243,8 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   Existing entries are left alone unless `--update`. Changing the household needs the admin scope.
   An asset of kind `vehicle` may carry a `vehicle` block (the body of `PUT /assets/{id}/vehicle`):
   saved when the vehicle has no saved details yet, overwritten (and what the file leaves out cleared)
-  only with `--update`. Tire sets and fuel logs are not seeded: a set has no key to find it again by, and a fill books
+  only with `--update`; the block cannot carry `costBookId` (a file knows no book ids) and an update keeps the book a
+  person chose. Tire sets and fuel logs are not seeded: a set has no key to find it again by, and a fill books
   a cost entry (`costs:write`).
 
 ### Signals, integrations and delivery
@@ -289,7 +296,7 @@ messages/{de,en}.json            Paraglide messages (ICU); src/lib/paraglide is 
   `PUT|DELETE /integrations/{kind}` and `POST .../test` (household kinds need an administrator; a
   changed address needs the token again), pickers `GET /integrations/{kind}/{entities,notify-services,
 calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` with `details.code`). An
-  adapter registers `registerIntegration({kind, validate?, test, describe, operations})`; it throws
+  adapter registers `registerIntegration({kind, validate?, checkReferences?, test, describe, operations})`; it throws
   `IntegrationError(code, message)`. Health (`status`, `lastError` code, `consecutiveFailures`) is
   recorded by the adapter; `dueForAttempt`/`backoffMs` give the 1, 2, 4 ... 15 minute backoff.
 - **Where a connection may point** (`connections.ts` `vetConnectionTarget`, `net/host-policy.ts`, `integrations/http.ts`
@@ -338,13 +345,15 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
 
 ### Costs and finance providers
 
-- **Cost entries** (`cost_entries`, domain data shared by the household): `date`, `title`,
+- **Cost entries** (`cost_entries`, domain data shared by the household): `bookId` (see "Cost books"), `date`, `title`,
   `amountMinor` (positive = expense, negative = refund, never 0) + `currency`, `category`
-  (`repair|utilities|renewal_fund|purchase|mortgage_interest|mortgage_principal|insurance|renovation|maintenance|fuel|taxes_fees|other`),
+  (`repair|utilities|renewal_fund|purchase|mortgage_interest|mortgage_principal|insurance|renovation|maintenance|fuel|taxes_fees|groceries|household|dining|leisure|travel|health|gifts|transport|subscriptions|other`;
+  the everyday ones count as an expense by default like all but `mortgage_principal`),
   optional asset, room, defect and service log entry (a service log entry or defect fills in
   asset/room when none is given; deleting the target only unlinks), `payee`, `notes`,
   `paidByUserId`, `splitMode`, `countsAsExpense`, `deductible` (`unknown|maintenance|investment|no`: the
-  Swiss tax distinction between value-preserving and value-increasing work), `source`
+  Swiss tax distinction between value-preserving and value-increasing work; only for tax relevant books, see
+  "Cost books"), `source`
   (`manual|finance_transaction|finance_bill`). `countsAsExpense` defaults to false for
   `mortgage_principal` (equity, not a cost) and follows a category change unless the person overrode it.
   Entries can be commented on and carry receipts (attachments, owner `cost`). The fuel log of a vehicle books its
@@ -354,24 +363,93 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
 - **Split math** (`money.ts` `allocate`, `costs/split.ts`): shares are frozen per entry in
   `cost_entry_shares` (basis points, sum exactly 10000), so a later ownership change never rewrites
   history. `ownership` weighs people by `users.ownership_bps` (normalised, 0% pays nothing, all zero
-  falls back to equal), `equal` weighs everybody the same, `custom` takes explicit shares (sum 10000),
-  `none` is not shared. A person's part of an amount is the largest-remainder split of its absolute
-  value (parts add up to the amount exactly; a refund splits exactly like the expense it reverses);
-  ties go to the earlier user id. PATCH with `splitMode` ownership/equal splits again by today's shares;
+  falls back to equal), `equal` weighs everybody the same - or only the `participantIds` (create and PATCH;
+  household members, each once, 1 to 20; refused for any other mode with a 400 on `participantIds`; a
+  PATCH with `participantIds` and no `splitMode` needs the entry to be `equal` already), `custom` takes
+  explicit shares (sum 10000), `none` is not shared. There is no stored participant list: the frozen shares are
+  the participants (a person who joins later bears nothing of an old entry). A person's part of an amount is the
+  largest-remainder split of its absolute value (parts add up to the amount exactly; a refund splits exactly like
+  the expense it reverses); ties go to the earlier user id. An omitted `splitMode` on create is the book's
+  default split. PATCH with `splitMode` ownership/equal splits again by today's shares (`equal`: everybody);
   changing only the amount keeps the frozen shares.
+- **Cost books** (`cost_books`, migration `0026`; `costs/books.ts`; `/cost-books`, reads `read`, writes `costs:write`): the
+  ledgers entries are booked into. `name` (60, unique without regard to case), `slug`, `icon` (a key the client maps),
+  `defaultSplitMode` (`ownership|equal|none`), `taxRelevant`, `archivedAt`, `sortOrder`. The migration creates Wohnung
+  (tax relevant, `ownership`), Haushalt and Auto (`equal`) and puts every earlier entry into Wohnung. SQLite cannot
+  add a NOT NULL reference to a table with rows, so it rebuilds `cost_entries`; it was written for a migrator with foreign
+  keys on, where `DROP TABLE` cascade-deleted `cost_entry_shares` and nulled the fuel log links, so both are set aside and
+  restored and the delete triggers are created again. It is the one migration that still runs with foreign keys on
+  (`MIGRATIONS_WITH_FOREIGN_KEYS` in `migrator.ts`); every other one runs with them off (see "Migrations" below), and
+  `migrations.test.ts` pins both. `cost_entries.book_id` is NOT NULL, `ON DELETE RESTRICT`. **The default book** (`defaultCostBook`,
+  `isDefault` in the DTO) is the book flagged `cost_books.is_default` (migration `0027`, which flagged the book that was
+  the first one not archived), where an entry without `bookId` goes (so does an accepted finance suggestion and a fuel
+  log's cost entry of a vehicle that remembers no book). Exactly one book that is not archived has the flag (a partial
+  unique index and the service keep it so): `PATCH /cost-books/{id}` with `isDefault: true` (also on create) moves it in one
+  transaction, `isDefault: false` on the default is a 409, an archived book that stays archived cannot get it (400 on
+  `isDefault`), archiving or deleting the default hands it to the first book that is still open, restoring a book does not
+  give it back and **reordering never moves it**. The last book that is not archived can be
+  neither archived nor deleted (409), so there always is one. A book with entries or payments cannot be deleted (409,
+  `details.entryCount`/`settlementCount`): archive it, which closes it to new entries (400 on `bookId` when creating
+  or moving into it; an entry may stay and be edited) while it still counts in the balances. **Tax class**:
+  `deductible` other than `unknown` is a 400 on `deductible` in a book that is not tax relevant (the entry's own value
+  may be repeated); moving an entry into such a book resets it to `unknown` unless the request sets it; switching
+  `taxRelevant` off keeps what entries say, and `byDeductible` of the summary counts tax relevant books only. `bookId`
+  filters the list, `GET /costs/summary` (every number is then that book's) and the CSV; a `bookId` that names no book is
+  a 404 on all of them (and on the balances and on `GET /settlements`), never an empty answer. The entry DTO carries `bookName` and
+  `bookTaxRelevant` (whether `deductible` means anything for it). **Moving entries**: `PATCH /costs/{id}` with `bookId` moves one; `POST /costs/move-to-book {bookId, ids | assetId}`
+  (scope `costs:write`, `costs/move.ts`) moves up to 500 named entries or every entry of a device, all or nothing in one
+  transaction (an unknown id is a 400 on `ids`, an unknown device on `assetId`, an unknown or archived target on
+  `bookId`), answers `{bookId, moved, unchanged, deductibleReset, dryRun, years}` and changes the ledger only: split, payer and frozen
+  shares stay, a tax class the target book cannot have is reset. **`dryRun: true`** does everything but write (the same
+  checks, the same counts; `dryRun: true` comes back) and `years` is `{from, to}`, the first and last year of the dates of
+  the entries that move or would (null when none does), so a client can say "23 Einträge aus 2024–2026, 5 verlieren ihre
+  Steuerklasse" before a move of a whole device is confirmed. Entries a fuel log entry booked may move too (their lock
+  covers amount, currency, date and device only).
 - **Currency**: entries may be in any currency, but every total, the settlement and the dashboard
   count the household currency only; `otherCurrencyCount` says how many entries were left out (the CSV
   has them all).
-- **Summary** (`GET /costs/summary?year=&assetId=`): `expenseTotalMinor` and the per category / month (always 12) /
+- **Summary** (`GET /costs/summary?year=&assetId=&bookId=`): `expenseTotalMinor` and the per category / month (always 12) /
   asset (top 10) / tax class breakdowns count entries with `countsAsExpense`; `equityTotalMinor` is the rest. With an
-  `assetId` every number in it, the settlement included, is that asset's alone.
+  `assetId` or `bookId` every number in it, the settlement included, is that asset's or book's alone. It is a
+  year of entries: recorded payments are not in it (and so not in the dashboard's `costsYearToDate`).
   **Settlement** covers every split entry with a payer, equity included (it is about who paid cash):
   `balanceMinor` = paid - share (positive = the others owe this person), `settlement` = greedy payments
   from the largest debtor to the largest creditor ("A owes B CHF x"). Split entries without a payer are
-  counted in `unassignedPayerCount`, never guessed. The dashboard carries `costsYearToDate` and `pendingFinanceSuggestions` (the caller's own pending
-  offers, shown as a card linking to the inbox).
-- **CSV** (`GET /costs/export.csv?year=`, binary `text/csv`): UTF-8 with BOM, `;` separated, CRLF,
-  fixed English column names (`costs/csv.ts` `CSV_COLUMNS`), amounts as plain decimals with a point, no
+  counted in `unassignedPayerCount`, never guessed. The dashboard carries `costsYearToDate`, `balances` and `pendingFinanceSuggestions` (the
+  caller's own pending offers, shown as a card linking to the inbox). **`costsYearToDate`** answers "what did the year
+  cost" and nothing else: `totalMinor` and `byCategory` (top three) over all books together plus `byBook` (per book,
+  largest first, only books with an expense this year, archived ones too, each with `taxRelevant` so a client can tell the
+  apartment from the everyday books); household currency, entries that count as an expense, the same numbers as
+  `costsSummary` (a test pins it), grouped in SQL without a ledger. It no longer has a `settlement`: a year of entries
+  knows nothing of recorded payments, so it would have disagreed with the balance. **`balances`** answers "where do I
+  stand": `{currency, myBalanceMinor, hasActivity, suggestedPayments (the first three, between any two people),
+suggestedPaymentCount}`, the caller's own place across all books with recorded payments included, from one read of the
+  same ledger as `GET /costs/balances` (four queries however many entries there are; a test pins that). It is the one
+  part of the dashboard that may fail on its own: when it cannot be worked out the handler answers `balances: null`
+  (the schema is nullable) and logs `dashboard.balances_failed` with the error's name and code, so the tasks and the
+  rest of the dashboard still open.
+- **Settlements and balances** (`settlements`, migration `0026`; `costs/settlements.ts`, `balances.ts`, `ledger.ts`;
+  `/settlements`, `GET /costs/balances`): a settlement is a payment between two members ("Ben paid Anna 50"):
+  `fromUserId` differs from `toUserId` (both members, else 400 on the field), `amountMinor` is positive (also a CHECK),
+  `currency` defaults to the household's, then `date`, `note`, and `bookId` (null = across all books; the book may be
+  archived, paying back a closed trip is the normal order). It is **not a cost**: no expense total counts it, it only
+  moves the balances. Users cannot be deleted, so its user foreign keys are `RESTRICT`. `POST /settlements` takes an
+  optional `idempotencyKey` (8 to 128 characters, migration `0027`, unique per person who records whatever credential
+  they use): a retry returns the first payment with 200 instead of 201, the same key for different people, amount, currency
+  or book is a 409 (date and note do not count), and the key is free again once the payment is deleted
+  (`recordSettlement`). `GET /costs/balances` is all
+  time: per member `paidMinor - shareMinor + sentMinor - receivedMinor` (`sentMinor` = payments handed over, a positive
+  balance = the others owe this person, zero-sum per currency), household currency only (`otherCurrencyCount` = entries
+  and payments left out, `unassignedPayerCount` as in the summary) and `suggestedPayments` from the same greedy `settle`
+  as the year summary. With `bookId`: that book's entries and its own payments (payments across all books cannot be
+  attributed and stay out; `crossBookSettlements: {count, totalMinor}` says how many of them there are, household
+  currency, null for the view of all books); with `all=true` or no parameter: every book, archived ones and payments
+  across all books included; `bookId` with `all=true`, or `all=false` without a book, is a 400, an unknown book a 404. `ledger.ts`
+  (`bookEntry`, `bookSettlement`, `personBalances`) is the one place paid/share are added up, for the summary and the
+  balances alike.
+- **CSV** (`GET /costs/export.csv?year=&bookId=`, binary `text/csv`): UTF-8 with BOM, `;` separated, CRLF,
+  fixed English column names (`costs/csv.ts` `CSV_COLUMNS`; columns are only ever added at the end, `book` is the
+  last; the file of one book is named `hauswart-costs-<year>-<book slug>.csv`), amounts as plain decimals with a point, no
   thousands separator and the currency's own precision (`-12.50`, `1500` for JPY) so they parse the same
   everywhere; text cells that start with `= + - @` tab or CR get an apostrophe (formula injection).
 - **Defects and service log entries** carry `costs: {totalMinor, count}` (correlated subqueries in the
@@ -382,9 +460,12 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   person's id is a 404 exactly like a missing one, and the finance address of an entry
   (`providerUrl`) is shown only to the person who booked it. `(connection, kind, ref)` is unique: a
   seen item keeps its status (a dismissed one stays dismissed, an accepted one never changes, only a
-  pending one takes a fresher payload). Accepting books the cost (paid by the owner, split by ownership
-  unless the body overrides category, title, asset/room/defect/service log, payer, split, expense flag,
-  deductible), creates the asset (with `externalSource: finance_transaction`; the cost of the same
+  pending one takes a fresher payload). A cost suggestion's payload may carry `bookId`, the cost book the
+  connection's settings offer for it (the accept dialog preselects it; the API shows null once that book is archived or
+  deleted, and legacy payloads without it read as null). Accepting books the cost (paid by the owner, into the book the body
+  names, else the one offered with the suggestion while it is open, else the default book, and
+  split as it says unless the body overrides book (`bookId`), category, title, asset/room/defect/service log,
+  payer, split, participants, expense flag, deductible), creates the asset (with `externalSource: finance_transaction`; the cost of the same
   transaction gets the asset, in either order) or the bill task, in one transaction. A cost booked from a
   provider item remembers it (`providerConnectionId` + `providerRef`, unique) so it is never booked twice,
   even after the entry is deleted.
@@ -424,7 +505,7 @@ map), billTasks, billCreditorFilter (case-insensitive exact creditor names; appl
   health, immediately when a connection is saved, overlap guard per connection and in the scheduler; each
   part runs on its own and the first failure becomes the connection's `lastError` code):
   - transactions of every mapped or purchase category since the cursor (`finance_sync_state`, per scope:
-    a different category set or `syncFrom` starts over; first run from `syncFrom` or 1 January) become `cost`
+    a different category set, `syncFrom` or choice of books starts over; first run from `syncFrom` or 1 January) become `cost`
     suggestions via `transactionToCostSeed`, or cost entries at once for automatic categories; outgoing payments
     from purchase categories also `asset` suggestions. A failed item keeps the cursor where it was.
   - with `billTasks`: open and overdue bills (creditor filter) become bill tasks; tasks of bills that left the
@@ -436,6 +517,21 @@ map), billTasks, billCreditorFilter (case-insensitive exact creditor names; appl
     (+ asset), url `ORIGIN/costs/<id>`; skipped without `ORIGIN`), a deleted one gets `deleteLink`; a failing
     call is logged by code and retried next sync, an item Kept does not know (404, 409, 400) is given up on. A
     links-only round also runs shortly after a cost from Kept is booked, edited or deleted.
+- **Books**: `config.categoryBookMap` `{keptCategoryId: bookId}` names the cost book of a mapped category (an entry
+  for a category that is not mapped is dropped when the settings are saved) and `config.defaultBookId` the book of a mapped
+  category without one and of paid invoices (`billCostCategory`; they have no Kept category). `bookFor` (sync.ts) takes
+  the category's book, else the default, else none; a book that is deleted or archived counts as none and the next choice
+  is tried, none meaning the household's default book. The id goes into the suggestion's payload (`bookId`, left out when
+  none) and, in an automatic category, to `acceptSuggestion` as the body's `bookId` (the adapter passes it, the core
+  knows no Kept). The cursors of the transactions and of the paid invoices carry a digest of the books the settings
+  name (`booksScope`: the category map and the default book for transactions, the default book alone for invoices), so
+  a changed choice reads everything since `syncFrom` again and the offers still waiting take the new `bookId` (a
+  decided one never changes: `recordSuggestion` rewrites pending ones only). Book ids are checked when settings are saved: the adapter's `checkReferences` (a generic hook of
+  `IntegrationAdapter`, run by `saveConnection` with the database after `validate`, and only when the request sends
+  `config`, so a save that leaves the stored settings alone never trips over a book deleted since) throws an
+  `IntegrationError` with `field: "config"`, which becomes a 400 on `config` naming the book. A book that does not exist
+  is refused, an archived one is allowed (it counts as none when used, the form warns), and the choice for a category that
+  is not mapped is dropped before the check. The web settings form has a book select under each mapped category (empty = the connection's default) and one for `defaultBookId` (empty = the household's default book); an archived choice shows a warning, a refused one `integration_kept_book_gone_error`; the accept dialog preselects the book offered with a suggestion.
 - Logs carry codes only (`kept.transaction_failed {code}`), never titles, amounts, creditors or tokens.
 
 ### Documents and the document provider
@@ -613,7 +709,8 @@ of the owner>` is added to the document unless an identical note exists (writes 
   `ZH 000000`; `vehiclesWithPlateLike` in `vehicles/summary.ts`, in code and not in SQL, which could only strip the
   characters it was told about). `vehicle_details` (1:1, created by the first save) holds plate, VIN, Stammnummer
   (`registrationNumber`), `firstRegistration`, `fuelType`, tire sizes, `location`, `odometerUnit`
-  (`km|mi`) and notes. `GET|PUT /assets/{id}/vehicle`: PUT replaces (a field left out is cleared; the
+  (`km|mi`), notes and `costBookId` (the cost book its fuel fills go to, see "Fuel log"; `ON DELETE SET NULL`, migration
+  `0027`). `GET|PUT /assets/{id}/vehicle`: PUT replaces (a field left out is cleared; the
   unit relabels the readings, it does not convert them), 400 for an asset of another kind, 404 for a
   missing one; GET answers empty details for a vehicle never saved and 404 for another kind. The asset
   DTO carries `vehicle: {plate, odometer: {value, date, unit} | null}` for vehicles only. The plate is
@@ -700,10 +797,15 @@ createdBy?, force?})` is what other features call when they learn the odometer o
   `missedPrevious`, `station`, `notes`. **Creating** is one transaction: the fill, an odometer reading (source
   `fuel_log`, same monotonic rule, 400 on `odometer`) and, unless the amount is 0 (a free charge), a cost entry of the new
   category `fuel` for the vehicle (title "Tanken <station>" or "Laden ..." in the base language, payee = station, paid by
-  `paidByUserId`, default the caller, `splitMode` default ownership). **PATCH** moves the reading with date and
+  `paidByUserId`, default the caller). **The book**: `bookId` of the request (an open book, else 400 on `bookId`, also for a
+  free fill), else the vehicle's own `costBookId` while that book is open, else the default book; `splitMode` is the one
+  asked for, else the split of the book the entry lands in (it used to be `ownership` always). The DTO carries `bookId`
+  and `bookName` of the cost entry (null for a free fill). **PATCH** moves the reading with date and
   odometer and keeps the cost entry in step for amount, currency, date, station (title and payee, the unit decides the
-  title too), payer and split (made free it loses the entry; costing again gets a new one; an entry somebody deleted is
-  not brought back by other changes). **The fill owns what it booked**: on the cost entry (`PATCH|DELETE /costs/{id}`) a
+  title too), payer, split and book (`bookId` moves the entry as `PATCH /costs/{id}` does, resetting a tax class the new
+  book cannot have; the book it is in already is always accepted; on a free fill it changes nothing, and a fill that starts
+  costing in the same request is booked into it; made free it loses the entry; costing again gets a new one in the vehicle's
+  or default book; an entry somebody deleted is not brought back by other changes). **The fill owns what it booked**: on the cost entry (`PATCH|DELETE /costs/{id}`) a
   change of amount, currency, date or device (`assetId`, which would break the link to the fuel log and the vehicle's
   statistics) and a delete are a 409 `conflict` (message names the fuel log, `details.fuelLogId`;
   repeating the current values is fine, so is every other field: category, title, notes, payee, payer, split, deductible,
@@ -1068,6 +1170,12 @@ tsconfig also includes `mcp/**` so `bun run check` type-checks it. The app impor
   1.32 implements protocol revisions up to 2025-11-25; a client that tries the stateless 2026-07-28
   revision first gets a 400 and falls back to `initialize`. OAuth (needed by the claude.ai web
   connectors) is not implemented.
+- **Cost book tools** (`tools/cost-books.ts`): `list_cost_books` and `get_balances` (read; a book is given by name, slug
+  or id, archived ones too - `ctx.resolveBook`), `record_settlement` (`costs:write`, `from` defaults to the token's
+  user; sends a fresh idempotency key; answers with what is still open). `create_cost` takes `book` and `participants` (names, ids or `me`; they
+  imply `equal`; an omitted `split` is the book's), `list_costs` and `cost_summary` take `book`, `accept_finance_suggestion`
+  takes `book` and `participants`. `list_costs` rows carry `bookTaxRelevant` (only when true) and `get_balances` for one
+  book says how many payments across all books it leaves out (`paymentsAcrossAllBooksLeftOut`).
 - **Tools** are curated and task-oriented (`defineTool({name, title, description, mode, input,
 handler})` returning `{summary, data}`; output is a summary line plus compact JSON with empty
   fields dropped). `mode` (`read|create|update|undo`) fixes the MCP annotations and the default
@@ -1080,7 +1188,7 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
 - **Insurance and asset notes** (`tools/insurance.ts`, `tools/notes.ts`): `list_insurance_policies` and
   `get_insurance_policy` (read; a policy by id, title or policy number), `add_asset_note`, `list_asset_notes` and
   `resolve_asset_note` (the asset by id or name; resolving is idempotent). `add_service_log` takes `resolvedNoteIds`, task
-  rows carry `openNotes`, and documents can be linked to a policy by its title. 67 tools when the token holds every scope (the appointment tools are `tools/appointments.ts`, see "Appointments"; `list_calendar_targets` in `tools/calendar-targets.ts` is read-only, see "Calendar sync").
+  rows carry `openNotes`, and documents can be linked to a policy by its title. 70 tools when the token holds every scope (the appointment tools are `tools/appointments.ts`, see "Appointments"; `list_calendar_targets` in `tools/calendar-targets.ts` is read-only, see "Calendar sync").
 - **New tool**: add the endpoint to the registry first, then a ~15-line `defineTool` in
   `mcp/src/tools/` and an entry in `tools/index.ts` (which lists the planned extension points).
   Triggers go through `parseTrigger` (engine schema, per-type docs in `trigger-docs.ts`, a `Record`
@@ -1105,7 +1213,7 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
   work when unambiguous); a device given by name is told apart from "no such vehicle".
   Every tool that takes an asset (`ctx.resolveAsset`) accepts a vehicle's plate as well (`lib/vehicles/plate.ts`).
   Fuel, tires and numbers: `list_fuel_logs` and `add_fuel_log` (`tools/fuel.ts`; **`costs:write`**, because a fill books a
-  cost entry, so it is offered with the cost tools, not with `write`), `get_vehicle_stats` (`tools/vehicle-stats.ts`),
+  cost entry, so it is offered with the cost tools, not with `write`; it takes `book` like `create_cost`), `get_vehicle_stats` (`tools/vehicle-stats.ts`),
   `list_tire_sets`, `add_tire_set`, `mount_tire_set` and `record_tire_tread` (`tools/tires.ts`). A tire set is given by
   its id or by words from its season, brand, model, size or DOT (`winter`; `findTireSets` searches the vehicle's own
   sets only, so another vehicle's set is never found; an id also finds a retired set, words only active ones; several
@@ -1256,7 +1364,21 @@ newPassword}`, 204; `auth/change-password.ts`, form in `settings/account`): the 
 - **Every UI string goes through Paraglide**; add the key to `messages/de.json` and
   `messages/en.json` together (a test enforces identical key sets). German is the base locale.
 - **Migrations**: edit `schema.ts`, run `bun run db:generate`, commit the generated file. Never
-  edit an existing migration, never use `drizzle-kit push`.
+  edit an existing migration, never use `drizzle-kit push`. The migrator (`migrator.ts`) runs migrations with foreign
+  keys **off**, set before the transaction because the `PRAGMA foreign_keys=OFF` lines drizzle-kit writes around a table
+  rebuild do nothing inside it, so a rebuilt parent table keeps its children (no stash and restore needed), and it runs
+  `PRAGMA foreign_key_check` before committing and compares it with the same check taken before the migrations: references
+  that already dangled are logged by table and count (`migrations.dangling_references`, no row data) and left alone, but a
+  migration that adds to them (more rows for a pair of child and parent table) rolls back and the app refuses to start
+  (`MigrationIntegrityError`). Consecutive migrations that need the same foreign key setting form a **group**, applied
+  together or not at all: a failing group rolls back, the groups before it stay applied. Each group starts with
+  `BEGIN IMMEDIATE` and works the pending list out only then, so a second instance that looked before the first got in
+  does not run a migration that only changes data twice. **Safety copy**: before the first pending migration of a
+  database that already has applied migrations (not a fresh one, not `:memory:`) `takeSafetyCopy` (`migration-copy.ts`)
+  writes `<database>.pre-migrate-<UTC>.db` next to it with `VACUUM INTO` (through a `.partial` file; a second one in the
+  same second gets `-2`), keeps the newest three and logs `migrations.safety_copy` with the file name only. A copy that
+  cannot be written stops the start before anything is migrated; `HAUSWART_MIGRATION_BACKUP=false` turns it off (a value
+  that is neither true nor false throws, so a typo is not taken for off).
 
 ## Svelte 5 and UI
 
@@ -1366,6 +1488,39 @@ in dark mode. Every list has an empty state, every async action a pending and an
   totals) and says so above it. A cost entry with `fuelLogId` has its amount, currency, date and device locked in the form (never sent by
   `buildUpdateBody`) with a link to `#fuel-log`, and the detail page offers that link instead of delete; a 409 with
   `details.fuelLogId` that still arrives is worded (`fuelLogOfConflict`).
+- **Costs in the web app** (books, balances, settlements): the address carries the book, `/costs?book=<id>|all`. The address wins; without
+  one the book the person looked at last applies (localStorage `hauswart:cost-book:<user id>`, `book-memory.ts`, written by an effect once the
+  address names a book). `chooseBook` (`lib/costs/books.ts`) decides in the load, which `redirect(307)`s to the explicit address (on a hard
+  reload that is a native navigation, SvelteKit's own rule for a redirect that only the browser can make); an address that narrows by device,
+  room, search ... (`narrowsBeyondBook`) ignores the memory, so `/costs?asset=` still shows that device's costs. `book` goes to the list,
+  summary, CSV and balances (`costsQuery`, `costsSummaryQuery`, `costsExportQuery`, `balancesQuery`). `BookSwitcher` is a row of links (a
+  scrolling row on phones that keeps the book on screen in view), the second summary card is the running balance (`BalanceOverview`, from
+  `GET /costs/balances`; the year's settlement of the summary is no longer shown, it ignores recorded payments). `/costs/balances` is the Saldo
+  page: balance per person with paid / share / payments sent / received, suggested payments with "Als bezahlt erfassen" (opens
+  `SettlementDialog` prefilled by `draftFromSuggestion`: book = the one on screen or all books, so the person only confirms or edits), a
+  dismissible note "settled before?" while no payment was ever recorded, and the recorded payments (year and person filters, edit, delete).
+  Balances are worded, never signed (`balanceWording`, `youWording`, `viewerLine`: "bekommt" / "schuldet"). Books are managed under
+  `/settings/cost-books` (create, edit, icon, default split, tax relevant, move, archive, restore, delete; a 409 is worded from `details`
+  by `bookConflictMessage`), "new book" is also a chip on the costs page. The cost form picks the book first (`BookPicker`: buttons up to
+  four books, else a select); a new entry takes the book's default split until the person chose a split (`withBook`, `splitAfterBook`); "Für wen"
+  are member checkboxes of an equal split (`participants`, sent as `participantIds` only when narrowed, and a PATCH sends `splitMode: "equal"`
+  again when the set changed); the tax class is only offered, and sent, for a tax relevant book (`taxClassApplies`). The inbox's accept dialog
+  has the same picker and checkboxes. The dashboard's `CostsCard` reads `dashboard.balances` ("Du bekommst / Du schuldest" across all books, the first three payments and how many more there are, no request of its own; `null` shows "Der Saldo konnte nicht geladen werden." under the year's costs) and labels the year total "Ausgaben 2026, alle Bücher" with the per-book list of `costsYearToDate.byBook` under it;
+  `tryLoadBalances` lets a page open when only the balances fail (the card says so).
+  `chooseBook` never hands on an id the server would 404 on; a remembered book that was deleted comes back as `staleMemory`, and the loads forget it (`forgetBook`).
+  The single-book balance cards and the Saldo page name the payments across all books they leave out (`crossBookNote`, from `crossBookSettlements`). The tax card measures its rows against
+  the sum of `byDeductible` (`taxTotal`, tax relevant books only), not against the year's expenses. The "Für wen" preview of an equal split divides the basis points first and the amount by those (`equalPreview`),
+  so it shows what the server books (300.00 among three: 100.02, 99.99, 99.99). Under `/settings/cost-books` a book that takes entries gets "Als Standard festlegen" (`isDefault`; the badge follows it, reordering never moves it).
+  Reordering (rooms, books, hints) goes through `lib/reorder.ts`: `saveOrder` waits for every request, a failed one included, then refreshes, so the order shown is the server's.
+  **Moving entries**: "Auswählen" on the list (checkboxes in the cards and the table, a sticky bar with the count, at most 500) and, on a list narrowed to a device, "Alle Einträge dieses Geräts verschieben"
+  open `MoveCostsDialog` (`POST /costs/move-to-book`; `moveSummary` words moved / unchanged / tax class reset, `moveFailure` the 400s; for a device it first asks a dry run for the chosen book, again whenever the book changes, and shows `movePreview` above the buttons - a failed preview is worded and does not block the move). **Vehicles**: the asset form's "Kostenbuch" picks `costBookId` (every save sends it, a PUT would clear it),
+  `VehicleCard` names the book, the fuel dialog offers a book (the vehicle's while it takes entries, else the default; a new fill takes that book's split; no "Für wen", the fuel API has no participants) and the list shows each fill's `bookName`.
+- **After a dialog, refresh with `invalidateAfterOverlay`** (`lib/overlays/use-overlay-history.svelte.ts`): closing a dialog pops its history
+  entry, and the router drops an `invalidateAll()` that is still loading when that popstate arrives, so the page kept the old data. It waits
+  for the entry to be gone first (`OverlayHistory.settled`); a dialog that navigates uses `gotoFromOverlay`. Menu items that start
+  an action with `onclick` do not disable themselves while it runs: bits-ui checks `disabled` after `onclick`, so the
+  item no longer selects, the menu does not close and the page stays locked. Items that use `onSelect` are fine (the
+  check comes before it runs).
 
 ## Testing
 

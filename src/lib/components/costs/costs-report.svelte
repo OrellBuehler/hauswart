@@ -8,7 +8,7 @@
     categoryLabels,
     deductibleLabels,
   } from "$lib/costs/labels";
-  import { hasSettlementData } from "$lib/costs/summary";
+  import { hasSettlementData, shareBps, taxTotal } from "$lib/costs/summary";
   import { formatPercent, monthName } from "$lib/format";
   import { formatMoney } from "$lib/format-money";
   import { m } from "$lib/paraglide/messages";
@@ -28,8 +28,11 @@
 
   const money = (value: number) => formatMoney(value, summary.currency);
   const total = $derived(summary.expenseTotalMinor);
-  const share = (value: number) =>
-    total > 0 ? formatPercent(Math.round((value / total) * 10_000)) : null;
+  const taxSum = $derived(taxTotal(summary));
+  const share = (value: number, whole: number = total) => {
+    const bps = shareBps(value, whole);
+    return bps === null ? null : formatPercent(bps);
+  };
   const barWidth = (value: number, max: number) =>
     max > 0 ? Math.max(2, Math.round((Math.abs(value) / max) * 100)) : 0;
 
@@ -277,11 +280,19 @@
                     maxTax,
                     undefined,
                     undefined,
-                    share(entry.totalMinor),
+                    share(entry.totalMinor, taxSum),
                   )}
                 </li>
               {/each}
             </ul>
+            <p
+              class="text-muted-foreground mt-2 flex items-baseline justify-between gap-3 border-t pt-3 text-xs"
+            >
+              <span>{m.costs_by_tax_total()}</span>
+              <span class="font-medium whitespace-nowrap tabular-nums"
+                >{money(taxSum)}</span
+              >
+            </p>
           {/if}
         </Card.Content>
       </Card.Root>

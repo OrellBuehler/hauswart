@@ -50,7 +50,7 @@ export const seedAssetSchema = z.strictObject({
   light: assetShape.light,
   waterNotes: assetShape.waterNotes,
   /** The details of an asset of kind `vehicle` (what `PUT /assets/{id}/vehicle` takes). */
-  vehicle: putVehicleRequestSchema.optional(),
+  vehicle: putVehicleRequestSchema.omit({ costBookId: true }).optional(),
 });
 
 export const seedPreparationSchema = z.strictObject({

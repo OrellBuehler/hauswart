@@ -1,7 +1,9 @@
 import type { z } from "zod";
 import { COST_CATEGORIES, type CostCategory } from "$lib/api/enums";
 import { isApiError } from "$lib/api/errors";
+import type { CostBook } from "$lib/api/schemas/cost-books";
 import type { financeCategorySchema } from "$lib/api/schemas/finance";
+import { bookChoices } from "$lib/costs/books";
 import { apiErrorMessage } from "$lib/error-message";
 import { m } from "$lib/paraglide/messages";
 import { hostOf, integrationErrorMessage } from "./errors";
@@ -19,6 +21,10 @@ export type KeptSettings = {
   purchaseCategoryIds: string[];
   /** Mapped category ids whose transactions are booked without asking. */
   autoAcceptCategoryIds: string[];
+  /** Kept category id -> the cost book id its transactions go to; a category without an entry takes `defaultBookId`. */
+  categoryBookMap: Record<string, string>;
+  /** The cost book id for mapped categories without a book of their own and for paid invoices; empty = the household's default book. */
+  defaultBookId: string;
   billTasks: boolean;
   /** Creditor names; empty means all creditors. */
   billCreditorFilter: string[];
@@ -62,12 +68,28 @@ export function readKeptSettings(
       if (isCostCategory(category)) categoryMap[id] = category;
     }
   }
+  const categoryBookMap: Record<string, string> = {};
+  const rawBooks = config.categoryBookMap;
+  if (
+    rawBooks !== null &&
+    typeof rawBooks === "object" &&
+    !Array.isArray(rawBooks)
+  ) {
+    for (const [id, book] of Object.entries(rawBooks)) {
+      if (id in categoryMap && typeof book === "string" && book !== "") {
+        categoryBookMap[id] = book;
+      }
+    }
+  }
   return {
     categoryMap,
     purchaseCategoryIds: strings(config.purchaseCategoryIds),
     autoAcceptCategoryIds: strings(config.autoAcceptCategoryIds).filter(
       (id) => id in categoryMap,
     ),
+    categoryBookMap,
+    defaultBookId:
+      typeof config.defaultBookId === "string" ? config.defaultBookId : "",
     billTasks: config.billTasks === true,
     billCreditorFilter: strings(config.billCreditorFilter),
     billCostCategory: isCostCategory(config.billCostCategory)
@@ -88,6 +110,14 @@ export function keptConfigOf(settings: KeptSettings): Record<string, unknown> {
     autoAcceptCategoryIds: settings.autoAcceptCategoryIds.filter(
       (id) => id in settings.categoryMap,
     ),
+    categoryBookMap: Object.fromEntries(
+      Object.entries(settings.categoryBookMap).filter(
+        ([id]) => id in settings.categoryMap,
+      ),
+    ),
+    ...(settings.defaultBookId === ""
+      ? {}
+      : { defaultBookId: settings.defaultBookId }),
     billTasks: settings.billTasks,
     billCreditorFilter: settings.billCreditorFilter,
     ...(settings.billCostCategory === null
@@ -108,6 +138,10 @@ export function keptSettingsSignature(settings: KeptSettings): string {
     auto: sorted(
       settings.autoAcceptCategoryIds.filter((id) => id in settings.categoryMap),
     ),
+    books: Object.entries(settings.categoryBookMap)
+      .filter(([id]) => id in settings.categoryMap)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+    defaultBook: settings.defaultBookId,
     billTasks: settings.billTasks,
     creditors: sorted(settings.billCreditorFilter),
     billCost: settings.billCostCategory,
@@ -126,16 +160,74 @@ export function withCostCategory(
   category: CostCategory | null,
 ): KeptSettings {
   const categoryMap = { ...settings.categoryMap };
-  if (category === null) delete categoryMap[id];
-  else categoryMap[id] = category;
+  const categoryBookMap = { ...settings.categoryBookMap };
+  if (category === null) {
+    delete categoryMap[id];
+    delete categoryBookMap[id];
+  } else categoryMap[id] = category;
   return {
     ...settings,
     categoryMap,
+    categoryBookMap,
     autoAcceptCategoryIds:
       category === null
         ? without(settings.autoAcceptCategoryIds, id)
         : settings.autoAcceptCategoryIds,
   };
+}
+
+/** Names the cost book a mapped category goes to; `null` (or an empty id) leaves it to the default. A category that is not read has none. */
+export function withCategoryBook(
+  settings: KeptSettings,
+  id: string,
+  bookId: string | null,
+): KeptSettings {
+  if (!(id in settings.categoryMap)) return settings;
+  const categoryBookMap = { ...settings.categoryBookMap };
+  if (bookId) categoryBookMap[id] = bookId;
+  else delete categoryBookMap[id];
+  return { ...settings, categoryBookMap };
+}
+
+/** The book of a mapped category without a book of its own and of paid invoices; `null` (or empty) = the household's default book. */
+export function withDefaultBook(
+  settings: KeptSettings,
+  bookId: string | null,
+): KeptSettings {
+  return { ...settings, defaultBookId: bookId ?? "" };
+}
+
+/**
+ * The choices for a book in the connection's settings: "none" first (the default applies), the books that take
+ * entries, the book chosen already even when it is archived, and a stand-in for one that no longer exists, so the
+ * select never shows a choice that is not in the settings.
+ */
+export function keptBookOptions(
+  books: readonly CostBook[],
+  currentId: string,
+  noneLabel: string,
+): { value: string; label: string }[] {
+  const options = [
+    { value: "", label: noneLabel },
+    ...bookChoices(books, currentId).map((book) => ({
+      value: book.id,
+      label: book.archivedAt
+        ? m.cost_book_archived_option({ name: book.name })
+        : book.name,
+    })),
+  ];
+  if (currentId !== "" && !books.some((book) => book.id === currentId)) {
+    options.push({ value: currentId, label: m.integration_kept_book_gone() });
+  }
+  return options;
+}
+
+/** Whether the book chosen is archived: it takes no entries, so the next choice applies instead (the settings say so). */
+export function isArchivedBook(
+  books: readonly CostBook[],
+  id: string,
+): boolean {
+  return id !== "" && books.some((b) => b.id === id && b.archivedAt !== null);
 }
 
 export function withAutoAccept(
@@ -383,6 +475,21 @@ export function keptSaveError(
     }
   }
   return { message: apiErrorMessage(err), fields: {} };
+}
+
+/** Why saving the settings failed: the host rule, a book that does not exist (a 400 on `config`), or the generic wording. */
+export function keptSettingsError(err: unknown, baseUrl: string): string {
+  const forbidden = keptForbiddenMessage(err, baseUrl);
+  if (forbidden) return forbidden;
+  if (isApiError(err) && err.code === "invalid_request") {
+    const fields = (
+      err.details as
+        { body?: { fieldErrors?: Record<string, unknown> } } | undefined
+    )?.body?.fieldErrors;
+    if (fields && "config" in fields)
+      return m.integration_kept_book_gone_error();
+  }
+  return apiErrorMessage(err);
 }
 
 const STAT_LINES: ReadonlyArray<[string, (count: number) => string]> = [

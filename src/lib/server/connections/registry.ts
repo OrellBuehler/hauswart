@@ -39,6 +39,14 @@ export interface IntegrationAdapter {
     baseUrl: string;
     config: Record<string, unknown>;
   };
+  /**
+   * Checks settings a person just submitted against what only the database knows (say, that the records they name
+   * exist), which `validate` cannot because it has no database. Gets the settings `validate` returned; throws
+   * `IntegrationError("invalid_input", message, { field: "config" })`, which the save turns into a 400 on that field.
+   * Not run by a save that sends no settings (the stored ones stay), so a stale reference never blocks switching a
+   * connection off.
+   */
+  checkReferences?(ctx: ServiceContext, config: Record<string, unknown>): void;
   /** Calls the system once and reports whether it answers and accepts the token. Never throws for an unreachable system. */
   test(connection: ResolvedConnection): Promise<ConnectionTestResult>;
   describe(): { capabilities: string[] };

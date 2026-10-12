@@ -288,6 +288,8 @@ async function syncVehicle(
     location: vehicle.location ?? null,
     odometerUnit: vehicle.odometerUnit ?? ("km" as const),
     notes: vehicle.notes ?? null,
+    // A seed file knows no book ids; the book a person chose for the vehicle stays.
+    costBookId: current.costBookId,
   };
   const never = current.updatedAt === null;
   if (!never && !options.update) {

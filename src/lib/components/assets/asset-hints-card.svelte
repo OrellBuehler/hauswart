@@ -14,6 +14,7 @@
   import * as Card from "$lib/components/ui/card/index.js";
   import { apiErrorMessage } from "$lib/error-message";
   import { m } from "$lib/paraglide/messages";
+  import { movedBy, saveOrder } from "$lib/reorder";
 
   let { assetId, hints }: { assetId: string; hints: Hint[] } = $props();
 
@@ -56,28 +57,26 @@
   async function move(hint: Hint, direction: -1 | 1) {
     if (busyId) return;
     const index = hints.findIndex((h) => h.id === hint.id);
-    const target = index + direction;
-    if (target < 0 || target >= hints.length) return;
-    if (hints[target].pinned !== hint.pinned) return;
-    const order = [...hints];
-    [order[index], order[target]] = [order[target], order[index]];
+    if (hints[index + direction]?.pinned !== hint.pinned) return;
+    const order = movedBy(hints, index, direction);
+    if (!order) return;
     busyId = hint.id;
     try {
-      await Promise.all(
+      const failures = await saveOrder(
         order.flatMap((h, position) =>
           h.sortOrder === position * 10
             ? []
             : [
-                api.call(endpoints.hintsUpdate, {
-                  params: { id: h.id },
-                  body: { sortOrder: position * 10 },
-                }),
+                () =>
+                  api.call(endpoints.hintsUpdate, {
+                    params: { id: h.id },
+                    body: { sortOrder: position * 10 },
+                  }),
               ],
         ),
+        invalidateAll,
       );
-      await invalidateAll();
-    } catch (err) {
-      toast.error(apiErrorMessage(err));
+      if (failures.length > 0) toast.error(apiErrorMessage(failures[0]));
     } finally {
       busyId = null;
     }

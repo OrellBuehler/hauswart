@@ -40,6 +40,7 @@
   {#key data.kind}
     <AssetForm
       rooms={data.rooms}
+      books={data.books}
       today={data.today}
       initialKind={data.kind}
       initialRoomId={data.roomId}

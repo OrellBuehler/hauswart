@@ -1,12 +1,20 @@
 import { and, eq, sql } from "drizzle-orm";
 import { COST_DEDUCTIBLE, type CostCategory } from "$lib/api/enums";
-import type { CostsSummary } from "$lib/api/schemas/costs";
-import { assets, costEntries, costEntryShares, users } from "$lib/server/db";
+import type { CostsSummary, DashboardCosts } from "$lib/api/schemas/costs";
+import {
+  assets,
+  costBooks,
+  costEntries,
+  costEntryShares,
+  users,
+} from "$lib/server/db";
 import { getHousehold } from "$lib/server/household/household";
 import type { ServiceContext } from "$lib/server/service";
 import { clockAt } from "$lib/server/tasks/evaluator";
+import { getCostBookRow } from "./books";
 import { yearRange } from "./costs";
-import { amountsFor, type Share } from "./split";
+import { bookEntry, newLedger, personBalances } from "./ledger";
+import type { Share } from "./split";
 
 type Db = Pick<ServiceContext, "db">;
 
@@ -73,20 +81,25 @@ const bump = (map: Map<string, Tally>, key: string, amount: number) => {
  * The year in numbers. Totals, categories, months, assets and tax classes
  * count entries in the household currency that count as an expense;
  * settlement covers every split entry with a payer (it is about who paid,
- * not about what is an expense). With an `assetId` only the entries of that
- * asset are counted, all of it.
+ * not about what is an expense). With an `assetId` or a `bookId` only the
+ * entries of that asset or book are counted, all of it; a `bookId` that names no book is a 404. The tax classes count
+ * the entries of books that are tax relevant only, since the class means
+ * nothing elsewhere. Recorded payments (settlements) are not part of a year:
+ * the running balance with them is `costBalances`.
  */
 export function costsSummary(
   ctx: Db,
   year: number,
-  filter: { assetId?: string } = {},
+  filter: { assetId?: string; bookId?: string } = {},
 ): CostsSummary {
   const { currency } = getHousehold(ctx);
+  if (filter.bookId) getCostBookRow(ctx, filter.bookId);
   const { from, to } = yearRange(year);
   const inYear = and(
     sql`${costEntries.date} >= ${from}`,
     sql`${costEntries.date} <= ${to}`,
     filter.assetId ? eq(costEntries.assetId, filter.assetId) : undefined,
+    filter.bookId ? eq(costEntries.bookId, filter.bookId) : undefined,
   );
   const entries = ctx.db
     .select({
@@ -101,8 +114,10 @@ export function costsSummary(
       deductible: costEntries.deductible,
       splitMode: costEntries.splitMode,
       paidByUserId: costEntries.paidByUserId,
+      taxRelevant: costBooks.taxRelevant,
     })
     .from(costEntries)
+    .innerJoin(costBooks, eq(costBooks.id, costEntries.bookId))
     .leftJoin(assets, eq(assets.id, costEntries.assetId))
     .where(inYear)
     .all();
@@ -133,8 +148,7 @@ export function costsSummary(
     })
     .from(users)
     .all();
-  const paid = new Map<string, number>();
-  const share = new Map<string, number>();
+  const ledger = newLedger();
 
   const categories = new Map<string, Tally>();
   const months = new Map<string, Tally>();
@@ -144,7 +158,6 @@ export function costsSummary(
   let expense = 0;
   let equity = 0;
   let otherCurrency = 0;
-  let unassigned = 0;
 
   for (const e of entries) {
     if (e.currency !== currency) {
@@ -155,7 +168,7 @@ export function costsSummary(
       expense += e.amountMinor;
       bump(categories, e.category, e.amountMinor);
       bump(months, e.date.slice(0, 7), e.amountMinor);
-      bump(deductibles, e.deductible, e.amountMinor);
+      if (e.taxRelevant) bump(deductibles, e.deductible, e.amountMinor);
       if (e.assetId) {
         bump(assetTallies, e.assetId, e.amountMinor);
         assetNames.set(e.assetId, e.assetName ?? "");
@@ -163,35 +176,19 @@ export function costsSummary(
     } else {
       equity += e.amountMinor;
     }
-    const shares = sharesByEntry.get(e.id) ?? [];
-    if (e.splitMode === "none" || shares.length === 0) continue;
-    if (e.paidByUserId === null) {
-      unassigned++;
-      continue;
-    }
-    paid.set(e.paidByUserId, (paid.get(e.paidByUserId) ?? 0) + e.amountMinor);
-    for (const part of amountsFor(e.amountMinor, shares)) {
-      share.set(part.userId, (share.get(part.userId) ?? 0) + part.amountMinor);
-    }
+    bookEntry(ledger, e, sharesByEntry.get(e.id) ?? []);
   }
 
-  const peopleRows = people
-    .map((p) => {
-      const paidMinor = paid.get(p.id) ?? 0;
-      const shareMinor = share.get(p.id) ?? 0;
-      return {
-        userId: p.id,
-        userName: p.name,
-        paidMinor,
-        shareMinor,
-        balanceMinor: paidMinor - shareMinor,
-      };
-    })
-    .sort(
-      (a, b) =>
-        (a.userName ?? "").localeCompare(b.userName ?? "", "de") ||
-        a.userId.localeCompare(b.userId),
-    );
+  const peopleRows = personBalances(
+    ledger,
+    people.map((p) => ({ id: p.id, name: p.name })),
+  ).map(({ userId, userName, paidMinor, shareMinor, balanceMinor }) => ({
+    userId,
+    userName,
+    paidMinor,
+    shareMinor,
+    balanceMinor,
+  }));
   const nameOf = new Map(peopleRows.map((p) => [p.userId, p.userName]));
 
   return {
@@ -235,19 +232,79 @@ export function costsSummary(
       toName: nameOf.get(t.toUserId) ?? null,
       amountMinor: t.amountMinor,
     })),
-    unassignedPayerCount: unassigned,
+    unassignedPayerCount: ledger.unassigned,
   };
 }
 
-/** The dashboard's slice: this year so far, the three largest categories and the settlement. */
-export function costsYearToDate(ctx: Pick<ServiceContext, "db" | "now">) {
+/**
+ * The dashboard's slice: what this year has cost so far, all books together and per book, with the three largest
+ * categories. The same entries as `costsSummary` counts (household currency, counts as an expense, refunds netted off),
+ * but only grouped in SQL: no ledger, no shares, no people. Who owes whom is `dashboardBalances`.
+ */
+export function costsYearToDate(
+  ctx: Pick<ServiceContext, "db" | "now">,
+): DashboardCosts {
   const year = Number(clockAt(ctx.now).today.slice(0, 4));
-  const s = costsSummary(ctx, year);
+  const { currency } = getHousehold(ctx);
+  const { from, to } = yearRange(year);
+  const expense = and(
+    sql`${costEntries.date} >= ${from}`,
+    sql`${costEntries.date} <= ${to}`,
+    eq(costEntries.currency, currency),
+    eq(costEntries.countsAsExpense, true),
+  );
+  const total = sql<number>`sum(${costEntries.amountMinor})`;
+  const byBook = ctx.db
+    .select({
+      bookId: costBooks.id,
+      bookName: costBooks.name,
+      taxRelevant: costBooks.taxRelevant,
+      archivedAt: costBooks.archivedAt,
+      totalMinor: total,
+      count: sql<number>`count(*)`,
+    })
+    .from(costEntries)
+    .innerJoin(costBooks, eq(costBooks.id, costEntries.bookId))
+    .where(expense)
+    .groupBy(costBooks.id)
+    .all()
+    .map((b) => ({
+      bookId: b.bookId,
+      bookName: b.bookName,
+      taxRelevant: b.taxRelevant,
+      archived: b.archivedAt !== null,
+      totalMinor: Number(b.totalMinor),
+      count: Number(b.count),
+    }))
+    .sort(
+      (a, b) =>
+        b.totalMinor - a.totalMinor || a.bookName.localeCompare(b.bookName),
+    );
+  const byCategory = ctx.db
+    .select({
+      category: costEntries.category,
+      totalMinor: total,
+      count: sql<number>`count(*)`,
+    })
+    .from(costEntries)
+    .where(expense)
+    .groupBy(costEntries.category)
+    .all()
+    .map((c) => ({
+      category: c.category,
+      totalMinor: Number(c.totalMinor),
+      count: Number(c.count),
+    }))
+    .sort(
+      (a, b) =>
+        b.totalMinor - a.totalMinor || a.category.localeCompare(b.category),
+    )
+    .slice(0, DASHBOARD_TOP_CATEGORIES);
   return {
     year,
-    currency: s.currency,
-    totalMinor: s.expenseTotalMinor,
-    byCategory: s.byCategory.slice(0, DASHBOARD_TOP_CATEGORIES),
-    settlement: s.settlement,
+    currency,
+    totalMinor: byBook.reduce((sum, b) => sum + b.totalMinor, 0),
+    byCategory,
+    byBook,
   };
 }

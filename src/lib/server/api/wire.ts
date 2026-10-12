@@ -205,6 +205,7 @@ export function wireVehicle(v: VehicleRecord): z.input<typeof vehicleSchema> {
     location: v.location,
     odometerUnit: v.odometerUnit,
     notes: v.notes,
+    costBookId: v.costBookId,
     odometer: v.odometer,
     updatedAt: iso(v.updatedAt),
   };
@@ -226,6 +227,8 @@ export function wireFuelLog(f: FuelLogRecord): z.input<typeof fuelLogSchema> {
     station: f.station,
     notes: f.notes,
     costEntryId: f.costEntryId,
+    bookId: f.bookId,
+    bookName: f.bookName,
     paidByUserId: f.paidByUserId,
     pricePerUnitMinor: f.pricePerUnitMinor,
     distance: f.distance,
@@ -442,6 +445,7 @@ export function wireDashboard(
     expiringWarranties: WarrantyRecord[];
     orderNow: OrderNowRecord[];
     costsYearToDate: z.input<typeof dashboardSchema>["costsYearToDate"];
+    balances: z.input<typeof dashboardSchema>["balances"];
     pendingFinanceSuggestions: number;
   },
 ): z.input<typeof dashboardSchema> {
@@ -472,6 +476,7 @@ export function wireDashboard(
     })),
     orderNow: extras.orderNow.map(wireOrderNow),
     costsYearToDate: extras.costsYearToDate,
+    balances: extras.balances,
     pendingFinanceSuggestions: extras.pendingFinanceSuggestions,
   };
 }

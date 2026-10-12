@@ -23,6 +23,7 @@ import {
   COMPLETION_KINDS,
   COMPLETION_SOURCES,
   CONTACT_KINDS,
+  COST_BOOK_SPLIT_MODES,
   COST_CATEGORIES,
   COST_DEDUCTIBLE,
   COST_SOURCES,
@@ -265,6 +266,10 @@ export const vehicleDetails = sqliteTable("vehicle_details", {
     .notNull()
     .default("km"),
   notes: text("notes"),
+  /** The cost book the fuel fills of this vehicle go to when a fill names none; null = the default book. */
+  costBookId: text("cost_book_id").references(() => costBooks.id, {
+    onDelete: "set null",
+  }),
   ...timestamps,
 });
 
@@ -1665,6 +1670,52 @@ export const guestLinks = sqliteTable(
 );
 
 /**
+ * A ledger the household books into: the apartment, the groceries, the car, a trip. Every cost entry belongs to exactly
+ * one. Domain data shared by the whole household. A book with entries or payments is never deleted, only archived
+ * (`archivedAt`: closed to new entries, still counted in the balances). Migration `0026` creates "Wohnung" (tax
+ * relevant), "Haushalt" and "Auto" and puts every earlier entry into "Wohnung".
+ */
+export const costBooks = sqliteTable(
+  "cost_books",
+  {
+    id: id(),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    /** A key the client maps to an icon; null for none. */
+    icon: text("icon"),
+    /** The split of an entry that names none. */
+    defaultSplitMode: text("default_split_mode", {
+      enum: COST_BOOK_SPLIT_MODES,
+    })
+      .notNull()
+      .default("ownership"),
+    /** Whether the tax class (`deductible`) of its entries means anything; false for everyday books. */
+    taxRelevant: integer("tax_relevant", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    archivedAt: integer("archived_at", { mode: "timestamp_ms" }),
+    sortOrder: integer("sort_order").notNull().default(0),
+    /**
+     * The book an entry without `bookId` goes to. Exactly one book that is not archived has it (kept by the service:
+     * setting it elsewhere clears it here, archiving or deleting the default hands it to the first book that is
+     * still open; the partial unique index allows no second one). Reordering books never moves it.
+     */
+    isDefault: integer("is_default", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("cost_books_slug_idx").on(t.slug),
+    uniqueIndex("cost_books_name_idx").on(sql`lower(${t.name})`),
+    index("cost_books_sort_idx").on(t.archivedAt, t.sortOrder),
+    uniqueIndex("cost_books_default_idx")
+      .on(t.isDefault)
+      .where(sql`${t.isDefault} = 1`),
+  ],
+);
+
+/**
  * One money movement of the apartment: an expense (positive) or a refund
  * (negative), in minor units. Domain data shared by the whole household. An entry that came
  * from a finance provider keeps an opaque reference to it (`providerRef`) so
@@ -1674,6 +1725,10 @@ export const costEntries = sqliteTable(
   "cost_entries",
   {
     id: id(),
+    /** The book the entry belongs to; restricted, so a book with entries cannot be deleted. */
+    bookId: text("book_id")
+      .notNull()
+      .references(() => costBooks.id, { onDelete: "restrict" }),
     date: text("date").notNull(),
     title: text("title").notNull(),
     amountMinor: integer("amount_minor").notNull().$type<Minor>(),
@@ -1725,6 +1780,7 @@ export const costEntries = sqliteTable(
   },
   (t) => [
     index("cost_entries_date_idx").on(sql`${t.date} desc`),
+    index("cost_entries_book_id_idx").on(t.bookId),
     index("cost_entries_category_idx").on(t.category),
     index("cost_entries_asset_id_idx").on(t.assetId),
     index("cost_entries_room_id_idx").on(t.roomId),
@@ -1754,6 +1810,49 @@ export const costEntryShares = sqliteTable(
   (t) => [
     primaryKey({ columns: [t.entryId, t.userId] }),
     index("cost_entry_shares_user_id_idx").on(t.userId),
+  ],
+);
+
+/**
+ * A payment between two people that squares what they owe each other ("Ben paid Anna 50"). Not a cost: it is in no
+ * expense total, it only moves the balances. `bookId` null settles across all books. Domain data shared by the household.
+ */
+export const settlements = sqliteTable(
+  "settlements",
+  {
+    id: id(),
+    bookId: text("book_id").references(() => costBooks.id, {
+      onDelete: "restrict",
+    }),
+    /** Who handed the money over. */
+    fromUserId: text("from_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    /** Who received it. */
+    toUserId: text("to_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    amountMinor: integer("amount_minor").notNull().$type<Minor>(),
+    currency: text("currency").notNull(),
+    date: text("date").notNull(),
+    note: text("note"),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    /** Chosen by the caller so a retried request returns the first payment instead of recording a second; unique per creator. */
+    idempotencyKey: text("idempotency_key"),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("settlements_idempotency_idx")
+      .on(t.createdBy, t.idempotencyKey)
+      .where(sql`${t.idempotencyKey} is not null`),
+    index("settlements_date_idx").on(sql`${t.date} desc`),
+    index("settlements_book_id_idx").on(t.bookId),
+    index("settlements_from_user_idx").on(t.fromUserId),
+    index("settlements_to_user_idx").on(t.toUserId),
+    check("settlements_amount_positive", sql`${t.amountMinor} > 0`),
+    check("settlements_two_people", sql`${t.fromUserId} <> ${t.toUserId}`),
   ],
 );
 

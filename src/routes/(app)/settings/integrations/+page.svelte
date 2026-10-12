@@ -39,6 +39,7 @@
       canEdit={integration.level === "user" || isAdmin}
       {isAdmin}
       timeZone={data.timeZone}
+      books={data.books}
       onchanged={reload}
     />
   {/each}

@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "$lib/api/errors";
+import type { CostBook } from "$lib/api/schemas/cost-books";
 import {
   KEPT_LIMITS,
   categoryRows,
+  keptBookOptions,
+  isArchivedBook,
   keptConfigOf,
   keptErrorMessage,
   keptSaveError,
+  keptSettingsError,
   keptSettingsSignature,
   offersWaiting,
   readCategoryCount,
@@ -13,8 +17,10 @@ import {
   readKeptTestInfo,
   syncStatLines,
   withAutoAccept,
+  withCategoryBook,
   withCostCategory,
   withCreditor,
+  withDefaultBook,
   withPurchase,
   withoutCreditor,
   type KeptCategory,
@@ -33,6 +39,8 @@ describe("readKeptSettings", () => {
       categoryMap: {},
       purchaseCategoryIds: [],
       autoAcceptCategoryIds: [],
+      categoryBookMap: {},
+      defaultBookId: "",
       billTasks: false,
       billCreditorFilter: [],
       billCostCategory: null,
@@ -55,11 +63,24 @@ describe("readKeptSettings", () => {
       categoryMap: { c1: "repair" },
       purchaseCategoryIds: ["c1"],
       autoAcceptCategoryIds: ["c1"],
+      categoryBookMap: {},
+      defaultBookId: "",
       billTasks: true,
       billCreditorFilter: ["Muster Verwaltung AG"],
       billCostCategory: "utilities",
       syncFrom: "2026-01-01",
     });
+  });
+
+  it("reads the cost books: those of mapped categories and the default one", () => {
+    const settings = readKeptSettings({
+      categoryMap: { c1: "repair", c2: "utilities" },
+      categoryBookMap: { c1: "book-1", c3: "book-3", c2: "", c4: 7 },
+      defaultBookId: "book-2",
+    });
+    expect(settings.categoryBookMap).toEqual({ c1: "book-1" });
+    expect(settings.defaultBookId).toBe("book-2");
+    expect(readKeptSettings({ defaultBookId: 4 }).defaultBookId).toBe("");
   });
 
   it("ignores values of the wrong type", () => {
@@ -97,17 +118,48 @@ describe("keptConfigOf", () => {
     });
   });
 
+  it("sends the books of mapped categories and the default book, and none that nothing maps", () => {
+    const settings: KeptSettings = {
+      ...empty,
+      categoryMap: { c1: "repair" },
+      categoryBookMap: { c1: "book-1", c2: "book-2" },
+      defaultBookId: "book-3",
+    };
+    expect(keptConfigOf(settings)).toMatchObject({
+      categoryBookMap: { c1: "book-1" },
+      defaultBookId: "book-3",
+    });
+    expect(keptConfigOf(empty)).not.toHaveProperty("defaultBookId");
+  });
+
   it("round-trips through readKeptSettings", () => {
     const settings: KeptSettings = {
       categoryMap: { c1: "repair", c2: "utilities" },
       purchaseCategoryIds: ["c2"],
       autoAcceptCategoryIds: ["c2"],
+      categoryBookMap: { c1: "book-1" },
+      defaultBookId: "book-2",
       billTasks: true,
       billCreditorFilter: ["Beispiel Strom AG"],
       billCostCategory: "utilities",
       syncFrom: "2026-02-01",
     };
     expect(readKeptSettings(keptConfigOf(settings))).toEqual(settings);
+  });
+});
+
+describe("withCostCategory", () => {
+  it("lets go of the book of a category that is not read any more", () => {
+    const settings = {
+      ...withCostCategory(empty, "c1", "repair"),
+      categoryBookMap: { c1: "book-1" },
+    };
+    expect(
+      withCostCategory(settings, "c1", "utilities").categoryBookMap,
+    ).toEqual({
+      c1: "book-1",
+    });
+    expect(withCostCategory(settings, "c1", null).categoryBookMap).toEqual({});
   });
 });
 
@@ -127,6 +179,11 @@ describe("keptSettingsSignature", () => {
       withCreditor(empty, "Muster AG"),
       { ...empty, billCostCategory: "other" },
       { ...empty, syncFrom: "2026-01-01" },
+      { ...empty, defaultBookId: "book-1" },
+      {
+        ...withCostCategory(empty, "c1", "repair"),
+        categoryBookMap: { c1: "book-1" },
+      },
     ];
     for (const settings of changed) {
       expect(keptSettingsSignature(settings)).not.toBe(base);
@@ -194,6 +251,144 @@ describe("editing helpers", () => {
       settings = withCreditor(settings, `Creditor ${i}`);
     }
     expect(settings.billCreditorFilter).toHaveLength(KEPT_LIMITS.creditors);
+  });
+});
+
+describe("books of the Kept settings", () => {
+  const mapped = withCostCategory(
+    withCostCategory(empty, "c1", "groceries"),
+    "c2",
+    "travel",
+  );
+
+  it("names a book for a mapped category and leaves the others to the connection's default", () => {
+    const next = withDefaultBook(
+      withCategoryBook(mapped, "c1", "b-haushalt"),
+      "b-ferien",
+    );
+    expect(next.categoryBookMap).toEqual({ c1: "b-haushalt" });
+    expect(next.defaultBookId).toBe("b-ferien");
+  });
+
+  it("takes a book away again with null or an empty id", () => {
+    const named = withCategoryBook(mapped, "c1", "b-haushalt");
+    expect(withCategoryBook(named, "c1", null).categoryBookMap).toEqual({});
+    expect(withCategoryBook(named, "c1", "").categoryBookMap).toEqual({});
+    expect(
+      withDefaultBook(withDefaultBook(empty, "b1"), null).defaultBookId,
+    ).toBe("");
+  });
+
+  it("names no book for a category that is not read", () => {
+    expect(withCategoryBook(mapped, "other", "b1")).toBe(mapped);
+  });
+
+  it("does not change the other settings", () => {
+    const next = withDefaultBook(withCategoryBook(mapped, "c1", "b1"), "b2");
+    expect(next.categoryMap).toEqual(mapped.categoryMap);
+    expect(next.defaultBookId).toBe("b2");
+  });
+
+  it("goes to the connection's settings and counts as a change", () => {
+    const next = withDefaultBook(withCategoryBook(mapped, "c1", "b1"), "b2");
+    expect(keptConfigOf(next)).toMatchObject({
+      categoryBookMap: { c1: "b1" },
+      defaultBookId: "b2",
+    });
+    expect(keptSettingsSignature(next)).not.toBe(keptSettingsSignature(mapped));
+  });
+});
+
+describe("keptBookOptions", () => {
+  const book = (over: Partial<CostBook>): CostBook => ({
+    id: "b1",
+    name: "Wohnung",
+    slug: "wohnung",
+    icon: null,
+    defaultSplitMode: "ownership",
+    taxRelevant: true,
+    archivedAt: null,
+    sortOrder: 0,
+    isDefault: true,
+    entryCount: 0,
+    settlementCount: 0,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    ...over,
+  });
+  const books = [
+    book({}),
+    book({ id: "b2", name: "Haushalt", isDefault: false }),
+    book({
+      id: "b3",
+      name: "Alt",
+      isDefault: false,
+      archivedAt: "2026-06-01T00:00:00.000Z",
+    }),
+  ];
+
+  it("offers none and the books that take entries", () => {
+    expect(keptBookOptions(books, "", "Standard")).toEqual([
+      { value: "", label: "Standard" },
+      { value: "b1", label: "Wohnung" },
+      { value: "b2", label: "Haushalt" },
+    ]);
+  });
+
+  it("keeps an archived book that is chosen already, so it can be seen", () => {
+    expect(
+      keptBookOptions(books, "b3", "Standard").map((o) => o.label),
+    ).toEqual(["Standard", "Wohnung", "Haushalt", "Alt (archiviert)"]);
+  });
+
+  it("stands in for a book that no longer exists", () => {
+    const options = keptBookOptions(books, "gone", "Standard");
+    expect(options.at(-1)).toEqual({
+      value: "gone",
+      label: "Buch nicht mehr vorhanden",
+    });
+  });
+
+  it("knows an archived book, so the settings can warn that it takes nothing", () => {
+    expect(isArchivedBook(books, "b3")).toBe(true);
+    expect(isArchivedBook(books, "b1")).toBe(false);
+    // no choice, and a book that does not exist (the select says so on its own), are not archived
+    expect(isArchivedBook(books, "")).toBe(false);
+    expect(isArchivedBook(books, "gone")).toBe(false);
+  });
+});
+
+describe("keptSettingsError", () => {
+  it("says a chosen book no longer exists for a 400 on the settings", () => {
+    const message = keptSettingsError(
+      new ApiError("invalid_request", "Invalid request", {
+        details: { body: { fieldErrors: { config: ["Cost book x"] } } },
+      }),
+      "https://kept.example.org",
+    );
+    expect(message).toContain("Buch");
+    expect(message).toContain("nicht mehr");
+  });
+
+  it("explains the host rule, and words anything else generically", () => {
+    expect(
+      keptSettingsError(
+        new ApiError("forbidden", "The host is not on the list"),
+        "https://kept.example.org/path",
+      ),
+    ).toContain("kept.example.org");
+    const other = keptSettingsError(new ApiError("internal", "boom"), "");
+    expect(other).toBeTruthy();
+    expect(other).not.toContain("Buch");
+    // a 400 about something else is not mistaken for the books
+    expect(
+      keptSettingsError(
+        new ApiError("invalid_request", "Invalid request", {
+          details: { body: { fieldErrors: { baseUrl: ["bad"] } } },
+        }),
+        "",
+      ),
+    ).not.toContain("nicht mehr");
   });
 });
 

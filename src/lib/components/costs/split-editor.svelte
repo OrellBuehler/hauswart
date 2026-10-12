@@ -3,9 +3,15 @@
   import type { DirectoryUser } from "$lib/api/schemas/users";
   import Segmented from "$lib/components/tasks/segmented.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
+  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
-  import { equalShares, parseShares, sharePreview } from "$lib/costs/form";
+  import {
+    equalPreview,
+    equalShares,
+    parseShares,
+    sharePreview,
+  } from "$lib/costs/form";
   import { splitModeHints, splitModeLabels } from "$lib/costs/labels";
   import { formatPercent } from "$lib/format";
   import { formatMoney } from "$lib/format-money";
@@ -17,21 +23,32 @@
     id,
     mode = $bindable("ownership"),
     shares = $bindable({}),
+    participants = $bindable([]),
     people,
     amountMinor,
     currency,
     error,
+    participantsError,
+    onmodechange,
+    allowParticipants = true,
     class: className,
   }: {
     id: string;
     mode?: CostSplitMode;
     /** Percent as typed, per user id. */
     shares?: Record<string, string>;
+    /** Who shares an equal split (user ids). */
+    participants?: string[];
     people: DirectoryUser[];
     /** The entry's amount, when it is known and valid; shows each person's part. */
     amountMinor?: number | undefined;
     currency: string;
     error?: string | undefined;
+    participantsError?: string | undefined;
+    /** The person picked a split mode (not set by code). */
+    onmodechange?: (mode: CostSplitMode) => void;
+    /** Whether an equal split can be narrowed to some people; where it cannot, it is among everybody. */
+    allowParticipants?: boolean;
     class?: string;
   } = $props();
 
@@ -67,10 +84,23 @@
             },
   );
 
+  const equalParts = $derived(
+    amountMinor !== undefined
+      ? equalPreview(amountMinor, participants)
+      : new Map<string, number>(),
+  );
+
   function pick(next: CostSplitMode) {
     if (next === "custom" && parsed.items.length === 0) {
       shares = equalShares(userIds);
     }
+    onmodechange?.(next);
+  }
+
+  function toggle(userId: string, on: boolean) {
+    participants = on
+      ? [...participants.filter((id) => id !== userId), userId]
+      : participants.filter((id) => id !== userId);
   }
 </script>
 
@@ -84,9 +114,65 @@
       onchange={pick}
     />
     <p class="text-muted-foreground text-xs text-pretty">
-      {splitModeHints[mode]()}
+      {mode === "equal" && !allowParticipants
+        ? m.cost_split_equal_everyone_hint()
+        : splitModeHints[mode]()}
     </p>
   </div>
+
+  {#if mode === "equal" && allowParticipants}
+    <div
+      role="group"
+      aria-labelledby={`${id}-whom`}
+      aria-describedby={participantsError ? `${id}-whom-error` : undefined}
+      class="flex flex-col gap-1"
+    >
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <span id={`${id}-whom`} class="text-sm leading-none font-medium"
+          >{m.cost_for_whom()}</span
+        >
+        {#if participants.length < people.length}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onclick={() => (participants = [...userIds])}
+          >
+            {m.cost_for_whom_everyone()}
+          </Button>
+        {/if}
+      </div>
+      <ul class="flex flex-col">
+        {#each people as person (person.id)}
+          {@const part = equalParts.get(person.id)}
+          <li>
+            <label
+              class="hover:bg-accent/50 flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-1 py-1"
+            >
+              <Checkbox
+                checked={participants.includes(person.id)}
+                onCheckedChange={(checked) => toggle(person.id, checked)}
+                aria-invalid={Boolean(participantsError) || undefined}
+              />
+              <span class="min-w-0 flex-1 truncate text-sm"
+                >{person.displayName}</span
+              >
+              {#if part !== undefined}
+                <span class="text-muted-foreground text-xs tabular-nums"
+                  >{formatMoney(part, currency)}</span
+                >
+              {/if}
+            </label>
+          </li>
+        {/each}
+      </ul>
+      {#if participantsError}
+        <p id={`${id}-whom-error`} class="text-destructive text-xs text-pretty">
+          {participantsError}
+        </p>
+      {/if}
+    </div>
+  {/if}
 
   {#if mode === "custom"}
     <fieldset

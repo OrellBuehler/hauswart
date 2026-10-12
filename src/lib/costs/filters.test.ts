@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   activeFilterCount,
   costFilterQuery,
+  costsExportQuery,
   costsQuery,
   costsSummaryQuery,
   monthRange,
+  narrowsBeyondBook,
   parseCostFilters,
   withYear,
   yearOptions,
@@ -17,6 +19,7 @@ describe("cost filters", () => {
   it("defaults to the current year without any other filter", () => {
     const filters = parse("");
     expect(filters).toEqual({
+      bookId: "",
       year: 2026,
       q: "",
       category: "",
@@ -26,15 +29,16 @@ describe("cost filters", () => {
       paidBy: "",
       month: "",
     });
-    expect(costFilterQuery(filters, 2026)).toBe("");
+    expect(costFilterQuery(filters, 2026)).toBe("?book=all");
     expect(activeFilterCount(filters)).toBe(0);
   });
 
   it("round-trips a selection through the URL", () => {
     const filters = parse(
-      "year=2025&q=lampe&category=repair&asset=a1&room=r1&defect=d1&paidBy=u1&month=03",
+      "book=b1&year=2025&q=lampe&category=repair&asset=a1&room=r1&defect=d1&paidBy=u1&month=03",
     );
     expect(filters.year).toBe(2025);
+    expect(filters.bookId).toBe("b1");
     expect(filters.category).toBe("repair");
     expect(filters.month).toBe("03");
     expect(activeFilterCount(filters)).toBe(6);
@@ -42,8 +46,10 @@ describe("cost filters", () => {
   });
 
   it("leaves the year out when it is the current one", () => {
-    expect(costFilterQuery(parse("year=2026"), 2026)).toBe("");
-    expect(costFilterQuery(parse("year=2024"), 2026)).toBe("?year=2024");
+    expect(costFilterQuery(parse("year=2026"), 2026)).toBe("?book=all");
+    expect(costFilterQuery(parse("year=2024"), 2026)).toBe(
+      "?book=all&year=2024",
+    );
   });
 
   it("ignores values it does not know", () => {
@@ -66,8 +72,37 @@ describe("cost filters", () => {
     expect(monthRange(2026, "04").to).toBe("2026-04-30");
   });
 
+  it("keeps the book in the address, and every book as an explicit choice", () => {
+    expect(parse("book=all").bookId).toBe("");
+    expect(parse("book=b7").bookId).toBe("b7");
+    expect(parse("").bookId).toBe("");
+    expect(costFilterQuery(parse("book=b7"), 2026)).toBe("?book=b7");
+    expect(costFilterQuery(parse("book=b7&year=2025"), 2026)).toBe(
+      "?book=b7&year=2025",
+    );
+    expect(parse(costFilterQuery(parse("book=b7"), 2026).slice(1)).bookId).toBe(
+      "b7",
+    );
+    expect(activeFilterCount(parse("book=b7"))).toBe(0);
+  });
+
+  it("tells a link that narrows the list from one that only picks a book", () => {
+    const narrows = (qs: string) => narrowsBeyondBook(new URLSearchParams(qs));
+    expect(narrows("")).toBe(false);
+    expect(narrows("year=2025&book=b1")).toBe(false);
+    expect(narrows("asset=a1")).toBe(true);
+    expect(narrows("month=03")).toBe(true);
+    expect(narrows("q=%20")).toBe(false);
+    expect(narrows("paidBy=me")).toBe(true);
+  });
+
   it("asks the list endpoint for the year and what is filtered", () => {
     expect(costsQuery(parse(""))).toEqual({ limit: 200, year: 2026 });
+    expect(costsQuery(parse("book=b7"))).toEqual({
+      limit: 200,
+      year: 2026,
+      bookId: "b7",
+    });
     expect(
       costsQuery(parse("category=repair&paidBy=me&month=05&q=x"), "next"),
     ).toEqual({
@@ -82,14 +117,28 @@ describe("cost filters", () => {
     });
   });
 
-  it("asks the summary for the year and the device: nothing else narrows its totals", () => {
+  it("asks the summary for the year, the book and the device: nothing else narrows its totals", () => {
     expect(costsSummaryQuery(parse(""))).toEqual({
       year: 2026,
       assetId: undefined,
+      bookId: undefined,
     });
     expect(
-      costsSummaryQuery(parse("year=2025&asset=a1&category=repair&month=05")),
-    ).toEqual({ year: 2025, assetId: "a1" });
+      costsSummaryQuery(
+        parse("book=b7&year=2025&asset=a1&category=repair&month=05"),
+      ),
+    ).toEqual({ year: 2025, assetId: "a1", bookId: "b7" });
+  });
+
+  it("exports the year of the book on screen", () => {
+    expect(costsExportQuery(parse("year=2025"))).toEqual({
+      year: 2025,
+      bookId: undefined,
+    });
+    expect(costsExportQuery(parse("book=b7&year=2025&q=x"))).toEqual({
+      year: 2025,
+      bookId: "b7",
+    });
   });
 
   it("drops the month when the year changes", () => {

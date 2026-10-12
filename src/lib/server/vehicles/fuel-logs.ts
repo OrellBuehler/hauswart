@@ -1,4 +1,4 @@
-import { and, eq, lt, or, sql, type SQL } from "drizzle-orm";
+import { and, eq, inArray, lt, or, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { ApiError } from "$lib/api/errors";
 import type { FuelUnit, OdometerUnit } from "$lib/api/enums";
@@ -13,9 +13,11 @@ import type {
 import { m } from "$lib/paraglide/messages";
 import { minor } from "$lib/money";
 import { dateInZone, householdTimeZone } from "$lib/server/config";
+import { openCostBookId, requireOpenCostBook } from "$lib/server/costs/books";
 import { createCost, deleteCost, updateCost } from "$lib/server/costs/costs";
 import {
   assets,
+  costBooks,
   costEntries,
   fuelLogs,
   vehicleDetails,
@@ -44,6 +46,9 @@ export type FuelLogRow = typeof fuelLogs.$inferSelect;
 
 export interface FuelLogRecord extends FuelLogRow {
   odometerUnit: OdometerUnit;
+  /** The book of the cost entry; null while there is none. */
+  bookId: string | null;
+  bookName: string | null;
   paidByUserId: string | null;
   pricePerUnitMinor: number | null;
   distance: number | null;
@@ -57,10 +62,17 @@ const BASE = { locale: "de" } as const;
 const todayOf = (ctx: Pick<ServiceContext, "now">) =>
   dateInZone(ctx.now, householdTimeZone());
 
-/** The vehicle's fuel type decides the unit a fill is counted in unless it says so. */
+/**
+ * The vehicle's fuel type decides the unit a fill is counted in unless it says so; its details also remember the book
+ * its fills go to.
+ */
 function vehicleOf(ctx: Pick<ServiceContext, "db">, assetId: string) {
   const row = ctx.db
-    .select({ kind: assets.kind, fuelType: vehicleDetails.fuelType })
+    .select({
+      kind: assets.kind,
+      fuelType: vehicleDetails.fuelType,
+      costBookId: vehicleDetails.costBookId,
+    })
     .from(assets)
     .leftJoin(vehicleDetails, eq(vehicleDetails.assetId, assets.id))
     .where(eq(assets.id, assetId))
@@ -130,24 +142,33 @@ function toRecords(
     stretchesOf(ctx, assetId).map((s) => [s.fillId, s]),
   );
   const unit = odometerUnitOf(ctx.db, assetId);
-  const payers = new Map(
-    rows.flatMap((r) => {
-      if (!r.costEntryId) return [];
-      const cost = ctx.db
-        .select({ paidByUserId: costEntries.paidByUserId })
-        .from(costEntries)
-        .where(eq(costEntries.id, r.costEntryId))
-        .get();
-      return cost ? [[r.id, cost.paidByUserId] as const] : [];
-    }),
+  const entryIds = rows.flatMap((r) => (r.costEntryId ? [r.costEntryId] : []));
+  const entries = new Map(
+    (entryIds.length === 0
+      ? []
+      : ctx.db
+          .select({
+            id: costEntries.id,
+            paidByUserId: costEntries.paidByUserId,
+            bookId: costEntries.bookId,
+            bookName: costBooks.name,
+          })
+          .from(costEntries)
+          .innerJoin(costBooks, eq(costBooks.id, costEntries.bookId))
+          .where(inArray(costEntries.id, entryIds))
+          .all()
+    ).map((e) => [e.id, e] as const),
   );
   const currency = getHousehold(ctx).currency;
   return rows.map((row) => {
     const stretch = stretches.get(row.id);
+    const entry = row.costEntryId ? entries.get(row.costEntryId) : undefined;
     return {
       ...row,
       odometerUnit: unit,
-      paidByUserId: payers.get(row.id) ?? null,
+      bookId: entry?.bookId ?? null,
+      bookName: entry?.bookName ?? null,
+      paidByUserId: entry?.paidByUserId ?? null,
       pricePerUnitMinor: pricePerUnitMinor({
         amountMinor: row.currency === currency ? row.amountMinor : null,
         quantity: row.quantity,
@@ -244,12 +265,14 @@ function costBody(
     "date" | "unit" | "station" | "amountMinor" | "currency" | "assetId"
   >,
   booking: {
+    bookId: string | undefined;
     paidByUserId: string | null;
     splitMode: CreateCostRequest["splitMode"];
     shares: CreateCostRequest["shares"];
   },
 ): CreateCostRequest {
   return {
+    bookId: booking.bookId,
     date: log.date,
     title: costTitle(log.unit, log.station),
     amountMinor: log.amountMinor,
@@ -289,9 +312,24 @@ function writtenNames(
 }
 
 /**
+ * The book a fill's cost entry goes to: the one the request names (an open book, else a 400 on `bookId`), else the
+ * vehicle's own while that book is still open, else nothing - and the default book takes it. The split is not decided
+ * here: an entry without one splits as its book says.
+ */
+function bookOf(
+  ctx: Pick<ServiceContext, "db">,
+  remembered: string | null,
+  named: string | undefined,
+): string | undefined {
+  if (named !== undefined) return requireOpenCostBook(ctx, named).id;
+  return openCostBookId(ctx, remembered);
+}
+
+/**
  * Logs a fill-up. In one transaction it records the odometer (a reading of the vehicle, source
  * `fuel_log`; lower than the reading before is a 400 on `odometer`) and books a cost entry of the
- * category `fuel` for the vehicle, unless the fill was free. Nothing is kept if any part fails.
+ * category `fuel` for the vehicle, unless the fill was free, in the book the request names, else the
+ * vehicle's own, else the default book. Nothing is kept if any part fails.
  */
 export function createFuelLog(
   ctx: Ctx,
@@ -304,6 +342,7 @@ export function createFuelLog(
   assertNotFuture(ctx, date);
   const currency = input.currency ?? getHousehold(ctx).currency;
   const unit = input.unit ?? defaultFuelUnit(vehicle.fuelType);
+  const bookId = bookOf(ctx, vehicle.costBookId, input.bookId);
   const id = ctx.db.transaction((tx) => {
     const inner: Ctx = { ...ctx, db: tx as unknown as DB };
     const created = tx
@@ -341,9 +380,10 @@ export function createFuelLog(
       const cost = createCost(
         inner,
         costBody(created, {
+          bookId,
           paidByUserId:
             input.paidByUserId === undefined ? userId : input.paidByUserId,
-          splitMode: input.splitMode ?? "ownership",
+          splitMode: input.splitMode,
           shares: input.shares,
         }),
         userId,
@@ -361,7 +401,8 @@ export function createFuelLog(
 /**
  * Changes a fill. The reading follows the date and the odometer; the cost entry follows the amount,
  * the currency, the date, the station (its title and payee, unless somebody changed those on the
- * cost entry since) and the payer or split. The fill owns the amount, currency and date of its cost
+ * cost entry since), the payer, the split and the book (a move to another open book, as `updateCost`
+ * does it). The fill owns the amount, currency and date of its cost
  * entry: they change here and nowhere else (its device stays the vehicle and is never sent). A fill
  * that becomes free loses its cost entry; one that
  * costs something now and has none gets one (unless only other things changed).
@@ -374,9 +415,28 @@ export function updateFuelLog(
 ): FuelLogRecord {
   const current = row(ctx, id);
   if (patch.date !== undefined) assertNotFuture(ctx, patch.date);
+  const vehicle = vehicleOf(ctx, current.assetId);
+  if (patch.bookId !== undefined) {
+    // The book the entry is in already is always fine, even an archived one; any other has to be open.
+    const inBook = current.costEntryId
+      ? ctx.db
+          .select({ bookId: costEntries.bookId })
+          .from(costEntries)
+          .where(eq(costEntries.id, current.costEntryId))
+          .get()?.bookId
+      : undefined;
+    if (inBook !== patch.bookId) requireOpenCostBook(ctx, patch.bookId);
+  }
   ctx.db.transaction((tx) => {
     const inner: Ctx = { ...ctx, db: tx as unknown as DB };
-    const { paidByUserId, splitMode, shares, amountMinor, ...fields } = patch;
+    const {
+      paidByUserId,
+      splitMode,
+      shares,
+      amountMinor,
+      bookId: namedBook,
+      ...fields
+    } = patch;
     tx.update(fuelLogs)
       .set({
         ...fields,
@@ -407,7 +467,8 @@ export function updateFuelLog(
     const booking =
       paidByUserId !== undefined ||
       splitMode !== undefined ||
-      shares !== undefined;
+      shares !== undefined ||
+      namedBook !== undefined;
     const titleChanged =
       patch.station !== undefined || patch.unit !== undefined;
     const moneyChanged =
@@ -437,6 +498,7 @@ export function updateFuelLog(
           ...(paidByUserId === undefined ? {} : { paidByUserId }),
           ...(splitMode === undefined ? {} : { splitMode }),
           ...(shares === undefined ? {} : { shares }),
+          ...(namedBook === undefined ? {} : { bookId: namedBook }),
         };
         if (Object.keys(costPatch).length > 0) {
           updateCost(inner, current.costEntryId, costPatch, { fuelLogId: id });
@@ -446,8 +508,9 @@ export function updateFuelLog(
       const cost = createCost(
         inner,
         costBody(next, {
+          bookId: bookOf(inner, vehicle.costBookId, namedBook),
           paidByUserId: paidByUserId === undefined ? userId : paidByUserId,
-          splitMode: splitMode ?? "ownership",
+          splitMode,
           shares,
         }),
         userId,

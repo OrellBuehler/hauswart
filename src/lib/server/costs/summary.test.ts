@@ -451,7 +451,7 @@ describe("costsSummary", () => {
     });
   });
 
-  it("year to date for the dashboard: top three categories and the settlement", async () => {
+  it("year to date for the dashboard: top three categories and the books", async () => {
     const { a } = await household();
     book({ amountMinor: 5000, category: "repair", paidByUserId: a.id });
     book({ amountMinor: 4000, category: "utilities" });
@@ -466,6 +466,8 @@ describe("costsSummary", () => {
       "utilities",
       "insurance",
     ]);
-    expect(d.settlement).toHaveLength(1);
+    expect(d.byBook).toMatchObject([
+      { bookName: "Wohnung", totalMinor: 14000, count: 4 },
+    ]);
   });
 });

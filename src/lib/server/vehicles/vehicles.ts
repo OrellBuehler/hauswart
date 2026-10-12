@@ -3,7 +3,8 @@ import type {
   OdometerSummary,
   PutVehicleRequest,
 } from "$lib/api/schemas/vehicles";
-import { vehicleDetails } from "$lib/server/db";
+import { requireOpenCostBook } from "$lib/server/costs/books";
+import { vehicleDetails, type DB } from "$lib/server/db";
 import type { ServiceContext } from "$lib/server/service";
 import { assertVehicleForRead, assertVehicleForWrite } from "./kind";
 import { syncOdometerSignal } from "./signal";
@@ -40,6 +41,7 @@ function toRecord(
     location: row?.location ?? null,
     odometerUnit: unit,
     notes: row?.notes ?? null,
+    costBookId: row?.costBookId ?? null,
     odometer: odometerSummary(ctx.db, assetId, unit),
     updatedAt: row?.updatedAt ?? null,
   };
@@ -87,13 +89,28 @@ export function putVehicle(
     location: body.location ?? null,
     odometerUnit: body.odometerUnit ?? ("km" as const),
     notes: body.notes ?? null,
+    costBookId: body.costBookId ?? null,
   };
   ctx.db.transaction((tx) => {
     const before = tx
-      .select({ unit: vehicleDetails.odometerUnit })
+      .select({
+        unit: vehicleDetails.odometerUnit,
+        costBookId: vehicleDetails.costBookId,
+      })
       .from(vehicleDetails)
       .where(eq(vehicleDetails.assetId, assetId))
       .get();
+    // The book the vehicle has already may have been archived since; any other has to be open.
+    if (
+      values.costBookId !== null &&
+      values.costBookId !== (before?.costBookId ?? null)
+    ) {
+      requireOpenCostBook(
+        { db: tx as unknown as DB },
+        values.costBookId,
+        "costBookId",
+      );
+    }
     tx.insert(vehicleDetails)
       .values({ assetId, ...values, createdAt: new Date(ctx.now) })
       .onConflictDoUpdate({

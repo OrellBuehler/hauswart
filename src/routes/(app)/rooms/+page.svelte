@@ -24,6 +24,7 @@
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
   import { apiErrorMessage } from "$lib/error-message";
   import { m } from "$lib/paraglide/messages";
+  import { movedBy, saveOrder } from "$lib/reorder";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -71,27 +72,27 @@
   }
 
   async function move(index: number, delta: -1 | 1) {
-    const next = [...rooms];
-    const [room] = next.splice(index, 1);
-    next.splice(index + delta, 0, room);
+    if (moving) return;
+    const next = movedBy(rooms, index, delta);
+    if (!next) return;
     reordered = next;
     moving = true;
     try {
-      await Promise.all(
+      const failures = await saveOrder(
         next.flatMap((item, position) =>
           item.sortOrder === position
             ? []
             : [
-                api.call(endpoints.roomsUpdate, {
-                  params: { id: item.id },
-                  body: { sortOrder: position },
-                }),
+                () =>
+                  api.call(endpoints.roomsUpdate, {
+                    params: { id: item.id },
+                    body: { sortOrder: position },
+                  }),
               ],
         ),
+        invalidateAll,
       );
-      await invalidateAll();
-    } catch (err) {
-      toast.error(apiErrorMessage(err));
+      if (failures.length > 0) toast.error(apiErrorMessage(failures[0]));
     } finally {
       reordered = null;
       moving = false;
@@ -185,13 +186,13 @@
                   <PencilIcon />{m.common_edit()}
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
-                  disabled={index === 0 || moving}
+                  disabled={index === 0}
                   onclick={() => move(index, -1)}
                 >
                   <ArrowUpIcon />{m.rooms_move_up_item()}
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
-                  disabled={index === rooms.length - 1 || moving}
+                  disabled={index === rooms.length - 1}
                   onclick={() => move(index, 1)}
                 >
                   <ArrowDownIcon />{m.rooms_move_down_item()}

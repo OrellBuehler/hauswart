@@ -452,37 +452,108 @@ describe("costs API", () => {
   });
 
   describe("dashboard", () => {
-    it("carries the year to date: total, top three categories and the settlement", async () => {
+    type Dashboard = {
+      costsYearToDate: {
+        year: number;
+        currency: string;
+        totalMinor: number;
+        byCategory: { category: string }[];
+        byBook: {
+          bookName: string;
+          taxRelevant: boolean;
+          archived: boolean;
+          totalMinor: number;
+          count: number;
+        }[];
+      };
+      balances: {
+        currency: string;
+        myBalanceMinor: number;
+        hasActivity: boolean;
+        suggestedPayments: {
+          fromName: string | null;
+          toName: string | null;
+          amountMinor: number;
+        }[];
+        suggestedPaymentCount: number;
+      };
+    };
+
+    it("carries the year to date: total, top three categories and the books", async () => {
       const { anna, call, book } = await setup();
       await book({ amountMinor: 8000, paidByUserId: anna.id, date: today() });
       await book({ amountMinor: 4000, category: "utilities", date: today() });
       await book({ amountMinor: 3000, category: "insurance", date: today() });
       await book({ amountMinor: 2000, category: "other", date: today() });
-      const d = (await call("GET", "/api/v1/dashboard")).body as {
-        costsYearToDate: {
-          year: number;
-          totalMinor: number;
-          byCategory: { category: string }[];
-          settlement: unknown[];
-        };
-      };
+      const d = (await call("GET", "/api/v1/dashboard")).body as Dashboard;
       expect(d.costsYearToDate.totalMinor).toBe(17000);
       expect(d.costsYearToDate.byCategory.map((c) => c.category)).toEqual([
         "repair",
         "utilities",
         "insurance",
       ]);
-      expect(d.costsYearToDate.settlement).toHaveLength(1);
+      expect(d.costsYearToDate.byBook).toEqual([
+        expect.objectContaining({
+          bookName: "Wohnung",
+          taxRelevant: true,
+          archived: false,
+          totalMinor: 17000,
+          count: 4,
+        }),
+      ]);
+      // who owes whom is not part of the year any more
+      expect(d.costsYearToDate).not.toHaveProperty("settlement");
     });
 
     it("is there, empty, without any cost", async () => {
       const { call } = await setup();
-      const d = (await call("GET", "/api/v1/dashboard")).body as {
-        costsYearToDate: { totalMinor: number; byCategory: unknown[] };
-      };
+      const d = (await call("GET", "/api/v1/dashboard")).body as Dashboard;
       expect(d.costsYearToDate).toMatchObject({
         totalMinor: 0,
         byCategory: [],
+        byBook: [],
+      });
+      expect(d.balances).toEqual({
+        currency: "CHF",
+        myBalanceMinor: 0,
+        hasActivity: false,
+        suggestedPayments: [],
+        suggestedPaymentCount: 0,
+      });
+    });
+
+    it("carries where the caller stands across all books, and each person sees their own", async () => {
+      const { anna, call, callBen, book } = await setup();
+      await book({ amountMinor: 8000, paidByUserId: anna.id, date: today() });
+      const mine = (await call("GET", "/api/v1/dashboard")).body as Dashboard;
+      const his = (await callBen("GET", "/api/v1/dashboard")).body as Dashboard;
+      expect(mine.balances).toMatchObject({
+        currency: "CHF",
+        myBalanceMinor: 4000,
+        hasActivity: true,
+        suggestedPaymentCount: 1,
+        suggestedPayments: [
+          { fromName: "Ben", toName: "Anna", amountMinor: 4000 },
+        ],
+      });
+      expect(his.balances.myBalanceMinor).toBe(-4000);
+      expect(his.balances.suggestedPayments).toEqual(
+        mine.balances.suggestedPayments,
+      );
+    });
+
+    it("follows a recorded payment", async () => {
+      const { anna, ben, call, book } = await setup();
+      await book({ amountMinor: 8000, paidByUserId: anna.id, date: today() });
+      await call("POST", "/api/v1/settlements", {
+        json: { fromUserId: ben.id, toUserId: anna.id, amountMinor: 4000 },
+      });
+      const d = (await call("GET", "/api/v1/dashboard")).body as Dashboard;
+      expect(d.balances).toMatchObject({
+        myBalanceMinor: 0,
+        hasActivity: true,
+        suggestedPayments: [],
+        suggestedPaymentCount: 0,
       });
     });
   });

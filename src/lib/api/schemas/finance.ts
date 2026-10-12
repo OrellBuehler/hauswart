@@ -16,6 +16,7 @@ import {
   COST_TITLE_MAX,
   costCategorySchema,
   costDeductibleSchema,
+  costParticipantsInputSchema,
   costSharesInputSchema,
   costSourceSchema,
   costSplitModeSchema,
@@ -48,6 +49,12 @@ export const costSuggestionPayloadSchema = z.object({
   url: z.string().nullable(),
   /** The asset created from the same transaction, if the person accepted that first. */
   assetId: z.string().nullable(),
+  /**
+   * The cost book the person's settings for the connection offer for this item (`GET /cost-books`), preselected in
+   * the accept dialog and used when the body names none; null = the default book. Null as well when that book has
+   * been archived or deleted since.
+   */
+  bookId: z.string().nullable().default(null),
 });
 
 export const assetSuggestionPayloadSchema = z.object({
@@ -101,11 +108,13 @@ export const listFinanceSuggestionsResponseSchema = paginated(
 /**
  * Overrides when accepting. Fields that belong to another kind are a 400.
  * A cost takes everything of a new cost entry except date, amount and
- * currency (they are the transaction's); an asset takes `name`, `assetKind`
- * and `roomId`.
+ * currency (they are the transaction's), `bookId` included: without one it goes
+ * to the book offered with the suggestion (`payload.bookId`) while that is open, else to the default book, and
+ * splits as that book says; an asset takes `name`, `assetKind` and `roomId`.
  */
 export const acceptFinanceSuggestionRequestSchema = z.strictObject({
   title: z.string().trim().min(1).max(COST_TITLE_MAX).optional(),
+  bookId: idSchema.optional(),
   category: costCategorySchema.optional(),
   notes: nullableText(COST_NOTES_MAX).optional(),
   assetId: idSchema.nullable().optional(),
@@ -115,6 +124,7 @@ export const acceptFinanceSuggestionRequestSchema = z.strictObject({
   paidByUserId: idSchema.nullable().optional(),
   splitMode: costSplitModeSchema.optional(),
   shares: costSharesInputSchema.optional(),
+  participantIds: costParticipantsInputSchema.optional(),
   countsAsExpense: z.boolean().optional(),
   deductible: costDeductibleSchema.optional(),
   name: z.string().trim().min(1).max(120).optional(),
