@@ -16,6 +16,8 @@
   import Fab from "$lib/components/app/fab.svelte";
   import PageHeader from "$lib/components/app/page-header.svelte";
   import CommentCount from "$lib/components/comments/comment-count.svelte";
+  import BookFormDialog from "$lib/components/costs/book-form-dialog.svelte";
+  import BookSwitcher from "$lib/components/costs/book-switcher.svelte";
   import CostAmount from "$lib/components/costs/cost-amount.svelte";
   import CostFlags from "$lib/components/costs/cost-flags.svelte";
   import CostRow from "$lib/components/costs/cost-row.svelte";
@@ -28,11 +30,14 @@
   import { Label } from "$lib/components/ui/label/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
   import * as Tabs from "$lib/components/ui/tabs/index.js";
+  import { rememberBook } from "$lib/costs/book-memory";
+  import { bookParam } from "$lib/costs/books";
   import {
     MAX_YEAR,
     MIN_YEAR,
     activeFilterCount,
     costFilterQuery,
+    costsExportQuery,
     parseCostFilters,
     yearOptions,
     type CostFilters,
@@ -40,6 +45,7 @@
   import { categoryLabels } from "$lib/costs/labels";
   import { formatDay, monthName } from "$lib/format";
   import { formatMoney } from "$lib/format-money";
+  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
   import { m } from "$lib/paraglide/messages";
   import { cn } from "$lib/utils";
   import type { PageProps } from "./$types";
@@ -51,7 +57,18 @@
   const activeCount = $derived(activeFilterCount(filters));
   const filtered = $derived(activeCount > 0 || filters.q !== "");
   const csvHref = $derived(
-    endpointUrl(endpoints.costsExport, { query: { year: filters.year } }),
+    endpointUrl(endpoints.costsExport, { query: costsExportQuery(filters) }),
+  );
+  const book = $derived(data.books.find((b) => b.id === filters.bookId));
+  const newHref = $derived(
+    resolve(
+      `/costs/new${filters.bookId ? `?book=${encodeURIComponent(filters.bookId)}` : ""}` as "/",
+    ),
+  );
+  const balancesHref = $derived(
+    resolve(
+      `/costs/balances?book=${encodeURIComponent(bookParam(filters.bookId))}` as "/",
+    ),
   );
   const expensesShown = $derived(
     data.costs.reduce(
@@ -75,6 +92,7 @@
   );
 
   let tab = $state("list");
+  let bookFormOpen = $state(false);
   let filtersOpen = $state(false);
   let search = $state("");
   let lastApplied = "";
@@ -91,6 +109,25 @@
   $effect(() => {
     if (activeCount > 0) filtersOpen = true;
   });
+
+  $effect(() => {
+    if (data.bookExplicit) rememberBook(data.user.id, data.filters.bookId);
+  });
+
+  function bookHref(bookId: string): string {
+    return resolve(
+      `/costs${costFilterQuery({ ...filters, bookId }, data.defaultYear)}` as "/",
+    );
+  }
+
+  async function bookCreated(created: { id: string }) {
+    await gotoFromOverlay(
+      resolve(
+        `/costs${costFilterQuery({ ...filters, bookId: created.id }, data.defaultYear)}` as "/",
+      ),
+      { invalidateAll: true },
+    );
+  }
 
   async function apply(patch: Partial<CostFilters>, replace = false) {
     const next = {
@@ -209,19 +246,29 @@
         data-sveltekit-reload
         variant="outline"
         size="lg"
-        title={m.costs_csv_hint({ year: filters.year })}
+        title={book
+          ? m.costs_csv_hint_book({ year: filters.year, name: book.name })
+          : m.costs_csv_hint({ year: filters.year })}
       >
         <DownloadIcon />
         {m.costs_csv({ year: filters.year })}
       </Button>
       {#if canWrite}
-        <Button href={resolve("/costs/new")} size="lg" class="max-md:hidden">
+        <Button href={newHref} size="lg" class="max-md:hidden">
           <PlusIcon />
           {m.cost_new()}
         </Button>
       {/if}
     {/snippet}
   </PageHeader>
+
+  <BookSwitcher
+    books={data.books}
+    value={filters.bookId}
+    hrefFor={bookHref}
+    {canWrite}
+    oncreate={() => (bookFormOpen = true)}
+  />
 
   <div
     class="flex flex-wrap items-center gap-2"
@@ -255,7 +302,14 @@
     </Button>
   </div>
 
-  <CostsSummary summary={data.summary} asset={summaryAsset} />
+  <CostsSummary
+    summary={data.summary}
+    balances={data.balances}
+    userId={data.user.id}
+    {balancesHref}
+    asset={summaryAsset}
+    bookName={book?.name}
+  />
 
   <Tabs.Root bind:value={tab} class="gap-4">
     <Tabs.List class="h-10 w-full sm:w-fit">
@@ -407,12 +461,17 @@
         {:else}
           <EmptyState
             icon={CoinsIcon}
-            title={m.costs_empty_title({ year: filters.year })}
+            title={book
+              ? m.costs_empty_book_title({
+                  year: filters.year,
+                  name: book.name,
+                })
+              : m.costs_empty_title({ year: filters.year })}
             description={m.costs_empty_body()}
           >
             {#snippet actions()}
               {#if canWrite}
-                <Button href={resolve("/costs/new")}>
+                <Button href={newHref}>
                   <PlusIcon />
                   {m.cost_new()}
                 </Button>
@@ -424,7 +483,7 @@
         <Card.Root class="gap-0 py-0 lg:hidden">
           <ul class="divide-y">
             {#each data.costs as cost (cost.id)}
-              <CostRow {cost} />
+              <CostRow {cost} showBook={!filters.bookId} />
             {/each}
           </ul>
         </Card.Root>
@@ -458,10 +517,16 @@
                       class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 rounded-sm font-medium wrap-anywhere outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
                       >{cost.title}</a
                     >
-                    {#if cost.payee || place}
+                    {#if cost.payee || place || !filters.bookId}
                       <span
                         class="text-muted-foreground mt-0.5 block text-xs wrap-anywhere"
-                        >{[cost.payee, place].filter(Boolean).join(" · ")}</span
+                        >{[
+                          cost.payee,
+                          place,
+                          filters.bookId ? "" : cost.bookName,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}</span
                       >
                     {/if}
                     <CostFlags {cost} class="mt-1.5" />
@@ -503,5 +568,10 @@
 </div>
 
 {#if canWrite}
-  <Fab href={resolve("/costs/new")} label={m.cost_new()} />
+  <Fab href={newHref} label={m.cost_new()} />
+  <BookFormDialog
+    bind:open={bookFormOpen}
+    book={undefined}
+    onsaved={bookCreated}
+  />
 {/if}

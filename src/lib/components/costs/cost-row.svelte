@@ -8,7 +8,14 @@
   import CostAmount from "./cost-amount.svelte";
   import CostFlags from "./cost-flags.svelte";
 
-  let { cost }: { cost: CostEntry } = $props();
+  let {
+    cost,
+    showBook = false,
+  }: {
+    cost: CostEntry;
+    /** Names the book: useful where entries of several books are listed together. */
+    showBook?: boolean;
+  } = $props();
 
   const meta = $derived(
     [formatDay(cost.date), categoryLabels[cost.category](), cost.payee]
@@ -16,7 +23,9 @@
       .join(" · "),
   );
   const place = $derived(
-    [cost.assetName, cost.roomName].filter(Boolean).join(" · "),
+    [showBook ? cost.bookName : "", cost.assetName, cost.roomName]
+      .filter(Boolean)
+      .join(" · "),
   );
 </script>
 
