@@ -31,6 +31,7 @@
   import { apiErrorMessage } from "$lib/error-message";
   import { invalidateAfterOverlay } from "$lib/overlays/use-overlay-history.svelte";
   import { m } from "$lib/paraglide/messages";
+  import { movedBy, saveOrder } from "$lib/reorder";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -119,28 +120,26 @@
 
   async function move(index: number, delta: -1 | 1) {
     if (busy) return;
-    const next = [...open];
-    const [book] = next.splice(index, 1);
-    if (!book) return;
-    next.splice(index + delta, 0, book);
+    const next = movedBy(open, index, delta);
+    if (!next) return;
     reordered = next;
     busy = true;
     try {
-      await Promise.all(
+      const failures = await saveOrder(
         next.flatMap((item, position) =>
           item.sortOrder === position
             ? []
             : [
-                api.call(endpoints.costBooksUpdate, {
-                  params: { id: item.id },
-                  body: { sortOrder: position },
-                }),
+                () =>
+                  api.call(endpoints.costBooksUpdate, {
+                    params: { id: item.id },
+                    body: { sortOrder: position },
+                  }),
               ],
         ),
+        invalidateAll,
       );
-      await invalidateAll();
-    } catch (err) {
-      toast.error(apiErrorMessage(err));
+      if (failures.length > 0) toast.error(apiErrorMessage(failures[0]));
     } finally {
       reordered = null;
       busy = false;
