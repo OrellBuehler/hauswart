@@ -552,7 +552,7 @@ All three are household data (no per-person scoping), reads need `read`, writes 
   archived: `book_archived`) is recorded on the recurring cost, keeps its place, does not hold the others up and is logged by code **once, when it begins or its reason
   changes** (the run tries again every five minutes; a stuck series must not fill the log). A tax class the template carries is booked as `unknown` while its book is not
   tax relevant (the template keeps it); a PATCH that moves the template into such a book resets it as for an entry, a different class there is a 400, and `splitMode: equal`
-  without `participantIds` widens a narrowed template to everybody, as for an entry. Creating and PATCHing book what is
+  without `participantIds` widens a narrowed template to everybody, and a new `category` brings the default of `countsAsExpense` along unless the template's value differs from the old category's default or the request names it, both as for an entry. Creating and PATCHing book what is
   due at once (a start date in the past books everything since, up to the cap). PATCH: the template applies to entries from now on; a changed rule continues after
   `lastOccurrenceDate`; `active: false` pauses, `active: true` resumes at the first occurrence on or after today (the paused time is skipped); the template is checked
   again only when the request touches it, so one in an archived book can still be paused; any change clears `lastError`. `run-now` books exactly the next due occurrence

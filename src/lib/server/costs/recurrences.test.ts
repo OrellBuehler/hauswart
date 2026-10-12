@@ -892,6 +892,83 @@ describe("recurring costs", () => {
       );
     });
 
+    describe("counting as an expense follows the category, as for an entry", () => {
+      it("takes the default of the new category while the template still has the default of the old one", () => {
+        const r = make({ category: "repair" });
+        expect(r.countsAsExpense).toBe(true);
+        const repayment = update(r.id, { category: "mortgage_principal" });
+        expect(repayment).toMatchObject({
+          category: "mortgage_principal",
+          countsAsExpense: false,
+        });
+        expect(update(r.id, { category: "insurance" })).toMatchObject({
+          category: "insurance",
+          countsAsExpense: true,
+        });
+        run("2026-01-01");
+        expect(entries()[0]).toMatchObject({
+          category: "insurance",
+          countsAsExpense: true,
+        });
+      });
+
+      it("books the entry the new category says", () => {
+        const r = make({ category: "repair" });
+        update(r.id, { category: "mortgage_principal" });
+        run("2026-01-01");
+        expect(entries()[0]).toMatchObject({
+          category: "mortgage_principal",
+          countsAsExpense: false,
+        });
+      });
+
+      it("keeps a value the person set on purpose when the category changes", () => {
+        const kept = make({
+          title: "Gesetzt",
+          category: "repair",
+          countsAsExpense: false,
+        });
+        expect(update(kept.id, { category: "insurance" })).toMatchObject({
+          category: "insurance",
+          countsAsExpense: false,
+        });
+        const equity = make({
+          title: "Eigenkapital",
+          category: "mortgage_principal",
+          countsAsExpense: true,
+        });
+        expect(update(equity.id, { category: "repair" })).toMatchObject({
+          category: "repair",
+          countsAsExpense: true,
+        });
+      });
+
+      it("takes the value the request names over any default", () => {
+        const r = make({ category: "repair" });
+        expect(
+          update(r.id, {
+            category: "mortgage_principal",
+            countsAsExpense: true,
+          }),
+        ).toMatchObject({ countsAsExpense: true });
+        expect(update(r.id, { countsAsExpense: false })).toMatchObject({
+          category: "mortgage_principal",
+          countsAsExpense: false,
+        });
+      });
+
+      it("changes nothing when the category stays or the request names none", () => {
+        const r = make({ category: "repair" });
+        expect(update(r.id, { category: "repair" }).countsAsExpense).toBe(true);
+        expect(update(r.id, { title: "Neu" }).countsAsExpense).toBe(true);
+        const paused = make({
+          title: "Eigenkapital",
+          category: "mortgage_principal",
+        });
+        expect(update(paused.id, { title: "Neu" }).countsAsExpense).toBe(false);
+      });
+    });
+
     it("replaces the tags", () => {
       const a = createCostTag(ctx(), { name: "A" });
       const b = createCostTag(ctx(), { name: "B" });

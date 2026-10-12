@@ -1,6 +1,9 @@
 import { and, asc, eq, inArray, isNotNull, lte, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
-import { COST_CATEGORY_COUNTS_AS_EXPENSE } from "$lib/api/enums";
+import {
+  COST_CATEGORY_COUNTS_AS_EXPENSE,
+  type CostCategory,
+} from "$lib/api/enums";
 import {
   MAX_COST_RECURRENCES,
   type CreateCostRecurrenceRequest,
@@ -370,11 +373,23 @@ export function updateCostRecurrence(
     patch.deductible ??
     (moved && target && !target.taxRelevant ? "unknown" : current.deductible);
 
+  // As for an entry: a new category brings its own default for "counts as an expense", unless the person chose another.
+  const categoryChanged =
+    patch.category !== undefined && patch.category !== current.category;
+  const countsAsExpense =
+    patch.countsAsExpense ??
+    (categoryChanged &&
+    current.countsAsExpense ===
+      COST_CATEGORY_COUNTS_AS_EXPENSE[current.category]
+      ? COST_CATEGORY_COUNTS_AS_EXPENSE[patch.category as CostCategory]
+      : current.countsAsExpense);
+
   const merged: CostRecurrenceRow = {
     ...current,
     ...plain,
     bookId: bookId ?? current.bookId,
     amountMinor: (amountMinor ?? current.amountMinor) as never,
+    countsAsExpense,
     deductible,
     splitMode: mode,
     sharesJson,
@@ -437,6 +452,7 @@ export function updateCostRecurrence(
       ...plain,
       bookId: merged.bookId,
       amountMinor: merged.amountMinor,
+      countsAsExpense: merged.countsAsExpense,
       deductible: merged.deductible,
       splitMode: merged.splitMode,
       sharesJson,
