@@ -18,6 +18,7 @@ import {
 } from "$lib/server/costs/recurrences";
 import { costEntries, financeSuggestions, type DB } from "$lib/server/db";
 import { onEvent } from "$lib/server/events";
+import { tieSuggestion } from "./links";
 import { createTestUser } from "$lib/testing/auth";
 import { at, ctxAt } from "$lib/testing/domain";
 import { useTestDB } from "$lib/testing/db";
@@ -1215,6 +1216,93 @@ describe("tying cost entries to transactions", () => {
         ),
       ).toThrow(/not found/);
       expect(getCost(ctx(), e.id).providerRef).toBeNull();
+    });
+
+    describe("a suggestion that is decided between the check and the tie", () => {
+      /** Dismisses the suggestion the moment the entry is written, as a second request would between the check and the tie. */
+      const decideWhenWritten = (table: "insert" | "update", id: string) =>
+        test.db.$client.exec(
+          `create temp trigger decide_meanwhile after ${table} on cost_entries
+           begin update finance_suggestions set status = 'dismissed' where id = '${id}'; end`,
+        );
+
+      it("books nothing when a new entry loses the suggestion to somebody else", async () => {
+        const a = await owner();
+        const { row } = offer(a);
+        decideWhenWritten("insert", row.id);
+        expect(() =>
+          createCost(
+            ctx(),
+            createCostRequestSchema.parse({
+              title: "Einkauf",
+              amountMinor: 4250,
+              category: "groceries",
+              financeSuggestionId: row.id,
+              splitMode: "none",
+            }),
+            a.user.id,
+          ),
+        ).toThrow(/decided meanwhile/);
+        expect(listCosts(ctx(), {}, { limit: 10 }, a.user.id).items).toEqual(
+          [],
+        );
+        // (The trigger's own decision was part of the transaction that rolled back.)
+        expect(getOwnSuggestion(ctx(), a.user.id, row.id)).toMatchObject({
+          status: "pending",
+          acceptedEntityId: null,
+        });
+      });
+
+      it("leaves an entry untied when it loses the suggestion on a change", async () => {
+        const a = await owner();
+        const e = entry(a, { title: "Anderer Name" });
+        const { row } = offer(a);
+        decideWhenWritten("update", row.id);
+        expect(() =>
+          updateCost(
+            ctx(),
+            e.id,
+            updateCostRequestSchema.parse({
+              title: "Neuer Name",
+              financeSuggestionId: row.id,
+            }),
+            { userId: a.user.id },
+          ),
+        ).toThrow(/decided meanwhile/);
+        expect(getCost(ctx(), e.id)).toMatchObject({
+          title: "Anderer Name",
+          providerRef: null,
+        });
+        expect(
+          getOwnSuggestion(ctx(), a.user.id, row.id).acceptedEntityId,
+        ).toBe(null);
+      });
+
+      it("never overwrites a suggestion that was accepted for another entry", async () => {
+        const a = await owner();
+        const { row } = offer(a);
+        const first = createCost(
+          ctx(),
+          createCostRequestSchema.parse({
+            title: "Einkauf",
+            amountMinor: 4250,
+            category: "groceries",
+            financeSuggestionId: row.id,
+            splitMode: "none",
+          }),
+          a.user.id,
+        );
+        const other = entry(a, { title: "Anderer Name" });
+        expect(() =>
+          test.db.transaction((tx) =>
+            tieSuggestion({ db: tx as unknown as DB }, row.id, other.id),
+          ),
+        ).toThrow(/decided meanwhile/);
+        expect(getOwnSuggestion(ctx(), a.user.id, row.id)).toMatchObject({
+          status: "accepted",
+          acceptedEntityId: first.id,
+        });
+      });
     });
   });
 

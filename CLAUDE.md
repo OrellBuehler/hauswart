@@ -593,7 +593,8 @@ A transaction of a finance app and an entry somebody typed are the same expense.
   currency (default the household's) within 3 days, nearest date first, at most 20. `financeSuggestionId` on `POST /costs` and `PATCH /costs/{id}` ties the entry to
   one of them in the same transaction (`claimSuggestion`, `tieSuggestion`): 404 unless it is the caller's own, 400 on the field when it is not a cost or the amount or currency
   (the entry's after the change) differs, 409 when decided; PATCH answers 409 for an entry tied to another item and does nothing for the same suggestion again.
-  Nothing is written when the entry is refused.
+  Nothing is written when the entry is refused; the tie itself only takes a suggestion that is still pending (`tieSuggestion` updates `where status = 'pending'` and checks the row
+  count), so one decided since the check is a 409 that rolls the entry back instead of being overwritten.
 
 #### Kept adapter (`integrations/kept/`)
 

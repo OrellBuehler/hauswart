@@ -405,13 +405,30 @@ export function isTiedTo(
   return row?.status === "accepted" && row.acceptedEntityId === entryId;
 }
 
-/** Marks the suggestion as booked as this entry, and lets other links to the entry go. */
+/**
+ * Marks the suggestion as booked as this entry, and lets other links to the entry go. Only a suggestion that is still
+ * pending is taken: one that was decided since `claimSuggestion` looked at it (the write is guarded by the status, not
+ * by that earlier read) is a 409 and, in the caller's transaction, rolls the entry back with it.
+ */
 export function tieSuggestion(
   ctx: Db,
   suggestionId: string,
   entryId: string,
 ): void {
-  markAccepted(ctx, suggestionId, entryId);
+  const tied = ctx.db
+    .update(financeSuggestions)
+    .set({ status: "accepted", acceptedEntityId: entryId })
+    .where(
+      and(
+        eq(financeSuggestions.id, suggestionId),
+        eq(financeSuggestions.status, "pending"),
+      ),
+    )
+    .returning({ id: financeSuggestions.id })
+    .all();
+  if (tied.length !== 1) {
+    throw conflict("This suggestion was decided meanwhile");
+  }
   releaseLinks(ctx, entryId);
 }
 
