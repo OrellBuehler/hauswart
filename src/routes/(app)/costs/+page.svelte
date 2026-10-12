@@ -1,17 +1,23 @@
 <script lang="ts">
+  import ArrowRightLeftIcon from "@lucide/svelte/icons/arrow-right-left";
   import ChevronLeftIcon from "@lucide/svelte/icons/chevron-left";
   import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
   import CoinsIcon from "@lucide/svelte/icons/coins";
   import DownloadIcon from "@lucide/svelte/icons/download";
   import InboxIcon from "@lucide/svelte/icons/inbox";
+  import ListChecksIcon from "@lucide/svelte/icons/list-checks";
   import FilterIcon from "@lucide/svelte/icons/list-filter";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import SearchIcon from "@lucide/svelte/icons/search";
+  import { untrack } from "svelte";
+  import { SvelteSet } from "svelte/reactivity";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { toast } from "svelte-sonner";
   import { COST_CATEGORIES } from "$lib/api/enums";
   import { endpointUrl } from "$lib/api/client";
   import { endpoints } from "$lib/api/registry";
+  import { MOVE_COSTS_MAX_IDS } from "$lib/api/schemas/costs";
   import EmptyState from "$lib/components/app/empty-state.svelte";
   import Fab from "$lib/components/app/fab.svelte";
   import PageHeader from "$lib/components/app/page-header.svelte";
@@ -23,15 +29,17 @@
   import CostRow from "$lib/components/costs/cost-row.svelte";
   import CostsReport from "$lib/components/costs/costs-report.svelte";
   import CostsSummary from "$lib/components/costs/costs-summary.svelte";
+  import MoveCostsDialog from "$lib/components/costs/move-costs-dialog.svelte";
   import OptionSelect from "$lib/components/tasks/option-select.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
+  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
   import * as Tabs from "$lib/components/ui/tabs/index.js";
   import { rememberBook } from "$lib/costs/book-memory";
-  import { bookParam } from "$lib/costs/books";
+  import { bookParam, openBooks } from "$lib/costs/books";
   import {
     MAX_YEAR,
     MIN_YEAR,
@@ -43,9 +51,13 @@
     type CostFilters,
   } from "$lib/costs/filters";
   import { categoryLabels } from "$lib/costs/labels";
+  import { moveSummary, pickAll, type MoveTarget } from "$lib/costs/move";
   import { formatDay, monthName } from "$lib/format";
   import { formatMoney } from "$lib/format-money";
-  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
+  import {
+    gotoFromOverlay,
+    invalidateAfterOverlay,
+  } from "$lib/overlays/use-overlay-history.svelte";
   import { m } from "$lib/paraglide/messages";
   import { cn } from "$lib/utils";
   import type { PageProps } from "./$types";
@@ -91,6 +103,28 @@
     data.financeConnected || data.pendingSuggestions > 0,
   );
 
+  /** Moving entries to another book makes sense with a second book that takes entries. */
+  const canMove = $derived(canWrite && openBooks(data.books).length > 1);
+  const assetName = $derived(
+    filters.assetId
+      ? data.assets.find((a) => a.id === filters.assetId)?.name
+      : undefined,
+  );
+
+  let selecting = $state(false);
+  const selected = new SvelteSet<string>();
+  let moveOpen = $state(false);
+  let moveTarget = $state.raw<MoveTarget | undefined>();
+  const selectedEntries = $derived(
+    data.costs.filter((cost) => selected.has(cost.id)),
+  );
+  const allSelected = $derived(
+    data.costs.length > 0 &&
+      data.costs
+        .slice(0, MOVE_COSTS_MAX_IDS)
+        .every((cost) => selected.has(cost.id)),
+  );
+
   let tab = $state("list");
   let bookFormOpen = $state(false);
   let filtersOpen = $state(false);
@@ -113,6 +147,52 @@
   $effect(() => {
     if (data.bookExplicit) rememberBook(data.user.id, data.filters.bookId);
   });
+
+  $effect(() => {
+    // What is no longer in the list (another year, another filter) is no longer picked.
+    const shown = new Set(data.costs.map((cost) => cost.id));
+    untrack(() => {
+      for (const id of [...selected]) if (!shown.has(id)) selected.delete(id);
+    });
+  });
+
+  function stopSelecting() {
+    selecting = false;
+    selected.clear();
+  }
+
+  function toggle(id: string) {
+    if (selected.has(id)) selected.delete(id);
+    else selected.add(id);
+  }
+
+  function toggleAll() {
+    if (allSelected) {
+      selected.clear();
+      return;
+    }
+    for (const id of pickAll(data.costs).ids) selected.add(id);
+  }
+
+  function moveSelected() {
+    moveTarget = { ids: selectedEntries.map((cost) => cost.id) };
+    moveOpen = true;
+  }
+
+  function moveAssetEntries() {
+    if (!filters.assetId) return;
+    moveTarget = { assetId: filters.assetId };
+    moveOpen = true;
+  }
+
+  async function moved(
+    result: Parameters<typeof moveSummary>[0],
+    bookName: string,
+  ) {
+    toast.success(moveSummary(result, bookName));
+    stopSelecting();
+    await invalidateAfterOverlay();
+  }
 
   function bookHref(bookId: string): string {
     return resolve(
@@ -445,6 +525,41 @@
         {/if}
       </div>
 
+      {#if canMove && (data.costs.length > 0 || assetName)}
+        <div class="flex flex-wrap items-center gap-2">
+          {#if selecting}
+            <Button variant="outline" size="lg" onclick={toggleAll}>
+              {allSelected ? m.costs_select_none() : m.costs_select_all()}
+            </Button>
+            <Button variant="ghost" size="lg" onclick={stopSelecting}>
+              {m.costs_select_done()}
+            </Button>
+          {:else}
+            {#if data.costs.length > 0}
+              <Button
+                variant="outline"
+                size="lg"
+                onclick={() => (selecting = true)}
+              >
+                <ListChecksIcon />
+                {m.costs_select()}
+              </Button>
+            {/if}
+            {#if assetName}
+              <Button variant="outline" size="lg" onclick={moveAssetEntries}>
+                <ArrowRightLeftIcon />
+                {m.costs_move_asset()}
+              </Button>
+            {/if}
+          {/if}
+        </div>
+        {#if selecting && data.costs.length > MOVE_COSTS_MAX_IDS}
+          <p class="text-muted-foreground -mt-2 text-xs text-pretty">
+            {m.costs_select_limit({ max: MOVE_COSTS_MAX_IDS })}
+          </p>
+        {/if}
+      {/if}
+
       {#if data.costs.length === 0}
         {#if filtered}
           <EmptyState
@@ -483,7 +598,13 @@
         <Card.Root class="gap-0 py-0 lg:hidden">
           <ul class="divide-y">
             {#each data.costs as cost (cost.id)}
-              <CostRow {cost} showBook={!filters.bookId} />
+              <CostRow
+                {cost}
+                showBook={!filters.bookId}
+                {selecting}
+                selected={selected.has(cost.id)}
+                ontoggle={() => toggle(cost.id)}
+              />
             {/each}
           </ul>
         </Card.Root>
@@ -492,6 +613,15 @@
           <Table.Root>
             <Table.Header>
               <Table.Row>
+                {#if selecting}
+                  <Table.Head class="w-10">
+                    <Checkbox
+                      checked={allSelected}
+                      onCheckedChange={toggleAll}
+                      aria-label={m.costs_select_all()}
+                    />
+                  </Table.Head>
+                {/if}
                 <Table.Head class="w-32">{m.cost_date()}</Table.Head>
                 <Table.Head>{m.cost_title()}</Table.Head>
                 <Table.Head>{m.cost_category()}</Table.Head>
@@ -507,16 +637,34 @@
                 {@const place = [cost.assetName, cost.roomName]
                   .filter(Boolean)
                   .join(" · ")}
-                <Table.Row class="relative">
+                <Table.Row
+                  class={cn("relative", selecting && "cursor-pointer")}
+                  onclick={selecting ? () => toggle(cost.id) : undefined}
+                >
+                  {#if selecting}
+                    <Table.Cell class="w-10">
+                      <Checkbox
+                        checked={selected.has(cost.id)}
+                        onCheckedChange={() => toggle(cost.id)}
+                        onclick={(event) => event.stopPropagation()}
+                        aria-label={m.costs_select_row({ title: cost.title })}
+                      />
+                    </Table.Cell>
+                  {/if}
                   <Table.Cell class="text-muted-foreground tabular-nums"
                     >{formatDay(cost.date)}</Table.Cell
                   >
                   <Table.Cell class="max-w-sm whitespace-normal">
-                    <a
-                      href={resolve(`/costs/${cost.id}` as "/")}
-                      class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 rounded-sm font-medium wrap-anywhere outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
-                      >{cost.title}</a
-                    >
+                    {#if selecting}
+                      <span class="font-medium wrap-anywhere">{cost.title}</span
+                      >
+                    {:else}
+                      <a
+                        href={resolve(`/costs/${cost.id}` as "/")}
+                        class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 rounded-sm font-medium wrap-anywhere outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
+                        >{cost.title}</a
+                      >
+                    {/if}
                     {#if cost.payee || place || !filters.bookId}
                       <span
                         class="text-muted-foreground mt-0.5 block text-xs wrap-anywhere"
@@ -567,8 +715,34 @@
   </Tabs.Root>
 </div>
 
+{#if selecting}
+  <div
+    class="bg-background sticky bottom-[calc(var(--bottom-nav,0px)+env(safe-area-inset-bottom)+0.5rem)] z-30 -mt-2 flex items-center gap-3 rounded-xl border p-3 shadow-lg"
+    role="region"
+    aria-label={m.costs_selection()}
+  >
+    <p class="min-w-0 flex-1 text-sm font-medium" aria-live="polite">
+      {m.costs_selected_count({ count: selected.size })}
+    </p>
+    <Button size="lg" disabled={selected.size === 0} onclick={moveSelected}>
+      <ArrowRightLeftIcon />
+      {m.costs_move()}
+    </Button>
+  </div>
+{/if}
+
 {#if canWrite}
-  <Fab href={newHref} label={m.cost_new()} />
+  {#if !selecting}
+    <Fab href={newHref} label={m.cost_new()} />
+  {/if}
+  <MoveCostsDialog
+    bind:open={moveOpen}
+    books={data.books}
+    target={moveTarget}
+    entries={moveTarget && "ids" in moveTarget ? selectedEntries : []}
+    {assetName}
+    onmoved={moved}
+  />
   <BookFormDialog
     bind:open={bookFormOpen}
     book={undefined}
