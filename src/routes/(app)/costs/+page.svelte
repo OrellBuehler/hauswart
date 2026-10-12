@@ -5,6 +5,7 @@
   import CoinsIcon from "@lucide/svelte/icons/coins";
   import DownloadIcon from "@lucide/svelte/icons/download";
   import EyeIcon from "@lucide/svelte/icons/eye";
+  import GaugeIcon from "@lucide/svelte/icons/gauge";
   import InboxIcon from "@lucide/svelte/icons/inbox";
   import ListChecksIcon from "@lucide/svelte/icons/list-checks";
   import FilterIcon from "@lucide/svelte/icons/list-filter";
@@ -386,6 +387,10 @@
             })}</span
           >
         {/if}
+      </Button>
+      <Button href={resolve("/costs/budgets")} variant="outline" size="lg">
+        <GaugeIcon />
+        {m.costs_budgets()}
       </Button>
       <Button
         href={csvHref}

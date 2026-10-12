@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "$lib/api/errors";
 import type { ApiClient } from "$lib/api/client";
-import { tryLoadFinanceConnected, tryLoadPendingReceipts } from "./load";
+import {
+  tryLoadBudgetAlerts,
+  tryLoadFinanceConnected,
+  tryLoadPendingReceipts,
+} from "./load";
 
 function client(answer: () => unknown) {
   const calls: { id: string; input: unknown }[] = [];
@@ -124,5 +128,57 @@ describe("whether bank transactions can be looked up", () => {
     await expect(
       tryLoadFinanceConnected(broken.api, "/costs/new"),
     ).rejects.toThrow("not an API error");
+  });
+});
+
+describe("the hint for budgets on the dashboard", () => {
+  const entry = (state: string) => ({ state });
+
+  beforeEach(() => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  it("asks once, for today's month and year, and counts what needs attention", async () => {
+    const { api, calls } = client(() => ({
+      items: [
+        entry("ok"),
+        entry("warning"),
+        entry("exceeded"),
+        entry("exceeded"),
+      ],
+    }));
+    expect(await tryLoadBudgetAlerts(api, "/")).toEqual({
+      exceeded: 2,
+      warning: 1,
+    });
+    expect(calls).toEqual([{ id: "costBudgetsStatus", input: { query: {} } }]);
+  });
+
+  it("opens the dashboard without the hint when the status cannot be read", async () => {
+    const { api } = client(() => {
+      throw new ApiError("internal", "boom", { status: 500 });
+    });
+    expect(await tryLoadBudgetAlerts(api, "/")).toBeNull();
+    expect(console.warn).toHaveBeenCalledWith(
+      "budget status unavailable",
+      "internal",
+      500,
+    );
+  });
+
+  it("sends a signed-out session to the login page and does not hide any other failure", async () => {
+    const { api } = client(() => {
+      throw new ApiError("unauthenticated", "no", { status: 401 });
+    });
+    await expect(tryLoadBudgetAlerts(api, "/")).rejects.toMatchObject({
+      status: 303,
+      location: "/login?redirectTo=%2F",
+    });
+    const broken = client(() => {
+      throw new TypeError("not an API error");
+    });
+    await expect(tryLoadBudgetAlerts(broken.api, "/")).rejects.toThrow(
+      "not an API error",
+    );
   });
 });

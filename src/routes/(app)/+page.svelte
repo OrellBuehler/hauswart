@@ -310,6 +310,7 @@
       <CostsCard
         costs={dashboard.costsYearToDate}
         balances={dashboard.balances}
+        budgetAlerts={data.budgetAlerts}
         canWrite={data.scopes.includes("costs:write")}
       />
       {#if dashboard.openDefects.length > 0}

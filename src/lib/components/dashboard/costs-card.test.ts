@@ -141,4 +141,28 @@ describe("the dashboard's costs card", () => {
     );
     expect(nothing).not.toContain("Ausgaben");
   });
+
+  describe("the hint for budgets", () => {
+    const withAlerts = (alerts: { exceeded: number; warning: number } | null) =>
+      render(CostsCard as never, {
+        props: {
+          costs: costs(),
+          balances: balances(),
+          budgetAlerts: alerts,
+        } as never,
+      }).body;
+
+    it("says how many budgets are over or nearly used up and links to them", () => {
+      const body = withAlerts({ exceeded: 2, warning: 1 });
+      expect(body).toContain("2 Budgets überschritten, 1 fast aufgebraucht");
+      expect(body).toContain('href="/costs/budgets"');
+    });
+
+    it("says nothing while every budget is within its amount, or when they could not be read", () => {
+      expect(withAlerts({ exceeded: 0, warning: 0 })).not.toContain(
+        "/costs/budgets",
+      );
+      expect(withAlerts(null)).not.toContain("/costs/budgets");
+    });
+  });
 });
