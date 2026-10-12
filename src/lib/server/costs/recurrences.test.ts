@@ -724,6 +724,45 @@ describe("recurring costs", () => {
       });
     });
 
+    it("widens a narrowed equal split to everybody when the request names equal without participants", async () => {
+      const anna = await createTestUser({ displayName: "Anna" });
+      await createTestUser({ displayName: "Ben" });
+      const r = make({ splitMode: "equal", participantIds: [anna.id] });
+      run("2026-01-01");
+      expect(bps(entries()[0])).toEqual({ Anna: 10000 });
+      expect(update(r.id, { splitMode: "equal" })).toMatchObject({
+        splitMode: "equal",
+        participantIdsJson: null,
+        sharesJson: null,
+      });
+      run("2026-02-01");
+      expect(bps(entries()[1])).toEqual({ Anna: 5000, Ben: 5000 });
+    });
+
+    it("keeps a narrowed equal split when the request does not touch the split", async () => {
+      const anna = await createTestUser({ displayName: "Anna" });
+      await createTestUser({ displayName: "Ben" });
+      const r = make({ splitMode: "equal", participantIds: [anna.id] });
+      expect(update(r.id, { title: "Neu" }).participantIdsJson).toEqual([
+        anna.id,
+      ]);
+    });
+
+    it("keeps a custom split when the request names custom again without shares", async () => {
+      const anna = await createTestUser({ displayName: "Anna" });
+      const ben = await createTestUser({ displayName: "Ben" });
+      const r = make({
+        splitMode: "custom",
+        shares: [
+          { userId: anna.id, shareBps: 2500 },
+          { userId: ben.id, shareBps: 7500 },
+        ],
+      });
+      const same = update(r.id, { splitMode: "custom" });
+      expect(same.sharesJson).toEqual(r.sharesJson);
+      expect(same.splitMode).toBe("custom");
+    });
+
     it("replaces the tags", () => {
       const a = createCostTag(ctx(), { name: "A" });
       const b = createCostTag(ctx(), { name: "B" });

@@ -347,12 +347,15 @@ export function updateCostRecurrence(
     }
     participantIdsJson = participantIds;
     sharesJson = null;
-  } else if (splitMode !== undefined && splitMode !== current.splitMode) {
+  } else if (splitMode !== undefined) {
     if (splitMode === "custom") {
-      throw invalidField("shares", "Shares are required for a custom split");
+      if (current.splitMode !== "custom") {
+        throw invalidField("shares", "Shares are required for a custom split");
+      }
+    } else {
+      sharesJson = null;
+      participantIdsJson = null;
     }
-    sharesJson = null;
-    participantIdsJson = null;
   }
   const tagIdsJson =
     tagIds === undefined ? current.tagIdsJson : requireTagIds(ctx, tagIds);
