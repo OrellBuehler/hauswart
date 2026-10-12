@@ -1,4 +1,4 @@
-import type { CostBalances } from "$lib/api/schemas/costs";
+import type { CostBalances, DashboardBalances } from "$lib/api/schemas/costs";
 import { formatMoney } from "$lib/format-money";
 import { m } from "$lib/paraglide/messages";
 
@@ -121,4 +121,24 @@ export function crossBookNote(
     count: cross.count,
     amount: formatMoney(cross.totalMinor, balances.currency),
   });
+}
+
+/** The same verdict as `balanceState`, for the slice of the balances the dashboard carries. */
+export function dashboardBalanceState(
+  balances: Pick<DashboardBalances, "hasActivity" | "suggestedPaymentCount">,
+): "empty" | "square" | "open" {
+  if (balances.suggestedPaymentCount > 0) return "open";
+  return balances.hasActivity ? "square" : "empty";
+}
+
+/** The caller's line on the dashboard ("Du bekommst CHF 25.00"); `null` before anything happened. */
+export function dashboardYouLine(
+  balances: Pick<
+    DashboardBalances,
+    "hasActivity" | "suggestedPaymentCount" | "myBalanceMinor" | "currency"
+  >,
+): { tone: BalanceTone; text: string } | null {
+  return dashboardBalanceState(balances) === "empty"
+    ? null
+    : youWording(balances.myBalanceMinor, balances.currency);
 }

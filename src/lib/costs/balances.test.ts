@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { CostBalances } from "$lib/api/schemas/costs";
+import type { CostBalances, DashboardBalances } from "$lib/api/schemas/costs";
 import {
   balanceState,
   balanceTone,
   balanceWording,
   crossBookNote,
+  dashboardBalanceState,
+  dashboardYouLine,
   hasBalanceData,
   paymentSentence,
   personName,
@@ -214,5 +216,38 @@ describe("crossBookNote", () => {
   it("has nothing to say in the view of all books, or when there are no such payments", () => {
     expect(crossBookNote(view(null))).toBeNull();
     expect(crossBookNote(view({ count: 0, totalMinor: 0 }))).toBeNull();
+  });
+});
+
+describe("the dashboard's balances", () => {
+  const slice = (over: Partial<DashboardBalances> = {}): DashboardBalances => ({
+    currency: "CHF",
+    myBalanceMinor: 0,
+    hasActivity: true,
+    suggestedPayments: [],
+    suggestedPaymentCount: 0,
+    ...over,
+  });
+
+  it("is empty before anything happened, open while somebody owes somebody, else square", () => {
+    expect(dashboardBalanceState(slice({ hasActivity: false }))).toBe("empty");
+    expect(dashboardBalanceState(slice({ suggestedPaymentCount: 2 }))).toBe(
+      "open",
+    );
+    expect(dashboardBalanceState(slice())).toBe("square");
+  });
+
+  it("words the caller's own balance, and nothing before anything happened", () => {
+    expect(dashboardYouLine(slice({ hasActivity: false }))).toBeNull();
+    const credit = dashboardYouLine(
+      slice({ myBalanceMinor: 2500, suggestedPaymentCount: 1 }),
+    );
+    expect(credit?.tone).toBe("credit");
+    expect(plain(credit?.text ?? "")).toBe("Du bekommst CHF 25.00");
+    const debit = dashboardYouLine(
+      slice({ myBalanceMinor: -1250, suggestedPaymentCount: 1 }),
+    );
+    expect(plain(debit?.text ?? "")).toBe("Du schuldest CHF 12.50");
+    expect(dashboardYouLine(slice())?.tone).toBe("even");
   });
 });

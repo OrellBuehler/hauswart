@@ -301,8 +301,7 @@
       {/if}
       <CostsCard
         costs={dashboard.costsYearToDate}
-        balances={data.balances}
-        userId={data.user.id}
+        balances={dashboard.balances}
       />
       {#if dashboard.openDefects.length > 0}
         <DefectsCard defects={dashboard.openDefects} {today} />

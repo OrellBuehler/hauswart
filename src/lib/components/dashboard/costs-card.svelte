@@ -2,15 +2,13 @@
   import ArrowRightIcon from "@lucide/svelte/icons/arrow-right";
   import CircleCheckIcon from "@lucide/svelte/icons/circle-check";
   import CoinsIcon from "@lucide/svelte/icons/coins";
-  import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import { resolve } from "$app/paths";
-  import type { CostBalances } from "$lib/api/schemas/costs";
   import type { Dashboard } from "$lib/api/schemas/dashboard";
   import SuggestedPayments from "$lib/components/costs/suggested-payments.svelte";
   import * as Card from "$lib/components/ui/card/index.js";
   import {
-    balanceState,
-    viewerLine,
+    dashboardBalanceState,
+    dashboardYouLine,
     type BalanceTone,
   } from "$lib/costs/balances";
   import { formatMoney } from "$lib/format-money";
@@ -20,22 +18,32 @@
   let {
     costs,
     balances,
-    userId,
   }: {
+    /** What the year has cost so far: all books together and per book. */
     costs: Dashboard["costsYearToDate"];
-    /** Where everybody stands across all books; `null` when they could not be read. */
-    balances: CostBalances | null;
-    userId: string;
+    /** Where the caller stands across all books, and the first payments that would square everybody. */
+    balances: Dashboard["balances"];
   } = $props();
 
-  const status = $derived(balances ? balanceState(balances) : "empty");
-  const you = $derived(balances ? viewerLine(balances, userId) : null);
+  const BOOKS_SHOWN = 4;
+
+  const status = $derived(dashboardBalanceState(balances));
+  const you = $derived(dashboardYouLine(balances));
   const tones: Record<BalanceTone, string> = {
     credit: "text-success",
     debit: "text-destructive",
     even: "",
   };
-  const payments = $derived(balances?.suggestedPayments.slice(0, 3) ?? []);
+  const morePayments = $derived(
+    Math.max(
+      0,
+      balances.suggestedPaymentCount - balances.suggestedPayments.length,
+    ),
+  );
+  const books = $derived(costs.byBook.slice(0, BOOKS_SHOWN));
+  const moreBooks = $derived(Math.max(0, costs.byBook.length - BOOKS_SHOWN));
+  const bookHref = (id: string) =>
+    resolve(`/costs?book=${encodeURIComponent(id)}` as "/");
 </script>
 
 {#if costs.totalMinor !== 0 || status !== "empty"}
@@ -50,26 +58,22 @@
       {/if}
     </Card.Header>
     <Card.Content class="flex flex-col gap-3">
-      {#if balances === null}
-        <p class="text-muted-foreground flex items-start gap-2 text-sm">
-          <TriangleAlertIcon
-            class="mt-0.5 size-4 shrink-0"
-            aria-hidden="true"
-          />
-          {m.balances_unavailable()}
-        </p>
-      {/if}
       {#if you}
         <p class={cn("text-xl font-semibold tabular-nums", tones[you.tone])}>
           {you.text}
         </p>
       {/if}
-      {#if balances && status === "open"}
+      {#if status === "open"}
         <SuggestedPayments
           class="text-sm"
-          {payments}
+          payments={balances.suggestedPayments}
           currency={balances.currency}
         />
+        {#if morePayments > 0}
+          <p class="text-muted-foreground text-xs">
+            {m.dashboard_costs_more_payments({ count: morePayments })}
+          </p>
+        {/if}
       {:else if status === "square"}
         <p class="flex items-start gap-2 text-sm text-pretty">
           <CircleCheckIcon
@@ -79,16 +83,45 @@
           {m.balances_square()}
         </p>
       {/if}
-      <p
-        class="flex items-baseline justify-between gap-3 border-t pt-3 text-sm"
-      >
-        <span class="text-muted-foreground"
-          >{m.dashboard_costs_year({ year: costs.year })}</span
-        >
-        <span class="font-medium whitespace-nowrap tabular-nums"
-          >{formatMoney(costs.totalMinor, costs.currency)}</span
-        >
-      </p>
+      <div class="flex flex-col gap-1 border-t pt-3 text-sm">
+        <p class="flex items-baseline justify-between gap-3">
+          <span class="text-muted-foreground"
+            >{m.dashboard_costs_year({ year: costs.year })}</span
+          >
+          <span class="font-medium whitespace-nowrap tabular-nums"
+            >{formatMoney(costs.totalMinor, costs.currency)}</span
+          >
+        </p>
+        {#if books.length > 1}
+          <ul class="flex flex-col">
+            {#each books as book (book.bookId)}
+              <li>
+                <a
+                  href={bookHref(book.bookId)}
+                  class="text-muted-foreground hover:text-foreground hover:bg-accent/50 focus-visible:ring-ring/50 -mx-2 flex min-h-10 items-baseline justify-between gap-3 rounded-md px-2 py-2 text-xs outline-none focus-visible:ring-[3px]"
+                >
+                  <span class="min-w-0 wrap-anywhere">
+                    {book.bookName}
+                    {#if book.archived}
+                      <span class="opacity-75"
+                        >({m.costbook_archived_badge()})</span
+                      >
+                    {/if}
+                  </span>
+                  <span class="whitespace-nowrap tabular-nums"
+                    >{formatMoney(book.totalMinor, costs.currency)}</span
+                  >
+                </a>
+              </li>
+            {/each}
+          </ul>
+          {#if moreBooks > 0}
+            <p class="text-muted-foreground text-xs">
+              {m.dashboard_costs_more_books({ count: moreBooks })}
+            </p>
+          {/if}
+        {/if}
+      </div>
       <div class="flex flex-wrap gap-x-4">
         <a
           href={resolve("/costs/balances")}
