@@ -3,14 +3,14 @@ import type { endpoints } from "$lib/api/registry";
 import { toIso } from "$lib/api/schemas/common";
 import type { settlementSchema } from "$lib/api/schemas/settlements";
 import {
-  createSettlement,
   deleteSettlement,
   getSettlement,
   listSettlements,
+  recordSettlement,
   updateSettlement,
   type SettlementRecord,
 } from "$lib/server/costs/settlements";
-import type { Handler } from "../bind";
+import { reply, type Handler } from "../bind";
 
 export function wireSettlement(
   s: SettlementRecord,
@@ -48,7 +48,11 @@ export const list: Handler<typeof endpoints.settlementsList> = ({
 export const create: Handler<typeof endpoints.settlementsCreate> = ({
   ctx,
   body,
-}) => wireSettlement(createSettlement(ctx, body, ctx.user.id));
+}) => {
+  const { settlement, replayed } = recordSettlement(ctx, body, ctx.user.id);
+  const out = wireSettlement(settlement);
+  return replayed ? reply(200, out) : out;
+};
 
 export const get: Handler<typeof endpoints.settlementsGet> = ({
   ctx,

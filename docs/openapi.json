@@ -20547,7 +20547,7 @@
       "post": {
         "operationId": "settlementsCreate",
         "summary": "Record a payment between two people",
-        "description": "\"Ben paid Anna 50\": `fromUserId` handed `amountMinor` over to `toUserId`. It is not a cost (no expense total counts it); it moves the balances in `GET /costs/balances`. `bookId` omitted or null settles across all books; a book may be archived (paying back a closed trip is the normal order). `currency` defaults to the household's, `date` to today. The two people must differ and be household members (400 on the field otherwise).",
+        "description": "\"Ben paid Anna 50\": `fromUserId` handed `amountMinor` over to `toUserId`. It is not a cost (no expense total counts it); it moves the balances in `GET /costs/balances`. `bookId` omitted or null settles across all books; a book may be archived (paying back a closed trip is the normal order). `currency` defaults to the household's, `date` to today. The two people must differ and be household members (400 on the field otherwise). A repeated `idempotencyKey` (unique per person who records, whatever credential they use) returns the first payment with status 200 and records nothing; the same key for a different payment (other people, amount, currency or book) is a 409 `conflict`; once the payment is deleted its key is free again.",
         "tags": [
           "costs"
         ],
@@ -20597,6 +20597,16 @@
           },
           "403": {
             "description": "Error: `forbidden`, `csrf_failed`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error: `conflict`",
             "content": {
               "application/json": {
                 "schema": {
@@ -20698,6 +20708,11 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "idempotencyKey": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128
                   }
                 },
                 "required": [

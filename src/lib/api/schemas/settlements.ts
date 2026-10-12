@@ -70,7 +70,9 @@ const fields = {
 
 /**
  * `bookId` omitted or null settles across all books, `currency` defaults to the household's and `date` to today.
- * The two people must differ and be members of the household.
+ * The two people must differ and be members of the household. `idempotencyKey` (8 to 128 characters, chosen by the
+ * caller, unique per person who records) makes a retried request return the first payment with status 200 instead of
+ * recording a second one; the same key for a different payment (other people, amount, currency or book) is a 409.
  */
 export const createSettlementRequestSchema = z.strictObject({
   bookId: fields.bookId.optional(),
@@ -80,6 +82,7 @@ export const createSettlementRequestSchema = z.strictObject({
   currency: fields.currency.optional(),
   date: fields.date.optional(),
   note: fields.note.optional(),
+  idempotencyKey: z.string().min(8).max(128).optional(),
 });
 export type CreateSettlementRequest = z.output<
   typeof createSettlementRequestSchema

@@ -2255,13 +2255,14 @@ export const endpoints = {
     path: "/api/v1/settlements",
     summary: "Record a payment between two people",
     description:
-      '"Ben paid Anna 50": `fromUserId` handed `amountMinor` over to `toUserId`. It is not a cost (no expense total counts it); it moves the balances in `GET /costs/balances`. `bookId` omitted or null settles across all books; a book may be archived (paying back a closed trip is the normal order). `currency` defaults to the household\'s, `date` to today. The two people must differ and be household members (400 on the field otherwise).',
+      '"Ben paid Anna 50": `fromUserId` handed `amountMinor` over to `toUserId`. It is not a cost (no expense total counts it); it moves the balances in `GET /costs/balances`. `bookId` omitted or null settles across all books; a book may be archived (paying back a closed trip is the normal order). `currency` defaults to the household\'s, `date` to today. The two people must differ and be household members (400 on the field otherwise). A repeated `idempotencyKey` (unique per person who records, whatever credential they use) returns the first payment with status 200 and records nothing; the same key for a different payment (other people, amount, currency or book) is a 409 `conflict`; once the payment is deleted its key is free again.',
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
     body: createSettlementRequestSchema,
     response: settlementSchema,
     status: 201,
+    errors: ["conflict"],
   }),
 
   settlementsGet: defineEndpoint({

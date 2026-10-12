@@ -141,6 +141,7 @@ export const recordSettlement = defineTool({
         date,
         note,
         bookId: b?.id ?? null,
+        idempotencyKey: ctx.newKey(),
       },
     });
     const after = await ctx.api.call(endpoints.costsBalances, {

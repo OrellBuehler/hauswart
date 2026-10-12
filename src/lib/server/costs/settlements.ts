@@ -20,7 +20,9 @@ import { costBooks, settlements, users } from "$lib/server/db";
 import { getHousehold } from "$lib/server/household/household";
 import { decodeCursor, pageOf } from "$lib/server/pagination";
 import {
+  conflict,
   invalidField,
+  isUniqueViolation,
   notFound,
   type ServiceContext,
 } from "$lib/server/service";
@@ -186,11 +188,80 @@ export function createSettlement(
       date: input.date ?? clockAt(ctx.now).today,
       note: input.note ?? null,
       createdBy,
+      idempotencyKey: input.idempotencyKey ?? null,
       createdAt: new Date(ctx.now),
     })
     .returning({ id: settlements.id })
     .get().id;
   return getSettlement(ctx, id);
+}
+
+/** The payment the person recorded with this key, if any. */
+function findByKey(
+  ctx: Db,
+  createdBy: string,
+  key: string,
+): SettlementRecord | undefined {
+  const row = selectSettlements(ctx.db)
+    .where(
+      and(
+        eq(settlements.createdBy, createdBy),
+        eq(settlements.idempotencyKey, key),
+      ),
+    )
+    .get();
+  return row ? recordOf(row) : undefined;
+}
+
+/** A retry names the same payment: same people, amount, currency and book (date and note do not count). */
+function sameRequest(
+  ctx: Db,
+  existing: SettlementRecord,
+  input: CreateSettlementRequest,
+): boolean {
+  return (
+    existing.fromUserId === input.fromUserId &&
+    existing.toUserId === input.toUserId &&
+    existing.amountMinor === input.amountMinor &&
+    existing.currency === (input.currency ?? getHousehold(ctx).currency) &&
+    existing.bookId === (input.bookId ?? null)
+  );
+}
+
+/**
+ * `createSettlement` for a request that may be sent twice. With an `idempotencyKey` the person's earlier payment with
+ * that key is returned (`replayed`) and nothing is recorded; the same key for a different payment is a 409. Once the
+ * payment is deleted its key is free again. Without a key (or without a person) every call records a payment.
+ */
+export function recordSettlement(
+  ctx: ServiceContext,
+  input: CreateSettlementRequest,
+  createdBy: string | null,
+): { settlement: SettlementRecord; replayed: boolean } {
+  const key = input.idempotencyKey;
+  const replay = () => {
+    if (!key || createdBy === null) return null;
+    const existing = findByKey(ctx, createdBy, key);
+    if (!existing) return null;
+    if (!sameRequest(ctx, existing, input)) {
+      throw conflict("This idempotency key was used for another payment");
+    }
+    return { settlement: existing, replayed: true };
+  };
+  const first = replay();
+  if (first) return first;
+  try {
+    return {
+      settlement: createSettlement(ctx, input, createdBy),
+      replayed: false,
+    };
+  } catch (err) {
+    if (key && isUniqueViolation(err)) {
+      const raced = replay();
+      if (raced) return raced;
+    }
+    throw err;
+  }
 }
 
 export function updateSettlement(

@@ -425,7 +425,11 @@ suggestedPaymentCount}`, the caller's own place across all books with recorded p
   `fromUserId` differs from `toUserId` (both members, else 400 on the field), `amountMinor` is positive (also a CHECK),
   `currency` defaults to the household's, then `date`, `note`, and `bookId` (null = across all books; the book may be
   archived, paying back a closed trip is the normal order). It is **not a cost**: no expense total counts it, it only
-  moves the balances. Users cannot be deleted, so its user foreign keys are `RESTRICT`. `GET /costs/balances` is all
+  moves the balances. Users cannot be deleted, so its user foreign keys are `RESTRICT`. `POST /settlements` takes an
+  optional `idempotencyKey` (8 to 128 characters, migration `0027`, unique per person who records whatever credential
+  they use): a retry returns the first payment with 200 instead of 201, the same key for different people, amount, currency
+  or book is a 409 (date and note do not count), and the key is free again once the payment is deleted
+  (`recordSettlement`). `GET /costs/balances` is all
   time: per member `paidMinor - shareMinor + sentMinor - receivedMinor` (`sentMinor` = payments handed over, a positive
   balance = the others owe this person, zero-sum per currency), household currency only (`otherCurrencyCount` = entries
   and payments left out, `unassignedPayerCount` as in the summary) and `suggestedPayments` from the same greedy `settle`
@@ -1153,7 +1157,7 @@ tsconfig also includes `mcp/**` so `bun run check` type-checks it. The app impor
   connectors) is not implemented.
 - **Cost book tools** (`tools/cost-books.ts`): `list_cost_books` and `get_balances` (read; a book is given by name, slug
   or id, archived ones too - `ctx.resolveBook`), `record_settlement` (`costs:write`, `from` defaults to the token's
-  user; answers with what is still open). `create_cost` takes `book` and `participants` (names, ids or `me`; they
+  user; sends a fresh idempotency key; answers with what is still open). `create_cost` takes `book` and `participants` (names, ids or `me`; they
   imply `equal`; an omitted `split` is the book's), `list_costs` and `cost_summary` take `book`, `accept_finance_suggestion`
   takes `book` and `participants`. `list_costs` rows carry `bookTaxRelevant` (only when true) and `get_balances` for one
   book says how many payments across all books it leaves out (`paymentsAcrossAllBooksLeftOut`).
