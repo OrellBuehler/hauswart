@@ -172,7 +172,10 @@ export type QuickSplit =
   | { kind: "book_default" }
   /** Equal among the chosen people (`participantIds` left out: among everybody). */
   | { kind: "equal"; participantIds: string[] | undefined }
-  | { kind: "none" };
+  /** The person chose "not shared" on purpose. */
+  | { kind: "none" }
+  /** Nobody is ticked in a book that shares and "not shared" was not chosen: not a choice, so nothing is sent yet. */
+  | { kind: "unchosen" };
 
 function sameSet(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((id) => b.includes(id));
@@ -181,18 +184,22 @@ function sameSet(a: readonly string[], b: readonly string[]): boolean {
 /**
  * The split for the chips. The chips as they stand when the book is picked mean "the book's own split" and send nothing,
  * so an ownership book keeps splitting by ownership. Any other choice is an equal split among the people chosen
- * (everybody chosen in a book that does not share is an equal split too), and nobody chosen is not shared.
+ * (everybody chosen in a book that does not share is an equal split too). Nobody ticked in a book that shares is not
+ * guessed: it is `unchosen` until the person picks somebody or says "not shared" (`notShared`); in a book that does not
+ * share, nobody ticked simply is the book's own "not shared".
  */
 export function quickSplit(
   book: Pick<CostBook, "defaultSplitMode"> | undefined,
   participants: readonly string[],
   userIds: readonly string[],
+  notShared = false,
 ): QuickSplit {
   const chosen = userIds.filter((id) => participants.includes(id));
   if (sameSet(chosen, defaultParticipants(book, userIds))) {
     return { kind: "book_default" };
   }
-  if (chosen.length === 0) return { kind: "none" };
+  if (chosen.length === 0)
+    return notShared ? { kind: "none" } : { kind: "unchosen" };
   return {
     kind: "equal",
     participantIds: chosen.length < userIds.length ? chosen : undefined,
@@ -209,6 +216,8 @@ export function splitSummary(
   switch (split.kind) {
     case "none":
       return m.quick_split_none();
+    case "unchosen":
+      return m.quick_split_unchosen();
     case "equal":
       return split.participantIds
         ? m.quick_split_equal_some({ names: formatList([...chosenNames]) })
@@ -238,6 +247,8 @@ export type QuickDraft = {
   participants: string[];
   /** The person ticked or cleared a chip, so picking another book no longer resets them. */
   participantsTouched: boolean;
+  /** The person chose "not shared" (nobody ticked, on purpose); in a book that shares, nobody ticked is no choice. */
+  notShared: boolean;
   assetId: string;
 };
 
@@ -259,6 +270,7 @@ export function newQuickDraft(input: {
     paidByUserId: input.paidByUserId,
     participants: defaultParticipants(book, input.userIds),
     participantsTouched: false,
+    notShared: false,
     assetId: "",
   };
 }
@@ -270,15 +282,38 @@ export function withQuickBook(
   books: readonly CostBook[],
   userIds: readonly string[],
 ): QuickDraft {
+  if (draft.participantsTouched) return { ...draft, bookId };
   return {
     ...draft,
     bookId,
-    participants: draft.participantsTouched
-      ? draft.participants
-      : defaultParticipants(
-          books.find((b) => b.id === bookId),
-          userIds,
-        ),
+    participants: defaultParticipants(
+      books.find((b) => b.id === bookId),
+      userIds,
+    ),
+    notShared: false,
+  };
+}
+
+/** The draft after the person ticked or cleared people: that is theirs now, and "not shared" ends (clearing the last one is no choice). */
+export function withTicked(
+  draft: QuickDraft,
+  participants: readonly string[],
+): QuickDraft {
+  return {
+    ...draft,
+    participants: [...participants],
+    participantsTouched: true,
+    notShared: false,
+  };
+}
+
+/** The draft after the person chose "not shared": nobody ticked, on purpose. */
+export function withNotShared(draft: QuickDraft): QuickDraft {
+  return {
+    ...draft,
+    participants: [],
+    participantsTouched: true,
+    notShared: true,
   };
 }
 
@@ -331,7 +366,18 @@ export function buildQuickCostBody(
   }
 
   const book = context.books.find((b) => b.id === draft.bookId);
-  const split = quickSplit(book, draft.participants, context.userIds);
+  const split = quickSplit(
+    book,
+    draft.participants,
+    context.userIds,
+    draft.notShared,
+  );
+  if (split.kind === "unchosen") {
+    return {
+      body: undefined,
+      errors: { participants: m.quick_split_unchosen() },
+    };
+  }
   const payee = draft.payee.trim();
   const body = {
     ...(draft.bookId ? { bookId: draft.bookId } : {}),

@@ -39,6 +39,24 @@ describe("choice chips", () => {
     expect(body.match(/lucide-check/g)).toHaveLength(2);
   });
 
+  it("end with a chip of their own that is pressed while it is on", () => {
+    const extra = (on: boolean) => ({
+      label: "Nicht teilen",
+      on,
+      onselect: () => {},
+    });
+    const off = html({ mode: "multiple", values: ["a"], extra: extra(false) });
+    expect(off).toContain("Nicht teilen");
+    expect(off.match(/aria-pressed="false"/g)).toHaveLength(3);
+    expect(off.match(/aria-pressed="true"/g)).toHaveLength(1);
+    const on = html({ mode: "multiple", values: [], extra: extra(true) });
+    expect(on.match(/aria-pressed="true"/g)).toHaveLength(1);
+    expect(on.match(/lucide-check/g)).toHaveLength(1);
+    expect(html({ mode: "multiple", values: [] })).not.toContain(
+      "Nicht teilen",
+    );
+  });
+
   it("are big enough to tap one-handed", () => {
     const body = html({ value: "a" });
     expect(body).toContain("min-h-11");

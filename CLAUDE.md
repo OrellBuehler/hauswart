@@ -1630,8 +1630,10 @@ in dark mode. Every list has an empty state, every async action a pending and an
   open books as chips, else a select), category chips ranked by `rankCategories` (the book's recent entries first, then all recent entries, then a
   fixed order, the apartment's for a tax relevant book; the load reads the last 100 entries only for this and goes without when it cannot), eight
   shown and "more" for the rest, none chosen at the start; payer chips (default me); "für wen" chips: as the book has them (everybody, nobody for a
-  book that does not share) sends no split so the book's own applies, any other choice is `equal` among the ticked (`quickSplit`), nobody ticked is
-  `none`, and a sentence under the chips says which. Date, payee, title (empty = payee, else the category) and device sit behind "Datum, Titel und
+  book that does not share) sends no split so the book's own applies, any other choice is `equal` among the ticked (`quickSplit`). **Nobody ticked is not guessed**: in a book that shares it is `unchosen`
+  (a warning under the chips, the save refused with an error on `participants`) until the person ticks somebody or taps the chip "Nicht teilen" (`notShared`, which
+  sends `none`; ticking a person ends it); in a book that does not share, nobody ticked is the book's own "not shared" and the chip is on. A sentence under the
+  chips says what the chips mean. Date, payee, title (empty = payee, else the category) and device sit behind "Datum, Titel und
   mehr". `POST /costs`, then `uploadAttachment` (owner `cost`): done = `/costs?book=` plus a 10 s toast with "Rückgängig" (`DELETE`) and "Noch eine";
   a failed upload keeps the entry and offers retry, "ohne Beleg fertig" and undo. **Every draft has a key** (`newIdempotencyKey()`,
   `lib/idempotency.ts`; sent as `idempotencyKey` with `POST /costs` and `POST /ai-tasks`): a save that got no answer is simply tried again with

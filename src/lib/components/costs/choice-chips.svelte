@@ -23,6 +23,7 @@
     disabled = false,
     invalid = false,
     describedby,
+    extra,
     class: className,
     onchange,
   }: {
@@ -37,6 +38,11 @@
     disabled?: boolean;
     invalid?: boolean;
     describedby?: string | undefined;
+    /**
+     * One more chip after the options that is not one of them but a choice of its own ("not shared" next to the people):
+     * a toggle button that is pressed while `on`.
+     */
+    extra?: { label: string; on: boolean; onselect: () => void } | undefined;
     class?: string;
     /** After the person chose: the option (single) or the options now chosen (multiple). */
     onchange?: (chosen: T | T[]) => void;
@@ -121,4 +127,24 @@
       <span class="truncate">{option.label}</span>
     </button>
   {/each}
+  {#if extra}
+    <button
+      type="button"
+      aria-pressed={extra.on}
+      {disabled}
+      class={cn(
+        "focus-visible:ring-ring/50 inline-flex min-h-11 max-w-full min-w-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-colors outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 pointer-coarse:min-h-12",
+        extra.on
+          ? "border-brand bg-brand text-brand-foreground"
+          : "bg-card hover:bg-accent",
+        invalid && !extra.on && "border-destructive/60",
+      )}
+      onclick={extra.onselect}
+    >
+      {#if extra.on}
+        <CheckIcon class="size-4 shrink-0" aria-hidden="true" />
+      {/if}
+      <span class="truncate">{extra.label}</span>
+    </button>
+  {/if}
 </div>

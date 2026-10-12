@@ -20,7 +20,9 @@ import {
   rankCategories,
   savedCostsQuery,
   splitSummary,
+  withNotShared,
   withQuickBook,
+  withTicked,
   type QuickContext,
   type QuickDraft,
 } from "./quick";
@@ -222,7 +224,13 @@ describe("who an entry is for", () => {
   });
 
   const cases: Array<
-    [string, CostBook | undefined, string[], ReturnType<typeof quickSplit>]
+    [
+      string,
+      CostBook | undefined,
+      string[],
+      ReturnType<typeof quickSplit>,
+      boolean?,
+    ]
   > = [
     ["ownership book, everybody", flat, people, { kind: "book_default" }],
     [
@@ -240,7 +248,10 @@ describe("who an entry is for", () => {
         participantIds: ["u2"],
       },
     ],
-    ["ownership book, nobody", flat, [], { kind: "none" }],
+    ["ownership book, nobody", flat, [], { kind: "unchosen" }],
+    ["ownership book, not shared on purpose", flat, [], { kind: "none" }, true],
+    ["equal book, nobody", home, [], { kind: "unchosen" }],
+    ["equal book, not shared on purpose", home, [], { kind: "none" }, true],
     ["equal book, everybody", home, people, { kind: "book_default" }],
     [
       "equal book, two of three",
@@ -267,10 +278,36 @@ describe("who an entry is for", () => {
       ["u1", "gone"],
       { kind: "equal", participantIds: ["u1"] },
     ],
+    [
+      "a person who is no longer in the household does not make nobody a choice",
+      flat,
+      ["gone"],
+      { kind: "unchosen" },
+    ],
+    [
+      "shared-less book, nobody, whatever the explicit choice",
+      solo,
+      [],
+      { kind: "book_default" },
+      true,
+    ],
+    [
+      "people ticked win over a stale 'not shared'",
+      flat,
+      ["u2"],
+      { kind: "equal", participantIds: ["u2"] },
+      true,
+    ],
+    ["no book known, nobody", undefined, [], { kind: "unchosen" }],
   ];
-  it.each(cases)("%s", (_name, bookInput, participants, expected) => {
-    expect(quickSplit(bookInput, participants, people)).toEqual(expected);
-  });
+  it.each(cases)(
+    "%s",
+    (_name, bookInput, participants, expected, notShared) => {
+      expect(quickSplit(bookInput, participants, people, notShared)).toEqual(
+        expected,
+      );
+    },
+  );
 
   it("says in a sentence what the chips mean", () => {
     const names = ["Anna", "Ben"];
@@ -294,6 +331,9 @@ describe("who an entry is for", () => {
       splitSummary({ kind: "equal", participantIds: undefined }, solo, names),
     ).toBe("Gleich unter allen");
     expect(splitSummary({ kind: "none" }, flat, [])).toBe("Nicht geteilt");
+    expect(splitSummary({ kind: "unchosen" }, flat, [])).toBe(
+      "Niemand ausgewählt. Wähle, für wen der Eintrag ist, oder «Nicht teilen».",
+    );
   });
 });
 
@@ -318,6 +358,7 @@ describe("the quick draft", () => {
       paidByUserId: "u2",
       participants: people,
       participantsTouched: false,
+      notShared: false,
       assetId: "",
     });
     expect(
@@ -343,6 +384,44 @@ describe("the quick draft", () => {
     expect(withQuickBook(touched, "b3", books, people).participants).toEqual([
       "u1",
     ]);
+  });
+
+  it("remembers that the person ticked people, or chose not to share, and that one excludes the other", () => {
+    const ticked = withTicked(start(), ["u3"]);
+    expect(ticked).toMatchObject({
+      participants: ["u3"],
+      participantsTouched: true,
+      notShared: false,
+    });
+    const none = withNotShared(ticked);
+    expect(none).toMatchObject({
+      participants: [],
+      participantsTouched: true,
+      notShared: true,
+    });
+    // ticking a person again ends 'not shared'
+    expect(withTicked(none, ["u1"])).toMatchObject({
+      participants: ["u1"],
+      notShared: false,
+    });
+    // clearing the last chip is not a choice
+    expect(withTicked(ticked, [])).toMatchObject({
+      participants: [],
+      notShared: false,
+    });
+  });
+
+  it("forgets 'not shared' with the book unless the chips were touched", () => {
+    const untouched = { ...start(), notShared: true };
+    expect(withQuickBook(untouched, "b2", books, people)).toMatchObject({
+      participants: people,
+      notShared: false,
+    });
+    const chosen = withNotShared(start());
+    expect(withQuickBook(chosen, "b2", books, people)).toMatchObject({
+      participants: [],
+      notShared: true,
+    });
   });
 });
 
@@ -407,6 +486,7 @@ describe("the request for a quick entry", () => {
     paidByUserId: "u2",
     participants: people,
     participantsTouched: false,
+    notShared: false,
     assetId: "",
     ...over,
   });
@@ -481,13 +561,25 @@ describe("the request for a quick entry", () => {
     });
   });
 
-  it("does not share an entry when nobody is ticked", () => {
-    expect(build({ participants: [] }).body).toMatchObject({
-      splitMode: "none",
-    });
-    expect(build({ participants: [] }).body).not.toHaveProperty(
-      "participantIds",
+  it("does not guess when nobody is ticked in a book that shares: the person has to choose", () => {
+    const result = build({ participants: [] });
+    expect(result.body).toBeUndefined();
+    expect(result.errors.participants).toBe(
+      "Niemand ausgewählt. Wähle, für wen der Eintrag ist, oder «Nicht teilen».",
     );
+    // the amount and the category are fine, so the split is the only complaint
+    expect(Object.keys(result.errors)).toEqual(["participants"]);
+  });
+
+  it("does not share an entry when the person chose not to", () => {
+    const body = build({ participants: [], notShared: true }).body;
+    expect(body).toMatchObject({ splitMode: "none" });
+    expect(body).not.toHaveProperty("participantIds");
+  });
+
+  it("keeps a book that does not share as it is when nobody is ticked", () => {
+    const body = build({ bookId: "b3", participants: [] }).body;
+    expect(body).not.toHaveProperty("splitMode");
   });
 
   it("splits equally among everybody when a book that does not share has all ticked", () => {

@@ -2472,6 +2472,8 @@
   "quick_split_equal_all": "Gleich unter allen",
   "quick_split_equal_some": "Gleich unter {names}",
   "quick_split_none": "Nicht geteilt",
+  "quick_split_unchosen": "Niemand ausgewählt. Wähle, für wen der Eintrag ist, oder «Nicht teilen».",
+  "quick_split_not_shared": "Nicht teilen",
   "quick_more": "Datum, Titel und mehr",
   "quick_today": "Heute",
   "quick_yesterday": "Gestern",

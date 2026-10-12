@@ -40,7 +40,9 @@
     rankCategories,
     savedCostsQuery,
     splitSummary,
+    withNotShared,
     withQuickBook,
+    withTicked,
     type CategoryHistory,
     type QuickDraft,
   } from "$lib/costs/quick";
@@ -163,7 +165,14 @@
       label: a.roomName ? `${a.name} (${a.roomName})` : a.name,
     })),
   ]);
-  const split = $derived(quickSplit(book, draft.participants, userIds));
+  const split = $derived(
+    quickSplit(book, draft.participants, userIds, draft.notShared),
+  );
+  /** Nobody is ticked and that is a way of splitting (the book's, or the person's own), not an open question. */
+  const notSharedOn = $derived(
+    split.kind !== "unchosen" &&
+      userIds.every((id) => !draft.participants.includes(id)),
+  );
   const splitText = $derived(
     splitSummary(
       split,
@@ -210,6 +219,9 @@
   $effect(() => {
     void draft.date;
     untrack(() => clearError("date"));
+  });
+  $effect(() => {
+    if (split.kind !== "unchosen") untrack(() => clearError("participants"));
   });
 
   function pickBook(next: string) {
@@ -539,11 +551,29 @@
         mode="multiple"
         options={whomOptions}
         label={m.cost_for_whom()}
-        bind:values={draft.participants}
+        values={draft.participants}
         disabled={busy !== null}
-        onchange={() => (draft.participantsTouched = true)}
+        invalid={split.kind === "unchosen"}
+        describedby="quick-whom-text"
+        extra={{
+          label: m.quick_split_not_shared(),
+          on: notSharedOn,
+          onselect: () => {
+            if (!notSharedOn) draft = withNotShared(draft);
+          },
+        }}
+        onchange={(next) => (draft = withTicked(draft, next as string[]))}
       />
-      <p class="text-muted-foreground text-xs text-pretty" aria-live="polite">
+      <p
+        id="quick-whom-text"
+        class={cn(
+          "text-xs text-pretty",
+          split.kind === "unchosen"
+            ? "text-destructive"
+            : "text-muted-foreground",
+        )}
+        aria-live="polite"
+      >
         {splitText}
       </p>
     </div>

@@ -2472,6 +2472,8 @@
   "quick_split_equal_all": "Equally among everybody",
   "quick_split_equal_some": "Equally among {names}",
   "quick_split_none": "Not shared",
+  "quick_split_unchosen": "Nobody chosen. Choose who the entry is for, or “Don’t share”.",
+  "quick_split_not_shared": "Don’t share",
   "quick_more": "Date, title and more",
   "quick_today": "Today",
   "quick_yesterday": "Yesterday",
