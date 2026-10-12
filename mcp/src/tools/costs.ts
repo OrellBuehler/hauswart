@@ -62,6 +62,7 @@ const costRow = (c: CostEntry) => ({
     c.defectNumber === null ? null : `#${c.defectNumber} ${c.defectTitle}`,
   countsAsExpense: c.countsAsExpense ? null : false,
   deductible: c.deductible === "unknown" ? null : c.deductible,
+  needsReview: c.reviewNeeded ? true : null,
   notes: c.notes,
 });
 
@@ -69,7 +70,7 @@ export const listCosts = defineTool({
   name: "list_costs",
   title: "List costs",
   description:
-    "Cost entries of the household's books (the apartment, groceries and everyday spending, the car ...), newest first. Amounts are decimals in the entry's currency: positive = expense, negative = refund. Filters: book (a name or id, see list_cost_books), year or from/to, category, asset and room (id or name), paidBy (me, a name or id), q (text in title, payee, notes). Totals and who owes whom are in cost_summary and get_balances.",
+    "Cost entries of the household's books (the apartment, groceries and everyday spending, the car ...), newest first. Amounts are decimals in the entry's currency: positive = expense, negative = refund. Filters: book (a name or id, see list_cost_books), year or from/to, category, asset and room (id or name), paidBy (me, a name or id), q (text in title, payee, notes), reviewNeeded (true: only the entries a person still has to review, such as those booked from a receipt of the receipt queue; they carry needsReview). Totals and who owes whom are in cost_summary and get_balances.",
   mode: "read",
   input: {
     book: z.string().min(1).max(64).optional(),
@@ -81,10 +82,11 @@ export const listCosts = defineTool({
     room: z.string().min(1).max(100).optional(),
     paidBy: z.string().min(1).max(100).optional(),
     q: z.string().trim().min(1).max(100).optional(),
+    reviewNeeded: z.boolean().optional(),
     limit: z.number().int().min(1).max(100).default(30),
     cursor: z.string().min(1).max(512).optional(),
   },
-  async handler({ book, asset, room, paidBy, ...rest }, ctx) {
+  async handler({ book, asset, room, paidBy, reviewNeeded, ...rest }, ctx) {
     const [b, a, r, p] = await Promise.all([
       book ? ctx.resolveBook(book) : undefined,
       asset ? ctx.resolveAsset(asset) : undefined,
@@ -98,6 +100,12 @@ export const listCosts = defineTool({
         assetId: a?.id,
         roomId: r?.id,
         paidBy: p,
+        reviewNeeded:
+          reviewNeeded === undefined
+            ? undefined
+            : reviewNeeded
+              ? "true"
+              : "false",
       },
     });
     return {
