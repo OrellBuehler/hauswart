@@ -37,7 +37,6 @@ import {
   type DB,
 } from "$lib/server/db";
 import { decodeCursor, pageOf } from "$lib/server/pagination";
-import { takeLease } from "./booking";
 import {
   conflict,
   forbidden,
@@ -46,6 +45,9 @@ import {
   notFound,
   type ServiceContext,
 } from "$lib/server/service";
+import { claimIsActive, takeLease } from "./booking";
+
+export { claimIsActive };
 
 type Db = Pick<ServiceContext, "db">;
 
@@ -657,5 +659,3 @@ export function deleteAiTask(
   // background and must not hold on to a transaction that is over.
   removeOwnedAttachments(ctx, "ai_task", id);
 }
-
-export { claimIsActive } from "./booking";

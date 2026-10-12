@@ -549,9 +549,9 @@ export function findCostByKey(
 }
 
 /**
- * A retry names the same entry: same amount, currency, category, title and receipt task, and the same book, date and payer when the
- * retry names them (a request that left them to the defaults accepts whatever the first one got). Notes, payee, device and
- * the other links do not count.
+ * A retry names the same entry: same amount, currency, category, title and receipt task, and the same book, date and
+ * payer when the retry names them (a request that left them to the defaults accepts whatever the first one got). Notes,
+ * payee, device and the other links do not count.
  */
 function sameRequest(
   ctx: Db,

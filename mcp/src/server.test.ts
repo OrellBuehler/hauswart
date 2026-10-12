@@ -6,6 +6,9 @@ import { createHauswartServer } from "./server";
 import { tools as allTools } from "./tools";
 import { useMcp } from "./test-harness";
 
+/** Offered with the read scope, but not read-only: they leave a note on a task (see `get_ai_task`). */
+const NOTES_A_LEASE = ["get_ai_task"];
+
 const READ_TOOLS = [
   "whoami",
   "list_upcoming",
@@ -145,7 +148,7 @@ describe("tool registration", () => {
       expect(tool.annotations?.title).toBeTruthy();
       expect(typeof tool.annotations?.readOnlyHint).toBe("boolean");
       expect(tool.annotations?.readOnlyHint).toBe(
-        READ_TOOLS.includes(tool.name),
+        READ_TOOLS.includes(tool.name) && !NOTES_A_LEASE.includes(tool.name),
       );
       expect(tool.inputSchema.type).toBe("object");
     }

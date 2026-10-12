@@ -604,7 +604,12 @@ describe("receipt queue tools", () => {
         destructiveHint: false,
         idempotentHint: true,
       });
-      expect(byName.get_ai_task.annotations?.readOnlyHint).toBe(true);
+      // opening a task leaves a lease on it, so it is not read-only (but harmless to repeat, and offered to a read-only token)
+      expect(byName.get_ai_task.annotations).toMatchObject({
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+      });
       expect(byName.list_ai_tasks.annotations?.readOnlyHint).toBe(true);
     });
   });
