@@ -28,6 +28,23 @@ export const AI_TASK_RESULT_NOTE_MAX = 2000;
 /** The most entries one task can be completed with (a receipt rarely becomes more than a handful). */
 export const AI_TASK_MAX_RESULT_IDS = 20;
 
+/** How long opening a task, or booking for it, marks it as being worked on. */
+export const AI_TASK_CLAIM_MINUTES = 15;
+
+/**
+ * Who opened a pending task last to work on it, while that is recent. A soft lease: it tells the next client that somebody
+ * may be booking this receipt right now, and locks nothing.
+ */
+export const aiTaskClaimSchema = z
+  .object({
+    byUserId: z.string(),
+    byName: z.string().nullable(),
+    at: isoTimestampSchema,
+    /** `at` plus `AI_TASK_CLAIM_MINUTES`; the lease is over then unless the person (or a booking) renews it. */
+    expiresAt: isoTimestampSchema,
+  })
+  .meta({ id: "AiTaskClaim" });
+
 /** A cost entry a task produced, as it is now; entries deleted since are not listed. */
 export const aiTaskCostSchema = z
   .object({
@@ -75,6 +92,8 @@ export const aiTaskSchema = z
     bookName: z.string().nullable(),
     assetId: z.string().nullable(),
     assetName: z.string().nullable(),
+    /** Set while somebody works on the pending task (they opened it, or booked for it, within the last 15 minutes). */
+    claim: aiTaskClaimSchema.nullable(),
     /**
      * The cost entries that exist and were booked for this task (`receiptTaskId` of `POST /costs`, of accepting a finance
      * suggestion and of logging a fill), oldest first, whoever booked them and whatever became of the task. A client that

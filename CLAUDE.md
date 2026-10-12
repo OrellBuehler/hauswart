@@ -604,7 +604,14 @@ entries with the tools that exist and closes the task. The web app has the page 
   of the cost entry and stays. Deleting the cost entry that holds the file clears `attachmentId` (the task shows no file).
 - **Several clients**: nothing locks a task. Two clients (or one that was restarted) can work on it, which `bookedSoFar` makes visible and the rules
   above keep from double booking: the first to complete wins, a later `create`, `accept` or `fill` for the task is a 409, a later `complete` with other
-  ids a 409 naming what is recorded, and what the loser had booked stays flagged for a person to sort out.
+  ids a 409 naming what is recorded, and what the loser had booked stays flagged for a person to sort out. **The lease** is only a warning in front of
+  that (`claimed_by_user_id`, `claimed_at`; `POST /ai-tasks/{id}/claim`, scope `costs:write`, no body, answers the task; `ai-tasks/booking.ts`
+  `takeLease`, `AI_TASK_CLAIM_MINUTES` = 15): opening a pending task, and booking for it, records the person; their own lease is renewed, a lapsed
+  one is taken, one that somebody else holds **stays theirs** (the answer says whose it is) and a done or dismissed task is answered as it is. Setting it
+  is no change of the task (`updatedAt` stays). The DTO's `claim` `{byUserId, byName, at, expiresAt}` is set only while the task is pending and the lease
+  has not run out (computed with the request's clock, `wireAiTask(task, now)`); the receipts page says "Wird gerade bearbeitet von ...". `get_ai_task`
+  claims when the token holds `costs:write` (a read-only token only looks) and starts its answer with a warning when another member's client holds the
+  lease; `list_ai_tasks` rows carry `claim` `{by: you|name, minutesLeft}`.
 - **The preview** (`GET /ai-tasks/{id}/preview`, binary, scope `read`; `ai-tasks/preview.ts`, `files/preview.ts`): the file as an assistant
   reads it. An image that fits (longest side at most 1600 px, at most 1.5 MB) is sent as stored; a larger one is drawn on white and re-encoded
   as JPEG at `previewSize` (longest side 1600, except a long, narrow receipt, which keeps a short side of 600 px up to a long side of 3200),

@@ -1,9 +1,14 @@
 import type { z } from "zod";
 import type { AiTaskClosedVia } from "$lib/api/enums";
 import type { endpoints } from "$lib/api/registry";
-import type { aiTaskSchema } from "$lib/api/schemas/ai-tasks";
+import {
+  AI_TASK_CLAIM_MINUTES,
+  type aiTaskSchema,
+} from "$lib/api/schemas/ai-tasks";
 import { toIso } from "$lib/api/schemas/common";
 import {
+  claimAiTask,
+  claimIsActive,
   completeAiTask,
   deleteAiTask,
   dismissAiTask,
@@ -25,7 +30,10 @@ export function closedVia(principal: Principal): AiTaskClosedVia {
 
 const iso = (value: Date | null) => (value ? toIso(value) : null);
 
-export function wireAiTask(t: AiTaskRecord): z.input<typeof aiTaskSchema> {
+export function wireAiTask(
+  t: AiTaskRecord,
+  now: number,
+): z.input<typeof aiTaskSchema> {
   return {
     id: t.id,
     kind: t.kind,
@@ -38,6 +46,20 @@ export function wireAiTask(t: AiTaskRecord): z.input<typeof aiTaskSchema> {
     bookName: t.bookName,
     assetId: t.assetId,
     assetName: t.assetName,
+    claim:
+      t.status === "pending" &&
+      t.claimedByUserId !== null &&
+      t.claimedAt !== null &&
+      claimIsActive(t.claimedAt, now)
+        ? {
+            byUserId: t.claimedByUserId,
+            byName: t.claimedByName,
+            at: toIso(t.claimedAt),
+            expiresAt: toIso(
+              new Date(t.claimedAt.getTime() + AI_TASK_CLAIM_MINUTES * 60_000),
+            ),
+          }
+        : null,
     bookedSoFar: t.bookedSoFar,
     result: t.resultJson
       ? {
@@ -75,18 +97,21 @@ export const create: Handler<typeof endpoints.aiTasksCreate> = async ({
     },
     ctx.user.id,
   );
-  const out = wireAiTask(task);
+  const out = wireAiTask(task, ctx.now);
   return replayed ? reply(200, out) : out;
 };
 
 export const list: Handler<typeof endpoints.aiTasksList> = ({ ctx, query }) => {
   const { cursor, limit, ...filter } = query;
   const page = listAiTasks(ctx, filter, { cursor, limit });
-  return { items: page.items.map(wireAiTask), nextCursor: page.nextCursor };
+  return {
+    items: page.items.map((task) => wireAiTask(task, ctx.now)),
+    nextCursor: page.nextCursor,
+  };
 };
 
 export const get: Handler<typeof endpoints.aiTasksGet> = ({ ctx, params }) =>
-  wireAiTask(getAiTask(ctx, params.id));
+  wireAiTask(getAiTask(ctx, params.id), ctx.now);
 
 export const preview: Handler<typeof endpoints.aiTasksPreview> = async ({
   ctx,
@@ -110,6 +135,7 @@ export const complete: Handler<typeof endpoints.aiTasksComplete> = ({
 }) =>
   wireAiTask(
     completeAiTask(ctx, params.id, body, closedVia(ctx.principal), ctx.user.id),
+    ctx.now,
   );
 
 export const dismiss: Handler<typeof endpoints.aiTasksDismiss> = ({
@@ -119,7 +145,13 @@ export const dismiss: Handler<typeof endpoints.aiTasksDismiss> = ({
 }) =>
   wireAiTask(
     dismissAiTask(ctx, params.id, body, closedVia(ctx.principal), ctx.user.id),
+    ctx.now,
   );
+
+export const claim: Handler<typeof endpoints.aiTasksClaim> = ({
+  ctx,
+  params,
+}) => wireAiTask(claimAiTask(ctx, params.id, ctx.user.id), ctx.now);
 
 export const remove: Handler<typeof endpoints.aiTasksDelete> = ({
   ctx,

@@ -30,8 +30,21 @@ export const TRANSACTION_LIMIT = 20;
 const filePath = (task: AiTask) =>
   task.attachment ? `/api/v1/attachments/${task.attachment.id}/content` : null;
 
+/** The lease on a pending task as the model reads it: who holds it (`you` or a name) and for how long yet. */
+function claimRow(task: AiTask, ctx: ToolContext) {
+  const claim = task.claim;
+  if (!claim) return null;
+  return {
+    by: claim.byUserId === ctx.me.id ? "you" : (claim.byName ?? "somebody"),
+    minutesLeft: Math.max(
+      0,
+      Math.ceil((Date.parse(claim.expiresAt) - ctx.now()) / 60_000),
+    ),
+  };
+}
+
 /** One task as the model reads it. */
-function taskRow(task: AiTask) {
+function taskRow(task: AiTask, ctx: ToolContext) {
   return {
     id: task.id,
     kind: task.kind,
@@ -42,6 +55,7 @@ function taskRow(task: AiTask) {
     uploadedAt: task.createdAt,
     hintBook: task.bookName,
     hintAsset: task.assetName,
+    claim: claimRow(task, ctx),
     file: task.attachment
       ? { filename: task.attachment.filename, mime: task.attachment.mime }
       : null,
@@ -87,10 +101,19 @@ export const listAiTasks = defineTool({
     const what = args.status === "pending" ? "waiting" : args.status;
     return {
       summary: `${plural(page.items.length, "task")} ${what}.${moreHint(page.nextCursor)}`,
-      data: { tasks: page.items.map(taskRow), nextCursor: page.nextCursor },
+      data: {
+        tasks: page.items.map((task) => taskRow(task, ctx)),
+        nextCursor: page.nextCursor,
+      },
     };
   },
 });
+
+/** `a moment ago`, `3 minutes ago`. */
+function ago(at: string, now: number): string {
+  const minutes = Math.floor((now - Date.parse(at)) / 60_000);
+  return minutes < 1 ? "a moment ago" : `${plural(minutes, "minute")} ago`;
+}
 
 const toBase64 = (bytes: Uint8Array) => Buffer.from(bytes).toString("base64");
 
@@ -214,11 +237,17 @@ export const getAiTask = defineTool({
   name: "get_ai_task",
   title: "Open a receipt task",
   description:
-    "Opens one task of the receipt queue: its note and hints, the receipt itself (an image scaled to at most 1600 px, which is plenty to read it; a PDF is attached as a document when it is not too large) and what you need to book it: the open cost books (default, tax relevant), the cost categories, the household members with their ownership shares, the vehicles and, when you are the uploader, their recent pending bank transactions (any of them may be the same payment). How to work: read the receipt; book it with create_cost (several entries when it mixes books or categories; add_fuel_log for the fuel receipt of a vehicle; accept_finance_suggestion when a listed bank transaction is the payment) and pass this task's id as receiptTaskId every time, so that what you book is recorded on the task and flagged for review at once; bookedSoFar lists what is recorded already (by an earlier attempt of yours or by somebody else's client): do not book those again; the uploader pays unless the note or the receipt says otherwise (paidBy); use the uploader's hints for book and asset when they fit; then close the task with complete_ai_task and the ids of everything you booked. Every entry you book is flagged for a person to review, so say in complete_ai_task's note what you were unsure of. A file that is no receipt, unreadable or already booked (check list_costs) is closed with dismiss_ai_task and a reason. Look before you book: a task that is not pending was processed already.",
+    "Opens one task of the receipt queue: its note and hints, the receipt itself (an image scaled to at most 1600 px, which is plenty to read it; a PDF is attached as a document when it is not too large) and what you need to book it: the open cost books (default, tax relevant), the cost categories, the household members with their ownership shares, the vehicles and, when you are the uploader, their recent pending bank transactions (any of them may be the same payment). How to work: read the receipt; book it with create_cost (several entries when it mixes books or categories; add_fuel_log for the fuel receipt of a vehicle; accept_finance_suggestion when a listed bank transaction is the payment) and pass this task's id as receiptTaskId every time, so that what you book is recorded on the task and flagged for review at once; bookedSoFar lists what is recorded already (by an earlier attempt of yours or by somebody else's client): do not book those again; the uploader pays unless the note or the receipt says otherwise (paidBy); use the uploader's hints for book and asset when they fit; then close the task with complete_ai_task and the ids of everything you booked. Every entry you book is flagged for a person to review, so say in complete_ai_task's note what you were unsure of. A file that is no receipt, unreadable or already booked (check list_costs) is closed with dismiss_ai_task and a reason. Look before you book: a task that is not pending was processed already. Opening a task marks it as being worked on by you for 15 minutes (a soft lease, shown as claim): when another member's client opened it recently the answer starts with a warning, because that client may be booking the same receipt right now; nothing is locked.",
   mode: "read",
   input: { id: taskId },
   async handler({ id }, ctx) {
-    const task = await ctx.api.call(endpoints.aiTasksGet, { params: { id } });
+    // Opening a task marks it as being worked on (a soft lease); a token that cannot write only looks.
+    const task = await ctx.api.call(
+      ctx.scopes.includes("costs:write")
+        ? endpoints.aiTasksClaim
+        : endpoints.aiTasksGet,
+      { params: { id } },
+    );
     const [file, books, people, vehicles, transactions] = await Promise.all([
       fileOf(ctx, task),
       ctx.api.call(endpoints.costBooksList, { query: { limit: 200 } }),
@@ -237,8 +266,13 @@ export const getAiTask = defineTool({
           ? ` ${plural(booked, "cost entry", "cost entries")} ${booked === 1 ? "was" : "were"} booked for this task already (bookedSoFar): do not book ${booked === 1 ? "it" : "them"} again, book only what is missing.`
           : ""
         : ` It is ${task.status} already${task.status === "done" ? ": do not book it again" : ""}.`;
+    const rival =
+      task.claim && task.claim.byUserId !== ctx.me.id ? task.claim : null;
+    const warning = rival
+      ? `Warning: ${rival.byName ?? "Another member"}'s client opened this task ${ago(rival.at, ctx.now())} and may be booking it right now. Look at bookedSoFar and list_costs before you book anything, do not book what is listed there again, and think twice before working on it in parallel. `
+      : "";
     return {
-      summary: `Receipt task ${task.id} (${task.status}), uploaded by ${uploader} on ${when}${
+      summary: `${warning}Receipt task ${task.id} (${task.status}), uploaded by ${uploader} on ${when}${
         task.note ? `: "${task.note}"` : ""
       }.${state}${
         file.blocks.length
@@ -246,7 +280,7 @@ export const getAiTask = defineTool({
           : " No receipt could be attached (see file)."
       }`,
       data: {
-        task: taskRow(task),
+        task: taskRow(task, ctx),
         file: file.file,
         defaults: {
           paidBy: uploader,
@@ -316,7 +350,7 @@ export const completeAiTask = defineTool({
     const booked = task.result?.costs ?? [];
     return {
       summary: `Task ${task.id} is done: ${plural(booked.length, "cost entry", "cost entries")} flagged for review.`,
-      data: taskRow(task),
+      data: taskRow(task, ctx),
     };
   },
 });
@@ -339,7 +373,7 @@ export const dismissAiTask = defineTool({
     });
     return {
       summary: `Task ${task.id} is dismissed${task.dismissReason ? `: ${task.dismissReason}` : ""}.`,
-      data: taskRow(task),
+      data: taskRow(task, ctx),
     };
   },
 });

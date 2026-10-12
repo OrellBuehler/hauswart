@@ -2624,6 +2624,7 @@
   "receipts_via_ha": "closed through Home Assistant",
   "receipts_via_api": "closed through the API",
   "receipts_closed_by": "By {name}",
+  "receipts_claimed": "Being worked on by {name} right now",
   "receipts_dismissed_reason": "Reason: {reason}",
   "receipts_dismiss": "Dismiss",
   "receipts_dismissing": "Dismissing …",

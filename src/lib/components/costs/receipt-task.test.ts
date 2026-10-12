@@ -32,6 +32,7 @@ function task(over: Partial<AiTask> = {}): AiTask {
     bookName: "Haushalt",
     assetId: null,
     assetName: null,
+    claim: null,
     bookedSoFar: [],
     result: null,
     dismissReason: null,
@@ -142,6 +143,21 @@ describe("a receipt in the queue", () => {
       }),
     );
     expect(dismissed).toContain("Von Anna Beispiel");
+  });
+
+  it("says who is working on a waiting task right now", () => {
+    const body = html(
+      task({
+        claim: {
+          byUserId: "u2",
+          byName: "Ben Beispiel",
+          at: "2026-10-12T08:05:00.000Z",
+          expiresAt: "2026-10-12T08:20:00.000Z",
+        },
+      }),
+    );
+    expect(body).toContain("Wird gerade bearbeitet von Ben Beispiel");
+    expect(html(task())).not.toContain("Wird gerade bearbeitet");
   });
 
   it("shows no name for a task closed before the closer was recorded, or by a person who is gone", () => {

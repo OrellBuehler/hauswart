@@ -1,4 +1,5 @@
-import { eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
+import { AI_TASK_CLAIM_MINUTES } from "$lib/api/schemas/ai-tasks";
 import { aiTasks } from "$lib/server/db";
 import {
   conflict,
@@ -29,4 +30,49 @@ export function assertTaskOpenForBooking(
       status: task.status,
     });
   }
+}
+
+const CLAIM_MS = AI_TASK_CLAIM_MINUTES * 60_000;
+
+/** Whether a lease taken at `claimedAt` still lasts at `now`. */
+export function claimIsActive(claimedAt: Date | null, now: number): boolean {
+  return claimedAt !== null && now < claimedAt.getTime() + CLAIM_MS;
+}
+
+/**
+ * Marks a pending task as being worked on by `userId` from now on. The person's own lease is renewed and a lapsed one is
+ * taken; one that somebody else holds is left alone (a warning for the next client, never a lock). A lease is not a change
+ * of the task, so `updatedAt` stays.
+ */
+export function takeLease(
+  ctx: Pick<ServiceContext, "db" | "now">,
+  taskId: string,
+  userId: string | null,
+): void {
+  if (userId === null) return;
+  const task = ctx.db
+    .select({
+      status: aiTasks.status,
+      claimedByUserId: aiTasks.claimedByUserId,
+      claimedAt: aiTasks.claimedAt,
+    })
+    .from(aiTasks)
+    .where(eq(aiTasks.id, taskId))
+    .get();
+  if (!task || task.status !== "pending") return;
+  if (
+    claimIsActive(task.claimedAt, ctx.now) &&
+    task.claimedByUserId !== userId
+  ) {
+    return;
+  }
+  ctx.db
+    .update(aiTasks)
+    .set({
+      claimedByUserId: userId,
+      claimedAt: new Date(ctx.now),
+      updatedAt: sql`${aiTasks.updatedAt}`,
+    })
+    .where(and(eq(aiTasks.id, taskId), eq(aiTasks.status, "pending")))
+    .run();
 }

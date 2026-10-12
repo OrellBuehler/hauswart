@@ -3958,7 +3958,7 @@ export const endpoints = {
     path: "/api/v1/ai-tasks/{id}",
     summary: "Get a task of the receipt queue",
     description:
-      "With the file (`attachment`, whose `url` and `thumbUrl` serve it), the uploader's note and hints, `bookedSoFar` (the cost entries that exist and were booked for the task with `receiptTaskId`, oldest first: what an interrupted client or somebody else's client already did) and, once processed, the result: the ids the processor reported and the cost entries that still exist (`result.costs`).",
+      "With the file (`attachment`, whose `url` and `thumbUrl` serve it), the uploader's note and hints, `claim` (who opened the pending task within the last 15 minutes, if anybody), `bookedSoFar` (the cost entries that exist and were booked for the task with `receiptTaskId`, oldest first: what an interrupted client or somebody else's client already did) and, once processed, the result: the ids the processor reported and the cost entries that still exist (`result.costs`).",
     tags: ["ai-tasks"],
     auth: "both",
     scopes: ["read"],
@@ -3981,6 +3981,21 @@ export const endpoints = {
     response: binaryResponseSchema,
     responseType: "binary",
     contentTypes: AI_TASK_PREVIEW_CONTENT_TYPES,
+    errors: ["not_found"],
+  }),
+
+  aiTasksClaim: defineEndpoint({
+    id: "aiTasksClaim",
+    method: "POST",
+    path: "/api/v1/ai-tasks/{id}/claim",
+    summary: "Mark a task as being worked on",
+    description:
+      "A soft lease for clients that work through the queue: it records the caller as the one who opened the pending task, for 15 minutes (renewed by calling this again, and by booking for the task with `receiptTaskId`), and answers the task with its `claim`. If somebody else holds an unexpired lease it stays theirs and the answer says so, so a client can warn before it books a receipt another client may be booking right now. Nothing is locked: booking and completing work for everybody, and the rules of the queue (a closed task takes no more bookings, a second completion with other entries is a 409) are what keep a receipt from being booked twice. A task that is done or dismissed is answered as it is, with no claim. No request body; needs `costs:write` like the other writes of the queue.",
+    tags: ["ai-tasks"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    response: aiTaskSchema,
     errors: ["not_found"],
   }),
 

@@ -37182,7 +37182,7 @@
       "get": {
         "operationId": "aiTasksGet",
         "summary": "Get a task of the receipt queue",
-        "description": "With the file (`attachment`, whose `url` and `thumbUrl` serve it), the uploader's note and hints, `bookedSoFar` (the cost entries that exist and were booked for the task with `receiptTaskId`, oldest first: what an interrupted client or somebody else's client already did) and, once processed, the result: the ids the processor reported and the cost entries that still exist (`result.costs`).",
+        "description": "With the file (`attachment`, whose `url` and `thumbUrl` serve it), the uploader's note and hints, `claim` (who opened the pending task within the last 15 minutes, if anybody), `bookedSoFar` (the cost entries that exist and were booked for the task with `receiptTaskId`, oldest first: what an interrupted client or somebody else's client already did) and, once processed, the result: the ids the processor reported and the cost entries that still exist (`result.costs`).",
         "tags": [
           "ai-tasks"
         ],
@@ -37480,6 +37480,113 @@
           },
           "403": {
             "description": "Error: `forbidden`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: `not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error: `rate_limited`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: `internal`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai-tasks/{id}/claim": {
+      "post": {
+        "operationId": "aiTasksClaim",
+        "summary": "Mark a task as being worked on",
+        "description": "A soft lease for clients that work through the queue: it records the caller as the one who opened the pending task, for 15 minutes (renewed by calling this again, and by booking for the task with `receiptTaskId`), and answers the task with its `claim`. If somebody else holds an unexpired lease it stays theirs and the answer says so, so a client can warn before it books a receipt another client may be booking right now. Nothing is locked: booking and completing work for everybody, and the rules of the queue (a closed task takes no more bookings, a second completion with other entries is a 409) are what keep a receipt from being booked twice. A task that is done or dismissed is answered as it is, with no claim. No request body; needs `costs:write` like the other writes of the queue.",
+        "tags": [
+          "ai-tasks"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": [
+              "costs:write"
+            ]
+          }
+        ],
+        "x-required-scopes": [
+          "costs:write"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiTask"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error: `invalid_request`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error: `unauthenticated`, `setup_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error: `forbidden`, `csrf_failed`",
             "content": {
               "application/json": {
                 "schema": {
@@ -49255,6 +49362,16 @@
               "null"
             ]
           },
+          "claim": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AiTaskClaim"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "bookedSoFar": {
             "type": "array",
             "items": {
@@ -49338,6 +49455,7 @@
           "bookName",
           "assetId",
           "assetName",
+          "claim",
           "bookedSoFar",
           "result",
           "dismissReason",
@@ -49347,6 +49465,35 @@
           "completedByName",
           "createdAt",
           "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "AiTaskClaim": {
+        "type": "object",
+        "properties": {
+          "byUserId": {
+            "type": "string"
+          },
+          "byName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "byUserId",
+          "byName",
+          "at",
+          "expiresAt"
         ],
         "additionalProperties": false
       },

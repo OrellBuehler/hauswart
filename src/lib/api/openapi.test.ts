@@ -56,6 +56,7 @@ describe("openapi document", () => {
     expect(Object.keys(doc.components.schemas).sort()).toEqual([
       "AdminUser",
       "AiTask",
+      "AiTaskClaim",
       "AiTaskCost",
       "AiTaskResult",
       "ApiToken",

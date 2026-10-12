@@ -132,6 +132,11 @@
           {hints.join(" · ")}
         </p>
       {/if}
+      {#if task.status === "pending" && task.claim}
+        <p class="text-warning text-xs wrap-anywhere">
+          {m.receipts_claimed({ name: task.claim.byName ?? "…" })}
+        </p>
+      {/if}
       {#if task.attachment && !isImageTask(task)}
         <!-- eslint-disable svelte/no-navigation-without-resolve -- the address of a file is the API's own path, resolved here -->
         <a

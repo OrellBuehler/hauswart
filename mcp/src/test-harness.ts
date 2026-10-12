@@ -66,7 +66,9 @@ export function useMcp() {
     await Promise.all(clients.splice(0).map((c) => c.close()));
   });
 
-  async function connect(
+  /** A client connected to the in-process server as `user`, with a token of its own. */
+  async function attach(
+    user: Awaited<ReturnType<typeof createTestUser>>,
     opts: {
       scopes?: Scope[];
       tools?: ConnectOptions["tools"];
@@ -74,9 +76,7 @@ export function useMcp() {
       newKey?: () => string;
     } = {},
   ) {
-    const anna = await createTestUser({ displayName: "Anna", role: "admin" });
-    const ben = await createTestUser({ displayName: "Ben" });
-    const { token, record } = createTestToken(anna, {
+    const { token, record } = createTestToken(user, {
       kind: "mcp",
       scopes: opts.scopes ?? ["read", "write"],
     });
@@ -105,19 +105,30 @@ export function useMcp() {
       if (reply.isError) throw new Error(`${name} failed: ${reply.text}`);
       return reply.json as Json;
     }
-    const today = server.context.today();
+    return { client, server, call, ok, token, tokenId: record.id };
+  }
+
+  async function connect(
+    opts: {
+      scopes?: Scope[];
+      tools?: ConnectOptions["tools"];
+      fetch?: (inner: FetchLike) => FetchLike;
+      newKey?: () => string;
+    } = {},
+  ) {
+    const anna = await createTestUser({ displayName: "Anna", role: "admin" });
+    const ben = await createTestUser({ displayName: "Ben" });
+    const first = await attach(anna, opts);
+    const today = first.server.context.today();
     return {
       db,
-      client,
-      server,
-      call,
-      ok,
+      ...first,
       anna,
       ben,
-      token,
-      tokenId: record.id,
       today,
       day: (offset: number) => addDays(today, offset),
+      /** Another client of the same household, as one of its members (a second assistant, another person). */
+      attach,
     };
   }
 

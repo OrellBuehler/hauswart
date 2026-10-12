@@ -293,6 +293,7 @@ describe("registry", () => {
         "GET /api/v1/ai-tasks/{id} both",
         "DELETE /api/v1/ai-tasks/{id} both",
         "GET /api/v1/ai-tasks/{id}/preview both",
+        "POST /api/v1/ai-tasks/{id}/claim both",
         "POST /api/v1/ai-tasks/{id}/complete both",
         "POST /api/v1/ai-tasks/{id}/dismiss both",
       ].sort(),

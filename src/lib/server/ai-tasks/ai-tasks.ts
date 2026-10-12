@@ -36,6 +36,7 @@ import {
   type DB,
 } from "$lib/server/db";
 import { decodeCursor, pageOf } from "$lib/server/pagination";
+import { takeLease } from "./booking";
 import {
   conflict,
   forbidden,
@@ -65,6 +66,8 @@ export interface AiTaskRecord extends AiTaskRow {
   createdByName: string | null;
   /** Who completed or dismissed the task. */
   completedByName: string | null;
+  /** Who opened the task last (see `claimIsActive` for whether that is recent). */
+  claimedByName: string | null;
   bookName: string | null;
   assetName: string | null;
   /** The file: the task's own while it is open, the receipt of a cost entry once the task is done. */
@@ -76,6 +79,7 @@ export interface AiTaskRecord extends AiTaskRow {
 }
 
 const closer = alias(users, "closer");
+const claimer = alias(users, "claimer");
 
 const selectTasks = (db: DB) =>
   db
@@ -87,6 +91,9 @@ const selectTasks = (db: DB) =>
       completedByName: sql<
         string | null
       >`coalesce(${closer.displayName}, ${closer.username})`,
+      claimedByName: sql<
+        string | null
+      >`coalesce(${claimer.displayName}, ${claimer.username})`,
       bookName: costBooks.name,
       assetName: assets.name,
       rowid: sql<number>`${aiTasks}.rowid`,
@@ -94,6 +101,7 @@ const selectTasks = (db: DB) =>
     .from(aiTasks)
     .leftJoin(users, eq(users.id, aiTasks.createdByUserId))
     .leftJoin(closer, eq(closer.id, aiTasks.completedByUserId))
+    .leftJoin(claimer, eq(claimer.id, aiTasks.claimedByUserId))
     .leftJoin(costBooks, eq(costBooks.id, aiTasks.bookId))
     .leftJoin(assets, eq(assets.id, aiTasks.assetId));
 
@@ -171,6 +179,7 @@ function hydrate(db: DB, joined: readonly Joined[]): AiTaskRecord[] {
     ...j.task,
     createdByName: j.createdByName,
     completedByName: j.completedByName,
+    claimedByName: j.claimedByName,
     bookName: j.bookName,
     assetName: j.assetName,
     attachment: j.task.attachmentId
@@ -566,6 +575,21 @@ export function completeAiTask(
 }
 
 /**
+ * Marks a pending task as being worked on by `userId` (see `takeLease`) and answers it, with the holder of the lease
+ * whoever that is. A task that is done or dismissed is answered as it is.
+ */
+export function claimAiTask(
+  ctx: ServiceContext,
+  id: string,
+  userId: string,
+): AiTaskRecord {
+  const task = getAiTask(ctx, id);
+  if (task.status !== "pending") return task;
+  takeLease(ctx, id, userId);
+  return getAiTask(ctx, id);
+}
+
+/**
  * Closes a pending task without booking anything. The file stays with the task. Dismissing a dismissed task changes
  * nothing (the first reason stays); a done task is a 409.
  */
@@ -613,3 +637,5 @@ export function deleteAiTask(
     removeOwnedAttachments({ ...ctx, db: tx as unknown as DB }, "ai_task", id);
   });
 }
+
+export { claimIsActive } from "./booking";

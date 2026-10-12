@@ -24,7 +24,10 @@ import type {
   UpdateCostRequest,
 } from "$lib/api/schemas/costs";
 import { minor } from "$lib/money";
-import { assertTaskOpenForBooking } from "$lib/server/ai-tasks/booking";
+import {
+  assertTaskOpenForBooking,
+  takeLease,
+} from "$lib/server/ai-tasks/booking";
 import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
 import { commentCountSql } from "$lib/server/comments/counts";
 import {
@@ -496,6 +499,13 @@ export function createCost(
         .returning({ id: costEntries.id })
         .get().id;
       writeShares(tx as unknown as DB, row, shares);
+      if (input.receiptTaskId) {
+        takeLease(
+          { db: tx as unknown as DB, now: ctx.now },
+          input.receiptTaskId,
+          createdBy,
+        );
+      }
       return row;
     });
   } catch (err) {
