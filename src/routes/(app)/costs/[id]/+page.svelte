@@ -38,6 +38,7 @@
   import { assetHref, roomHref } from "$lib/links";
   import { m } from "$lib/paraglide/messages";
   import { fuelLogHref } from "$lib/vehicles/links";
+  import { cn } from "$lib/utils";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -131,7 +132,14 @@
           currency={cost.currency}
           class="text-2xl font-semibold"
         />
-        <CostFlags {cost} />
+        <CostFlags
+          {cost}
+          recurrenceHref={cost.recurrenceId
+            ? resolve(
+                `/costs/recurring/${encodeURIComponent(cost.recurrenceId)}` as "/",
+              )
+            : undefined}
+        />
       </div>
       <TagChips tags={cost.tags} limit={10} />
     </div>
@@ -307,7 +315,20 @@
           </div>
           <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">{m.cost_source()}</dt>
-            <dd class="mt-0.5">{sourceLabels[cost.source]()}</dd>
+            <dd class="mt-0.5 wrap-anywhere">
+              {sourceLabels[cost.source]()}
+              {#if cost.recurrenceId}
+                <!-- eslint-disable svelte/no-navigation-without-resolve -- the address is resolved here, only the id is appended -->
+                <a
+                  href={resolve(
+                    `/costs/recurring/${encodeURIComponent(cost.recurrenceId)}` as "/",
+                  )}
+                  class={cn("ms-1 block text-xs", linkClass)}
+                  >{m.cost_recurrence_open()}</a
+                >
+                <!-- eslint-enable svelte/no-navigation-without-resolve -->
+              {/if}
+            </dd>
           </div>
           {#if cost.financeLinked && cost.source !== "finance_transaction" && cost.source !== "finance_bill"}
             <div class="min-w-0">

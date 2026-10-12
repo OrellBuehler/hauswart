@@ -11,6 +11,7 @@
   import FilterIcon from "@lucide/svelte/icons/list-filter";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import ReceiptTextIcon from "@lucide/svelte/icons/receipt-text";
+  import RepeatIcon from "@lucide/svelte/icons/repeat";
   import SearchIcon from "@lucide/svelte/icons/search";
   import ZapIcon from "@lucide/svelte/icons/zap";
   import { untrack } from "svelte";
@@ -391,6 +392,10 @@
       <Button href={resolve("/costs/budgets")} variant="outline" size="lg">
         <GaugeIcon />
         {m.costs_budgets()}
+      </Button>
+      <Button href={resolve("/costs/recurring")} variant="outline" size="lg">
+        <RepeatIcon />
+        {m.costs_recurring()}
       </Button>
       <Button
         href={csvHref}

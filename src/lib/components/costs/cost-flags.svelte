@@ -8,12 +8,15 @@
 
   let {
     cost,
+    recurrenceHref,
     class: className,
   }: {
     cost: Pick<
       CostEntry,
       "amountMinor" | "countsAsExpense" | "source" | "reviewNeeded"
     >;
+    /** Where the recurring cost that booked the entry is; the badge is a link then (not in a row that is a link itself). */
+    recurrenceHref?: string | undefined;
     class?: string;
   } = $props();
 </script>
@@ -34,7 +37,9 @@
       <Badge variant="secondary">{m.cost_badge_equity()}</Badge>
     {/if}
     {#if cost.source === "recurring"}
-      <Badge variant="outline">{m.cost_badge_recurring()}</Badge>
+      <Badge variant="outline" href={recurrenceHref}
+        >{m.cost_badge_recurring()}</Badge
+      >
     {:else if cost.source !== "manual"}
       <Badge variant="outline">{m.cost_badge_imported()}</Badge>
     {/if}

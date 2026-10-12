@@ -493,6 +493,53 @@ function sameShares(
 }
 
 /**
+ * The part of a PATCH that changes the split of something that has one (a cost entry, a recurring cost) into the draft's.
+ * Sending the split again would divide the amount by today's ownership shares, so it goes only when the person changed the
+ * mode, the custom shares or the people an equal split is among.
+ */
+export function splitPatch(input: {
+  splitMode: CostSplitMode;
+  /** The custom shares, checked. */
+  shares: readonly CostShareItem[];
+  /** The people ticked for an equal split. */
+  participants: readonly string[];
+  userIds: readonly string[];
+  current: {
+    splitMode: CostSplitMode;
+    shares: readonly CostShareItem[];
+    participants: readonly string[];
+  };
+}): {
+  splitMode?: CostSplitMode;
+  shares?: CostShareItem[];
+  participantIds?: string[];
+} {
+  const { splitMode, shares, participants, userIds, current } = input;
+  const narrowed =
+    splitMode === "equal"
+      ? narrowedParticipants(participants, userIds)
+      : undefined;
+  if (splitMode !== current.splitMode) {
+    return {
+      splitMode,
+      ...(splitMode === "custom" ? { shares: [...shares] } : {}),
+      ...(narrowed ? { participantIds: narrowed } : {}),
+    };
+  }
+  if (splitMode === "custom" && !sameShares(shares, current.shares)) {
+    return { shares: [...shares] };
+  }
+  if (splitMode === "equal" && !sameIds(participants, current.participants)) {
+    // An equal split is divided again among the people now ticked; without `participantIds` that is everybody.
+    return {
+      splitMode: "equal",
+      ...(narrowed ? { participantIds: narrowed } : {}),
+    };
+  }
+  return {};
+}
+
+/**
  * The request that changes `entry` into the draft, with only what differs.
  * An empty body means nothing changed; the date, amount, currency and device of an entry a fuel log
  * entry booked (`fuelLogId`) are never sent. Sending the split again would divide
@@ -544,27 +591,20 @@ export function buildUpdateBody(
   if ((draft.paidByUserId || null) !== entry.paidByUserId) {
     patch.paidByUserId = draft.paidByUserId || null;
   }
-  const narrowed =
-    draft.splitMode === "equal"
-      ? narrowedParticipants(participants, userIds)
-      : undefined;
-  if (draft.splitMode !== entry.splitMode) {
-    patch.splitMode = draft.splitMode;
-    if (draft.splitMode === "custom") patch.shares = shares;
-    if (narrowed) patch.participantIds = narrowed;
-  } else if (
-    draft.splitMode === "custom" &&
-    !sameShares(shares, entry.shares)
-  ) {
-    patch.shares = shares;
-  } else if (
-    draft.splitMode === "equal" &&
-    !sameIds(participants, entryParticipants(entry, userIds))
-  ) {
-    // An equal split is divided again among the people now ticked; without `participantIds` that is everybody.
-    patch.splitMode = "equal";
-    if (narrowed) patch.participantIds = narrowed;
-  }
+  Object.assign(
+    patch,
+    splitPatch({
+      splitMode: draft.splitMode,
+      shares,
+      participants,
+      userIds,
+      current: {
+        splitMode: entry.splitMode,
+        shares: entry.shares,
+        participants: entryParticipants(entry, userIds),
+      },
+    }),
+  );
   // The server moves the flag along with a category change unless it is sent,
   // so a category change always carries what the person sees.
   if (
