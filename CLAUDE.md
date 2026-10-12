@@ -1634,7 +1634,7 @@ in dark mode. Every list has an empty state, every async action a pending and an
   (a warning under the chips, the save refused with an error on `participants`) until the person ticks somebody or taps the chip "Nicht teilen" (`notShared`, which
   sends `none`; ticking a person ends it); in a book that does not share, nobody ticked is the book's own "not shared" and the chip is on. A sentence under the
   chips says what the chips mean. Date, payee, title (empty = payee, else the category) and device sit behind "Datum, Titel und
-  mehr". `POST /costs`, then `uploadAttachment` (owner `cost`): done = `/costs?book=` plus a 10 s toast with "Rückgängig" (`DELETE`) and "Noch eine";
+  mehr" (an error on any of them opens the section, `needsMoreSection`, and the device shows its error like the others). `POST /costs`, then `uploadAttachment` (owner `cost`): done = `/costs?book=` plus a 10 s toast with "Rückgängig" (`DELETE`) and "Noch eine";
   a failed upload keeps the entry and offers retry, "ohne Beleg fertig" and undo. **Every draft has a key** (`newIdempotencyKey()`,
   `lib/idempotency.ts`; sent as `idempotencyKey` with `POST /costs` and `POST /ai-tasks`): a save that got no answer is simply tried again with
   the same key (the words say so: the entry is not booked twice), the key is renewed after the entry is booked and when the server answers

@@ -12,6 +12,7 @@ import {
   cleanAmount,
   defaultParticipants,
   isKeyConflict,
+  needsMoreSection,
   newQuickDraft,
   parseQuickMode,
   quickErrorMessage,
@@ -719,5 +720,26 @@ describe("where the person lands after saving", () => {
     expect(
       savedCostsQuery({ bookId: "b2", date: "2025-12-31" }, "2026-10-12"),
     ).toBe("?book=b2&year=2025");
+  });
+});
+
+describe("the part of the form that is folded away", () => {
+  it.each([
+    ["date", true],
+    ["title", true],
+    ["payee", true],
+    ["assetId", true],
+    ["amountMinor", false],
+    ["category", false],
+    ["participants", false],
+    ["bookId", false],
+  ])("opens for an error on %s: %s", (field, opens) => {
+    expect(needsMoreSection({ [field]: "Nicht gut." })).toBe(opens);
+  });
+
+  it("opens when any of several errors is behind it, and stays shut without errors", () => {
+    expect(needsMoreSection({ amountMinor: "x", payee: "y" })).toBe(true);
+    expect(needsMoreSection({ amountMinor: "x", category: "y" })).toBe(false);
+    expect(needsMoreSection({})).toBe(false);
   });
 });

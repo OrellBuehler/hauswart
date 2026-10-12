@@ -476,6 +476,14 @@ export function quickErrorMessage(
   return apiErrorMessage(err);
 }
 
+/** The fields behind "Datum, Titel und mehr". */
+const FOLDED_FIELDS = ["date", "title", "payee", "assetId"] as const;
+
+/** Whether an error sits on a field that is folded away, so the section has to be opened for the person to see it. */
+export function needsMoreSection(errors: Record<string, string>): boolean {
+  return FOLDED_FIELDS.some((field) => field in errors);
+}
+
 /** The costs page for the book (and year, when it is not this one) an entry was booked into. */
 export function savedCostsQuery(
   saved: Pick<CostEntry, "bookId" | "date">,

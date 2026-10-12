@@ -19,7 +19,6 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Collapsible from "$lib/components/ui/collapsible/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
   import {
     loadQuickBook,
     loadRememberedBook,
@@ -34,6 +33,7 @@
     chooseQuickBook,
     cleanAmount,
     isKeyConflict,
+    needsMoreSection,
     newQuickDraft,
     quickErrorMessage,
     quickSplit,
@@ -221,6 +221,18 @@
     untrack(() => clearError("date"));
   });
   $effect(() => {
+    void draft.assetId;
+    untrack(() => clearError("assetId"));
+  });
+  $effect(() => {
+    void draft.title;
+    untrack(() => clearError("title"));
+  });
+  $effect(() => {
+    void draft.payee;
+    untrack(() => clearError("payee"));
+  });
+  $effect(() => {
     if (split.kind !== "unchosen") untrack(() => clearError("participants"));
   });
 
@@ -230,7 +242,7 @@
 
   function focusFirstError() {
     queueMicrotask(() => {
-      if (errors.date) moreOpen = true;
+      if (needsMoreSection(errors)) moreOpen = true;
       queueMicrotask(() => {
         const invalid = formEl?.querySelector<HTMLElement>(
           "[aria-invalid='true']",
@@ -667,20 +679,23 @@
             />
           {/snippet}
         </Field>
-        <div class="flex min-w-0 flex-col gap-2">
-          <Label for="quick-asset"
-            >{m.cost_asset()}
-            <span class="text-muted-foreground font-normal"
-              >({m.common_optional()})</span
-            ></Label
-          >
-          <OptionSelect
-            id="quick-asset"
-            bind:value={draft.assetId}
-            options={assetOptions}
-            disabled={busy !== null}
-          />
-        </div>
+        <Field
+          id="quick-asset"
+          label={m.cost_asset()}
+          optional
+          error={errors.assetId}
+        >
+          {#snippet children({ describedby, invalid })}
+            <OptionSelect
+              id="quick-asset"
+              bind:value={draft.assetId}
+              options={assetOptions}
+              disabled={busy !== null}
+              {invalid}
+              {describedby}
+            />
+          {/snippet}
+        </Field>
       </Collapsible.Content>
     </Collapsible.Root>
 
