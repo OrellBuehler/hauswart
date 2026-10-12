@@ -447,6 +447,7 @@ export function wireDashboard(
     costsYearToDate: z.input<typeof dashboardSchema>["costsYearToDate"];
     balances: z.input<typeof dashboardSchema>["balances"];
     pendingFinanceSuggestions: number;
+    reviewNeededCount: number;
   },
 ): z.input<typeof dashboardSchema> {
   return {
@@ -478,6 +479,7 @@ export function wireDashboard(
     costsYearToDate: extras.costsYearToDate,
     balances: extras.balances,
     pendingFinanceSuggestions: extras.pendingFinanceSuggestions,
+    reviewNeededCount: extras.reviewNeededCount,
   };
 }
 

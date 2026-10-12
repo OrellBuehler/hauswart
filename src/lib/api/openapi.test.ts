@@ -55,6 +55,9 @@ describe("openapi document", () => {
   it("hoists named schemas into components and references them", () => {
     expect(Object.keys(doc.components.schemas).sort()).toEqual([
       "AdminUser",
+      "AiTask",
+      "AiTaskCost",
+      "AiTaskResult",
       "ApiToken",
       "Appointment",
       "Asset",

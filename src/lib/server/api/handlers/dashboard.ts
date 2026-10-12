@@ -1,6 +1,7 @@
 import type { endpoints } from "$lib/api/registry";
 import type { DashboardBalances } from "$lib/api/schemas/costs";
 import { dashboardBalances } from "$lib/server/costs/balances";
+import { countReviewNeeded } from "$lib/server/costs/costs";
 import { costsYearToDate } from "$lib/server/costs/summary";
 import { selectAllDefects } from "$lib/server/defects/defects";
 import { countPendingSuggestions } from "$lib/server/finance/suggestions";
@@ -44,6 +45,7 @@ export const get: Handler<typeof endpoints.dashboard> = async ({ ctx }) =>
     costsYearToDate: costsYearToDate(ctx),
     balances: balancesOrNull(ctx, ctx.user.id),
     pendingFinanceSuggestions: countPendingSuggestions(ctx, ctx.user.id),
+    reviewNeededCount: countReviewNeeded(ctx),
   });
 
 export const stats: Handler<typeof endpoints.stats> = ({ ctx, query }) =>

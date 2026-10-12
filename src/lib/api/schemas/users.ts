@@ -49,9 +49,17 @@ export const updateUserRequestSchema = z
     error: "Provide at least one field to update.",
   });
 
-/** Just enough to render a person: names for assignee pickers and activity lines. */
+/**
+ * Just enough to render a person: names for assignee pickers and activity lines, and the share of shared costs they bear
+ * (every member can read it from the frozen shares of any cost entry anyway).
+ */
 export const directoryUserSchema = z
-  .object({ id: z.string(), displayName: z.string() })
+  .object({
+    id: z.string(),
+    displayName: z.string(),
+    /** Basis points (5000 = 50%) of the shared household costs this person bears. */
+    ownershipBps: ownershipBpsSchema,
+  })
   .meta({ id: "DirectoryUser" });
 export type DirectoryUser = z.infer<typeof directoryUserSchema>;
 

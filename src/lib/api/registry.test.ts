@@ -251,6 +251,7 @@ describe("registry", () => {
         "GET /api/v1/costs/{id} both",
         "PATCH /api/v1/costs/{id} both",
         "DELETE /api/v1/costs/{id} both",
+        "POST /api/v1/costs/{id}/review both",
         "GET /api/v1/costs/balances both",
         "POST /api/v1/costs/move-to-book both",
         "GET /api/v1/cost-books both",
@@ -287,6 +288,13 @@ describe("registry", () => {
         "DELETE /api/v1/document-links/{id} both",
         "POST /api/v1/attachments/{id}/push-to-documents both",
         "POST /api/v1/ha/action bearer",
+        "GET /api/v1/ai-tasks both",
+        "POST /api/v1/ai-tasks both",
+        "GET /api/v1/ai-tasks/{id} both",
+        "DELETE /api/v1/ai-tasks/{id} both",
+        "GET /api/v1/ai-tasks/{id}/preview both",
+        "POST /api/v1/ai-tasks/{id}/complete both",
+        "POST /api/v1/ai-tasks/{id}/dismiss both",
       ].sort(),
     );
   });

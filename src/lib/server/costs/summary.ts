@@ -114,6 +114,7 @@ export function costsSummary(
       deductible: costEntries.deductible,
       splitMode: costEntries.splitMode,
       paidByUserId: costEntries.paidByUserId,
+      reviewNeeded: costEntries.reviewNeeded,
       taxRelevant: costBooks.taxRelevant,
     })
     .from(costEntries)
@@ -158,8 +159,10 @@ export function costsSummary(
   let expense = 0;
   let equity = 0;
   let otherCurrency = 0;
+  let reviewNeeded = 0;
 
   for (const e of entries) {
+    if (e.reviewNeeded) reviewNeeded++;
     if (e.currency !== currency) {
       otherCurrency++;
       continue;
@@ -233,6 +236,7 @@ export function costsSummary(
       amountMinor: t.amountMinor,
     })),
     unassignedPayerCount: ledger.unassigned,
+    reviewNeededCount: reviewNeeded,
   };
 }
 
