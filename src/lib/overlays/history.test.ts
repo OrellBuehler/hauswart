@@ -510,6 +510,36 @@ describe("overlay history", () => {
     });
   });
 
+  describe("settled", () => {
+    it("resolves at once while nothing is closing", async () => {
+      let done = false;
+      void history.settled().then(() => (done = true));
+      await browser.settle();
+      expect(done).toBe(true);
+      open("a");
+      await browser.settle();
+      done = false;
+      void history.settled().then(() => (done = true));
+      await browser.settle();
+      expect(done).toBe(true);
+      expect(state().at).toBe(1);
+    });
+
+    it("waits until the entry of a closing overlay is popped", async () => {
+      open("a");
+      await browser.settle();
+      close("a");
+      let done = false;
+      void history.settled().then(() => (done = true));
+      await browser.step();
+      expect(done).toBe(false);
+      await browser.settle();
+      expect(done).toBe(true);
+      expect(state().at).toBe(0);
+      expect(browser.goCalls).toEqual([-1]);
+    });
+  });
+
   it("ignores overlays it does not know and repeated calls", async () => {
     history.release("unknown");
     const a = open("a");

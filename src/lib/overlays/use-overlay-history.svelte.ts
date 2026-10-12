@@ -4,6 +4,7 @@ import {
   afterNavigate,
   beforeNavigate,
   goto,
+  invalidateAll,
   pushState,
   replaceState,
 } from "$app/navigation";
@@ -166,4 +167,14 @@ export async function gotoFromOverlay(
   await overlays().popAll();
   // eslint-disable-next-line svelte/no-navigation-without-resolve -- callers pass an address they resolved
   return goto(url, options);
+}
+
+/**
+ * `invalidateAll()` for the action of a dialog or sheet that closes afterwards. Closing pops the overlay's history
+ * entry, and the router drops an invalidation that is still loading when that popstate arrives, so the page would keep
+ * showing the old data. This waits until the entry is gone, then invalidates.
+ */
+export async function invalidateAfterOverlay(): Promise<void> {
+  await overlays().settled();
+  await invalidateAll();
 }

@@ -46,6 +46,8 @@ type Entry = {
 
 /** How often a held-back pop looks again at whether the link click turned into a navigation. */
 const LINK_RECHECK_MS = 50;
+/** How often `settled` looks again while an entry waits to be popped. */
+const SETTLE_POLL_MS = 10;
 /** How many traversals an opening overlay waits for while the router and the browser disagree. */
 const MAX_STABLE_WAITS = 3;
 
@@ -99,6 +101,20 @@ export class OverlayHistory {
       if (!entry.released) entry.close();
     }
     if (this.#stack.at(-1)?.released) this.#scheduleFlush();
+  }
+
+  /**
+   * Resolves once no entry waits to be popped and no pop is under way. The router drops an invalidation that is
+   * still loading when a popstate arrives (even for a shallow entry), so `invalidateAll()` after a dialog closed
+   * must wait for this.
+   */
+  async settled(): Promise<void> {
+    while (this.#flushScheduled || this.#traversal || this.#draining) {
+      await (this.#traversal ??
+        new Promise<void>((resolve) =>
+          this.#env.defer(resolve, SETTLE_POLL_MS),
+        ));
+    }
   }
 
   /** True while the current history entry is one of ours. */
