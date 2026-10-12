@@ -36,6 +36,8 @@ function task(over: Partial<AiTask> = {}): AiTask {
     dismissReason: null,
     completedAt: null,
     completedVia: null,
+    completedByUserId: null,
+    completedByName: null,
     createdAt: "2026-10-12T08:00:00.000Z",
     updatedAt: "2026-10-12T08:00:00.000Z",
     ...over,
@@ -119,6 +121,30 @@ describe("a receipt in the queue", () => {
     expect(body).toContain("über die MCP-Verbindung abgeschlossen");
     // a task that is done cannot be dismissed any more
     expect(body).not.toContain("Verwerfen");
+  });
+
+  it("names the person who closed a task, next to when and how", () => {
+    const body = html(
+      done({ completedByUserId: "u2", completedByName: "Ben Beispiel" }),
+    );
+    expect(body).toContain("Von Ben Beispiel");
+    expect(body).toContain("über die MCP-Verbindung abgeschlossen");
+    const dismissed = html(
+      task({
+        status: "dismissed",
+        completedAt: "2026-10-12T09:00:00.000Z",
+        completedVia: "session",
+        completedByUserId: "u1",
+        completedByName: "Anna Beispiel",
+      }),
+    );
+    expect(dismissed).toContain("Von Anna Beispiel");
+  });
+
+  it("shows no name for a task closed before the closer was recorded, or by a person who is gone", () => {
+    const body = html(done());
+    expect(body).not.toContain("Von ");
+    expect(body).toContain("über die MCP-Verbindung abgeschlossen");
   });
 
   it("says so when the entries of a done task are gone", () => {

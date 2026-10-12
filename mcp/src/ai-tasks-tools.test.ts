@@ -404,6 +404,7 @@ describe("receipt queue tools", () => {
         id: task.id,
         status: "done",
         closedVia: "mcp",
+        closedBy: "Anna",
         resultNote: "Datum geschätzt",
         bookedAs: [{ id: cost.id, needsReview: true }],
       });
@@ -509,6 +510,7 @@ describe("receipt queue tools", () => {
         status: "dismissed",
         dismissReason: "Ein Foto der Katze, kein Beleg",
         closedVia: "mcp",
+        closedBy: "Anna",
       });
       const again = await s.call("dismiss_ai_task", { id: task.id });
       expect(again.isError).toBe(false);

@@ -264,8 +264,14 @@ describe("receipt queue", () => {
       const pending = await upload();
       const done = await upload();
       const dismissed = await upload();
-      completeAiTask(ctx(), done.id, { createdCostIds: [cost().id] }, "mcp");
-      dismissAiTask(ctx(), dismissed.id, {}, "mcp");
+      completeAiTask(
+        ctx(),
+        done.id,
+        { createdCostIds: [cost().id] },
+        "mcp",
+        null,
+      );
+      dismissAiTask(ctx(), dismissed.id, {}, "mcp", null);
       const ids = (status?: "pending" | "done" | "dismissed") =>
         listAiTasks(ctx(), { status }, { limit: 50 })
           .items.map((t) => t.id)
@@ -307,6 +313,7 @@ describe("receipt queue", () => {
         task.id,
         { createdCostIds: [entry.id], note: "Datum unleserlich" },
         "mcp",
+        null,
       );
       expect(done).toMatchObject({
         status: "done",
@@ -353,6 +360,7 @@ describe("receipt queue", () => {
         task.id,
         { createdCostIds: [first.id, second.id, third.id] },
         "mcp",
+        null,
       );
       const rows = [first, second, third].map(
         (c) => attachmentsOf("cost", c.id)[0]!,
@@ -381,7 +389,13 @@ describe("receipt queue", () => {
       const task = await upload();
       const a = cost({ title: "A" });
       const b = cost({ title: "B" });
-      completeAiTask(ctx(), task.id, { createdCostIds: [a.id, b.id] }, "mcp");
+      completeAiTask(
+        ctx(),
+        task.id,
+        { createdCostIds: [a.id, b.id] },
+        "mcp",
+        null,
+      );
       const [row] = test.db.select().from(attachments).all();
       const stored = join(files.dir, row!.path);
       const aged = new Date(Date.now() - 3_600_000);
@@ -417,6 +431,7 @@ describe("receipt queue", () => {
         task.id,
         { createdFuelLogIds: [free.id, paid.id] },
         "mcp",
+        null,
       );
       expect(getCost(ctx(), paid.costEntryId!).reviewNeeded).toBe(true);
       expect(attachmentsOf("cost", paid.costEntryId!)).toHaveLength(1);
@@ -444,6 +459,7 @@ describe("receipt queue", () => {
         task.id,
         { createdFuelLogIds: [free.id] },
         "mcp",
+        null,
       );
       expect(done.status).toBe("done");
       expect(attachmentsOf("ai_task", task.id)).toHaveLength(1);
@@ -473,6 +489,7 @@ describe("receipt queue", () => {
           createdFuelLogIds: [paid.id],
         },
         "mcp",
+        null,
       );
       expect(done.resultJson?.createdCostIds).toEqual([paid.costEntryId]);
       expect(attachmentsOf("cost", paid.costEntryId!)).toHaveLength(1);
@@ -491,7 +508,13 @@ describe("receipt queue", () => {
         .where(eq(costEntries.id, entry.id))
         .run();
       const task = await upload();
-      completeAiTask(ctx(), task.id, { createdCostIds: [entry.id] }, "mcp");
+      completeAiTask(
+        ctx(),
+        task.id,
+        { createdCostIds: [entry.id] },
+        "mcp",
+        null,
+      );
       expect(getCost(ctx(), entry.id)).toMatchObject({
         reviewNeeded: true,
         reviewedAt: null,
@@ -509,6 +532,7 @@ describe("receipt queue", () => {
           task.id,
           { createdCostIds: [real.id, "ghost-1", "ghost-2"] },
           "mcp",
+          null,
         ),
       );
       expect(badCost.code).toBe("invalid_request");
@@ -520,6 +544,7 @@ describe("receipt queue", () => {
           task.id,
           { createdCostIds: [real.id], createdFuelLogIds: ["ghost-3"] },
           "mcp",
+          null,
         ),
       );
       expect(fieldErrors(badFuel, "createdFuelLogIds")[0]).toContain("ghost-3");
@@ -538,6 +563,7 @@ describe("receipt queue", () => {
             "missing",
             { createdCostIds: [cost().id] },
             "mcp",
+            null,
           ),
         ),
       ).rejects.toMatchObject({ code: "not_found" });
@@ -556,6 +582,7 @@ describe("receipt queue", () => {
         task.id,
         { createdCostIds: [entry.id] },
         "mcp",
+        null,
       );
       expect(done).toMatchObject({ status: "done", attachment: null });
       expect(getCost(ctx(), entry.id).reviewNeeded).toBe(true);
@@ -568,12 +595,14 @@ describe("receipt queue", () => {
         (await upload()).id,
         { createdCostIds: [cost().id] },
         "session",
+        null,
       );
       const viaToken = completeAiTask(
         ctx(),
         (await upload()).id,
         { createdCostIds: [cost().id] },
         "integration",
+        null,
       );
       expect([viaSession.completedVia, viaToken.completedVia]).toEqual([
         "session",
@@ -592,12 +621,14 @@ describe("receipt queue", () => {
           task.id,
           { createdCostIds: [a.id, b.id], note: "Erstes Mal" },
           "mcp",
+          null,
         );
         const again = completeAiTask(
           ctx(NOW + 90_000),
           task.id,
           { createdCostIds: [b.id, a.id, b.id], note: "Anderer Text" },
           "session",
+          null,
         );
         expect(again).toEqual(first);
         expect(again.resultJson?.note).toBe("Erstes Mal");
@@ -611,13 +642,13 @@ describe("receipt queue", () => {
         const { ben, upload, cost } = await world();
         const task = await upload();
         const a = cost();
-        completeAiTask(ctx(), task.id, { createdCostIds: [a.id] }, "mcp");
+        completeAiTask(ctx(), task.id, { createdCostIds: [a.id] }, "mcp", null);
         test.db
           .update(costEntries)
           .set({ reviewNeeded: false, reviewedByUserId: ben.id })
           .where(eq(costEntries.id, a.id))
           .run();
-        completeAiTask(ctx(), task.id, { createdCostIds: [a.id] }, "mcp");
+        completeAiTask(ctx(), task.id, { createdCostIds: [a.id] }, "mcp", null);
         expect(getCost(ctx(), a.id).reviewNeeded).toBe(false);
       });
 
@@ -626,13 +657,13 @@ describe("receipt queue", () => {
         const task = await upload();
         const a = cost({ title: "A" });
         const b = cost({ title: "B" });
-        completeAiTask(ctx(), task.id, { createdCostIds: [a.id] }, "mcp");
+        completeAiTask(ctx(), task.id, { createdCostIds: [a.id] }, "mcp", null);
         for (const other of [
           { createdCostIds: [a.id, b.id] },
           { createdCostIds: [b.id] },
         ]) {
           const err = await failure(() =>
-            completeAiTask(ctx(), task.id, other, "mcp"),
+            completeAiTask(ctx(), task.id, other, "mcp", null),
           );
           expect(err.code).toBe("conflict");
           expect(err.details).toMatchObject({
@@ -647,13 +678,14 @@ describe("receipt queue", () => {
         const { upload, cost } = await world();
         const task = await upload();
         const a = cost();
-        completeAiTask(ctx(), task.id, { createdCostIds: [a.id] }, "mcp");
+        completeAiTask(ctx(), task.id, { createdCostIds: [a.id] }, "mcp", null);
         expect(
           completeAiTask(
             ctx(),
             task.id,
             { createdCostIds: [a.id], createdFuelLogIds: [] },
             "mcp",
+            null,
           ).status,
         ).toBe("done");
       });
@@ -662,9 +694,15 @@ describe("receipt queue", () => {
         const { upload, cost } = await world();
         const task = await upload();
         const a = cost();
-        dismissAiTask(ctx(), task.id, { reason: "kein Beleg" }, "mcp");
+        dismissAiTask(ctx(), task.id, { reason: "kein Beleg" }, "mcp", null);
         const err = await failure(() =>
-          completeAiTask(ctx(), task.id, { createdCostIds: [a.id] }, "mcp"),
+          completeAiTask(
+            ctx(),
+            task.id,
+            { createdCostIds: [a.id] },
+            "mcp",
+            null,
+          ),
         );
         expect(err).toMatchObject({ code: "conflict" });
         expect(err.details).toMatchObject({ status: "dismissed" });
@@ -683,6 +721,7 @@ describe("receipt queue", () => {
         task.id,
         { createdCostIds: [keep.id, gone.id] },
         "mcp",
+        null,
       );
       deleteCost(ctx(), gone.id);
       const after = getAiTask(ctx(), task.id);
@@ -694,7 +733,13 @@ describe("receipt queue", () => {
       const { upload, cost } = await world();
       const task = await upload();
       const entry = cost();
-      completeAiTask(ctx(), task.id, { createdCostIds: [entry.id] }, "mcp");
+      completeAiTask(
+        ctx(),
+        task.id,
+        { createdCostIds: [entry.id] },
+        "mcp",
+        null,
+      );
       deleteCost(ctx(), entry.id);
       expect(getAiTask(ctx(), task.id)).toMatchObject({
         status: "done",
@@ -718,7 +763,13 @@ describe("receipt queue", () => {
         anna.id,
       );
       const task = await upload();
-      completeAiTask(ctx(), task.id, { createdFuelLogIds: [paid.id] }, "mcp");
+      completeAiTask(
+        ctx(),
+        task.id,
+        { createdFuelLogIds: [paid.id] },
+        "mcp",
+        null,
+      );
       expect(getAiTask(ctx(), task.id).resultCosts).toHaveLength(1);
       deleteFuelLog(ctx(), paid.id);
       expect(getAiTask(ctx(), task.id).resultCosts).toEqual([]);
@@ -734,6 +785,7 @@ describe("receipt queue", () => {
         task.id,
         { reason: "Das ist kein Beleg" },
         "mcp",
+        null,
       );
       expect(dismissed).toMatchObject({
         status: "dismissed",
@@ -750,7 +802,7 @@ describe("receipt queue", () => {
       const { upload } = await world();
       const task = await upload();
       expect(
-        dismissAiTask(ctx(), task.id, { reason: null }, "session"),
+        dismissAiTask(ctx(), task.id, { reason: null }, "session", null),
       ).toMatchObject({ status: "dismissed", dismissReason: null });
     });
 
@@ -762,12 +814,14 @@ describe("receipt queue", () => {
         task.id,
         { reason: "erster Grund" },
         "mcp",
+        null,
       );
       const again = dismissAiTask(
         ctx(NOW + 5_000),
         task.id,
         { reason: "zweiter Grund" },
         "session",
+        null,
       );
       expect(again).toEqual(first);
       expect(again.dismissReason).toBe("erster Grund");
@@ -776,13 +830,21 @@ describe("receipt queue", () => {
     it("is a 409 for a task that is done, and a 404 for one that does not exist", async () => {
       const { upload, cost } = await world();
       const task = await upload();
-      completeAiTask(ctx(), task.id, { createdCostIds: [cost().id] }, "mcp");
-      const err = await failure(() => dismissAiTask(ctx(), task.id, {}, "mcp"));
+      completeAiTask(
+        ctx(),
+        task.id,
+        { createdCostIds: [cost().id] },
+        "mcp",
+        null,
+      );
+      const err = await failure(() =>
+        dismissAiTask(ctx(), task.id, {}, "mcp", null),
+      );
       expect(err.code).toBe("conflict");
       expect(err.details).toMatchObject({ status: "done" });
       expect(getAiTask(ctx(), task.id).status).toBe("done");
       const missing = await failure(() =>
-        dismissAiTask(ctx(), "missing", {}, "mcp"),
+        dismissAiTask(ctx(), "missing", {}, "mcp", null),
       );
       expect(missing.code).toBe("not_found");
     });
@@ -838,7 +900,13 @@ describe("receipt queue", () => {
       const { anna, upload, cost, attachmentsOf } = await world();
       const task = await upload();
       const entry = cost();
-      completeAiTask(ctx(), task.id, { createdCostIds: [entry.id] }, "mcp");
+      completeAiTask(
+        ctx(),
+        task.id,
+        { createdCostIds: [entry.id] },
+        "mcp",
+        null,
+      );
       deleteAiTask(ctx(), anna, task.id);
       expect(test.db.select().from(aiTasks).all()).toEqual([]);
       expect(attachmentsOf("cost", entry.id)).toHaveLength(1);
@@ -855,7 +923,7 @@ describe("receipt queue", () => {
     it("removes the file of a dismissed task and is a 404 for a task that does not exist", async () => {
       const { anna, upload } = await world();
       const task = await upload();
-      dismissAiTask(ctx(), task.id, {}, "mcp");
+      dismissAiTask(ctx(), task.id, {}, "mcp", null);
       deleteAiTask(ctx(), anna, task.id);
       expect(test.db.select().from(attachments).all()).toEqual([]);
       expect(

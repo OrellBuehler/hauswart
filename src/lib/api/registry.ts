@@ -3990,7 +3990,7 @@ export const endpoints = {
     path: "/api/v1/ai-tasks/{id}/complete",
     summary: "Close a task as done with the entries it produced",
     description:
-      "`createdCostIds` and `createdFuelLogIds` name entries that must exist (400 on the field otherwise); at least one is needed (a receipt that produced nothing is dismissed instead). In one transaction every cost entry named, and the cost entry each named fuel log entry booked, is flagged `reviewNeeded` (it was booked from a receipt somebody else read), the file moves to the first of those cost entries as its receipt (the others get a copy; a free fuel fill has no cost entry) and the task becomes `done` with the result, `completedAt` and `completedVia` (`session` or the token kind). `note` is for the people reading the entries (what was unsure). Idempotent: completing a done task with the same entries (in any order) answers 200 with the task as it is; with other entries it is a 409 `conflict`, and so is completing a dismissed task. Send a JSON body.",
+      "`createdCostIds` and `createdFuelLogIds` name entries that must exist (400 on the field otherwise); at least one is needed (a receipt that produced nothing is dismissed instead). In one transaction every cost entry named, and the cost entry each named fuel log entry booked, is flagged `reviewNeeded` (it was booked from a receipt somebody else read), the file moves to the first of those cost entries as its receipt (the others get a copy; a free fuel fill has no cost entry) and the task becomes `done` with the result, `completedAt`, `completedVia` (`session` or the token kind) and who closed it (`completedByUserId`, `completedByName`: the person in the browser, or the owner of the token). `note` is for the people reading the entries (what was unsure). Idempotent: completing a done task with the same entries (in any order) answers 200 with the task as it is (the first closer stays); with other entries it is a 409 `conflict`, and so is completing a dismissed task. Send a JSON body.",
     tags: ["ai-tasks"],
     auth: "both",
     scopes: ["costs:write"],
@@ -4006,7 +4006,7 @@ export const endpoints = {
     path: "/api/v1/ai-tasks/{id}/dismiss",
     summary: "Close a task without booking anything",
     description:
-      "For a file that is no receipt, unreadable or already booked; `reason` (at most 500 characters) tells the uploader why. The file stays with the task until the task is deleted. Idempotent: dismissing a dismissed task answers 200 with the task as it is (the first reason stays); a done task is a 409 `conflict`. Send a JSON body (`{}` is enough).",
+      "For a file that is no receipt, unreadable or already booked; `reason` (at most 500 characters) tells the uploader why. The file stays with the task until the task is deleted. Who dismissed it is recorded like for a completion (`completedByUserId`, `completedByName`). Idempotent: dismissing a dismissed task answers 200 with the task as it is (the first reason and the first closer stay); a done task is a 409 `conflict`. Send a JSON body (`{}` is enough).",
     tags: ["ai-tasks"],
     auth: "both",
     scopes: ["costs:write"],

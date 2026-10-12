@@ -155,7 +155,13 @@ describe("queueing a receipt twice", () => {
       }),
       anna.id,
     );
-    completeAiTask(ctx(), first.task.id, { createdCostIds: [cost.id] }, "mcp");
+    completeAiTask(
+      ctx(),
+      first.task.id,
+      { createdCostIds: [cost.id] },
+      "mcp",
+      null,
+    );
     const again = await queue(
       { idempotencyKey: KEY, bookId: book.id },
       anna.id,

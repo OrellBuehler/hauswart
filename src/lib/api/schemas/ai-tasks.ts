@@ -81,6 +81,12 @@ export const aiTaskSchema = z
     completedAt: isoTimestampSchema.nullable(),
     /** How it left the queue: `session` (a person in the web app) or the kind of the API token. */
     completedVia: aiTaskClosedViaSchema.nullable(),
+    /**
+     * Who closed it, done or dismissed: the person in the web app, or the owner of the API token. Null while the task
+     * waits, for a task closed before this was recorded, and once the person is gone.
+     */
+    completedByUserId: z.string().nullable(),
+    completedByName: z.string().nullable(),
     createdAt: isoTimestampSchema,
     updatedAt: isoTimestampSchema,
   })

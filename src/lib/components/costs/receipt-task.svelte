@@ -46,6 +46,11 @@
   const thumb = $derived(taskThumbSrc(task));
   const costs = $derived(task.result?.costs ?? []);
   const via = $derived(closedViaLabel(task.completedVia));
+  const closer = $derived(
+    task.completedByName
+      ? m.receipts_closed_by({ name: task.completedByName })
+      : undefined,
+  );
   const hints = $derived(
     [
       task.bookName ? m.receipts_hint_book({ name: task.bookName }) : "",
@@ -197,7 +202,7 @@
 
   {#if task.status !== "pending"}
     <p class="text-muted-foreground text-xs text-pretty wrap-anywhere">
-      {[closedAt, via].filter(Boolean).join(" · ")}
+      {[closer, closedAt, via].filter(Boolean).join(" · ")}
       {#if task.status === "dismissed"}
         {#if task.dismissReason}
           <span class="block"

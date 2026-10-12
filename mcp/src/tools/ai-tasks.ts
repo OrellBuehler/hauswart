@@ -57,6 +57,7 @@ function taskRow(task: AiTask) {
     dismissReason: task.dismissReason,
     closedAt: task.completedAt,
     closedVia: task.completedVia,
+    closedBy: task.completedByName,
   };
 }
 

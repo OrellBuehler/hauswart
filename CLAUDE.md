@@ -559,8 +559,10 @@ entries with the tools that exist and closes the task. The web app has the page 
 - **The table** (`ai_tasks`, migration `0028`, together with the review flag of cost entries; `ai-tasks/ai-tasks.ts`): `kind`, `status`
   (`pending|done|dismissed`), `note` (the uploader's words, at most 1000 characters), `createdByUserId` (the uploader), the hints `bookId`
   (an open cost book, else 400 on `bookId`) and `assetId` (set null when the book or device goes), `attachmentId` (set null when the file
-  goes), `resultJson`, `dismissReason`, `completedAt` (when the task left the queue, done or dismissed) and `completedVia` (`session`, or the
-  kind of the API token). `kind` is `receipt` today, the only value `POST /ai-tasks` accepts; `fuel_receipt`, `service_invoice` and
+  goes), `resultJson`, `dismissReason`, `completedAt` (when the task left the queue, done or dismissed), `completedVia` (`session`, or the
+  kind of the API token) and `completedByUserId` (who closed it: the person in the browser or the owner of the token; set null with the
+  person; the DTO adds `completedByName`, the receipts page shows "Von Ben" and the tools' rows `closedBy`; the first closer stays when a
+  repeated call is answered with the task as it is). `kind` is `receipt` today, the only value `POST /ai-tasks` accepts; `fuel_receipt`, `service_invoice` and
   `insurance_policy` are already in `AI_TASK_KINDS`, so another kind widens the request schema and the tools but not the table (the column
   has no CHECK).
 - **Everybody sees everything.** Like cost entries the queue is household data: every member lists, reads, completes and dismisses every

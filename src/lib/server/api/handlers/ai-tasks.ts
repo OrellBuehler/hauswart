@@ -49,6 +49,8 @@ export function wireAiTask(t: AiTaskRecord): z.input<typeof aiTaskSchema> {
     dismissReason: t.dismissReason,
     completedAt: iso(t.completedAt),
     completedVia: t.completedVia,
+    completedByUserId: t.completedByUserId,
+    completedByName: t.completedByName,
     createdAt: toIso(t.createdAt),
     updatedAt: toIso(t.updatedAt),
   };
@@ -105,13 +107,18 @@ export const complete: Handler<typeof endpoints.aiTasksComplete> = ({
   params,
   body,
 }) =>
-  wireAiTask(completeAiTask(ctx, params.id, body, closedVia(ctx.principal)));
+  wireAiTask(
+    completeAiTask(ctx, params.id, body, closedVia(ctx.principal), ctx.user.id),
+  );
 
 export const dismiss: Handler<typeof endpoints.aiTasksDismiss> = ({
   ctx,
   params,
   body,
-}) => wireAiTask(dismissAiTask(ctx, params.id, body, closedVia(ctx.principal)));
+}) =>
+  wireAiTask(
+    dismissAiTask(ctx, params.id, body, closedVia(ctx.principal), ctx.user.id),
+  );
 
 export const remove: Handler<typeof endpoints.aiTasksDelete> = ({
   ctx,

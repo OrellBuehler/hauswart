@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { and, desc, eq, inArray, lt, or, sql, type SQL } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 import type { AiTaskClosedVia, AiTaskKind, UserRole } from "$lib/api/enums";
 import type { ListAiTasksQuery } from "$lib/api/schemas/ai-tasks";
@@ -50,6 +51,8 @@ export interface AiTaskCostRecord {
 
 export interface AiTaskRecord extends AiTaskRow {
   createdByName: string | null;
+  /** Who completed or dismissed the task. */
+  completedByName: string | null;
   bookName: string | null;
   assetName: string | null;
   /** The file: the task's own while it is open, the receipt of a cost entry once the task is done. */
@@ -58,6 +61,8 @@ export interface AiTaskRecord extends AiTaskRow {
   resultCosts: AiTaskCostRecord[];
 }
 
+const closer = alias(users, "closer");
+
 const selectTasks = (db: DB) =>
   db
     .select({
@@ -65,12 +70,16 @@ const selectTasks = (db: DB) =>
       createdByName: sql<
         string | null
       >`coalesce(${users.displayName}, ${users.username})`,
+      completedByName: sql<
+        string | null
+      >`coalesce(${closer.displayName}, ${closer.username})`,
       bookName: costBooks.name,
       assetName: assets.name,
       rowid: sql<number>`${aiTasks}.rowid`,
     })
     .from(aiTasks)
     .leftJoin(users, eq(users.id, aiTasks.createdByUserId))
+    .leftJoin(closer, eq(closer.id, aiTasks.completedByUserId))
     .leftJoin(costBooks, eq(costBooks.id, aiTasks.bookId))
     .leftJoin(assets, eq(assets.id, aiTasks.assetId));
 
@@ -129,6 +138,7 @@ function hydrate(db: DB, joined: readonly Joined[]): AiTaskRecord[] {
   return joined.map((j) => ({
     ...j.task,
     createdByName: j.createdByName,
+    completedByName: j.completedByName,
     bookName: j.bookName,
     assetName: j.assetName,
     attachment: j.task.attachmentId
@@ -338,6 +348,7 @@ export function completeAiTask(
   id: string,
   input: CompleteAiTaskInput,
   via: AiTaskClosedVia,
+  userId: string | null,
 ): AiTaskRecord {
   const task = getAiTask(ctx, id);
   const costIds = unique(input.createdCostIds);
@@ -423,6 +434,7 @@ export function completeAiTask(
         },
         completedAt: new Date(ctx.now),
         completedVia: via,
+        completedByUserId: userId,
       })
       .where(and(eq(aiTasks.id, id), eq(aiTasks.status, "pending")))
       .run();
@@ -439,6 +451,7 @@ export function dismissAiTask(
   id: string,
   input: { reason?: string | null },
   via: AiTaskClosedVia,
+  userId: string | null,
 ): AiTaskRecord {
   const task = getAiTask(ctx, id);
   if (task.status === "dismissed") return task;
@@ -452,6 +465,7 @@ export function dismissAiTask(
       dismissReason: input.reason ? input.reason : null,
       completedAt: new Date(ctx.now),
       completedVia: via,
+      completedByUserId: userId,
     })
     .where(and(eq(aiTasks.id, id), eq(aiTasks.status, "pending")))
     .run();

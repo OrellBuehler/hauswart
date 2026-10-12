@@ -46,6 +46,8 @@ function task(over: Partial<AiTask> = {}): AiTask {
     dismissReason: null,
     completedAt: null,
     completedVia: null,
+    completedByUserId: null,
+    completedByName: null,
     createdAt: "2026-10-12T08:00:00.000Z",
     updatedAt: "2026-10-12T08:00:00.000Z",
     ...over,
