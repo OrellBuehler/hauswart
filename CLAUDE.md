@@ -516,7 +516,7 @@ map), billTasks, billCreditorFilter (case-insensitive exact creditor names; appl
   is tried, none meaning the household's default book. The id goes into the suggestion's payload (`bookId`, left out when
   none) and, in an automatic category, to `acceptSuggestion` as the body's `bookId` (the adapter passes it, the core
   knows no Kept). Book ids are not checked when the settings are saved (the adapter's `validate` has no database), only
-  when they are used; the web settings form carries both fields through unchanged until it gets a picker.
+  when they are used. The web settings form has a book select under each mapped category (empty = the connection's default) and one for `defaultBookId` (empty = the household's default book); the accept dialog preselects the book offered with a suggestion.
 - Logs carry codes only (`kept.transaction_failed {code}`), never titles, amounts, creditors or tokens.
 
 ### Documents and the document provider
@@ -1480,8 +1480,16 @@ in dark mode. Every list has an empty state, every async action a pending and an
   four books, else a select); a new entry takes the book's default split until the person chose a split (`withBook`, `splitAfterBook`); "Für wen"
   are member checkboxes of an equal split (`participants`, sent as `participantIds` only when narrowed, and a PATCH sends `splitMode: "equal"`
   again when the set changed); the tax class is only offered, and sent, for a tax relevant book (`taxClassApplies`). The inbox's accept dialog
-  has the same picker and checkboxes. The dashboard's `CostsCard` shows "Du bekommst / Du schuldest" across all books plus the year total (the dashboard payload carries `balances` and `costsYearToDate.byBook` for it);
+  has the same picker and checkboxes. The dashboard's `CostsCard` reads `dashboard.balances` ("Du bekommst / Du schuldest" across all books, the first three payments and how many more there are, no request of its own) and labels the year total "Ausgaben 2026, alle Bücher" with the per-book list of `costsYearToDate.byBook` under it;
   `tryLoadBalances` lets a page open when only the balances fail (the card says so).
+  `chooseBook` never hands on an id the server would 404 on; a remembered book that was deleted comes back as `staleMemory`, and the loads forget it (`forgetBook`).
+  The single-book balance cards and the Saldo page name the payments across all books they leave out (`crossBookNote`, from `crossBookSettlements`). The tax card measures its rows against
+  the sum of `byDeductible` (`taxTotal`, tax relevant books only), not against the year's expenses. The "Für wen" preview of an equal split divides the basis points first and the amount by those (`equalPreview`),
+  so it shows what the server books (300.00 among three: 100.02, 99.99, 99.99). Under `/settings/cost-books` a book that takes entries gets "Als Standard festlegen" (`isDefault`; the badge follows it, reordering never moves it).
+  Reordering (rooms, books, hints) goes through `lib/reorder.ts`: `saveOrder` waits for every request, a failed one included, then refreshes, so the order shown is the server's.
+  **Moving entries**: "Auswählen" on the list (checkboxes in the cards and the table, a sticky bar with the count, at most 500) and, on a list narrowed to a device, "Alle Einträge dieses Geräts verschieben"
+  open `MoveCostsDialog` (`POST /costs/move-to-book`; `moveSummary` words moved / unchanged / tax class reset, `moveFailure` the 400s). **Vehicles**: the asset form's "Kostenbuch" picks `costBookId` (every save sends it, a PUT would clear it),
+  `VehicleCard` names the book, the fuel dialog offers a book (the vehicle's while it takes entries, else the default; a new fill takes that book's split; no "Für wen", the fuel API has no participants) and the list shows each fill's `bookName`.
 - **After a dialog, refresh with `invalidateAfterOverlay`** (`lib/overlays/use-overlay-history.svelte.ts`): closing a dialog pops its history
   entry, and the router drops an `invalidateAll()` that is still loading when that popstate arrives, so the page kept the old data. It waits
   for the entry to be gone first (`OverlayHistory.settled`); a dialog that navigates uses `gotoFromOverlay`. Menu items that start an action do
