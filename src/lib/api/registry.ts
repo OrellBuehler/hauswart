@@ -1302,10 +1302,10 @@ export const endpoints = {
     path: "/api/v1/users/directory",
     summary: "Names of everyone in the household",
     description:
-      "Id, display name and ownership share (`ownershipBps`, basis points of the shared costs the person bears; every member can read it from the frozen shares of the cost entries anyway), for assignee pickers, activity lines and split previews. Nothing else about a user. Open to every authenticated caller.",
+      "Id, display name and ownership share (`ownershipBps`, basis points of the shared costs the person bears; every member can read it from the frozen shares of the cost entries anyway), for assignee pickers, activity lines and split previews. Nothing else about a user. Needs the `read` scope (a token with other scopes only is refused, since the shares are money-related); a browser session has it.",
     tags: ["users"],
     auth: "both",
-    scopes: [],
+    scopes: ["read"],
     response: listDirectoryResponseSchema,
   }),
 

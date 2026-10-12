@@ -10237,7 +10237,7 @@
       "get": {
         "operationId": "usersDirectory",
         "summary": "Names of everyone in the household",
-        "description": "Id, display name and ownership share (`ownershipBps`, basis points of the shared costs the person bears; every member can read it from the frozen shares of the cost entries anyway), for assignee pickers, activity lines and split previews. Nothing else about a user. Open to every authenticated caller.",
+        "description": "Id, display name and ownership share (`ownershipBps`, basis points of the shared costs the person bears; every member can read it from the frozen shares of the cost entries anyway), for assignee pickers, activity lines and split previews. Nothing else about a user. Needs the `read` scope (a token with other scopes only is refused, since the shares are money-related); a browser session has it.",
         "tags": [
           "users"
         ],
@@ -10246,8 +10246,13 @@
             "cookieAuth": []
           },
           {
-            "bearerAuth": []
+            "bearerAuth": [
+              "read"
+            ]
           }
+        ],
+        "x-required-scopes": [
+          "read"
         ],
         "responses": {
           "200": {

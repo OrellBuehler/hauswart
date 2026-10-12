@@ -633,7 +633,8 @@ entries with the tools that exist and closes the task. The web app has the page 
   size before anything is fetched) is not sent at all: `file.problem` tells the model to dismiss the task with the reason "PDF zu gross", and the queue
   page's picker warns when such a PDF is chosen (`exceedsReadingLimit`, only where the file goes to the queue, not as the receipt of an entry). No dependency
   of the project can render PDF pages (pdfmake only writes them; `@napi-rs/canvas` does not read them), so a page is not turned into an image. The members' ownership share comes from `GET /users/directory`, which now also carries `ownershipBps` (every member can
-  read it from the frozen shares of the cost entries anyway). `list_costs` takes `reviewNeeded` and its rows carry `needsReview`.
+  read it from the frozen shares of the cost entries anyway) and for that reason needs the `read` scope like the other reads (it used to be open to any
+  authenticated caller, a token without scopes included). `list_costs` takes `reviewNeeded` and its rows carry `needsReview`.
 - **Not built**: a notification for the uploader ("receipt processed"; it would need a new title key in both languages and the delivery
   rules), reopening a dismissed task, retention of dismissed tasks, the other kinds, and a way to complete a task by hand in the web app.
 - **Tests**: `ai-tasks/ai-tasks.test.ts` and `preview.test.ts` (service), `routes/api/v1/ai-tasks/ai-tasks.test.ts` (API, scopes, visibility,

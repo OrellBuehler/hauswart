@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { getDB, users } from "$lib/server/db";
-import { createCaller } from "$lib/testing/api";
+import { createCaller, errorCode } from "$lib/testing/api";
 import {
   createTestToken,
   createTestUser,
@@ -51,13 +51,34 @@ describe("users directory API", () => {
     });
   });
 
-  it("works for tokens without scopes", async () => {
+  it("needs the read scope: it shows the ownership shares, so a token without scopes is refused", async () => {
     const user = await createTestUser({ displayName: "Zoe" });
-    const token = createTestToken(user, {
-      scopes: [],
+    const none = createTestToken(user, { scopes: [], kind: "integration" });
+    const refused = await createCaller({ bearer: none.token })(
+      "GET",
+      "/api/v1/users/directory",
+    );
+    expect([refused.res.status, errorCode(refused)]).toEqual([
+      403,
+      "forbidden",
+    ]);
+    const other = createTestToken(user, {
+      scopes: ["write", "costs:write"],
       kind: "integration",
-    }).token;
-    const r = await createCaller({ bearer: token })(
+    });
+    expect(
+      (
+        await createCaller({ bearer: other.token })(
+          "GET",
+          "/api/v1/users/directory",
+        )
+      ).res.status,
+    ).toBe(403);
+    const reader = createTestToken(user, {
+      scopes: ["read"],
+      kind: "integration",
+    });
+    const r = await createCaller({ bearer: reader.token })(
       "GET",
       "/api/v1/users/directory",
     );
