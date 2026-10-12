@@ -28,6 +28,7 @@ import {
   assertTaskOpenForBooking,
   takeLease,
 } from "$lib/server/ai-tasks/booking";
+import type { CostTagRef } from "$lib/api/schemas/cost-tags";
 import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
 import { commentCountSql } from "$lib/server/comments/counts";
 import {
@@ -68,6 +69,12 @@ import {
   validateParticipants,
   type Share,
 } from "./split";
+import {
+  getCostTagRow,
+  requireTagIds,
+  tagsOfEntries,
+  writeEntryTags,
+} from "./tags";
 
 type Db = Pick<ServiceContext, "db">;
 
@@ -93,6 +100,7 @@ export interface CostRecord extends CostRow {
   /** The fuel log entry that booked this entry, which then owns its amount, currency and date. */
   fuelLogId: string | null;
   shares: CostShareRecord[];
+  tags: CostTagRef[];
 }
 
 const payer = alias(users, "payer");
@@ -177,6 +185,10 @@ function toRecords(db: DB, joined: readonly Joined[]): CostRecord[] {
     db,
     joined.map((j) => j.cost),
   );
+  const tags = tagsOfEntries(
+    db,
+    joined.map((j) => j.cost.id),
+  );
   return joined.map((j) => ({
     ...j.cost,
     bookName: j.bookName,
@@ -190,6 +202,7 @@ function toRecords(db: DB, joined: readonly Joined[]): CostRecord[] {
     commentCount: Number(j.commentCount),
     fuelLogId: j.fuelLogId,
     shares: shares.get(j.cost.id) ?? [],
+    tags: tags.get(j.cost.id) ?? [],
   }));
 }
 
@@ -212,6 +225,10 @@ export const yearRange = (year: number) => ({
   from: `${String(year).padStart(4, "0")}-01-01`,
   to: `${String(year).padStart(4, "0")}-12-31`,
 });
+
+/** Entries that carry the tag; written against the table by name so any query over `cost_entries` can use it. */
+export const hasTag = (tagId: string): SQL =>
+  sql`exists (select 1 from cost_entry_tags where cost_entry_tags.entry_id = cost_entries.id and cost_entry_tags.tag_id = ${tagId})`;
 
 function whereOf(filter: ListCostsQuery, viewerId: string): SQL[] {
   const where: SQL[] = [];
@@ -237,6 +254,7 @@ function whereOf(filter: ListCostsQuery, viewerId: string): SQL[] {
       ),
     );
   }
+  if (filter.tagId) where.push(hasTag(filter.tagId));
   if (filter.reviewNeeded !== undefined) {
     where.push(eq(costEntries.reviewNeeded, filter.reviewNeeded));
   }
@@ -270,6 +288,7 @@ export function listCosts(
   viewerId: string,
 ) {
   if (filter.bookId) getCostBookRow(ctx, filter.bookId);
+  if (filter.tagId) getCostTagRow(ctx, filter.tagId);
   const where = whereOf(filter as ListCostsQuery, viewerId);
   if (page.cursor) {
     const at = decodeCursor(page.cursor, cursorSchema);
@@ -439,6 +458,7 @@ export function createCost(
     input.participantIds,
   );
   assertDeductible(book, input.deductible);
+  const tagIds = requireTagIds(ctx, input.tagIds ?? []);
   if (input.receiptTaskId) assertTaskOpenForBooking(ctx, input.receiptTaskId);
 
   let assetId = input.assetId ?? null;
@@ -499,6 +519,7 @@ export function createCost(
         .returning({ id: costEntries.id })
         .get().id;
       writeShares(tx as unknown as DB, row, shares);
+      writeEntryTags(tx as unknown as DB, row, tagIds);
       if (input.receiptTaskId) {
         takeLease(
           { db: tx as unknown as DB, now: ctx.now },
@@ -671,8 +692,11 @@ export function updateCost(
     participantIds,
     splitMode,
     amountMinor,
+    tagIds: tagIdsPatch,
     ...fields
   } = patch;
+  const tagIds =
+    tagIdsPatch === undefined ? undefined : requireTagIds(ctx, tagIdsPatch);
   let nextShares: Share[] | undefined;
   if (customShares !== undefined) {
     if ((splitMode ?? current.splitMode) !== "custom") {
@@ -715,28 +739,31 @@ export function updateCost(
     ((patch.title !== undefined && patch.title !== current.title) ||
       (patch.assetId !== undefined && patch.assetId !== current.assetId));
 
+  const set = {
+    ...fields,
+    ...(resetDeductible ? { deductible: "unknown" as const } : {}),
+    ...(amountMinor === undefined ? {} : { amountMinor: minor(amountMinor) }),
+    // Naming the mode even when it stays keeps the update from being empty when only the shares change.
+    ...(splitMode === undefined
+      ? nextShares
+        ? { splitMode: current.splitMode }
+        : {}
+      : { splitMode }),
+    ...(defaultExpense === undefined
+      ? {}
+      : { countsAsExpense: defaultExpense }),
+    ...(linkAffected ? { linkSyncedAt: null } : {}),
+  };
   ctx.db.transaction((tx) => {
+    // A change of the tags alone still counts as a change of the entry.
     tx.update(costEntries)
-      .set({
-        ...fields,
-        ...(resetDeductible ? { deductible: "unknown" as const } : {}),
-        ...(amountMinor === undefined
-          ? {}
-          : { amountMinor: minor(amountMinor) }),
-        // Naming the mode even when it stays keeps the update from being empty when only the shares change.
-        ...(splitMode === undefined
-          ? nextShares
-            ? { splitMode: current.splitMode }
-            : {}
-          : { splitMode }),
-        ...(defaultExpense === undefined
-          ? {}
-          : { countsAsExpense: defaultExpense }),
-        ...(linkAffected ? { linkSyncedAt: null } : {}),
-      })
+      .set(
+        Object.keys(set).length === 0 ? { updatedAt: new Date(ctx.now) } : set,
+      )
       .where(eq(costEntries.id, id))
       .run();
     if (nextShares) writeShares(tx as unknown as DB, id, nextShares);
+    if (tagIds) writeEntryTags(tx as unknown as DB, id, tagIds);
   });
   if (linkAffected && current.providerConnectionId) {
     emitEvent("financeLinksPending", {

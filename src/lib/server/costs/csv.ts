@@ -11,7 +11,8 @@ import {
 } from "$lib/server/db";
 import type { ServiceContext } from "$lib/server/service";
 import { getCostBookRow } from "./books";
-import { yearRange } from "./costs";
+import { hasTag, yearRange } from "./costs";
+import { getCostTagRow, tagsOfEntries } from "./tags";
 
 export const CSV_BOM = "﻿";
 export const CSV_SEPARATOR = ";";
@@ -36,6 +37,7 @@ export const CSV_COLUMNS = [
   "id",
   // Columns are only ever added at the end, so a spreadsheet or script built on the earlier ones keeps working.
   "book",
+  "tags",
 ] as const;
 
 /**
@@ -59,15 +61,17 @@ export function csvAmount(amountMinor: number, currency: string): string {
 const payer = alias(users, "payer");
 
 /**
- * The entries of a year (of one book with `bookId`), oldest first, as a CSV text with byte order mark, semicolons and
- * CRLF. A `bookId` that names no book is a 404.
+ * The entries of a year (of one book with `bookId`, of one tag with `tagId`), oldest first, as a CSV text with byte order
+ * mark, semicolons and CRLF. A `bookId` or `tagId` that names nothing is a 404. The `tags` cell lists the entry's tag
+ * names by name, separated by a comma and a space.
  */
 export function costsCsv(
   ctx: Pick<ServiceContext, "db">,
   year: number,
-  filter: { bookId?: string } = {},
+  filter: { bookId?: string; tagId?: string } = {},
 ): string {
   if (filter.bookId) getCostBookRow(ctx, filter.bookId);
+  if (filter.tagId) getCostTagRow(ctx, filter.tagId);
   const { from, to } = yearRange(year);
   const rows = ctx.db
     .select({
@@ -92,6 +96,7 @@ export function costsCsv(
         sql`${costEntries.date} >= ${from}`,
         sql`${costEntries.date} <= ${to}`,
         filter.bookId ? eq(costEntries.bookId, filter.bookId) : undefined,
+        filter.tagId ? hasTag(filter.tagId) : undefined,
       ),
     )
     .orderBy(
@@ -100,6 +105,10 @@ export function costsCsv(
       asc(sql`${costEntries}.rowid`),
     )
     .all();
+  const tags = tagsOfEntries(
+    ctx.db,
+    rows.map((r) => r.cost.id),
+  );
   const lines = [CSV_COLUMNS.join(CSV_SEPARATOR)];
   for (const r of rows) {
     const c = r.cost;
@@ -126,6 +135,7 @@ export function costsCsv(
         c.source,
         c.id,
         csvField(r.bookName),
+        csvField((tags.get(c.id) ?? []).map((t) => t.name).join(", ") || null),
       ].join(CSV_SEPARATOR),
     );
   }

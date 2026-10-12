@@ -15,6 +15,7 @@ import {
   paginationQuerySchema,
   queryBooleanSchema,
 } from "./common";
+import { costTagIdsInputSchema, costTagRefSchema } from "./cost-tags";
 import { currencySchema } from "./household";
 
 export const costCategorySchema = z.enum(COST_CATEGORIES);
@@ -89,6 +90,8 @@ export const costEntrySchema = z
      * the participants.
      */
     shares: z.array(costShareSchema),
+    /** The tags of the entry (`GET /cost-tags`), by name. */
+    tags: z.array(costTagRefSchema),
     /** False for what builds equity (mortgage repayment); such entries stay out of the expense totals. */
     countsAsExpense: z.boolean(),
     /** The tax class; `unknown` and without meaning unless the book is tax relevant. */
@@ -137,6 +140,8 @@ export const listCostsQuerySchema = paginationQuerySchema.extend({
   defectId: idSchema.optional(),
   /** A user id, or `me`. */
   paidBy: idSchema.optional(),
+  /** Only the entries that carry this tag (`GET /cost-tags`); a tag that does not exist is a 404. */
+  tagId: idSchema.optional(),
   /** `true`: only the entries a person still has to review; `false`: only the others. */
   reviewNeeded: queryBooleanSchema.optional(),
   q: z.string().trim().min(1).max(100).optional(),
@@ -163,6 +168,7 @@ const costFields = {
   participantIds: costParticipantsInputSchema,
   countsAsExpense: z.boolean(),
   deductible: costDeductibleSchema,
+  tagIds: costTagIdsInputSchema,
 };
 
 /**
@@ -173,6 +179,7 @@ const costFields = {
  * `receiptTaskId` names the receipt task (`/ai-tasks`) the entry is booked for: the entry is flagged `reviewNeeded` at
  * once and recorded on the task (`bookedSoFar`) in the same transaction; an unknown task is a 400 on the field, a task that
  * is not waiting any more a 409.
+ * `tagIds` are the tags (`GET /cost-tags`) the entry carries, each once (400 on `tagIds` for one that does not exist).
  * `idempotencyKey` (8 to 128 characters, chosen by the caller, unique per person who books) makes a retried request return
  * the first entry with status 200 instead of booking a second one; the same key for a different entry (amount, currency,
  * category, title, and book, date or payer when the retry names them) is a 409.
@@ -196,6 +203,7 @@ export const createCostRequestSchema = z.strictObject({
   participantIds: costFields.participantIds.optional(),
   countsAsExpense: costFields.countsAsExpense.optional(),
   deductible: costFields.deductible.default("unknown"),
+  tagIds: costFields.tagIds.optional(),
   receiptTaskId: idSchema.optional(),
   idempotencyKey: z.string().min(8).max(128).optional(),
 });
@@ -205,7 +213,7 @@ export type CreateCostRequest = z.output<typeof createCostRequestSchema>;
  * Setting `splitMode` to `ownership` or `equal` splits again by the people's
  * current shares; sending `shares` needs `custom`, `participantIds` an `equal` split (the entry's, or the one set in
  * the same request) and split again among those people. Changing only the amount keeps the frozen shares.
- * `bookId` moves the entry to another book that is not archived.
+ * `bookId` moves the entry to another book that is not archived. `tagIds` replaces the entry's tags (an empty list removes them all).
  */
 export const updateCostRequestSchema = atLeastOne(
   z.strictObject({
@@ -227,6 +235,7 @@ export const updateCostRequestSchema = atLeastOne(
     participantIds: costFields.participantIds.optional(),
     countsAsExpense: costFields.countsAsExpense.optional(),
     deductible: costFields.deductible.optional(),
+    tagIds: costFields.tagIds.optional(),
   }),
 );
 export type UpdateCostRequest = z.output<typeof updateCostRequestSchema>;
@@ -279,6 +288,8 @@ export const costsSummaryQuerySchema = z.object({
   assetId: idSchema.optional(),
   /** Only the cost entries of this book: everything in the summary, the settlement included, is then that book's alone. */
   bookId: idSchema.optional(),
+  /** Only the cost entries that carry this tag: everything in the summary is then theirs alone; a tag that does not exist is a 404. */
+  tagId: idSchema.optional(),
 });
 export type CostsSummaryQuery = z.output<typeof costsSummaryQuerySchema>;
 
@@ -425,6 +436,8 @@ export const exportCostsQuerySchema = z.object({
   year: year.optional(),
   /** Only the entries of this book. */
   bookId: idSchema.optional(),
+  /** Only the entries that carry this tag. */
+  tagId: idSchema.optional(),
 });
 export type ExportCostsQuery = z.output<typeof exportCostsQuerySchema>;
 

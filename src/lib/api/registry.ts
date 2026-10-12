@@ -315,6 +315,12 @@ import {
   updateCostBookRequestSchema,
 } from "./schemas/cost-books";
 import {
+  costTagSchema,
+  createCostTagRequestSchema,
+  listCostTagsResponseSchema,
+  updateCostTagRequestSchema,
+} from "./schemas/cost-tags";
+import {
   createSettlementRequestSchema,
   listSettlementsQuerySchema,
   listSettlementsResponseSchema,
@@ -2043,7 +2049,7 @@ export const endpoints = {
     path: "/api/v1/costs",
     summary: "List cost entries",
     description:
-      "Newest first by date. Filter by book (`bookId`; an unknown book is a 404, not an empty list), year or a date range (`from`/`to`), category, asset, room, defect, who paid (`paidBy`, a user id or `me`), whether a person still has to review the entry (`reviewNeeded=true|false`) and a search text over title, payee and notes. Amounts are minor units of the entry's currency: positive = expense, negative = refund. Every entry carries its book and whether that book is tax relevant (`bookTaxRelevant`).",
+      "Newest first by date. Filter by book (`bookId`; an unknown book is a 404, not an empty list), year or a date range (`from`/`to`), category, asset, room, defect, who paid (`paidBy`, a user id or `me`), whether a person still has to review the entry (`reviewNeeded=true|false`), the tag it carries (`tagId`; an unknown tag is a 404) and a search text over title, payee and notes. Amounts are minor units of the entry's currency: positive = expense, negative = refund. Every entry carries its book and whether that book is tax relevant (`bookTaxRelevant`) and its tags.",
     tags: ["costs"],
     auth: "both",
     scopes: ["read"],
@@ -2058,7 +2064,7 @@ export const endpoints = {
     path: "/api/v1/costs",
     summary: "Book a cost",
     description:
-      "`bookId` defaults to the default book (`isDefault` in `GET /cost-books`; an archived book is a 400 on `bookId`), `currency` to the household's, `date` to today. `splitMode` defaults to the book's default split: `ownership` divides by the people's current ownership shares, `equal` equally among everybody or, with `participantIds`, among those household members only (each listed once), `custom` by `shares` (basis points, sum 10000), `none` does not split; `participantIds` with any other split and `shares` with any other than `custom` are a 400. The shares are frozen with the entry; the parts add up to the amount exactly (largest remainder, ties to the earlier user id). `countsAsExpense` defaults to false for a mortgage repayment (equity), else true. `deductible` other than `unknown` needs a tax relevant book (400 on `deductible` otherwise). Entries cannot be created for a finance provider's transaction here: accept the suggestion instead. `receiptTaskId` books the entry for a task of the receipt queue (`/ai-tasks`): in the same transaction the entry is flagged `reviewNeeded` and recorded on the task (`bookedSoFar` of `GET /ai-tasks/{id}`, `receiptTaskId` on the entry), so an interrupted client or another one sees what is booked already; an unknown task is a 400 on the field, a task that is done or dismissed a 409 `conflict` (`details.status`). A repeated `idempotencyKey` (8 to 128 characters; unique per person who books, whatever credential they use) returns the first entry with status 200 and books nothing; the same key for a different entry (amount, currency, category, title or receipt task, or book, date or payer when the retry names them) is a 409 `conflict`; once the entry is deleted its key is free again. Send one per attempt to save, and keep it for a retry that got no answer.",
+      "`bookId` defaults to the default book (`isDefault` in `GET /cost-books`; an archived book is a 400 on `bookId`), `currency` to the household's, `date` to today. `splitMode` defaults to the book's default split: `ownership` divides by the people's current ownership shares, `equal` equally among everybody or, with `participantIds`, among those household members only (each listed once), `custom` by `shares` (basis points, sum 10000), `none` does not split; `participantIds` with any other split and `shares` with any other than `custom` are a 400. The shares are frozen with the entry; the parts add up to the amount exactly (largest remainder, ties to the earlier user id). `countsAsExpense` defaults to false for a mortgage repayment (equity), else true. `deductible` other than `unknown` needs a tax relevant book (400 on `deductible` otherwise). `tagIds` label the entry with tags (`/cost-tags`; 400 on `tagIds` for one that does not exist). Entries cannot be created for a finance provider's transaction here: accept the suggestion instead. `receiptTaskId` books the entry for a task of the receipt queue (`/ai-tasks`): in the same transaction the entry is flagged `reviewNeeded` and recorded on the task (`bookedSoFar` of `GET /ai-tasks/{id}`, `receiptTaskId` on the entry), so an interrupted client or another one sees what is booked already; an unknown task is a 400 on the field, a task that is done or dismissed a 409 `conflict` (`details.status`). A repeated `idempotencyKey` (8 to 128 characters; unique per person who books, whatever credential they use) returns the first entry with status 200 and books nothing; the same key for a different entry (amount, currency, category, title or receipt task, or book, date or payer when the retry names them) is a 409 `conflict`; once the entry is deleted its key is free again. Send one per attempt to save, and keep it for a retry that got no answer.",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2074,7 +2080,7 @@ export const endpoints = {
     path: "/api/v1/costs/summary",
     summary: "Costs of a year: totals and settlement",
     description:
-      "Totals per category, month and asset (top ten) and per tax class count entries in the household currency that count as an expense; mortgage repayments are reported as `equityTotalMinor`; the tax classes count the entries of tax relevant books only. `people` and `settlement` cover every split entry with a payer of the year: `balanceMinor` = paid - share, and `settlement` lists who pays whom to square the balances. Recorded payments (`/settlements`) are not part of a year: the running balance with them is `GET /costs/balances`. With `assetId` or `bookId` only the entries of that asset or book are counted; a `bookId` that names no book is a 404.",
+      "Totals per category, month and asset (top ten) and per tax class count entries in the household currency that count as an expense; mortgage repayments are reported as `equityTotalMinor`; the tax classes count the entries of tax relevant books only. `people` and `settlement` cover every split entry with a payer of the year: `balanceMinor` = paid - share, and `settlement` lists who pays whom to square the balances. Recorded payments (`/settlements`) are not part of a year: the running balance with them is `GET /costs/balances`. With `assetId`, `bookId` or `tagId` only the entries of that asset, book or tag are counted; a `bookId` or `tagId` that names nothing is a 404.",
     tags: ["costs"],
     auth: "both",
     scopes: ["read"],
@@ -2118,7 +2124,7 @@ export const endpoints = {
     path: "/api/v1/costs/export.csv",
     summary: "Cost entries of a year as CSV",
     description:
-      "UTF-8 with a byte order mark, semicolon separated and CRLF line ends (opens in Swiss Excel). Amounts are plain decimals with a point and no thousands separator (`-12.50`), so they parse the same everywhere. Text that would be read as a formula is prefixed with an apostrophe. Columns are only ever added at the end (`book` is the last one). With `bookId` only that book's entries are exported (404 for a book that does not exist).",
+      "UTF-8 with a byte order mark, semicolon separated and CRLF line ends (opens in Swiss Excel). Amounts are plain decimals with a point and no thousands separator (`-12.50`), so they parse the same everywhere. Text that would be read as a formula is prefixed with an apostrophe. Columns are only ever added at the end (`tags` is the last one: the tag names of the entry, by name, separated by a comma and a space). With `bookId` or `tagId` only that book's or tag's entries are exported (404 for one that does not exist).",
     tags: ["costs"],
     auth: "both",
     scopes: ["read"],
@@ -2148,7 +2154,7 @@ export const endpoints = {
     path: "/api/v1/costs/{id}",
     summary: "Change a cost entry",
     description:
-      "Setting `splitMode` to `ownership` or `equal` splits again by the people's current shares (`equal` among everybody); `shares` need `custom`; `participantIds` need an `equal` split (the entry's, or the one set in the same request) and split again among those members. Changing only the amount keeps the frozen shares. `bookId` moves the entry to another book that is not archived (an entry may stay in an archived book); moving it to a book that is not tax relevant resets its `deductible` to `unknown` unless the request sets it, and `deductible` other than `unknown` (and other than the entry's own) is a 400 there. An entry booked from a finance provider keeps its source; its back-link in the provider is refreshed. An entry a fuel log entry booked (`fuelLogId` is set) keeps its amount, currency, date and device as that entry has them: asking for other values is a 409 `conflict` with `details.fuelLogId` (the first three change with `PATCH /fuel-logs/{id}`, the device is the vehicle and stays); sending the current values is fine, and category, title, notes, payee, payer, split, deductibility, room, defect and service log entry stay editable here.",
+      "Setting `splitMode` to `ownership` or `equal` splits again by the people's current shares (`equal` among everybody); `shares` need `custom`; `participantIds` need an `equal` split (the entry's, or the one set in the same request) and split again among those members. Changing only the amount keeps the frozen shares. `tagIds` replaces the entry's tags (an empty list removes them all). `bookId` moves the entry to another book that is not archived (an entry may stay in an archived book); moving it to a book that is not tax relevant resets its `deductible` to `unknown` unless the request sets it, and `deductible` other than `unknown` (and other than the entry's own) is a 400 there. An entry booked from a finance provider keeps its source; its back-link in the provider is refreshed. An entry a fuel log entry booked (`fuelLogId` is set) keeps its amount, currency, date and device as that entry has them: asking for other values is a 409 `conflict` with `details.fuelLogId` (the first three change with `PATCH /fuel-logs/{id}`, the device is the vehicle and stays); sending the current values is fine, and category, title, notes, payee, payer, split, deductibility, room, defect and service log entry stay editable here.",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2277,6 +2283,78 @@ export const endpoints = {
     response: emptySchema,
     status: 204,
     errors: ["not_found", "conflict"],
+  }),
+
+  costTagsList: defineEndpoint({
+    id: "costTagsList",
+    method: "GET",
+    path: "/api/v1/cost-tags",
+    summary: "List cost tags",
+    description:
+      "The labels cost entries carry, by name without regard to case, with the number of entries that carry each. Not paged: there are at most 200.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    response: listCostTagsResponseSchema,
+  }),
+
+  costTagsCreate: defineEndpoint({
+    id: "costTagsCreate",
+    method: "POST",
+    path: "/api/v1/cost-tags",
+    summary: "Create a cost tag",
+    description:
+      "`color` is a key the client maps to a colour and defaults to `gray`. Names are unique without regard to case (409 `conflict`), and there are at most 200 tags (409).",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    body: createCostTagRequestSchema,
+    response: costTagSchema,
+    status: 201,
+    errors: ["conflict"],
+  }),
+
+  costTagsGet: defineEndpoint({
+    id: "costTagsGet",
+    method: "GET",
+    path: "/api/v1/cost-tags/{id}",
+    summary: "Get a cost tag",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: costTagSchema,
+    errors: ["not_found"],
+  }),
+
+  costTagsUpdate: defineEndpoint({
+    id: "costTagsUpdate",
+    method: "PATCH",
+    path: "/api/v1/cost-tags/{id}",
+    summary: "Rename or recolour a cost tag",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    body: updateCostTagRequestSchema,
+    response: costTagSchema,
+    errors: ["not_found", "conflict"],
+  }),
+
+  costTagsDelete: defineEndpoint({
+    id: "costTagsDelete",
+    method: "DELETE",
+    path: "/api/v1/cost-tags/{id}",
+    summary: "Delete a cost tag",
+    description:
+      "The entries (and recurring costs) that carried the tag stay, without it.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
   }),
 
   settlementsList: defineEndpoint({

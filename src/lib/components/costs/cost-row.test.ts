@@ -28,6 +28,7 @@ const cost: CostEntry = {
   paidByName: "Anna Beispiel",
   splitMode: "ownership",
   shares: [],
+  tags: [],
   countsAsExpense: true,
   deductible: "unknown",
   source: "manual",

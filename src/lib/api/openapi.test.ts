@@ -83,6 +83,8 @@ describe("openapi document", () => {
       "CostBook",
       "CostEntry",
       "CostShare",
+      "CostTag",
+      "CostTagRef",
       "CostsOf",
       "CostsSummary",
       "CreatedApiToken",

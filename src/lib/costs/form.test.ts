@@ -77,6 +77,7 @@ function entry(over: Partial<CostEntry> = {}): CostEntry {
         amountMinor: 7580,
       },
     ],
+    tags: [],
     countsAsExpense: true,
     deductible: "unknown",
     source: "manual",
