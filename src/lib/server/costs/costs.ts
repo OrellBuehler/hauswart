@@ -42,6 +42,7 @@ import { clockAt } from "$lib/server/tasks/evaluator";
 import {
   defaultCostBook,
   findCostBookRow,
+  getCostBookRow,
   requireOpenCostBook,
   type CostBookRow,
 } from "./books";
@@ -67,6 +68,7 @@ export interface CostShareRecord {
 
 export interface CostRecord extends CostRow {
   bookName: string;
+  bookTaxRelevant: boolean;
   assetName: string | null;
   roomName: string | null;
   defectNumber: number | null;
@@ -86,6 +88,7 @@ const selectCosts = (db: DB) =>
     .select({
       cost: costEntries,
       bookName: costBooks.name,
+      bookTaxRelevant: costBooks.taxRelevant,
       assetName: assets.name,
       roomName: rooms.name,
       defectNumber: defects.number,
@@ -163,6 +166,7 @@ function toRecords(db: DB, joined: readonly Joined[]): CostRecord[] {
   return joined.map((j) => ({
     ...j.cost,
     bookName: j.bookName,
+    bookTaxRelevant: j.bookTaxRelevant,
     assetName: j.assetName,
     roomName: j.roomName,
     defectNumber: j.defectNumber,
@@ -238,13 +242,17 @@ const cursorSchema = z.object({
   r: z.number().int(),
 });
 
-/** Newest first by date, then by when it was entered; keyset pages on (date, createdAt, rowid). */
+/**
+ * Newest first by date, then by when it was entered; keyset pages on (date, createdAt, rowid). A `bookId` that names no
+ * book is a 404, not an empty list.
+ */
 export function listCosts(
   ctx: Db,
   filter: Omit<ListCostsQuery, "cursor" | "limit">,
   page: { cursor?: string; limit: number },
   viewerId: string,
 ) {
+  if (filter.bookId) getCostBookRow(ctx, filter.bookId);
   const where = whereOf(filter as ListCostsQuery, viewerId);
   if (page.cursor) {
     const at = decodeCursor(page.cursor, cursorSchema);

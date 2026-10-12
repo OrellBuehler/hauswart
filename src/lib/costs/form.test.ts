@@ -41,6 +41,7 @@ function entry(over: Partial<CostEntry> = {}): CostEntry {
     id: "c1",
     bookId: "b1",
     bookName: "Wohnung",
+    bookTaxRelevant: true,
     date: "2026-10-01",
     title: "Dishwasher repair",
     amountMinor: 18950,

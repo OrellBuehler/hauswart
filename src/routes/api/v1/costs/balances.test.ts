@@ -201,10 +201,11 @@ describe("balances, books and participants through the API", () => {
       const unknown = await fetch(
         "/api/v1/costs/export.csv?year=2026&bookId=missing",
       );
-      expect(unknown.headers.get("content-disposition")).toBe(
-        'attachment; filename="hauswart-costs-2026.csv"',
-      );
-      expect((await unknown.text()).trim().split("\r\n")).toHaveLength(1);
+      expect(unknown.status).toBe(404);
+      expect(unknown.headers.get("content-disposition")).toBeNull();
+      expect(await unknown.json()).toMatchObject({
+        error: { code: "not_found" },
+      });
     });
   });
 

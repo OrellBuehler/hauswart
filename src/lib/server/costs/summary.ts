@@ -11,6 +11,7 @@ import {
 import { getHousehold } from "$lib/server/household/household";
 import type { ServiceContext } from "$lib/server/service";
 import { clockAt } from "$lib/server/tasks/evaluator";
+import { getCostBookRow } from "./books";
 import { yearRange } from "./costs";
 import { bookEntry, newLedger, personBalances } from "./ledger";
 import type { Share } from "./split";
@@ -81,7 +82,7 @@ const bump = (map: Map<string, Tally>, key: string, amount: number) => {
  * count entries in the household currency that count as an expense;
  * settlement covers every split entry with a payer (it is about who paid,
  * not about what is an expense). With an `assetId` or a `bookId` only the
- * entries of that asset or book are counted, all of it. The tax classes count
+ * entries of that asset or book are counted, all of it; a `bookId` that names no book is a 404. The tax classes count
  * the entries of books that are tax relevant only, since the class means
  * nothing elsewhere. Recorded payments (settlements) are not part of a year:
  * the running balance with them is `costBalances`.
@@ -92,6 +93,7 @@ export function costsSummary(
   filter: { assetId?: string; bookId?: string } = {},
 ): CostsSummary {
   const { currency } = getHousehold(ctx);
+  if (filter.bookId) getCostBookRow(ctx, filter.bookId);
   const { from, to } = yearRange(year);
   const inYear = and(
     sql`${costEntries.date} >= ${from}`,

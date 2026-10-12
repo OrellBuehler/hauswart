@@ -392,8 +392,9 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   `deductible` other than `unknown` is a 400 on `deductible` in a book that is not tax relevant (the entry's own value
   may be repeated); moving an entry into such a book resets it to `unknown` unless the request sets it; switching
   `taxRelevant` off keeps what entries say, and `byDeductible` of the summary counts tax relevant books only. `bookId`
-  filters the list, `GET /costs/summary` (every number is then that book's) and the CSV.
-  **Moving entries**: `PATCH /costs/{id}` with `bookId` moves one; `POST /costs/move-to-book {bookId, ids | assetId}`
+  filters the list, `GET /costs/summary` (every number is then that book's) and the CSV; a `bookId` that names no book is
+  a 404 on all of them (and on the balances), never an empty answer. The entry DTO carries `bookName` and
+  `bookTaxRelevant` (whether `deductible` means anything for it). **Moving entries**: `PATCH /costs/{id}` with `bookId` moves one; `POST /costs/move-to-book {bookId, ids | assetId}`
   (scope `costs:write`, `costs/move.ts`) moves up to 500 named entries or every entry of a device, all or nothing in one
   transaction (an unknown id is a 400 on `ids`, an unknown device on `assetId`, an unknown or archived target on
   `bookId`), answers `{bookId, moved, unchanged, deductibleReset}` and changes the ledger only: split, payer and frozen
@@ -422,8 +423,9 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   balance = the others owe this person, zero-sum per currency), household currency only (`otherCurrencyCount` = entries
   and payments left out, `unassignedPayerCount` as in the summary) and `suggestedPayments` from the same greedy `settle`
   as the year summary. With `bookId`: that book's entries and its own payments (payments across all books cannot be
-  attributed and stay out); with `all=true` or no parameter: every book, archived ones and payments across all books
-  included; `bookId` with `all=true`, or `all=false` without a book, is a 400, an unknown book a 404. `ledger.ts`
+  attributed and stay out; `crossBookSettlements: {count, totalMinor}` says how many of them there are, household
+  currency, null for the view of all books); with `all=true` or no parameter: every book, archived ones and payments
+  across all books included; `bookId` with `all=true`, or `all=false` without a book, is a 400, an unknown book a 404. `ledger.ts`
   (`bookEntry`, `bookSettlement`, `personBalances`) is the one place paid/share are added up, for the summary and the
   balances alike.
 - **CSV** (`GET /costs/export.csv?year=&bookId=`, binary `text/csv`): UTF-8 with BOM, `;` separated, CRLF,
@@ -1146,7 +1148,8 @@ tsconfig also includes `mcp/**` so `bun run check` type-checks it. The app impor
   or id, archived ones too - `ctx.resolveBook`), `record_settlement` (`costs:write`, `from` defaults to the token's
   user; answers with what is still open). `create_cost` takes `book` and `participants` (names, ids or `me`; they
   imply `equal`; an omitted `split` is the book's), `list_costs` and `cost_summary` take `book`, `accept_finance_suggestion`
-  takes `book` and `participants`.
+  takes `book` and `participants`. `list_costs` rows carry `bookTaxRelevant` (only when true) and `get_balances` for one
+  book says how many payments across all books it leaves out (`paymentsAcrossAllBooksLeftOut`).
 - **Tools** are curated and task-oriented (`defineTool({name, title, description, mode, input,
 handler})` returning `{summary, data}`; output is a summary line plus compact JSON with empty
   fields dropped). `mode` (`read|create|update|undo`) fixes the MCP annotations and the default

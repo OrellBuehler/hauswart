@@ -18028,7 +18028,7 @@
       "get": {
         "operationId": "costsList",
         "summary": "List cost entries",
-        "description": "Newest first by date. Filter by book (`bookId`), year or a date range (`from`/`to`), category, asset, room, defect, who paid (`paidBy`, a user id or `me`) and a search text over title, payee and notes. Amounts are minor units of the entry's currency: positive = expense, negative = refund.",
+        "description": "Newest first by date. Filter by book (`bookId`; an unknown book is a 404, not an empty list), year or a date range (`from`/`to`), category, asset, room, defect, who paid (`paidBy`, a user id or `me`) and a search text over title, payee and notes. Amounts are minor units of the entry's currency: positive = expense, negative = refund. Every entry carries its book and whether that book is tax relevant (`bookTaxRelevant`).",
         "tags": [
           "costs"
         ],
@@ -18239,6 +18239,16 @@
           },
           "403": {
             "description": "Error: `forbidden`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: `not_found`",
             "content": {
               "application/json": {
                 "schema": {
@@ -18583,7 +18593,7 @@
       "get": {
         "operationId": "costsSummary",
         "summary": "Costs of a year: totals and settlement",
-        "description": "Totals per category, month and asset (top ten) and per tax class count entries in the household currency that count as an expense; mortgage repayments are reported as `equityTotalMinor`; the tax classes count the entries of tax relevant books only. `people` and `settlement` cover every split entry with a payer of the year: `balanceMinor` = paid - share, and `settlement` lists who pays whom to square the balances. Recorded payments (`/settlements`) are not part of a year: the running balance with them is `GET /costs/balances`. With `assetId` or `bookId` only the entries of that asset or book are counted.",
+        "description": "Totals per category, month and asset (top ten) and per tax class count entries in the household currency that count as an expense; mortgage repayments are reported as `equityTotalMinor`; the tax classes count the entries of tax relevant books only. `people` and `settlement` cover every split entry with a payer of the year: `balanceMinor` = paid - share, and `settlement` lists who pays whom to square the balances. Recorded payments (`/settlements`) are not part of a year: the running balance with them is `GET /costs/balances`. With `assetId` or `bookId` only the entries of that asset or book are counted; a `bookId` that names no book is a 404.",
         "tags": [
           "costs"
         ],
@@ -18665,6 +18675,16 @@
           },
           "403": {
             "description": "Error: `forbidden`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: `not_found`",
             "content": {
               "application/json": {
                 "schema": {
@@ -18841,7 +18861,7 @@
       "get": {
         "operationId": "costsExport",
         "summary": "Cost entries of a year as CSV",
-        "description": "UTF-8 with a byte order mark, semicolon separated and CRLF line ends (opens in Swiss Excel). Amounts are plain decimals with a point and no thousands separator (`-12.50`), so they parse the same everywhere. Text that would be read as a formula is prefixed with an apostrophe. Columns are only ever added at the end (`book` is the last one). With `bookId` only that book's entries are exported.",
+        "description": "UTF-8 with a byte order mark, semicolon separated and CRLF line ends (opens in Swiss Excel). Amounts are plain decimals with a point and no thousands separator (`-12.50`), so they parse the same everywhere. Text that would be read as a formula is prefixed with an apostrophe. Columns are only ever added at the end (`book` is the last one). With `bookId` only that book's entries are exported (404 for a book that does not exist).",
         "tags": [
           "costs"
         ],
@@ -18926,6 +18946,16 @@
           },
           "403": {
             "description": "Error: `forbidden`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: `not_found`",
             "content": {
               "application/json": {
                 "schema": {
@@ -19510,7 +19540,7 @@
       "get": {
         "operationId": "costsBalances",
         "summary": "Where everybody stands: running balances and suggested payments",
-        "description": "All-time balance per household member: paid - share over the split entries with a payer, plus the payments they made (settlements) minus those they received; positive means the others owe this person. Pass `bookId` for one book (its settlements only; payments across all books cannot be attributed and stay out) or `all=true` for every book together, archived ones and payments across all books included; without parameters all books are used. A book together with `all=true`, or `all=false` without a book, is a 400; an unknown `bookId` is a 404. Only the household currency is counted (`otherCurrencyCount` says how many entries and payments were left out). `suggestedPayments` are the fewest payments that square the balances. The per-year settlement in `GET /costs/summary` is separate and does not include recorded payments.",
+        "description": "All-time balance per household member: paid - share over the split entries with a payer, plus the payments they made (settlements) minus those they received; positive means the others owe this person. Pass `bookId` for one book (its settlements only; payments across all books cannot be attributed and stay out) or `all=true` for every book together, archived ones and payments across all books included; without parameters all books are used. A book together with `all=true`, or `all=false` without a book, is a 400; an unknown `bookId` is a 404. In the view of one book `crossBookSettlements` says how many recorded payments across all books (and for how much, household currency) the view leaves out; in the view of all books it is null. Only the household currency is counted (`otherCurrencyCount` says how many entries and payments were left out). `suggestedPayments` are the fewest payments that square the balances. The per-year settlement in `GET /costs/summary` is separate and does not include recorded payments.",
         "tags": [
           "costs"
         ],
@@ -42128,6 +42158,9 @@
           "bookName": {
             "type": "string"
           },
+          "bookTaxRelevant": {
+            "type": "boolean"
+          },
           "date": {
             "type": "string",
             "format": "date"
@@ -42324,6 +42357,7 @@
           "id",
           "bookId",
           "bookName",
+          "bookTaxRelevant",
           "date",
           "title",
           "amountMinor",
@@ -42776,6 +42810,33 @@
               "additionalProperties": false
             }
           },
+          "crossBookSettlements": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "count": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "totalMinor": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "count",
+                  "totalMinor"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "suggestedPayments": {
             "type": "array",
             "items": {
@@ -42822,6 +42883,7 @@
           "otherCurrencyCount",
           "unassignedPayerCount",
           "people",
+          "crossBookSettlements",
           "suggestedPayments"
         ],
         "additionalProperties": false

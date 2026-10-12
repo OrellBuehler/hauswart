@@ -3,7 +3,7 @@ import type { endpoints } from "$lib/api/registry";
 import type { costEntrySchema } from "$lib/api/schemas/costs";
 import { toIso } from "$lib/api/schemas/common";
 import { costBalances } from "$lib/server/costs/balances";
-import { findCostBookRow } from "$lib/server/costs/books";
+import { getCostBookRow } from "$lib/server/costs/books";
 import {
   createCost,
   deleteCost,
@@ -28,6 +28,7 @@ export function wireCost(
     id: c.id,
     bookId: c.bookId,
     bookName: c.bookName,
+    bookTaxRelevant: c.bookTaxRelevant,
     date: c.date,
     title: c.title,
     amountMinor: c.amountMinor,
@@ -122,7 +123,7 @@ export const exportCsv: Handler<typeof endpoints.costsExport> = ({
   query,
 }) => {
   const year = query.year ?? yearOf(ctx.today);
-  const book = query.bookId ? findCostBookRow(ctx, query.bookId) : undefined;
+  const book = query.bookId ? getCostBookRow(ctx, query.bookId) : undefined;
   const name = book
     ? `hauswart-costs-${year}-${book.slug}`
     : `hauswart-costs-${year}`;

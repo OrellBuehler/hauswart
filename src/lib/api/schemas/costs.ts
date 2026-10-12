@@ -62,6 +62,8 @@ export const costEntrySchema = z
     /** The book (ledger) the entry belongs to; `GET /cost-books`. */
     bookId: z.string(),
     bookName: z.string(),
+    /** Whether the book is tax relevant, i.e. whether `deductible` means anything for this entry. */
+    bookTaxRelevant: z.boolean(),
     date: dateSchema,
     title: z.string(),
     /** Positive = expense, negative = refund. Minor units of `currency`. */
@@ -378,6 +380,14 @@ export const costBalancesSchema = z
         balanceMinor: z.number().int(),
       }),
     ),
+    /**
+     * Only in the view of a single book: the recorded payments across all books, which that view leaves out because
+     * they cannot be attributed to one book (household currency; `count` of them, `totalMinor` their amounts added up,
+     * not their effect on anybody's balance). The view of all books includes them: null there.
+     */
+    crossBookSettlements: z
+      .object({ count: z.number().int(), totalMinor: z.number().int() })
+      .nullable(),
     /** The fewest payments that would square the balances ("A owes B CHF x"); empty when everybody is square. */
     suggestedPayments: z.array(
       z.object({

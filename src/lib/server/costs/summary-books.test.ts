@@ -90,9 +90,10 @@ describe("the year summary and books", () => {
     expect(
       costsSummary(ctx(), 2026, { bookId: book("Auto").id }).expenseTotalMinor,
     ).toBe(0);
-    expect(
-      costsSummary(ctx(), 2026, { bookId: "unknown" }).expenseTotalMinor,
-    ).toBe(0);
+    // a book that does not exist is not an empty book
+    expect(() => costsSummary(ctx(), 2026, { bookId: "unknown" })).toThrowError(
+      expect.objectContaining({ code: "not_found" }),
+    );
   });
 
   it("combines the book with an asset filter", async () => {

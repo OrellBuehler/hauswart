@@ -10,6 +10,7 @@ import {
   users,
 } from "$lib/server/db";
 import type { ServiceContext } from "$lib/server/service";
+import { getCostBookRow } from "./books";
 import { yearRange } from "./costs";
 
 export const CSV_BOM = "﻿";
@@ -59,13 +60,14 @@ const payer = alias(users, "payer");
 
 /**
  * The entries of a year (of one book with `bookId`), oldest first, as a CSV text with byte order mark, semicolons and
- * CRLF.
+ * CRLF. A `bookId` that names no book is a 404.
  */
 export function costsCsv(
   ctx: Pick<ServiceContext, "db">,
   year: number,
   filter: { bookId?: string } = {},
 ): string {
+  if (filter.bookId) getCostBookRow(ctx, filter.bookId);
   const { from, to } = yearRange(year);
   const rows = ctx.db
     .select({

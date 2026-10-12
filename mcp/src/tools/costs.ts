@@ -43,6 +43,7 @@ export function toMinor(amount: string, currency: string): number {
 const costRow = (c: CostEntry) => ({
   id: c.id,
   book: c.bookName,
+  bookTaxRelevant: c.bookTaxRelevant ? true : null,
   date: c.date,
   title: c.title,
   amount: money(c.amountMinor, c.currency),

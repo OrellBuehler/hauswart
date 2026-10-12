@@ -60,6 +60,12 @@ function balancesData(b: CostBalances) {
     })),
     otherCurrencyEntries: b.otherCurrencyCount || null,
     splitEntriesWithoutPayer: b.unassignedPayerCount || null,
+    paymentsAcrossAllBooksLeftOut: b.crossBookSettlements?.count
+      ? {
+          count: b.crossBookSettlements.count,
+          total: m(b.crossBookSettlements.totalMinor),
+        }
+      : null,
   };
 }
 
@@ -77,7 +83,7 @@ export const getBalances = defineTool({
   name: "get_balances",
   title: "Who owes whom",
   description:
-    "The running balance of every household member over all time: what each person paid, their share of what was split, the payments they made and received (record_settlement), and the balance (positive = the others owe this person), plus the fewest payments that would square everybody. Covers every book together, or one book with book (name or id). Only the household currency counts. The per-year settlement in cost_summary is separate and does not include recorded payments.",
+    "The running balance of every household member over all time: what each person paid, their share of what was split, the payments they made and received (record_settlement), and the balance (positive = the others owe this person), plus the fewest payments that would square everybody. Covers every book together, or one book with book (name or id; payments recorded across all books are then left out, and paymentsAcrossAllBooksLeftOut says how many). Only the household currency counts. The per-year settlement in cost_summary is separate and does not include recorded payments.",
   mode: "read",
   input: { book: z.string().min(1).max(64).optional() },
   async handler({ book }, ctx) {

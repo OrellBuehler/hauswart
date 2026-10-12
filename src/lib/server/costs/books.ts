@@ -75,6 +75,13 @@ export function findCostBookRow(ctx: Db, id: string): CostBookRow | undefined {
   return ctx.db.select().from(costBooks).where(eq(costBooks.id, id)).get();
 }
 
+/** A book that a query or a path names; a missing one is a 404. */
+export function getCostBookRow(ctx: Db, id: string): CostBookRow {
+  const book = findCostBookRow(ctx, id);
+  if (!book) throw notFound("Cost book");
+  return book;
+}
+
 /** The id of a book that exists and is not archived, else undefined: what a stored preference may still point at. */
 export function openCostBookId(
   ctx: Db,
