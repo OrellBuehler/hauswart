@@ -1,10 +1,13 @@
 import { COST_CATEGORIES, type CostCategory } from "$lib/api/enums";
 import { daysInMonth } from "$lib/dates";
+import { bookParam, parseBookParam } from "./books";
 
 export const MIN_YEAR = 1990;
 export const MAX_YEAR = 2200;
 
 export type CostFilters = {
+  /** The book on screen; empty for every book. */
+  bookId: string;
   year: number;
   q: string;
   category: CostCategory | "";
@@ -35,6 +38,7 @@ export function parseCostFilters(
   const category = params.get("category");
   const month = params.get("month") ?? "";
   return {
+    bookId: parseBookParam(params.get("book")) ?? "",
     year: parseYear(params.get("year"), defaultYear),
     q: (params.get("q") ?? "").trim().slice(0, 100),
     category: COST_CATEGORIES.find((c) => c === category) ?? "",
@@ -51,6 +55,7 @@ export function costFilterQuery(
   defaultYear: number,
 ): string {
   const params = new URLSearchParams();
+  params.set("book", bookParam(filters.bookId));
   if (filters.year !== defaultYear) params.set("year", String(filters.year));
   if (filters.q) params.set("q", filters.q);
   if (filters.category) params.set("category", filters.category);
@@ -61,6 +66,16 @@ export function costFilterQuery(
   if (filters.month) params.set("month", filters.month);
   const qs = params.toString();
   return qs ? `?${qs}` : "";
+}
+
+/**
+ * Whether the address narrows the list by something other than the book, say a link to the costs of one device. Such
+ * a link shows what it was made to show, whichever book the person looked at last.
+ */
+export function narrowsBeyondBook(params: URLSearchParams): boolean {
+  return ["q", "category", "asset", "room", "defect", "paidBy", "month"].some(
+    (key) => (params.get(key) ?? "").trim() !== "",
+  );
 }
 
 /** Filters set in the panel (the year and the search box are counted apart). */
@@ -93,6 +108,7 @@ export function costsQuery(filters: CostFilters, cursor?: string) {
   return {
     limit: 200,
     year: filters.year,
+    ...(filters.bookId ? { bookId: filters.bookId } : {}),
     ...(cursor ? { cursor } : {}),
     ...(filters.month ? monthRange(filters.year, filters.month) : {}),
     ...(filters.q ? { q: filters.q } : {}),
@@ -104,9 +120,18 @@ export function costsQuery(filters: CostFilters, cursor?: string) {
   };
 }
 
-/** The summary follows the year and the device; the other filters only narrow the list. */
+/** The summary follows the year, the book and the device; the other filters only narrow the list. */
 export function costsSummaryQuery(filters: CostFilters) {
-  return { year: filters.year, assetId: filters.assetId || undefined };
+  return {
+    year: filters.year,
+    assetId: filters.assetId || undefined,
+    bookId: filters.bookId || undefined,
+  };
+}
+
+/** The CSV file covers the year of the book on screen (every book without one). */
+export function costsExportQuery(filters: CostFilters) {
+  return { year: filters.year, bookId: filters.bookId || undefined };
 }
 
 /** The same filters one year later or earlier, keeping everything else but the month. */
