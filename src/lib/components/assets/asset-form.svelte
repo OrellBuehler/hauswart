@@ -13,6 +13,7 @@
   } from "$lib/api/enums";
   import { endpoints } from "$lib/api/registry";
   import type { Asset } from "$lib/api/schemas/assets";
+  import type { CostBook } from "$lib/api/schemas/cost-books";
   import type { Room } from "$lib/api/schemas/rooms";
   import type { Vehicle } from "$lib/api/schemas/vehicles";
   import { kindLabels } from "$lib/assets/kinds";
@@ -27,8 +28,10 @@
   import FieldSelect from "$lib/components/tasks/option-select.svelte";
   import { Switch } from "$lib/components/ui/switch/index.js";
   import { Textarea } from "$lib/components/ui/textarea/index.js";
+  import { bookChoices, defaultBook } from "$lib/costs/books";
   import { apiErrorMessage } from "$lib/error-message";
   import { m } from "$lib/paraglide/messages";
+  import { apiFieldErrors } from "$lib/tasks/field-errors";
   import { cn } from "$lib/utils";
   import {
     buildVehicleBody,
@@ -41,6 +44,7 @@
 
   let {
     rooms,
+    books = [],
     asset,
     initialKind = "device",
     initialRoomId = null,
@@ -48,6 +52,8 @@
     vehicle,
   }: {
     rooms: Room[];
+    /** Every cost book: a vehicle picks the one its fuel fills are booked into. */
+    books?: CostBook[];
     /** The asset to edit; undefined creates a new one. */
     asset?: Asset;
     initialKind?: AssetKind;
@@ -104,6 +110,20 @@
     ...VEHICLE_FUEL_TYPES.map((value) => ({
       value,
       label: fuelLabels[value](),
+    })),
+  ]);
+  const bookOptions = $derived([
+    {
+      value: "",
+      label: defaultBook(books)
+        ? m.vehicle_cost_book_default({ name: defaultBook(books)?.name ?? "" })
+        : m.vehicle_cost_book_default_plain(),
+    },
+    ...bookChoices(books, vehicle?.costBookId).map((book) => ({
+      value: book.id,
+      label: book.archivedAt
+        ? m.cost_book_archived_option({ name: book.name })
+        : book.name,
     })),
   ]);
   const unitOptions = ODOMETER_UNITS.map((value) => ({
@@ -185,6 +205,11 @@
             body: vehicleBody.body,
           });
         } catch (err) {
+          const fields = apiFieldErrors(err);
+          vehicleErrors =
+            "costBookId" in fields
+              ? { costBookId: m.vehicle_cost_book_closed() }
+              : {};
           error = m.asset_form_vehicle_save_failed({
             error: apiErrorMessage(err),
           });
@@ -629,6 +654,24 @@
                 aria-invalid={invalid || undefined}
                 aria-describedby={describedby}
                 bind:value={vehicleDraft.location}
+              />
+            {/snippet}
+          </Field>
+          <Field
+            id="vehicle-cost-book"
+            label={m.vehicle_cost_book()}
+            hint={m.vehicle_cost_book_hint()}
+            class="sm:col-span-2"
+            error={vehicleErrors.costBookId}
+          >
+            {#snippet children({ describedby, invalid })}
+              <FieldSelect
+                id="vehicle-cost-book"
+                options={bookOptions}
+                value={vehicleDraft.costBookId}
+                {invalid}
+                {describedby}
+                onchange={(next) => (vehicleDraft.costBookId = next)}
               />
             {/snippet}
           </Field>

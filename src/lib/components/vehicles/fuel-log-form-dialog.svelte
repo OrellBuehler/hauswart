@@ -9,11 +9,13 @@
     type VehicleFuelType,
   } from "$lib/api/enums";
   import { endpoints } from "$lib/api/registry";
+  import type { CostBook } from "$lib/api/schemas/cost-books";
   import type { FuelLog } from "$lib/api/schemas/fuel-logs";
   import type { DirectoryUser } from "$lib/api/schemas/users";
   import type { OdometerSummary } from "$lib/api/schemas/vehicles";
   import FormDialog from "$lib/components/app/form-dialog.svelte";
   import SwitchField from "$lib/components/app/switch-field.svelte";
+  import BookPicker from "$lib/components/costs/book-picker.svelte";
   import SplitEditor from "$lib/components/costs/split-editor.svelte";
   import Field from "$lib/components/tasks/field.svelte";
   import OptionSelect from "$lib/components/tasks/option-select.svelte";
@@ -22,6 +24,8 @@
   import { Input } from "$lib/components/ui/input/index.js";
   import { Textarea } from "$lib/components/ui/textarea/index.js";
   import { resolve } from "$app/paths";
+  import { bookChoices, fuelBook } from "$lib/costs/books";
+  import { splitAfterBook } from "$lib/costs/form";
   import { apiErrorMessage } from "$lib/error-message";
   import { formatDay } from "$lib/format";
   import { readMoney } from "$lib/format-money";
@@ -44,6 +48,8 @@
     assetId,
     log,
     fuelType,
+    books,
+    vehicleBookId,
     odometerUnit,
     latest,
     currency,
@@ -56,6 +62,10 @@
     assetId: string;
     log?: FuelLog | undefined;
     fuelType: VehicleFuelType | null;
+    /** Every cost book: the fill's cost entry goes into one that takes entries. */
+    books: CostBook[];
+    /** The book the vehicle remembers for its fills; null = the default book. */
+    vehicleBookId: string | null;
     odometerUnit: OdometerUnit;
     latest: OdometerSummary | null;
     currency: string;
@@ -94,6 +104,12 @@
     const value = readMoney(draft.amount, draft.currency);
     return typeof value === "number" && value > 0 ? value : undefined;
   });
+  const selectableBooks = $derived(bookChoices(books, log?.bookId));
+  /** A fill that costs money has a cost entry and so a book; a free one has none to choose. */
+  const showBook = $derived(
+    selectableBooks.length > 1 &&
+      (!log || log.bookId !== null || amountMinor !== undefined),
+  );
   const MORE_FIELDS = [
     "currency",
     "shares",
@@ -108,7 +124,7 @@
     if (!open) return;
     untrack(() => {
       draft = log
-        ? draftFromFuelLog(log, userIds)
+        ? draftFromFuelLog(log, userIds, fuelBook(books, vehicleBookId)?.id)
         : newFuelDraft({
             today,
             unit: defaultFuelUnit(fuelType),
@@ -117,6 +133,8 @@
               ? currentUserId
               : "",
             userIds,
+            books,
+            vehicleBookId,
           });
       errors = {};
       moreOpen = Boolean(
@@ -124,6 +142,13 @@
       );
     });
   });
+
+  function pickBook(next: string) {
+    const picked = books.find((book) => book.id === next);
+    if (!picked) return;
+    draft.bookId = picked.id;
+    draft.splitMode = splitAfterBook(draft, picked, !editing);
+  }
 
   function next(id: string) {
     return (event: KeyboardEvent) => {
@@ -276,6 +301,17 @@
       />
     {/snippet}
   </Field>
+  {#if showBook}
+    <BookPicker
+      id="fuel-book"
+      compact
+      books={selectableBooks}
+      bind:value={draft.bookId}
+      hint={m.fuel_book_hint()}
+      error={errors.bookId}
+      onchange={pickBook}
+    />
+  {/if}
 
   <Collapsible.Root bind:open={moreOpen} class="flex flex-col gap-5">
     <Collapsible.Trigger
@@ -399,6 +435,8 @@
           {amountMinor}
           currency={draft.currency}
           error={errors.shares}
+          allowParticipants={false}
+          onmodechange={() => (draft.splitTouched = true)}
         />
       {/if}
     </Collapsible.Content>

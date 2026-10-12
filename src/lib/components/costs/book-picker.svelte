@@ -14,6 +14,7 @@
     hint,
     error,
     disabled = false,
+    compact = false,
     class: className,
     onchange,
   }: {
@@ -25,6 +26,8 @@
     hint?: string | undefined;
     error?: string | undefined;
     disabled?: boolean;
+    /** Always a select, where there is no room for a row of buttons (a dialog on a phone). */
+    compact?: boolean;
     class?: string;
     onchange?: (bookId: string) => void;
   } = $props();
@@ -45,7 +48,7 @@
 </script>
 
 <div class={cn("flex min-w-0 flex-col gap-2", className)}>
-  {#if options.length <= 4}
+  {#if options.length <= 4 && !compact}
     <span class="text-sm leading-none font-medium">{label}</span>
     <Segmented
       {options}

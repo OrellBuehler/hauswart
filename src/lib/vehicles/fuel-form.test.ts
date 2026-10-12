@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MAX_FUEL_QUANTITY, type FuelLog } from "$lib/api/schemas/fuel-logs";
+import type { CostBook } from "$lib/api/schemas/cost-books";
 import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
 import { formatNumber } from "$lib/format";
 import {
@@ -55,6 +56,51 @@ const draft = (over: Partial<FuelDraft> = {}): FuelDraft => ({
   ...over,
 });
 
+const book = (over: Partial<CostBook> = {}): CostBook => ({
+  id: "b1",
+  name: "Wohnung",
+  slug: "wohnung",
+  icon: null,
+  defaultSplitMode: "ownership",
+  taxRelevant: true,
+  archivedAt: null,
+  sortOrder: 0,
+  isDefault: true,
+  entryCount: 0,
+  settlementCount: 0,
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-01T00:00:00.000Z",
+  ...over,
+});
+
+const BOOKS = [
+  book(),
+  book({
+    id: "b2",
+    name: "Auto",
+    defaultSplitMode: "equal",
+    isDefault: false,
+    taxRelevant: false,
+  }),
+  book({
+    id: "b3",
+    name: "Alt",
+    isDefault: false,
+    archivedAt: "2026-06-01T00:00:00.000Z",
+  }),
+];
+
+const withBooks = (vehicleBookId: string | null) =>
+  newFuelDraft({
+    today: TODAY,
+    unit: "l",
+    currency: "CHF",
+    paidByUserId: "u1",
+    userIds: USERS,
+    books: BOOKS,
+    vehicleBookId,
+  });
+
 describe("defaultFuelUnit", () => {
   it("takes kWh for an electric vehicle and litres for the rest", () => {
     expect(defaultFuelUnit("electric")).toBe("kWh");
@@ -82,6 +128,50 @@ describe("newFuelDraft", () => {
       unit: "l",
       currency: "CHF",
     });
+  });
+});
+
+describe("the book of a new fill", () => {
+  it("is the vehicle's book, split the way that book splits", () => {
+    expect(withBooks("b2")).toMatchObject({
+      bookId: "b2",
+      splitMode: "equal",
+      splitTouched: false,
+    });
+  });
+
+  it("is the default book when the vehicle has none, or its book is archived or gone", () => {
+    for (const vehicleBookId of [null, "b3", "gone"]) {
+      expect(withBooks(vehicleBookId)).toMatchObject({
+        bookId: "b1",
+        splitMode: "ownership",
+      });
+    }
+  });
+
+  it("is left to the server without books", () => {
+    expect(draft().bookId).toBe("");
+  });
+
+  it("goes to the server with the split the person saw", () => {
+    const { body } = buildCreateFuelLog(
+      {
+        ...withBooks("b2"),
+        odometer: "45700",
+        quantity: "38,5",
+        amount: "70.40",
+      },
+      { today: TODAY, userIds: USERS },
+    );
+    expect(body).toMatchObject({ bookId: "b2", splitMode: "equal" });
+  });
+
+  it("is not sent when no book is known", () => {
+    const { body } = buildCreateFuelLog(draft(), {
+      today: TODAY,
+      userIds: USERS,
+    });
+    expect(body).not.toHaveProperty("bookId");
   });
 });
 
@@ -244,6 +334,59 @@ describe("draftFromFuelLog", () => {
       draftFromFuelLog({ ...log, currency: "JPY", amountMinor: 6500 }, USERS)
         .amount,
     ).toBe("6500");
+  });
+});
+
+describe("the book of a fill that is edited", () => {
+  const costing = { ...log, bookId: "b1", bookName: "Wohnung" };
+
+  it("is the book its cost entry is in, and sending nothing says nothing changed", () => {
+    const form = draftFromFuelLog(costing, USERS, "b2");
+    expect(form.bookId).toBe("b1");
+    expect(buildUpdateFuelLog(form, costing, TODAY)).toEqual({
+      kind: "unchanged",
+    });
+  });
+
+  it("is sent when another book is picked", () => {
+    const form = { ...draftFromFuelLog(costing, USERS, "b2"), bookId: "b2" };
+    expect(buildUpdateFuelLog(form, costing, TODAY)).toEqual({
+      kind: "changed",
+      body: { bookId: "b2" },
+    });
+  });
+
+  it("starts from the vehicle's book for a free fill, and changes nothing while it stays free", () => {
+    const free = { ...log, amountMinor: 0, costEntryId: null, bookId: null };
+    const form = draftFromFuelLog(free, USERS, "b2");
+    expect(form.bookId).toBe("b2");
+    expect(buildUpdateFuelLog(form, free, TODAY)).toEqual({
+      kind: "unchanged",
+    });
+    expect(
+      buildUpdateFuelLog({ ...form, notes: "Gratis" }, free, TODAY),
+    ).toEqual({ kind: "changed", body: { notes: "Gratis" } });
+  });
+
+  it("goes along when a free fill starts to cost money", () => {
+    const free = { ...log, amountMinor: 0, costEntryId: null, bookId: null };
+    const form = {
+      ...draftFromFuelLog(free, USERS, "b2"),
+      amount: "12.00",
+    };
+    expect(buildUpdateFuelLog(form, free, TODAY)).toEqual({
+      kind: "changed",
+      body: { amountMinor: 1200, bookId: "b2" },
+    });
+  });
+
+  it("is not sent for a fill whose cost entry was deleted", () => {
+    const orphan = { ...log, costEntryId: null, bookId: null };
+    const form = { ...draftFromFuelLog(orphan, USERS, "b2"), notes: "x" };
+    expect(buildUpdateFuelLog(form, orphan, TODAY)).toEqual({
+      kind: "changed",
+      body: { notes: "x" },
+    });
   });
 });
 

@@ -10,6 +10,7 @@
   import { api } from "$lib/api/browser";
   import { FUEL_UNITS, type FuelUnit } from "$lib/api/enums";
   import { endpoints } from "$lib/api/registry";
+  import type { CostBook } from "$lib/api/schemas/cost-books";
   import type { FuelLog } from "$lib/api/schemas/fuel-logs";
   import type { DirectoryUser } from "$lib/api/schemas/users";
   import type { VehicleStats } from "$lib/api/schemas/vehicle-stats";
@@ -40,6 +41,7 @@
     nextCursor,
     stats,
     vehicle,
+    books = [],
     currency,
     today,
     people,
@@ -51,6 +53,8 @@
     nextCursor: string | null;
     stats: VehicleStats;
     vehicle: Vehicle;
+    /** Every cost book: a fill is booked into one of them. */
+    books?: CostBook[];
     currency: string;
     today: string;
     people: DirectoryUser[];
@@ -295,9 +299,9 @@
                   <Badge variant="outline">{m.fuel_missed_badge()}</Badge>
                 {/if}
               </div>
-              {#if log.station}
+              {#if log.station || log.bookName}
                 <p class="text-muted-foreground mt-0.5 text-xs wrap-anywhere">
-                  {log.station}
+                  {[log.station, log.bookName].filter(Boolean).join(" · ")}
                 </p>
               {/if}
               <p class="mt-1 text-sm tabular-nums">
@@ -410,6 +414,8 @@
   {assetId}
   log={editing}
   fuelType={vehicle.fuelType}
+  {books}
+  vehicleBookId={vehicle.costBookId}
   odometerUnit={unit}
   latest={vehicle.odometer}
   {currency}

@@ -3,6 +3,7 @@
   import PencilIcon from "@lucide/svelte/icons/pencil";
   import { invalidateAll } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import type { CostBook } from "$lib/api/schemas/cost-books";
   import type { Vehicle } from "$lib/api/schemas/vehicles";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
@@ -15,11 +16,14 @@
   let {
     assetId,
     vehicle,
+    books = [],
     today,
     canWrite,
   }: {
     assetId: string;
     vehicle: Vehicle;
+    /** Every cost book, to name the one the vehicle's fuel fills are booked into. */
+    books?: CostBook[];
     today: string;
     canWrite: boolean;
   } = $props();
@@ -27,6 +31,7 @@
   let recordOpen = $state(false);
 
   const odometer = $derived(vehicle.odometer);
+  const costBook = $derived(books.find((b) => b.id === vehicle.costBookId));
   const facts = $derived(
     (
       [
@@ -45,6 +50,14 @@
         [m.vehicle_tire_summer(), vehicle.tireSizeSummer],
         [m.vehicle_tire_winter(), vehicle.tireSizeWinter],
         [m.vehicle_location(), vehicle.location],
+        [
+          m.vehicle_cost_book(),
+          costBook
+            ? costBook.archivedAt
+              ? m.cost_book_archived_option({ name: costBook.name })
+              : costBook.name
+            : null,
+        ],
       ] as const
     ).flatMap(([label, value]) => (value ? [[label, value] as const] : [])),
   );

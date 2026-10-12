@@ -30,6 +30,7 @@
     error,
     participantsError,
     onmodechange,
+    allowParticipants = true,
     class: className,
   }: {
     id: string;
@@ -46,6 +47,8 @@
     participantsError?: string | undefined;
     /** The person picked a split mode (not set by code). */
     onmodechange?: (mode: CostSplitMode) => void;
+    /** Whether an equal split can be narrowed to some people; where it cannot, it is among everybody. */
+    allowParticipants?: boolean;
     class?: string;
   } = $props();
 
@@ -111,11 +114,13 @@
       onchange={pick}
     />
     <p class="text-muted-foreground text-xs text-pretty">
-      {splitModeHints[mode]()}
+      {mode === "equal" && !allowParticipants
+        ? m.cost_split_equal_everyone_hint()
+        : splitModeHints[mode]()}
     </p>
   </div>
 
-  {#if mode === "equal"}
+  {#if mode === "equal" && allowParticipants}
     <div
       role="group"
       aria-labelledby={`${id}-whom`}

@@ -21,7 +21,7 @@ export type VehicleDraft = {
   location: string;
   odometerUnit: OdometerUnit;
   notes: string;
-  /** The cost book the fuel fills go to; empty for the default book. Kept as it is until the form gets a picker. */
+  /** The cost book the fuel fills go to; empty for the default book. Every save sends it, since a PUT clears what it leaves out. */
   costBookId: string;
 };
 

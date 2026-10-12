@@ -33,6 +33,7 @@
   {#key data.asset.id}
     <AssetForm
       rooms={data.rooms}
+      books={data.books}
       asset={data.asset}
       vehicle={data.vehicle}
       today={data.today}

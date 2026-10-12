@@ -89,6 +89,16 @@ export function openBooks<T extends Pick<CostBook, "archivedAt">>(
   return books.filter((book) => book.archivedAt === null);
 }
 
+/** The books a record can be put into: those that take entries, and the one it is in already, archived or not. */
+export function bookChoices<T extends Pick<CostBook, "id" | "archivedAt">>(
+  books: readonly T[],
+  currentId?: string | null,
+): T[] {
+  return books.filter(
+    (book) => book.archivedAt === null || book.id === currentId,
+  );
+}
+
 /**
  * The books the switcher offers: those that take entries, and archived ones that still hold something (they count in
  * the balances) or are the one on screen.
@@ -109,6 +119,20 @@ export function switcherBooks(
 /** The book an entry without a choice goes to. */
 export function defaultBook(books: readonly CostBook[]): CostBook | undefined {
   return books.find((book) => book.isDefault) ?? openBooks(books)[0];
+}
+
+/**
+ * The book a fuel fill goes to when nobody picks one: the vehicle's own book while that takes entries, else the default
+ * book (what the server does without a `bookId`).
+ */
+export function fuelBook(
+  books: readonly CostBook[],
+  vehicleBookId: string | null | undefined,
+): CostBook | undefined {
+  return (
+    openBooks(books).find((book) => book.id === vehicleBookId) ??
+    defaultBook(books)
+  );
 }
 
 export type BookIconEntry = { icon: Component; label: () => string };

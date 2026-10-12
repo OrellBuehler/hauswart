@@ -127,6 +127,21 @@ describe("FuelLogCard", () => {
     expect(body.match(/role="img"/g)).toHaveLength(2);
   });
 
+  it("names the book a fill was booked into next to its station", () => {
+    const body = html([log({ bookId: "b1", bookName: "Auto" })]);
+    expect(body).toContain("Beispiel-Tankstelle · Auto");
+  });
+
+  it("names no book for a fill that booked nothing", () => {
+    const body = html([log({ bookId: null, bookName: null })]);
+    expect(body).toContain("Beispiel-Tankstelle");
+    expect(body).not.toContain("Beispiel-Tankstelle ·");
+    const noStation = html([
+      log({ station: null, bookId: "b1", bookName: "Haushalt" }),
+    ]);
+    expect(noStation).toContain("Haushalt");
+  });
+
   it("describes the price chart in words", () => {
     const body = html([log({})]);
     expect(body).toMatch(/aria-label="Preisverlauf der letzten 2 Tankungen/);

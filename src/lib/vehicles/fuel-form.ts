@@ -1,4 +1,5 @@
 import type { CostSplitMode, FuelUnit, VehicleFuelType } from "$lib/api/enums";
+import type { CostBook } from "$lib/api/schemas/cost-books";
 import { MAX_COST_MINOR } from "$lib/api/schemas/costs";
 import {
   MAX_FUEL_QUANTITY,
@@ -10,6 +11,7 @@ import {
 } from "$lib/api/schemas/fuel-logs";
 import { currencySchema } from "$lib/api/schemas/household";
 import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
+import { fuelBook } from "$lib/costs/books";
 import { equalShares, validateShares } from "$lib/costs/form";
 import { isValidDate } from "$lib/dates";
 import { formatNumber } from "$lib/format";
@@ -31,7 +33,11 @@ export type FuelDraft = {
   station: string;
   notes: string;
   paidByUserId: string;
+  /** The cost book of the fill's cost entry; empty when no book is known (the server then picks one). */
+  bookId: string;
   splitMode: CostSplitMode;
+  /** The person chose the split by hand, so picking another book no longer changes it. */
+  splitTouched: boolean;
   shares: Record<string, string>;
 };
 
@@ -47,7 +53,11 @@ export function newFuelDraft(options: {
   currency: string;
   paidByUserId: string;
   userIds: readonly string[];
+  /** Every cost book, and the book the vehicle remembers: the fill is booked into that one, else the default book. */
+  books?: readonly CostBook[] | undefined;
+  vehicleBookId?: string | null | undefined;
 }): FuelDraft {
+  const book = fuelBook(options.books ?? [], options.vehicleBookId);
   return {
     date: options.today,
     odometer: "",
@@ -60,14 +70,18 @@ export function newFuelDraft(options: {
     station: "",
     notes: "",
     paidByUserId: options.paidByUserId,
-    splitMode: "ownership",
+    bookId: book?.id ?? "",
+    splitMode: book?.defaultSplitMode ?? "ownership",
+    splitTouched: false,
     shares: equalShares(options.userIds),
   };
 }
 
+/** `fallbackBookId` is where a fill without a cost entry would be booked if it started to cost money. */
 export function draftFromFuelLog(
   log: FuelLog,
   userIds: readonly string[],
+  fallbackBookId = "",
 ): FuelDraft {
   return {
     date: log.date,
@@ -84,7 +98,9 @@ export function draftFromFuelLog(
     station: log.station ?? "",
     notes: log.notes ?? "",
     paidByUserId: log.paidByUserId ?? "",
+    bookId: log.bookId ?? fallbackBookId,
     splitMode: "ownership",
+    splitTouched: true,
     shares: equalShares(userIds),
   };
 }
@@ -191,6 +207,7 @@ export function buildCreateFuelLog(
     station: nullable(draft.station),
     notes: nullable(draft.notes),
     paidByUserId: draft.paidByUserId || null,
+    ...(draft.bookId ? { bookId: draft.bookId } : {}),
     splitMode: draft.splitMode,
     ...(draft.splitMode === "custom" ? { shares } : {}),
   };
@@ -237,6 +254,13 @@ export function buildUpdateFuelLog(
     changes.notes = nullable(draft.notes);
   const payer = draft.paidByUserId || null;
   if (payer !== log.paidByUserId) changes.paidByUserId = payer;
+  if (draft.bookId) {
+    // A fill without a cost entry has no book to change; one that is free and starts to cost money is booked into it.
+    const moves = log.bookId !== null && draft.bookId !== log.bookId;
+    const starts =
+      log.bookId === null && log.amountMinor === 0 && fill.amountMinor > 0;
+    if (moves || starts) changes.bookId = draft.bookId;
+  }
   if (Object.keys(changes).length === 0) return { kind: "unchanged" };
   const result = updateFuelLogRequestSchema.safeParse(changes);
   if (!result.success) {

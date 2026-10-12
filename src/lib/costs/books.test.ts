@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ApiError } from "$lib/api/errors";
 import type { CostBook } from "$lib/api/schemas/cost-books";
 import {
+  bookChoices,
   bookConflictMessage,
   bookDefaultMessage,
   bookIconFor,
@@ -10,6 +11,7 @@ import {
   bookParam,
   chooseBook,
   defaultBook,
+  fuelBook,
   openBooks,
   parseBookParam,
   switcherBooks,
@@ -281,5 +283,34 @@ describe("bookDefaultMessage", () => {
       ),
     ).toBeUndefined();
     expect(bookDefaultMessage(new Error("boom"), target)).toBeUndefined();
+  });
+});
+
+describe("bookChoices", () => {
+  it("offers the books that take entries, and the one the record is in already, archived or not", () => {
+    expect(bookChoices(books).map((b) => b.id)).toEqual(["b1", "b2"]);
+    expect(bookChoices(books, "b3").map((b) => b.id)).toEqual([
+      "b1",
+      "b2",
+      "b3",
+    ]);
+    expect(bookChoices(books, null).map((b) => b.id)).toEqual(["b1", "b2"]);
+    expect(bookChoices(books, "gone").map((b) => b.id)).toEqual(["b1", "b2"]);
+  });
+});
+
+describe("fuelBook", () => {
+  it("is the vehicle's own book while that takes entries", () => {
+    expect(fuelBook(books, "b2")?.id).toBe("b2");
+  });
+
+  it("is the default book for a vehicle without a book, with an archived one or with one that is gone", () => {
+    expect(fuelBook(books, null)?.id).toBe("b1");
+    expect(fuelBook(books, "b3")?.id).toBe("b1");
+    expect(fuelBook(books, "gone")?.id).toBe("b1");
+  });
+
+  it("is nothing without books", () => {
+    expect(fuelBook([], null)).toBeUndefined();
   });
 });
