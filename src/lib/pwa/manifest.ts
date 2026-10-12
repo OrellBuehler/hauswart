@@ -34,6 +34,8 @@ export interface WebManifest {
 
 /** The names of the shortcuts, in the language of the visitor. */
 export interface ShortcutNames {
+  quickExpense: string;
+  submitReceipt: string;
   newTask: string;
   newDefect: string;
   emergency: string;
@@ -62,12 +64,19 @@ export const MANIFEST_ICONS: WebManifestIcon[] = [
   },
 ];
 
-/** Long-press menu of the home screen icon: the places a person goes to straight away. */
+/**
+ * Long-press menu of the home screen icon: the places a person goes to straight away. The two ways to put an expense
+ * into the app come first: Android launchers show about four shortcuts, and these are what is done with the phone in hand.
+ * They open the quick entry, which is a page of the app like the others, so the service worker needs to know nothing of
+ * them (see "Installable app").
+ */
 function shortcuts(names: ShortcutNames): WebManifestShortcut[] {
   const icon = MANIFEST_ICONS.find(
     (i) => i.sizes === "192x192" && i.purpose === "any",
   )!;
   return [
+    { name: names.quickExpense, url: "/costs/quick" },
+    { name: names.submitReceipt, url: "/costs/quick?mode=receipt" },
     { name: names.newTask, url: "/tasks/new" },
     { name: names.newDefect, url: "/defects/new" },
     { name: names.emergency, url: "/emergency" },

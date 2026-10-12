@@ -55,6 +55,14 @@ describe("GET /manifest.webmanifest", () => {
     type Shortcuts = { shortcuts: { name: string; url: string }[] };
     const de = (await fetchManifest()).body as Shortcuts;
     expect(de.shortcuts).toEqual([
+      expect.objectContaining({
+        name: "Ausgabe erfassen",
+        url: "/costs/quick",
+      }),
+      expect.objectContaining({
+        name: "Beleg einreichen",
+        url: "/costs/quick?mode=receipt",
+      }),
       expect.objectContaining({ name: "Neue Aufgabe", url: "/tasks/new" }),
       expect.objectContaining({ name: "Mangel erfassen", url: "/defects/new" }),
       expect.objectContaining({ name: "Notfall", url: "/emergency" }),
@@ -63,6 +71,8 @@ describe("GET /manifest.webmanifest", () => {
     const en = (await fetchManifest({ "accept-language": "en" }))
       .body as Shortcuts;
     expect(en.shortcuts.map((s) => s.name)).toEqual([
+      "Add expense",
+      "Submit receipt",
       "New task",
       "Record defect",
       "Emergency",

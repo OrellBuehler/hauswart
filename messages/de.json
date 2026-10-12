@@ -2636,6 +2636,8 @@
   "costs_receipts_pending": "{count, plural, one {1 offener Beleg} other {{count} offene Belege}}",
   "costs_quick": "Schnell erfassen",
   "dashboard_costs_quick": "Ausgabe erfassen",
+  "pwa_shortcut_expense": "Ausgabe erfassen",
+  "pwa_shortcut_receipt": "Beleg einreichen",
   "costs_settlement_nothing": "Noch nichts zu verrechnen. Der Ausgleich zählt geteilte Einträge mit zahlender Person.",
   "costs_settlement_who": "{from} schuldet {to}",
   "costs_share": "Anteil",

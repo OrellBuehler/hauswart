@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { THEME_COLORS } from "./colors";
 import { buildManifest, MANIFEST_ICONS } from "./manifest";
+import { isAppNavigation } from "./options";
 
 const html = readFileSync("src/app.html", "utf8");
 const manifest = buildManifest({
@@ -9,6 +10,8 @@ const manifest = buildManifest({
   description: "Sample description",
   lang: "en",
   shortcuts: {
+    quickExpense: "Add expense",
+    submitReceipt: "Submit receipt",
     newTask: "New task",
     newDefect: "Record defect",
     emergency: "Emergency",
@@ -72,6 +75,8 @@ describe("web app manifest", () => {
   describe("shortcuts", () => {
     it("jump to the places used from the home screen, named in the given language", () => {
       expect(manifest.shortcuts.map((s) => [s.name, s.url])).toEqual([
+        ["Add expense", "/costs/quick"],
+        ["Submit receipt", "/costs/quick?mode=receipt"],
         ["New task", "/tasks/new"],
         ["Record defect", "/defects/new"],
         ["Emergency", "/emergency"],
@@ -92,6 +97,22 @@ describe("web app manifest", () => {
           type: "image/png",
         });
         expect(shipped).toContain(shortcut.icons[0]!.src);
+      }
+    });
+
+    it("put the two ways to book an expense first, where a phone's launcher shows them", () => {
+      expect(manifest.shortcuts.slice(0, 2).map((s) => s.url)).toEqual([
+        "/costs/quick",
+        "/costs/quick?mode=receipt",
+      ]);
+    });
+
+    it("open pages of the app that the service worker leaves to the network", () => {
+      // an address with a query is still an app navigation: no cache, no special case
+      for (const shortcut of manifest.shortcuts) {
+        const url = new URL(shortcut.url, "https://example.org");
+        const navigation = { request: { mode: "navigate" } as Request, url };
+        expect(isAppNavigation(navigation), shortcut.url).toBe(true);
       }
     });
 

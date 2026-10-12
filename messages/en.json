@@ -2636,6 +2636,8 @@
   "costs_receipts_pending": "{count, plural, one {1 open receipt} other {{count} open receipts}}",
   "costs_quick": "Quick entry",
   "dashboard_costs_quick": "Add an expense",
+  "pwa_shortcut_expense": "Add expense",
+  "pwa_shortcut_receipt": "Submit receipt",
   "costs_settlement_nothing": "Nothing to settle yet. The settlement counts split entries that have a payer.",
   "costs_settlement_who": "{from} owes {to}",
   "costs_share": "Share",
