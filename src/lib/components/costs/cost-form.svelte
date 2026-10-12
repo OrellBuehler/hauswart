@@ -1,6 +1,6 @@
 <script lang="ts">
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
-  import { untrack } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
@@ -14,6 +14,7 @@
   } from "$lib/api/enums";
   import { endpoints } from "$lib/api/registry";
   import type { Asset } from "$lib/api/schemas/assets";
+  import type { CostBook } from "$lib/api/schemas/cost-books";
   import type { CostEntry } from "$lib/api/schemas/costs";
   import type { Defect } from "$lib/api/schemas/defects";
   import type { Room } from "$lib/api/schemas/rooms";
@@ -28,12 +29,16 @@
   import * as Card from "$lib/components/ui/card/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Textarea } from "$lib/components/ui/textarea/index.js";
+  import { loadRememberedBook } from "$lib/costs/book-memory";
+  import { openBooks } from "$lib/costs/books";
   import {
     buildCreateBody,
     buildUpdateBody,
     draftFromEntry,
     newDraft,
     parseDraftAmount,
+    taxClassApplies,
+    withBook,
     type CostDraft,
   } from "$lib/costs/form";
   import { fuelLogOfConflict } from "$lib/costs/fuel-owner";
@@ -45,6 +50,7 @@
   import { apiFieldErrors } from "$lib/tasks/field-errors";
   import { fuelLogHref } from "$lib/vehicles/links";
   import { cn } from "$lib/utils";
+  import BookPicker from "./book-picker.svelte";
   import SplitEditor from "./split-editor.svelte";
 
   let {
@@ -53,6 +59,7 @@
     assets,
     defects,
     people,
+    books,
     currency,
     today,
     currentUserId,
@@ -63,11 +70,15 @@
     assets: Asset[];
     defects: Defect[];
     people: DirectoryUser[];
+    /** Every cost book, archived ones included. */
+    books: CostBook[];
     /** The household's currency. */
     currency: string;
     today: string;
     currentUserId: string;
     defaults?: {
+      /** The book on screen on the costs page. */
+      bookId?: string | undefined;
       assetId?: string | undefined;
       roomId?: string | undefined;
       defectId?: string | undefined;
@@ -87,6 +98,7 @@
               ? currentUserId
               : "",
             userIds,
+            books,
             ...defaults,
           }),
     ),
@@ -103,6 +115,14 @@
   let serviceRun = 0;
   /** Every service log entry the form has seen, to tell which device an entry belongs to. */
   const knownServiceEntries = new SvelteMap<string, ServiceLogEntry>();
+
+  /** The books an entry can be booked into: those that take entries, and the one it is in already. */
+  const selectableBooks = $derived(
+    books.filter(
+      (book) => book.archivedAt === null || book.id === entry?.bookId,
+    ),
+  );
+  const taxApplies = $derived(taxClassApplies(draft, books));
 
   const categoryOptions = $derived(
     COST_CATEGORIES.map((c) => ({ value: c, label: categoryLabels[c]() })),
@@ -211,6 +231,24 @@
       });
   });
 
+  function pickBook(next: string) {
+    const picked = withBook(
+      draft,
+      books.find((book) => book.id === next),
+      !entry,
+    );
+    draft.bookId = picked.bookId;
+    draft.splitMode = picked.splitMode;
+  }
+
+  onMount(() => {
+    // The page the form opened from could not name a book; the one looked at last on the costs page is the next guess.
+    if (entry || defaults.bookId) return;
+    const remembered = loadRememberedBook(currentUserId);
+    const book = openBooks(books).find((b) => b.id === remembered);
+    if (book && book.id !== draft.bookId) pickBook(book.id);
+  });
+
   function pickCategory(next: string) {
     if (!draft.countsTouched) {
       draft.countsAsExpense =
@@ -249,8 +287,8 @@
     if (pending) return;
     formError = undefined;
     const built = entry
-      ? buildUpdateBody(draft, entry, userIds)
-      : buildCreateBody(draft, userIds);
+      ? buildUpdateBody(draft, entry, userIds, books)
+      : buildCreateBody(draft, userIds, books);
     errors = built.errors;
     if (!built.body) {
       formError = m.form_check_fields();
@@ -308,6 +346,16 @@
       <Card.Title>{m.cost_form_basics()}</Card.Title>
     </Card.Header>
     <Card.Content class="flex flex-col gap-5">
+      {#if selectableBooks.length > 1}
+        <BookPicker
+          id="cost-book"
+          books={selectableBooks}
+          bind:value={draft.bookId}
+          error={errors.bookId}
+          onchange={pickBook}
+        />
+      {/if}
+
       <Field id="cost-title" label={m.cost_title()} error={errors.title}>
         {#snippet children({ describedby, invalid })}
           <Input
@@ -471,6 +519,96 @@
 
   <Card.Root>
     <Card.Header>
+      <Card.Title>{m.cost_form_payment()}</Card.Title>
+    </Card.Header>
+    <Card.Content class="flex flex-col gap-5">
+      <div class="grid gap-5 sm:grid-cols-2">
+        <Field
+          id="cost-payer"
+          label={m.cost_paid_by()}
+          hint={showPayerHint ? m.cost_payer_missing_hint() : undefined}
+          error={errors.paidByUserId}
+        >
+          {#snippet children({ describedby, invalid })}
+            <OptionSelect
+              id="cost-payer"
+              bind:value={draft.paidByUserId}
+              options={payerOptions}
+              {invalid}
+              {describedby}
+            />
+          {/snippet}
+        </Field>
+        <Field
+          id="cost-payee"
+          label={m.cost_payee()}
+          optional
+          error={errors.payee}
+        >
+          {#snippet children({ describedby, invalid })}
+            <Input
+              id="cost-payee"
+              class="h-10"
+              maxlength={200}
+              autocomplete="off"
+              placeholder={m.cost_payee_placeholder()}
+              aria-invalid={invalid || undefined}
+              aria-describedby={describedby}
+              bind:value={draft.payee}
+            />
+          {/snippet}
+        </Field>
+      </div>
+
+      <SplitEditor
+        id="cost-split"
+        bind:mode={draft.splitMode}
+        bind:shares={draft.shares}
+        bind:participants={draft.participants}
+        {people}
+        amountMinor={amount.ok ? amount.amountMinor : undefined}
+        currency={draft.currency}
+        error={errors.shares}
+        participantsError={errors.participantIds}
+        onmodechange={() => (draft.splitTouched = true)}
+      />
+      {#if entry && draft.splitMode === entry.splitMode && draft.splitMode !== "custom"}
+        <p class="text-muted-foreground -mt-2 text-xs text-pretty">
+          {m.cost_split_frozen_hint()}
+        </p>
+      {/if}
+
+      <SwitchField
+        id="cost-counts"
+        bind:checked={draft.countsAsExpense}
+        label={m.cost_counts_as_expense()}
+        hint={m.cost_counts_as_expense_hint()}
+        onchange={() => (draft.countsTouched = true)}
+      />
+
+      {#if taxApplies}
+        <Field
+          id="cost-deductible"
+          label={m.cost_deductible()}
+          hint={m.cost_deductible_hint()}
+          error={errors.deductible}
+        >
+          {#snippet children({ describedby, invalid })}
+            <OptionSelect
+              id="cost-deductible"
+              bind:value={draft.deductible}
+              options={deductibleOptions}
+              {invalid}
+              {describedby}
+            />
+          {/snippet}
+        </Field>
+      {/if}
+    </Card.Content>
+  </Card.Root>
+
+  <Card.Root>
+    <Card.Header>
       <Card.Title>{m.cost_form_links()}</Card.Title>
       <Card.Description>{m.cost_form_links_description()}</Card.Description>
     </Card.Header>
@@ -532,91 +670,6 @@
             bind:value={draft.serviceLogId}
             options={serviceOptions}
             onchange={pickServiceEntry}
-            {invalid}
-            {describedby}
-          />
-        {/snippet}
-      </Field>
-    </Card.Content>
-  </Card.Root>
-
-  <Card.Root>
-    <Card.Header>
-      <Card.Title>{m.cost_form_payment()}</Card.Title>
-    </Card.Header>
-    <Card.Content class="flex flex-col gap-5">
-      <div class="grid gap-5 sm:grid-cols-2">
-        <Field
-          id="cost-payee"
-          label={m.cost_payee()}
-          optional
-          error={errors.payee}
-        >
-          {#snippet children({ describedby, invalid })}
-            <Input
-              id="cost-payee"
-              class="h-10"
-              maxlength={200}
-              autocomplete="off"
-              placeholder={m.cost_payee_placeholder()}
-              aria-invalid={invalid || undefined}
-              aria-describedby={describedby}
-              bind:value={draft.payee}
-            />
-          {/snippet}
-        </Field>
-        <Field
-          id="cost-payer"
-          label={m.cost_paid_by()}
-          hint={showPayerHint ? m.cost_payer_missing_hint() : undefined}
-          error={errors.paidByUserId}
-        >
-          {#snippet children({ describedby, invalid })}
-            <OptionSelect
-              id="cost-payer"
-              bind:value={draft.paidByUserId}
-              options={payerOptions}
-              {invalid}
-              {describedby}
-            />
-          {/snippet}
-        </Field>
-      </div>
-
-      <SplitEditor
-        id="cost-split"
-        bind:mode={draft.splitMode}
-        bind:shares={draft.shares}
-        {people}
-        amountMinor={amount.ok ? amount.amountMinor : undefined}
-        currency={draft.currency}
-        error={errors.shares}
-      />
-      {#if entry && draft.splitMode === entry.splitMode && draft.splitMode !== "custom"}
-        <p class="text-muted-foreground -mt-2 text-xs text-pretty">
-          {m.cost_split_frozen_hint()}
-        </p>
-      {/if}
-
-      <SwitchField
-        id="cost-counts"
-        bind:checked={draft.countsAsExpense}
-        label={m.cost_counts_as_expense()}
-        hint={m.cost_counts_as_expense_hint()}
-        onchange={() => (draft.countsTouched = true)}
-      />
-
-      <Field
-        id="cost-deductible"
-        label={m.cost_deductible()}
-        hint={m.cost_deductible_hint()}
-        error={errors.deductible}
-      >
-        {#snippet children({ describedby, invalid })}
-          <OptionSelect
-            id="cost-deductible"
-            bind:value={draft.deductible}
-            options={deductibleOptions}
             {invalid}
             {describedby}
           />

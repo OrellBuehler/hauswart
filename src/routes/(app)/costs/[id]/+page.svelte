@@ -160,6 +160,19 @@
       <Card.Content>
         <dl class="grid grid-cols-2 gap-x-4 gap-y-4 text-sm sm:gap-x-6">
           <div class="min-w-0">
+            <dt class="text-muted-foreground text-xs">{m.cost_book()}</dt>
+            <dd class="mt-0.5 wrap-anywhere">
+              <!-- eslint-disable svelte/no-navigation-without-resolve -- the address is resolved here, only the query is appended -->
+              <a
+                href={resolve(
+                  `/costs?book=${encodeURIComponent(cost.bookId)}` as "/",
+                )}
+                class={linkClass}>{cost.bookName}</a
+              >
+              <!-- eslint-enable svelte/no-navigation-without-resolve -->
+            </dd>
+          </div>
+          <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">{m.cost_paid_by()}</dt>
             <dd class="mt-0.5 wrap-anywhere">
               {cost.paidByName ?? m.cost_payer_open()}
@@ -220,10 +233,14 @@
               {/if}
             </dd>
           </div>
-          <div class="min-w-0">
-            <dt class="text-muted-foreground text-xs">{m.cost_deductible()}</dt>
-            <dd class="mt-0.5">{deductibleLabels[cost.deductible]()}</dd>
-          </div>
+          {#if data.book.taxRelevant || cost.deductible !== "unknown"}
+            <div class="min-w-0">
+              <dt class="text-muted-foreground text-xs">
+                {m.cost_deductible()}
+              </dt>
+              <dd class="mt-0.5">{deductibleLabels[cost.deductible]()}</dd>
+            </div>
+          {/if}
           <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">
               {m.cost_counts_as_expense()}

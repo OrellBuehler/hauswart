@@ -12,6 +12,7 @@ export const load: PageLoad = async ({ fetch, url }) => {
   return {
     ...context,
     defaults: {
+      bookId: known(url.searchParams.get("book"), context.books),
       assetId: known(url.searchParams.get("asset"), context.assets),
       roomId: known(url.searchParams.get("room"), context.rooms),
       defectId: known(url.searchParams.get("defect"), context.defects),

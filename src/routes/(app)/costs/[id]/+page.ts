@@ -6,9 +6,13 @@ import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ fetch, params, url }) => {
   const client = createApiClient(fetch);
-  const [cost, household, people] = await Promise.all([
+  const cost = await orFail(
+    client.call(endpoints.costsGet, { params: { id: params.id } }),
+    url.pathname,
+  );
+  const [book, household, people] = await Promise.all([
     orFail(
-      client.call(endpoints.costsGet, { params: { id: params.id } }),
+      client.call(endpoints.costBooksGet, { params: { id: cost.bookId } }),
       url.pathname,
     ),
     loadHousehold(client, url.pathname),
@@ -16,6 +20,7 @@ export const load: PageLoad = async ({ fetch, params, url }) => {
   ]);
   return {
     cost,
+    book,
     timeZone: household.timeZone,
     people: new Map(people.map((p) => [p.id, p.displayName])),
   };
