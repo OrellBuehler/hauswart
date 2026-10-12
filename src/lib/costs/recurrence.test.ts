@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  RECURRENCE_BOOKING_CAP,
   dueOccurrences,
   firstOccurrence,
   nextOccurrenceAfter,
@@ -365,6 +366,10 @@ describe("recurrence", () => {
       ],
     )("%s", (_name, over, last, today, expected) => {
       expect(dueOccurrences(rule(over), last, today)).toEqual(expected);
+    });
+
+    it("has one cap for a run, the one the server books by and the form warns about", () => {
+      expect(RECURRENCE_BOOKING_CAP).toBe(120);
     });
 
     it("is cut at the cap, oldest first", () => {

@@ -546,8 +546,8 @@ All three are household data (no per-person scoping), reads need `read`, writes 
   Stored: `nextDate` (null once over), `lastOccurrenceDate`, `active`, `lastError` (`book_archived|failed`). The template is checked when saved as a booking would be
   (`checkCostTemplate`; 400 on the field, on `endDate` when no occurrence is left); the split is frozen **when an entry is booked**, so a changed ownership share applies to
   later entries only. **Booking** (`registerCostRecurrences()` in `init()`: 20 s after start, then every 5 minutes): `bookDueRecurrences` books for every active recurring
-  cost every occurrence up to and including today in the household zone, oldest first (a server that was down books each occurrence it missed), at most 120 per recurring
-  cost and run. One transaction per occurrence books the entry (source `recurring`, `recurrenceId`, `reviewNeeded` false, `createdBy` = whoever set it up) and moves
+  cost every occurrence up to and including today in the household zone, oldest first (a server that was down books each occurrence it missed), at most `RECURRENCE_BOOKING_CAP` = 120 (one
+  constant in the pure `lib/costs/recurrence.ts`, the server and the form's preview both read it) per recurring cost and run. One transaction per occurrence books the entry (source `recurring`, `recurrenceId`, `reviewNeeded` false, `createdBy` = whoever set it up) and moves
   `nextDate`; the unique `(recurrence_id, recurrence_date)` and a look-before keep it to one entry, and deleting the entry does not book it again. A failure (the book was
   archived: `book_archived`) is recorded on the recurring cost, keeps its place, does not hold the others up and is logged by code **once, when it begins or its reason
   changes** (the run tries again every five minutes; a stuck series must not fill the log). A tax class the template carries is booked as `unknown` while its book is not

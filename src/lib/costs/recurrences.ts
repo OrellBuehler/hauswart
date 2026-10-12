@@ -40,14 +40,12 @@ import {
 } from "./form";
 import { sameTagIds, tagIdsOf } from "./tags";
 import {
+  RECURRENCE_BOOKING_CAP,
   dueOccurrences,
   firstOccurrence,
   nextOccurrenceAfter,
   type RecurrenceRule,
 } from "./recurrence";
-
-/** The most entries one booking run makes for one recurring cost (`bookDueRecurrences`). */
-export const RECURRENCE_BOOKING_CAP = 120;
 
 /** How many dates the preview of a rule shows. */
 export const PREVIEW_DATES = 3;

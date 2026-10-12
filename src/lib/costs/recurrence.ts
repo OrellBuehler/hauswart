@@ -28,6 +28,12 @@ export interface RecurrenceRule {
   endDate: string | null;
 }
 
+/**
+ * The most entries one booking run makes for one recurring cost (`bookDueRecurrences`; a series that was down longer
+ * goes on with the next run). Defined here so the server that books and the form that warns about it cannot disagree.
+ */
+export const RECURRENCE_BOOKING_CAP = 120;
+
 /** The most occurrences one scan looks at: 100 years of a monthly rule. */
 const SCAN_LIMIT = 1200;
 

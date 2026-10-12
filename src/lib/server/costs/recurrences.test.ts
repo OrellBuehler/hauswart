@@ -9,6 +9,7 @@ import {
 import { createAssetRequestSchema } from "$lib/api/schemas/assets";
 import { costEntries, costRecurrences, users } from "$lib/server/db";
 import { createAsset } from "$lib/server/assets/assets";
+import { RECURRENCE_BOOKING_CAP } from "$lib/costs/recurrence";
 import { createTestUser } from "$lib/testing/auth";
 import { at, ctxAt } from "$lib/testing/domain";
 import { useTestDB } from "$lib/testing/db";
@@ -20,7 +21,6 @@ import {
 } from "./books";
 import { deleteCost, listCosts } from "./costs";
 import {
-  MAX_OCCURRENCES_PER_RUN,
   bookDueRecurrences,
   createCostRecurrence,
   deleteCostRecurrence,
@@ -426,14 +426,14 @@ describe("recurring costs", () => {
       expect(by("Zwei")).toEqual({ Anna: 5000, Ben: 5000 });
     });
 
-    it("books at most MAX_OCCURRENCES_PER_RUN at once and the rest in the next run", () => {
+    it("books at most RECURRENCE_BOOKING_CAP at once and the rest in the next run", () => {
       make({ startDate: "2010-01-01" });
       const first = run("2026-01-01");
-      expect(first.booked).toBe(MAX_OCCURRENCES_PER_RUN);
+      expect(first.booked).toBe(RECURRENCE_BOOKING_CAP);
       const second = run("2026-01-01");
       expect(second.booked).toBeGreaterThan(0);
       expect(first.booked + second.booked).toBeGreaterThan(
-        MAX_OCCURRENCES_PER_RUN,
+        RECURRENCE_BOOKING_CAP,
       );
       let total = first.booked + second.booked;
       for (let i = 0; i < 5; i++) total += run("2026-01-01").booked;

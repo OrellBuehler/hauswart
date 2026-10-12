@@ -10,6 +10,7 @@ import {
 import type { CreateCostRequest } from "$lib/api/schemas/costs";
 import type { CostTagRef } from "$lib/api/schemas/cost-tags";
 import {
+  RECURRENCE_BOOKING_CAP,
   firstOccurrence,
   nextOccurrenceAfter,
   nextOccurrenceOnOrAfter,
@@ -48,9 +49,6 @@ export interface CostRecurrenceRecord extends CostRecurrenceRow {
   paidByName: string | null;
   tags: CostTagRef[];
 }
-
-/** The most occurrences one run books for one recurring cost; a series that was down longer goes on with the next run. */
-export const MAX_OCCURRENCES_PER_RUN = 120;
 
 const payer = alias(users, "payer");
 
@@ -531,7 +529,7 @@ function recordFailure(ctx: Db, rec: CostRecurrenceRow, err: unknown) {
 /**
  * Books what is due: every occurrence of an active recurring cost up to and including today in the household zone,
  * oldest first, so a server that was down for a while books each occurrence it missed, once. At most
- * `MAX_OCCURRENCES_PER_RUN` per recurring cost and run. One that fails (say its book was archived) records the reason on
+ * `RECURRENCE_BOOKING_CAP` per recurring cost and run. One that fails (say its book was archived) records the reason on
  * itself (`lastError`), keeps its place and does not hold up the others. `options.id` limits the run to one.
  */
 export function bookDueRecurrences(
@@ -558,7 +556,7 @@ export function bookDueRecurrences(
     let rec = first;
     for (
       let i = 0;
-      i < MAX_OCCURRENCES_PER_RUN &&
+      i < RECURRENCE_BOOKING_CAP &&
       rec.nextDate !== null &&
       rec.nextDate <= today;
       i++

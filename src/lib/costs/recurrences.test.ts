@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { CostBook } from "$lib/api/schemas/cost-books";
 import type { CostRecurrence } from "$lib/api/schemas/cost-recurrences";
-import type { RecurrenceRule } from "./recurrence";
+import { RECURRENCE_BOOKING_CAP, type RecurrenceRule } from "./recurrence";
 import {
-  RECURRENCE_BOOKING_CAP,
   buildRecurrenceCreateBody,
   buildRecurrenceUpdateBody,
   changesRule,
