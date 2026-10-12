@@ -445,6 +445,7 @@ export function wireDashboard(
     expiringWarranties: WarrantyRecord[];
     orderNow: OrderNowRecord[];
     costsYearToDate: z.input<typeof dashboardSchema>["costsYearToDate"];
+    balances: z.input<typeof dashboardSchema>["balances"];
     pendingFinanceSuggestions: number;
   },
 ): z.input<typeof dashboardSchema> {
@@ -475,6 +476,7 @@ export function wireDashboard(
     })),
     orderNow: extras.orderNow.map(wireOrderNow),
     costsYearToDate: extras.costsYearToDate,
+    balances: extras.balances,
     pendingFinanceSuggestions: extras.pendingFinanceSuggestions,
   };
 }

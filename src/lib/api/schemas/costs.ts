@@ -325,16 +325,34 @@ export const costsSummarySchema = z
   .meta({ id: "CostsSummary" });
 export type CostsSummary = z.infer<typeof costsSummarySchema>;
 
-/** The slice the dashboard shows: the year so far. */
+/**
+ * What the year has cost so far, across all books together (the dashboard's slice). Household currency, entries that
+ * count as an expense, refunds netted off: the same numbers `GET /costs/summary` adds up. Who owes whom is not part of
+ * it (a year of entries knows nothing of recorded payments): that is `Dashboard.balances`.
+ */
 export const dashboardCostsSchema = z
   .object({
     year: z.number().int(),
     currency: z.string(),
+    /** All books together; the sum of `byBook`. */
     totalMinor: z.number().int(),
-    /** The three largest expense categories. */
+    /** The three largest expense categories, all books together. */
     byCategory: z.array(totalByCategory),
-    /** The payments that settle the balances so far. */
-    settlement: costsSummarySchema.shape.settlement,
+    /**
+     * The same expenses per book, largest first: only books with an expense this year, archived ones included.
+     * `taxRelevant` tells the apartment's books from the everyday ones, whose sum a person may not want to read as
+     * "the cost of the apartment".
+     */
+    byBook: z.array(
+      z.object({
+        bookId: z.string(),
+        bookName: z.string(),
+        taxRelevant: z.boolean(),
+        archived: z.boolean(),
+        totalMinor: z.number().int(),
+        count: z.number().int(),
+      }),
+    ),
   })
   .meta({ id: "DashboardCosts" });
 
@@ -401,6 +419,24 @@ export const costBalancesSchema = z
   })
   .meta({ id: "CostBalances" });
 export type CostBalances = z.infer<typeof costBalancesSchema>;
+
+/** Where the caller stands across all books, for the dashboard: one pass over the same ledger as `GET /costs/balances`. */
+export const dashboardBalancesSchema = z
+  .object({
+    /** The household currency: only entries and payments in it are counted. */
+    currency: z.string(),
+    /** The caller's balance, recorded payments included: positive means the others owe the caller. */
+    myBalanceMinor: z.number().int(),
+    /** Whether anything was ever paid, shared or settled: false reads "nothing to square yet", not "all square". */
+    hasActivity: z.boolean(),
+    /** The first (largest) three of the fewest payments that would square everybody, between any two people. */
+    suggestedPayments: costBalancesSchema.shape.suggestedPayments,
+    /** How many payments there are in all, so the card can say "and 2 more". */
+    suggestedPaymentCount: z.number().int(),
+  })
+  .meta({ id: "DashboardBalances" });
+export type DashboardBalances = z.infer<typeof dashboardBalancesSchema>;
+export type DashboardCosts = z.infer<typeof dashboardCostsSchema>;
 
 /** Cost entries booked against a defect or service log entry. */
 export const costsOfSchema = z

@@ -1,4 +1,5 @@
 import type { endpoints } from "$lib/api/registry";
+import { dashboardBalances } from "$lib/server/costs/balances";
 import { costsYearToDate } from "$lib/server/costs/summary";
 import { selectAllDefects } from "$lib/server/defects/defects";
 import { countPendingSuggestions } from "$lib/server/finance/suggestions";
@@ -15,6 +16,7 @@ export const get: Handler<typeof endpoints.dashboard> = async ({ ctx }) =>
     expiringWarranties: dashboardWarranties(ctx),
     orderNow: listOrderNow(ctx),
     costsYearToDate: costsYearToDate(ctx),
+    balances: dashboardBalances(ctx, ctx.user.id),
     pendingFinanceSuggestions: countPendingSuggestions(ctx, ctx.user.id),
   });
 

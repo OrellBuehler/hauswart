@@ -1,5 +1,5 @@
 import { and, count, eq, isNull, sql } from "drizzle-orm";
-import type { CostBalances } from "$lib/api/schemas/costs";
+import type { CostBalances, DashboardBalances } from "$lib/api/schemas/costs";
 import {
   costEntries,
   costEntryShares,
@@ -128,5 +128,29 @@ export function costBalances(
       toName: nameOf.get(t.toUserId) ?? null,
       amountMinor: t.amountMinor,
     })),
+  };
+}
+
+export const DASHBOARD_PAYMENTS = 3;
+
+/**
+ * The caller's place in the running balance across all books, for the dashboard. It is `costBalances` read once (four
+ * queries, however many entries there are) and cut down, so it cannot disagree with the balance page.
+ */
+export function dashboardBalances(ctx: Db, userId: string): DashboardBalances {
+  const all = costBalances(ctx);
+  return {
+    currency: all.currency,
+    myBalanceMinor:
+      all.people.find((p) => p.userId === userId)?.balanceMinor ?? 0,
+    hasActivity: all.people.some(
+      (p) =>
+        p.paidMinor !== 0 ||
+        p.shareMinor !== 0 ||
+        p.sentMinor !== 0 ||
+        p.receivedMinor !== 0,
+    ),
+    suggestedPayments: all.suggestedPayments.slice(0, DASHBOARD_PAYMENTS),
+    suggestedPaymentCount: all.suggestedPayments.length,
   };
 }

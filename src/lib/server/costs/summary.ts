@@ -1,6 +1,6 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { COST_DEDUCTIBLE, type CostCategory } from "$lib/api/enums";
-import type { CostsSummary } from "$lib/api/schemas/costs";
+import type { CostsSummary, DashboardCosts } from "$lib/api/schemas/costs";
 import {
   assets,
   costBooks,
@@ -236,15 +236,76 @@ export function costsSummary(
   };
 }
 
-/** The dashboard's slice: this year so far, the three largest categories and the settlement. */
-export function costsYearToDate(ctx: Pick<ServiceContext, "db" | "now">) {
+/**
+ * The dashboard's slice: what this year has cost so far, all books together and per book, with the three largest
+ * categories. The same entries as `costsSummary` counts (household currency, counts as an expense, refunds netted off),
+ * but only grouped in SQL: no ledger, no shares, no people. Who owes whom is `dashboardBalances`.
+ */
+export function costsYearToDate(
+  ctx: Pick<ServiceContext, "db" | "now">,
+): DashboardCosts {
   const year = Number(clockAt(ctx.now).today.slice(0, 4));
-  const s = costsSummary(ctx, year);
+  const { currency } = getHousehold(ctx);
+  const { from, to } = yearRange(year);
+  const expense = and(
+    sql`${costEntries.date} >= ${from}`,
+    sql`${costEntries.date} <= ${to}`,
+    eq(costEntries.currency, currency),
+    eq(costEntries.countsAsExpense, true),
+  );
+  const total = sql<number>`sum(${costEntries.amountMinor})`;
+  const byBook = ctx.db
+    .select({
+      bookId: costBooks.id,
+      bookName: costBooks.name,
+      taxRelevant: costBooks.taxRelevant,
+      archivedAt: costBooks.archivedAt,
+      totalMinor: total,
+      count: sql<number>`count(*)`,
+    })
+    .from(costEntries)
+    .innerJoin(costBooks, eq(costBooks.id, costEntries.bookId))
+    .where(expense)
+    .groupBy(costBooks.id)
+    .orderBy(asc(costBooks.name))
+    .all()
+    .map((b) => ({
+      bookId: b.bookId,
+      bookName: b.bookName,
+      taxRelevant: b.taxRelevant,
+      archived: b.archivedAt !== null,
+      totalMinor: Number(b.totalMinor),
+      count: Number(b.count),
+    }))
+    .sort(
+      (a, b) =>
+        b.totalMinor - a.totalMinor || a.bookName.localeCompare(b.bookName),
+    );
+  const byCategory = ctx.db
+    .select({
+      category: costEntries.category,
+      totalMinor: total,
+      count: sql<number>`count(*)`,
+    })
+    .from(costEntries)
+    .where(expense)
+    .groupBy(costEntries.category)
+    .all()
+    .map((c) => ({
+      category: c.category,
+      totalMinor: Number(c.totalMinor),
+      count: Number(c.count),
+    }))
+    .sort(
+      (a, b) =>
+        b.totalMinor - a.totalMinor || a.category.localeCompare(b.category),
+    )
+    .slice(0, DASHBOARD_TOP_CATEGORIES);
   return {
     year,
-    currency: s.currency,
-    totalMinor: s.expenseTotalMinor,
-    byCategory: s.byCategory.slice(0, DASHBOARD_TOP_CATEGORIES),
-    settlement: s.settlement,
+    currency,
+    totalMinor: byBook.reduce((sum, b) => sum + b.totalMinor, 0),
+    byCategory,
+    byBook,
   };
 }

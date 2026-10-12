@@ -83,6 +83,7 @@ describe("openapi document", () => {
       "CreatedApiToken",
       "CreatedGuestLink",
       "Dashboard",
+      "DashboardBalances",
       "DashboardCosts",
       "DashboardDefect",
       "DashboardPreparation",

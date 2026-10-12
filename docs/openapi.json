@@ -9400,7 +9400,7 @@
       "get": {
         "operationId": "dashboard",
         "summary": "Overview for the start page",
-        "description": "Overdue, today, this week, later (60 days) and signal-based tasks, relevant preparations and the last completions. openDefects: defects that need attention, by deadline. expiringWarranties: warranties ending within 90 days or ended at most 30 days ago. orderNow: parts to order now (same items as GET /parts/order-now).",
+        "description": "Overdue, today, this week, later (60 days) and signal-based tasks, relevant preparations and the last completions. openDefects: defects that need attention, by deadline. expiringWarranties: warranties ending within 90 days or ended at most 30 days ago. orderNow: parts to order now (same items as GET /parts/order-now). costsYearToDate: what the year has cost so far, all books together and per book (`byBook`; household currency, entries that count as an expense; the same numbers as GET /costs/summary), without any settlement. balances: where the caller stands across all books (`myBalanceMinor`, recorded payments included; positive means the others owe the caller) and the first three of the payments that would square everybody (`suggestedPaymentCount` says how many there are), read from the same ledger as GET /costs/balances.",
         "tags": [
           "dashboard"
         ],
@@ -39539,6 +39539,9 @@
           "costsYearToDate": {
             "$ref": "#/components/schemas/DashboardCosts"
           },
+          "balances": {
+            "$ref": "#/components/schemas/DashboardBalances"
+          },
           "pendingFinanceSuggestions": {
             "type": "integer",
             "minimum": 0,
@@ -39556,6 +39559,7 @@
           "expiringWarranties",
           "orderNow",
           "costsYearToDate",
+          "balances",
           "pendingFinanceSuggestions"
         ],
         "additionalProperties": false
@@ -40084,7 +40088,70 @@
               "additionalProperties": false
             }
           },
-          "settlement": {
+          "byBook": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "bookId": {
+                  "type": "string"
+                },
+                "bookName": {
+                  "type": "string"
+                },
+                "taxRelevant": {
+                  "type": "boolean"
+                },
+                "archived": {
+                  "type": "boolean"
+                },
+                "totalMinor": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "bookId",
+                "bookName",
+                "taxRelevant",
+                "archived",
+                "totalMinor",
+                "count"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "year",
+          "currency",
+          "totalMinor",
+          "byCategory",
+          "byBook"
+        ],
+        "additionalProperties": false
+      },
+      "DashboardBalances": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "myBalanceMinor": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "hasActivity": {
+            "type": "boolean"
+          },
+          "suggestedPayments": {
             "type": "array",
             "items": {
               "type": "object",
@@ -40122,14 +40189,19 @@
               ],
               "additionalProperties": false
             }
+          },
+          "suggestedPaymentCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
           }
         },
         "required": [
-          "year",
           "currency",
-          "totalMinor",
-          "byCategory",
-          "settlement"
+          "myBalanceMinor",
+          "hasActivity",
+          "suggestedPayments",
+          "suggestedPaymentCount"
         ],
         "additionalProperties": false
       },

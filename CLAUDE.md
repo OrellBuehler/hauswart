@@ -406,13 +406,20 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
 - **Summary** (`GET /costs/summary?year=&assetId=&bookId=`): `expenseTotalMinor` and the per category / month (always 12) /
   asset (top 10) / tax class breakdowns count entries with `countsAsExpense`; `equityTotalMinor` is the rest. With an
   `assetId` or `bookId` every number in it, the settlement included, is that asset's or book's alone. It is a
-  year of entries: recorded payments are not in it (and so not in the dashboard's `costsYearToDate`, which stays
-  across all books and unchanged).
+  year of entries: recorded payments are not in it (and so not in the dashboard's `costsYearToDate`).
   **Settlement** covers every split entry with a payer, equity included (it is about who paid cash):
   `balanceMinor` = paid - share (positive = the others owe this person), `settlement` = greedy payments
   from the largest debtor to the largest creditor ("A owes B CHF x"). Split entries without a payer are
-  counted in `unassignedPayerCount`, never guessed. The dashboard carries `costsYearToDate` and `pendingFinanceSuggestions` (the caller's own pending
-  offers, shown as a card linking to the inbox).
+  counted in `unassignedPayerCount`, never guessed. The dashboard carries `costsYearToDate`, `balances` and `pendingFinanceSuggestions` (the
+  caller's own pending offers, shown as a card linking to the inbox). **`costsYearToDate`** answers "what did the year
+  cost" and nothing else: `totalMinor` and `byCategory` (top three) over all books together plus `byBook` (per book,
+  largest first, only books with an expense this year, archived ones too, each with `taxRelevant` so a client can tell the
+  apartment from the everyday books); household currency, entries that count as an expense, the same numbers as
+  `costsSummary` (a test pins it), grouped in SQL without a ledger. It no longer has a `settlement`: a year of entries
+  knows nothing of recorded payments, so it would have disagreed with the balance. **`balances`** answers "where do I
+  stand": `{currency, myBalanceMinor, hasActivity, suggestedPayments (the first three, between any two people),
+suggestedPaymentCount}`, the caller's own place across all books with recorded payments included, from one read of the
+  same ledger as `GET /costs/balances` (four queries however many entries there are; a test pins that).
 - **Settlements and balances** (`settlements`, migration `0026`; `costs/settlements.ts`, `balances.ts`, `ledger.ts`;
   `/settlements`, `GET /costs/balances`): a settlement is a payment between two members ("Ben paid Anna 50"):
   `fromUserId` differs from `toUserId` (both members, else 400 on the field), `amountMinor` is positive (also a CHECK),
@@ -1469,7 +1476,7 @@ in dark mode. Every list has an empty state, every async action a pending and an
   four books, else a select); a new entry takes the book's default split until the person chose a split (`withBook`, `splitAfterBook`); "Für wen"
   are member checkboxes of an equal split (`participants`, sent as `participantIds` only when narrowed, and a PATCH sends `splitMode: "equal"`
   again when the set changed); the tax class is only offered, and sent, for a tax relevant book (`taxClassApplies`). The inbox's accept dialog
-  has the same picker and checkboxes. The dashboard's `CostsCard` shows "Du bekommst / Du schuldest" across all books plus the year total;
+  has the same picker and checkboxes. The dashboard's `CostsCard` shows "Du bekommst / Du schuldest" across all books plus the year total (the dashboard payload carries `balances` and `costsYearToDate.byBook` for it);
   `tryLoadBalances` lets a page open when only the balances fail (the card says so).
 - **After a dialog, refresh with `invalidateAfterOverlay`** (`lib/overlays/use-overlay-history.svelte.ts`): closing a dialog pops its history
   entry, and the router drops an `invalidateAll()` that is still loading when that popstate arrives, so the page kept the old data. It waits
