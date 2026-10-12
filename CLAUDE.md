@@ -10,7 +10,7 @@ attachments, search, file backup), contacts, spare parts, the service log, care 
 a PDF export), the warranty overview, generic comments, iCal feeds, the emergency page data and guest
 links, costs (cost books, the split between the people, running balances with recorded payments and a CSV export), the per-person finance
 connection (Kept), insurance policies (with a cancellation reminder), appointments (see "Appointments"), asset notes and vehicles (details, odometer
-readings, tire sets, a fuel log with consumption, statistics, task templates; see "Vehicles"), and a receipt queue that an MCP client works through (see "Receipt queue") exist; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
+readings, tire sets, a fuel log with consumption, statistics, task templates; see "Vehicles"), and a receipt queue that an MCP client works through (see "Receipt queue", with a page and a quick entry for phones in the web app) exist; Home Assistant is wired end to end (readings, auto-complete, hint reactions,
 push notifications with a "done" button, areas taken over as rooms, items pushed into its calendars; see "Signals, integrations and delivery" and "Calendar sync"); Paperless-ngx is wired as
 a per-person document provider (links, previews, warranty dates, pushing attachments; see "Documents and the
 document provider"); the MCP server covers the task core, documentation, defects, parts, contacts,
@@ -178,7 +178,10 @@ src/lib/server/schema.ts         Drizzle schema — one file, every table has cr
 src/lib/server/crypto.ts         AES-256-GCM for stored secrets (HAUSWART_SECRET_KEY)
 src/lib/money.ts                 minor-unit money type, parsing/formatting, ownership shares
 src/lib/costs/                   client-safe UI logic of the costs pages: books.ts (book choice, icons), book-memory.ts, filters.ts, form.ts (draft ->
-                                 request bodies), balances.ts (wording), settlements.ts (drafts, bodies, filters), load.ts; see "Costs in the web app"
+                                 request bodies), balances.ts (wording), settlements.ts (drafts, bodies, filters), load.ts, quick.ts (category ranking,
+                                 chips -> split, quick draft -> bodies), receipts.ts (queue page helpers); see "Costs in the web app" and "Quick entry, receipts and the review flag in the web app"
+src/lib/attachments/             client-safe upload logic: files.ts, list.svelte.ts, upload.ts (XHR with progress), receipt-file.ts (checks and the HEIC
+                                 decision), receipt-convert.ts (the canvas conversion, browser only)
 src/lib/testing/                 useTestDB, createTestUser/Token, createTestEvent, callRoute, fixtures/
 src/hooks.server.ts              init (secret key, time zone, migrations) + auth gate + Paraglide locale
 src/routes/api/v1/**             one-liner route files: export const GET = bind(endpoints.x, handler)
@@ -546,7 +549,8 @@ map), billTasks, billCreditorFilter (case-insensitive exact creditor names; appl
 ### Receipt queue
 
 A work queue for an assistant: a person puts a photo or PDF of a receipt in the app, an MCP client reads it, books the cost
-entries with the tools that exist and closes the task. Only the contract and the tools exist so far (no page).
+entries with the tools that exist and closes the task. The web app has the page `/costs/receipts` and the receipt mode of the quick entry (see
+"Quick entry, receipts and the review flag in the web app").
 
 - **The table** (`ai_tasks`, migration `0028`, together with the review flag of cost entries; `ai-tasks/ai-tasks.ts`): `kind`, `status`
   (`pending|done|dismissed`), `note` (the uploader's words, at most 1000 characters), `createdByUserId` (the uploader), the hints `bookId`
@@ -590,7 +594,8 @@ entries with the tools that exist and closes the task. Only the contract and the
   read it from the frozen shares of the cost entries anyway). `list_costs` takes `reviewNeeded` and its rows carry `needsReview`.
 - **Not built**: a notification for the uploader ("receipt processed"; it would need a new title key in both languages and the delivery
   rules), reopening a dismissed task, a claim or lock while an assistant works on a task (two assistants can book the same receipt twice;
-  `list_costs` is the check the tool text asks for), retention of dismissed tasks, a page in the web app, and the other kinds.
+  `list_costs` is the check the tool text asks for), retention of dismissed tasks, the other kinds, a count of waiting receipts on the dashboard (the costs page reads one page of `GET /ai-tasks?status=pending`
+  for its badge), and a way to complete a task by hand in the web app.
 - **Tests**: `ai-tasks/ai-tasks.test.ts` and `preview.test.ts` (service), `routes/api/v1/ai-tasks/ai-tasks.test.ts` (API, scopes, visibility,
   review), `files/preview.test.ts` (sizes and encoding, table-driven), `costs/review.test.ts`, `mcp/src/ai-tasks-tools.test.ts` (tools, image and
   PDF content, the private inbox) and one through the HTTP endpoint in `routes/api/v1/mcp/mcp.test.ts`.
@@ -1319,10 +1324,18 @@ build` moves `sw.js` (runtime inlined, one file) to `build/server/sw.js` (`scrip
 - **Absolute asset paths.** `kit.paths.relative` is `false` (pinned by `src/paths.test.ts`): the precached `/offline`
   page is served as the fallback on any URL, and relative `./_app/…` links would miss the cache on nested paths.
   `docker-smoke.sh` checks that the offline page links no relative assets and that every precache URL answers 200.
-- **Manifest extras and meta.** `shortcuts` (new task, record defect, emergency, search; names in the browser's
-  language), `color_scheme_dark`, `categories`; `format-detection: telephone=no`. No `viewport-fit=cover` and the
+- **Manifest extras and meta.** `shortcuts` (add expense `/costs/quick`, submit receipt `/costs/quick?mode=receipt`, new task, record defect,
+  emergency, search, in that order because Android launchers show about four; names in the browser's language), `color_scheme_dark`,
+  `categories`; `format-detection: telephone=no`. No `viewport-fit=cover` and the
   status bar stays `default` (iOS 26 draws an edge blur over `cover` pages), so safe-area insets are 0 except at the
   bottom where the shell adds them explicitly.
+- **No share target** (`share_target`; Chromium only, Safari ignores it): a shared file arrives as a multipart `POST` navigation to an address of the app.
+  Answering it takes either (a) a server route outside `/api/v1` (say `/costs/quick/share`): `isCrossSiteWrite` (`auth/origin.ts`) would refuse the
+  request, so that one path needs its own exemption and its own guard (the session cookie is SameSite=Lax, which is no substitute for the origin
+  check), and the route should only park the file for the signed-in person and open the quick page to confirm it, never book anything; or (b) a
+  service worker `fetch` handler for that one `POST` (which means `injectManifest` instead of `generateSW`) that keeps the file in the worker's
+  storage until the page uploads it, which the rule above ("never holds user data") would have to allow as a narrow, deliberate exception.
+  Neither is built.
 
 ### Authentication and the API spine
 
@@ -1576,6 +1589,30 @@ in dark mode. Every list has an empty state, every async action a pending and an
   **Moving entries**: "Auswählen" on the list (checkboxes in the cards and the table, a sticky bar with the count, at most 500) and, on a list narrowed to a device, "Alle Einträge dieses Geräts verschieben"
   open `MoveCostsDialog` (`POST /costs/move-to-book`; `moveSummary` words moved / unchanged / tax class reset, `moveFailure` the 400s; for a device it first asks a dry run for the chosen book, again whenever the book changes, and shows `movePreview` above the buttons - a failed preview is worded and does not block the move). **Vehicles**: the asset form's "Kostenbuch" picks `costBookId` (every save sends it, a PUT would clear it),
   `VehicleCard` names the book, the fuel dialog offers a book (the vehicle's while it takes entries, else the default; a new fill takes that book's split; no "Für wen", the fuel API has no participants) and the list shows each fill's `bookName`.
+- **Quick entry, receipts and the review flag in the web app**: `/costs/quick` is for one hand on a phone (no bottom bar, a sticky save bar of its
+  own; the costs page's round button leads there, the dashboard's costs card and the home screen shortcuts too; `?book=` names the book, `?mode=receipt`
+  opens on the receipt). The load reads nothing from the address (`untrack`), so the mode switch and `?book` fetch nothing again. **Expense**: a big
+  amount field (`inputmode="decimal"`, the household currency, "12." and "12,5" read as typed), book chips (`chooseQuickBook`: the address, then the
+  book of the last quick entry - `loadQuickBook`, kept apart from the costs page's remembered book -, then that one, then the default; up to five
+  open books as chips, else a select), category chips ranked by `rankCategories` (the book's recent entries first, then all recent entries, then a
+  fixed order, the apartment's for a tax relevant book; the load reads the last 100 entries only for this and goes without when it cannot), eight
+  shown and "more" for the rest, none chosen at the start; payer chips (default me); "für wen" chips: as the book has them (everybody, nobody for a
+  book that does not share) sends no split so the book's own applies, any other choice is `equal` among the ticked (`quickSplit`), nobody ticked is
+  `none`, and a sentence under the chips says which. Date, payee, title (empty = payee, else the category) and device sit behind "Datum, Titel und
+  mehr". `POST /costs`, then `uploadAttachment` (owner `cost`): done = `/costs?book=` plus a 10 s toast with "Rückgängig" (`DELETE`) and "Noch eine";
+  a failed upload keeps the entry and offers retry, "ohne Beleg fertig" and undo; a request that got no answer says to look in the list before
+  trying again (`POST /costs` has no idempotency key). Mistakes are cleared as the field changes. **Receipt**: `ReceiptPicker` (camera button
+  with `capture="environment"` only on touch, in CSS so hydration does not move the page; any image or PDF in the file picker). A HEIC photo is
+  turned into a JPEG through a canvas where the browser decodes it (`prepareReceiptFile`, Safari; the decision `heicPlan` is tested, the canvas is
+  not) and refused with the server's `attach_error_heic` wording otherwise. **Receipt only** (`POST /ai-tasks`, multipart, optional note, book and
+  device hints) ends on the page `/costs/receipts` with a toast offering undo (`DELETE /ai-tasks/{id}`): open tasks are always read completely and
+  listed first (`mergePendingFirst`), the history comes 30 at a time ("Mehr laden"), `?status=` filters; each row shows the thumbnail (the lightbox
+  for pictures, a new tab for a PDF), uploader, note, hints, for a done task the booked entries as links with their "Prüfen" mark, for a dismissed one the
+  reason; anybody may dismiss (reason optional, final), deleting is for the uploader and administrators (`canDeleteTask`). The wording says receipts are
+  "über die MCP-Verbindung verbucht". **Review flag**: `CostFlags` shows "Prüfen", the detail page a notice with "Geprüft" (`POST /costs/{id}/review`)
+  and who reviewed when, the costs page a "Zu prüfen" chip (`?review=1`; `?year=all` lists every year and is only honoured with the review filter,
+  because that list is short), a notice under the summary that links to the entries it counts (`reviewFilters`) and the dashboard a card for
+  `reviewNeededCount` that opens `REVIEW_ALL_HREF` (every book and year).
 - **After a dialog, refresh with `invalidateAfterOverlay`** (`lib/overlays/use-overlay-history.svelte.ts`): closing a dialog pops its history
   entry, and the router drops an `invalidateAll()` that is still loading when that popstate arrives, so the page kept the old data. It waits
   for the entry to be gone first (`OverlayHistory.settled`); a dialog that navigates uses `gotoFromOverlay`. Menu items that start
