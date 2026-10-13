@@ -2685,7 +2685,6 @@
   "recurrence_start_label": "Start",
   "recurrence_end_label": "End",
   "recurrence_end_none": "No end",
-  "quick_error_transaction_conflict": "The bank transaction is no longer open, or this entry is booked already. Check the cost list before you try again.",
   "cost_bank_linked": "Linked to a bank transaction",
   "cost_bank_linked_note": "This entry is linked to a bank transaction in your finance app and will not be suggested again.",
   "quick_title": "Quick entry",

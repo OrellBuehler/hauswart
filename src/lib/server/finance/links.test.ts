@@ -108,6 +108,12 @@ describe("tying cost entries to transactions", () => {
         (r) => (!kind || r.kind === kind) && (!userId || r.userId === userId),
       );
 
+  /** The 409 of a suggestion that is decided already: the message and the `details.code` a client acts on. */
+  const DECIDED = expect.objectContaining({
+    code: "conflict",
+    details: { code: "suggestion_decided" },
+  });
+
   describe("recording a transaction that matches an entry made by hand", () => {
     it("records a link to the entry instead of a cost, and no cost suggestion", async () => {
       const a = await owner();
@@ -758,6 +764,9 @@ describe("tying cost entries to transactions", () => {
       await expect(
         acceptSuggestion(ctx(), a.user.id, row.id, {}),
       ).rejects.toThrow(/accepted already/);
+      await expect(
+        acceptSuggestion(ctx(), a.user.id, row.id, {}),
+      ).rejects.toThrow(DECIDED);
     });
 
     it("answers 409 when the entry is gone, tied to something else or changed, and leaves the link pending", async () => {
@@ -787,15 +796,21 @@ describe("tying cost entries to transactions", () => {
         .set({ amountMinor: 4300 as never })
         .where(eq(costEntries.id, changed.id))
         .run();
-      for (const [id, pattern] of [
-        [gone.id, /deleted/],
-        [tied.id, /tied to a finance item already/],
-        [changed.id, /no longer matches/],
+      for (const [id, pattern, code] of [
+        [gone.id, /deleted/, undefined],
+        [tied.id, /tied to a finance item already/, "entry_tied"],
+        [changed.id, /no longer matches/, undefined],
       ] as const) {
         const link = byTarget.get(id)!;
         await expect(
           acceptSuggestion(ctx(), a.user.id, link.id, {}),
         ).rejects.toThrow(pattern);
+        await expect(
+          acceptSuggestion(ctx(), a.user.id, link.id, {}),
+        ).rejects.toMatchObject({
+          code: "conflict",
+          details: code === undefined ? undefined : { code },
+        });
         expect(getOwnSuggestion(ctx(), a.user.id, link.id).status).toBe(
           "pending",
         );
@@ -862,6 +877,9 @@ describe("tying cost entries to transactions", () => {
       await acceptSuggestion(ctx(), a.user.id, row.id, {});
       expect(() => dismissSuggestion(ctx(), a.user.id, row.id)).toThrow(
         /accepted already/,
+      );
+      expect(() => dismissSuggestion(ctx(), a.user.id, row.id)).toThrow(
+        DECIDED,
       );
     });
   });
@@ -1115,6 +1133,7 @@ describe("tying cost entries to transactions", () => {
       expect(() => make(theirs.id, null)).toThrow(/not found/);
       expect(() => make(asset.id)).toThrow("Invalid request");
       expect(() => make(done.id)).toThrow(/dismissed/);
+      expect(() => make(done.id)).toThrow(DECIDED);
       expect(getOwnSuggestion(ctx(), b.user.id, theirs.id).status).toBe(
         "pending",
       );
@@ -1242,7 +1261,7 @@ describe("tying cost entries to transactions", () => {
             }),
             a.user.id,
           ),
-        ).toThrow(/decided meanwhile/);
+        ).toThrow(DECIDED);
         expect(listCosts(ctx(), {}, { limit: 10 }, a.user.id).items).toEqual(
           [],
         );
@@ -1268,7 +1287,7 @@ describe("tying cost entries to transactions", () => {
             }),
             { userId: a.user.id },
           ),
-        ).toThrow(/decided meanwhile/);
+        ).toThrow(DECIDED);
         expect(getCost(ctx(), e.id)).toMatchObject({
           title: "Anderer Name",
           providerRef: null,
@@ -1297,7 +1316,7 @@ describe("tying cost entries to transactions", () => {
           test.db.transaction((tx) =>
             tieSuggestion({ db: tx as unknown as DB }, row.id, other.id),
           ),
-        ).toThrow(/decided meanwhile/);
+        ).toThrow(DECIDED);
         expect(getOwnSuggestion(ctx(), a.user.id, row.id)).toMatchObject({
           status: "accepted",
           acceptedEntityId: first.id,

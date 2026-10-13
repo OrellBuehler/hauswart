@@ -4,6 +4,7 @@ import { currencySchema } from "$lib/api/schemas/household";
 import { diffDays, isValidDate } from "$lib/dates";
 import { m } from "$lib/paraglide/messages";
 import { apiFieldErrors } from "$lib/tasks/field-errors";
+import { costConflictCode } from "./conflict";
 import { MATCH_DAYS } from "./match";
 
 /** A pending cost suggestion of the person's finance app that may be the entry being typed. */
@@ -102,7 +103,8 @@ export type TieRefusal = "changed" | "gone" | "decided";
 /**
  * Whether the API refused the bank transaction that was sent with an entry, and why: the amount, currency or date moved
  * away from the transaction (400 on the field), the transaction is not there for this person (404), or it was decided in
- * the meantime (409). `undefined` when no transaction was sent or the failure is about something else.
+ * the meantime (409 with `details.code` `suggestion_decided`; any other 409, say a key that is used up, is not about the
+ * transaction). `undefined` when no transaction was sent or the failure is about something else.
  */
 export function tieRefused(
   err: unknown,
@@ -116,7 +118,7 @@ export function tieRefused(
     return "changed";
   }
   if (err.code === "not_found") return "gone";
-  if (err.code === "conflict") return "decided";
+  if (costConflictCode(err) === "suggestion_decided") return "decided";
   return undefined;
 }
 

@@ -25,6 +25,7 @@ import {
   type AttachmentRecord,
 } from "$lib/server/attachments/attachments";
 import { requireOpenCostBook } from "$lib/server/costs/books";
+import { costConflict } from "$lib/server/costs/conflicts";
 import { flagForReview } from "$lib/server/costs/costs";
 import {
   aiTasks,
@@ -370,7 +371,10 @@ export async function recordAiTask(
     const existing = findByKey(ctx, userId, key);
     if (!existing) return null;
     if (existing.idempotencyDigest !== digestOf(input)) {
-      throw conflict("This idempotency key was used for another receipt");
+      throw costConflict(
+        "idempotency_key_reused",
+        "This idempotency key was used for another receipt",
+      );
     }
     return { task: existing, replayed: true };
   };

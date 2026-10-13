@@ -10,6 +10,7 @@ import {
   matchTitle,
   matchWhen,
   tieFailure,
+  tieRefused,
   type FinanceMatch,
   type MatchQuery,
 } from "./matches";
@@ -146,6 +147,10 @@ describe("the words for a match", () => {
 });
 
 describe("why tying an entry was refused", () => {
+  const decided = new ApiError("conflict", "decided", {
+    status: 409,
+    details: { code: "suggestion_decided" },
+  });
   const field = new ApiError("invalid_request", "x", {
     status: 400,
     details: { body: { fieldErrors: { financeSuggestionId: ["x"] } } },
@@ -156,14 +161,29 @@ describe("why tying an entry was refused", () => {
     expect(tieFailure(new ApiError("not_found", "x"), true)).toContain(
       "nicht mehr",
     );
-    expect(tieFailure(new ApiError("conflict", "x"), true)).toContain(
-      "verarbeitet",
-    );
+    expect(tieFailure(decided, true)).toContain("verarbeitet");
+  });
+
+  it("takes only a 409 about the suggestion for a decided transaction, not any other conflict", () => {
+    for (const details of [
+      { code: "idempotency_key_reused" },
+      { code: "entry_tied" },
+      { code: "receipt_task_closed", status: "done" },
+      { fuelLogId: "f1" },
+      undefined,
+    ]) {
+      const conflict = new ApiError("conflict", "x", { status: 409, details });
+      expect(tieRefused(conflict, true), JSON.stringify(details)).toBe(
+        undefined,
+      );
+      expect(tieFailure(conflict, true)).toBeUndefined();
+    }
+    expect(tieRefused(decided, true)).toBe("decided");
   });
 
   it("says nothing when no transaction was sent or the failure is about something else", () => {
     expect(tieFailure(field, false)).toBeUndefined();
-    expect(tieFailure(new ApiError("conflict", "x"), false)).toBeUndefined();
+    expect(tieFailure(decided, false)).toBeUndefined();
     expect(tieFailure(new ApiError("internal", "x"), true)).toBeUndefined();
     expect(
       tieFailure(

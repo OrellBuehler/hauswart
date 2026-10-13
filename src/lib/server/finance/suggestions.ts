@@ -44,6 +44,7 @@ import {
   getOwnSuggestion,
   markAccepted,
   payloadOf,
+  suggestionDecided,
   type SuggestionRow,
 } from "./store";
 
@@ -268,9 +269,7 @@ export function dismissSuggestion(
   id: string,
 ): SuggestionRow {
   const row = getOwnSuggestion(ctx, userId, id);
-  if (row.status === "accepted") {
-    throw conflict("This suggestion was accepted already");
-  }
+  if (row.status === "accepted") throw suggestionDecided(row.status);
   if (row.status === "dismissed") return row;
   if (row.kind === "link") {
     return ctx.db.transaction((tx) =>
@@ -373,13 +372,7 @@ export async function acceptSuggestion(
   body: AcceptFinanceSuggestionRequest,
 ): Promise<Accepted> {
   const row = getOwnSuggestion(ctx, userId, id);
-  if (row.status !== "pending") {
-    throw conflict(
-      row.status === "accepted"
-        ? "This suggestion was accepted already"
-        : "This suggestion was dismissed",
-    );
-  }
+  if (row.status !== "pending") throw suggestionDecided(row.status);
   assertOverrides(row.kind, body);
 
   if (row.kind === "link") {

@@ -376,6 +376,12 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   use, exactly like `POST /settlements`): a retry returns the first entry with 200 instead of 201, the same key for another entry (amount,
   currency, category or title; book, date or payer when the retry names them; notes, payee and device do not count) is a 409, and the key is
   free again once the entry is deleted (`recordCost`; `createCost` stays the plain booking, also used by the finance inbox and the fuel log).
+  **The 409s say which they are** (`error.details.code`, `COST_CONFLICT_CODES` in `enums.ts`, built by `costConflict` in `costs/conflicts.ts`):
+  `idempotency_key_reused` (also on `POST /settlements` and `POST /ai-tasks`), `suggestion_decided` (the suggestion named by `financeSuggestionId` is
+  accepted or dismissed already, or its transaction is booked; also on accepting and dismissing a suggestion), `entry_tied` (`PATCH` of an entry that
+  is tied to a finance item already, and accepting a link to such an entry) and `receipt_task_closed` (with `details.status`). A 409 without a code (the
+  fuel log lock has `details.fuelLogId`, a book that still has entries carries its counts) is told apart by its other details. The client reads the code with
+  `costConflictCode` (`lib/costs/conflict.ts`), so `isKeyConflict` and `tieRefused` no longer guess from the status and from what the form sent.
   `GET /costs?reviewNeeded=true|false` filters; `GET /costs/summary` carries `reviewNeededCount` (the entries of its own scope: the year
   and the asset or book if one was asked for, any currency, expense or not) and the dashboard `reviewNeededCount` (every year and book).
   The fuel log of a vehicle books its
@@ -1742,7 +1748,8 @@ in dark mode. Every list has an empty state, every async action a pending and an
   a failed upload keeps the entry and offers retry, "ohne Beleg fertig" and undo. **Every draft has a key** (`newIdempotencyKey()`,
   `lib/idempotency.ts`; sent as `idempotencyKey` with `POST /costs` and `POST /ai-tasks`): a save that got no answer is simply tried again with
   the same key (the words say so: the entry is not booked twice), the key is renewed after the entry is booked and when the server answers
-  409 (the key stands for another entry: "look in the list"), and the receipt's key also when another photo is picked; the receipt's
+  409 `idempotency_key_reused` (the key stands for another entry: "look in the list"; a 409 `suggestion_decided` spends no key, it releases the
+  bank transaction and says so under the list), and the receipt's key also when another photo is picked; the receipt's
   network error says that nothing is booked and links to `/costs/receipts`. Mistakes are cleared as the field changes. **Receipt**: `ReceiptPicker` (camera button
   with `capture="environment"` only on touch, in CSS so hydration does not move the page; any image or PDF in the file picker). A HEIC photo is
   turned into a JPEG through a canvas where the browser decodes it (`prepareReceiptFile`, Safari; the decision `heicPlan` is tested, the canvas is

@@ -6,6 +6,8 @@ import {
   costSuggestionPayloadSchema,
   storedLinkPayloadSchema,
 } from "$lib/api/schemas/finance";
+import type { ApiError } from "$lib/api/errors";
+import { costConflict } from "$lib/server/costs/conflicts";
 import { financeSuggestions } from "$lib/server/db";
 import { parseStored } from "$lib/server/json";
 import { notFound, type ServiceContext } from "$lib/server/service";
@@ -24,6 +26,16 @@ const PAYLOADS = {
 /** The payload of a stored suggestion, checked against the shape of its kind. */
 export function payloadOf(row: SuggestionRow) {
   return parseStored(PAYLOADS[row.kind], row.payloadJson, "finance suggestion");
+}
+
+/** The 409 for a suggestion that was accepted or dismissed already (`details.code` `suggestion_decided`). */
+export function suggestionDecided(status: SuggestionRow["status"]): ApiError {
+  return costConflict(
+    "suggestion_decided",
+    status === "accepted"
+      ? "This suggestion was accepted already"
+      : "This suggestion was dismissed",
+  );
 }
 
 export function findSuggestion(

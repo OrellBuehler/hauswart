@@ -367,14 +367,12 @@
       saved = await api.call(endpoints.costsCreate, { body: built.body });
     } catch (err) {
       errors = apiFieldErrors(err);
-      formError = quickErrorMessage(err, "expense", {
-        tiedToTransaction: sentTie,
-      });
+      formError = quickErrorMessage(err, "expense");
       if (tieRefused(err, sentTie)) {
         // The transaction was refused: let go of it and ask for the list again.
         draft.financeSuggestionId = "";
         matchRefresh += 1;
-        const tie = isKeyConflict(err) ? undefined : tieFailure(err, sentTie);
+        const tie = tieFailure(err, sentTie);
         if (tie) {
           errors.financeSuggestionId = tie;
           formError = m.form_check_fields();

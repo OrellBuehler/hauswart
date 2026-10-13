@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { saveConnection } from "$lib/server/connections/connections";
 import { getDB } from "$lib/server/db";
 import { recordSuggestion } from "$lib/server/finance/suggestions";
-import { createCaller, errorCode } from "$lib/testing/api";
+import { createCaller, errorCode, errorDetailCode } from "$lib/testing/api";
 import {
   createTestToken,
   createTestUser,
@@ -445,6 +445,58 @@ describe("tying entries made by hand to transactions, through the API", () => {
         },
       });
       expect(again.res.status).toBe(409);
+      expect(errorDetailCode(again)).toBe("suggestion_decided");
+    });
+
+    it("tells a suggestion that is decided from a key that stands for another entry", async () => {
+      const anna = await member("Anna");
+      const dismissed = anna.offer("tx:1");
+      const accepted = anna.offer("tx:2");
+      await anna.call(
+        "POST",
+        `/api/v1/finance/suggestions/${dismissed.id}/dismiss`,
+      );
+      await anna.call(
+        "POST",
+        `/api/v1/finance/suggestions/${accepted.id}/accept`,
+        { json: {} },
+      );
+      const post = (json: Record<string, unknown>) =>
+        anna.call("POST", "/api/v1/costs", {
+          json: {
+            title: "Wocheneinkauf",
+            amountMinor: 4250,
+            category: "groceries",
+            date: DAY,
+            splitMode: "none",
+            ...json,
+          },
+        });
+      for (const id of [dismissed.id, accepted.id]) {
+        const refused = await post({ financeSuggestionId: id });
+        expect([refused.res.status, errorDetailCode(refused)]).toEqual([
+          409,
+          "suggestion_decided",
+        ]);
+      }
+      const first = await post({ idempotencyKey: "key-code-0001" });
+      expect(first.res.status).toBe(201);
+      const reused = await post({
+        idempotencyKey: "key-code-0001",
+        title: "Etwas anderes",
+      });
+      expect([reused.res.status, errorDetailCode(reused)]).toEqual([
+        409,
+        "idempotency_key_reused",
+      ]);
+      // A refused tie spends no key: the same key books the entry once the transaction is let go of.
+      const retryKey = await post({
+        idempotencyKey: "key-code-0002",
+        financeSuggestionId: dismissed.id,
+      });
+      expect(errorDetailCode(retryKey)).toBe("suggestion_decided");
+      const freed = await post({ idempotencyKey: "key-code-0002" });
+      expect(freed.res.status).toBe(201);
     });
 
     it("refuses a suggestion that is not yours, not a cost, or another amount", async () => {
@@ -499,6 +551,59 @@ describe("tying entries made by hand to transactions, through the API", () => {
       const other = anna.offer("tx:2", { title: "Anderes" });
       const conflict = await patch({ financeSuggestionId: other.id });
       expect(conflict.res.status).toBe(409);
+      expect(errorDetailCode(conflict)).toBe("entry_tied");
+    });
+
+    it("tells an entry that is tied already from a suggestion that is decided when a change names one", async () => {
+      const anna = await member("Anna");
+      const free = await anna.entry({ title: "Etwas anderes" });
+      const tied = await anna.entry({ title: "Noch etwas anderes" });
+      const first = anna.offer("tx:1");
+      const second = anna.offer("tx:2");
+      const patch = (id: string, suggestion: string) =>
+        anna.call("PATCH", `/api/v1/costs/${id}`, {
+          json: { financeSuggestionId: suggestion },
+        });
+      expect((await patch(tied.id, first.id)).res.status).toBe(200);
+      const elsewhere = await patch(tied.id, second.id);
+      expect([elsewhere.res.status, errorDetailCode(elsewhere)]).toEqual([
+        409,
+        "entry_tied",
+      ]);
+      const decided = await patch(free.id, first.id);
+      expect([decided.res.status, errorDetailCode(decided)]).toEqual([
+        409,
+        "suggestion_decided",
+      ]);
+    });
+
+    it("answers a link that was let go of, when its entry got tied to another transaction, as decided", async () => {
+      const anna = await member("Anna");
+      const e = await anna.entry();
+      const link = anna.offer("tx:1");
+      const other = anna.offer("tx:2", { title: "Etwas ganz anderes" });
+      await anna.call("PATCH", `/api/v1/costs/${e.id}`, {
+        json: { financeSuggestionId: other.id },
+      });
+      const stale = await anna.call(
+        "POST",
+        `/api/v1/finance/suggestions/${link.id}/accept`,
+        { json: {} },
+      );
+      // Tying the entry to the other transaction let go of the link, which is decided now.
+      expect([stale.res.status, errorDetailCode(stale)]).toEqual([
+        409,
+        "suggestion_decided",
+      ]);
+      const again = await anna.call(
+        "POST",
+        `/api/v1/finance/suggestions/${other.id}/accept`,
+        { json: {} },
+      );
+      expect([again.res.status, errorDetailCode(again)]).toEqual([
+        409,
+        "suggestion_decided",
+      ]);
     });
 
     it("needs costs:write to tie and read to look", async () => {

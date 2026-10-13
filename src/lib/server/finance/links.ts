@@ -18,6 +18,7 @@ import {
   financeSuggestions,
   type DB,
 } from "$lib/server/db";
+import { costConflict } from "$lib/server/costs/conflicts";
 import { emitEvent } from "$lib/server/events";
 import {
   conflict,
@@ -31,6 +32,7 @@ import {
   getOwnSuggestion,
   markAccepted,
   payloadOf,
+  suggestionDecided,
   type SuggestionRow,
 } from "./store";
 
@@ -294,7 +296,10 @@ export function acceptLink(
     );
   }
   if (entry.providerRef !== null || entry.providerConnectionId !== null) {
-    throw conflict("This cost entry is tied to a finance item already");
+    throw costConflict(
+      "entry_tied",
+      "This cost entry is tied to a finance item already",
+    );
   }
   if (
     entry.amountMinor !== transaction.amountMinor ||
@@ -321,7 +326,10 @@ export function acceptLink(
     });
   } catch (err) {
     if (isUniqueViolation(err)) {
-      throw conflict("This item of the finance provider is already booked");
+      throw costConflict(
+        "suggestion_decided",
+        "This item of the finance provider is already booked",
+      );
     }
     throw err;
   }
@@ -356,13 +364,7 @@ export function claimSuggestion(
       "Only a suggestion of a cost can be tied to a cost entry",
     );
   }
-  if (row.status !== "pending") {
-    throw conflict(
-      row.status === "accepted"
-        ? "This suggestion was accepted already"
-        : "This suggestion was dismissed",
-    );
-  }
+  if (row.status !== "pending") throw suggestionDecided(row.status);
   const payload = payloadOf(row) as CostPayload;
   if (
     payload.amountMinor !== entry.amountMinor ||
@@ -427,7 +429,10 @@ export function tieSuggestion(
     .returning({ id: financeSuggestions.id })
     .all();
   if (tied.length !== 1) {
-    throw conflict("This suggestion was decided meanwhile");
+    throw costConflict(
+      "suggestion_decided",
+      "This suggestion was decided meanwhile",
+    );
   }
   releaseLinks(ctx, entryId);
 }

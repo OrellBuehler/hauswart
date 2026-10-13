@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   COST_CATEGORIES,
+  COST_CONFLICT_CODES,
   COST_DEDUCTIBLE,
   COST_SOURCES,
   COST_SPLIT_MODES,
@@ -22,6 +23,15 @@ export const costCategorySchema = z.enum(COST_CATEGORIES);
 export const costSplitModeSchema = z.enum(COST_SPLIT_MODES);
 export const costDeductibleSchema = z.enum(COST_DEDUCTIBLE);
 export const costSourceSchema = z.enum(COST_SOURCES);
+
+/**
+ * What the `details` of a 409 on the cost endpoints carry (see `COST_CONFLICT_CODES`): `code` says which conflict it is,
+ * so a client does not have to guess from the status. `receipt_task_closed` adds the task's `status`.
+ */
+export const costConflictDetailsSchema = z.looseObject({
+  code: z.enum(COST_CONFLICT_CODES),
+});
+export type CostConflictDetails = z.infer<typeof costConflictDetailsSchema>;
 
 export const COST_TITLE_MAX = 200;
 export const COST_NOTES_MAX = 4000;

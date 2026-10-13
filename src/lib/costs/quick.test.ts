@@ -714,6 +714,11 @@ describe("the request for a receipt in the queue", () => {
 
 describe("the words for a failed save", () => {
   const noAnswer = () => new TypeError("Failed to fetch");
+  const keyConflict = () =>
+    new ApiError("conflict", "key used", {
+      status: 409,
+      details: { code: "idempotency_key_reused" },
+    });
 
   it("says a save that got no answer can simply be tried again, since the key keeps it from being booked twice", () => {
     const message = quickErrorMessage(noAnswer());
@@ -730,24 +735,26 @@ describe("the words for a failed save", () => {
   });
 
   it("words a key that another entry or receipt used, and what to look at", () => {
-    const conflict = new ApiError("conflict", "key used", { status: 409 });
+    const conflict = keyConflict();
     expect(quickErrorMessage(conflict)).toContain("Liste");
     expect(quickErrorMessage(conflict, "receipt")).toContain("Belege");
     expect(quickErrorMessage(conflict)).not.toContain("Verbindung");
   });
 
-  it("words a 409 for an entry tied to a bank transaction as that transaction no longer being open", () => {
-    const conflict = new ApiError("conflict", "decided", { status: 409 });
-    const tied = quickErrorMessage(conflict, "expense", {
-      tiedToTransaction: true,
-    });
-    expect(tied).toContain("Banktransaktion");
-    expect(tied).not.toBe(quickErrorMessage(conflict));
-    expect(
-      quickErrorMessage(new TypeError("x"), "expense", {
-        tiedToTransaction: true,
-      }),
-    ).toContain("Verbindung");
+  it("does not take any other 409 for a used key: it goes by the code the API gives", () => {
+    for (const details of [
+      { code: "suggestion_decided" },
+      { code: "entry_tied" },
+      { code: "receipt_task_closed", status: "done" },
+      { fuelLogId: "f1" },
+      undefined,
+    ]) {
+      const conflict = new ApiError("conflict", "x", { status: 409, details });
+      const message = quickErrorMessage(conflict);
+      expect(message, JSON.stringify(details)).not.toContain("Liste");
+      expect(message).not.toBe(quickErrorMessage(keyConflict()));
+      expect(quickErrorMessage(conflict, "receipt")).not.toContain("Belege");
+    }
   });
 
   it("words an answer of the API like everywhere else", () => {
@@ -760,9 +767,18 @@ describe("the words for a failed save", () => {
   });
 
   it("takes only a 409 for a key that is used up; every other failure keeps the key for the retry", () => {
-    expect(isKeyConflict(new ApiError("conflict", "x", { status: 409 }))).toBe(
-      true,
-    );
+    expect(isKeyConflict(keyConflict())).toBe(true);
+    for (const details of [
+      { code: "suggestion_decided" },
+      { code: "entry_tied" },
+      { code: "receipt_task_closed" },
+      { fuelLogId: "f1" },
+      undefined,
+    ]) {
+      expect(
+        isKeyConflict(new ApiError("conflict", "x", { status: 409, details })),
+      ).toBe(false);
+    }
     expect(isKeyConflict(new ApiError("not_found", "x", { status: 404 }))).toBe(
       false,
     );

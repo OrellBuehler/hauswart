@@ -2685,7 +2685,6 @@
   "recurrence_start_label": "Beginn",
   "recurrence_end_label": "Ende",
   "recurrence_end_none": "Kein Ende",
-  "quick_error_transaction_conflict": "Die Banktransaktion ist nicht mehr offen, oder dieser Eintrag ist schon gebucht. Schau in der Kostenliste nach, bevor du es noch einmal versuchst.",
   "cost_bank_linked": "Mit Banktransaktion verknüpft",
   "cost_bank_linked_note": "Dieser Eintrag ist mit einer Banktransaktion deiner Finanz-App verknüpft und wird nicht noch einmal vorgeschlagen.",
   "quick_title": "Schnell erfassen",

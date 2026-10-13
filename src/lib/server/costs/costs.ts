@@ -68,6 +68,7 @@ import {
   requireOpenCostBook,
   type CostBookRow,
 } from "./books";
+import { costConflict } from "./conflicts";
 import {
   amountsFor,
   listPeople,
@@ -596,7 +597,10 @@ export function createCost(
         throw err;
       }
       if (recurrence) throw conflict("This occurrence is already booked");
-      throw conflict("This item of the finance provider is already booked");
+      throw costConflict(
+        "suggestion_decided",
+        "This item of the finance provider is already booked",
+      );
     }
     throw err;
   }
@@ -665,7 +669,10 @@ export function recordCost(
     const existing = findCostByKey(ctx, createdBy, key);
     if (!existing) return null;
     if (!sameRequest(ctx, existing, input)) {
-      throw conflict("This idempotency key was used for another cost entry");
+      throw costConflict(
+        "idempotency_key_reused",
+        "This idempotency key was used for another cost entry",
+      );
     }
     return { cost: existing, replayed: true };
   };
@@ -764,7 +771,10 @@ export function updateCost(
     )
   ) {
     if (current.providerRef !== null || current.providerConnectionId !== null) {
-      throw conflict("This cost entry is tied to a finance item already");
+      throw costConflict(
+        "entry_tied",
+        "This cost entry is tied to a finance item already",
+      );
     }
     tied = claimSuggestion(ctx, options.userId ?? null, financeSuggestionId, {
       amountMinor: patch.amountMinor ?? current.amountMinor,
@@ -857,7 +867,10 @@ export function updateCost(
     });
   } catch (err) {
     if (tied && isUniqueViolation(err)) {
-      throw conflict("This item of the finance provider is already booked");
+      throw costConflict(
+        "suggestion_decided",
+        "This item of the finance provider is already booked",
+      );
     }
     throw err;
   }

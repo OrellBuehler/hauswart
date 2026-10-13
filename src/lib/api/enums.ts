@@ -66,6 +66,21 @@ export const ODOMETER_REFUSAL_CODES = [
 ] as const;
 export type OdometerRefusalCode = (typeof ODOMETER_REFUSAL_CODES)[number];
 
+/**
+ * Which kind of 409 a cost endpoint answers, in `error.details.code`: the idempotency key stands for another entry,
+ * payment or receipt; the finance suggestion named by `financeSuggestionId` (or being accepted or dismissed) is decided
+ * already; the entry is tied to a finance item already; the receipt task is not waiting any more (its `details.status`
+ * says what it is). A 409 without a code (a fuel log entry owns the entry, a book still has entries, ...) is told apart
+ * by its other `details`.
+ */
+export const COST_CONFLICT_CODES = [
+  "idempotency_key_reused",
+  "suggestion_decided",
+  "entry_tied",
+  "receipt_task_closed",
+] as const;
+export type CostConflictCode = (typeof COST_CONFLICT_CODES)[number];
+
 export const TASK_CATEGORIES = [
   "cleaning",
   "maintenance",

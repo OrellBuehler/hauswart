@@ -1,15 +1,12 @@
 import { and, eq, sql } from "drizzle-orm";
 import { AI_TASK_CLAIM_MINUTES } from "$lib/api/schemas/ai-tasks";
+import { costConflict } from "$lib/server/costs/conflicts";
 import { aiTasks } from "$lib/server/db";
-import {
-  conflict,
-  invalidField,
-  type ServiceContext,
-} from "$lib/server/service";
+import { invalidField, type ServiceContext } from "$lib/server/service";
 
 /**
  * A booking names the receipt task it is for (`receiptTaskId`): that task has to exist (400 on the field) and still wait
- * for its result (409, `details.status` says what became of it), so nothing is booked for a task that was closed by
+ * for its result (409 `receipt_task_closed`, `details.status` says what became of it), so nothing is booked for a task that was closed by
  * somebody else in the meantime. A module of its own, apart from the rest of the queue, so that the cost service can ask
  * without importing it.
  */
@@ -26,9 +23,11 @@ export function assertTaskOpenForBooking(
     throw invalidField("receiptTaskId", "Receipt task does not exist");
   }
   if (task.status !== "pending") {
-    throw conflict("This receipt task is not waiting any more", {
-      status: task.status,
-    });
+    throw costConflict(
+      "receipt_task_closed",
+      "This receipt task is not waiting any more",
+      { status: task.status },
+    );
   }
 }
 

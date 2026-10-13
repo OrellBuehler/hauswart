@@ -6,6 +6,7 @@ import {
   createCaller,
   createInProcessFetch,
   errorCode,
+  errorDetailCode,
 } from "$lib/testing/api";
 import {
   createTestToken,
@@ -87,7 +88,11 @@ describe("POST /api/v1/ai-tasks with an idempotency key", () => {
     const { send, count } = await setup();
     await send({ idempotencyKey: KEY });
     const other = await send({ idempotencyKey: KEY }, undefined, plainJpeg());
-    expect([other.res.status, errorCode(other)]).toEqual([409, "conflict"]);
+    expect([
+      other.res.status,
+      errorCode(other),
+      errorDetailCode(other),
+    ]).toEqual([409, "conflict", "idempotency_key_reused"]);
     const short = await send({ idempotencyKey: "short" });
     expect(short.res.status).toBe(400);
     expect(await count()).toBe(1);

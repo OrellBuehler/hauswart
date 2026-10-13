@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AiTask } from "$lib/api/schemas/ai-tasks";
 import { plainPng } from "$lib/server/files/test-images";
-import { createCaller, errorCode } from "$lib/testing/api";
+import { createCaller, errorCode, errorDetailCode } from "$lib/testing/api";
 import { createTestUser, loginTestUser } from "$lib/testing/auth";
 import { useTestDB } from "$lib/testing/db";
 import { useTestFilesDir } from "$lib/testing/files";
@@ -86,7 +86,15 @@ describe("entries booked for a receipt task, through the API", () => {
     const closed = await upload();
     await call("POST", `/api/v1/ai-tasks/${closed.id}/dismiss`, { json: {} });
     const late = await book({ receiptTaskId: closed.id });
-    expect([late.res.status, errorCode(late)]).toEqual([409, "conflict"]);
+    expect([late.res.status, errorCode(late), errorDetailCode(late)]).toEqual([
+      409,
+      "conflict",
+      "receipt_task_closed",
+    ]);
+    expect(
+      (late.body as { error: { details: { status: string } } }).error.details
+        .status,
+    ).toBe("dismissed");
   });
 
   it("books a fill for the task through the fuel log", async () => {
