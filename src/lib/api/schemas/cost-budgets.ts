@@ -117,3 +117,38 @@ export const costBudgetStatusSchema = z
   })
   .meta({ id: "CostBudgetStatus" });
 export type CostBudgetStatus = z.infer<typeof costBudgetStatusSchema>;
+
+/** How many budgets the dashboard names. */
+export const DASHBOARD_BUDGET_ALERTS_TOP = 3;
+
+/** A budget that is close to or over its amount, as the dashboard names it (the month and year of today are measured). */
+export const dashboardBudgetAlertSchema = z
+  .object({
+    budgetId: z.string(),
+    bookId: z.string().nullable(),
+    bookName: z.string().nullable(),
+    category: costCategorySchema.nullable(),
+    period: costBudgetPeriodSchema,
+    amountMinor: z.number().int(),
+    /** Net of refunds; in `currency`. */
+    spentMinor: z.number().int(),
+    currency: z.string(),
+    /** Whole percent of the amount spent (rounded down); at least 80. */
+    percentUsed: z.number().int(),
+    state: z.enum(["warning", "exceeded"]),
+  })
+  .meta({ id: "DashboardBudgetAlert" });
+
+/**
+ * Where the budgets stand this month and year, as much as a hint on the dashboard needs: how many are over their amount and
+ * how many from `warningPercent` up, and the most urgent three (exceeded before warning, then the higher share used).
+ * Household data, the same for every member.
+ */
+export const dashboardBudgetAlertsSchema = z
+  .object({
+    exceeded: z.number().int().min(0),
+    warning: z.number().int().min(0),
+    top: z.array(dashboardBudgetAlertSchema).max(DASHBOARD_BUDGET_ALERTS_TOP),
+  })
+  .meta({ id: "DashboardBudgetAlerts" });
+export type DashboardBudgetAlerts = z.infer<typeof dashboardBudgetAlertsSchema>;

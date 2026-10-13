@@ -96,6 +96,8 @@ describe("openapi document", () => {
       "CreatedGuestLink",
       "Dashboard",
       "DashboardBalances",
+      "DashboardBudgetAlert",
+      "DashboardBudgetAlerts",
       "DashboardCosts",
       "DashboardDefect",
       "DashboardPreparation",

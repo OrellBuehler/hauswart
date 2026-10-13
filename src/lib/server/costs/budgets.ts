@@ -1,9 +1,13 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import type {
   CreateCostBudgetRequest,
+  DashboardBudgetAlerts,
   UpdateCostBudgetRequest,
 } from "$lib/api/schemas/cost-budgets";
-import { BUDGET_WARNING_PERCENT } from "$lib/api/schemas/cost-budgets";
+import {
+  BUDGET_WARNING_PERCENT,
+  DASHBOARD_BUDGET_ALERTS_TOP,
+} from "$lib/api/schemas/cost-budgets";
 import { budgetRange, budgetUsage } from "$lib/costs/budget";
 import { costBooks, costBudgets, costEntries } from "$lib/server/db";
 import { getHousehold } from "$lib/server/household/household";
@@ -185,5 +189,45 @@ export function costBudgetStatus(
     currency: getHousehold(ctx).currency,
     warningPercent: BUDGET_WARNING_PERCENT,
     items,
+  };
+}
+
+/**
+ * What the dashboard says about the budgets: from the status of today's month and year (`costBudgetStatus`), how many are
+ * over their amount and how many are close to it, and the most urgent `DASHBOARD_BUDGET_ALERTS_TOP` - exceeded before
+ * warning, the higher share used first, then the order the budgets were made in.
+ */
+export function dashboardBudgetAlerts(
+  ctx: Pick<ServiceContext, "db" | "now">,
+): DashboardBudgetAlerts {
+  const alerting = costBudgetStatus(ctx).items.flatMap((item, index) =>
+    item.state === "ok" ? [] : [{ item, index, state: item.state }],
+  );
+  const rank = { exceeded: 0, warning: 1 } as const;
+  const top = alerting
+    .slice()
+    .sort(
+      (a, b) =>
+        rank[a.state] - rank[b.state] ||
+        b.item.percentUsed - a.item.percentUsed ||
+        a.index - b.index,
+    )
+    .slice(0, DASHBOARD_BUDGET_ALERTS_TOP)
+    .map(({ item, state }) => ({
+      budgetId: item.budget.id,
+      bookId: item.budget.bookId,
+      bookName: item.budget.bookName,
+      category: item.budget.category,
+      period: item.budget.period,
+      amountMinor: item.budget.amountMinor,
+      spentMinor: item.spentMinor,
+      currency: item.budget.currency,
+      percentUsed: item.percentUsed,
+      state,
+    }));
+  return {
+    exceeded: alerting.filter((a) => a.state === "exceeded").length,
+    warning: alerting.filter((a) => a.state === "warning").length,
+    top,
   };
 }

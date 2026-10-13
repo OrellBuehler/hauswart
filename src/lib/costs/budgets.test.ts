@@ -6,7 +6,6 @@ import type {
 } from "$lib/api/schemas/cost-budgets";
 import {
   budgetAlertText,
-  budgetAlerts,
   budgetDisplay,
   budgetEntriesQuery,
   budgetSaveErrors,
@@ -160,18 +159,6 @@ describe("the budgets of a period", () => {
       "f",
     ]);
     expect(itemsForPeriod([], "month")).toEqual([]);
-  });
-
-  it("counts what is close to or over its amount", () => {
-    expect(
-      budgetAlerts([
-        { state: "ok" },
-        { state: "warning" },
-        { state: "exceeded" },
-        { state: "exceeded" },
-      ]),
-    ).toEqual({ exceeded: 2, warning: 1 });
-    expect(budgetAlerts([])).toEqual({ exceeded: 0, warning: 0 });
   });
 
   it("words the alert, and says nothing while every budget is within its amount", () => {

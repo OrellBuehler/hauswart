@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { DUE_KINDS, PREPARATION_STATES, TASK_CATEGORIES } from "../enums";
 import { dateSchema, isoTimestampSchema } from "./common";
+import { dashboardBudgetAlertsSchema } from "./cost-budgets";
 import { dashboardBalancesSchema, dashboardCostsSchema } from "./costs";
 import { defectSeveritySchema, defectStatusSchema } from "./defects";
 import { orderNowItemSchema } from "./parts";
@@ -114,6 +115,11 @@ export const dashboardSchema = z
      * when it could not be worked out right now (logged), so the rest of the dashboard still opens.
      */
     balances: dashboardBalancesSchema.nullable(),
+    /**
+     * The budgets that are close to or over their amount this month and year (`GET /costs/budgets/status`): the counts and the
+     * three most urgent. Null when it could not be worked out right now (logged), so the rest of the dashboard still opens.
+     */
+    budgetAlerts: dashboardBudgetAlertsSchema.nullable(),
     /** The caller's own offers from a connected finance app that wait for a decision; other members' offers are never counted. */
     pendingFinanceSuggestions: z.number().int().min(0),
     /** Cost entries, in any book and year, that a person still has to review (`GET /costs?reviewNeeded=true`). */

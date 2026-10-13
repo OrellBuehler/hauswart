@@ -446,6 +446,7 @@ export function wireDashboard(
     orderNow: OrderNowRecord[];
     costsYearToDate: z.input<typeof dashboardSchema>["costsYearToDate"];
     balances: z.input<typeof dashboardSchema>["balances"];
+    budgetAlerts: z.input<typeof dashboardSchema>["budgetAlerts"];
     pendingFinanceSuggestions: number;
     reviewNeededCount: number;
     pendingReceiptCount: number;
@@ -479,6 +480,7 @@ export function wireDashboard(
     orderNow: extras.orderNow.map(wireOrderNow),
     costsYearToDate: extras.costsYearToDate,
     balances: extras.balances,
+    budgetAlerts: extras.budgetAlerts,
     pendingFinanceSuggestions: extras.pendingFinanceSuggestions,
     reviewNeededCount: extras.reviewNeededCount,
     pendingReceiptCount: extras.pendingReceiptCount,

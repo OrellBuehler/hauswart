@@ -118,19 +118,6 @@ export function itemsForPeriod(
     );
 }
 
-/** How many budgets are close to or over their amount (all periods): what a hint on another page counts. */
-export function budgetAlerts(
-  items: readonly Pick<CostBudgetStatusItem, "state">[],
-): {
-  exceeded: number;
-  warning: number;
-} {
-  return {
-    exceeded: items.filter((item) => item.state === "exceeded").length,
-    warning: items.filter((item) => item.state === "warning").length,
-  };
-}
-
 /** "2 Budgets überschritten, 1 fast aufgebraucht"; empty while all budgets are within their amount. */
 export function budgetAlertText(alerts: {
   exceeded: number;

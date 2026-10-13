@@ -17,6 +17,7 @@ import {
 import {
   costBudgetStatus,
   createCostBudget,
+  dashboardBudgetAlerts,
   deleteCostBudget,
   getCostBudget,
   listCostBudgets,
@@ -375,6 +376,87 @@ describe("cost budgets", () => {
         items: [],
         currency: "CHF",
         warningPercent: 80,
+      });
+    });
+  });
+
+  describe("the alerts of the dashboard", () => {
+    const NOW = at("2026-06-15");
+    const alerts = () => dashboardBudgetAlerts(ctx(NOW));
+    /** A budget of 100.00 for a category, with the given spending in June. */
+    const spendOn = (category: string, spent: number, period = "month") => {
+      const b = budget({ category, period, amountMinor: 10000 });
+      if (spent !== 0) cost({ category, amountMinor: spent });
+      return b.id;
+    };
+
+    it("is empty without budgets and while every budget is within its amount", () => {
+      expect(alerts()).toEqual({ exceeded: 0, warning: 0, top: [] });
+      spendOn("groceries", 7999);
+      expect(alerts()).toEqual({ exceeded: 0, warning: 0, top: [] });
+    });
+
+    it("counts every budget over or close to its amount but names only the three most urgent", () => {
+      const a = spendOn("groceries", 9000);
+      const b = spendOn("dining", 12000);
+      const c = spendOn("leisure", 8000);
+      const d = spendOn("travel", 10000);
+      spendOn("health", 100);
+      const result = alerts();
+      expect(result).toMatchObject({ exceeded: 2, warning: 2 });
+      expect(result.top.map((t) => [t.budgetId, t.state])).toEqual([
+        [b, "exceeded"],
+        [d, "exceeded"],
+        [a, "warning"],
+      ]);
+      expect(result.top.map((t) => t.budgetId)).not.toContain(c);
+    });
+
+    it("breaks a tie by the order the budgets were made in", () => {
+      const first = spendOn("groceries", 9000);
+      const second = spendOn("dining", 9000);
+      const third = spendOn("leisure", 9000);
+      const fourth = spendOn("travel", 9000);
+      expect(alerts().top.map((t) => t.budgetId)).toEqual([
+        first,
+        second,
+        third,
+      ]);
+      expect(alerts().warning).toBe(4);
+      expect(alerts().top.map((t) => t.budgetId)).not.toContain(fourth);
+    });
+
+    it("measures the month and the year of today, and leaves inactive budgets out", () => {
+      const monthly = budget({ category: "groceries", period: "month" });
+      budget({ category: "groceries", period: "year", amountMinor: 1000000 });
+      cost({ category: "groceries", amountMinor: 50000, date: "2026-05-20" });
+      expect(alerts()).toEqual({ exceeded: 0, warning: 0, top: [] });
+      cost({ category: "groceries", amountMinor: 45000, date: "2026-06-02" });
+      expect(
+        alerts().top.map((t) => [t.budgetId, t.state, t.percentUsed]),
+      ).toEqual([[monthly.id, "warning", 90]]);
+      updateCostBudget(ctx(), monthly.id, { active: false });
+      expect(alerts()).toEqual({ exceeded: 0, warning: 0, top: [] });
+    });
+
+    it("carries what a client needs to name the budget", () => {
+      const ferien = createCostBook(
+        ctx(),
+        createCostBookRequestSchema.parse({ name: "Ferien" }),
+      );
+      budget({ bookId: ferien.id, category: "travel", amountMinor: 20000 });
+      cost({ bookId: ferien.id, category: "travel", amountMinor: 25000 });
+      expect(alerts().top[0]).toEqual({
+        budgetId: expect.any(String),
+        bookId: ferien.id,
+        bookName: "Ferien",
+        category: "travel",
+        period: "month",
+        amountMinor: 20000,
+        spentMinor: 25000,
+        currency: "CHF",
+        percentUsed: 125,
+        state: "exceeded",
       });
     });
   });

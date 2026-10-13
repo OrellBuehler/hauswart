@@ -452,10 +452,13 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   knows nothing of recorded payments, so it would have disagreed with the balance. **`balances`** answers "where do I
   stand": `{currency, myBalanceMinor, hasActivity, suggestedPayments (the first three, between any two people),
 suggestedPaymentCount}`, the caller's own place across all books with recorded payments included, from one read of the
-  same ledger as `GET /costs/balances` (four queries however many entries there are; a test pins that). It is the one
-  part of the dashboard that may fail on its own: when it cannot be worked out the handler answers `balances: null`
+  same ledger as `GET /costs/balances` (four queries however many entries there are; a test pins that). It is one of two
+  parts of the dashboard that may fail on their own (`orNull` in the handler): when it cannot be worked out the handler answers `balances: null`
   (the schema is nullable) and logs `dashboard.balances_failed` with the error's name and code, so the tasks and the
-  rest of the dashboard still open.
+  rest of the dashboard still open. The other is **`budgetAlerts`** (`dashboardBudgetAlerts`, `costs/budgets.ts`): `{exceeded, warning, top}` from the
+  status of today's month and year (the same numbers as `GET /costs/budgets/status`), `exceeded` and `warning` counting the active budgets over their amount and from 80 % up, `top` the most
+  urgent three (exceeded before warning, then the higher share used, then the order they were made in; each with book, category, period, amount, spent, `percentUsed`, `state`); household data, the same for every member; all zeros and `top: []` while every budget is
+  within its amount, `null` and `dashboard.budget_alerts_failed` when it cannot be worked out.
 - **Settlements and balances** (`settlements`, migration `0026`; `costs/settlements.ts`, `balances.ts`, `ledger.ts`;
   `/settlements`, `GET /costs/balances`): a settlement is a payment between two members ("Ben paid Anna 50"):
   `fromUserId` differs from `toUserId` (both members, else 400 on the field), `amountMinor` is positive (also a CHECK),
@@ -1768,7 +1771,7 @@ in dark mode. Every list has an empty state, every async action a pending and an
   `withKnownTag` drops a tag that no longer exists, which the API answers with a 404): list, summary and CSV follow it, the balances do not (the note under the summary says so). **Budgets** have their own
   page, `/costs/budgets?period=month|year&year=&month=` (it measures a month or a year by itself, not the list's filters): active budgets of one period type, the ones needing attention first
   (`itemsForPeriod`), each with a bar, the state as a word and an icon (never colour alone), what is left or the overspend, and a link to the entries it measured (`budgetEntriesQuery`). The dashboard's
-  costs card adds one line when a budget is almost used up or exceeded (`tryLoadBudgetAlerts`, silent when it fails). **Recurring costs**: `/costs/recurring` (active, paused, finished), `/[id]` (rhythm,
+  costs card adds one line when a budget is almost used up or exceeded (from `dashboard.budgetAlerts`, no call of its own; nothing when it is null). **Recurring costs**: `/costs/recurring` (active, paused, finished), `/[id]` (rhythm,
   next three dates - `RecurrenceUpcoming`, which for a paused one lists none and says it goes on from the next date when resumed -, template) and `/new`, `/[id]/edit` with `RecurrenceForm` (the entry's draft without date plus the rule; `splitPatch` is shared with the entry form; the payer defaults to the person).
   `RecurrenceControls` runs pause, resume and "Jetzt buchen" (enabled only for a due booking, `isDue`: the API never books ahead). `ruleWording` words the rule, `clampNote` explains month-end clamping, and
   `RecurrencePreview` adds the next three dates and, while saving books something, "Bucht sofort n Einträge seit ..." (`immediateBookings`, at most `RECURRENCE_BOOKING_CAP` = 120 per run). An entry's

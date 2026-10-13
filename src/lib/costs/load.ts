@@ -9,7 +9,6 @@ import type { CostTag } from "$lib/api/schemas/cost-tags";
 import type { CostBalances } from "$lib/api/schemas/costs";
 import type { Household } from "$lib/api/schemas/household";
 import { todayIn } from "$lib/dates";
-import { budgetAlerts } from "./budgets";
 import { loadDirectory, loadPlaces } from "$lib/tasks/load";
 
 /** The household and today's date in its zone. */
@@ -87,30 +86,6 @@ export async function tryLoadPendingReceipts(
       redirect(303, `/login?redirectTo=${encodeURIComponent(redirectTo)}`);
     }
     console.warn("pending receipts unavailable", err.code, err.status);
-    return null;
-  }
-}
-
-/**
- * How many budgets are nearly used up or over their amount this month and year: one call, for a hint on the dashboard.
- * When it cannot be read the dashboard opens without the hint (logged by code). A signed-out session still goes to the
- * login page.
- */
-export async function tryLoadBudgetAlerts(
-  client: ApiClient,
-  redirectTo: string,
-): Promise<{ exceeded: number; warning: number } | null> {
-  try {
-    const status = await client.call(endpoints.costBudgetsStatus, {
-      query: {},
-    });
-    return budgetAlerts(status.items);
-  } catch (err) {
-    if (!isApiError(err)) throw err;
-    if (err.status === 401) {
-      redirect(303, `/login?redirectTo=${encodeURIComponent(redirectTo)}`);
-    }
-    console.warn("budget status unavailable", err.code, err.status);
     return null;
   }
 }

@@ -29,8 +29,8 @@
     costs: Dashboard["costsYearToDate"];
     /** Where the caller stands across all books, and the first payments that would square everybody; null when the server could not work it out. */
     balances: Dashboard["balances"];
-    /** How many budgets are nearly used up or over their amount; null when that could not be read. */
-    budgetAlerts?: { exceeded: number; warning: number } | null;
+    /** How many budgets are nearly used up or over their amount (the dashboard's own `budgetAlerts`); null when that could not be worked out. */
+    budgetAlerts?: Dashboard["budgetAlerts"];
     /** The person may book costs: the card offers the quick entry. */
     canWrite?: boolean;
   } = $props();
