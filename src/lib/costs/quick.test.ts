@@ -388,6 +388,8 @@ describe("the quick draft", () => {
       participantsTouched: false,
       notShared: false,
       assetId: "",
+      tagIds: [],
+      financeSuggestionId: "",
     });
     expect(
       newQuickDraft({
@@ -516,6 +518,8 @@ describe("the request for a quick entry", () => {
     participantsTouched: false,
     notShared: false,
     assetId: "",
+    tagIds: [],
+    financeSuggestionId: "",
     ...over,
   });
   const build = (over: Partial<QuickDraft> = {}) =>
@@ -534,6 +538,23 @@ describe("the request for a quick entry", () => {
       paidByUserId: "u2",
       deductible: "unknown",
     });
+  });
+
+  it("sends the tags and the bank transaction that were chosen, and nothing otherwise", () => {
+    const withBoth = build({ tagIds: ["t1", "t2"], financeSuggestionId: "s1" });
+    expect(withBoth.body).toMatchObject({
+      tagIds: ["t1", "t2"],
+      financeSuggestionId: "s1",
+    });
+    expect(build().body).not.toHaveProperty("tagIds");
+    expect(build().body).not.toHaveProperty("financeSuggestionId");
+  });
+
+  it("refuses more than ten tags", () => {
+    const many = Array.from({ length: 11 }, (_, i) => `t${i}`);
+    const { body, errors } = build({ tagIds: many });
+    expect(body).toBeUndefined();
+    expect(errors.tagIds).toBeTruthy();
   });
 
   it("reads Swiss and German decimals and a dangling separator", () => {
@@ -693,6 +714,11 @@ describe("the request for a receipt in the queue", () => {
 
 describe("the words for a failed save", () => {
   const noAnswer = () => new TypeError("Failed to fetch");
+  const keyConflict = () =>
+    new ApiError("conflict", "key used", {
+      status: 409,
+      details: { code: "idempotency_key_reused" },
+    });
 
   it("says a save that got no answer can simply be tried again, since the key keeps it from being booked twice", () => {
     const message = quickErrorMessage(noAnswer());
@@ -709,10 +735,26 @@ describe("the words for a failed save", () => {
   });
 
   it("words a key that another entry or receipt used, and what to look at", () => {
-    const conflict = new ApiError("conflict", "key used", { status: 409 });
+    const conflict = keyConflict();
     expect(quickErrorMessage(conflict)).toContain("Liste");
     expect(quickErrorMessage(conflict, "receipt")).toContain("Belege");
     expect(quickErrorMessage(conflict)).not.toContain("Verbindung");
+  });
+
+  it("does not take any other 409 for a used key: it goes by the code the API gives", () => {
+    for (const details of [
+      { code: "suggestion_decided" },
+      { code: "entry_tied" },
+      { code: "receipt_task_closed", status: "done" },
+      { fuelLogId: "f1" },
+      undefined,
+    ]) {
+      const conflict = new ApiError("conflict", "x", { status: 409, details });
+      const message = quickErrorMessage(conflict);
+      expect(message, JSON.stringify(details)).not.toContain("Liste");
+      expect(message).not.toBe(quickErrorMessage(keyConflict()));
+      expect(quickErrorMessage(conflict, "receipt")).not.toContain("Belege");
+    }
   });
 
   it("words an answer of the API like everywhere else", () => {
@@ -725,9 +767,18 @@ describe("the words for a failed save", () => {
   });
 
   it("takes only a 409 for a key that is used up; every other failure keeps the key for the retry", () => {
-    expect(isKeyConflict(new ApiError("conflict", "x", { status: 409 }))).toBe(
-      true,
-    );
+    expect(isKeyConflict(keyConflict())).toBe(true);
+    for (const details of [
+      { code: "suggestion_decided" },
+      { code: "entry_tied" },
+      { code: "receipt_task_closed" },
+      { fuelLogId: "f1" },
+      undefined,
+    ]) {
+      expect(
+        isKeyConflict(new ApiError("conflict", "x", { status: 409, details })),
+      ).toBe(false);
+    }
     expect(isKeyConflict(new ApiError("not_found", "x", { status: 404 }))).toBe(
       false,
     );

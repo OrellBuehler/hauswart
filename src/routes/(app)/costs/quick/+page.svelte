@@ -83,6 +83,8 @@
         books={data.books}
         people={data.people}
         assets={data.assets}
+        tags={data.tags}
+        financeConnected={data.financeConnected}
         currency={data.currency}
         today={data.today}
         currentUserId={data.user.id}

@@ -49,6 +49,7 @@ describe("dashboard API", () => {
       openDefects: [],
       expiringWarranties: [],
       orderNow: [],
+      budgetAlerts: { exceeded: 0, warning: 0, top: [] },
       pendingReceiptCount: 0,
     });
   });
@@ -97,6 +98,192 @@ describe("dashboard API", () => {
           code: "SQLITE_ERROR",
         });
         expect(lines[0]).not.toContain("settlements");
+      } finally {
+        error.mockRestore();
+      }
+    });
+  });
+
+  describe("the budget alerts", () => {
+    type Alerts = {
+      exceeded: number;
+      warning: number;
+      top: {
+        budgetId: string;
+        bookId: string | null;
+        bookName: string | null;
+        category: string | null;
+        period: string;
+        amountMinor: number;
+        spentMinor: number;
+        currency: string;
+        percentUsed: number;
+        state: string;
+      }[];
+    };
+    const alerts = async (call: ReturnType<typeof createCaller>) =>
+      (
+        (await call("GET", "/api/v1/dashboard")).body as {
+          budgetAlerts: Alerts | null;
+        }
+      ).budgetAlerts;
+
+    async function budgets() {
+      const { call, user } = await member();
+      const budget = async (
+        category: string,
+        period: "month" | "year",
+        extra: Record<string, unknown> = {},
+      ) =>
+        (
+          (
+            await call("POST", "/api/v1/cost-budgets", {
+              json: { category, period, amountMinor: 10000, ...extra },
+            })
+          ).body as { id: string }
+        ).id;
+      const spend = (category: string, amountMinor: number, date = today()) =>
+        call("POST", "/api/v1/costs", {
+          json: {
+            title: `Ausgabe ${category}`,
+            amountMinor,
+            category,
+            date,
+            splitMode: "none",
+          },
+        });
+      return { call, user, budget, spend };
+    }
+
+    it("are empty while no budget is close to its amount", async () => {
+      const { call, budget, spend } = await budgets();
+      expect(await alerts(call)).toEqual({ exceeded: 0, warning: 0, top: [] });
+      await budget("groceries", "month");
+      await spend("groceries", 7999);
+      expect(await alerts(call)).toEqual({ exceeded: 0, warning: 0, top: [] });
+    });
+
+    it("count the budgets that are over or close to their amount, and list the three most urgent", async () => {
+      const { call, budget, spend } = await budgets();
+      const groceries = await budget("groceries", "month");
+      const dining = await budget("dining", "month");
+      const leisure = await budget("leisure", "month");
+      await budget("travel", "month");
+      const health = await budget("health", "year");
+      await budget("gifts", "month", { active: false });
+      await budget("transport", "month");
+      await spend("groceries", 12000);
+      await spend("dining", 9000);
+      await spend("leisure", 8000);
+      await spend("travel", 5000);
+      await spend("health", 15000);
+      await spend("gifts", 20000);
+      await spend("transport", 20000, today(-40));
+
+      const result = await alerts(call);
+      expect(result).toMatchObject({ exceeded: 2, warning: 2 });
+      expect(
+        result?.top.map((a) => [a.budgetId, a.state, a.percentUsed]),
+      ).toEqual([
+        [health, "exceeded", 150],
+        [groceries, "exceeded", 120],
+        [dining, "warning", 90],
+      ]);
+      expect(result?.top[1]).toEqual({
+        budgetId: groceries,
+        bookId: null,
+        bookName: null,
+        category: "groceries",
+        period: "month",
+        amountMinor: 10000,
+        spentMinor: 12000,
+        currency: "CHF",
+        percentUsed: 120,
+        state: "exceeded",
+      });
+      expect(JSON.stringify(result)).not.toContain(leisure);
+    });
+
+    it("name the book of a budget that is for one", async () => {
+      const { call, budget, spend } = await budgets();
+      const books = (
+        (await call("GET", "/api/v1/cost-books")).body as {
+          items: { id: string; name: string }[];
+        }
+      ).items;
+      const haushalt = books.find((b) => b.name === "Haushalt")!;
+      await budget("groceries", "month", { bookId: haushalt.id });
+      await call("POST", "/api/v1/costs", {
+        json: {
+          title: "Wochenmarkt",
+          amountMinor: 11000,
+          category: "groceries",
+          bookId: haushalt.id,
+          splitMode: "none",
+        },
+      });
+      await spend("groceries", 99999);
+      const result = await alerts(call);
+      expect(result?.top).toHaveLength(1);
+      expect(result?.top[0]).toMatchObject({
+        bookId: haushalt.id,
+        bookName: "Haushalt",
+        spentMinor: 11000,
+        state: "exceeded",
+      });
+    });
+
+    it("agree with the status the budgets page shows, and are the same for every member", async () => {
+      const { call, budget, spend } = await budgets();
+      await budget("groceries", "month");
+      await budget("dining", "year");
+      await budget("leisure", "month");
+      await spend("groceries", 10000);
+      await spend("dining", 8500);
+      await spend("leisure", 100);
+      const status = (
+        (await call("GET", "/api/v1/costs/budgets/status")).body as {
+          items: { state: string }[];
+        }
+      ).items;
+      const result = await alerts(call);
+      expect(result?.exceeded).toBe(
+        status.filter((i) => i.state === "exceeded").length,
+      );
+      expect(result?.warning).toBe(
+        status.filter((i) => i.state === "warning").length,
+      );
+      const ben = createCaller({
+        session: loginTestUser(await createTestUser({ displayName: "Ben" }))
+          .token,
+      });
+      expect(await alerts(ben)).toEqual(result);
+    });
+
+    it("are null when they cannot be worked out, and the rest of the dashboard is still there", async () => {
+      const { call } = await budgets();
+      await call("POST", "/api/v1/costs", {
+        json: { title: "Einkauf", amountMinor: 10000, category: "groceries" },
+      });
+      getDB().$client.exec("drop table cost_budgets");
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        const r = await call("GET", "/api/v1/dashboard");
+        expect(r.res.status).toBe(200);
+        expect(r.body).toMatchObject({
+          budgetAlerts: null,
+          today: today(),
+          costsYearToDate: { totalMinor: 10000 },
+          balances: { currency: "CHF" },
+        });
+        const lines = error.mock.calls.map((c) => String(c[0]));
+        expect(lines).toHaveLength(1);
+        expect(JSON.parse(lines[0]!)).toEqual({
+          event: "dashboard.budget_alerts_failed",
+          name: "SQLiteError",
+          code: "SQLITE_ERROR",
+        });
+        expect(lines[0]).not.toContain("cost_budgets");
       } finally {
         error.mockRestore();
       }

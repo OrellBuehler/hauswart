@@ -155,7 +155,7 @@ describe("balances, books and participants through the API", () => {
       ).toBe(18000);
     });
 
-    it("exports one book's entries, with the book last, in a file named after it", async () => {
+    it("exports one book's entries, with the book before the tags, in a file named after it", async () => {
       const anna = await createTestUser({ displayName: "Anna" });
       await createTestUser({ displayName: "Ben" });
       const call = createCaller({ session: loginTestUser(anna).token });
@@ -194,10 +194,10 @@ describe("balances, books and participants through the API", () => {
         .replace(/^\uFEFF/, "")
         .trim()
         .split("\r\n");
-      expect(rows[0].split(";").at(-1)).toBe("book");
+      expect(rows[0].split(";").slice(-2)).toEqual(["book", "tags"]);
       expect(rows).toHaveLength(2);
       expect(rows[1]).toContain("Haushalt eins");
-      expect(rows[1].split(";").at(-1)).toBe("Haushalt");
+      expect(rows[1].split(";").at(-2)).toBe("Haushalt");
       const unknown = await fetch(
         "/api/v1/costs/export.csv?year=2026&bookId=missing",
       );

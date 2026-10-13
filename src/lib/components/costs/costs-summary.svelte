@@ -18,6 +18,7 @@
     balancesHref,
     asset,
     bookName,
+    tagName,
     reviewHref,
   }: {
     summary: CostsSummary;
@@ -30,6 +31,8 @@
     asset?: { name: string | null } | undefined;
     /** Set when the summary was asked for one book only. */
     bookName?: string | undefined;
+    /** Set when the summary was asked for the entries of one tag only. */
+    tagName?: string | undefined;
     /**
      * The list of the entries still to review in the summary's scope. The notice only shows while the summary counts
      * some; leave it out where that list is on screen already.
@@ -101,7 +104,7 @@
     </a>
     <!-- eslint-enable svelte/no-navigation-without-resolve -->
   {/if}
-  {#if asset || bookName}
+  {#if asset || bookName || tagName}
     <p
       class="bg-muted/50 text-muted-foreground flex items-start gap-2 rounded-lg border px-3 py-2 text-sm text-pretty"
     >
@@ -113,6 +116,9 @@
             : m.costs_summary_asset_unknown()}
         {:else if bookName}
           {m.costs_summary_book({ name: bookName })}
+        {/if}
+        {#if tagName}
+          {m.costs_summary_tag({ name: tagName })}
         {/if}
       </span>
     </p>

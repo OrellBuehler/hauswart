@@ -34,7 +34,9 @@ describe("the CSV export and books", () => {
       .filter((line) => line !== "")
       .map((line) => line.split(";"));
 
-  it("keeps the earlier columns where they were and adds the book at the end", () => {
+  const BOOK = CSV_COLUMNS.indexOf("book");
+
+  it("keeps the earlier columns where they were and adds the book and then the tags at the end", () => {
     expect(CSV_COLUMNS.slice(0, 16)).toEqual([
       "date",
       "title",
@@ -53,8 +55,8 @@ describe("the CSV export and books", () => {
       "source",
       "id",
     ]);
-    expect(CSV_COLUMNS.slice(16)).toEqual(["book"]);
-    expect(CSV_COLUMNS.at(-1)).toBe("book");
+    expect(CSV_COLUMNS.slice(16)).toEqual(["book", "tags"]);
+    expect(BOOK).toBe(16);
   });
 
   it("names the book of every entry", () => {
@@ -65,11 +67,11 @@ describe("the CSV export and books", () => {
       bookId: book("Haushalt").id,
     });
     const [header, first, second] = records(costsCsv(ctx(), 2026));
-    expect(header.at(-1)).toBe("book");
+    expect(header[BOOK]).toBe("book");
     expect(first[1]).toBe("Wohnung eins");
-    expect(first.at(-1)).toBe("Wohnung");
+    expect(first[BOOK]).toBe("Wohnung");
     expect(first).toHaveLength(CSV_COLUMNS.length);
-    expect(second.at(-1)).toBe("Haushalt");
+    expect(second[BOOK]).toBe("Haushalt");
   });
 
   it("can be limited to one book", () => {
@@ -100,6 +102,6 @@ describe("the CSV export and books", () => {
       createCostBookRequestSchema.parse({ name: "=1+1" }),
     );
     cost({ bookId: trick.id });
-    expect(records(costsCsv(ctx(), 2026))[1].at(-1)).toBe("'=1+1");
+    expect(records(costsCsv(ctx(), 2026))[1][BOOK]).toBe("'=1+1");
   });
 });

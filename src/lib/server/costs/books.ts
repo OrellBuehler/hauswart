@@ -4,7 +4,8 @@ import type {
   ListCostBooksQuery,
   UpdateCostBookRequest,
 } from "$lib/api/schemas/cost-books";
-import { costBooks, type DB } from "$lib/server/db";
+import { nameKey } from "$lib/costs/names";
+import { costBooks, costRecurrences, type DB } from "$lib/server/db";
 import { paginateArray } from "$lib/server/pagination";
 import {
   conflict,
@@ -214,16 +215,17 @@ const slugTaken = (ctx: Db, slug: string) =>
     .where(eq(costBooks.slug, slug))
     .get() !== undefined;
 
-/** Names are compared without regard to case, so "auto" cannot join an "Auto" a picker would show twice. */
+/**
+ * Names are compared without regard to case by `nameKey`, so "auto" cannot join an "Auto" a picker would show twice, and
+ * "übernachtung" cannot join "Übernachtung" (SQLite's `lower()`, and so the unique index, fold ASCII only).
+ */
 function nameTaken(ctx: Db, name: string, exceptId?: string): boolean {
-  const same = sql`lower(${costBooks.name}) = lower(${name})`;
-  return (
-    ctx.db
-      .select({ id: costBooks.id })
-      .from(costBooks)
-      .where(exceptId ? and(same, sql`${costBooks.id} <> ${exceptId}`) : same)
-      .get() !== undefined
-  );
+  const wanted = nameKey(name);
+  return ctx.db
+    .select({ id: costBooks.id, name: costBooks.name })
+    .from(costBooks)
+    .all()
+    .some((b) => b.id !== exceptId && nameKey(b.name) === wanted);
 }
 
 const activeCount = (ctx: Db) =>
@@ -349,7 +351,8 @@ export function updateCostBook(
 
 /**
  * Deletes an empty book. One with entries or payments is a 409 that says how many (`details.entryCount`,
- * `details.settlementCount`): archive it instead. The last book that is not archived stays.
+ * `details.settlementCount`): archive it instead; so is one that still has recurring costs (`details.recurrenceCount`).
+ * The last book that is not archived stays. Its budgets go with it.
  */
 export function deleteCostBook(ctx: Db, id: string): void {
   const current = getCostBook(ctx, id);
@@ -360,6 +363,18 @@ export function deleteCostBook(ctx: Db, id: string): void {
         entryCount: current.entryCount,
         settlementCount: current.settlementCount,
       },
+    );
+  }
+  const recurrenceCount =
+    ctx.db
+      .select({ n: sql<number>`count(*)` })
+      .from(costRecurrences)
+      .where(eq(costRecurrences.bookId, id))
+      .get()?.n ?? 0;
+  if (recurrenceCount > 0) {
+    throw conflict(
+      "This cost book still has recurring costs; delete them or move them to another book first",
+      { recurrenceCount },
     );
   }
   if (current.archivedAt === null && activeCount(ctx) <= 1) {

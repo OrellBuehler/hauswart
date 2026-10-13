@@ -557,13 +557,24 @@ describe("sync result", () => {
     expect(lines[0]).toContain("2");
   });
 
+  it("names the suggestions to link a transaction to an entry made by hand, apart from the cost suggestions", () => {
+    const lines = syncStatLines({ suggestions: 1, linkSuggestions: 2 });
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toContain("1");
+    expect(lines[1]).toContain("2");
+    expect(lines[1]).toContain("verknüpfen");
+    expect(syncStatLines({ linkSuggestions: 1 })).toHaveLength(1);
+  });
+
   it("has nothing to say when nothing happened", () => {
     expect(syncStatLines({ suggestions: 0, skipped: 0 })).toEqual([]);
+    expect(syncStatLines({ linkSuggestions: 0 })).toEqual([]);
   });
 
   it("says when offers wait for a decision", () => {
     expect(offersWaiting({ suggestions: 1 })).toBe(true);
     expect(offersWaiting({ assetSuggestions: 2 })).toBe(true);
+    expect(offersWaiting({ linkSuggestions: 1 })).toBe(true);
     expect(offersWaiting({ autoAccepted: 4, tasksCreated: 1 })).toBe(false);
   });
 });

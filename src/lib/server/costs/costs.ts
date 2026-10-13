@@ -28,6 +28,7 @@ import {
   assertTaskOpenForBooking,
   takeLease,
 } from "$lib/server/ai-tasks/booking";
+import type { CostTagRef } from "$lib/api/schemas/cost-tags";
 import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
 import { commentCountSql } from "$lib/server/comments/counts";
 import {
@@ -43,6 +44,13 @@ import {
   type DB,
 } from "$lib/server/db";
 import { emitEvent } from "$lib/server/events";
+import {
+  claimSuggestion,
+  isTiedTo,
+  linkWaitingOffer,
+  tieSuggestion,
+  type TiedOrigin,
+} from "$lib/server/finance/links";
 import { getHousehold } from "$lib/server/household/household";
 import { decodeCursor, pageOf } from "$lib/server/pagination";
 import {
@@ -60,6 +68,7 @@ import {
   requireOpenCostBook,
   type CostBookRow,
 } from "./books";
+import { costConflict } from "./conflicts";
 import {
   amountsFor,
   listPeople,
@@ -68,6 +77,12 @@ import {
   validateParticipants,
   type Share,
 } from "./split";
+import {
+  getCostTagRow,
+  requireTagIds,
+  tagsOfEntries,
+  writeEntryTags,
+} from "./tags";
 
 type Db = Pick<ServiceContext, "db">;
 
@@ -93,6 +108,7 @@ export interface CostRecord extends CostRow {
   /** The fuel log entry that booked this entry, which then owns its amount, currency and date. */
   fuelLogId: string | null;
   shares: CostShareRecord[];
+  tags: CostTagRef[];
 }
 
 const payer = alias(users, "payer");
@@ -177,6 +193,10 @@ function toRecords(db: DB, joined: readonly Joined[]): CostRecord[] {
     db,
     joined.map((j) => j.cost),
   );
+  const tags = tagsOfEntries(
+    db,
+    joined.map((j) => j.cost.id),
+  );
   return joined.map((j) => ({
     ...j.cost,
     bookName: j.bookName,
@@ -190,6 +210,7 @@ function toRecords(db: DB, joined: readonly Joined[]): CostRecord[] {
     commentCount: Number(j.commentCount),
     fuelLogId: j.fuelLogId,
     shares: shares.get(j.cost.id) ?? [],
+    tags: tags.get(j.cost.id) ?? [],
   }));
 }
 
@@ -212,6 +233,10 @@ export const yearRange = (year: number) => ({
   from: `${String(year).padStart(4, "0")}-01-01`,
   to: `${String(year).padStart(4, "0")}-12-31`,
 });
+
+/** Entries that carry the tag; written against the table by name so any query over `cost_entries` can use it. */
+export const hasTag = (tagId: string): SQL =>
+  sql`exists (select 1 from cost_entry_tags where cost_entry_tags.entry_id = cost_entries.id and cost_entry_tags.tag_id = ${tagId})`;
 
 function whereOf(filter: ListCostsQuery, viewerId: string): SQL[] {
   const where: SQL[] = [];
@@ -237,6 +262,7 @@ function whereOf(filter: ListCostsQuery, viewerId: string): SQL[] {
       ),
     );
   }
+  if (filter.tagId) where.push(hasTag(filter.tagId));
   if (filter.reviewNeeded !== undefined) {
     where.push(eq(costEntries.reviewNeeded, filter.reviewNeeded));
   }
@@ -270,6 +296,7 @@ export function listCosts(
   viewerId: string,
 ) {
   if (filter.bookId) getCostBookRow(ctx, filter.bookId);
+  if (filter.tagId) getCostTagRow(ctx, filter.tagId);
   const where = whereOf(filter as ListCostsQuery, viewerId);
   if (page.cursor) {
     const at = decodeCursor(page.cursor, cursorSchema);
@@ -337,7 +364,8 @@ function assertUser(ctx: Db, id: string | null | undefined) {
 
 /** What a finance provider adds to an entry booked from one of its items. */
 export interface ProviderOrigin {
-  source: Exclude<CostSource, "manual">;
+  /** Where the entry came from; absent for an entry made by hand and tied to a suggestion afterwards. */
+  source?: Exclude<CostSource, "manual" | "recurring">;
   connectionId: string;
   ref: string;
   url: string | null;
@@ -407,16 +435,14 @@ function writeShares(db: DB, entryId: string, shares: readonly Share[]) {
 }
 
 /**
- * Books a cost. The split is frozen with the entry. Defaults: today, the
- * household currency, and the asset or room of the linked service log entry
- * or defect.
+ * Everything a new entry is checked against before it is written: the references exist, the book takes entries, the
+ * split and the tags are valid for the tax class. Answers what the entry is split by.
  */
-export function createCost(
-  ctx: ServiceContext,
+function prepareCost(
+  ctx: Db,
   input: CreateCostRequest,
-  createdBy: string | null,
-  origin?: ProviderOrigin,
-): CostRecord {
+  currentDeductible?: CostDeductible,
+) {
   assertRef(ctx, assets, input.assetId, "assetId", "Asset");
   assertRef(ctx, rooms, input.roomId, "roomId", "Room");
   assertRef(ctx, defects, input.defectId, "defectId", "Defect");
@@ -438,8 +464,47 @@ export function createCost(
     input.shares,
     input.participantIds,
   );
-  assertDeductible(book, input.deductible);
+  assertDeductible(book, input.deductible, currentDeductible);
+  const tagIds = requireTagIds(ctx, input.tagIds ?? []);
+  return { book, splitMode, shares, tagIds };
+}
+
+/**
+ * Checks a template of entries (a recurring cost) as booking it would, and writes nothing. `currentDeductible` is the tax
+ * class the template has already: repeating it is no change, so it passes even where the book has no tax class any more.
+ */
+export function checkCostTemplate(
+  ctx: Db,
+  input: CreateCostRequest,
+  currentDeductible?: CostDeductible,
+): void {
+  prepareCost(ctx, input, currentDeductible);
+}
+
+/**
+ * Books a cost. The split is frozen with the entry. Defaults: today, the
+ * household currency, and the asset or room of the linked service log entry
+ * or defect.
+ */
+export function createCost(
+  ctx: ServiceContext,
+  input: CreateCostRequest,
+  createdBy: string | null,
+  origin?: ProviderOrigin,
+  recurrence?: { id: string; date: string },
+): CostRecord {
+  const { book, splitMode, shares, tagIds } = prepareCost(ctx, input);
   if (input.receiptTaskId) assertTaskOpenForBooking(ctx, input.receiptTaskId);
+  const currency = input.currency ?? getHousehold(ctx).currency;
+  const tied: TiedOrigin | undefined = input.financeSuggestionId
+    ? claimSuggestion(ctx, createdBy, input.financeSuggestionId, {
+        amountMinor: input.amountMinor,
+        currency,
+        createdBy,
+      }).origin
+    : undefined;
+  const provider: ProviderOrigin | undefined =
+    origin ?? (tied ? { ...tied } : undefined);
 
   let assetId = input.assetId ?? null;
   let roomId = input.roomId ?? null;
@@ -464,14 +529,14 @@ export function createCost(
   let id: string;
   try {
     id = ctx.db.transaction((tx) => {
-      const row = tx
+      const inserted = tx
         .insert(costEntries)
         .values({
           bookId: book.id,
           date: input.date ?? clockAt(ctx.now).today,
           title: input.title,
           amountMinor: minor(input.amountMinor),
-          currency: input.currency ?? getHousehold(ctx).currency,
+          currency,
           category: input.category,
           assetId,
           roomId,
@@ -485,10 +550,12 @@ export function createCost(
             input.countsAsExpense ??
             COST_CATEGORY_COUNTS_AS_EXPENSE[input.category],
           deductible: input.deductible,
-          source: origin?.source ?? "manual",
-          providerConnectionId: origin?.connectionId ?? null,
-          providerRef: origin?.ref ?? null,
-          providerUrl: origin?.url ?? null,
+          source: provider?.source ?? (recurrence ? "recurring" : "manual"),
+          recurrenceId: recurrence?.id ?? null,
+          recurrenceDate: recurrence?.date ?? null,
+          providerConnectionId: provider?.connectionId ?? null,
+          providerRef: provider?.ref ?? null,
+          providerUrl: provider?.url ?? null,
           createdBy,
           idempotencyKey: input.idempotencyKey ?? null,
           // booked on the strength of a receipt somebody else read: a person confirms it once
@@ -496,9 +563,20 @@ export function createCost(
           aiTaskId: input.receiptTaskId ?? null,
           createdAt: new Date(ctx.now),
         })
-        .returning({ id: costEntries.id })
-        .get().id;
+        .returning()
+        .get();
+      const row = inserted.id;
       writeShares(tx as unknown as DB, row, shares);
+      writeEntryTags(tx as unknown as DB, row, tagIds);
+      // The transaction this entry stands for may be waiting in the payer's inbox already.
+      if (!provider) linkWaitingOffer({ db: tx as unknown as DB }, inserted);
+      if (input.financeSuggestionId) {
+        tieSuggestion(
+          { db: tx as unknown as DB },
+          input.financeSuggestionId,
+          row,
+        );
+      }
       if (input.receiptTaskId) {
         takeLease(
           { db: tx as unknown as DB, now: ctx.now },
@@ -518,14 +596,18 @@ export function createCost(
       ) {
         throw err;
       }
-      throw conflict("This item of the finance provider is already booked");
+      if (recurrence) throw conflict("This occurrence is already booked");
+      throw costConflict(
+        "suggestion_decided",
+        "This item of the finance provider is already booked",
+      );
     }
     throw err;
   }
-  if (origin) {
+  if (provider) {
     emitEvent("financeLinksPending", {
       ctx,
-      connectionId: origin.connectionId,
+      connectionId: provider.connectionId,
     });
   }
   return getCost(ctx, id);
@@ -587,7 +669,10 @@ export function recordCost(
     const existing = findCostByKey(ctx, createdBy, key);
     if (!existing) return null;
     if (!sameRequest(ctx, existing, input)) {
-      throw conflict("This idempotency key was used for another cost entry");
+      throw costConflict(
+        "idempotency_key_reused",
+        "This idempotency key was used for another cost entry",
+      );
     }
     return { cost: existing, replayed: true };
   };
@@ -615,7 +700,7 @@ export function updateCost(
   ctx: ServiceContext,
   id: string,
   patch: UpdateCostRequest,
-  options: { fuelLogId?: string } = {},
+  options: { fuelLogId?: string; userId?: string } = {},
 ): CostRecord {
   const current = getCost(ctx, id);
   if (
@@ -671,8 +756,32 @@ export function updateCost(
     participantIds,
     splitMode,
     amountMinor,
+    tagIds: tagIdsPatch,
+    financeSuggestionId,
     ...fields
   } = patch;
+  const tagIds =
+    tagIdsPatch === undefined ? undefined : requireTagIds(ctx, tagIdsPatch);
+  let tied: TiedOrigin | undefined;
+  if (
+    financeSuggestionId !== undefined &&
+    !(
+      options.userId !== undefined &&
+      isTiedTo(ctx, options.userId, financeSuggestionId, id)
+    )
+  ) {
+    if (current.providerRef !== null || current.providerConnectionId !== null) {
+      throw costConflict(
+        "entry_tied",
+        "This cost entry is tied to a finance item already",
+      );
+    }
+    tied = claimSuggestion(ctx, options.userId ?? null, financeSuggestionId, {
+      amountMinor: patch.amountMinor ?? current.amountMinor,
+      currency: patch.currency ?? current.currency,
+      createdBy: current.createdBy,
+    }).origin;
+  }
   let nextShares: Share[] | undefined;
   if (customShares !== undefined) {
     if ((splitMode ?? current.splitMode) !== "custom") {
@@ -715,29 +824,59 @@ export function updateCost(
     ((patch.title !== undefined && patch.title !== current.title) ||
       (patch.assetId !== undefined && patch.assetId !== current.assetId));
 
-  ctx.db.transaction((tx) => {
-    tx.update(costEntries)
-      .set({
-        ...fields,
-        ...(resetDeductible ? { deductible: "unknown" as const } : {}),
-        ...(amountMinor === undefined
-          ? {}
-          : { amountMinor: minor(amountMinor) }),
-        // Naming the mode even when it stays keeps the update from being empty when only the shares change.
-        ...(splitMode === undefined
-          ? nextShares
-            ? { splitMode: current.splitMode }
-            : {}
-          : { splitMode }),
-        ...(defaultExpense === undefined
-          ? {}
-          : { countsAsExpense: defaultExpense }),
-        ...(linkAffected ? { linkSyncedAt: null } : {}),
-      })
-      .where(eq(costEntries.id, id))
-      .run();
-    if (nextShares) writeShares(tx as unknown as DB, id, nextShares);
-  });
+  const set = {
+    ...fields,
+    ...(resetDeductible ? { deductible: "unknown" as const } : {}),
+    ...(amountMinor === undefined ? {} : { amountMinor: minor(amountMinor) }),
+    // Naming the mode even when it stays keeps the update from being empty when only the shares change.
+    ...(splitMode === undefined
+      ? nextShares
+        ? { splitMode: current.splitMode }
+        : {}
+      : { splitMode }),
+    ...(defaultExpense === undefined
+      ? {}
+      : { countsAsExpense: defaultExpense }),
+    ...(linkAffected ? { linkSyncedAt: null } : {}),
+    ...(tied
+      ? {
+          providerConnectionId: tied.connectionId,
+          providerRef: tied.ref,
+          providerUrl: tied.url,
+          providerLinkId: null,
+          linkSyncedAt: null,
+        }
+      : {}),
+  };
+  try {
+    ctx.db.transaction((tx) => {
+      // A change of the tags alone still counts as a change of the entry.
+      tx.update(costEntries)
+        .set(
+          Object.keys(set).length === 0
+            ? { updatedAt: new Date(ctx.now) }
+            : set,
+        )
+        .where(eq(costEntries.id, id))
+        .run();
+      if (nextShares) writeShares(tx as unknown as DB, id, nextShares);
+      if (tagIds) writeEntryTags(tx as unknown as DB, id, tagIds);
+      if (tied && financeSuggestionId) {
+        tieSuggestion({ db: tx as unknown as DB }, financeSuggestionId, id);
+      }
+    });
+  } catch (err) {
+    if (tied && isUniqueViolation(err)) {
+      throw costConflict(
+        "suggestion_decided",
+        "This item of the finance provider is already booked",
+      );
+    }
+    throw err;
+  }
+  if (tied) {
+    emitEvent("financeLinksPending", { ctx, connectionId: tied.connectionId });
+  }
   if (linkAffected && current.providerConnectionId) {
     emitEvent("financeLinksPending", {
       ctx,
@@ -771,6 +910,10 @@ export function deleteCost(ctx: ServiceContext, id: string): void {
         .run();
     }
     tx.delete(costEntries).where(eq(costEntries.id, id)).run();
+    emitEvent("costEntryDeleted", {
+      ctx: { db: tx as unknown as DB, now: ctx.now },
+      costId: id,
+    });
   });
   removeOwnedAttachments(ctx, "cost", id);
   if (current.providerConnectionId && current.providerLinkId) {

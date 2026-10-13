@@ -156,6 +156,10 @@ describe("migrations", () => {
         "calendar_targets",
         "calendar_links",
         "ai_tasks",
+        "cost_tags",
+        "cost_entry_tags",
+        "cost_budgets",
+        "cost_recurrences",
       ]),
     );
     expect(
@@ -382,7 +386,7 @@ describe("migrations", () => {
     )[0].id;
     const after = rows(db, "select * from cost_entries order by id");
     expect(after.map((r) => r.book_id)).toEqual([wohnung, wohnung, wohnung]);
-    // Columns later migrations added start unset (0028: the review flag; 0029: the idempotency key and the receipt task).
+    // Columns later migrations added start unset (0028: the review flag; 0029: the idempotency key and the receipt task; 0030: the recurrence).
     expect(
       after.map(
         ({
@@ -392,8 +396,19 @@ describe("migrations", () => {
           reviewed_by_user_id: reviewedBy,
           idempotency_key: key,
           ai_task_id: task,
+          recurrence_id: recurrence,
+          recurrence_date: occurrence,
           ...rest
-        }) => ({ unflagged, reviewedAt, reviewedBy, key, task, rest }),
+        }) => ({
+          unflagged,
+          reviewedAt,
+          reviewedBy,
+          key,
+          task,
+          recurrence,
+          occurrence,
+          rest,
+        }),
       ),
     ).toEqual(
       before.map((rest) => ({
@@ -402,6 +417,8 @@ describe("migrations", () => {
         reviewedBy: null,
         key: null,
         task: null,
+        recurrence: null,
+        occurrence: null,
         rest,
       })),
     );
@@ -453,6 +470,7 @@ describe("migrations", () => {
       "cost_entries_idempotency_idx",
       "cost_entries_paid_by_idx",
       "cost_entries_provider_idx",
+      "cost_entries_recurrence_idx",
       "cost_entries_review_idx",
       "cost_entries_room_id_idx",
       "cost_entries_service_log_id_idx",
@@ -715,6 +733,194 @@ describe("migrations", () => {
         claimed_by_user_id: null,
         claimed_at: 1700000000000,
       },
+    ]);
+    expect(rows(db, "pragma foreign_key_check")).toEqual([]);
+  });
+
+  it("add cost tags, budgets and recurring costs: entries stay as they were, a tag name is unique whatever the case, budgets need a book or a category, and what points at a book, tag or recurrence behaves", () => {
+    const db = databaseAt("0029_receipt_queue_keys_bookings_claims");
+    db.$client.exec(`
+      insert into users (id, username, password_hash) values ('u1', 'anna', 'x'), ('u2', 'ben', 'x');
+      insert into assets (id, kind, name, slug, qr_slug) values ('a1', 'device', 'Backofen', 'backofen', 'aaaaaaaaaa');
+      insert into cost_entries (id, book_id, date, title, amount_minor, currency, category, created_by)
+        values ('k1', (select id from cost_books where slug = 'wohnung'), '2026-01-05', 'Dachrinne', 10001, 'CHF', 'maintenance', 'u1');
+    `);
+    migrateDatabase(db);
+
+    expect(
+      rows(db, "select id, recurrence_id, recurrence_date from cost_entries"),
+    ).toEqual([{ id: "k1", recurrence_id: null, recurrence_date: null }]);
+    expect(rows(db, "pragma foreign_key_check")).toEqual([]);
+
+    // Tags: unique without regard to case, a colour that defaults, links gone with the entry or the tag.
+    db.$client.exec(
+      "insert into cost_tags (id, name) values ('t1', 'Ferien'), ('t2', 'Steuern')",
+    );
+    expect(rows(db, "select color from cost_tags where id = 't1'")).toEqual([
+      { color: "gray" },
+    ]);
+    expect(() =>
+      db.$client.exec(
+        "insert into cost_tags (id, name) values ('t3', 'FERIEN')",
+      ),
+    ).toThrow(/UNIQUE/);
+    db.$client.exec(
+      "insert into cost_entry_tags (entry_id, tag_id) values ('k1', 't1'), ('k1', 't2')",
+    );
+    expect(() =>
+      db.$client.exec(
+        "insert into cost_entry_tags (entry_id, tag_id) values ('k1', 't1')",
+      ),
+    ).toThrow(/UNIQUE|PRIMARY KEY/);
+    expect(() =>
+      db.$client.exec(
+        "insert into cost_entry_tags (entry_id, tag_id) values ('k1', 'missing')",
+      ),
+    ).toThrow(/FOREIGN KEY/);
+    expect(
+      JSON.stringify(
+        rows(
+          db,
+          "explain query plan select entry_id from cost_entry_tags where tag_id = 't1'",
+        ),
+      ),
+    ).toContain("cost_entry_tags_tag_id_idx");
+    db.$client.exec("delete from cost_tags where id = 't2'");
+    expect(
+      rows(db, "select tag_id from cost_entry_tags order by tag_id"),
+    ).toEqual([{ tag_id: "t1" }]);
+    db.$client.exec("delete from cost_entries where id = 'k1'");
+    expect(rows(db, "select * from cost_entry_tags")).toEqual([]);
+
+    // Budgets: a book or a category, a positive amount, one per scope and period, gone with the book.
+    db.$client.exec(
+      "insert into cost_books (id, name, slug) values ('b1', 'Ferien', 'ferien')",
+    );
+    const budget = (
+      id: string,
+      book: string | null,
+      category: string | null,
+      period = "month",
+      amount = 50000,
+    ) =>
+      db.$client
+        .query(
+          "insert into cost_budgets (id, book_id, category, period, amount_minor, currency) values (?, ?, ?, ?, ?, 'CHF')",
+        )
+        .run(id, book as never, category as never, period, amount);
+    budget("g1", "b1", null);
+    budget("g2", "b1", null, "year");
+    budget("g3", null, "groceries");
+    budget("g4", "b1", "groceries");
+    expect(() => budget("g5", "b1", null)).toThrow(/UNIQUE/);
+    expect(() => budget("g5", null, "groceries")).toThrow(/UNIQUE/);
+    expect(() => budget("g5", "b1", "groceries")).toThrow(/UNIQUE/);
+    expect(() => budget("g5", null, null)).toThrow(/CHECK/);
+    expect(() => budget("g5", "b1", "dining", "month", 0)).toThrow(/CHECK/);
+    expect(() => budget("g5", "b1", "dining", "month", -1)).toThrow(/CHECK/);
+    expect(() => budget("g5", "missing", null)).toThrow(/FOREIGN KEY/);
+    db.$client.exec("delete from cost_books where id = 'b1'");
+    expect(rows(db, "select id from cost_budgets")).toEqual([{ id: "g3" }]);
+    expect(rows(db, "select active from cost_budgets where id = 'g3'")).toEqual(
+      [{ active: 1 }],
+    );
+
+    // Recurring costs: a book that has one cannot be deleted; the asset and the people let go quietly.
+    db.$client.exec(
+      "insert into cost_books (id, name, slug) values ('b2', 'Wohnen', 'wohnen')",
+    );
+    const recurrence = (id: string, over: Record<string, unknown> = {}) => {
+      const v = {
+        book_id: "b2",
+        interval: 1,
+        day_of_month: 1,
+        ...over,
+      };
+      db.$client
+        .query(
+          `insert into cost_recurrences (id, book_id, title, amount_minor, currency, category, asset_id, paid_by_user_id, created_by, frequency, interval, day_of_month, start_date, next_date)
+             values (?, ?, 'Miete', 150000, 'CHF', 'other', 'a1', 'u2', 'u2', 'monthly', ?, ?, '2026-01-01', '2026-01-01')`,
+        )
+        .run(
+          id,
+          v.book_id as string,
+          v.interval as number,
+          v.day_of_month as number,
+        );
+    };
+    recurrence("r1");
+    expect(
+      rows(
+        db,
+        "select split_mode, tag_ids_json, counts_as_expense, deductible, active, last_error from cost_recurrences",
+      ),
+    ).toEqual([
+      {
+        split_mode: "ownership",
+        tag_ids_json: "[]",
+        counts_as_expense: 1,
+        deductible: "unknown",
+        active: 1,
+        last_error: null,
+      },
+    ]);
+    expect(() => recurrence("r2", { day_of_month: 0 })).toThrow(/CHECK/);
+    expect(() => recurrence("r2", { day_of_month: 32 })).toThrow(/CHECK/);
+    expect(() => recurrence("r2", { interval: 0 })).toThrow(/CHECK/);
+    expect(() => recurrence("r2", { interval: 13 })).toThrow(/CHECK/);
+    expect(() => recurrence("r2", { book_id: "missing" })).toThrow(
+      /FOREIGN KEY/,
+    );
+    expect(() =>
+      db.$client.exec("delete from cost_books where id = 'b2'"),
+    ).toThrow(/FOREIGN KEY/);
+    expect(
+      JSON.stringify(
+        rows(
+          db,
+          "explain query plan select id from cost_recurrences where active = 1 and next_date is not null and next_date <= '2026-02-01'",
+        ),
+      ),
+    ).toContain("cost_recurrences_due_idx");
+
+    // An entry carries the recurrence and the occurrence that booked it: once each, and the entry survives its recurrence.
+    const booked = (
+      id: string,
+      recurrenceId: string | null,
+      date: string | null,
+    ) =>
+      db.$client
+        .query(
+          "insert into cost_entries (id, book_id, date, title, amount_minor, currency, category, source, recurrence_id, recurrence_date) values (?, 'b2', '2026-02-01', 'Miete', 150000, 'CHF', 'other', 'recurring', ?, ?)",
+        )
+        .run(id, recurrenceId as never, date as never);
+    booked("k2", "r1", "2026-02-01");
+    booked("k3", "r1", "2026-03-01");
+    expect(() => booked("k4", "r1", "2026-02-01")).toThrow(/UNIQUE/);
+    expect(() => booked("k4", "missing", "2026-04-01")).toThrow(/FOREIGN KEY/);
+    booked("k4", null, "2026-02-01");
+    booked("k5", null, "2026-02-01");
+    expect(
+      JSON.stringify(
+        rows(
+          db,
+          "explain query plan select id from cost_entries where recurrence_id = 'r1' and recurrence_date = '2026-02-01'",
+        ),
+      ),
+    ).toContain("cost_entries_recurrence_idx");
+    db.$client.exec("delete from assets where id = 'a1'");
+    expect(rows(db, "select asset_id from cost_recurrences")).toEqual([
+      { asset_id: null },
+    ]);
+    db.$client.exec("delete from cost_recurrences where id = 'r1'");
+    expect(
+      rows(
+        db,
+        "select id, recurrence_id, recurrence_date from cost_entries where id in ('k2', 'k3') order by id",
+      ),
+    ).toEqual([
+      { id: "k2", recurrence_id: null, recurrence_date: "2026-02-01" },
+      { id: "k3", recurrence_id: null, recurrence_date: "2026-03-01" },
     ]);
     expect(rows(db, "pragma foreign_key_check")).toEqual([]);
   });

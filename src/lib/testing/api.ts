@@ -144,3 +144,8 @@ export function createCaller(auth: Auth): ApiCall {
 
 export const errorCode = (r: { body: unknown }): string | undefined =>
   (r.body as { error?: { code?: string } } | null)?.error?.code;
+
+/** The `details.code` of an error answer: which kind of 409 it is, where an endpoint tells. */
+export const errorDetailCode = (r: { body: unknown }): string | undefined =>
+  (r.body as { error?: { details?: { code?: string } } } | null)?.error?.details
+    ?.code;

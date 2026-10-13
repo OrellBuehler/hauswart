@@ -237,6 +237,99 @@ describe("finance inbox tools", () => {
     });
   });
 
+  describe("links to entries made by hand", () => {
+    async function withLink() {
+      const c = await mcp.connect({ scopes: [...ALL] });
+      const anna = await inboxOf(c);
+      const entry = await c.ok("create_cost", {
+        title: "Backofen reparieren",
+        amount: "120.50",
+        category: "repair",
+        date: "2026-03-09",
+        split: "none",
+      });
+      const row = anna.cost("1");
+      return { c, anna, entry, row };
+    }
+
+    it("lists a link with the transaction and the entry it would be tied to", async () => {
+      const { c, entry, row } = await withLink();
+      expect(row.kind).toBe("link");
+      const reply = await c.call("list_finance_suggestions");
+      expect(reply.summary).toBe("1 suggestion (pending): 1 link.");
+      expect(reply.json.suggestions).toEqual([
+        {
+          id: row.id,
+          kind: "link",
+          transaction: "Reparatur Backofen",
+          date: "2026-03-10",
+          amount: "120.50 CHF",
+          payee: "Beispiel AG",
+          entry: {
+            id: entry.id,
+            title: "Backofen reparieren",
+            date: "2026-03-09",
+            amount: "120.50 CHF",
+            book: "Wohnung",
+          },
+          url: "https://anna-finance.example.org/tx/1",
+        },
+      ]);
+    });
+
+    it("ties the entry on accepting and books nothing new", async () => {
+      const { c, entry, row } = await withLink();
+      const accepted = await c.call("accept_finance_suggestion", {
+        id: row.id,
+      });
+      expect(accepted.summary).toBe(
+        `Accepted "Reparatur Backofen": tied it to cost entry ${entry.id}, nothing new was booked.`,
+      );
+      expect(accepted.json.entity).toEqual({ type: "cost", id: entry.id });
+      expect((await c.ok("list_costs", { q: "Backofen" })).costs).toHaveLength(
+        1,
+      );
+      const refused = await c.call("accept_finance_suggestion", {
+        id: row.id,
+        title: "Anders",
+      });
+      expect(refused.isError).toBe(true);
+    });
+
+    it("offers the transaction as a cost again when the link is dismissed", async () => {
+      const { c, row } = await withLink();
+      const dismissed = await c.call("dismiss_finance_suggestion", {
+        id: row.id,
+      });
+      expect(dismissed.isError).toBe(false);
+      const list = await c.ok("list_finance_suggestions");
+      expect(list.suggestions).toHaveLength(1);
+      expect(list.suggestions[0]).toMatchObject({
+        kind: "cost",
+        title: "Reparatur Backofen",
+      });
+    });
+
+    it("says how many transactions matched an entry in the summary of a sync", async () => {
+      const { c } = await withLink();
+      const dispose = registerFinanceProvider({
+        kind: "kept",
+        sync: async () => ({
+          ok: true,
+          stats: { suggestions: 2, linkSuggestions: 1 },
+        }),
+      });
+      try {
+        const reply = await c.call("sync_finance");
+        expect(reply.summary).toBe(
+          "Finance sync done: 2 new suggestions, 1 transaction matching an entry made by hand.",
+        );
+      } finally {
+        dispose();
+      }
+    });
+  });
+
   it("refuses overrides that do not fit the kind of suggestion", async () => {
     const c = await mcp.connect({ scopes: [...ALL] });
     const anna = await inboxOf(c);

@@ -27,10 +27,14 @@ import {
   COMPLETION_SOURCES,
   CONTACT_KINDS,
   COST_BOOK_SPLIT_MODES,
+  COST_BUDGET_PERIODS,
   COST_CATEGORIES,
   COST_DEDUCTIBLE,
+  COST_RECURRENCE_ERRORS,
+  COST_RECURRENCE_FREQUENCIES,
   COST_SOURCES,
   COST_SPLIT_MODES,
+  COST_TAG_COLORS,
   DEFECT_DEADLINE_SOURCES,
   DEFECT_EVENT_TYPES,
   DEFECT_SEVERITIES,
@@ -1793,10 +1797,18 @@ export const costEntries = sqliteTable(
     aiTaskId: text("ai_task_id").references(() => aiTasks.id, {
       onDelete: "set null",
     }),
+    /** The recurring cost that booked the entry, with the occurrence it stands for; the pair is unique, so a run books each occurrence once. */
+    recurrenceId: text("recurrence_id").references(() => costRecurrences.id, {
+      onDelete: "set null",
+    }),
+    recurrenceDate: text("recurrence_date"),
     ...timestamps,
   },
   (t) => [
     index("cost_entries_date_idx").on(sql`${t.date} desc`),
+    uniqueIndex("cost_entries_recurrence_idx")
+      .on(t.recurrenceId, t.recurrenceDate)
+      .where(sql`${t.recurrenceId} is not null`),
     index("cost_entries_review_idx")
       .on(t.reviewNeeded)
       .where(sql`${t.reviewNeeded} = 1`),
@@ -1818,6 +1830,157 @@ export const costEntries = sqliteTable(
       .where(
         sql`${t.providerConnectionId} is not null and ${t.providerRef} is not null`,
       ),
+  ],
+);
+
+/** A label on cost entries ("holiday", "tax return"); names are unique without regard to case. Domain data shared by the household. */
+export const costTags = sqliteTable(
+  "cost_tags",
+  {
+    id: id(),
+    name: text("name").notNull(),
+    color: text("color", { enum: COST_TAG_COLORS }).notNull().default("gray"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("cost_tags_name_idx").on(sql`lower(${t.name})`)],
+);
+
+/** Which tags an entry carries; gone with the entry or the tag. */
+export const costEntryTags = sqliteTable(
+  "cost_entry_tags",
+  {
+    entryId: text("entry_id")
+      .notNull()
+      .references(() => costEntries.id, { onDelete: "cascade" }),
+    tagId: text("tag_id")
+      .notNull()
+      .references(() => costTags.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.entryId, t.tagId] }),
+    index("cost_entry_tags_tag_id_idx").on(t.tagId),
+  ],
+);
+
+/**
+ * What the household wants to spend in a book, a category or both, per calendar month or year. Compared with the
+ * expense entries of the period in `currency` (the household currency when it was set). Deleted with its book.
+ */
+export const costBudgets = sqliteTable(
+  "cost_budgets",
+  {
+    id: id(),
+    bookId: text("book_id").references(() => costBooks.id, {
+      onDelete: "cascade",
+    }),
+    category: text("category", { enum: COST_CATEGORIES }),
+    period: text("period", { enum: COST_BUDGET_PERIODS }).notNull(),
+    amountMinor: integer("amount_minor").notNull().$type<Minor>(),
+    currency: text("currency").notNull(),
+    active: integer("active", { mode: "boolean" }).notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [
+    // One budget per book, category and period; a missing book or category is its own kind, hence three indexes.
+    uniqueIndex("cost_budgets_book_category_idx")
+      .on(t.bookId, t.category, t.period)
+      .where(sql`${t.bookId} is not null and ${t.category} is not null`),
+    uniqueIndex("cost_budgets_book_idx")
+      .on(t.bookId, t.period)
+      .where(sql`${t.category} is null`),
+    uniqueIndex("cost_budgets_category_idx")
+      .on(t.category, t.period)
+      .where(sql`${t.bookId} is null`),
+    index("cost_budgets_book_id_idx").on(t.bookId),
+    check(
+      "cost_budgets_scope",
+      sql`${t.bookId} is not null or ${t.category} is not null`,
+    ),
+    check("cost_budgets_amount_positive", sql`${t.amountMinor} > 0`),
+  ],
+);
+
+/**
+ * A cost that repeats ("rent on the 1st", "insurance every quarter"): the template of the entries the scheduler books
+ * when an occurrence falls due. The split is worked out when an entry is booked (`sharesJson` for a custom split,
+ * `participantIdsJson` for an equal one among some people), so a changed ownership share applies to later entries only.
+ * Domain data shared by the household.
+ */
+export const costRecurrences = sqliteTable(
+  "cost_recurrences",
+  {
+    id: id(),
+    bookId: text("book_id")
+      .notNull()
+      .references(() => costBooks.id, { onDelete: "restrict" }),
+    title: text("title").notNull(),
+    amountMinor: integer("amount_minor").notNull().$type<Minor>(),
+    currency: text("currency").notNull(),
+    category: text("category", { enum: COST_CATEGORIES }).notNull(),
+    assetId: text("asset_id").references(() => assets.id, {
+      onDelete: "set null",
+    }),
+    roomId: text("room_id").references(() => rooms.id, {
+      onDelete: "set null",
+    }),
+    payee: text("payee"),
+    notes: text("notes"),
+    paidByUserId: text("paid_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    splitMode: text("split_mode", { enum: COST_SPLIT_MODES })
+      .notNull()
+      .default("ownership"),
+    sharesJson: text("shares_json", { mode: "json" }).$type<
+      { userId: string; shareBps: number }[] | null
+    >(),
+    participantIdsJson: text("participant_ids_json", {
+      mode: "json",
+    }).$type<string[] | null>(),
+    tagIdsJson: text("tag_ids_json", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    countsAsExpense: integer("counts_as_expense", { mode: "boolean" })
+      .notNull()
+      .default(true),
+    deductible: text("deductible", { enum: COST_DEDUCTIBLE })
+      .notNull()
+      .default("unknown"),
+    frequency: text("frequency", {
+      enum: COST_RECURRENCE_FREQUENCIES,
+    }).notNull(),
+    /** Every n-th month, quarter or year. */
+    interval: integer("interval").notNull().default(1),
+    /** The day of the month an occurrence falls on; clamped to the end of a shorter month. */
+    dayOfMonth: integer("day_of_month").notNull(),
+    startDate: text("start_date").notNull(),
+    endDate: text("end_date"),
+    /** The next occurrence to book; null once the series is over. Moves only when an occurrence was booked or the rule changed. */
+    nextDate: text("next_date"),
+    /** The newest occurrence booked, which the next one follows whatever the rule says now. */
+    lastOccurrenceDate: text("last_occurrence_date"),
+    active: integer("active", { mode: "boolean" }).notNull().default(true),
+    /** Why the last attempt to book failed; null while it works. */
+    lastError: text("last_error", { enum: COST_RECURRENCE_ERRORS }),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    ...timestamps,
+  },
+  (t) => [
+    index("cost_recurrences_due_idx")
+      .on(t.nextDate)
+      .where(sql`${t.active} = 1 and ${t.nextDate} is not null`),
+    index("cost_recurrences_book_id_idx").on(t.bookId),
+    check(
+      "cost_recurrences_day",
+      sql`${t.dayOfMonth} >= 1 and ${t.dayOfMonth} <= 31`,
+    ),
+    check(
+      "cost_recurrences_interval",
+      sql`${t.interval} >= 1 and ${t.interval} <= 12`,
+    ),
   ],
 );
 

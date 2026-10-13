@@ -20,7 +20,6 @@ import { costBooks, settlements, users } from "$lib/server/db";
 import { getHousehold } from "$lib/server/household/household";
 import { decodeCursor, pageOf } from "$lib/server/pagination";
 import {
-  conflict,
   invalidField,
   isUniqueViolation,
   notFound,
@@ -28,6 +27,7 @@ import {
 } from "$lib/server/service";
 import { clockAt } from "$lib/server/tasks/evaluator";
 import { getCostBookRow, requireCostBook } from "./books";
+import { costConflict } from "./conflicts";
 import { yearRange } from "./costs";
 
 type Db = Pick<ServiceContext, "db">;
@@ -250,7 +250,10 @@ export function recordSettlement(
     const existing = findByKey(ctx, createdBy, key);
     if (!existing) return null;
     if (!sameRequest(ctx, existing, input)) {
-      throw conflict("This idempotency key was used for another payment");
+      throw costConflict(
+        "idempotency_key_reused",
+        "This idempotency key was used for another payment",
+      );
     }
     return { settlement: existing, replayed: true };
   };

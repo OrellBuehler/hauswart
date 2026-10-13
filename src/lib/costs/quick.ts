@@ -20,6 +20,7 @@ import { formatList } from "$lib/format";
 import { m } from "$lib/paraglide/messages";
 import { issuesToErrors } from "$lib/tasks/field-errors";
 import { defaultBook, openBooks } from "./books";
+import { costConflictCode } from "./conflict";
 import { parseDraftAmount, type BuiltBody } from "./form";
 
 /** The two things the quick page does: book an expense now, or put a receipt in the queue for later. */
@@ -279,6 +280,10 @@ export type QuickDraft = {
   /** The person chose "not shared" (nobody ticked, on purpose); in a book that shares, nobody ticked is no choice. */
   notShared: boolean;
   assetId: string;
+  /** The tags of the entry (ids), at most ten. */
+  tagIds: string[];
+  /** The bank transaction (a pending cost suggestion) the entry is tied to; empty for none. */
+  financeSuggestionId: string;
 };
 
 export function newQuickDraft(input: {
@@ -301,6 +306,8 @@ export function newQuickDraft(input: {
     participantsTouched: false,
     notShared: false,
     assetId: "",
+    tagIds: [],
+    financeSuggestionId: "",
   };
 }
 
@@ -417,6 +424,10 @@ export function buildQuickCostBody(
     category: draft.category,
     ...(draft.assetId ? { assetId: draft.assetId } : {}),
     ...(payee ? { payee } : {}),
+    ...(draft.tagIds.length > 0 ? { tagIds: draft.tagIds } : {}),
+    ...(draft.financeSuggestionId
+      ? { financeSuggestionId: draft.financeSuggestionId }
+      : {}),
     paidByUserId: draft.paidByUserId || null,
     ...(context.idempotencyKey
       ? { idempotencyKey: context.idempotencyKey }
@@ -477,16 +488,20 @@ export function buildReceiptTaskBody(
   };
 }
 
-/** Whether the API refused because the draft's key already stands for another entry or receipt (a 409). */
+/**
+ * Whether the API refused because the draft's key already stands for another entry or receipt: a 409 whose
+ * `details.code` is `idempotency_key_reused`. Any other 409 (a transaction that is decided, ...) did not use the key up.
+ */
 export function isKeyConflict(err: unknown): boolean {
-  return isApiError(err) && err.code === "conflict";
+  return costConflictCode(err) === "idempotency_key_reused";
 }
 
 /**
  * Why a save failed. A request that never got an answer (the browser's own `TypeError`) may or may not have arrived, but
  * the key it carried makes sending it again safe, and the words say so. A key that stands for something else by now
  * (the draft was changed after a first attempt that did arrive) says where to look. A receipt only queues a photo, so
- * nothing is booked and the words point to the receipt list instead of the cost list.
+ * nothing is booked and the words point to the receipt list instead of the cost list. Which 409 it is comes from the
+ * API (`details.code`); a transaction that is decided is worded by the form that offered it (`tieFailure`).
  */
 export function quickErrorMessage(
   err: unknown,

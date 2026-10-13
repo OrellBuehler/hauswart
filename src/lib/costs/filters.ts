@@ -16,6 +16,8 @@ export type CostFilters = {
   defectId: string;
   /** A user id, or `me`. */
   paidBy: string;
+  /** Only the entries that carry this tag (`?tag=`); empty for any. */
+  tagId: string;
   /** `01` to `12` of the selected year, or empty for the whole year. */
   month: string;
   /** Only the entries a person still has to review (`?review=1`). */
@@ -51,6 +53,7 @@ export function parseCostFilters(
     roomId: params.get("room") ?? "",
     defectId: params.get("defect") ?? "",
     paidBy: params.get("paidBy") ?? "",
+    tagId: (params.get("tag") ?? "").trim(),
     month: MONTHS.includes(month) ? month : "",
     reviewNeeded,
     // Every year of the whole list would be unbounded; the review list is short.
@@ -75,6 +78,7 @@ export function costFilterQuery(
   if (filters.roomId) params.set("room", filters.roomId);
   if (filters.defectId) params.set("defect", filters.defectId);
   if (filters.paidBy) params.set("paidBy", filters.paidBy);
+  if (filters.tagId) params.set("tag", filters.tagId);
   if (filters.month && !filters.allYears) params.set("month", filters.month);
   const qs = params.toString();
   return qs ? `?${qs}` : "";
@@ -92,6 +96,7 @@ export function narrowsBeyondBook(params: URLSearchParams): boolean {
     "room",
     "defect",
     "paidBy",
+    "tag",
     "month",
     "review",
   ].some((key) => (params.get(key) ?? "").trim() !== "");
@@ -105,6 +110,7 @@ export function activeFilterCount(filters: CostFilters): number {
     filters.roomId,
     filters.defectId,
     filters.paidBy,
+    filters.tagId,
     filters.month,
   ].filter(Boolean).length;
 }
@@ -146,21 +152,40 @@ export function costsQuery(filters: CostFilters, cursor?: string) {
     ...(filters.roomId ? { roomId: filters.roomId } : {}),
     ...(filters.defectId ? { defectId: filters.defectId } : {}),
     ...(filters.paidBy ? { paidBy: filters.paidBy } : {}),
+    ...(filters.tagId ? { tagId: filters.tagId } : {}),
   };
 }
 
-/** The summary follows the year, the book and the device; the other filters only narrow the list. */
+/** The summary follows the year, the book, the device and the tag; the other filters only narrow the list. */
 export function costsSummaryQuery(filters: CostFilters) {
   return {
     year: filters.year,
     assetId: filters.assetId || undefined,
     bookId: filters.bookId || undefined,
+    tagId: filters.tagId || undefined,
   };
 }
 
-/** The CSV file covers the year of the book on screen (every book without one). */
+/** The CSV file covers the year of the book (and the tag) on screen: every book and every tag without one. */
 export function costsExportQuery(filters: CostFilters) {
-  return { year: filters.year, bookId: filters.bookId || undefined };
+  return {
+    year: filters.year,
+    bookId: filters.bookId || undefined,
+    tagId: filters.tagId || undefined,
+  };
+}
+
+/**
+ * The filters with a tag that does not exist (any more) left out: the endpoints answer 404 for an unknown `tagId`, which
+ * would turn a stale link into an error page.
+ */
+export function withKnownTag(
+  filters: CostFilters,
+  tags: readonly { id: string }[],
+): CostFilters {
+  return filters.tagId !== "" && !tags.some((tag) => tag.id === filters.tagId)
+    ? { ...filters, tagId: "" }
+    : filters;
 }
 
 /** The same filters one year later or earlier, keeping everything else but the month. */
@@ -169,7 +194,7 @@ export function withYear(filters: CostFilters, year: number): CostFilters {
 }
 
 /**
- * The entries `GET /costs/summary` counted as waiting for a review: its year, book and device, nothing else. The
+ * The entries `GET /costs/summary` counted as waiting for a review: its year, book, device and tag, nothing else. The
  * summary's `reviewNeededCount` and the list this opens agree.
  */
 export function reviewFilters(filters: CostFilters): CostFilters {

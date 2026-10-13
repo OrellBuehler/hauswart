@@ -77,6 +77,7 @@ function entry(over: Partial<CostEntry> = {}): CostEntry {
         amountMinor: 7580,
       },
     ],
+    tags: [],
     countsAsExpense: true,
     deductible: "unknown",
     source: "manual",
@@ -86,6 +87,8 @@ function entry(over: Partial<CostEntry> = {}): CostEntry {
     reviewedAt: null,
     reviewedByUserId: null,
     receiptTaskId: null,
+    financeLinked: false,
+    recurrenceId: null,
     commentCount: 0,
     createdBy: "u1",
     createdAt: "2026-10-01T08:00:00.000Z",
@@ -876,5 +879,103 @@ describe("for whom", () => {
         splitMode: "ownership",
       });
     });
+  });
+});
+
+describe("tags", () => {
+  const ferien = { id: "t1", name: "Ferien", color: "blue" as const };
+  const steuern = { id: "t2", name: "Steuern", color: "green" as const };
+
+  it("starts without tags, or with the ones given", () => {
+    expect(draft().tagIds).toEqual([]);
+    expect(
+      newDraft({
+        today: "2026-10-07",
+        currency: "CHF",
+        paidByUserId: "u1",
+        userIds: USERS,
+        tagIds: ["t1"],
+      }).tagIds,
+    ).toEqual(["t1"]);
+  });
+
+  it("sends the tags of a new entry, and nothing when there are none", () => {
+    expect(
+      buildCreateBody(draft({ tagIds: ["t1", "t2"] }), USERS).body,
+    ).toMatchObject({
+      tagIds: ["t1", "t2"],
+    });
+    expect(buildCreateBody(draft(), USERS).body).not.toHaveProperty("tagIds");
+  });
+
+  it("refuses more than ten tags before the server does", () => {
+    const many = Array.from({ length: 11 }, (_, i) => `t${i}`);
+    const built = buildCreateBody(draft({ tagIds: many }), USERS);
+    expect(built.body).toBeUndefined();
+    expect(built.errors.tagIds).toBeTruthy();
+  });
+
+  it("reads the tags of an entry into the draft", () => {
+    expect(
+      draftFromEntry(entry({ tags: [ferien, steuern] }), USERS).tagIds,
+    ).toEqual(["t1", "t2"]);
+  });
+
+  it("sends nothing for tags that did not change, whatever their order", () => {
+    const e = entry({ tags: [ferien, steuern] });
+    const same = draftFromEntry(e, USERS);
+    expect(buildUpdateBody(same, e, USERS).body).toEqual({});
+    expect(
+      buildUpdateBody({ ...same, tagIds: ["t2", "t1"] }, e, USERS).body,
+    ).toEqual({});
+  });
+
+  it("replaces the tags as a whole, and an empty list takes them all off", () => {
+    const e = entry({ tags: [ferien] });
+    const base = draftFromEntry(e, USERS);
+    expect(
+      buildUpdateBody({ ...base, tagIds: ["t1", "t2"] }, e, USERS).body,
+    ).toEqual({ tagIds: ["t1", "t2"] });
+    expect(buildUpdateBody({ ...base, tagIds: [] }, e, USERS).body).toEqual({
+      tagIds: [],
+    });
+  });
+});
+
+describe("tying an entry to a bank transaction", () => {
+  it("sends the chosen suggestion with a new entry, and nothing without a choice", () => {
+    expect(
+      buildCreateBody(draft({ financeSuggestionId: "s1" }), USERS).body,
+    ).toMatchObject({ financeSuggestionId: "s1" });
+    expect(buildCreateBody(draft(), USERS).body).not.toHaveProperty(
+      "financeSuggestionId",
+    );
+  });
+
+  it("sends it with an edit of an entry that is not tied yet", () => {
+    const e = entry();
+    expect(
+      buildUpdateBody(
+        { ...draftFromEntry(e, USERS), financeSuggestionId: "s1" },
+        e,
+        USERS,
+      ).body,
+    ).toEqual({ financeSuggestionId: "s1" });
+  });
+
+  it("leaves it out for an entry that is tied already, which the server would refuse", () => {
+    const e = entry({ financeLinked: true });
+    expect(
+      buildUpdateBody(
+        { ...draftFromEntry(e, USERS), financeSuggestionId: "s1" },
+        e,
+        USERS,
+      ).body,
+    ).toEqual({});
+  });
+
+  it("starts without a choice", () => {
+    expect(draft().financeSuggestionId).toBe("");
+    expect(draftFromEntry(entry(), USERS).financeSuggestionId).toBe("");
   });
 });

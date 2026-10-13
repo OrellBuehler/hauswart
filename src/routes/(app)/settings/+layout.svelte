@@ -9,6 +9,7 @@
   import LinkIcon from "@lucide/svelte/icons/link-2";
   import PlugIcon from "@lucide/svelte/icons/plug";
   import SmartphoneIcon from "@lucide/svelte/icons/smartphone";
+  import TagsIcon from "@lucide/svelte/icons/tags";
   import UserRoundIcon from "@lucide/svelte/icons/user-round";
   import PageHeader from "$lib/components/app/page-header.svelte";
   import * as Tabs from "$lib/components/ui/tabs/index.js";
@@ -36,6 +37,11 @@
       href: "/settings/cost-books",
       label: () => m.settings_tab_cost_books(),
       icon: LibraryIcon,
+    },
+    {
+      href: "/settings/cost-tags",
+      label: () => m.settings_tab_cost_tags(),
+      icon: TagsIcon,
     },
     {
       href: "/settings/integrations",

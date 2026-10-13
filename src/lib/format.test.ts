@@ -4,6 +4,7 @@ import {
   formatDateShort,
   formatOrdinalDay,
   formatRelativeDays,
+  monthInDate,
   weekdayName,
 } from "./format";
 
@@ -46,6 +47,14 @@ describe("format", () => {
     expect(formatRelativeDays(-3, "en")).toBe("3 days ago");
     expect(formatRelativeDays(21, "en")).toBe("in 3 weeks");
     expect(formatRelativeDays(0, "de")).toBe("heute");
+  });
+
+  it("writes a month the way it stands next to a day", () => {
+    expect(monthInDate(1, "de")).toBe("Jan.");
+    expect(monthInDate(3, "de")).toBe("März");
+    expect(monthInDate(12, "de")).toBe("Dez.");
+    expect(monthInDate(1, "en")).toBe("Jan");
+    expect(monthInDate(10, "en")).toBe("Oct");
   });
 
   it("names weekdays and ordinal days", () => {

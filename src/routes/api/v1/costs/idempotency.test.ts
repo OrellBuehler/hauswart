@@ -5,6 +5,7 @@ import {
   createCaller,
   createInProcessFetch,
   errorCode,
+  errorDetailCode,
 } from "$lib/testing/api";
 import {
   createTestToken,
@@ -96,10 +97,11 @@ describe("POST /api/v1/costs with an idempotency key", () => {
     await pay({ idempotencyKey: KEY });
     for (const change of [{ amountMinor: 2341 }, { bookId: other }]) {
       const r = await pay({ idempotencyKey: KEY, ...change });
-      expect([change, r.res.status, errorCode(r)]).toEqual([
+      expect([change, r.res.status, errorCode(r), errorDetailCode(r)]).toEqual([
         change,
         409,
         "conflict",
+        "idempotency_key_reused",
       ]);
     }
     const short = await pay({ idempotencyKey: "short" });

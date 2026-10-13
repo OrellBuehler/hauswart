@@ -66,6 +66,21 @@ export const ODOMETER_REFUSAL_CODES = [
 ] as const;
 export type OdometerRefusalCode = (typeof ODOMETER_REFUSAL_CODES)[number];
 
+/**
+ * Which kind of 409 a cost endpoint answers, in `error.details.code`: the idempotency key stands for another entry,
+ * payment or receipt; the finance suggestion named by `financeSuggestionId` (or being accepted or dismissed) is decided
+ * already; the entry is tied to a finance item already; the receipt task is not waiting any more (its `details.status`
+ * says what it is). A 409 without a code (a fuel log entry owns the entry, a book still has entries, ...) is told apart
+ * by its other `details`.
+ */
+export const COST_CONFLICT_CODES = [
+  "idempotency_key_reused",
+  "suggestion_decided",
+  "entry_tied",
+  "receipt_task_closed",
+] as const;
+export type CostConflictCode = (typeof COST_CONFLICT_CODES)[number];
+
 export const TASK_CATEGORIES = [
   "cleaning",
   "maintenance",
@@ -548,13 +563,54 @@ export const COST_SOURCES = [
   "manual",
   "finance_transaction",
   "finance_bill",
+  "recurring",
 ] as const;
 export type CostSource = (typeof COST_SOURCES)[number];
+
+/** Colour keys of a cost tag; the client maps them to classes. */
+export const COST_TAG_COLORS = [
+  "gray",
+  "red",
+  "orange",
+  "amber",
+  "green",
+  "teal",
+  "blue",
+  "violet",
+  "pink",
+] as const;
+export type CostTagColor = (typeof COST_TAG_COLORS)[number];
+
+/** What a budget covers: one calendar month or one calendar year. */
+export const COST_BUDGET_PERIODS = ["month", "year"] as const;
+export type CostBudgetPeriod = (typeof COST_BUDGET_PERIODS)[number];
+
+/** How often a recurring cost falls due; `interval` stretches it ("every 2 months"). */
+export const COST_RECURRENCE_FREQUENCIES = [
+  "monthly",
+  "quarterly",
+  "yearly",
+] as const;
+export type CostRecurrenceFrequency =
+  (typeof COST_RECURRENCE_FREQUENCIES)[number];
+
+/** Why the last attempt to book a recurring cost failed; null while it works. */
+export const COST_RECURRENCE_ERRORS = ["book_archived", "failed"] as const;
+export type CostRecurrenceError = (typeof COST_RECURRENCE_ERRORS)[number];
 
 /** `tasks.externalSource` of the tasks that follow a bill in a finance system. */
 export const FINANCE_BILL_TASK_SOURCE = "finance_bill";
 
-export const FINANCE_SUGGESTION_KINDS = ["cost", "bill_task", "asset"] as const;
+/**
+ * `link`: a transaction of the finance system that looks like a cost entry somebody booked by hand; accepting it ties the
+ * entry to the transaction instead of booking a second one.
+ */
+export const FINANCE_SUGGESTION_KINDS = [
+  "cost",
+  "bill_task",
+  "asset",
+  "link",
+] as const;
 export type FinanceSuggestionKind = (typeof FINANCE_SUGGESTION_KINDS)[number];
 
 export const FINANCE_SUGGESTION_STATUSES = [

@@ -19,7 +19,7 @@ const summary = (reviewNeededCount: number): CostsSummary => ({
   reviewNeededCount,
 });
 
-const html = (count: number, reviewHref?: string) =>
+const html = (count: number, reviewHref?: string, tagName?: string) =>
   render(CostsSummaryCard as never, {
     props: {
       summary: summary(count),
@@ -27,6 +27,7 @@ const html = (count: number, reviewHref?: string) =>
       userId: "u1",
       balancesHref: "/costs/balances",
       reviewHref,
+      tagName,
     } as never,
   }).body;
 
@@ -43,5 +44,12 @@ describe("costs summary", () => {
 
   it("leaves the link out where the list is on screen already", () => {
     expect(html(2)).not.toContain("zu prüfen");
+  });
+
+  it("says that the totals only cover the entries of the tag on screen", () => {
+    expect(html(0, undefined, "Ferien")).toContain(
+      "Die Ausgaben zählen nur Einträge mit dem Tag «Ferien». Der Saldo gilt weiterhin für alle Einträge.",
+    );
+    expect(html(0)).not.toContain("mit dem Tag");
   });
 });

@@ -20,6 +20,7 @@
   import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
   import CostAmount from "$lib/components/costs/cost-amount.svelte";
   import CostFlags from "$lib/components/costs/cost-flags.svelte";
+  import TagChips from "$lib/components/costs/tag-chips.svelte";
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
@@ -37,6 +38,7 @@
   import { assetHref, roomHref } from "$lib/links";
   import { m } from "$lib/paraglide/messages";
   import { fuelLogHref } from "$lib/vehicles/links";
+  import { cn } from "$lib/utils";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -130,8 +132,16 @@
           currency={cost.currency}
           class="text-2xl font-semibold"
         />
-        <CostFlags {cost} />
+        <CostFlags
+          {cost}
+          recurrenceHref={cost.recurrenceId
+            ? resolve(
+                `/costs/recurring/${encodeURIComponent(cost.recurrenceId)}` as "/",
+              )
+            : undefined}
+        />
       </div>
+      <TagChips tags={cost.tags} limit={10} />
     </div>
 
     {#if canWrite}
@@ -305,8 +315,29 @@
           </div>
           <div class="min-w-0">
             <dt class="text-muted-foreground text-xs">{m.cost_source()}</dt>
-            <dd class="mt-0.5">{sourceLabels[cost.source]()}</dd>
+            <dd class="mt-0.5 wrap-anywhere">
+              {sourceLabels[cost.source]()}
+              {#if cost.recurrenceId}
+                <!-- eslint-disable svelte/no-navigation-without-resolve -- the address is resolved here, only the id is appended -->
+                <a
+                  href={resolve(
+                    `/costs/recurring/${encodeURIComponent(cost.recurrenceId)}` as "/",
+                  )}
+                  class={cn("ms-1 block text-xs", linkClass)}
+                  >{m.cost_recurrence_open()}</a
+                >
+                <!-- eslint-enable svelte/no-navigation-without-resolve -->
+              {/if}
+            </dd>
           </div>
+          {#if cost.financeLinked && cost.source !== "finance_transaction" && cost.source !== "finance_bill"}
+            <div class="min-w-0">
+              <dt class="text-muted-foreground text-xs">
+                {m.cost_bank_linked()}
+              </dt>
+              <dd class="mt-0.5">{m.common_yes()}</dd>
+            </div>
+          {/if}
           {#if cost.reviewedAt && !cost.reviewNeeded}
             <div class="min-w-0">
               <dt class="text-muted-foreground text-xs">

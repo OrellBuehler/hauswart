@@ -28,6 +28,7 @@ import {
 import { m } from "$lib/paraglide/messages";
 import { issuesToErrors } from "$lib/tasks/field-errors";
 import { defaultBook, openBooks } from "./books";
+import { sameTagIds, tagIdsOf } from "./tags";
 
 export type CostShareItem = { userId: string; shareBps: number };
 
@@ -60,6 +61,13 @@ export type CostDraft = {
   /** The switch was set by hand (or the stored value differs from the category's default). */
   countsTouched: boolean;
   deductible: CostDeductible;
+  /** The tags of the entry (ids), at most ten. */
+  tagIds: string[];
+  /**
+   * The bank transaction (a pending cost suggestion of the person's finance app) the entry is tied to, picked in the
+   * form; empty for none. It only goes along while it still fits the amount, currency and date of the draft.
+   */
+  financeSuggestionId: string;
 };
 
 export type NewDraftDefaults = {
@@ -75,6 +83,7 @@ export type NewDraftDefaults = {
   roomId?: string | undefined;
   defectId?: string | undefined;
   serviceLogId?: string | undefined;
+  tagIds?: readonly string[] | undefined;
 };
 
 /** Percent texts that split 100% over the people as evenly as possible (the remainder goes to the first ones). */
@@ -158,6 +167,8 @@ export function newDraft(defaults: NewDraftDefaults): CostDraft {
     countsAsExpense: COST_CATEGORY_COUNTS_AS_EXPENSE.other,
     countsTouched: false,
     deductible: "unknown",
+    tagIds: [...(defaults.tagIds ?? [])],
+    financeSuggestionId: "",
   };
 }
 
@@ -206,6 +217,8 @@ export function draftFromEntry(
     countsTouched:
       entry.countsAsExpense !== COST_CATEGORY_COUNTS_AS_EXPENSE[entry.category],
     deductible: entry.deductible,
+    tagIds: tagIdsOf(entry.tags),
+    financeSuggestionId: "",
   };
 }
 
@@ -455,6 +468,10 @@ export function buildCreateBody(
     countsAsExpense: draft.countsAsExpense,
     // A book that is not tax relevant refuses a tax class, whatever the form held before the book was changed.
     deductible: taxClassApplies(draft, books) ? draft.deductible : "unknown",
+    ...(draft.tagIds.length > 0 ? { tagIds: draft.tagIds } : {}),
+    ...(draft.financeSuggestionId
+      ? { financeSuggestionId: draft.financeSuggestionId }
+      : {}),
   };
   const result = createCostRequestSchema.safeParse(body);
   if (!result.success) {
@@ -473,6 +490,53 @@ function sameShares(
   if (a.length !== b.length) return false;
   const byUser = new Map(a.map((s) => [s.userId, s.shareBps]));
   return b.every((s) => byUser.get(s.userId) === s.shareBps);
+}
+
+/**
+ * The part of a PATCH that changes the split of something that has one (a cost entry, a recurring cost) into the draft's.
+ * Sending the split again would divide the amount by today's ownership shares, so it goes only when the person changed the
+ * mode, the custom shares or the people an equal split is among.
+ */
+export function splitPatch(input: {
+  splitMode: CostSplitMode;
+  /** The custom shares, checked. */
+  shares: readonly CostShareItem[];
+  /** The people ticked for an equal split. */
+  participants: readonly string[];
+  userIds: readonly string[];
+  current: {
+    splitMode: CostSplitMode;
+    shares: readonly CostShareItem[];
+    participants: readonly string[];
+  };
+}): {
+  splitMode?: CostSplitMode;
+  shares?: CostShareItem[];
+  participantIds?: string[];
+} {
+  const { splitMode, shares, participants, userIds, current } = input;
+  const narrowed =
+    splitMode === "equal"
+      ? narrowedParticipants(participants, userIds)
+      : undefined;
+  if (splitMode !== current.splitMode) {
+    return {
+      splitMode,
+      ...(splitMode === "custom" ? { shares: [...shares] } : {}),
+      ...(narrowed ? { participantIds: narrowed } : {}),
+    };
+  }
+  if (splitMode === "custom" && !sameShares(shares, current.shares)) {
+    return { shares: [...shares] };
+  }
+  if (splitMode === "equal" && !sameIds(participants, current.participants)) {
+    // An equal split is divided again among the people now ticked; without `participantIds` that is everybody.
+    return {
+      splitMode: "equal",
+      ...(narrowed ? { participantIds: narrowed } : {}),
+    };
+  }
+  return {};
 }
 
 /**
@@ -527,27 +591,20 @@ export function buildUpdateBody(
   if ((draft.paidByUserId || null) !== entry.paidByUserId) {
     patch.paidByUserId = draft.paidByUserId || null;
   }
-  const narrowed =
-    draft.splitMode === "equal"
-      ? narrowedParticipants(participants, userIds)
-      : undefined;
-  if (draft.splitMode !== entry.splitMode) {
-    patch.splitMode = draft.splitMode;
-    if (draft.splitMode === "custom") patch.shares = shares;
-    if (narrowed) patch.participantIds = narrowed;
-  } else if (
-    draft.splitMode === "custom" &&
-    !sameShares(shares, entry.shares)
-  ) {
-    patch.shares = shares;
-  } else if (
-    draft.splitMode === "equal" &&
-    !sameIds(participants, entryParticipants(entry, userIds))
-  ) {
-    // An equal split is divided again among the people now ticked; without `participantIds` that is everybody.
-    patch.splitMode = "equal";
-    if (narrowed) patch.participantIds = narrowed;
-  }
+  Object.assign(
+    patch,
+    splitPatch({
+      splitMode: draft.splitMode,
+      shares,
+      participants,
+      userIds,
+      current: {
+        splitMode: entry.splitMode,
+        shares: entry.shares,
+        participants: entryParticipants(entry, userIds),
+      },
+    }),
+  );
   // The server moves the flag along with a category change unless it is sent,
   // so a category change always carries what the person sees.
   if (
@@ -559,6 +616,14 @@ export function buildUpdateBody(
   // In a book that is not tax relevant the class is not offered, and the server keeps or resets it by itself.
   if (draft.deductible !== entry.deductible && taxClassApplies(draft, books)) {
     patch.deductible = draft.deductible;
+  }
+  // The tags are replaced as a whole, so they go only when the set changed.
+  if (!sameTagIds(draft.tagIds, tagIdsOf(entry.tags))) {
+    patch.tagIds = draft.tagIds;
+  }
+  // An entry that is tied to a finance item already cannot be tied again.
+  if (draft.financeSuggestionId && !entry.financeLinked) {
+    patch.financeSuggestionId = draft.financeSuggestionId;
   }
 
   if (Object.keys(patch).length === 0) return { body: {}, errors };

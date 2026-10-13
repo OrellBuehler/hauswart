@@ -124,6 +124,22 @@ export function formatPercent(basisPoints: number): string {
   }).format(basisPoints / 100);
 }
 
+/**
+ * A month's abbreviation as it stands next to a day: "Jan." and "Sept." in German (with the period, "31. Jan."), "Jan" in
+ * English. `monthName` gives the stand-alone form, which German writes without the period.
+ */
+export function monthInDate(month: number, locale?: UserLocale): string {
+  const parts = new Intl.DateTimeFormat(intlLocale(locale), {
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  }).formatToParts(Date.UTC(2027, month - 1, 1));
+  return (
+    parts.find((part) => part.type === "month")?.value ??
+    monthName(month, "short", locale)
+  );
+}
+
 /** Weekday name for an ISO weekday (1 = Monday ... 7 = Sunday). */
 export function weekdayName(
   isoWeekday: number,

@@ -11,6 +11,8 @@ import {
   nullableText,
   paginated,
 } from "./common";
+import { costTagIdsInputSchema } from "./cost-tags";
+import { currencySchema } from "./household";
 import {
   COST_NOTES_MAX,
   COST_TITLE_MAX,
@@ -38,7 +40,7 @@ const common = {
 
 /** An expense (positive) or refund (negative) the finance provider saw and the person may book as a cost. */
 export const costSuggestionPayloadSchema = z.object({
-  source: costSourceSchema,
+  source: costSourceSchema.exclude(["manual", "recurring"]),
   date: dateSchema,
   amountMinor: z.number().int(),
   currency: z.string(),
@@ -73,13 +75,45 @@ export const billTaskSuggestionPayloadSchema = z.object({
   url: z.string().nullable(),
 });
 
+/**
+ * A transaction that looks like a cost entry somebody booked by hand: the entry's id and the transaction as it would be
+ * offered as a cost. This is what is stored; the API adds the entry as it is now (`linkSuggestionPayloadSchema`).
+ */
+export const storedLinkPayloadSchema = z.object({
+  entryId: z.string(),
+  transaction: costSuggestionPayloadSchema,
+});
+
+/** The cost entry a link suggestion would tie the transaction to, as it is now. */
+export const linkedEntrySchema = z
+  .object({
+    id: z.string(),
+    title: z.string(),
+    date: dateSchema,
+    amountMinor: z.number().int(),
+    currency: z.string(),
+    payee: z.string().nullable(),
+    bookId: z.string(),
+    bookName: z.string(),
+  })
+  .meta({ id: "FinanceLinkedEntry" });
+
+export const linkSuggestionPayloadSchema = z.object({
+  entryId: z.string(),
+  /** The entry as it is now; null when it was deleted since (dismiss the suggestion to get the transaction back as a cost). */
+  entry: linkedEntrySchema.nullable(),
+  transaction: costSuggestionPayloadSchema,
+});
+
+const costFinanceSuggestionSchema = z.object({
+  ...common,
+  kind: z.literal("cost"),
+  payload: costSuggestionPayloadSchema,
+});
+
 export const financeSuggestionSchema = z
   .discriminatedUnion("kind", [
-    z.object({
-      ...common,
-      kind: z.literal("cost"),
-      payload: costSuggestionPayloadSchema,
-    }),
+    costFinanceSuggestionSchema,
     z.object({
       ...common,
       kind: z.literal("asset"),
@@ -89,6 +123,11 @@ export const financeSuggestionSchema = z
       ...common,
       kind: z.literal("bill_task"),
       payload: billTaskSuggestionPayloadSchema,
+    }),
+    z.object({
+      ...common,
+      kind: z.literal("link"),
+      payload: linkSuggestionPayloadSchema,
     }),
   ])
   .meta({ id: "FinanceSuggestion" });
@@ -110,7 +149,8 @@ export const listFinanceSuggestionsResponseSchema = paginated(
  * A cost takes everything of a new cost entry except date, amount and
  * currency (they are the transaction's), `bookId` included: without one it goes
  * to the book offered with the suggestion (`payload.bookId`) while that is open, else to the default book, and
- * splits as that book says; an asset takes `name`, `assetKind` and `roomId`.
+ * splits as that book says, and `tagIds` label the entry; an asset takes `name`, `assetKind` and `roomId`. A link
+ * suggestion takes no override at all (send `{}`).
  */
 export const acceptFinanceSuggestionRequestSchema = z.strictObject({
   title: z.string().trim().min(1).max(COST_TITLE_MAX).optional(),
@@ -127,6 +167,8 @@ export const acceptFinanceSuggestionRequestSchema = z.strictObject({
   participantIds: costParticipantsInputSchema.optional(),
   countsAsExpense: z.boolean().optional(),
   deductible: costDeductibleSchema.optional(),
+  /** A cost only: the tags of the entry (see `POST /costs`). */
+  tagIds: costTagIdsInputSchema.optional(),
   /** A cost only: the receipt task the entry is booked for (see `POST /costs`), 400 for an asset or a bill task. */
   receiptTaskId: idSchema.optional(),
   name: z.string().trim().min(1).max(120).optional(),
@@ -135,6 +177,24 @@ export const acceptFinanceSuggestionRequestSchema = z.strictObject({
 export type AcceptFinanceSuggestionRequest = z.output<
   typeof acceptFinanceSuggestionRequestSchema
 >;
+
+/**
+ * The entry being typed in the cost form: its amount (signed, as in `POST /costs`), currency (default: the household's) and
+ * date. Answers the caller's pending cost suggestions with the same amount and currency booked at most 3 days from the date.
+ */
+export const financeMatchesQuerySchema = z.object({
+  amountMinor: z.coerce
+    .number()
+    .int()
+    .refine((v) => v !== 0, { error: "The amount must not be zero." }),
+  currency: currencySchema.optional(),
+  date: dateSchema,
+});
+export type FinanceMatchesQuery = z.output<typeof financeMatchesQuerySchema>;
+
+export const financeMatchesResponseSchema = z.object({
+  items: z.array(costFinanceSuggestionSchema),
+});
 
 export const acceptFinanceSuggestionResponseSchema = z
   .object({

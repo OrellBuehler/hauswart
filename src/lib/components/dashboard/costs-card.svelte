@@ -2,6 +2,7 @@
   import ArrowRightIcon from "@lucide/svelte/icons/arrow-right";
   import CircleCheckIcon from "@lucide/svelte/icons/circle-check";
   import CoinsIcon from "@lucide/svelte/icons/coins";
+  import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import ZapIcon from "@lucide/svelte/icons/zap";
   import { resolve } from "$app/paths";
   import type { Dashboard } from "$lib/api/schemas/dashboard";
@@ -13,6 +14,7 @@
     dashboardYouLine,
     type BalanceTone,
   } from "$lib/costs/balances";
+  import { budgetAlertText } from "$lib/costs/budgets";
   import { formatMoney } from "$lib/format-money";
   import { m } from "$lib/paraglide/messages";
   import { cn } from "$lib/utils";
@@ -20,12 +22,15 @@
   let {
     costs,
     balances,
+    budgetAlerts = null,
     canWrite = false,
   }: {
     /** What the year has cost so far: all books together and per book. */
     costs: Dashboard["costsYearToDate"];
     /** Where the caller stands across all books, and the first payments that would square everybody; null when the server could not work it out. */
     balances: Dashboard["balances"];
+    /** How many budgets are nearly used up or over their amount (the dashboard's own `budgetAlerts`); null when that could not be worked out. */
+    budgetAlerts?: Dashboard["budgetAlerts"];
     /** The person may book costs: the card offers the quick entry. */
     canWrite?: boolean;
   } = $props();
@@ -48,6 +53,9 @@
           0,
           balances.suggestedPaymentCount - balances.suggestedPayments.length,
         ),
+  );
+  const budgetText = $derived(
+    budgetAlerts ? budgetAlertText(budgetAlerts) : "",
   );
   const books = $derived(costs.byBook.slice(0, BOOKS_SHOWN));
   const moreBooks = $derived(Math.max(0, costs.byBook.length - BOOKS_SHOWN));
@@ -135,6 +143,22 @@
           {/if}
         {/if}
       </div>
+      {#if budgetText}
+        <a
+          href={resolve("/costs/budgets")}
+          class={cn(
+            "hover:bg-accent/50 focus-visible:ring-ring/50 flex min-h-11 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium outline-none focus-visible:ring-[3px]",
+            budgetAlerts && budgetAlerts.exceeded > 0
+              ? "border-destructive/50 text-destructive"
+              : "border-warning/40 text-warning",
+          )}
+        >
+          <TriangleAlertIcon class="size-4 shrink-0" aria-hidden="true" />
+          <span class="min-w-0 flex-1 text-pretty">{budgetText}</span>
+          <span class="sr-only">{m.budget_alert_open()}</span>
+          <ArrowRightIcon class="size-4 shrink-0" aria-hidden="true" />
+        </a>
+      {/if}
       {#if canWrite}
         <Button
           href={resolve("/costs/quick")}

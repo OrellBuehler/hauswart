@@ -315,6 +315,28 @@ import {
   updateCostBookRequestSchema,
 } from "./schemas/cost-books";
 import {
+  costBudgetSchema,
+  costBudgetStatusQuerySchema,
+  costBudgetStatusSchema,
+  createCostBudgetRequestSchema,
+  listCostBudgetsResponseSchema,
+  updateCostBudgetRequestSchema,
+} from "./schemas/cost-budgets";
+import {
+  costRecurrenceSchema,
+  createCostRecurrenceRequestSchema,
+  listCostRecurrencesQuerySchema,
+  listCostRecurrencesResponseSchema,
+  runCostRecurrenceResultSchema,
+  updateCostRecurrenceRequestSchema,
+} from "./schemas/cost-recurrences";
+import {
+  costTagSchema,
+  createCostTagRequestSchema,
+  listCostTagsResponseSchema,
+  updateCostTagRequestSchema,
+} from "./schemas/cost-tags";
+import {
   createSettlementRequestSchema,
   listSettlementsQuerySchema,
   listSettlementsResponseSchema,
@@ -324,6 +346,8 @@ import {
 import {
   acceptFinanceSuggestionRequestSchema,
   acceptFinanceSuggestionResponseSchema,
+  financeMatchesQuerySchema,
+  financeMatchesResponseSchema,
   financeSyncResponseSchema,
   listFinanceAccountsResponseSchema,
   listFinanceCategoriesResponseSchema,
@@ -1202,7 +1226,7 @@ export const endpoints = {
     path: "/api/v1/dashboard",
     summary: "Overview for the start page",
     description:
-      "Overdue, today, this week, later (60 days) and signal-based tasks, relevant preparations and the last completions. openDefects: defects that need attention, by deadline. expiringWarranties: warranties ending within 90 days or ended at most 30 days ago. orderNow: parts to order now (same items as GET /parts/order-now). costsYearToDate: what the year has cost so far, all books together and per book (`byBook`; household currency, entries that count as an expense; the same numbers as GET /costs/summary), without any settlement. balances: where the caller stands across all books (`myBalanceMinor`, recorded payments included; positive means the others owe the caller) and the first three of the payments that would square everybody (`suggestedPaymentCount` says how many there are), read from the same ledger as GET /costs/balances. `balances` is null when they could not be worked out right now (the failure is logged by error name and code); the rest of the dashboard is still answered.",
+      "Overdue, today, this week, later (60 days) and signal-based tasks, relevant preparations and the last completions. openDefects: defects that need attention, by deadline. expiringWarranties: warranties ending within 90 days or ended at most 30 days ago. orderNow: parts to order now (same items as GET /parts/order-now). costsYearToDate: what the year has cost so far, all books together and per book (`byBook`; household currency, entries that count as an expense; the same numbers as GET /costs/summary), without any settlement. balances: where the caller stands across all books (`myBalanceMinor`, recorded payments included; positive means the others owe the caller) and the first three of the payments that would square everybody (`suggestedPaymentCount` says how many there are), read from the same ledger as GET /costs/balances. `balances` is null when they could not be worked out right now (the failure is logged by error name and code); the rest of the dashboard is still answered. budgetAlerts: how many budgets are over their amount (`exceeded`) or from 80 % up (`warning`) this month (monthly budgets) and this year (yearly ones), as `GET /costs/budgets/status` measures them, and the three most urgent in `top` (exceeded before warning, then the higher share used; each with its book, category, period, amount, spent, `percentUsed` and `state`). Household data, the same for every member; all zeros and an empty `top` while every budget is within its amount, and null, like `balances`, when it could not be worked out right now (logged as `dashboard.budget_alerts_failed`).",
     tags: ["dashboard"],
     auth: "both",
     scopes: ["read"],
@@ -2043,7 +2067,7 @@ export const endpoints = {
     path: "/api/v1/costs",
     summary: "List cost entries",
     description:
-      "Newest first by date. Filter by book (`bookId`; an unknown book is a 404, not an empty list), year or a date range (`from`/`to`), category, asset, room, defect, who paid (`paidBy`, a user id or `me`), whether a person still has to review the entry (`reviewNeeded=true|false`) and a search text over title, payee and notes. Amounts are minor units of the entry's currency: positive = expense, negative = refund. Every entry carries its book and whether that book is tax relevant (`bookTaxRelevant`).",
+      "Newest first by date. Filter by book (`bookId`; an unknown book is a 404, not an empty list), year or a date range (`from`/`to`), category, asset, room, defect, who paid (`paidBy`, a user id or `me`), whether a person still has to review the entry (`reviewNeeded=true|false`), the tag it carries (`tagId`; an unknown tag is a 404) and a search text over title, payee and notes. Amounts are minor units of the entry's currency: positive = expense, negative = refund. Every entry carries its book and whether that book is tax relevant (`bookTaxRelevant`) and its tags.",
     tags: ["costs"],
     auth: "both",
     scopes: ["read"],
@@ -2058,7 +2082,7 @@ export const endpoints = {
     path: "/api/v1/costs",
     summary: "Book a cost",
     description:
-      "`bookId` defaults to the default book (`isDefault` in `GET /cost-books`; an archived book is a 400 on `bookId`), `currency` to the household's, `date` to today. `splitMode` defaults to the book's default split: `ownership` divides by the people's current ownership shares, `equal` equally among everybody or, with `participantIds`, among those household members only (each listed once), `custom` by `shares` (basis points, sum 10000), `none` does not split; `participantIds` with any other split and `shares` with any other than `custom` are a 400. The shares are frozen with the entry; the parts add up to the amount exactly (largest remainder, ties to the earlier user id). `countsAsExpense` defaults to false for a mortgage repayment (equity), else true. `deductible` other than `unknown` needs a tax relevant book (400 on `deductible` otherwise). Entries cannot be created for a finance provider's transaction here: accept the suggestion instead. `receiptTaskId` books the entry for a task of the receipt queue (`/ai-tasks`): in the same transaction the entry is flagged `reviewNeeded` and recorded on the task (`bookedSoFar` of `GET /ai-tasks/{id}`, `receiptTaskId` on the entry), so an interrupted client or another one sees what is booked already; an unknown task is a 400 on the field, a task that is done or dismissed a 409 `conflict` (`details.status`). A repeated `idempotencyKey` (8 to 128 characters; unique per person who books, whatever credential they use) returns the first entry with status 200 and books nothing; the same key for a different entry (amount, currency, category, title or receipt task, or book, date or payer when the retry names them) is a 409 `conflict`; once the entry is deleted its key is free again. Send one per attempt to save, and keep it for a retry that got no answer.",
+      "`bookId` defaults to the default book (`isDefault` in `GET /cost-books`; an archived book is a 400 on `bookId`), `currency` to the household's, `date` to today. `splitMode` defaults to the book's default split: `ownership` divides by the people's current ownership shares, `equal` equally among everybody or, with `participantIds`, among those household members only (each listed once), `custom` by `shares` (basis points, sum 10000), `none` does not split; `participantIds` with any other split and `shares` with any other than `custom` are a 400. The shares are frozen with the entry; the parts add up to the amount exactly (largest remainder, ties to the earlier user id). `countsAsExpense` defaults to false for a mortgage repayment (equity), else true. `deductible` other than `unknown` needs a tax relevant book (400 on `deductible` otherwise). `tagIds` label the entry with tags (`/cost-tags`; 400 on `tagIds` for one that does not exist). A finance provider's transaction is booked by accepting its suggestion; `financeSuggestionId` instead ties an entry you book by hand to one of your own pending cost suggestions from the finance app (`GET /finance/matches` finds them): in the same transaction the suggestion is accepted and the entry remembers the transaction, so it is never booked twice and its back-link is written (404 for a suggestion that is not yours, 400 on the field when it is not a cost or its amount or currency differs from the entry's, 409 when it is decided already). Without `financeSuggestionId`, when exactly one of the payer's pending cost suggestions looks like the new entry (same amount and currency, at most 3 days apart, similar text) it becomes a `link` suggestion to this entry in the same transaction (a recurring booking does the same); nothing is accepted by itself, and several fitting suggestions change nothing. `receiptTaskId` books the entry for a task of the receipt queue (`/ai-tasks`): in the same transaction the entry is flagged `reviewNeeded` and recorded on the task (`bookedSoFar` of `GET /ai-tasks/{id}`, `receiptTaskId` on the entry), so an interrupted client or another one sees what is booked already; an unknown task is a 400 on the field, a task that is done or dismissed a 409 `conflict` (`details.status`). A repeated `idempotencyKey` (8 to 128 characters; unique per person who books, whatever credential they use) returns the first entry with status 200 and books nothing; the same key for a different entry (amount, currency, category, title or receipt task, or book, date or payer when the retry names them) is a 409 `conflict`; once the entry is deleted its key is free again. Send one per attempt to save, and keep it for a retry that got no answer. A 409 `conflict` carries `details.code` so a client does not have to guess: `idempotency_key_reused` (the key stands for another entry), `suggestion_decided` (the suggestion named by `financeSuggestionId` was accepted or dismissed already, or its transaction is booked) or `receipt_task_closed` (the receipt task is not waiting any more; `details.status`). A refused request books nothing and spends no key.",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2074,7 +2098,7 @@ export const endpoints = {
     path: "/api/v1/costs/summary",
     summary: "Costs of a year: totals and settlement",
     description:
-      "Totals per category, month and asset (top ten) and per tax class count entries in the household currency that count as an expense; mortgage repayments are reported as `equityTotalMinor`; the tax classes count the entries of tax relevant books only. `people` and `settlement` cover every split entry with a payer of the year: `balanceMinor` = paid - share, and `settlement` lists who pays whom to square the balances. Recorded payments (`/settlements`) are not part of a year: the running balance with them is `GET /costs/balances`. With `assetId` or `bookId` only the entries of that asset or book are counted; a `bookId` that names no book is a 404.",
+      "Totals per category, month and asset (top ten) and per tax class count entries in the household currency that count as an expense; mortgage repayments are reported as `equityTotalMinor`; the tax classes count the entries of tax relevant books only. `people` and `settlement` cover every split entry with a payer of the year: `balanceMinor` = paid - share, and `settlement` lists who pays whom to square the balances. Recorded payments (`/settlements`) are not part of a year: the running balance with them is `GET /costs/balances`. With `assetId`, `bookId` or `tagId` only the entries of that asset, book or tag are counted; a `bookId` or `tagId` that names nothing is a 404.",
     tags: ["costs"],
     auth: "both",
     scopes: ["read"],
@@ -2118,7 +2142,7 @@ export const endpoints = {
     path: "/api/v1/costs/export.csv",
     summary: "Cost entries of a year as CSV",
     description:
-      "UTF-8 with a byte order mark, semicolon separated and CRLF line ends (opens in Swiss Excel). Amounts are plain decimals with a point and no thousands separator (`-12.50`), so they parse the same everywhere. Text that would be read as a formula is prefixed with an apostrophe. Columns are only ever added at the end (`book` is the last one). With `bookId` only that book's entries are exported (404 for a book that does not exist).",
+      "UTF-8 with a byte order mark, semicolon separated and CRLF line ends (opens in Swiss Excel). Amounts are plain decimals with a point and no thousands separator (`-12.50`), so they parse the same everywhere. Text that would be read as a formula is prefixed with an apostrophe. Columns are only ever added at the end (`tags` is the last one: the tag names of the entry, by name, separated by a comma and a space). With `bookId` or `tagId` only that book's or tag's entries are exported (404 for one that does not exist).",
     tags: ["costs"],
     auth: "both",
     scopes: ["read"],
@@ -2148,7 +2172,7 @@ export const endpoints = {
     path: "/api/v1/costs/{id}",
     summary: "Change a cost entry",
     description:
-      "Setting `splitMode` to `ownership` or `equal` splits again by the people's current shares (`equal` among everybody); `shares` need `custom`; `participantIds` need an `equal` split (the entry's, or the one set in the same request) and split again among those members. Changing only the amount keeps the frozen shares. `bookId` moves the entry to another book that is not archived (an entry may stay in an archived book); moving it to a book that is not tax relevant resets its `deductible` to `unknown` unless the request sets it, and `deductible` other than `unknown` (and other than the entry's own) is a 400 there. An entry booked from a finance provider keeps its source; its back-link in the provider is refreshed. An entry a fuel log entry booked (`fuelLogId` is set) keeps its amount, currency, date and device as that entry has them: asking for other values is a 409 `conflict` with `details.fuelLogId` (the first three change with `PATCH /fuel-logs/{id}`, the device is the vehicle and stays); sending the current values is fine, and category, title, notes, payee, payer, split, deductibility, room, defect and service log entry stay editable here.",
+      "Setting `splitMode` to `ownership` or `equal` splits again by the people's current shares (`equal` among everybody); `shares` need `custom`; `participantIds` need an `equal` split (the entry's, or the one set in the same request) and split again among those members. Changing only the amount keeps the frozen shares. `tagIds` replaces the entry's tags (an empty list removes them all). `financeSuggestionId` ties the entry to one of your own pending cost suggestions from the finance app as when booking (checked against the amount and currency the entry has after the change; 409 for an entry that is tied to a finance item already, unless it is that very suggestion, which changes nothing). `bookId` moves the entry to another book that is not archived (an entry may stay in an archived book); moving it to a book that is not tax relevant resets its `deductible` to `unknown` unless the request sets it, and `deductible` other than `unknown` (and other than the entry's own) is a 400 there. An entry booked from a finance provider keeps its source; its back-link in the provider is refreshed. An entry a fuel log entry booked (`fuelLogId` is set) keeps its amount, currency, date and device as that entry has them: asking for other values is a 409 `conflict` with `details.fuelLogId` (the first three change with `PATCH /fuel-logs/{id}`, the device is the vehicle and stays); sending the current values is fine, and category, title, notes, payee, payer, split, deductibility, room, defect and service log entry stay editable here. A 409 about the finance link carries `details.code`: `entry_tied` (the entry is tied to a finance item already) or `suggestion_decided` (the suggestion named by `financeSuggestionId` is decided already); the fuel log lock has `details.fuelLogId` instead.",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2224,7 +2248,7 @@ export const endpoints = {
     path: "/api/v1/cost-books",
     summary: "Create a cost book",
     description:
-      "`slug` is derived from the name, `defaultSplitMode` is `ownership` (or `equal`, `none`), `taxRelevant` false (only a tax relevant book takes a `deductible` class on its entries) and the book goes to the end of the list. `isDefault: true` makes it the default book (the previous one stops being it). Names are unique without regard to case (409 `conflict`).",
+      "`slug` is derived from the name, `defaultSplitMode` is `ownership` (or `equal`, `none`), `taxRelevant` false (only a tax relevant book takes a `deductible` class on its entries) and the book goes to the end of the list. `isDefault: true` makes it the default book (the previous one stops being it). Names are unique without regard to case, umlauts included (409 `conflict`).",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2269,7 +2293,7 @@ export const endpoints = {
     path: "/api/v1/cost-books/{id}",
     summary: "Delete an empty cost book",
     description:
-      "Only a book without entries and payments can be deleted; otherwise 409 `conflict` with `details.entryCount` and `details.settlementCount`: archive it instead. The last book that is not archived cannot be deleted either. Deleting the default book hands the default to the first book that is still open.",
+      "Only a book without entries, payments and recurring costs can be deleted; otherwise 409 `conflict` with `details.entryCount` and `details.settlementCount` (or `details.recurrenceCount`): archive it instead. The last book that is not archived cannot be deleted either. Deleting the default book hands the default to the first book that is still open. The book's budgets go with it.",
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2277,6 +2301,254 @@ export const endpoints = {
     response: emptySchema,
     status: 204,
     errors: ["not_found", "conflict"],
+  }),
+
+  costTagsList: defineEndpoint({
+    id: "costTagsList",
+    method: "GET",
+    path: "/api/v1/cost-tags",
+    summary: "List cost tags",
+    description:
+      "The labels cost entries carry, by name without regard to case, with the number of entries that carry each. Not paged: there are at most 200.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    response: listCostTagsResponseSchema,
+  }),
+
+  costTagsCreate: defineEndpoint({
+    id: "costTagsCreate",
+    method: "POST",
+    path: "/api/v1/cost-tags",
+    summary: "Create a cost tag",
+    description:
+      "`color` is a key the client maps to a colour and defaults to `gray`. Names are unique without regard to case, umlauts included (409 `conflict`), and there are at most 200 tags (409).",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    body: createCostTagRequestSchema,
+    response: costTagSchema,
+    status: 201,
+    errors: ["conflict"],
+  }),
+
+  costTagsGet: defineEndpoint({
+    id: "costTagsGet",
+    method: "GET",
+    path: "/api/v1/cost-tags/{id}",
+    summary: "Get a cost tag",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: costTagSchema,
+    errors: ["not_found"],
+  }),
+
+  costTagsUpdate: defineEndpoint({
+    id: "costTagsUpdate",
+    method: "PATCH",
+    path: "/api/v1/cost-tags/{id}",
+    summary: "Rename or recolour a cost tag",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    body: updateCostTagRequestSchema,
+    response: costTagSchema,
+    errors: ["not_found", "conflict"],
+  }),
+
+  costTagsDelete: defineEndpoint({
+    id: "costTagsDelete",
+    method: "DELETE",
+    path: "/api/v1/cost-tags/{id}",
+    summary: "Delete a cost tag",
+    description:
+      "The entries (and recurring costs) that carried the tag stay, without it.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
+  costBudgetsList: defineEndpoint({
+    id: "costBudgetsList",
+    method: "GET",
+    path: "/api/v1/cost-budgets",
+    summary: "List cost budgets",
+    description:
+      "What the household wants to spend in a book, a category or both, per calendar month or year, in the order the budgets were made; inactive ones included. Where they stand is `GET /costs/budgets/status`.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    response: listCostBudgetsResponseSchema,
+  }),
+
+  costBudgetsCreate: defineEndpoint({
+    id: "costBudgetsCreate",
+    method: "POST",
+    path: "/api/v1/cost-budgets",
+    summary: "Set a cost budget",
+    description:
+      "For a book (`bookId`), a category (`category`) or both (400 on `bookId` when it names neither), per `month` or `year`, in the household currency of the day. One budget per book, category and period (409 `conflict`). Deleting a book deletes its budgets.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    body: createCostBudgetRequestSchema,
+    response: costBudgetSchema,
+    status: 201,
+    errors: ["conflict"],
+  }),
+
+  costBudgetsStatus: defineEndpoint({
+    id: "costBudgetsStatus",
+    method: "GET",
+    path: "/api/v1/costs/budgets/status",
+    summary: "Where the active budgets stand",
+    description:
+      "For every active budget: what the entries in its scope add up to (entries that count as an expense, refunds netted off, in the budget's currency) in the month `year`/`month` for a monthly budget or in the whole `year` for a yearly one, what is left, the whole percent used and a `state`: `ok`, `warning` from 80 % (`warningPercent`) or `exceeded` from 100 %. `year` and `month` default to today in the household zone, each on its own. Nothing is announced by a notification; a client shows the state.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    query: costBudgetStatusQuerySchema,
+    response: costBudgetStatusSchema,
+  }),
+
+  costBudgetsGet: defineEndpoint({
+    id: "costBudgetsGet",
+    method: "GET",
+    path: "/api/v1/cost-budgets/{id}",
+    summary: "Get a cost budget",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: costBudgetSchema,
+    errors: ["not_found"],
+  }),
+
+  costBudgetsUpdate: defineEndpoint({
+    id: "costBudgetsUpdate",
+    method: "PATCH",
+    path: "/api/v1/cost-budgets/{id}",
+    summary: "Change a cost budget",
+    description:
+      "`null` for `bookId` or `category` removes that half of the scope; what is left must name a book or a category (400 on `bookId`). `active: false` keeps the budget but leaves it out of the status. A change that makes it the same as another budget is a 409.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    body: updateCostBudgetRequestSchema,
+    response: costBudgetSchema,
+    errors: ["not_found", "conflict"],
+  }),
+
+  costBudgetsDelete: defineEndpoint({
+    id: "costBudgetsDelete",
+    method: "DELETE",
+    path: "/api/v1/cost-budgets/{id}",
+    summary: "Delete a cost budget",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
+  costRecurrencesList: defineEndpoint({
+    id: "costRecurrencesList",
+    method: "GET",
+    path: "/api/v1/cost-recurrences",
+    summary: "List recurring costs",
+    description:
+      "The costs that repeat (rent, insurance, a subscription): the ones that book first, soonest `nextDate` first, then the paused and finished ones by title. `active=true` lists the ones that book, `active=false` the paused and finished ones; `bookId` narrows to one book. Not paged: there are at most 200.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    query: listCostRecurrencesQuerySchema,
+    response: listCostRecurrencesResponseSchema,
+  }),
+
+  costRecurrencesCreate: defineEndpoint({
+    id: "costRecurrencesCreate",
+    method: "POST",
+    path: "/api/v1/cost-recurrences",
+    summary: "Set up a recurring cost",
+    description:
+      "The template of an entry (the fields of `POST /costs` without a date) and a rule: every `interval` months (`monthly`), quarters or years, counted from the month of `startDate`, on `dayOfMonth` (default: the day of `startDate`; a day a shorter month does not have means its last day, so 31 gives 31 January, 28 February, 31 March). The first occurrence is the first one on or after `startDate`; `endDate` (included) closes the series. The template is checked as booking would be (400 on the field for an unknown book, asset, room, payer or tag, a book that is archived, a split that does not fit, a tax class in a book without one; 400 on `endDate` when it leaves no occurrence). A scheduler books each occurrence that falls due, on its date in the household time zone, as an entry with `source: recurring`, `recurrenceId` set and no review flag; an occurrence is booked once even if the run is repeated, and a server that was down books each occurrence it missed. A `startDate` in the past is therefore booked right away, up to 120 occurrences per call. The split is worked out when an entry is booked, so a changed ownership share applies to later entries only.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    body: createCostRecurrenceRequestSchema,
+    response: costRecurrenceSchema,
+    status: 201,
+    errors: ["conflict"],
+  }),
+
+  costRecurrencesGet: defineEndpoint({
+    id: "costRecurrencesGet",
+    method: "GET",
+    path: "/api/v1/cost-recurrences/{id}",
+    summary: "Get a recurring cost",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    response: costRecurrenceSchema,
+    errors: ["not_found"],
+  }),
+
+  costRecurrencesUpdate: defineEndpoint({
+    id: "costRecurrencesUpdate",
+    method: "PATCH",
+    path: "/api/v1/cost-recurrences/{id}",
+    summary: "Change, pause or resume a recurring cost",
+    description:
+      "Changes the template for the entries booked from now on (the ones booked already stay as they are) and the rule. After a change of the rule the series continues after the newest occurrence that was booked. `active: false` pauses it; `active: true` on a paused one resumes it at the first occurrence on or after today, skipping what fell due meanwhile. Touching the template asks for an open book (400 on `bookId` for an archived one: move it to another); pausing or changing only the rule does not. `splitMode` `equal` without `participantIds` splits among everybody again, also for a template that was narrowed to some people. A tax class (`deductible`) means something in a tax relevant book only: moving the template to a book that is not tax relevant resets it to `unknown` unless the request sets it, and a class other than `unknown` (and other than the template's own) is a 400 on `deductible` there; entries booked from a template whose book lost its tax class get `unknown`. A new `category` brings the default of `countsAsExpense` along unless the template's value was set on purpose or the request names it, as for an entry. Occurrences already due after the change are booked right away. Any change clears `lastError`.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    body: updateCostRecurrenceRequestSchema,
+    response: costRecurrenceSchema,
+    errors: ["not_found"],
+  }),
+
+  costRecurrencesDelete: defineEndpoint({
+    id: "costRecurrencesDelete",
+    method: "DELETE",
+    path: "/api/v1/cost-recurrences/{id}",
+    summary: "Delete a recurring cost",
+    description:
+      "The entries it booked stay (with `source: recurring`, but no longer tied to it: `recurrenceId` becomes null).",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    response: emptySchema,
+    status: 204,
+    errors: ["not_found"],
+  }),
+
+  costRecurrencesRun: defineEndpoint({
+    id: "costRecurrencesRun",
+    method: "POST",
+    path: "/api/v1/cost-recurrences/{id}/run-now",
+    summary: "Book the next due occurrence now",
+    description:
+      "Books the next occurrence if it is due (on or before today in the household time zone), exactly one, so a series that is behind needs several calls; `entry` is the new entry. Nothing is booked, and `entry` is null, for a paused or finished recurring cost or one whose next occurrence is still ahead. A booking that fails (the book is archived: 400 on `bookId`) is also recorded as `lastError`. No request body.",
+    tags: ["costs"],
+    auth: "both",
+    scopes: ["costs:write"],
+    params: idParamsSchema,
+    response: runCostRecurrenceResultSchema,
+    errors: ["not_found"],
   }),
 
   settlementsList: defineEndpoint({
@@ -2300,7 +2572,7 @@ export const endpoints = {
     path: "/api/v1/settlements",
     summary: "Record a payment between two people",
     description:
-      '"Ben paid Anna 50": `fromUserId` handed `amountMinor` over to `toUserId`. It is not a cost (no expense total counts it); it moves the balances in `GET /costs/balances`. `bookId` omitted or null settles across all books; a book may be archived (paying back a closed trip is the normal order). `currency` defaults to the household\'s, `date` to today. The two people must differ and be household members (400 on the field otherwise). A repeated `idempotencyKey` (unique per person who records, whatever credential they use) returns the first payment with status 200 and records nothing; the same key for a different payment (other people, amount, currency or book) is a 409 `conflict`; once the payment is deleted its key is free again.',
+      '"Ben paid Anna 50": `fromUserId` handed `amountMinor` over to `toUserId`. It is not a cost (no expense total counts it); it moves the balances in `GET /costs/balances`. `bookId` omitted or null settles across all books; a book may be archived (paying back a closed trip is the normal order). `currency` defaults to the household\'s, `date` to today. The two people must differ and be household members (400 on the field otherwise). A repeated `idempotencyKey` (unique per person who records, whatever credential they use) returns the first payment with status 200 and records nothing; the same key for a different payment (other people, amount, currency or book) is a 409 `conflict` with `details.code` `idempotency_key_reused`; once the payment is deleted its key is free again.',
     tags: ["costs"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2358,7 +2630,7 @@ export const endpoints = {
     path: "/api/v1/finance/suggestions",
     summary: "Your suggestions from the connected finance app",
     description:
-      "Costs, assets and bill tasks the finance provider offers, waiting for a decision (`status` defaults to `pending`). Strictly your own: no other member sees them, and other members' suggestions are never listed or reachable by id.",
+      "Costs, assets, bill tasks and links the finance provider offers, waiting for a decision (`status` defaults to `pending`). A `link` is a transaction that looks like a cost entry somebody booked by hand (same amount and currency, booked at most 3 days from the entry's date, similar payee or title, paid by you, not tied to a finance item yet; found when the transaction is offered or, when the transaction was waiting as a cost already, when such an entry is booked later): its payload carries the `entryId`, the `entry` as it is now (null if it was deleted) and the `transaction`. Accepting it ties the entry to the transaction instead of booking a second entry; dismissing it offers the transaction as a normal cost suggestion. Strictly your own: no other member sees them, and other members' suggestions are never listed or reachable by id.",
     tags: ["finance"],
     auth: "both",
     scopes: ["read"],
@@ -2372,7 +2644,7 @@ export const endpoints = {
     path: "/api/v1/finance/suggestions/{id}/accept",
     summary: "Accept a suggestion",
     description:
-      "Creates the cost entry (paid by you, in the book the body names with `bookId`, else the one offered with the suggestion (`payload.bookId`, set by the connection's settings) while it is open, else the default book; split as that book says unless the body says otherwise), the asset or the bill task. The body may override book, category, title, split (`participantIds` narrow an equal split), asset link and so on; fields of another kind are a 400. `receiptTaskId` (a cost only) books the entry for a task of the receipt queue like `POST /costs` does; a task that is not waiting any more is a 409 and the suggestion stays pending. Accepting twice is a 409.",
+      "Creates the cost entry (paid by you, in the book the body names with `bookId`, else the one offered with the suggestion (`payload.bookId`, set by the connection's settings) while it is open, else the default book; split as that book says unless the body says otherwise), the asset or the bill task. The body may override book, category, title, split (`participantIds` narrow an equal split), asset link and so on; fields of another kind are a 400. `tagIds` (a cost only) label the entry. `receiptTaskId` (a cost only) books the entry for a task of the receipt queue like `POST /costs` does; a task that is not waiting any more is a 409 and the suggestion stays pending. Accepting a `link` takes no body fields: the entry named in its payload remembers the transaction (so it is never booked twice and the finance app gets its back-link), nothing new is booked, and the answer's entity is that entry; 409 when the entry was deleted, is tied to a finance item already or no longer has the transaction's amount and currency (dismiss the link then). Accepting twice is a 409. A 409 carries `details.code` where it tells: `suggestion_decided` (accepted or dismissed already, or the transaction is booked), `entry_tied` (a link's entry is tied to a finance item already) or `receipt_task_closed`.",
     tags: ["finance"],
     auth: "both",
     scopes: ["costs:write"],
@@ -2388,13 +2660,27 @@ export const endpoints = {
     path: "/api/v1/finance/suggestions/{id}/dismiss",
     summary: "Dismiss a suggestion",
     description:
-      "A dismissed suggestion is never offered again. Dismissing an accepted one is a 409.",
+      'A dismissed suggestion is never offered again, except a `link`: dismissing it means "not that entry", so its transaction comes back as a normal cost suggestion. Dismissing an accepted one is a 409 with `details.code` `suggestion_decided`.',
     tags: ["finance"],
     auth: "both",
     scopes: ["costs:write"],
     params: idParamsSchema,
     response: financeSuggestionSchema,
     errors: ["not_found", "conflict"],
+  }),
+
+  financeMatches: defineEndpoint({
+    id: "financeMatches",
+    method: "GET",
+    path: "/api/v1/finance/matches",
+    summary: "Your pending cost suggestions that match an entry being typed",
+    description:
+      'For the cost form: `amountMinor` (signed like `POST /costs`), `currency` (default: the household\'s) and `date` of the entry being typed. Answers your own pending cost suggestions from the finance app with the same amount and currency booked at most 3 days from `date`, nearest date first (at most 20), so the form can offer "tie to bank transaction"; send the chosen id as `financeSuggestionId` to `POST /costs` or `PATCH /costs/{id}`. Strictly your own.',
+    tags: ["finance"],
+    auth: "both",
+    scopes: ["read"],
+    query: financeMatchesQuerySchema,
+    response: financeMatchesResponseSchema,
   }),
 
   financeSync: defineEndpoint({
@@ -3945,7 +4231,7 @@ export const endpoints = {
     path: "/api/v1/ai-tasks",
     summary: "Put a receipt in the queue for an assistant to book",
     description:
-      "multipart/form-data with `file` (an image or a PDF, like an attachment: JPEG, PNG and WebP images are re-encoded and lose their metadata, PDFs are stored as uploaded, at most 25 MiB; the same `invalid_request` errors with `details.code` as `POST /attachments`), optional `kind` (only `receipt` today, the default), `note` (the uploader's own words, at most 1000 characters) and the hints `bookId` (an open cost book, else a 400 on `bookId`) and `assetId`. The task starts `pending` and is shared by the whole household; the caller is its uploader, who is the default payer of what is booked from it. An assistant (the MCP tools `list_ai_tasks`, `get_ai_task`, `complete_ai_task`, `dismiss_ai_task`) reads the receipt, books the entries and completes the task. Needs `costs:write` because the outcome is cost entries. A repeated `idempotencyKey` (8 to 128 characters; unique per person who uploads, whatever credential they use) returns the first task with status 200 and stores and queues nothing; the same key for a different receipt (another file, or another kind, book or device; the note does not count) is a 409 `conflict`; once the task is deleted its key is free again. Send one per receipt and keep it for a retry that got no answer.",
+      "multipart/form-data with `file` (an image or a PDF, like an attachment: JPEG, PNG and WebP images are re-encoded and lose their metadata, PDFs are stored as uploaded, at most 25 MiB; the same `invalid_request` errors with `details.code` as `POST /attachments`), optional `kind` (only `receipt` today, the default), `note` (the uploader's own words, at most 1000 characters) and the hints `bookId` (an open cost book, else a 400 on `bookId`) and `assetId`. The task starts `pending` and is shared by the whole household; the caller is its uploader, who is the default payer of what is booked from it. An assistant (the MCP tools `list_ai_tasks`, `get_ai_task`, `complete_ai_task`, `dismiss_ai_task`) reads the receipt, books the entries and completes the task. Needs `costs:write` because the outcome is cost entries. A repeated `idempotencyKey` (8 to 128 characters; unique per person who uploads, whatever credential they use) returns the first task with status 200 and stores and queues nothing; the same key for a different receipt (another file, or another kind, book or device; the note does not count) is a 409 `conflict` with `details.code` `idempotency_key_reused`; once the task is deleted its key is free again. Send one per receipt and keep it for a retry that got no answer.",
     tags: ["ai-tasks"],
     auth: "both",
     scopes: ["costs:write"],

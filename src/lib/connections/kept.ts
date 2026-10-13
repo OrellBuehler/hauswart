@@ -494,6 +494,10 @@ export function keptSettingsError(err: unknown, baseUrl: string): string {
 
 const STAT_LINES: ReadonlyArray<[string, (count: number) => string]> = [
   ["suggestions", (count) => m.integration_kept_stat_suggestions({ count })],
+  [
+    "linkSuggestions",
+    (count) => m.integration_kept_stat_link_suggestions({ count }),
+  ],
   ["autoAccepted", (count) => m.integration_kept_stat_auto_accepted({ count })],
   [
     "assetSuggestions",
@@ -527,7 +531,12 @@ export function syncStatLines(stats: Record<string, number>): string[] {
   });
 }
 
-/** Whether the sync left something for the person to decide on. */
+/** Whether the sync left something for the person to decide on: a cost, a device or a transaction to link to an entry. */
 export function offersWaiting(stats: Record<string, number>): boolean {
-  return (stats.suggestions ?? 0) + (stats.assetSuggestions ?? 0) > 0;
+  return (
+    (stats.suggestions ?? 0) +
+      (stats.linkSuggestions ?? 0) +
+      (stats.assetSuggestions ?? 0) >
+    0
+  );
 }

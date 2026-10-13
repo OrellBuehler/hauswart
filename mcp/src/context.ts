@@ -4,6 +4,7 @@ import { endpoints } from "../../src/lib/api/registry";
 import type { Scope } from "../../src/lib/api/scopes";
 import type { Asset } from "../../src/lib/api/schemas/assets";
 import type { CostBook } from "../../src/lib/api/schemas/cost-books";
+import type { CostTag } from "../../src/lib/api/schemas/cost-tags";
 import type { Household } from "../../src/lib/api/schemas/household";
 import type { Room } from "../../src/lib/api/schemas/rooms";
 import { todayIn } from "../../src/lib/dates";
@@ -37,6 +38,8 @@ export interface ToolContext {
   resolveUser(ref: string): Promise<string>;
   /** A cost book by id, slug or name, archived ones included. */
   resolveBook(ref: string): Promise<CostBook>;
+  /** A cost tag by id or name (without regard to case). */
+  resolveTag(ref: string): Promise<CostTag>;
 }
 
 export interface ContextOptions {
@@ -178,6 +181,23 @@ export function createContext(options: ContextOptions): ToolContext {
       throw new ToolError(
         "not_found",
         `No cost book "${ref}". Known cost books: ${books.map((b) => b.name).join(", ") || "none"}.`,
+      );
+    },
+
+    async resolveTag(ref) {
+      const { items: tags } = await api.call(endpoints.costTagsList);
+      const hits = tags.filter((t) => t.id === ref || same(t.name, ref));
+      if (hits.length === 1) return hits[0];
+      if (hits.length > 1) {
+        throw ambiguous(
+          "Cost tag",
+          ref,
+          hits.map((t) => `${t.name} (${t.id})`),
+        );
+      }
+      throw new ToolError(
+        "not_found",
+        `No cost tag "${ref}". Known cost tags: ${tags.map((t) => t.name).join(", ") || "none"}.`,
       );
     },
 

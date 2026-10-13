@@ -26,6 +26,7 @@ import { startFileSweeper } from "$lib/server/attachments/sweeper";
 import { withGuestHeaders } from "$lib/server/share/guest-http";
 import { registerBackups } from "$lib/server/backup";
 import { registerCalendarSync } from "$lib/server/calendar-sync";
+import { registerCostRecurrences } from "$lib/server/costs/recurrence-scheduler";
 import { startAttachmentRerender } from "$lib/server/docs/pages";
 import { registerHomeAssistant } from "$lib/server/integrations/homeassistant";
 import { registerKept } from "$lib/server/integrations/kept";
@@ -41,6 +42,7 @@ export async function init() {
   await warmDummyHash();
   registerDomainEventHandlers();
   registerEvaluator();
+  registerCostRecurrences();
   registerSignalWorker();
   registerHomeAssistant();
   registerKept();

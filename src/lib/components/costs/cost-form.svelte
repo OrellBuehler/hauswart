@@ -15,6 +15,7 @@
   import { endpoints } from "$lib/api/registry";
   import type { Asset } from "$lib/api/schemas/assets";
   import type { CostBook } from "$lib/api/schemas/cost-books";
+  import type { CostTag } from "$lib/api/schemas/cost-tags";
   import type { CostEntry } from "$lib/api/schemas/costs";
   import type { Defect } from "$lib/api/schemas/defects";
   import type { Room } from "$lib/api/schemas/rooms";
@@ -43,6 +44,7 @@
   } from "$lib/costs/form";
   import { fuelLogOfConflict } from "$lib/costs/fuel-owner";
   import { categoryLabels, deductibleLabels } from "$lib/costs/labels";
+  import { matchQuery, tieFailure } from "$lib/costs/matches";
   import { COST_NOTES_MAX, COST_TITLE_MAX } from "$lib/api/schemas/costs";
   import { apiErrorMessage } from "$lib/error-message";
   import { formatDay } from "$lib/format";
@@ -51,7 +53,9 @@
   import { fuelLogHref } from "$lib/vehicles/links";
   import { cn } from "$lib/utils";
   import BookPicker from "./book-picker.svelte";
+  import FinanceMatches from "./finance-matches.svelte";
   import SplitEditor from "./split-editor.svelte";
+  import TagPicker from "./tag-picker.svelte";
 
   let {
     entry,
@@ -60,6 +64,8 @@
     defects,
     people,
     books,
+    tags,
+    financeConnected = false,
     currency,
     today,
     currentUserId,
@@ -72,6 +78,10 @@
     people: DirectoryUser[];
     /** Every cost book, archived ones included. */
     books: CostBook[];
+    /** Every cost tag of the household. */
+    tags: CostTag[];
+    /** The person has a working finance connection: the form looks for bank transactions that fit the entry. */
+    financeConnected?: boolean;
     /** The household's currency. */
     currency: string;
     today: string;
@@ -108,6 +118,8 @@
   let formError = $state<string | undefined>();
   let pending = $state(false);
   let formEl = $state<HTMLFormElement | null>(null);
+  /** Counts up when the bank transactions are to be asked for again (the chosen one was refused). */
+  let matchRefresh = $state(0);
 
   let serviceEntries = $state.raw<ServiceLogEntry[]>([]);
   let serviceLoading = $state(false);
@@ -203,6 +215,19 @@
   );
   const otherCurrency = $derived(
     /^[A-Z]{3}$/.test(draft.currency) && draft.currency !== currency,
+  );
+  /** An entry that is tied to a finance item already, or a fuel fill's, is not offered a transaction. */
+  const matchable = $derived(
+    financeConnected && !owned && !entry?.financeLinked,
+  );
+  const matchFor = $derived(
+    matchable
+      ? matchQuery({
+          amountMinor: amount.ok ? amount.amountMinor : undefined,
+          currency: draft.currency,
+          date: draft.date,
+        })
+      : null,
   );
 
   $effect(() => {
@@ -301,6 +326,7 @@
       return;
     }
     pending = true;
+    const sentTie = draft.financeSuggestionId !== "";
     try {
       const saved = entry
         ? await api.call(endpoints.costsUpdate, {
@@ -320,10 +346,19 @@
       });
     } catch (err) {
       errors = apiFieldErrors(err);
-      formError = apiErrorMessage(
-        err,
-        fuelLogOfConflict(err) ? { conflict: m.cost_fuel_conflict() } : {},
-      );
+      const tie = tieFailure(err, sentTie);
+      if (tie) {
+        // The transaction was refused: let go of it, ask again, and say so under the list.
+        errors.financeSuggestionId = tie;
+        draft.financeSuggestionId = "";
+        matchRefresh += 1;
+        formError = m.form_check_fields();
+      } else {
+        formError = apiErrorMessage(
+          err,
+          fuelLogOfConflict(err) ? { conflict: m.cost_fuel_conflict() } : {},
+        );
+      }
       focusFirstError();
     } finally {
       pending = false;
@@ -491,6 +526,32 @@
           {/snippet}
         </Field>
       </div>
+
+      {#if matchable}
+        <FinanceMatches
+          id="cost-matches"
+          query={matchFor}
+          bind:value={draft.financeSuggestionId}
+          refresh={matchRefresh}
+          disabled={pending}
+          error={errors.financeSuggestionId}
+        />
+      {:else if entry?.financeLinked}
+        <p
+          class="text-muted-foreground bg-muted/50 rounded-lg border px-3 py-2 text-xs text-pretty"
+        >
+          {m.cost_bank_linked_note()}
+        </p>
+      {/if}
+
+      <TagPicker
+        id="cost-tags"
+        {tags}
+        bind:value={draft.tagIds}
+        creatable
+        disabled={pending}
+        error={errors.tagIds}
+      />
 
       <Field
         id="cost-notes"

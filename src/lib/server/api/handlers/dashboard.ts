@@ -1,7 +1,7 @@
 import type { endpoints } from "$lib/api/registry";
-import type { DashboardBalances } from "$lib/api/schemas/costs";
 import { countAiTasks } from "$lib/server/ai-tasks/ai-tasks";
 import { dashboardBalances } from "$lib/server/costs/balances";
+import { dashboardBudgetAlerts } from "$lib/server/costs/budgets";
 import { countReviewNeeded } from "$lib/server/costs/costs";
 import { costsYearToDate } from "$lib/server/costs/summary";
 import { selectAllDefects } from "$lib/server/defects/defects";
@@ -14,19 +14,17 @@ import type { Handler } from "../bind";
 import { wireDashboard } from "../wire";
 
 /**
- * The caller's balances, or null when they cannot be worked out: they are one card of the dashboard and must not take
- * the tasks, defects and everything else down with them. Logged by error name and code only, as `bind` does.
+ * A part of the dashboard (the caller's balances, the budget alerts), or null when it cannot be worked out: each is one
+ * card and must not take the tasks, defects and everything else down with it. Logged by event, error name and code only,
+ * as `bind` does.
  */
-function balancesOrNull(
-  ctx: Parameters<typeof dashboardBalances>[0],
-  userId: string,
-): DashboardBalances | null {
+function orNull<T>(event: string, compute: () => T): T | null {
   try {
-    return dashboardBalances(ctx, userId);
+    return compute();
   } catch (err) {
     console.error(
       JSON.stringify({
-        event: "dashboard.balances_failed",
+        event,
         name: err instanceof Error ? err.name : "NonError",
         code:
           typeof (err as { code?: unknown } | null)?.code === "string"
@@ -44,7 +42,12 @@ export const get: Handler<typeof endpoints.dashboard> = async ({ ctx }) =>
     expiringWarranties: dashboardWarranties(ctx),
     orderNow: listOrderNow(ctx),
     costsYearToDate: costsYearToDate(ctx),
-    balances: balancesOrNull(ctx, ctx.user.id),
+    balances: orNull("dashboard.balances_failed", () =>
+      dashboardBalances(ctx, ctx.user.id),
+    ),
+    budgetAlerts: orNull("dashboard.budget_alerts_failed", () =>
+      dashboardBudgetAlerts(ctx),
+    ),
     pendingFinanceSuggestions: countPendingSuggestions(ctx, ctx.user.id),
     reviewNeededCount: countReviewNeeded(ctx),
     pendingReceiptCount: countAiTasks(ctx, { status: "pending" }),

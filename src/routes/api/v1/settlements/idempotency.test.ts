@@ -5,6 +5,7 @@ import {
   createCaller,
   createInProcessFetch,
   errorCode,
+  errorDetailCode,
 } from "$lib/testing/api";
 import {
   createTestToken,
@@ -93,6 +94,7 @@ describe("POST /api/v1/settlements with an idempotency key", () => {
     const other = await pay({ idempotencyKey: KEY, amountMinor: 6000 });
     expect(other.res.status).toBe(409);
     expect(errorCode(other)).toBe("conflict");
+    expect(errorDetailCode(other)).toBe("idempotency_key_reused");
     const short = await pay({ idempotencyKey: "short" });
     expect(short.res.status).toBe(400);
     expect(await count()).toBe(1);

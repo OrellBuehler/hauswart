@@ -12,6 +12,7 @@
   } from "$lib/api/enums";
   import type { Asset } from "$lib/api/schemas/assets";
   import type { CostBook } from "$lib/api/schemas/cost-books";
+  import type { CostTag } from "$lib/api/schemas/cost-tags";
   import { COST_NOTES_MAX, COST_TITLE_MAX } from "$lib/api/schemas/costs";
   import type {
     AcceptFinanceSuggestionRequest,
@@ -40,6 +41,7 @@
   import { m } from "$lib/paraglide/messages";
   import BookPicker from "./book-picker.svelte";
   import SplitEditor from "./split-editor.svelte";
+  import TagPicker from "./tag-picker.svelte";
 
   let {
     open = $bindable(false),
@@ -48,16 +50,19 @@
     assets,
     people,
     books,
+    tags,
     currentUserId,
     onaccept,
   }: {
     open?: boolean;
-    suggestion: FinanceSuggestion;
+    suggestion: Exclude<FinanceSuggestion, { kind: "link" }>;
     rooms: Room[];
     assets: Asset[];
     people: DirectoryUser[];
     /** Every cost book; the suggestion goes to one that takes entries. */
     books: CostBook[];
+    /** Every cost tag, for the tags of the entry that is booked. */
+    tags: CostTag[];
     currentUserId: string;
     /** Books the suggestion with the overrides; a thrown API error is shown in the dialog. */
     onaccept: (body: AcceptFinanceSuggestionRequest) => Promise<void>;
@@ -100,6 +105,7 @@
   );
   let countsTouched = $state(false);
   let deductible = $state<CostDeductible>("unknown");
+  let tagIds = $state<string[]>([]);
   let assetKind = $state<AssetKind>("device");
 
   const categoryOptions = COST_CATEGORIES.map((c) => ({
@@ -201,6 +207,7 @@
         body.countsAsExpense = countsAsExpense;
       }
       if (taxApplies && deductible !== "unknown") body.deductible = deductible;
+      if (tagIds.length > 0) body.tagIds = tagIds;
     }
     await onaccept(body);
   }
@@ -400,6 +407,8 @@
         {/snippet}
       </Field>
     {/if}
+
+    <TagPicker id="accept-tags" {tags} bind:value={tagIds} creatable />
 
     <Field id="accept-notes" label={m.cost_notes()} optional>
       {#snippet children({ describedby, invalid })}

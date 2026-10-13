@@ -12,9 +12,10 @@ import { getHousehold } from "$lib/server/household/household";
 import type { ServiceContext } from "$lib/server/service";
 import { clockAt } from "$lib/server/tasks/evaluator";
 import { getCostBookRow } from "./books";
-import { yearRange } from "./costs";
+import { hasTag, yearRange } from "./costs";
 import { bookEntry, newLedger, personBalances } from "./ledger";
 import type { Share } from "./split";
+import { getCostTagRow } from "./tags";
 
 type Db = Pick<ServiceContext, "db">;
 
@@ -82,7 +83,8 @@ const bump = (map: Map<string, Tally>, key: string, amount: number) => {
  * count entries in the household currency that count as an expense;
  * settlement covers every split entry with a payer (it is about who paid,
  * not about what is an expense). With an `assetId` or a `bookId` only the
- * entries of that asset or book are counted, all of it; a `bookId` that names no book is a 404. The tax classes count
+ * entries of that asset or book are counted, all of it; a `bookId` that names no book is a 404, and so is a `tagId`
+ * that names no tag (with one, only the entries that carry the tag are counted). The tax classes count
  * the entries of books that are tax relevant only, since the class means
  * nothing elsewhere. Recorded payments (settlements) are not part of a year:
  * the running balance with them is `costBalances`.
@@ -90,16 +92,18 @@ const bump = (map: Map<string, Tally>, key: string, amount: number) => {
 export function costsSummary(
   ctx: Db,
   year: number,
-  filter: { assetId?: string; bookId?: string } = {},
+  filter: { assetId?: string; bookId?: string; tagId?: string } = {},
 ): CostsSummary {
   const { currency } = getHousehold(ctx);
   if (filter.bookId) getCostBookRow(ctx, filter.bookId);
+  if (filter.tagId) getCostTagRow(ctx, filter.tagId);
   const { from, to } = yearRange(year);
   const inYear = and(
     sql`${costEntries.date} >= ${from}`,
     sql`${costEntries.date} <= ${to}`,
     filter.assetId ? eq(costEntries.assetId, filter.assetId) : undefined,
     filter.bookId ? eq(costEntries.bookId, filter.bookId) : undefined,
+    filter.tagId ? hasTag(filter.tagId) : undefined,
   );
   const entries = ctx.db
     .select({

@@ -70,6 +70,8 @@ const costRow = (c: CostEntry) => ({
   room: c.roomName,
   defect:
     c.defectNumber === null ? null : `#${c.defectNumber} ${c.defectTitle}`,
+  tags: c.tags.length ? c.tags.map((t) => t.name) : null,
+  source: c.source === "manual" ? null : c.source,
   countsAsExpense: c.countsAsExpense ? null : false,
   deductible: c.deductible === "unknown" ? null : c.deductible,
   needsReview: c.reviewNeeded ? true : null,
@@ -81,7 +83,7 @@ export const listCosts = defineTool({
   name: "list_costs",
   title: "List costs",
   description:
-    "Cost entries of the household's books (the apartment, groceries and everyday spending, the car ...), newest first. Amounts are decimals in the entry's currency: positive = expense, negative = refund. Filters: book (a name or id, see list_cost_books), year or from/to, category, asset and room (id or name), paidBy (me, a name or id), q (text in title, payee, notes), reviewNeeded (true: only the entries a person still has to review, such as those booked from a receipt of the receipt queue; they carry needsReview). Totals and who owes whom are in cost_summary and get_balances.",
+    "Cost entries of the household's books (the apartment, groceries and everyday spending, the car ...), newest first. Amounts are decimals in the entry's currency: positive = expense, negative = refund. Filters: book (a name or id, see list_cost_books), year or from/to, category, asset and room (id or name), paidBy (me, a name or id), tag (a tag name or id, see list_cost_tags), q (text in title, payee, notes), reviewNeeded (true: only the entries a person still has to review, such as those booked from a receipt of the receipt queue; they carry needsReview). Entries with source recurring were booked by a recurring cost (list_cost_recurrences) and finance_transaction or finance_bill ones from a finance app; the others were entered by hand. Totals and who owes whom are in cost_summary and get_balances.",
   mode: "read",
   input: {
     book: z.string().min(1).max(64).optional(),
@@ -92,17 +94,22 @@ export const listCosts = defineTool({
     asset: z.string().min(1).max(120).optional(),
     room: z.string().min(1).max(100).optional(),
     paidBy: z.string().min(1).max(100).optional(),
+    tag: z.string().min(1).max(40).optional(),
     q: z.string().trim().min(1).max(100).optional(),
     reviewNeeded: z.boolean().optional(),
     limit: z.number().int().min(1).max(100).default(30),
     cursor: z.string().min(1).max(512).optional(),
   },
-  async handler({ book, asset, room, paidBy, reviewNeeded, ...rest }, ctx) {
-    const [b, a, r, p] = await Promise.all([
+  async handler(
+    { book, asset, room, paidBy, tag, reviewNeeded, ...rest },
+    ctx,
+  ) {
+    const [b, a, r, p, t] = await Promise.all([
       book ? ctx.resolveBook(book) : undefined,
       asset ? ctx.resolveAsset(asset) : undefined,
       room ? ctx.resolveRoom(room) : undefined,
       paidBy ? ctx.resolveUser(paidBy) : undefined,
+      tag ? ctx.resolveTag(tag) : undefined,
     ]);
     const page = await ctx.api.call(endpoints.costsList, {
       query: {
@@ -110,6 +117,7 @@ export const listCosts = defineTool({
         bookId: b?.id,
         assetId: a?.id,
         roomId: r?.id,
+        tagId: t?.id,
         paidBy: p,
         reviewNeeded:
           reviewNeeded === undefined
@@ -130,23 +138,25 @@ export const costSummary = defineTool({
   name: "cost_summary",
   title: "Costs of a year",
   description:
-    "What a year cost: expense total (mortgage repayments are equity and counted separately), per category, per month, the assets with the highest costs, the tax classes (maintenance = deductible, investment = not; only books that are tax relevant have them), and the settlement of the year between the people (who paid what, who owes whom; recorded payments are not part of it, get_balances has the running balance with them). Default year: the current one. With asset (id, name or a vehicle's plate) or book (name or id) everything is that asset's or book's alone.",
+    "What a year cost: expense total (mortgage repayments are equity and counted separately), per category, per month, the assets with the highest costs, the tax classes (maintenance = deductible, investment = not; only books that are tax relevant have them), and the settlement of the year between the people (who paid what, who owes whom; recorded payments are not part of it, get_balances has the running balance with them). Default year: the current one. With asset (id, name or a vehicle's plate), book (name or id) or tag (name or id, see list_cost_tags) everything is that asset's, book's or tag's alone.",
   mode: "read",
   input: {
     year: z.number().int().min(1990).max(2200).optional(),
     asset: z.string().min(1).max(120).optional(),
     book: z.string().min(1).max(64).optional(),
+    tag: z.string().min(1).max(40).optional(),
   },
-  async handler({ year, asset, book }, ctx) {
-    const [a, b] = await Promise.all([
+  async handler({ year, asset, book, tag }, ctx) {
+    const [a, b, t] = await Promise.all([
       asset ? ctx.resolveAsset(asset) : undefined,
       book ? ctx.resolveBook(book) : undefined,
+      tag ? ctx.resolveTag(tag) : undefined,
     ]);
     const s = await ctx.api.call(endpoints.costsSummary, {
-      query: { year, assetId: a?.id, bookId: b?.id },
+      query: { year, assetId: a?.id, bookId: b?.id, tagId: t?.id },
     });
     const m = (n: number) => money(n, s.currency);
-    const scope = [b?.name, a?.name].filter(Boolean).join(", ");
+    const scope = [b?.name, a?.name, t?.name].filter(Boolean).join(", ");
     return {
       summary: `${s.year}${scope ? ` (${scope})` : ""}: ${m(s.expenseTotalMinor)} in expenses${
         s.settlement.length
@@ -198,7 +208,7 @@ export const createCost = defineTool({
   name: "create_cost",
   title: "Book a cost",
   description:
-    "Books an expense (or, with a negative amount, a refund). amount is a decimal such as '123.45' in the household currency unless currency is given. category is required. book is the cost book by name or id (list_cost_books; the default book when omitted). paidBy defaults to the token's user. split is 'ownership' (by the people's ownership shares), 'equal' or 'none' (not shared); omitted, the book's own default applies. participants (names, ids or 'me') split the amount equally among those members only, e.g. dinner for two of three; it implies 'equal'. date defaults to today. asset and room can be given by name. deductible: maintenance (value-preserving, tax deductible) or investment (value-increasing), only in books that are tax relevant; countsAsExpense is false for mortgage repayments by default. Check list_costs first to avoid booking twice. Working on a task of the receipt queue: pass its id as receiptTaskId.",
+    "Books an expense (or, with a negative amount, a refund). amount is a decimal such as '123.45' in the household currency unless currency is given. category is required. book is the cost book by name or id (list_cost_books; the default book when omitted). paidBy defaults to the token's user. split is 'ownership' (by the people's ownership shares), 'equal' or 'none' (not shared); omitted, the book's own default applies. participants (names, ids or 'me') split the amount equally among those members only, e.g. dinner for two of three; it implies 'equal'. date defaults to today. asset and room can be given by name. deductible: maintenance (value-preserving, tax deductible) or investment (value-increasing), only in books that are tax relevant; countsAsExpense is false for mortgage repayments by default. tags are tag names or ids (list_cost_tags); an unknown tag is an error, nothing is booked. Check list_costs first to avoid booking twice. Working on a task of the receipt queue: pass its id as receiptTaskId.",
   mode: "create",
   scopes: ["costs:write"],
   input: {
@@ -223,6 +233,7 @@ export const createCost = defineTool({
     book: z.string().min(1).max(64).optional(),
     split: z.enum(["ownership", "equal", "none"]).optional(),
     participants: z.array(z.string().min(1).max(100)).min(1).max(20).optional(),
+    tags: z.array(z.string().min(1).max(40)).max(10).optional(),
     deductible: z.enum(COST_DEDUCTIBLE).optional(),
     countsAsExpense: z.boolean().optional(),
     receiptTaskId,
@@ -236,11 +247,12 @@ export const createCost = defineTool({
       book,
       split,
       participants,
+      tags,
       currency,
       ...rest
     } = args;
     const amountMinor = toMinor(amount, currency ?? ctx.household.currency);
-    const [a, r, p, b, who] = await Promise.all([
+    const [a, r, p, b, who, labels] = await Promise.all([
       asset ? ctx.resolveAsset(asset) : undefined,
       room ? ctx.resolveRoom(room) : undefined,
       paidBy ? ctx.resolveUser(paidBy) : ctx.me.id,
@@ -248,6 +260,7 @@ export const createCost = defineTool({
       participants
         ? Promise.all(participants.map((x) => ctx.resolveUser(x)))
         : undefined,
+      tags ? Promise.all(tags.map((x) => ctx.resolveTag(x))) : undefined,
     ]);
     const cost = await ctx.api.call(endpoints.costsCreate, {
       body: {
@@ -260,6 +273,7 @@ export const createCost = defineTool({
         bookId: b?.id,
         splitMode: split ?? (who ? "equal" : undefined),
         participantIds: who,
+        tagIds: labels?.map((t) => t.id),
         idempotencyKey: ctx.newKey(),
       },
     });

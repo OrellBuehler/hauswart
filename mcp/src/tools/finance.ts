@@ -19,7 +19,11 @@ const suggestionId = z
   .describe("Suggestion id, from list_finance_suggestions");
 
 const titleOf = (s: FinanceSuggestion) =>
-  s.kind === "asset" ? s.payload.name : s.payload.title;
+  s.kind === "asset"
+    ? s.payload.name
+    : s.kind === "link"
+      ? s.payload.transaction.title
+      : s.payload.title;
 
 /** One suggestion as the model reads it: amounts as decimals, the finance app's address only for its owner (the API never sends anybody else's). */
 const suggestionRow = (s: FinanceSuggestion) => {
@@ -61,6 +65,30 @@ const suggestionRow = (s: FinanceSuggestion) => {
             : money(s.payload.amountMinor, s.payload.currency),
         url: s.payload.url,
       };
+    case "link":
+      return {
+        ...base,
+        transaction: s.payload.transaction.title,
+        date: s.payload.transaction.date,
+        amount: money(
+          s.payload.transaction.amountMinor,
+          s.payload.transaction.currency,
+        ),
+        payee: s.payload.transaction.payee,
+        entry: s.payload.entry
+          ? {
+              id: s.payload.entry.id,
+              title: s.payload.entry.title,
+              date: s.payload.entry.date,
+              amount: money(
+                s.payload.entry.amountMinor,
+                s.payload.entry.currency,
+              ),
+              book: s.payload.entry.bookName,
+            }
+          : null,
+        url: s.payload.transaction.url,
+      };
   }
 };
 
@@ -68,7 +96,7 @@ export const listFinanceSuggestions = defineTool({
   name: "list_finance_suggestions",
   title: "List finance suggestions",
   description:
-    "The token user's own inbox from the connected finance app (private: nobody else's suggestions are ever listed). Three kinds: 'cost' (an expense or refund that could be booked as a cost entry), 'asset' (a purchase that could become a device) and 'bill_task' (a bill that could become a payment task). Default: the ones waiting for a decision (status pending), newest first. Decide with accept_finance_suggestion or dismiss_finance_suggestion; sync_finance fetches new ones.",
+    "The token user's own inbox from the connected finance app (private: nobody else's suggestions are ever listed). Four kinds: 'cost' (an expense or refund that could be booked as a cost entry), 'asset' (a purchase that could become a device), 'bill_task' (a bill that could become a payment task) and 'link' (a transaction that looks like a cost entry somebody booked by hand: same amount, within 3 days, similar text, paid by the token's user; accepting it ties that entry to the transaction instead of booking a second one, dismissing it offers the transaction as a normal 'cost'). Default: the ones waiting for a decision (status pending), newest first. Decide with accept_finance_suggestion or dismiss_finance_suggestion; sync_finance fetches new ones.",
   mode: "read",
   input: {
     kind: z.enum(FINANCE_SUGGESTION_KINDS).optional(),
@@ -108,7 +136,7 @@ export const acceptFinanceSuggestion = defineTool({
   name: "accept_finance_suggestion",
   title: "Accept a finance suggestion",
   description:
-    "Turns one of the token user's pending suggestions into what it offers: a cost entry (paid by the token's user, in the default cost book and split as that book says), a device, or a payment task for a bill. Without overrides it is taken exactly as the finance app reported it; an accepted cost is never booked twice. Overrides for a 'cost': title, book (name or id, see list_cost_books), category, notes, asset and room (by name), paidBy, split (ownership, equal or none), participants (members the amount is split equally among), deductible (tax relevant books only), countsAsExpense, receiptTaskId (the receipt task you are booking it for, see create_cost). For an 'asset': name, assetKind, room. For a 'bill_task': title. An override of another kind is rejected. Deciding twice is a conflict. Look at list_finance_suggestions first.",
+    "Turns one of the token user's pending suggestions into what it offers: a cost entry (paid by the token's user, in the default cost book and split as that book says), a device, a payment task for a bill, or, for a 'link', nothing new: the cost entry it names remembers the transaction (no overrides allowed; entity is that entry). Without overrides it is taken exactly as the finance app reported it; an accepted cost is never booked twice. Overrides for a 'cost': title, book (name or id, see list_cost_books), category, notes, asset and room (by name), paidBy, split (ownership, equal or none), participants (members the amount is split equally among), tags (names or ids, see list_cost_tags), deductible (tax relevant books only), countsAsExpense, receiptTaskId (the receipt task you are booking it for, see create_cost). For an 'asset': name, assetKind, room. For a 'bill_task': title. An override of another kind is rejected. Deciding twice is a conflict. Look at list_finance_suggestions first.",
   mode: "create",
   scopes: ["costs:write"],
   input: {
@@ -122,6 +150,7 @@ export const acceptFinanceSuggestion = defineTool({
     paidBy: z.string().min(1).max(100).optional(),
     split: z.enum(["ownership", "equal", "none"]).optional(),
     participants: z.array(z.string().min(1).max(100)).min(1).max(20).optional(),
+    tags: z.array(z.string().min(1).max(40)).max(10).optional(),
     deductible: z.enum(COST_DEDUCTIBLE).optional(),
     countsAsExpense: z.boolean().optional(),
     name: z.string().trim().min(1).max(120).optional(),
@@ -129,10 +158,10 @@ export const acceptFinanceSuggestion = defineTool({
     receiptTaskId,
   },
   async handler(
-    { id, asset, room, paidBy, split, book, participants, ...rest },
+    { id, asset, room, paidBy, split, book, participants, tags, ...rest },
     ctx,
   ) {
-    const [a, r, p, b, who] = await Promise.all([
+    const [a, r, p, b, who, labels] = await Promise.all([
       asset ? ctx.resolveAsset(asset) : undefined,
       room ? ctx.resolveRoom(room) : undefined,
       paidBy ? ctx.resolveUser(paidBy) : undefined,
@@ -140,6 +169,7 @@ export const acceptFinanceSuggestion = defineTool({
       participants
         ? Promise.all(participants.map((x) => ctx.resolveUser(x)))
         : undefined,
+      tags ? Promise.all(tags.map((x) => ctx.resolveTag(x))) : undefined,
     ]);
     const { suggestion, entity } = await ctx.api.call(
       endpoints.financeSuggestionsAccept,
@@ -153,11 +183,15 @@ export const acceptFinanceSuggestion = defineTool({
           bookId: b?.id,
           splitMode: split ?? (who ? "equal" : undefined),
           participantIds: who,
+          tagIds: labels?.map((t) => t.id),
         },
       },
     );
     return {
-      summary: `Accepted "${titleOf(suggestion)}": created ${ENTITY_NOUN[entity.type]} ${entity.id}.`,
+      summary:
+        suggestion.kind === "link"
+          ? `Accepted "${titleOf(suggestion)}": tied it to cost entry ${entity.id}, nothing new was booked.`
+          : `Accepted "${titleOf(suggestion)}": created ${ENTITY_NOUN[entity.type]} ${entity.id}.`,
       data: { entity, suggestion: suggestionRow(suggestion) },
     };
   },
@@ -167,7 +201,7 @@ export const dismissFinanceSuggestion = defineTool({
   name: "dismiss_finance_suggestion",
   title: "Dismiss a finance suggestion",
   description:
-    "Rejects one of the token user's pending suggestions for good: it is never offered again, even when the finance app changes the item, and this cannot be undone. Dismissing one that is dismissed already changes nothing; an accepted one is a conflict.",
+    "Rejects one of the token user's pending suggestions for good: it is never offered again, even when the finance app changes the item, and this cannot be undone. The exception is a 'link': dismissing it says 'not that entry', so its transaction comes back as a normal 'cost' suggestion. Dismissing one that is dismissed already changes nothing; an accepted one is a conflict.",
   mode: "undo",
   scopes: ["costs:write"],
   input: { id: suggestionId },
@@ -185,6 +219,8 @@ export const dismissFinanceSuggestion = defineTool({
 /** What a sync counts, by the names the API reports; zeros are left out of the summary. */
 const STAT_TEXT: Record<string, (n: number) => string> = {
   suggestions: (n) => plural(n, "new suggestion"),
+  linkSuggestions: (n) =>
+    plural(n, "transaction matching an entry made by hand"),
   assetSuggestions: (n) => plural(n, "new device suggestion"),
   autoAccepted: (n) => `${n} booked automatically`,
   tasksCreated: (n) => plural(n, "payment task") + " created",

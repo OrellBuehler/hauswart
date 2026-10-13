@@ -51,16 +51,19 @@ export function wireCost(
     paidByName: c.paidByName,
     splitMode: c.splitMode,
     shares: c.shares,
+    tags: c.tags,
     countsAsExpense: c.countsAsExpense,
     deductible: c.deductible,
     source: c.source,
     // The address of the item in the person's own finance app is theirs alone.
     providerUrl: c.createdBy === viewerId ? c.providerUrl : null,
     fuelLogId: c.fuelLogId,
+    financeLinked: c.providerRef !== null,
     reviewNeeded: c.reviewNeeded,
     reviewedAt: c.reviewedAt ? toIso(c.reviewedAt) : null,
     reviewedByUserId: c.reviewedByUserId,
     receiptTaskId: c.aiTaskId,
+    recurrenceId: c.recurrenceId,
     commentCount: c.commentCount,
     createdBy: c.createdBy,
     createdAt: toIso(c.createdAt),
@@ -93,7 +96,11 @@ export const update: Handler<typeof endpoints.costsUpdate> = ({
   ctx,
   params,
   body,
-}) => wireCost(updateCost(ctx, params.id, body), ctx.user.id);
+}) =>
+  wireCost(
+    updateCost(ctx, params.id, body, { userId: ctx.user.id }),
+    ctx.user.id,
+  );
 
 export const remove: Handler<typeof endpoints.costsDelete> = ({
   ctx,
@@ -120,6 +127,7 @@ export const summary: Handler<typeof endpoints.costsSummary> = ({
   costsSummary(ctx, query.year ?? yearOf(ctx.today), {
     assetId: query.assetId,
     bookId: query.bookId,
+    tagId: query.tagId,
   });
 
 export const recentCategoryCounts: Handler<
@@ -148,10 +156,13 @@ export const exportCsv: Handler<typeof endpoints.costsExport> = ({
   const name = book
     ? `hauswart-costs-${year}-${book.slug}`
     : `hauswart-costs-${year}`;
-  return new Response(costsCsv(ctx, year, { bookId: query.bookId }), {
-    headers: {
-      "content-type": "text/csv; charset=utf-8",
-      "content-disposition": `attachment; filename="${name}.csv"`,
+  return new Response(
+    costsCsv(ctx, year, { bookId: query.bookId, tagId: query.tagId }),
+    {
+      headers: {
+        "content-type": "text/csv; charset=utf-8",
+        "content-disposition": `attachment; filename="${name}.csv"`,
+      },
     },
-  });
+  );
 };

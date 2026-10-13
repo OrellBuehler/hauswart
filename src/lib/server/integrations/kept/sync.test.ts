@@ -13,7 +13,13 @@ import {
 import type { Minor } from "$lib/money";
 import { getConnectionRow } from "$lib/server/connections/connections";
 import { defaultCostBook } from "$lib/server/costs/books";
-import { deleteCost, getCost, updateCost } from "$lib/server/costs/costs";
+import { createCostRequestSchema } from "$lib/api/schemas/costs";
+import {
+  createCost,
+  deleteCost,
+  getCost,
+  updateCost,
+} from "$lib/server/costs/costs";
 import {
   acceptSuggestion,
   dismissSuggestion,
@@ -1125,6 +1131,285 @@ describe("Kept sync", () => {
       await run(user.id);
       expect(fake.links).toHaveLength(1);
       expect(fake.links[0].label).toBe("Anders");
+    });
+  });
+
+  describe("entries somebody booked by hand", () => {
+    const byHand = (userId: string, over: Record<string, unknown> = {}) =>
+      createCost(
+        ctx(),
+        createCostRequestSchema.parse({
+          title: "Pumpe",
+          amountMinor: 5000,
+          category: "repair",
+          date: "2026-05-13",
+          paidByUserId: userId,
+          splitMode: "none",
+          ...over,
+        }),
+        userId,
+      );
+    const links = (userId: string) =>
+      listSuggestions(
+        ctx(),
+        userId,
+        { kind: "link", status: "pending" },
+        { limit: 50 },
+      ).items;
+    const pumpe = () =>
+      tx({
+        id: "t1",
+        amount: -5000,
+        description: "Pumpe ersetzt",
+        counterpartyName: "Muster AG",
+        bookingDate: "2026-05-12",
+      });
+
+    it("offers a transaction that looks like such an entry as a link to it, not as a cost", async () => {
+      const { user } = await setup();
+      const entry = byHand(user.id);
+      fake.transactions = [pumpe(), tx({ id: "t2", amount: -777 })];
+      const result = await run(user.id);
+      expect(result).toMatchObject({
+        ok: true,
+        stats: { suggestions: 1, linkSuggestions: 1, autoAccepted: 0 },
+      });
+      expect(pending(user.id, "cost").map((r) => r.providerRef)).toEqual([
+        "tx:t2",
+      ]);
+      const [link] = links(user.id);
+      expect(link.providerRef).toBe("tx:t1");
+      expect(payload(link)).toMatchObject({
+        entryId: entry.id,
+        transaction: { amountMinor: 5000, title: "Pumpe ersetzt" },
+      });
+      // Seeing it again changes nothing.
+      expect((await run(user.id)).stats).toMatchObject({
+        suggestions: 0,
+        linkSuggestions: 0,
+      });
+      expect(links(user.id)).toHaveLength(1);
+    });
+
+    it("does not book it by itself in an automatic category: the person decides", async () => {
+      const { user } = await setup({
+        ...CONFIG,
+        autoAcceptCategoryIds: ["cat-repair"],
+      });
+      byHand(user.id);
+      fake.transactions = [pumpe(), tx({ id: "t2", amount: -777 })];
+      const result = await run(user.id);
+      expect(result.stats).toMatchObject({
+        linkSuggestions: 1,
+        autoAccepted: 1,
+        suggestions: 0,
+      });
+      expect(links(user.id)).toHaveLength(1);
+      expect(test.db.select().from(costEntries).all()).toHaveLength(2);
+      expect(
+        test.db
+          .select()
+          .from(costEntries)
+          .all()
+          .filter((e) => e.providerRef !== null)
+          .map((e) => e.providerRef),
+      ).toEqual(["tx:t2"]);
+    });
+
+    it("ties the entry on accepting, writes the link in Kept to it and books nothing twice", async () => {
+      const { user } = await setup();
+      const entry = byHand(user.id);
+      fake.transactions = [pumpe()];
+      await run(user.id);
+      const accepted = await acceptSuggestion(
+        ctx(),
+        user.id,
+        links(user.id)[0].id,
+        {},
+      );
+      expect(accepted.entity).toEqual({ type: "cost", id: entry.id });
+      const result = await run(user.id);
+      expect(result.stats).toMatchObject({
+        linksWritten: 1,
+        suggestions: 0,
+        linkSuggestions: 0,
+      });
+      expect(fake.links).toHaveLength(1);
+      expect(fake.links[0]).toMatchObject({
+        entityType: "transaction",
+        entityId: "t1",
+        source: "hauswart",
+        label: "Pumpe",
+        url: `${ORIGIN}/costs/${entry.id}`,
+      });
+      expect(test.db.select().from(costEntries).all()).toHaveLength(1);
+      expect(pending(user.id)).toEqual([]);
+      // Reading the transaction again (it changed in Kept) does not offer it a second time.
+      fake.transactions = [
+        { ...pumpe(), updatedAt: "2026-09-30T10:00:00.000Z" },
+      ];
+      await run(user.id);
+      expect(pending(user.id)).toEqual([]);
+      expect(test.db.select().from(costEntries).all()).toHaveLength(1);
+    });
+
+    it("offers the transaction as a cost after all when the link is dismissed, and stays with that", async () => {
+      const { user } = await setup();
+      byHand(user.id);
+      fake.transactions = [pumpe()];
+      await run(user.id);
+      dismissSuggestion(ctx(), user.id, links(user.id)[0].id);
+      expect(pending(user.id, "cost").map((r) => r.providerRef)).toEqual([
+        "tx:t1",
+      ]);
+      fake.transactions = [
+        { ...pumpe(), updatedAt: "2026-09-30T10:00:00.000Z" },
+      ];
+      const result = await run(user.id);
+      expect(result.stats).toMatchObject({
+        linkSuggestions: 0,
+        suggestions: 0,
+      });
+      expect(links(user.id)).toEqual([]);
+      expect(pending(user.id, "cost")).toHaveLength(1);
+    });
+
+    it("books a payment once when its invoice was linked to an entry first: the transaction that pays it arrives dismissed", async () => {
+      const { user } = await setup({
+        ...CONFIG,
+        billCostCategory: "utilities",
+      });
+      byHand(user.id, {
+        title: "Rechnung Strom",
+        payee: "Beispiel Energie AG",
+        amountMinor: 33000,
+        category: "utilities",
+        date: "2026-04-21",
+      });
+      fake.bills = [
+        fakeBill({
+          id: "b1",
+          status: "paid",
+          creditorName: "Beispiel Energie AG",
+          invoiceNumber: "E-55",
+          amount: 33000,
+          remainingAmount: 0,
+          lastPaymentDate: "2026-04-20",
+        }),
+      ];
+      await run(user.id);
+      await acceptSuggestion(ctx(), user.id, links(user.id)[0].id, {});
+      fake.transactions = [
+        tx({
+          id: "t1",
+          categoryId: "cat-utilities",
+          amount: -33000,
+          billIds: ["b1"],
+          counterpartyName: "Beispiel Energie AG",
+          bookingDate: "2026-04-20",
+        }),
+      ];
+      const result = await run(user.id);
+      expect(result.stats).toMatchObject({
+        suggestions: 0,
+        linkSuggestions: 0,
+        skipped: 1,
+      });
+      expect(pending(user.id)).toEqual([]);
+      expect(test.db.select().from(costEntries).all()).toHaveLength(1);
+    });
+
+    it("withdraws a pending link made from a bill when the transaction that pays it shows up, and links that instead", async () => {
+      const { user } = await setup({
+        ...CONFIG,
+        billCostCategory: "utilities",
+      });
+      const entry = byHand(user.id, {
+        title: "Rechnung Strom",
+        payee: "Beispiel Energie AG",
+        amountMinor: 33000,
+        category: "utilities",
+        date: "2026-04-21",
+      });
+      fake.bills = [
+        fakeBill({
+          id: "b1",
+          status: "paid",
+          creditorName: "Beispiel Energie AG",
+          amount: 33000,
+          remainingAmount: 0,
+          lastPaymentDate: "2026-04-20",
+        }),
+      ];
+      await run(user.id);
+      expect(links(user.id).map((r) => r.providerRef)).toEqual(["bill:b1"]);
+      fake.transactions = [
+        tx({
+          id: "t1",
+          categoryId: "cat-utilities",
+          amount: -33000,
+          billIds: ["b1"],
+          counterpartyName: "Beispiel Energie AG",
+          bookingDate: "2026-04-20",
+          updatedAt: "2026-09-21T10:00:00.000Z",
+        }),
+      ];
+      await run(user.id);
+      const [link] = links(user.id);
+      expect(link.providerRef).toBe("tx:t1");
+      expect(payload(link)).toMatchObject({ entryId: entry.id });
+      expect(links(user.id)).toHaveLength(1);
+    });
+
+    it("links a paid invoice to an entry, and writes the link in Kept on the bill", async () => {
+      const { user } = await setup({
+        ...CONFIG,
+        billCostCategory: "utilities",
+      });
+      const entry = byHand(user.id, {
+        title: "Rechnung Strom",
+        payee: "Beispiel Energie AG",
+        amountMinor: 33000,
+        category: "utilities",
+        date: "2026-04-21",
+      });
+      fake.bills = [
+        fakeBill({
+          id: "b1",
+          status: "paid",
+          creditorName: "Beispiel Energie AG",
+          invoiceNumber: "E-55",
+          amount: 33000,
+          remainingAmount: 0,
+          lastPaymentDate: "2026-04-20",
+        }),
+      ];
+      const result = await run(user.id);
+      expect(result.stats).toMatchObject({
+        linkSuggestions: 1,
+        suggestions: 0,
+      });
+      const [link] = links(user.id);
+      expect(link.providerRef).toBe("bill:b1");
+      await acceptSuggestion(ctx(), user.id, link.id, {});
+      await run(user.id);
+      expect(fake.links[0]).toMatchObject({
+        entityType: "bill",
+        entityId: "b1",
+        url: `${ORIGIN}/costs/${entry.id}`,
+      });
+    });
+
+    it("does not link an entry that somebody else paid, nor offer another person's transaction to it", async () => {
+      const { user } = await setup();
+      const ben = await createTestUser({ displayName: "Ben" });
+      byHand(user.id, { paidByUserId: ben.id });
+      fake.transactions = [pumpe()];
+      await run(user.id);
+      expect(links(user.id)).toEqual([]);
+      expect(pending(user.id, "cost").map((r) => r.providerRef)).toEqual([
+        "tx:t1",
+      ]);
     });
   });
 

@@ -28,6 +28,11 @@ export interface DomainEvents {
     ctx: Pick<ServiceContext, "db">;
     connectionId: string;
   };
+  /** A cost entry was deleted (inside the deleting transaction): what pointed at it can let go. */
+  costEntryDeleted: {
+    ctx: Pick<ServiceContext, "db" | "now">;
+    costId: string;
+  };
   /** A calendar target was created, changed or switched on: it is synced soon. */
   calendarTargetChanged: {
     ctx: Pick<ServiceContext, "db">;
@@ -52,6 +57,7 @@ const listeners: { [K in keyof DomainEvents]: Set<Listener<K>> } = {
   completionRecorded: new Set(),
   completionRevoked: new Set(),
   financeLinksPending: new Set(),
+  costEntryDeleted: new Set(),
   calendarTargetChanged: new Set(),
 };
 
