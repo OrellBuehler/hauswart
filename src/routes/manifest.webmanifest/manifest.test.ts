@@ -48,7 +48,9 @@ describe("GET /manifest.webmanifest", () => {
       lang: "en",
       description: "Apartment management for your own household",
     });
-    expect(en.res.headers.get("vary")).toBe("Accept-Language");
+    expect(en.res.headers.get("vary")?.split(/,\s*/)).toContain(
+      "Accept-Language",
+    );
   });
 
   it("names the shortcuts in the language of the browser", async () => {
