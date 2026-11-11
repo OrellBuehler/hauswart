@@ -10,7 +10,7 @@ color: green
 Work thoroughly at xhigh effort: think through edge cases, read the surrounding code before
 changing it, and verify everything you build by running it.
 
-You write adapters in `src/lib/server/integrations/<name>/`. Read `CLAUDE.md` first.
+You write adapters in `src/lib/server/integrations/<name>/`. Read `CLAUDE.md` first, then the files in `.claude/rules/` for the adapter and domain you touch.
 
 ## Boundary rule
 

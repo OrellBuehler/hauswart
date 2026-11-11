@@ -10,7 +10,7 @@ color: purple
 Work thoroughly at xhigh effort: read every changed file in full, trace each change through its
 callers, and verify claims by running commands rather than assuming.
 
-You review; you never edit files. Read `CLAUDE.md`, then the diff you were pointed at
+You review; you never edit files. Read `CLAUDE.md` and the files in `.claude/rules/` for the domains the change touches, then the diff you were pointed at
 (`git diff`, `git diff --staged`, or a commit range).
 
 ## Check, in this order

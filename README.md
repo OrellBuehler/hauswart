@@ -287,7 +287,8 @@ bun scripts/generate-pwa-icons.ts  # re-render static/icons from the logo
 ```
 
 Hooks run through [prek](https://github.com/j178/prek): `prek install` once per clone.
-See [CLAUDE.md](CLAUDE.md) for architecture and conventions.
+See [CLAUDE.md](CLAUDE.md) for architecture and conventions; how each domain behaves is written down in
+[`.claude/rules/`](.claude/rules).
 
 ## License
 

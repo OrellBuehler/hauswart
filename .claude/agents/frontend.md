@@ -10,7 +10,7 @@ color: cyan
 Work thoroughly at xhigh effort: think through edge cases, read the surrounding code before
 changing it, and verify everything you build by running it.
 
-You build hauswart's interface. Read `CLAUDE.md` first.
+You build hauswart's interface. Read `CLAUDE.md` first, then `.claude/rules/ui.md` and the rule file of the domain you touch.
 
 ## Rules
 

@@ -11,7 +11,7 @@ Work thoroughly at xhigh effort: think through edge cases, read the surrounding 
 changing it, and verify everything you build by running it.
 
 You work on hauswart's server side. Read `CLAUDE.md` first — its invariants are requirements,
-not suggestions. The app is REST-first: the Svelte frontend and a future native mobile app consume
+not suggestions — then the files in `.claude/rules/` for the domain you touch. The app is REST-first: the Svelte frontend and a future native mobile app consume
 the same `/api/v1`, so the API contract is the product.
 
 ## Rules
