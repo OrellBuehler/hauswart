@@ -2,7 +2,7 @@
   import ArrowRightIcon from "@lucide/svelte/icons/arrow-right";
   import { untrack } from "svelte";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
+  import { api } from "#lib/api/browser.ts";
   import {
     CALENDAR_ITEM_KINDS,
     CALENDAR_REMOTE_DELETE_POLICIES,
@@ -13,21 +13,21 @@
     type CalendarItemKind,
     type CalendarProviderKind,
     type UserLocale,
-  } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
+  } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
   import {
     MAX_TARGET_NAME,
     MAX_TITLE_PREFIX,
     type CalendarTarget,
-  } from "$lib/api/schemas/calendar-sync";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import NumberField from "$lib/components/tasks/number-field.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
+  } from "#lib/api/schemas/calendar-sync.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import NumberField from "#lib/components/tasks/number-field.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import { Checkbox } from "#lib/components/ui/checkbox/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
   import {
     alarmsSupported,
     createBody,
@@ -37,19 +37,19 @@
     updateBody,
     validateDraft,
     type TargetDraft,
-  } from "$lib/calendar-sync/form";
-  import { saveFailure } from "$lib/calendar-sync/errors";
+  } from "#lib/calendar-sync/form.ts";
+  import { saveFailure } from "#lib/calendar-sync/errors.ts";
   import {
     calendarKindHints,
     calendarKindLabels,
     remoteDeleteHints,
     remoteDeleteLabels,
     timedModeLabels,
-  } from "$lib/calendar-sync/labels";
-  import { providerName } from "$lib/calendar-sync/providers";
-  import type { ExternalCalendar } from "$lib/connections/types";
-  import { m } from "$lib/paraglide/messages";
-  import { getLocale } from "$lib/paraglide/runtime";
+  } from "#lib/calendar-sync/labels.ts";
+  import { providerName } from "#lib/calendar-sync/providers.ts";
+  import type { ExternalCalendar } from "#lib/connections/types.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
   import CalendarPicker from "./calendar-picker.svelte";
 
   let {

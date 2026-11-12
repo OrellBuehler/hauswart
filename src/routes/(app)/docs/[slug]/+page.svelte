@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { goto, invalidateAll } from "$app/navigation";
-  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
+  import { goto, refreshAll } from "$app/navigation";
+  import { gotoFromOverlay } from "#lib/overlays/use-overlay-history.svelte.ts";
   import { resolve } from "$app/paths";
   import ArchiveIcon from "@lucide/svelte/icons/archive";
   import ArchiveRestoreIcon from "@lucide/svelte/icons/archive-restore";
@@ -18,26 +18,26 @@
   import PinOffIcon from "@lucide/svelte/icons/pin-off";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import Attachments from "$lib/components/attachments/attachments.svelte";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import Comments from "$lib/components/comments/comments.svelte";
-  import DocProse from "$lib/components/docs/doc-prose.svelte";
-  import DocRevisionsSheet from "$lib/components/docs/doc-revisions-sheet.svelte";
-  import DocToc from "$lib/components/docs/doc-toc.svelte";
-  import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { pageErrorMessage } from "$lib/docs/errors";
-  import { docEditHref, docHref, newDocHref } from "$lib/docs/links";
-  import { sectionIcons, sectionLabels } from "$lib/docs/sections";
-  import { formatDateTime } from "$lib/format";
-  import { assetHref, roomHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import Attachments from "#lib/components/attachments/attachments.svelte";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import Comments from "#lib/components/comments/comments.svelte";
+  import DocProse from "#lib/components/docs/doc-prose.svelte";
+  import DocRevisionsSheet from "#lib/components/docs/doc-revisions-sheet.svelte";
+  import DocToc from "#lib/components/docs/doc-toc.svelte";
+  import LinkedDocuments from "#lib/components/documents/linked-documents.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { pageErrorMessage } from "#lib/docs/errors.ts";
+  import { docEditHref, docHref, newDocHref } from "#lib/docs/links.ts";
+  import { sectionIcons, sectionLabels } from "#lib/docs/sections.ts";
+  import { formatDateTime } from "#lib/format.ts";
+  import { assetHref, roomHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -60,9 +60,11 @@
       activeId = null;
       return;
     }
+
     const elements = [...root.querySelectorAll<HTMLElement>("[id]")].filter(
       (el) => /^H[1-6]$/.test(el.tagName),
     );
+
     if (elements.length === 0) return;
     let visible: string[] = [];
     const observer = new IntersectionObserver(
@@ -92,10 +94,10 @@
         body: { rev: page.rev, ...body },
       });
       toast.success(success);
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       toast.error(pageErrorMessage(err));
-      await invalidateAll();
+      await refreshAll();
     } finally {
       busy = false;
     }
@@ -106,7 +108,7 @@
     const { slug, title } = page;
     await api.call(endpoints.pagesDelete, { params: { slug } });
     toast.success(m.docs_deleted_toast({ title }));
-    await gotoFromOverlay(resolve("/docs"), { invalidateAll: true });
+    await gotoFromOverlay(resolve("docs"), { refreshAll: true });
   }
 
   const missingTitle = $derived(
@@ -134,8 +136,8 @@
             <FilePlusIcon />{m.docs_missing_create()}
           </Button>
         {/if}
-        <Button href={resolve("/docs")} variant="outline">{m.nav_docs()}</Button
-        >
+
+        <Button href={resolve("docs")} variant="outline">{m.nav_docs()}</Button>
       {/snippet}
     </EmptyState>
   </div>
@@ -143,7 +145,7 @@
   <div class="flex flex-col gap-6">
     <div class="flex flex-col gap-4">
       <Button
-        href={resolve("/docs")}
+        href={resolve("docs")}
         variant="ghost"
         size="sm"
         class="text-muted-foreground -ms-2 w-fit max-md:hidden"
@@ -158,6 +160,7 @@
             >
               {page.title}
             </h1>
+
             <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5">
               <Badge variant="secondary" class="gap-1.5">
                 {#if SectionIcon}<SectionIcon aria-hidden="true" />{/if}
@@ -234,9 +237,9 @@
                 <DropdownMenu.Item
                   class="min-h-10"
                   onSelect={() => (historyOpen = true)}
+                  ><HistoryIcon />{m.docs_history()}</DropdownMenu.Item
                 >
-                  <HistoryIcon />{m.docs_history()}
-                </DropdownMenu.Item>
+
                 {#if canWrite}
                   <DropdownMenu.Item
                     class="min-h-10"
@@ -277,9 +280,8 @@
                     variant="destructive"
                     class="min-h-10"
                     onSelect={() => (deleteOpen = true)}
+                    ><Trash2Icon />{m.common_delete()}</DropdownMenu.Item
                   >
-                    <Trash2Icon />{m.common_delete()}
-                  </DropdownMenu.Item>
                 {/if}
               </DropdownMenu.Content>
             </DropdownMenu.Root>
@@ -376,7 +378,7 @@
     currentRev={page.rev}
     {canWrite}
     timeZone={data.timeZone}
-    onrestored={() => invalidateAll()}
+    onrestored={() => refreshAll()}
   />
 
   <ConfirmDialog

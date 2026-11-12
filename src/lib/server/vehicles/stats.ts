@@ -1,25 +1,25 @@
 import { and, eq, sql } from "drizzle-orm";
-import type { CostCategory, FuelUnit } from "$lib/api/enums";
-import { yearRange } from "$lib/server/costs/costs";
-import { dateInZone, householdTimeZone } from "$lib/server/config";
-import { costEntries, fuelLogs, odometerReadings } from "$lib/server/db";
-import { getHousehold } from "$lib/server/household/household";
-import type { ServiceContext } from "$lib/server/service";
+import type { CostCategory, FuelUnit } from "#lib/api/enums.ts";
+import { yearRange } from "#lib/server/costs/costs.ts";
+import { dateInZone, householdTimeZone } from "#lib/server/config.ts";
+import { costEntries, fuelLogs, odometerReadings } from "#lib/server/db.ts";
+import { getHousehold } from "#lib/server/household/household.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import {
   getUpcomingTasks,
   type DashboardTaskRecord,
-} from "$lib/server/tasks/dashboard";
+} from "#lib/server/tasks/dashboard.ts";
 import {
   averageConsumption,
   pricePerUnitMinor,
   type Stretch,
-} from "$lib/vehicles/fuel";
+} from "#lib/vehicles/fuel.ts";
 import {
   distanceBetween,
   distanceByMonth,
   monthsBetween,
   round1,
-} from "$lib/vehicles/stats";
+} from "#lib/vehicles/stats.ts";
 import { stretchesOf } from "./fuel-logs";
 import { assertVehicleForRead } from "./kind";
 import { odometerUnitOf } from "./summary";

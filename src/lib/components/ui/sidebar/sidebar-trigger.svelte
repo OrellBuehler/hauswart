@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { cn } from "$lib/utils.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { cn } from "#lib/utils.js";
   import PanelLeftIcon from "@lucide/svelte/icons/panel-left";
   import type { ComponentProps } from "svelte";
   import { useSidebar } from "./context.svelte.js";

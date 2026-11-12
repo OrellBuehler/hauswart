@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { m } from "$lib/paraglide/messages";
-import { countsDto } from "$lib/testing/calendar-targets";
+import { m } from "#lib/paraglide/messages.js";
+import { countsDto } from "#lib/testing/calendar-targets.ts";
 import { statLines, statsSummary } from "./stats";
 
 describe("statLines", () => {

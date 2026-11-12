@@ -1,10 +1,10 @@
 <script lang="ts">
-  import type { UserLocale } from "$lib/api/enums";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import type { UserLocale } from "#lib/api/enums.ts";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     locale,

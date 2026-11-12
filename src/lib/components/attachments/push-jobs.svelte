@@ -5,17 +5,17 @@
   import FileXIcon from "@lucide/svelte/icons/file-x";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import XIcon from "@lucide/svelte/icons/x";
-  import type { AttachmentOwnerType } from "$lib/api/enums";
-  import { Button } from "$lib/components/ui/button/index.js";
+  import type { AttachmentOwnerType } from "#lib/api/enums.ts";
+  import { Button } from "#lib/components/ui/button/index.js";
   import {
     dismissPush,
     isActive,
     pushErrorMessage,
     pushes,
     type PushJob,
-  } from "$lib/documents/pushes.svelte";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/documents/pushes.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     ownerType,

@@ -1,33 +1,33 @@
 import { and, desc, eq, gte, lt, lte, or, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
-import type { ServiceLogKind } from "$lib/api/enums";
+import type { ServiceLogKind } from "#lib/api/enums.ts";
 import type {
   CompletionServiceLogRequest,
   CreateServiceLogRequest,
   UpdateServiceLogRequest,
-} from "$lib/api/schemas/service-log";
-import { minor } from "$lib/money";
-import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
-import { assets, contacts, serviceLog, type DB } from "$lib/server/db";
+} from "#lib/api/schemas/service-log.ts";
+import { minor } from "#lib/money.ts";
+import { removeOwnedAttachments } from "#lib/server/attachments/attachments.ts";
+import { assets, contacts, serviceLog, type DB } from "#lib/server/db.ts";
 import {
   assertNotesOfAsset,
   reopenNotesOf,
   resolveNotes,
-} from "$lib/server/asset-notes/resolve";
-import { commentCountSql } from "$lib/server/comments/counts";
-import { costsOfSql, type CostsOf } from "$lib/server/costs/totals";
-import { getHousehold } from "$lib/server/household/household";
-import { decodeCursor, pageOf } from "$lib/server/pagination";
+} from "#lib/server/asset-notes/resolve.ts";
+import { commentCountSql } from "#lib/server/comments/counts.ts";
+import { costsOfSql, type CostsOf } from "#lib/server/costs/totals.ts";
+import { getHousehold } from "#lib/server/household/household.ts";
+import { decodeCursor, pageOf } from "#lib/server/pagination.ts";
 import {
   invalidField,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
-import { clockAt } from "$lib/server/tasks/evaluator";
+} from "#lib/server/service.ts";
+import { clockAt } from "#lib/server/tasks/evaluator.ts";
 import {
   removeReadingsOfSource,
   writeOdometer,
-} from "$lib/server/vehicles/odometer";
+} from "#lib/server/vehicles/odometer.ts";
 
 type Db = Pick<ServiceContext, "db">;
 type Now = Pick<ServiceContext, "db" | "now">;

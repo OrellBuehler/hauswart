@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Dashboard } from "$lib/api/schemas/dashboard";
-import type { Task } from "$lib/api/schemas/tasks";
+import type { Dashboard } from "#lib/api/schemas/dashboard.ts";
+import type { Task } from "#lib/api/schemas/tasks.ts";
 import { rowFromDashboard, rowFromTask } from "./row";
 
 const task = {

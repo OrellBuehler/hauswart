@@ -7,10 +7,10 @@ import {
   createAppointmentRequestSchema,
   updateAppointmentRequestSchema,
   type Appointment,
-} from "$lib/api/schemas/appointments";
-import { isValidDate, localDateOf, zonedTimeToInstant } from "$lib/dates";
-import { m } from "$lib/paraglide/messages";
-import { issuesToErrors } from "$lib/tasks/field-errors";
+} from "#lib/api/schemas/appointments.ts";
+import { isValidDate, localDateOf, zonedTimeToInstant } from "#lib/dates.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { issuesToErrors } from "#lib/tasks/field-errors.ts";
 import { spanOf, whenOf, type WhenFields } from "./format";
 import { pinnableOccurrenceKey } from "./occurrence";
 import { defaultEnd, whenProblem, type AppointmentWhen } from "./when";

@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
-import { household, HOUSEHOLD_ID } from "$lib/server/db";
-import { ctxAt } from "$lib/testing/domain";
-import { useTestDB } from "$lib/testing/db";
+import { household, HOUSEHOLD_ID } from "#lib/server/db.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import { getHousehold, updateHousehold } from "./household";
 
 describe("household", () => {

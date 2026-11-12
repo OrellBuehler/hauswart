@@ -10,24 +10,24 @@
   import RepeatIcon from "@lucide/svelte/icons/repeat";
   import SquareCheckBigIcon from "@lucide/svelte/icons/square-check-big";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
-  import { goto, invalidateAll } from "$app/navigation";
+  import { goto, refreshAll } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { CostRecurrence } from "$lib/api/schemas/cost-recurrences";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import Fab from "$lib/components/app/fab.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import CostAmount from "$lib/components/costs/cost-amount.svelte";
-  import RecurrenceStatus from "$lib/components/costs/recurrence-status.svelte";
-  import TagChips from "$lib/components/costs/tag-chips.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { categoryLabels } from "$lib/costs/labels";
-  import { RecurrenceControls } from "$lib/costs/recurrence-controls.svelte";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { CostRecurrence } from "#lib/api/schemas/cost-recurrences.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import Fab from "#lib/components/app/fab.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import CostAmount from "#lib/components/costs/cost-amount.svelte";
+  import RecurrenceStatus from "#lib/components/costs/recurrence-status.svelte";
+  import TagChips from "#lib/components/costs/tag-chips.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { categoryLabels } from "#lib/costs/labels.ts";
+  import { RecurrenceControls } from "#lib/costs/recurrence-controls.svelte.ts";
   import {
     clampNote,
     isDue,
@@ -35,10 +35,10 @@
     recurrenceState,
     ruleOf,
     ruleWording,
-  } from "$lib/costs/recurrences";
-  import { formatDay } from "$lib/format";
-  import { invalidateAfterOverlay } from "$lib/overlays/use-overlay-history.svelte";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/costs/recurrences.ts";
+  import { formatDay } from "#lib/format.ts";
+  import { invalidateAfterOverlay } from "#lib/overlays/use-overlay-history.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -59,8 +59,8 @@
   } as const;
 
   const controls = new RecurrenceControls({
-    onchanged: () => invalidateAll(),
-    viewEntry: (id) => void goto(resolve(`/costs/${id}` as "/")),
+    onchanged: () => refreshAll(),
+    viewEntry: (id) => void goto(resolve(`costs/${id}`)),
   });
 
   let deleteOpen = $state(false);
@@ -81,7 +81,7 @@
     await invalidateAfterOverlay();
   }
 
-  const newHref = $derived(resolve("/costs/recurring/new"));
+  const newHref = $derived(resolve("costs/recurring/new"));
 </script>
 
 <svelte:head>
@@ -99,7 +99,7 @@
       <div class="min-w-0 flex-1">
         <h3 class="text-sm font-semibold text-pretty wrap-anywhere">
           <a
-            href={resolve(`/costs/recurring/${recurrence.id}` as "/")}
+            href={resolve(`costs/recurring/${recurrence.id}`)}
             class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 rounded-sm outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
             >{recurrence.title}</a
           >
@@ -142,9 +142,7 @@
             <DropdownMenu.Content align="end">
               <DropdownMenu.Item
                 onclick={() =>
-                  goto(
-                    resolve(`/costs/recurring/${recurrence.id}/edit` as "/"),
-                  )}
+                  goto(resolve(`costs/recurring/${recurrence.id}/edit`))}
               >
                 <PencilIcon />{m.common_edit()}
               </DropdownMenu.Item>
@@ -177,6 +175,7 @@
 
     <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
       <RecurrenceStatus {state} />
+
       <span class="text-muted-foreground tabular-nums">
         {#if state === "finished"}
           {m.recurrence_over()}
@@ -213,7 +212,7 @@
 <div class="flex flex-col gap-6">
   <div class="max-md:hidden">
     <a
-      href={resolve("/costs")}
+      href={resolve("costs")}
       class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -ms-1 inline-flex min-h-10 items-center gap-1.5 rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />

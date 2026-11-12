@@ -1,28 +1,28 @@
 import { isHttpError, isRedirect, type RequestEvent } from "@sveltejs/kit";
 import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it } from "vitest";
-import { createGuestLinkRequestSchema } from "$lib/api/schemas/share";
+import { createGuestLinkRequestSchema } from "#lib/api/schemas/share.ts";
 import {
   SHARE_MISSES_PER_WINDOW,
   SHARE_REQUESTS_PER_MINUTE,
-} from "$lib/server/auth/rate-limit";
-import { guestLinks } from "$lib/server/db";
-import { shutdownMarkdownWorkers } from "$lib/server/docs/markdown-runner";
-import { GUEST_COOKIE } from "$lib/server/share/guest-access";
+} from "#lib/server/auth/rate-limit.ts";
+import { guestLinks } from "#lib/server/db.ts";
+import { shutdownMarkdownWorkers } from "#lib/server/docs/markdown-runner.ts";
+import { GUEST_COOKIE } from "#lib/server/share/guest-access.ts";
 import {
   createGuestLink,
   MAX_PIN_FAILURES,
   revokeGuestLink,
   rotateGuestLink,
   updateGuestLink,
-} from "$lib/server/share/guest-links";
-import { clearGuestRenderCache } from "$lib/server/share/guest-view";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt } from "$lib/testing/domain";
-import { useTestFilesDir } from "$lib/testing/files";
-import { SECRET_TEXT, shareFixture } from "$lib/testing/share";
-import { callRoute, type RouteResult } from "$lib/testing/route";
+} from "#lib/server/share/guest-links.ts";
+import { clearGuestRenderCache } from "#lib/server/share/guest-view.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
+import { useTestFilesDir } from "#lib/testing/files.ts";
+import { SECRET_TEXT, shareFixture } from "#lib/testing/share.ts";
+import { callRoute, type RouteResult } from "#lib/testing/route.ts";
 import * as filesRoute from "./[token]/files/[id]/+server";
 import * as homeRoute from "./[token]/+page.server";
 import * as docsRoute from "./[token]/docs/[slug]/+page.server";

@@ -1,39 +1,42 @@
 <script lang="ts">
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
-  import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import NoteChoices from "$lib/components/asset-notes/note-choices.svelte";
-  import ServiceLogFields from "$lib/components/assets/service-log-fields.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
+  import { MAX_ODOMETER_VALUE } from "#lib/api/schemas/vehicles.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import NoteChoices from "#lib/components/asset-notes/note-choices.svelte";
+  import ServiceLogFields from "#lib/components/assets/service-log-fields.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Dialog from "#lib/components/ui/dialog/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
   import {
     addDays,
     addMonths,
     isoWeekStart,
     zonedTimeToInstant,
-  } from "$lib/dates";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { householdCurrency } from "$lib/api/household-currency";
-  import { formatDateShort, formatNumber } from "$lib/format";
-  import { readMoney } from "$lib/format-money";
-  import { m } from "$lib/paraglide/messages";
-  import type { ServiceLogKind } from "$lib/api/enums";
-  import OdometerReadingField from "$lib/components/vehicles/odometer-reading-field.svelte";
-  import type { Trigger } from "$lib/tasks/engine/types";
-  import { refusedMessage, refusedReading } from "$lib/vehicles/odometer-error";
-  import { knownOdometerAsset } from "$lib/vehicles/odometer";
-  import { readingToSend } from "$lib/vehicles/odometer-input";
-  import { VehicleReading } from "$lib/vehicles/odometer-state.svelte";
+  } from "#lib/dates.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { householdCurrency } from "#lib/api/household-currency.ts";
+  import { formatDateShort, formatNumber } from "#lib/format.ts";
+  import { readMoney } from "#lib/format-money.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { ServiceLogKind } from "#lib/api/enums.ts";
+  import OdometerReadingField from "#lib/components/vehicles/odometer-reading-field.svelte";
+  import type { Trigger } from "#lib/tasks/engine/types.ts";
+  import {
+    refusedMessage,
+    refusedReading,
+  } from "#lib/vehicles/odometer-error.ts";
+  import { knownOdometerAsset } from "#lib/vehicles/odometer.ts";
+  import { readingToSend } from "#lib/vehicles/odometer-input.ts";
+  import { VehicleReading } from "#lib/vehicles/odometer-state.svelte.ts";
   import {
     completeTask,
     skipTask,
     snoozeTask,
     type CompleteOptions,
-  } from "$lib/tasks/actions";
+  } from "#lib/tasks/actions.ts";
 
   let {
     open = $bindable(false),

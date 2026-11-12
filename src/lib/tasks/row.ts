@@ -1,7 +1,7 @@
-import type { Dashboard } from "$lib/api/schemas/dashboard";
-import type { NextAppointment, Task } from "$lib/api/schemas/tasks";
-import { daysUntil, formatDateShort, formatRelativeDays } from "$lib/format";
-import { odometerAssetOfTrigger } from "$lib/vehicles/odometer";
+import type { Dashboard } from "#lib/api/schemas/dashboard.ts";
+import type { NextAppointment, Task } from "#lib/api/schemas/tasks.ts";
+import { daysUntil, formatDateShort, formatRelativeDays } from "#lib/format.ts";
+import { odometerAssetOfTrigger } from "#lib/vehicles/odometer.ts";
 import { shownDate, shownDateIsEstimate } from "./engine/shown";
 import type { DueStatus, Trigger } from "./engine/types";
 

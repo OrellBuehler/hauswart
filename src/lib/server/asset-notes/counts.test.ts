@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createAssetNoteRequestSchema } from "$lib/api/schemas/asset-notes";
-import { createAsset } from "$lib/server/assets/assets";
-import { getDashboard } from "$lib/server/tasks/dashboard";
-import { getTask, listTasks } from "$lib/server/tasks/tasks";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, everyDays, makeTask } from "$lib/testing/domain";
+import { createAssetNoteRequestSchema } from "#lib/api/schemas/asset-notes.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import { getDashboard } from "#lib/server/tasks/dashboard.ts";
+import { getTask, listTasks } from "#lib/server/tasks/tasks.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, everyDays, makeTask } from "#lib/testing/domain.ts";
 import { createNote, updateNote } from "./notes";
 
 describe("open notes on a task's asset", () => {

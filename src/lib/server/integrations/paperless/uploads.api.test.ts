@@ -6,28 +6,28 @@ import {
   docPages,
   documentLinks,
   documentUploads,
-} from "$lib/server/db";
+} from "#lib/server/db.ts";
 import {
   createAttachment,
   settleBackgroundWork,
-} from "$lib/server/attachments/attachments";
+} from "#lib/server/attachments/attachments.ts";
 import {
   getConnectionRow,
   resolveConnection,
-} from "$lib/server/connections/connections";
+} from "#lib/server/connections/connections.ts";
 import {
   pruneFinishedUploads,
   resumeUploads,
-} from "$lib/server/documents/uploads";
-import { createCaller, errorCode } from "$lib/testing/api";
+} from "#lib/server/documents/uploads.ts";
+import { createCaller, errorCode } from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { makeAsset } from "$lib/testing/documents";
-import { samplePdf, useTestFilesDir } from "$lib/testing/files";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { makeAsset } from "#lib/testing/documents.ts";
+import { samplePdf, useTestFilesDir } from "#lib/testing/files.ts";
 import { paperlessDocumentProvider, uploadPolling } from "./provider";
 import { syncAll } from "./sync";
 import { TEST_CONFIG, seedTaxonomy, useFakePaperless } from "./testing";

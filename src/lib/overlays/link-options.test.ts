@@ -19,35 +19,39 @@ describe("routerOptions", () => {
     expect(routerOptions(chain({}, {}, {}))).toEqual({});
   });
 
-  it("reads the three options on the link itself", () => {
+  it("reads both options on the link itself", () => {
     expect(
       routerOptions(
         chain({
           "data-sveltekit-replacestate": "",
-          "data-sveltekit-noscroll": "true",
-          "data-sveltekit-keepfocus": "off",
+          "data-sveltekit-reset": "false",
         }),
       ),
-    ).toEqual({ replaceState: true, noScroll: true, keepFocus: false });
+    ).toEqual({ replace: true, reset: false });
   });
 
   it("takes the nearest element that sets an option", () => {
     const link = chain(
       {},
-      { "data-sveltekit-noscroll": "false" },
-      { "data-sveltekit-noscroll": "true", "data-sveltekit-replacestate": "" },
+      { "data-sveltekit-reset": "false" },
+      { "data-sveltekit-reset": "true", "data-sveltekit-replacestate": "" },
     );
-    expect(routerOptions(link)).toEqual({
-      replaceState: true,
-      noScroll: false,
-    });
+    expect(routerOptions(link)).toEqual({ replace: true, reset: false });
   });
 
   it("treats a value the router does not know as not set, and does not look further out", () => {
     const link = chain(
-      { "data-sveltekit-keepfocus": "maybe" },
-      { "data-sveltekit-keepfocus": "true" },
+      { "data-sveltekit-reset": "off" },
+      { "data-sveltekit-reset": "true" },
     );
+    expect(routerOptions(link)).toEqual({});
+  });
+
+  it("ignores the options SvelteKit 3 no longer has", () => {
+    const link = chain({
+      "data-sveltekit-noscroll": "",
+      "data-sveltekit-keepfocus": "true",
+    });
     expect(routerOptions(link)).toEqual({});
   });
 });

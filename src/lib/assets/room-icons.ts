@@ -23,7 +23,7 @@ import HammerIcon from "@lucide/svelte/icons/hammer";
 import DumbbellIcon from "@lucide/svelte/icons/dumbbell";
 import Gamepad2Icon from "@lucide/svelte/icons/gamepad-2";
 import HouseIcon from "@lucide/svelte/icons/house";
-import { m } from "$lib/paraglide/messages";
+import { m } from "#lib/paraglide/messages.js";
 
 export type RoomIconEntry = { icon: Component; label: () => string };
 

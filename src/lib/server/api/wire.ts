@@ -1,50 +1,50 @@
 import type { z } from "zod";
-import { toIso } from "$lib/api/schemas/common";
-import type { userSchema } from "$lib/api/schemas/auth";
-import type { adminUserSchema } from "$lib/api/schemas/users";
-import type { apiTokenSchema } from "$lib/api/schemas/tokens";
-import type { SessionUser } from "$lib/server/auth/types";
-import type { TokenRecord } from "$lib/server/auth/tokens";
-import type { UserRecord } from "$lib/server/users/users";
-import type { roomSchema } from "$lib/api/schemas/rooms";
-import type { assetSchema } from "$lib/api/schemas/assets";
+import { toIso } from "#lib/api/schemas/common.ts";
+import type { userSchema } from "#lib/api/schemas/auth.ts";
+import type { adminUserSchema } from "#lib/api/schemas/users.ts";
+import type { apiTokenSchema } from "#lib/api/schemas/tokens.ts";
+import type { SessionUser } from "#lib/server/auth/types.ts";
+import type { TokenRecord } from "#lib/server/auth/tokens.ts";
+import type { UserRecord } from "#lib/server/users/users.ts";
+import type { roomSchema } from "#lib/api/schemas/rooms.ts";
+import type { assetSchema } from "#lib/api/schemas/assets.ts";
 import type {
   completionSchema,
   preparationSchema,
   taskSchema,
   taskStateSchema,
-} from "$lib/api/schemas/tasks";
-import type { dashboardSchema } from "$lib/api/schemas/dashboard";
-import type { notificationSchema } from "$lib/api/schemas/notifications";
-import type { householdSchema } from "$lib/api/schemas/household";
+} from "#lib/api/schemas/tasks.ts";
+import type { dashboardSchema } from "#lib/api/schemas/dashboard.ts";
+import type { notificationSchema } from "#lib/api/schemas/notifications.ts";
+import type { householdSchema } from "#lib/api/schemas/household.ts";
 import type {
   docPageSchema,
   docPageSummarySchema,
   pageRevisionSchema,
   pageRevisionSummarySchema,
-} from "$lib/api/schemas/docs";
-import type { attachmentSchema } from "$lib/api/schemas/attachments";
-import type { AttachmentRecord } from "$lib/server/attachments/attachments";
+} from "#lib/api/schemas/docs.ts";
+import type { attachmentSchema } from "#lib/api/schemas/attachments.ts";
+import type { AttachmentRecord } from "#lib/server/attachments/attachments.ts";
 import {
   excerptOf,
   type PageDetail,
   type PageRecord,
   type RevisionRecord,
   type RevisionSummary,
-} from "$lib/server/docs/pages";
-import type { RoomRecord } from "$lib/server/rooms/rooms";
-import type { AssetRecord } from "$lib/server/assets/assets";
-import type { TaskRecord } from "$lib/server/tasks/tasks";
-import type { TaskStateRecord } from "$lib/server/tasks/state";
-import type { CompletionRecord } from "$lib/server/tasks/completions";
-import type { PreparationRecord } from "$lib/server/tasks/preparations";
-import type { DashboardRecord } from "$lib/server/tasks/dashboard";
-import type { NotificationRow } from "$lib/server/notifications/notifications";
-import type { HouseholdRecord } from "$lib/server/household/household";
+} from "#lib/server/docs/pages.ts";
+import type { RoomRecord } from "#lib/server/rooms/rooms.ts";
+import type { AssetRecord } from "#lib/server/assets/assets.ts";
+import type { TaskRecord } from "#lib/server/tasks/tasks.ts";
+import type { TaskStateRecord } from "#lib/server/tasks/state.ts";
+import type { CompletionRecord } from "#lib/server/tasks/completions.ts";
+import type { PreparationRecord } from "#lib/server/tasks/preparations.ts";
+import type { DashboardRecord } from "#lib/server/tasks/dashboard.ts";
+import type { NotificationRow } from "#lib/server/notifications/notifications.ts";
+import type { HouseholdRecord } from "#lib/server/household/household.ts";
 import type {
   contactSchema,
   assetContactSchema,
-} from "$lib/api/schemas/contacts";
+} from "#lib/api/schemas/contacts.ts";
 import type {
   assetPartSchema,
   orderNowItemSchema,
@@ -52,57 +52,60 @@ import type {
   partMovementSchema,
   partSchema,
   taskPartSchema,
-} from "$lib/api/schemas/parts";
-import type { serviceLogEntrySchema } from "$lib/api/schemas/service-log";
+} from "#lib/api/schemas/parts.ts";
+import type { serviceLogEntrySchema } from "#lib/api/schemas/service-log.ts";
 import type {
   odometerReadingSchema,
   vehicleSchema,
-} from "$lib/api/schemas/vehicles";
+} from "#lib/api/schemas/vehicles.ts";
 import type {
   tireEventSchema,
   tireSetDetailSchema,
   tireSetSchema,
-} from "$lib/api/schemas/tire-sets";
-import type { fuelLogSchema } from "$lib/api/schemas/fuel-logs";
-import type { FuelLogRecord } from "$lib/server/vehicles/fuel-logs";
-import type { OdometerRow } from "$lib/server/vehicles/odometer";
+} from "#lib/api/schemas/tire-sets.ts";
+import type { fuelLogSchema } from "#lib/api/schemas/fuel-logs.ts";
+import type { FuelLogRecord } from "#lib/server/vehicles/fuel-logs.ts";
+import type { OdometerRow } from "#lib/server/vehicles/odometer.ts";
 import type {
   TireEventRow,
   TireSetDetailRecord,
   TireSetRecord,
-} from "$lib/server/vehicles/tires";
-import { tireAgeYears, treadWarning } from "$lib/vehicles/tires";
-import type { VehicleRecord } from "$lib/server/vehicles/vehicles";
+} from "#lib/server/vehicles/tires.ts";
+import { tireAgeYears, treadWarning } from "#lib/vehicles/tires.ts";
+import type { VehicleRecord } from "#lib/server/vehicles/vehicles.ts";
 import type {
   defectDetailSchema,
   defectEventSchema,
   defectSchema,
   defectTimelineItemSchema,
-} from "$lib/api/schemas/defects";
-import type { warrantySchema } from "$lib/api/schemas/warranties";
-import type { commentSchema } from "$lib/api/schemas/comments";
-import type { hintSchema } from "$lib/api/schemas/hints";
+} from "#lib/api/schemas/defects.ts";
+import type { warrantySchema } from "#lib/api/schemas/warranties.ts";
+import type { commentSchema } from "#lib/api/schemas/comments.ts";
+import type { hintSchema } from "#lib/api/schemas/hints.ts";
 import type {
   AssetContactRecord,
   ContactRow,
-} from "$lib/server/contacts/contacts";
-import type { AssetPartRecord, TaskPartRecord } from "$lib/server/parts/links";
-import type { OrderNowRecord } from "$lib/server/parts/order-now";
+} from "#lib/server/contacts/contacts.ts";
+import type {
+  AssetPartRecord,
+  TaskPartRecord,
+} from "#lib/server/parts/links.ts";
+import type { OrderNowRecord } from "#lib/server/parts/order-now.ts";
 import type {
   MovementRecord,
   PartDetailRecord,
   PartRecord,
-} from "$lib/server/parts/parts";
-import type { ServiceLogRecord } from "$lib/server/service-log/service-log";
+} from "#lib/server/parts/parts.ts";
+import type { ServiceLogRecord } from "#lib/server/service-log/service-log.ts";
 import type {
   DefectDetailRecord,
   DefectEventRecord,
   DefectRecord,
   TimelineItem,
-} from "$lib/server/defects/defects";
-import type { WarrantyRecord } from "$lib/server/warranties/warranties";
-import type { CommentRecord } from "$lib/server/comments/comments";
-import type { HintRecord } from "$lib/server/hints/hints";
+} from "#lib/server/defects/defects.ts";
+import type { WarrantyRecord } from "#lib/server/warranties/warranties.ts";
+import type { CommentRecord } from "#lib/server/comments/comments.ts";
+import type { HintRecord } from "#lib/server/hints/hints.ts";
 
 /** Explicit field lists: a row never reaches the wire by accident (password hashes, token hashes). */
 export function wireUser(user: SessionUser): z.input<typeof userSchema> {

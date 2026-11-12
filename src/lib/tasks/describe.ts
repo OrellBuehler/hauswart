@@ -1,5 +1,5 @@
-import type { UserLocale } from "$lib/api/enums";
-import { parseDate } from "$lib/dates";
+import type { UserLocale } from "#lib/api/enums.ts";
+import { parseDate } from "#lib/dates.ts";
 import {
   formatDate,
   formatList,
@@ -7,9 +7,9 @@ import {
   formatOrdinalDay,
   monthName,
   weekdayName,
-} from "$lib/format";
-import { m } from "$lib/paraglide/messages";
-import { isOdometerKey } from "$lib/vehicles/odometer";
+} from "#lib/format.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { isOdometerKey } from "#lib/vehicles/odometer.ts";
 import type {
   CalendarTrigger,
   ConditionOp,

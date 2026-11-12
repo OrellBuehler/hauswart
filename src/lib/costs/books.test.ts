@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { ApiError } from "$lib/api/errors";
-import type { CostBook } from "$lib/api/schemas/cost-books";
+import { ApiError } from "#lib/api/errors.ts";
+import type { CostBook } from "#lib/api/schemas/cost-books.ts";
 import {
   acceptBook,
   bookChoices,

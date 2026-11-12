@@ -1,16 +1,16 @@
 <script lang="ts">
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import MessageSquareIcon from "@lucide/svelte/icons/message-square";
-  import { api } from "$lib/api/browser";
-  import type { CommentEntityType } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { Comment } from "$lib/api/schemas/comments";
-  import ErrorBanner from "$lib/components/app/form-alert.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Skeleton } from "$lib/components/ui/skeleton/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import type { CommentEntityType } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Comment } from "#lib/api/schemas/comments.ts";
+  import ErrorBanner from "#lib/components/app/form-alert.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import CommentComposer from "./comment-composer.svelte";
   import CommentItem from "./comment-item.svelte";
 

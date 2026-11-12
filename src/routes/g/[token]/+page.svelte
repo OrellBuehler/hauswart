@@ -3,11 +3,11 @@
   import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
   import MailIcon from "@lucide/svelte/icons/mail";
   import PhoneIcon from "@lucide/svelte/icons/phone";
-  import type { HintKind } from "$lib/api/enums";
-  import GuestHtml from "$lib/components/guest/guest-html.svelte";
-  import GuestShell from "$lib/components/guest/guest-shell.svelte";
-  import PinForm from "$lib/components/guest/pin-form.svelte";
-  import { m } from "$lib/paraglide/messages";
+  import type { HintKind } from "#lib/api/enums.ts";
+  import GuestHtml from "#lib/components/guest/guest-html.svelte";
+  import GuestShell from "#lib/components/guest/guest-shell.svelte";
+  import PinForm from "#lib/components/guest/pin-form.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data, form }: PageProps = $props();

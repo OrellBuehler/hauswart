@@ -1,8 +1,8 @@
-import { CALENDAR_PROVIDERS } from "$lib/api/enums";
-import { ApiError } from "$lib/api/errors";
-import { dueForAttempt } from "$lib/server/connections/connections";
-import { getDB } from "$lib/server/db";
-import { onEvent } from "$lib/server/events";
+import { CALENDAR_PROVIDERS } from "#lib/api/enums.ts";
+import { ApiError } from "#lib/api/errors.ts";
+import { dueForAttempt } from "#lib/server/connections/connections.ts";
+import { getDB } from "#lib/server/db.ts";
+import { onEvent } from "#lib/server/events.ts";
 import { buildDesiredItems, itemSettingsOf } from "./items";
 import { listLinks } from "./links";
 import { hasPendingChanges } from "./reconcile";

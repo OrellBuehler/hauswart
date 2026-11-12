@@ -1,7 +1,7 @@
 import type { z } from "zod";
-import type { endpoints } from "$lib/api/registry";
-import type { appointmentSchema } from "$lib/api/schemas/appointments";
-import { toIso } from "$lib/api/schemas/common";
+import type { endpoints } from "#lib/api/registry.ts";
+import type { appointmentSchema } from "#lib/api/schemas/appointments.ts";
+import { toIso } from "#lib/api/schemas/common.ts";
 import {
   createAppointment,
   deleteAppointment,
@@ -9,8 +9,8 @@ import {
   listAppointments,
   updateAppointment,
   type AppointmentRecord,
-} from "$lib/server/appointments/appointments";
-import { completeAppointment } from "$lib/server/appointments/complete";
+} from "#lib/server/appointments/appointments.ts";
+import { completeAppointment } from "#lib/server/appointments/complete.ts";
 import type { Handler } from "../bind";
 import { wireCompletion } from "../wire";
 import { completionSourceFor, wireTaskFor } from "./tasks";

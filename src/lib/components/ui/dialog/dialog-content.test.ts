@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { cn } from "$lib/utils";
+import { cn } from "#lib/utils.ts";
 
 const source = readFileSync(
   new URL("./dialog-content.svelte", import.meta.url),

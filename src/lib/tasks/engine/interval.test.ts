@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, addMonths, addYears, diffDays } from "$lib/dates";
+import { addDays, addMonths, addYears, diffDays } from "#lib/dates.ts";
 import { addInterval, intervalAt, monthInRange, nextFrom } from "./interval";
 import { done, evaluate, skipped, trigger } from "./testing";
 import type { Completion, IntervalUnit } from "./types";

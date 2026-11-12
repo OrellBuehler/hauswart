@@ -1,23 +1,23 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import ContactIcon from "@lucide/svelte/icons/contact";
   import FileSearchIcon from "@lucide/svelte/icons/file-search";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import SearchIcon from "@lucide/svelte/icons/search";
   import SearchXIcon from "@lucide/svelte/icons/search-x";
   import SirenIcon from "@lucide/svelte/icons/siren";
-  import { CONTACT_KINDS } from "$lib/api/enums";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import ContactFormDialog from "$lib/components/contacts/contact-form-dialog.svelte";
-  import ContactRow from "$lib/components/contacts/contact-row.svelte";
-  import DocumentSuggestionsSheet from "$lib/components/documents/document-suggestions-sheet.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { contactKindGroupLabels } from "$lib/contacts/labels";
-  import { DocumentSystem } from "$lib/documents/system.svelte";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import { CONTACT_KINDS } from "#lib/api/enums.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import ContactFormDialog from "#lib/components/contacts/contact-form-dialog.svelte";
+  import ContactRow from "#lib/components/contacts/contact-row.svelte";
+  import DocumentSuggestionsSheet from "#lib/components/documents/document-suggestions-sheet.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { contactKindGroupLabels } from "#lib/contacts/labels.ts";
+  import { DocumentSystem } from "#lib/documents/system.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -186,13 +186,13 @@
   {/if}
 </div>
 
-<ContactFormDialog bind:open={createOpen} onsaved={() => invalidateAll()} />
+<ContactFormDialog bind:open={createOpen} onsaved={() => refreshAll()} />
 
 {#if documents.provider}
   <DocumentSuggestionsSheet
     bind:open={suggestionsOpen}
     kind="contact"
     provider={documents.provider}
-    onadded={() => invalidateAll()}
+    onadded={() => refreshAll()}
   />
 {/if}

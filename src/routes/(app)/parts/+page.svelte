@@ -1,23 +1,23 @@
 <script lang="ts">
-  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
+  import { gotoFromOverlay } from "#lib/overlays/use-overlay-history.svelte.ts";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import PuzzleIcon from "@lucide/svelte/icons/puzzle";
   import SearchIcon from "@lucide/svelte/icons/search";
   import SearchXIcon from "@lucide/svelte/icons/search-x";
   import ShoppingCartIcon from "@lucide/svelte/icons/shopping-cart";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import OrderNowItem from "$lib/components/parts/order-now-item.svelte";
-  import PartFormDialog from "$lib/components/parts/part-form-dialog.svelte";
-  import PartRow from "$lib/components/parts/part-row.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { partHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
-  import { stockLevel } from "$lib/parts/stock";
-  import { cn } from "$lib/utils";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import OrderNowItem from "#lib/components/parts/order-now-item.svelte";
+  import PartFormDialog from "#lib/components/parts/part-form-dialog.svelte";
+  import PartRow from "#lib/components/parts/part-row.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { partHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { stockLevel } from "#lib/parts/stock.ts";
+  import { cn } from "#lib/utils.ts";
   import type { PageProps, Snapshot } from "./$types";
 
   let { data }: PageProps = $props();
@@ -199,6 +199,5 @@
 <PartFormDialog
   bind:open={createOpen}
   currency={data.currency}
-  onsaved={(part) =>
-    gotoFromOverlay(partHref(part.id), { invalidateAll: true })}
+  onsaved={(part) => gotoFromOverlay(partHref(part.id), { refreshAll: true })}
 />

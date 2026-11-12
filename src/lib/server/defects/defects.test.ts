@@ -3,19 +3,19 @@ import { eq } from "drizzle-orm";
 import {
   DEFECT_TRANSITIONS,
   createDefectRequestSchema,
-} from "$lib/api/schemas/defects";
-import { createAsset } from "$lib/server/assets/assets";
-import { createContact, deleteContact } from "$lib/server/contacts/contacts";
-import { createContactRequestSchema } from "$lib/api/schemas/contacts";
-import { createComment, deleteComment } from "$lib/server/comments/comments";
-import { tasks, defectEvents } from "$lib/server/db";
-import { updateHousehold } from "$lib/server/household/household";
-import { createRoom, deleteRoom } from "$lib/server/rooms/rooms";
-import { listPreparations } from "$lib/server/tasks/preparations";
-import { getTask } from "$lib/server/tasks/tasks";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt } from "$lib/testing/domain";
+} from "#lib/api/schemas/defects.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import { createContact, deleteContact } from "#lib/server/contacts/contacts.ts";
+import { createContactRequestSchema } from "#lib/api/schemas/contacts.ts";
+import { createComment, deleteComment } from "#lib/server/comments/comments.ts";
+import { tasks, defectEvents } from "#lib/server/db.ts";
+import { updateHousehold } from "#lib/server/household/household.ts";
+import { createRoom, deleteRoom } from "#lib/server/rooms/rooms.ts";
+import { listPreparations } from "#lib/server/tasks/preparations.ts";
+import { getTask } from "#lib/server/tasks/tasks.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt } from "#lib/testing/domain.ts";
 import {
   addEvent,
   changeStatus,

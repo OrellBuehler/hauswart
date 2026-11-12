@@ -1,12 +1,12 @@
 <script lang="ts">
   import SearchIcon from "@lucide/svelte/icons/search";
-  import { kindIcons } from "$lib/assets/kinds";
-  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import type { PickerAsset } from "$lib/insurance/form";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import { kindIcons } from "#lib/assets/kinds.ts";
+  import { Checkbox } from "#lib/components/ui/checkbox/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import type { PickerAsset } from "#lib/insurance/form.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     id,

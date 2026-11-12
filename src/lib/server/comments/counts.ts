@@ -1,5 +1,5 @@
 import { sql, type AnyColumn } from "drizzle-orm";
-import type { CommentEntityType } from "$lib/api/enums";
+import type { CommentEntityType } from "#lib/api/enums.ts";
 
 /**
  * Number of (not deleted) comments on the entity whose id column is given, as

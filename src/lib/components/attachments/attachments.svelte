@@ -20,20 +20,20 @@
   import { untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
   import { toast } from "svelte-sonner";
-  import type { AttachmentOwnerType } from "$lib/api/enums";
-  import type { Attachment } from "$lib/api/schemas/attachments";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { Progress } from "$lib/components/ui/progress/index.js";
-  import { Skeleton } from "$lib/components/ui/skeleton/index.js";
+  import type { AttachmentOwnerType } from "#lib/api/enums.ts";
+  import type { Attachment } from "#lib/api/schemas/attachments.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { Progress } from "#lib/components/ui/progress/index.js";
+  import { Skeleton } from "#lib/components/ui/skeleton/index.js";
   import {
     DEFAULT_ACCEPT,
     contentHref,
@@ -41,15 +41,15 @@
     formatBytes,
     isImage,
     isPdf,
-  } from "$lib/attachments/files";
-  import { AttachmentList } from "$lib/attachments/list.svelte";
-  import { isLinkableOwner } from "$lib/documents/labels";
-  import { isActive, pushes } from "$lib/documents/pushes.svelte";
-  import { DocumentSystem } from "$lib/documents/system.svelte";
-  import { CAPTION_MAX } from "$lib/api/schemas/attachments";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/attachments/files.ts";
+  import { AttachmentList } from "#lib/attachments/list.svelte.ts";
+  import { isLinkableOwner } from "#lib/documents/labels.ts";
+  import { isActive, pushes } from "#lib/documents/pushes.svelte.ts";
+  import { DocumentSystem } from "#lib/documents/system.svelte.ts";
+  import { CAPTION_MAX } from "#lib/api/schemas/attachments.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import AttachmentLightbox from "./attachment-lightbox.svelte";
   import PushJobs from "./push-jobs.svelte";
   import PushToDocumentsDialog from "./push-to-documents-dialog.svelte";

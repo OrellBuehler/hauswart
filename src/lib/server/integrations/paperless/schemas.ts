@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isValidDate } from "$lib/dates";
+import { isValidDate } from "#lib/dates.ts";
 
 const id = z.number().int().positive();
 const nullableId = id.nullish().transform((v) => v ?? null);

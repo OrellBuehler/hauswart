@@ -3,15 +3,15 @@
   import LinkIcon from "@lucide/svelte/icons/link";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { resolve } from "$app/paths";
-  import type { FinanceSuggestion } from "$lib/api/schemas/finance";
-  import { Button } from "$lib/components/ui/button/index.js";
+  import type { FinanceSuggestion } from "#lib/api/schemas/finance.ts";
+  import { Button } from "#lib/components/ui/button/index.js";
   import {
     categoryLabels,
     suggestionKindIcons,
     suggestionKindLabels,
-  } from "$lib/costs/labels";
-  import { formatDay } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/costs/labels.ts";
+  import { formatDay } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import CostAmount from "./cost-amount.svelte";
 
   let {
@@ -144,7 +144,7 @@
             <p class="text-sm font-medium text-pretty break-words">
               <!-- eslint-disable svelte/no-navigation-without-resolve -- the address is resolved here, only the id is appended -->
               <a
-                href={resolve(`/costs/${encodeURIComponent(linked.id)}` as "/")}
+                href={resolve(`costs/${encodeURIComponent(linked.id)}`)}
                 class="focus-visible:ring-ring/50 rounded underline-offset-4 outline-none hover:underline focus-visible:ring-[3px]"
                 >{linked.title}</a
               >

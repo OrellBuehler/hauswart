@@ -1,6 +1,6 @@
-import type { ServiceContext } from "$lib/server/service";
-import { generateNotifications } from "$lib/server/notifications/generate";
-import { evaluateTasks } from "$lib/server/tasks/evaluator";
+import type { ServiceContext } from "#lib/server/service.ts";
+import { generateNotifications } from "#lib/server/notifications/generate.ts";
+import { evaluateTasks } from "#lib/server/tasks/evaluator.ts";
 import { applyAutoComplete } from "./auto-complete";
 import { processDueReactions, scheduleReactions } from "./reactions";
 import {

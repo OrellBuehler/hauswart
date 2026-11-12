@@ -1,10 +1,10 @@
 <script lang="ts">
-  import type { CostRecurrence } from "$lib/api/schemas/cost-recurrences";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import type { RecurrenceRule } from "$lib/costs/recurrence";
-  import { upcomingView } from "$lib/costs/recurrences";
-  import { formatDateShort } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  import type { CostRecurrence } from "#lib/api/schemas/cost-recurrences.ts";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import type { RecurrenceRule } from "#lib/costs/recurrence.ts";
+  import { upcomingView } from "#lib/costs/recurrences.ts";
+  import { formatDateShort } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     recurrence,

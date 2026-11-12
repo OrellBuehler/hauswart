@@ -9,15 +9,15 @@
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import type { Component } from "svelte";
   import { resolve } from "$app/paths";
-  import type { NotificationKind } from "$lib/api/enums";
-  import type { Notification } from "$lib/api/schemas/notifications";
-  import { formatDateTime, formatRelativeInstant } from "$lib/format";
+  import type { NotificationKind } from "#lib/api/enums.ts";
+  import type { Notification } from "#lib/api/schemas/notifications.ts";
+  import { formatDateTime, formatRelativeInstant } from "#lib/format.ts";
   import {
     notificationPath,
     notificationText,
-  } from "$lib/notifications/render";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/notifications/render.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     notification,
@@ -91,7 +91,7 @@
 
 {#if path}
   <a
-    href={resolve(path as "/")}
+    href={resolve(path)}
     class="hover:bg-accent focus-visible:ring-ring/50 flex min-h-12 items-start gap-3 rounded-lg px-3 py-2.5 text-start outline-none focus-visible:ring-[3px]"
     onclick={() => onopen(notification)}
   >

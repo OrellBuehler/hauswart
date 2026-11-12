@@ -1,11 +1,11 @@
 <script lang="ts">
   import PuzzleIcon from "@lucide/svelte/icons/puzzle";
   import type { Snippet } from "svelte";
-  import type { Part } from "$lib/api/schemas/parts";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { formatMoney } from "$lib/format-money";
-  import { partHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
+  import type { Part } from "#lib/api/schemas/parts.ts";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { partHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import OrderedBadge from "./ordered-badge.svelte";
   import StockBadge from "./stock-badge.svelte";
 

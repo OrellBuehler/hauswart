@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { createAsset } from "$lib/server/assets/assets";
-import { createHint } from "$lib/server/hints/hints";
-import { createPreparation } from "$lib/server/tasks/preparations";
-import { updateTask } from "$lib/server/tasks/tasks";
-import { onEvent } from "$lib/server/events";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, everyDays, makeTask, NOW } from "$lib/testing/domain";
-import { createHintRequestSchema } from "$lib/api/schemas/hints";
-import { createPreparationRequestSchema } from "$lib/api/schemas/tasks";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import { createHint } from "#lib/server/hints/hints.ts";
+import { createPreparation } from "#lib/server/tasks/preparations.ts";
+import { updateTask } from "#lib/server/tasks/tasks.ts";
+import { onEvent } from "#lib/server/events.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, everyDays, makeTask, NOW } from "#lib/testing/domain.ts";
+import { createHintRequestSchema } from "#lib/api/schemas/hints.ts";
+import { createPreparationRequestSchema } from "#lib/api/schemas/tasks.ts";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
 import { tasksReading, watchedEntities } from "./watch";
 
 describe("watchedEntities", () => {

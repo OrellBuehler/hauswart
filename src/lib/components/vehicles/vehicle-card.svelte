@@ -1,16 +1,16 @@
 <script lang="ts">
   import GaugeIcon from "@lucide/svelte/icons/gauge";
   import PencilIcon from "@lucide/svelte/icons/pencil";
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import type { CostBook } from "$lib/api/schemas/cost-books";
-  import type { Vehicle } from "$lib/api/schemas/vehicles";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { formatDay } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { formatOdometer } from "$lib/vehicles/format";
-  import { fuelLabels } from "$lib/vehicles/labels";
+  import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+  import type { Vehicle } from "#lib/api/schemas/vehicles.ts";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { formatDay } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { formatOdometer } from "#lib/vehicles/format.ts";
+  import { fuelLabels } from "#lib/vehicles/labels.ts";
   import OdometerDialog from "./odometer-dialog.svelte";
 
   let {
@@ -118,7 +118,7 @@
           {m.vehicle_facts_empty()}
         </p>
         <Button
-          href={resolve(`/assets/${assetId}/edit` as "/")}
+          href={resolve(`assets/${assetId}/edit`)}
           variant="outline"
           size="sm"
         >
@@ -144,5 +144,5 @@
   unit={vehicle.odometerUnit}
   {today}
   latest={odometer}
-  onsaved={() => invalidateAll()}
+  onsaved={() => refreshAll()}
 />

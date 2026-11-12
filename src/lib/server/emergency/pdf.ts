@@ -1,17 +1,17 @@
-import type { UserLocale } from "$lib/api/enums";
-import { m } from "$lib/paraglide/messages";
-import { householdTimeZone } from "$lib/server/config";
-import { decodeEntities } from "$lib/server/docs/markdown-core";
-import { renderMarkdownAsync } from "$lib/server/docs/markdown";
+import type { UserLocale } from "#lib/api/enums.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { householdTimeZone } from "#lib/server/config.ts";
+import { decodeEntities } from "#lib/server/docs/markdown-core.ts";
+import { renderMarkdownAsync } from "#lib/server/docs/markdown.ts";
 import {
   headerCell,
   MUTED,
   renderPdf,
   table,
   type PdfContent,
-} from "$lib/server/pdf/render";
-import type { ServiceContext } from "$lib/server/service";
-import { clockAt } from "$lib/server/tasks/evaluator";
+} from "#lib/server/pdf/render.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
+import { clockAt } from "#lib/server/tasks/evaluator.ts";
 import { getEmergency } from "./emergency";
 
 const INTL_LOCALE: Record<UserLocale, string> = { de: "de-CH", en: "en-GB" };

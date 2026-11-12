@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { ApiError } from "$lib/api/errors";
+import { ApiError } from "#lib/api/errors.ts";
 import {
   createPreparationRequestSchema,
   createTaskRequestSchema,
   type Task,
-} from "$lib/api/schemas/tasks";
+} from "#lib/api/schemas/tasks.ts";
 import { odometerSignalKey } from "./odometer";
 import {
   DEFAULT_SELECTED,

@@ -3,12 +3,12 @@ import {
   householdSettingsSchema,
   type HouseholdSettings,
   type UpdateHouseholdRequest,
-} from "$lib/api/schemas/household";
-import { normalizeHostEntry } from "$lib/hosts";
-import { householdTimeZone } from "$lib/server/config";
-import { HOUSEHOLD_ID, household } from "$lib/server/db";
-import { parseStored } from "$lib/server/json";
-import type { ServiceContext } from "$lib/server/service";
+} from "#lib/api/schemas/household.ts";
+import { normalizeHostEntry } from "#lib/hosts.ts";
+import { householdTimeZone } from "#lib/server/config.ts";
+import { HOUSEHOLD_ID, household } from "#lib/server/db.ts";
+import { parseStored } from "#lib/server/json.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 
 export interface HouseholdRecord {
   name: string;

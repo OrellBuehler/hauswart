@@ -1,9 +1,9 @@
 <script lang="ts">
   import EllipsisIcon from "@lucide/svelte/icons/ellipsis";
   import { resolve } from "$app/paths";
-  import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import * as Sidebar from "#lib/components/ui/sidebar/index.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import { isMoreActive, isNavActive, mobileTabs } from "./nav";
   import { opensKeyboard } from "./text-entry";
 
@@ -40,7 +40,7 @@
     {#each mobileTabs as item (item.href)}
       {@const active = isNavActive(item, pathname)}
       <a
-        href={resolve(item.href)}
+        href={resolve(item.href.slice(1))}
         aria-current={active ? "page" : undefined}
         class={cn(tab, tone(active))}
       >

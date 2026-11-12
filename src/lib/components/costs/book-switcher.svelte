@@ -2,10 +2,10 @@
   import PlusIcon from "@lucide/svelte/icons/plus";
   import Settings2Icon from "@lucide/svelte/icons/settings-2";
   import { resolve } from "$app/paths";
-  import type { CostBook } from "$lib/api/schemas/cost-books";
-  import { bookIconFor, switcherBooks } from "$lib/costs/books";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+  import { bookIconFor, switcherBooks } from "#lib/costs/books.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     books,
@@ -14,13 +14,14 @@
     canWrite = false,
     oncreate,
     class: className,
+
+    /** The book on screen; empty for every book. */
+    /** The address of the page for a book (`""` = every book). */
+    /** Offers "new book" (with `oncreate`). */
   }: {
     books: CostBook[];
-    /** The book on screen; empty for every book. */
     value: string;
-    /** The address of the page for a book (`""` = every book). */
     hrefFor: (bookId: string) => string;
-    /** Offers "new book" (with `oncreate`). */
     canWrite?: boolean;
     oncreate?: () => void;
     class?: string;
@@ -104,7 +105,7 @@
     {/if}
     <li class="shrink-0 sm:ms-auto">
       <a
-        href={resolve("/settings/cost-books")}
+        href={resolve("settings/cost-books")}
         class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex min-h-10 items-center gap-1.5 rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
       >
         <Settings2Icon class="size-4" aria-hidden="true" />

@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { createApiClient } from "$lib/api/client";
-import { endpoints } from "$lib/api/registry";
-import { saveConnection } from "$lib/server/connections/connections";
-import { createCost } from "$lib/server/costs/costs";
-import { plainPng } from "$lib/server/files/test-images";
-import { createCaller, createInProcessFetch } from "$lib/testing/api";
+import { createApiClient } from "#lib/api/client.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import { saveConnection } from "#lib/server/connections/connections.ts";
+import { createCost } from "#lib/server/costs/costs.ts";
+import { plainPng } from "#lib/server/files/test-images.ts";
+import { createCaller, createInProcessFetch } from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { today } from "$lib/testing/dates";
-import { useTestDB } from "$lib/testing/db";
-import { useTestFilesDir } from "$lib/testing/files";
-import { createCostRequestSchema } from "$lib/api/schemas/costs";
+} from "#lib/testing/auth.ts";
+import { today } from "#lib/testing/dates.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { useTestFilesDir } from "#lib/testing/files.ts";
+import { createCostRequestSchema } from "#lib/api/schemas/costs.ts";
 
 type Cost = {
   id: string;
@@ -229,7 +229,7 @@ describe("costs API", () => {
     it("is shown to the person who booked it and to nobody else", async () => {
       const { anna, ben, call, callBen } = await setup();
       const connection = saveConnection(
-        { db: (await import("$lib/server/db")).getDB(), now: Date.now() },
+        { db: (await import("#lib/server/db.ts")).getDB(), now: Date.now() },
         "kept",
         anna.id,
         {
@@ -239,7 +239,7 @@ describe("costs API", () => {
         },
       );
       const cost = createCost(
-        { db: (await import("$lib/server/db")).getDB(), now: Date.now() },
+        { db: (await import("#lib/server/db.ts")).getDB(), now: Date.now() },
         createCostRequestSchema.parse({
           title: "Aus der Finanz-App",
           amountMinor: 500,

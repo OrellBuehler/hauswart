@@ -2,8 +2,8 @@ import type { Component } from "svelte";
 import FileTextIcon from "@lucide/svelte/icons/file-text";
 import HouseIcon from "@lucide/svelte/icons/house";
 import PiggyBankIcon from "@lucide/svelte/icons/piggy-bank";
-import type { IntegrationKind } from "$lib/api/enums";
-import { m } from "$lib/paraglide/messages";
+import type { IntegrationKind } from "#lib/api/enums.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 export const kindMeta: Record<
   IntegrationKind,

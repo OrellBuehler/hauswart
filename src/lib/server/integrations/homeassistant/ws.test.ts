@@ -1,4 +1,4 @@
-import { setLenientHostPolicy } from "$lib/server/net/host-policy";
+import { setLenientHostPolicy } from "#lib/server/net/host-policy.ts";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { HomeAssistantClient, HomeAssistantError, haWsCommand } from "./index";
 import { haWsCall } from "./ws";

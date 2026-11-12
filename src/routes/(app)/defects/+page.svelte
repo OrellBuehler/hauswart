@@ -6,23 +6,23 @@
   import WrenchIcon from "@lucide/svelte/icons/wrench";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { DEFECT_SEVERITIES, DEFECT_STATUSES } from "$lib/api/enums";
-  import { endpointUrl } from "$lib/api/client";
-  import { endpoints } from "$lib/api/registry";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import Fab from "$lib/components/app/fab.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import CommentCount from "$lib/components/comments/comment-count.svelte";
-  import DefectDeadline from "$lib/components/defects/defect-deadline.svelte";
-  import DefectRow from "$lib/components/defects/defect-row.svelte";
-  import DefectSeverityBadge from "$lib/components/defects/defect-severity-badge.svelte";
-  import DefectStatusBadge from "$lib/components/defects/defect-status-badge.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import * as Table from "$lib/components/ui/table/index.js";
+  import { DEFECT_SEVERITIES, DEFECT_STATUSES } from "#lib/api/enums.ts";
+  import { endpointUrl } from "#lib/api/client.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import Fab from "#lib/components/app/fab.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import CommentCount from "#lib/components/comments/comment-count.svelte";
+  import DefectDeadline from "#lib/components/defects/defect-deadline.svelte";
+  import DefectRow from "#lib/components/defects/defect-row.svelte";
+  import DefectSeverityBadge from "#lib/components/defects/defect-severity-badge.svelte";
+  import DefectStatusBadge from "#lib/components/defects/defect-status-badge.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import * as Table from "#lib/components/ui/table/index.js";
   import {
     activeFilterCount,
     applyDefectFilters,
@@ -33,11 +33,11 @@
     parseDefectFilters,
     type DefectFilters,
     type DefectSort,
-  } from "$lib/defects/filters";
-  import { severityLabels, statusLabels } from "$lib/defects/labels";
-  import { defectPlace } from "$lib/defects/place";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/defects/filters.ts";
+  import { severityLabels, statusLabels } from "#lib/defects/labels.ts";
+  import { defectPlace } from "#lib/defects/place.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -82,10 +82,9 @@
       ...parseDefectFilters(new URLSearchParams(location.search)),
       ...patch,
     };
-    await goto(resolve(`/defects${defectFilterQuery(next)}` as "/"), {
-      keepFocus: true,
-      noScroll: true,
-      replaceState: replace,
+    await goto(resolve(`defects${defectFilterQuery(next)}`), {
+      reset: false,
+      replace,
     });
   }
 
@@ -157,7 +156,7 @@
         </p>
       </div>
       <Button
-        href={resolve("/defects/new")}
+        href={resolve("defects/new")}
         size="lg"
         class="max-md:hidden md:self-start"
       >
@@ -290,10 +289,9 @@
         description={m.defects_empty_body()}
       >
         {#snippet actions()}
-          <Button href={resolve("/defects/new")}>
-            <PlusIcon />
-            {m.defect_new()}
-          </Button>
+          <Button href={resolve("defects/new")}
+            ><PlusIcon /> {m.defect_new()}</Button
+          >
         {/snippet}
       </EmptyState>
     {:else if data.defects.length > 0 && !filters.q && !filters.severity && !filters.roomId && !filters.assetId && activeCount === 0}
@@ -356,7 +354,7 @@
               >
               <Table.Cell class="max-w-sm whitespace-normal">
                 <a
-                  href={resolve(`/defects/${defect.id}` as "/")}
+                  href={resolve(`defects/${defect.id}`)}
                   class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 rounded-sm font-medium wrap-anywhere outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
                   >{defect.title}</a
                 >
@@ -367,12 +365,14 @@
                   >
                 {/if}
               </Table.Cell>
-              <Table.Cell>
-                <DefectStatusBadge status={defect.status} />
-              </Table.Cell>
-              <Table.Cell>
-                <DefectSeverityBadge severity={defect.severity} />
-              </Table.Cell>
+
+              <Table.Cell
+                ><DefectStatusBadge status={defect.status} /></Table.Cell
+              >
+              <Table.Cell
+                ><DefectSeverityBadge severity={defect.severity} /></Table.Cell
+              >
+
               <Table.Cell>
                 <DefectDeadline
                   date={defect.deadlineDate}
@@ -391,4 +391,4 @@
   {/if}
 </div>
 
-<Fab href={resolve("/defects/new")} label={m.defect_new()} />
+<Fab href={resolve("defects/new")} label={m.defect_new()} />

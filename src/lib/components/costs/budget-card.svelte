@@ -7,18 +7,18 @@
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import { resolve } from "$app/paths";
-  import type { CostBudgetStatusItem } from "$lib/api/schemas/cost-budgets";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { Progress } from "$lib/components/ui/progress/index.js";
+  import type { CostBudgetStatusItem } from "#lib/api/schemas/cost-budgets.ts";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { Progress } from "#lib/components/ui/progress/index.js";
   import {
     budgetDisplay,
     budgetEntriesQuery,
     budgetPeriodLabels,
     budgetScope,
-  } from "$lib/costs/budgets";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/costs/budgets.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     item,
@@ -144,7 +144,7 @@
     {#if item.entryCount > 0}
       <!-- eslint-disable svelte/no-navigation-without-resolve -- the address is resolved here, only the query is appended -->
       <a
-        href={resolve(`/costs${budgetEntriesQuery(item)}` as "/")}
+        href={resolve(`costs${budgetEntriesQuery(item)}`)}
         class="text-foreground focus-visible:ring-ring/50 rounded font-medium underline underline-offset-4 outline-none focus-visible:ring-[3px]"
         >{m.budgets_show_entries()}</a
       >

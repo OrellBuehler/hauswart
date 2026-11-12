@@ -6,15 +6,15 @@
   import RotateCcwIcon from "@lucide/svelte/icons/rotate-ccw";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import WrenchIcon from "@lucide/svelte/icons/wrench";
-  import type { AssetNote } from "$lib/api/schemas/asset-notes";
-  import { noteExcerpt } from "$lib/asset-notes/text";
-  import Attachments from "$lib/components/attachments/attachments.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { formatRelativeInstant } from "$lib/format";
-  import { defectHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import type { AssetNote } from "#lib/api/schemas/asset-notes.ts";
+  import { noteExcerpt } from "#lib/asset-notes/text.ts";
+  import Attachments from "#lib/components/attachments/attachments.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { formatRelativeInstant } from "#lib/format.ts";
+  import { defectHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     note,

@@ -1,4 +1,4 @@
-import { compareDates } from "$lib/dates";
+import { compareDates } from "#lib/dates.ts";
 import { datedResult, noDateResult } from "./common";
 import type { DueResult, EvalContext, KeptBillTrigger } from "./types";
 

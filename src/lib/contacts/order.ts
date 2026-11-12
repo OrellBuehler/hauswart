@@ -1,4 +1,4 @@
-import type { ContactKind } from "$lib/api/enums";
+import type { ContactKind } from "#lib/api/enums.ts";
 
 /** The contacts of `kind` first, each group in the order it came in (a stable partition). */
 export function preferKind<T extends { kind: ContactKind }>(

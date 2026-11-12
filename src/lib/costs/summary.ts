@@ -1,4 +1,4 @@
-import type { CostsSummary } from "$lib/api/schemas/costs";
+import type { CostsSummary } from "#lib/api/schemas/costs.ts";
 
 /** Whether any split entry with a payer exists, so that "all square" means something. */
 export function hasSettlementData(

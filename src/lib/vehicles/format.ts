@@ -1,5 +1,5 @@
-import type { OdometerUnit } from "$lib/api/enums";
-import { formatNumber } from "$lib/format";
+import type { OdometerUnit } from "#lib/api/enums.ts";
+import { formatNumber } from "#lib/format.ts";
 
 /** An odometer reading with its unit in the user's language, e.g. "45’200 km". */
 export function formatOdometer(value: number, unit: OdometerUnit): string {

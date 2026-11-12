@@ -1,11 +1,11 @@
 <script lang="ts">
   import { toast } from "svelte-sonner";
-  import { USER_LOCALES, type UserLocale } from "$lib/api/enums";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { saveLocale } from "$lib/locale";
-  import { m } from "$lib/paraglide/messages";
-  import { getLocale } from "$lib/paraglide/runtime";
+  import { USER_LOCALES, type UserLocale } from "#lib/api/enums.ts";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { saveLocale } from "#lib/locale.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
 
   const names: Record<UserLocale, () => string> = {
     de: () => m.locale_name_de(),

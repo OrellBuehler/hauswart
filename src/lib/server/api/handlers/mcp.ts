@@ -1,11 +1,11 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
-import { createApiClient } from "$lib/api/client";
-import { ApiError } from "$lib/api/errors";
-import type { endpoints } from "$lib/api/registry";
-import { householdSchema } from "$lib/api/schemas/household";
-import { hasForeignOrigin } from "$lib/server/auth/origin";
-import { getHousehold } from "$lib/server/household/household";
-import { APP_VERSION } from "$lib/server/version";
+import { createApiClient } from "#lib/api/client.ts";
+import { ApiError } from "#lib/api/errors.ts";
+import type { endpoints } from "#lib/api/registry.ts";
+import { householdSchema } from "#lib/api/schemas/household.ts";
+import { hasForeignOrigin } from "#lib/server/auth/origin.ts";
+import { getHousehold } from "#lib/server/household/household.ts";
+import { APP_VERSION } from "#lib/server/version.ts";
 import { buildHauswartServer } from "../../../../../mcp/src/server";
 import type { Handler } from "../bind";
 import { wireHousehold, wireUser } from "../wire";

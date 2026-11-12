@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const call = vi.fn();
-vi.mock("$lib/api/browser", () => ({ api: { call } }));
+vi.mock("#lib/api/browser.ts", () => ({ api: { call } }));
 
 const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 

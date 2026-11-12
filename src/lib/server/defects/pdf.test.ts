@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { createDefectRequestSchema } from "$lib/api/schemas/defects";
-import { createAsset } from "$lib/server/assets/assets";
-import { createComment, deleteComment } from "$lib/server/comments/comments";
-import { createContact } from "$lib/server/contacts/contacts";
-import { createContactRequestSchema } from "$lib/api/schemas/contacts";
-import { updateHousehold } from "$lib/server/household/household";
-import { createRoom } from "$lib/server/rooms/rooms";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { pdfInfo } from "$lib/testing/pdf";
-import { at, ctxAt } from "$lib/testing/domain";
+import { createDefectRequestSchema } from "#lib/api/schemas/defects.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import { createComment, deleteComment } from "#lib/server/comments/comments.ts";
+import { createContact } from "#lib/server/contacts/contacts.ts";
+import { createContactRequestSchema } from "#lib/api/schemas/contacts.ts";
+import { updateHousehold } from "#lib/server/household/household.ts";
+import { createRoom } from "#lib/server/rooms/rooms.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { pdfInfo } from "#lib/testing/pdf.ts";
+import { at, ctxAt } from "#lib/testing/domain.ts";
 import { addEvent, changeStatus, createDefect } from "./defects";
 import { exportDefectsPdf, plainText } from "./pdf";
 

@@ -5,13 +5,13 @@ import {
   costEntries,
   financeSuggestions,
   assets,
-} from "$lib/server/db";
-import { saveConnection } from "$lib/server/connections/connections";
-import { listCostBooks, updateCostBook } from "$lib/server/costs/books";
-import { getCost } from "$lib/server/costs/costs";
-import { createTestUser } from "$lib/testing/auth";
-import { ctxAt } from "$lib/testing/domain";
-import { useTestDB } from "$lib/testing/db";
+} from "#lib/server/db.ts";
+import { saveConnection } from "#lib/server/connections/connections.ts";
+import { listCostBooks, updateCostBook } from "#lib/server/costs/books.ts";
+import { getCost } from "#lib/server/costs/costs.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import {
   FINANCE_ASSET_SOURCE,
   acceptSuggestion,
@@ -609,7 +609,7 @@ describe("finance suggestions", () => {
       });
       const result = await acceptSuggestion(ctx(), a.user.id, row.id, {});
       expect(result.entity.type).toBe("task");
-      const { getTask } = await import("$lib/server/tasks/tasks");
+      const { getTask } = await import("#lib/server/tasks/tasks.ts");
       const task = getTask(ctx(), result.entity.id);
       expect(task).toMatchObject({
         title: "Muster Verwaltung AG: INV-1",

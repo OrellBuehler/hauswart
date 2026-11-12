@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
+  import { gotoFromOverlay } from "#lib/overlays/use-overlay-history.svelte.ts";
   import CheckIcon from "@lucide/svelte/icons/check";
   import ContactIcon from "@lucide/svelte/icons/contact";
   import EyeOffIcon from "@lucide/svelte/icons/eye-off";
@@ -8,26 +8,26 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import RotateCcwIcon from "@lucide/svelte/icons/rotate-ccw";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import type { DocumentProviderKind } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
+  import { api } from "#lib/api/browser.ts";
+  import type { DocumentProviderKind } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
   import type { z } from "zod";
   import type {
     assetSuggestionSchema,
     contactSuggestionSchema,
-  } from "$lib/api/schemas/documents";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Sheet from "$lib/components/ui/sheet/index.js";
-  import { pickerErrorMessage } from "$lib/connections/errors";
+  } from "#lib/api/schemas/documents.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Sheet from "#lib/components/ui/sheet/index.js";
+  import { pickerErrorMessage } from "#lib/connections/errors.ts";
   import {
     loadDismissedSuggestions,
     saveDismissedSuggestions,
-  } from "$lib/documents/dismissed";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDay } from "$lib/format";
-  import { assetHref, contactHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/documents/dismissed.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDay } from "#lib/format.ts";
+  import { assetHref, contactHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   type AssetSuggestion = z.infer<typeof assetSuggestionSchema>;
   type ContactSuggestion = z.infer<typeof contactSuggestionSchema>;

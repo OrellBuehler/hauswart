@@ -6,32 +6,32 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
+  import { api } from "#lib/api/browser.ts";
   import {
     INSURANCE_PREMIUM_PERIODS,
     INSURANCE_RENEWALS,
     INSURANCE_TYPES,
-  } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { Asset } from "$lib/api/schemas/assets";
+  } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Asset } from "#lib/api/schemas/assets.ts";
   import {
     MAX_NOTICE_MONTHS,
     type InsurancePolicy,
-  } from "$lib/api/schemas/insurance";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import ContactSelect from "$lib/components/contacts/contact-select.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDateShort, formatRelativeDays } from "$lib/format";
-  import { readMoney, formatMoney } from "$lib/format-money";
-  import { deadlineInfo, deadlineTones } from "$lib/insurance/deadline";
+  } from "#lib/api/schemas/insurance.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import ContactSelect from "#lib/components/contacts/contact-select.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDateShort, formatRelativeDays } from "#lib/format.ts";
+  import { readMoney, formatMoney } from "#lib/format-money.ts";
+  import { deadlineInfo, deadlineTones } from "#lib/insurance/deadline.ts";
   import {
     buildCreateBody,
     buildUpdateBody,
@@ -40,17 +40,17 @@
     draftFromPolicy,
     newDraft,
     type PolicyDraft,
-  } from "$lib/insurance/form";
+  } from "#lib/insurance/form.ts";
   import {
     insuranceTypeLabels,
     premiumPeriodLabels,
     renewalLabels,
-  } from "$lib/insurance/labels";
-  import { annualPremiumMinor } from "$lib/insurance/policy";
-  import { insuranceHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
-  import { cn } from "$lib/utils";
+  } from "#lib/insurance/labels.ts";
+  import { annualPremiumMinor } from "#lib/insurance/policy.ts";
+  import { insuranceHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
+  import { cn } from "#lib/utils.ts";
   import AssetMultiPicker from "./asset-multi-picker.svelte";
 
   let {
@@ -59,11 +59,12 @@
     currency,
     today,
     defaults = {},
-  }: {
+
     /** The policy to edit; undefined creates a new one. */
+    /** The household's currency. */
+  }: {
     policy?: InsurancePolicy | undefined;
     assets: Asset[];
-    /** The household's currency. */
     currency: string;
     today: string;
     defaults?: {
@@ -97,10 +98,10 @@
     value: renewal,
     label: renewalLabels[renewal](),
   }));
-
   const otherCurrency = $derived(
     /^[A-Z]{3}$/.test(draft.currency) && draft.currency !== currency,
   );
+
   const annual = $derived.by(() => {
     if (!/^[A-Z]{3}$/.test(draft.currency)) return null;
     const amount = readMoney(draft.premium, draft.currency);
@@ -159,7 +160,7 @@
           ? m.insurance_saved_toast({ title: saved.title })
           : m.insurance_created_toast({ title: saved.title }),
       );
-      await goto(insuranceHref(saved.id), { invalidateAll: true });
+      await goto(insuranceHref(saved.id), { refreshAll: true });
     } catch (err) {
       errors = apiFieldErrors(err);
       formError = apiErrorMessage(err);
@@ -170,7 +171,7 @@
   }
 
   const cancelHref = $derived(
-    policy ? insuranceHref(policy.id) : resolve("/insurance"),
+    policy ? insuranceHref(policy.id) : resolve("insurance"),
   );
 </script>
 
@@ -254,7 +255,7 @@
         />
       </Field>
       <a
-        href={resolve("/contacts")}
+        href={resolve("contacts")}
         target="_blank"
         rel="noopener"
         class="text-brand -mt-3 w-fit text-sm font-medium underline underline-offset-4"

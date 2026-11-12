@@ -1,7 +1,7 @@
 import type { RequestHandler } from "./$types";
-import { m } from "$lib/paraglide/messages";
-import { getLocale } from "$lib/paraglide/runtime";
-import { buildManifest } from "$lib/pwa/manifest";
+import { m } from "#lib/paraglide/messages.js";
+import { getLocale } from "#lib/paraglide/runtime.js";
+import { buildManifest } from "#lib/pwa/manifest.ts";
 
 /**
  * The web app manifest. Public: browsers fetch it without credentials. It is a route rather than a

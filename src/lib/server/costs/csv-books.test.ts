@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createCostRequestSchema } from "$lib/api/schemas/costs";
-import { ctxAt } from "$lib/testing/domain";
-import { useTestDB } from "$lib/testing/db";
-import { createCostBookRequestSchema } from "$lib/api/schemas/cost-books";
+import { createCostRequestSchema } from "#lib/api/schemas/costs.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { createCostBookRequestSchema } from "#lib/api/schemas/cost-books.ts";
 import { createCostBook, listCostBooks } from "./books";
 import { createCost } from "./costs";
 import { CSV_BOM, CSV_COLUMNS, costsCsv } from "./csv";

@@ -3,22 +3,22 @@
   import ChevronsUpDownIcon from "@lucide/svelte/icons/chevrons-up-down";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import * as Command from "$lib/components/ui/command/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import * as Popover from "$lib/components/ui/popover/index.js";
-  import { areaKey } from "$lib/connections/areas";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import * as Command from "#lib/components/ui/command/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import * as Popover from "#lib/components/ui/popover/index.js";
+  import { areaKey } from "#lib/connections/areas.ts";
   import {
     homeAssistantOf,
     isUsable,
     loadIntegrations,
-  } from "$lib/connections/connection";
-  import { pickerErrorMessage } from "$lib/connections/errors";
-  import type { ExternalArea } from "$lib/connections/types";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/connections/connection.ts";
+  import { pickerErrorMessage } from "#lib/connections/errors.ts";
+  import type { ExternalArea } from "#lib/connections/types.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     id,

@@ -1,6 +1,9 @@
-import { detectCounterReset, type AutoCompleteRule } from "$lib/tasks/engine";
-import type { ServiceContext } from "$lib/server/service";
-import { completeTask } from "$lib/server/tasks/completions";
+import {
+  detectCounterReset,
+  type AutoCompleteRule,
+} from "#lib/tasks/engine/index.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
+import { completeTask } from "#lib/server/tasks/completions.ts";
 import type { SignalChange, SignalValue } from "./service";
 import { activeTriggers, autoCompleteRulesOf } from "./watch";
 

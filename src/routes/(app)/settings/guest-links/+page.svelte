@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import { resolve } from "$app/paths";
   import BookOpenIcon from "@lucide/svelte/icons/book-open";
   import ContactIcon from "@lucide/svelte/icons/contact";
@@ -8,17 +8,17 @@
   import PlusIcon from "@lucide/svelte/icons/plus";
   import SirenIcon from "@lucide/svelte/icons/siren";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { CreatedGuestLink, GuestLink } from "$lib/api/schemas/share";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import GuestLinkFormDialog from "$lib/components/share/guest-link-form-dialog.svelte";
-  import GuestLinkRevealDialog from "$lib/components/share/guest-link-reveal-dialog.svelte";
-  import GuestLinkRow from "$lib/components/share/guest-link-row.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { CreatedGuestLink, GuestLink } from "#lib/api/schemas/share.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import GuestLinkFormDialog from "#lib/components/share/guest-link-form-dialog.svelte";
+  import GuestLinkRevealDialog from "#lib/components/share/guest-link-reveal-dialog.svelte";
+  import GuestLinkRow from "#lib/components/share/guest-link-row.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -56,7 +56,7 @@
     revealedRotated = false;
     formOpen = false;
     revealOpen = true;
-    await invalidateAll();
+    await refreshAll();
   }
 
   function askRotate(link: GuestLink) {
@@ -79,7 +79,7 @@
     revealedPin = null;
     revealedRotated = true;
     revealOpen = true;
-    await invalidateAll();
+    await refreshAll();
   }
 
   async function revoke() {
@@ -87,7 +87,7 @@
     const { id, label } = target;
     await api.call(endpoints.guestLinksRevoke, { params: { id } });
     toast.success(m.glinks_revoked_toast({ label }));
-    await invalidateAll();
+    await refreshAll();
   }
 
   const flagPlaces = [
@@ -217,7 +217,7 @@
               {place.body()}
             </p>
             <a
-              href={resolve(place.href)}
+              href={resolve(place.href.slice(1))}
               class="text-brand mt-auto inline-flex min-h-10 items-center self-start text-xs font-medium underline underline-offset-4"
             >
               {m.glinks_where_open()}
@@ -228,7 +228,7 @@
       <p class="text-muted-foreground text-xs text-pretty">
         {m.glinks_info_emergency()}
         <a
-          href={resolve("/emergency")}
+          href={resolve("emergency")}
           class="text-brand font-medium underline underline-offset-4 pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center"
         >
           {m.glinks_info_emergency_link()}
@@ -245,7 +245,7 @@
   timeZone={data.timeZone}
   today={data.today}
   oncreated={created}
-  onsaved={invalidateAll}
+  onsaved={refreshAll}
 />
 <GuestLinkRevealDialog
   bind:open={revealOpen}

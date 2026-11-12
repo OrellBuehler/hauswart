@@ -5,7 +5,7 @@ import type {
   SessionInfo,
   SessionUser,
   TokenInfo,
-} from "$lib/server/auth/types";
+} from "#lib/server/auth/types.ts";
 
 declare global {
   namespace App {
@@ -18,7 +18,7 @@ declare global {
       token: TokenInfo | null;
     }
     interface PageState {
-      /** Id of the dialog or sheet that owns the current history entry (see `$lib/overlays`). */
+      /** Id of the dialog or sheet that owns the current history entry (see `#lib/overlays`). */
       overlay?: string;
     }
   }

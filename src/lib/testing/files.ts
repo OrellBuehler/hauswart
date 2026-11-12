@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach } from "vitest";
-import { settleBackgroundWork } from "$lib/server/attachments/attachments";
+import { settleBackgroundWork } from "#lib/server/attachments/attachments.ts";
 
 /**
  * Call once at the top level of a test file: every test gets an empty temporary directory as

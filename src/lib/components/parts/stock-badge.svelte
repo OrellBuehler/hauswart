@@ -2,10 +2,10 @@
   import PackageCheckIcon from "@lucide/svelte/icons/package-check";
   import PackageMinusIcon from "@lucide/svelte/icons/package-minus";
   import PackageXIcon from "@lucide/svelte/icons/package-x";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { m } from "$lib/paraglide/messages";
-  import { stockLevel } from "$lib/parts/stock";
-  import { cn } from "$lib/utils";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { stockLevel } from "#lib/parts/stock.ts";
+  import { cn } from "#lib/utils.ts";
 
   let {
     part,

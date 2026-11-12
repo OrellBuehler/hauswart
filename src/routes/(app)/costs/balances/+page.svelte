@@ -11,25 +11,26 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { Settlement } from "$lib/api/schemas/settlements";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import BookSwitcher from "$lib/components/costs/book-switcher.svelte";
-  import SettlementDialog from "$lib/components/costs/settlement-dialog.svelte";
-  import SuggestedPayments from "$lib/components/costs/suggested-payments.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Settlement } from "#lib/api/schemas/settlements.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import BookSwitcher from "#lib/components/costs/book-switcher.svelte";
+  import SettlementDialog from "#lib/components/costs/settlement-dialog.svelte";
+  import SuggestedPayments from "#lib/components/costs/suggested-payments.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
   import {
     dismissHistoryHint,
     historyHintDismissed,
-  } from "$lib/costs/balance-hint";
+  } from "#lib/costs/balance-hint.ts";
+
   import {
     balanceState,
     balanceWording,
@@ -38,21 +39,21 @@
     viewerLine,
     type BalanceTone,
     type SuggestedPayment,
-  } from "$lib/costs/balances";
-  import { rememberBook } from "$lib/costs/book-memory";
-  import { MAX_YEAR, MIN_YEAR, yearOptions } from "$lib/costs/filters";
+  } from "#lib/costs/balances.ts";
+  import { rememberBook } from "#lib/costs/book-memory.ts";
+  import { MAX_YEAR, MIN_YEAR, yearOptions } from "#lib/costs/filters.ts";
   import {
     draftFromSuggestion,
     settlementFilterQuery,
     settlementFiltersActive,
     type SettlementDraft,
     type SettlementFilters,
-  } from "$lib/costs/settlements";
-  import { formatDay } from "$lib/format";
-  import { formatMoney } from "$lib/format-money";
-  import { invalidateAfterOverlay } from "$lib/overlays/use-overlay-history.svelte";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/costs/settlements.ts";
+  import { formatDay } from "#lib/format.ts";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { invalidateAfterOverlay } from "#lib/overlays/use-overlay-history.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -99,15 +100,15 @@
   });
 
   function address(next: SettlementFilters): string {
-    return resolve(`/costs/balances${settlementFilterQuery(next)}` as "/");
+    return resolve(`costs/balances${settlementFilterQuery(next)}`);
   }
 
   async function apply(patch: Partial<SettlementFilters>) {
     await goto(
       resolve(
-        `/costs/balances${settlementFilterQuery({ ...filters, ...patch })}` as "/",
+        `costs/balances${settlementFilterQuery({ ...filters, ...patch })}`,
       ),
-      { keepFocus: true, noScroll: true },
+      { reset: false },
     );
   }
 
@@ -175,7 +176,7 @@
 <div class="flex flex-col gap-6">
   <div class="max-md:hidden">
     <a
-      href={resolve("/costs")}
+      href={resolve("costs")}
       class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -ms-1 inline-flex min-h-10 items-center gap-1.5 rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />

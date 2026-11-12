@@ -1,5 +1,5 @@
-import type { WarrantyStatus } from "$lib/api/enums";
-import type { Warranty } from "$lib/api/schemas/warranties";
+import type { WarrantyStatus } from "#lib/api/enums.ts";
+import type { Warranty } from "#lib/api/schemas/warranties.ts";
 
 const ORDER: Record<WarrantyStatus, number> = {
   expiring: 0,

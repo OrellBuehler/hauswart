@@ -1,8 +1,14 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { appointments, assets, contacts, tasks, users } from "$lib/server/db";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
+import {
+  appointments,
+  assets,
+  contacts,
+  tasks,
+  users,
+} from "#lib/server/db.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 
 const START = Date.UTC(2026, 5, 15, 8);
 

@@ -1,20 +1,23 @@
-import { householdTimeZone } from "$lib/server/config";
+import { householdTimeZone } from "#lib/server/config.ts";
 import {
   dueForAttempt,
   recordConnectionFailure,
   recordConnectionOk,
   resolveConnection,
-} from "$lib/server/connections/connections";
-import { parseMarker } from "$lib/server/calendar-sync/ref";
-import { ingestSignals, afterCalendarSync } from "$lib/server/signals/ingest";
+} from "#lib/server/connections/connections.ts";
+import { parseMarker } from "#lib/server/calendar-sync/ref.ts";
+import {
+  ingestSignals,
+  afterCalendarSync,
+} from "#lib/server/signals/ingest.ts";
 import {
   hasExternalDates,
   replaceExternalDates,
   type ExternalDateEntry,
   type SignalReading,
-} from "$lib/server/signals/service";
-import { watchedEntities } from "$lib/server/signals/watch";
-import type { ServiceContext } from "$lib/server/service";
+} from "#lib/server/signals/service.ts";
+import { watchedEntities } from "#lib/server/signals/watch.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import { clientFor, householdConnection, SIGNAL_SOURCE } from "./connection";
 import { errorCode } from "./errors";
 import {

@@ -1,15 +1,15 @@
-import type { endpoints } from "$lib/api/registry";
-import { countAiTasks } from "$lib/server/ai-tasks/ai-tasks";
-import { dashboardBalances } from "$lib/server/costs/balances";
-import { dashboardBudgetAlerts } from "$lib/server/costs/budgets";
-import { countReviewNeeded } from "$lib/server/costs/costs";
-import { costsYearToDate } from "$lib/server/costs/summary";
-import { selectAllDefects } from "$lib/server/defects/defects";
-import { countPendingSuggestions } from "$lib/server/finance/suggestions";
-import { listOrderNow } from "$lib/server/parts/order-now";
-import { getDashboard } from "$lib/server/tasks/dashboard";
-import { getStats } from "$lib/server/tasks/stats";
-import { dashboardWarranties } from "$lib/server/warranties/warranties";
+import type { endpoints } from "#lib/api/registry.ts";
+import { countAiTasks } from "#lib/server/ai-tasks/ai-tasks.ts";
+import { dashboardBalances } from "#lib/server/costs/balances.ts";
+import { dashboardBudgetAlerts } from "#lib/server/costs/budgets.ts";
+import { countReviewNeeded } from "#lib/server/costs/costs.ts";
+import { costsYearToDate } from "#lib/server/costs/summary.ts";
+import { selectAllDefects } from "#lib/server/defects/defects.ts";
+import { countPendingSuggestions } from "#lib/server/finance/suggestions.ts";
+import { listOrderNow } from "#lib/server/parts/order-now.ts";
+import { getDashboard } from "#lib/server/tasks/dashboard.ts";
+import { getStats } from "#lib/server/tasks/stats.ts";
+import { dashboardWarranties } from "#lib/server/warranties/warranties.ts";
 import type { Handler } from "../bind";
 import { wireDashboard } from "../wire";
 

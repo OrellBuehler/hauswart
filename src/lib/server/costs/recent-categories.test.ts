@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createCostBookRequestSchema } from "$lib/api/schemas/cost-books";
-import { createCostRequestSchema } from "$lib/api/schemas/costs";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, NOW } from "$lib/testing/domain";
-import { failure } from "$lib/testing/vehicles";
+import { createCostBookRequestSchema } from "#lib/api/schemas/cost-books.ts";
+import { createCostRequestSchema } from "#lib/api/schemas/costs.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, NOW } from "#lib/testing/domain.ts";
+import { failure } from "#lib/testing/vehicles.ts";
 import { createCostBook, listCostBooks, updateCostBook } from "./books";
 import { createCost } from "./costs";
 import { recentCategories } from "./recent-categories";

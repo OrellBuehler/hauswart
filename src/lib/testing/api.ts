@@ -1,6 +1,6 @@
 import type { RequestEvent } from "@sveltejs/kit";
-import { SESSION_COOKIE } from "$lib/api/constants";
-import type { FetchLike } from "$lib/api/client";
+import { SESSION_COOKIE } from "#lib/api/constants.ts";
+import type { FetchLike } from "#lib/api/client.ts";
 import { handle } from "../../hooks.server";
 import { callRoute, type CallOptions, type RouteResult } from "./route";
 import { createTestEvent } from "./event";

@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { createContact } from "$lib/server/contacts/contacts";
-import { createContactRequestSchema } from "$lib/api/schemas/contacts";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
+import { createContact } from "#lib/server/contacts/contacts.ts";
+import { createContactRequestSchema } from "#lib/api/schemas/contacts.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import {
   cacheDocument,
   linkDocument,
   makeAsset,
   makeConnection,
-} from "$lib/testing/documents";
+} from "#lib/testing/documents.ts";
 import {
   CORRESPONDENT_SOURCE,
   assetSuggestions,

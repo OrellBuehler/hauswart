@@ -10,13 +10,13 @@ import {
   sql,
   type SQL,
 } from "drizzle-orm";
-import { ApiError } from "$lib/api/errors";
+import { ApiError } from "#lib/api/errors.ts";
 import type {
   CreatePageRequest,
   UpdatePageRequest,
-} from "$lib/api/schemas/docs";
-import { RESERVED_PAGE_SLUGS } from "$lib/api/schemas/docs";
-import type { DocSection } from "$lib/api/enums";
+} from "#lib/api/schemas/docs.ts";
+import { RESERVED_PAGE_SLUGS } from "#lib/api/schemas/docs.ts";
+import type { DocSection } from "#lib/api/enums.ts";
 import {
   getDB,
   assets,
@@ -24,23 +24,23 @@ import {
   docPages,
   rooms,
   users,
-} from "$lib/server/db";
+} from "#lib/server/db.ts";
 import {
   onAttachmentsChanged,
   removeOwnedAttachments,
   trackBackground,
-} from "$lib/server/attachments/attachments";
-import { commentCountSql } from "$lib/server/comments/counts";
-import { paginateArray } from "$lib/server/pagination";
-import { searchRefs } from "$lib/server/search/search";
+} from "#lib/server/attachments/attachments.ts";
+import { commentCountSql } from "#lib/server/comments/counts.ts";
+import { paginateArray } from "#lib/server/pagination.ts";
+import { searchRefs } from "#lib/server/search/search.ts";
 import {
   conflict,
   invalidField,
   isUniqueViolation,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
-import { slugify, uniqueSlug } from "$lib/server/slug";
+} from "#lib/server/service.ts";
+import { slugify, uniqueSlug } from "#lib/server/slug.ts";
 import {
   referencedAttachmentIds,
   renderPageContent,

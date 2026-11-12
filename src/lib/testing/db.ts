@@ -1,6 +1,11 @@
 import { afterEach, beforeEach } from "vitest";
-import { registerDomainEventHandlers } from "$lib/server/domain-events";
-import { migrateDatabase, openDatabase, setDB, type DB } from "$lib/server/db";
+import { registerDomainEventHandlers } from "#lib/server/domain-events.ts";
+import {
+  migrateDatabase,
+  openDatabase,
+  setDB,
+  type DB,
+} from "#lib/server/db.ts";
 
 /**
  * Call once at the top level of a test file (or inside a describe).

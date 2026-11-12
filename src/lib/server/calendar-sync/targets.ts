@@ -5,8 +5,8 @@ import {
   type CalendarProviderKind,
   type IntegrationStatus,
   type UserLocale,
-} from "$lib/api/enums";
-import { ApiError } from "$lib/api/errors";
+} from "#lib/api/enums.ts";
+import { ApiError } from "#lib/api/errors.ts";
 import {
   calendarTargetConfigSchema,
   type CalendarSyncCounts,
@@ -14,14 +14,14 @@ import {
   type CalendarTargetConfig,
   type CreateCalendarTargetRequest,
   type UpdateCalendarTargetRequest,
-} from "$lib/api/schemas/calendar-sync";
+} from "#lib/api/schemas/calendar-sync.ts";
 import {
   getConnectionRow,
   resolveConnection,
-} from "$lib/server/connections/connections";
-import { IntegrationError } from "$lib/server/connections/errors";
-import { calendarTargets, connections } from "$lib/server/db";
-import { emitEvent } from "$lib/server/events";
+} from "#lib/server/connections/connections.ts";
+import { IntegrationError } from "#lib/server/connections/errors.ts";
+import { calendarTargets, connections } from "#lib/server/db.ts";
+import { emitEvent } from "#lib/server/events.ts";
 import {
   conflict,
   forbidden,
@@ -29,7 +29,7 @@ import {
   isUniqueViolation,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
+} from "#lib/server/service.ts";
 import { readRange } from "./items";
 import { countLinks, listLinks } from "./links";
 import {

@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeEach } from "vitest";
-import { getDB } from "$lib/server/db";
-import { saveConnection } from "$lib/server/connections/connections";
-import { settleBackgroundWork } from "$lib/server/attachments/attachments";
+import { getDB } from "#lib/server/db.ts";
+import { saveConnection } from "#lib/server/connections/connections.ts";
+import { settleBackgroundWork } from "#lib/server/attachments/attachments.ts";
 import { registerPaperlessAdapter } from "./index";
 import { startFakePaperless, type FakePaperless } from "./fake-server";
 import { uploadPolling } from "./provider";

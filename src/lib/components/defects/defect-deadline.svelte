@@ -1,10 +1,10 @@
 <script lang="ts">
   import ClockAlertIcon from "@lucide/svelte/icons/clock-alert";
-  import type { DefectStatus } from "$lib/api/enums";
-  import { deadlineInfo, deadlineTones } from "$lib/defects/deadline";
-  import { formatDateShort, formatRelativeDays } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import type { DefectStatus } from "#lib/api/enums.ts";
+  import { deadlineInfo, deadlineTones } from "#lib/defects/deadline.ts";
+  import { formatDateShort, formatRelativeDays } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     date,

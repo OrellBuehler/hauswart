@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
-import { sessions, users } from "$lib/server/db";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { FakeCookies } from "$lib/testing/event";
+import { sessions, users } from "#lib/server/db.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { FakeCookies } from "#lib/testing/event.ts";
 import {
   SESSION_COOKIE,
   SESSION_LIFETIME_MS,

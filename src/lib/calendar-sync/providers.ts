@@ -2,10 +2,10 @@ import {
   CALENDAR_PROVIDERS,
   INTEGRATION_LEVELS,
   type CalendarProviderKind,
-} from "$lib/api/enums";
-import type { Integration } from "$lib/api/schemas/integrations";
-import { isUsable } from "$lib/connections/connection";
-import { m } from "$lib/paraglide/messages";
+} from "#lib/api/enums.ts";
+import type { Integration } from "#lib/api/schemas/integrations.ts";
+import { isUsable } from "#lib/connections/connection.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 /** The connected systems the caller can add a calendar of: working connection, and for the household's own connection an administrator. */
 export function creatableProviders(

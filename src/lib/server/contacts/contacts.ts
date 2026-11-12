@@ -1,20 +1,20 @@
 import { and, asc, eq, like, or, sql, type SQL } from "drizzle-orm";
-import type { ContactKind } from "$lib/api/enums";
+import type { ContactKind } from "#lib/api/enums.ts";
 import type {
   CreateContactRequest,
   LinkAssetContactRequest,
   UpdateContactRequest,
-} from "$lib/api/schemas/contacts";
-import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
-import { assetContacts, assets, contacts } from "$lib/server/db";
-import { paginateArray } from "$lib/server/pagination";
+} from "#lib/api/schemas/contacts.ts";
+import { removeOwnedAttachments } from "#lib/server/attachments/attachments.ts";
+import { assetContacts, assets, contacts } from "#lib/server/db.ts";
+import { paginateArray } from "#lib/server/pagination.ts";
 import {
   conflict,
   invalidField,
   isUniqueViolation,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
+} from "#lib/server/service.ts";
 
 type Db = Pick<ServiceContext, "db">;
 type Now = Pick<ServiceContext, "db" | "now">;

@@ -27,8 +27,8 @@ import type {
   CostSource,
   CostSplitMode,
   FinanceSuggestionKind,
-} from "$lib/api/enums";
-import { m } from "$lib/paraglide/messages";
+} from "#lib/api/enums.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 export const categoryLabels: Record<CostCategory, () => string> = {
   repair: () => m.cost_category_repair(),

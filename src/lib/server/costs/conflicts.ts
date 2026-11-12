@@ -1,6 +1,6 @@
-import type { ApiError } from "$lib/api/errors";
-import type { CostConflictCode } from "$lib/api/enums";
-import { conflict } from "$lib/server/service";
+import type { ApiError } from "#lib/api/errors.ts";
+import type { CostConflictCode } from "#lib/api/enums.ts";
+import { conflict } from "#lib/server/service.ts";
 
 /**
  * A 409 whose `details.code` says which conflict it is (`COST_CONFLICT_CODES`), with more `details` where there is

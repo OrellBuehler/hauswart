@@ -1,11 +1,11 @@
 import { and, isNull } from "drizzle-orm";
-import { assets } from "$lib/server/db";
-import { IntegrationError } from "$lib/server/connections/errors";
+import { assets } from "#lib/server/db.ts";
+import { IntegrationError } from "#lib/server/connections/errors.ts";
 import type {
   IntegrationAdapter,
   IntegrationOperation,
   ResolvedConnection,
-} from "$lib/server/connections/registry";
+} from "#lib/server/connections/registry.ts";
 import { configSchema, normalizeAppUrl } from "./app-url";
 import { createCalendarProvider } from "./calendar-provider";
 import { normalizeBaseUrl } from "./client";

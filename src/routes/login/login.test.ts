@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { createTestEvent, outcome } from "$lib/testing/event";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { createTestEvent, outcome } from "#lib/testing/event.ts";
 import { load } from "./+page.server";
 
 const run = (url: string, user: unknown = null) =>

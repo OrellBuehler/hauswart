@@ -3,11 +3,11 @@ import {
   createCostBudgetRequestSchema,
   updateCostBudgetRequestSchema,
   type CreateCostBudgetRequest,
-} from "$lib/api/schemas/cost-budgets";
-import { createCostRequestSchema } from "$lib/api/schemas/costs";
-import { costBudgets } from "$lib/server/db";
-import { at, ctxAt } from "$lib/testing/domain";
-import { useTestDB } from "$lib/testing/db";
+} from "#lib/api/schemas/cost-budgets.ts";
+import { createCostRequestSchema } from "#lib/api/schemas/costs.ts";
+import { costBudgets } from "#lib/server/db.ts";
+import { at, ctxAt } from "#lib/testing/domain.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import {
   createCostBook,
   defaultCostBook,
@@ -24,7 +24,7 @@ import {
   updateCostBudget,
 } from "./budgets";
 import { createCost } from "./costs";
-import { createCostBookRequestSchema } from "$lib/api/schemas/cost-books";
+import { createCostBookRequestSchema } from "#lib/api/schemas/cost-books.ts";
 
 describe("cost budgets", () => {
   const test = useTestDB();

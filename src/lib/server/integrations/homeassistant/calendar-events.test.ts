@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { zonedTimeToInstant } from "$lib/dates";
-import type { CalendarItem } from "$lib/server/calendar-sync/provider";
+import { zonedTimeToInstant } from "#lib/dates.ts";
+import type { CalendarItem } from "#lib/server/calendar-sync/provider.ts";
 import {
   capabilitiesOf,
   eventDescription,

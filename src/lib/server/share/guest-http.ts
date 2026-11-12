@@ -5,14 +5,14 @@ import {
   type ActionFailure,
   type RequestEvent,
 } from "@sveltejs/kit";
-import { clientKey } from "$lib/server/auth/login";
+import { clientKey } from "#lib/server/auth/login.ts";
 import {
   shareMissLimiter,
   shareRequestLimiter,
   shareTokenLimiter,
-} from "$lib/server/auth/rate-limit";
-import { cookieSecureOverride } from "$lib/server/auth/sessions";
-import { getDB } from "$lib/server/db";
+} from "#lib/server/auth/rate-limit.ts";
+import { cookieSecureOverride } from "#lib/server/auth/sessions.ts";
+import { getDB } from "#lib/server/db.ts";
 import {
   attemptPin,
   GUEST_COOKIE,

@@ -1,7 +1,7 @@
 <script lang="ts">
   import BellRingIcon from "@lucide/svelte/icons/bell-ring";
-  import type { SignalReaction } from "$lib/api/schemas/hints";
-  import { m } from "$lib/paraglide/messages";
+  import type { SignalReaction } from "#lib/api/schemas/hints.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   let { reaction }: { reaction: SignalReaction } = $props();
 

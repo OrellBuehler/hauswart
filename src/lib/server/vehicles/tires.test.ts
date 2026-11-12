@@ -1,28 +1,28 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
 import {
   createTireSetRequestSchema,
   measureTreadRequestSchema,
   mountTireSetRequestSchema,
   updateTireSetRequestSchema,
-} from "$lib/api/schemas/tire-sets";
-import { createAsset, deleteAsset } from "$lib/server/assets/assets";
-import { createAttachment } from "$lib/server/attachments/attachments";
-import { createContact } from "$lib/server/contacts/contacts";
-import { createContactRequestSchema } from "$lib/api/schemas/contacts";
+} from "#lib/api/schemas/tire-sets.ts";
+import { createAsset, deleteAsset } from "#lib/server/assets/assets.ts";
+import { createAttachment } from "#lib/server/attachments/attachments.ts";
+import { createContact } from "#lib/server/contacts/contacts.ts";
+import { createContactRequestSchema } from "#lib/api/schemas/contacts.ts";
 import {
   attachments,
   odometerReadings,
   tireSetEvents,
   tireSets,
-} from "$lib/server/db";
-import { getSignal } from "$lib/server/signals/service";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, NOW } from "$lib/testing/domain";
-import { samplePdf, useTestFilesDir } from "$lib/testing/files";
-import { failure, fieldErrors, makeVehicle } from "$lib/testing/vehicles";
-import { odometerSignalKey } from "$lib/vehicles/odometer";
+} from "#lib/server/db.ts";
+import { getSignal } from "#lib/server/signals/service.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, NOW } from "#lib/testing/domain.ts";
+import { samplePdf, useTestFilesDir } from "#lib/testing/files.ts";
+import { failure, fieldErrors, makeVehicle } from "#lib/testing/vehicles.ts";
+import { odometerSignalKey } from "#lib/vehicles/odometer.ts";
 import { listReadings, recordOdometer } from "./odometer";
 import {
   createTireSet,

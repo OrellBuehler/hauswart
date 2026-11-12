@@ -1,8 +1,12 @@
-import { ApiError } from "$lib/api/errors";
-import type { endpoints } from "$lib/api/registry";
-import { logAuthEvent } from "$lib/server/auth/events";
-import { requireScopes } from "$lib/server/auth/guards";
-import { createToken, listTokens, revokeToken } from "$lib/server/auth/tokens";
+import { ApiError } from "#lib/api/errors.ts";
+import type { endpoints } from "#lib/api/registry.ts";
+import { logAuthEvent } from "#lib/server/auth/events.ts";
+import { requireScopes } from "#lib/server/auth/guards.ts";
+import {
+  createToken,
+  listTokens,
+  revokeToken,
+} from "#lib/server/auth/tokens.ts";
 import type { Handler } from "../bind";
 import { wireToken } from "../wire";
 

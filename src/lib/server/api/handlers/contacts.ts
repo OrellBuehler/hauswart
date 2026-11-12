@@ -1,4 +1,4 @@
-import type { endpoints } from "$lib/api/registry";
+import type { endpoints } from "#lib/api/registry.ts";
 import {
   createContact,
   deleteContact,
@@ -8,7 +8,7 @@ import {
   listContacts,
   unlinkAssetContact,
   updateContact,
-} from "$lib/server/contacts/contacts";
+} from "#lib/server/contacts/contacts.ts";
 import type { Handler } from "../bind";
 import { wireAssetContact, wireContact } from "../wire";
 

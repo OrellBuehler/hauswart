@@ -4,10 +4,10 @@
   import CircleHelpIcon from "@lucide/svelte/icons/circle-help";
   import CirclePauseIcon from "@lucide/svelte/icons/circle-pause";
   import CircleXIcon from "@lucide/svelte/icons/circle-x";
-  import type { Integration } from "$lib/api/schemas/integrations";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import type { Integration } from "#lib/api/schemas/integrations.ts";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     integration,

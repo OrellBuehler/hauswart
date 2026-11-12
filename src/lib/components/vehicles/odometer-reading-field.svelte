@@ -1,11 +1,11 @@
 <script lang="ts">
-  import Field from "$lib/components/tasks/field.svelte";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { formatDay } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { formatOdometer } from "$lib/vehicles/format";
-  import type { VehicleReadingState } from "$lib/vehicles/odometer-state.svelte";
-  import { readingText } from "$lib/vehicles/odometer-input";
+  import Field from "#lib/components/tasks/field.svelte";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { formatDay } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { formatOdometer } from "#lib/vehicles/format.ts";
+  import type { VehicleReadingState } from "#lib/vehicles/odometer-state.svelte.ts";
+  import { readingText } from "#lib/vehicles/odometer-input.ts";
 
   let {
     id,

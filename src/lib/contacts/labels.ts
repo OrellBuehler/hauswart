@@ -8,8 +8,8 @@ import SirenIcon from "@lucide/svelte/icons/siren";
 import StoreIcon from "@lucide/svelte/icons/store";
 import WrenchIcon from "@lucide/svelte/icons/wrench";
 import ZapIcon from "@lucide/svelte/icons/zap";
-import type { AssetContactRole, ContactKind } from "$lib/api/enums";
-import { m } from "$lib/paraglide/messages";
+import type { AssetContactRole, ContactKind } from "#lib/api/enums.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 export const contactKindLabels: Record<ContactKind, () => string> = {
   installer: () => m.contact_kind_installer(),

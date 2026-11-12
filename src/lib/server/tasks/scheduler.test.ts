@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, everyDays, makeTask, NOW } from "$lib/testing/domain";
-import { createTestUser } from "$lib/testing/auth";
-import { notifications } from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, everyDays, makeTask, NOW } from "#lib/testing/domain.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { notifications } from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import {
   EVALUATION_INTERVAL_MS,
   registerEvaluator,

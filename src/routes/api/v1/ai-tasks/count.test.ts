@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { endpoints } from "$lib/api/registry";
-import { createApiClient } from "$lib/api/client";
-import { plainPng } from "$lib/server/files/test-images";
+import { endpoints } from "#lib/api/registry.ts";
+import { createApiClient } from "#lib/api/client.ts";
+import { plainPng } from "#lib/server/files/test-images.ts";
 import {
   createCaller,
   createInProcessFetch,
   errorCode,
-} from "$lib/testing/api";
+} from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { useTestFilesDir } from "$lib/testing/files";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { useTestFilesDir } from "#lib/testing/files.ts";
 
 describe("GET /api/v1/ai-tasks/count", () => {
   useTestDB();

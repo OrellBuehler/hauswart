@@ -3,30 +3,30 @@ import type { z } from "zod";
 import {
   costSuggestionPayloadSchema,
   storedLinkPayloadSchema,
-} from "$lib/api/schemas/finance";
+} from "#lib/api/schemas/finance.ts";
 import {
   MATCH_DAYS,
   MATCH_MIN_SIMILARITY,
   matchSimilarity,
   transactionMatchesEntry,
   type MatchSide,
-} from "$lib/costs/match";
-import { addDays, diffDays } from "$lib/dates";
+} from "#lib/costs/match.ts";
+import { addDays, diffDays } from "#lib/dates.ts";
 import {
   costBooks,
   costEntries,
   financeSuggestions,
   type DB,
-} from "$lib/server/db";
-import { costConflict } from "$lib/server/costs/conflicts";
-import { emitEvent } from "$lib/server/events";
+} from "#lib/server/db.ts";
+import { costConflict } from "#lib/server/costs/conflicts.ts";
+import { emitEvent } from "#lib/server/events.ts";
 import {
   conflict,
   invalidField,
   isUniqueViolation,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
+} from "#lib/server/service.ts";
 import {
   findSuggestion,
   getOwnSuggestion,

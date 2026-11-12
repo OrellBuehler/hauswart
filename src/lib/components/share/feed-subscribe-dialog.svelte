@@ -3,16 +3,16 @@
   import ChevronDownIcon from "@lucide/svelte/icons/chevron-down";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import { page } from "$app/state";
-  import type { CalendarFeed } from "$lib/api/schemas/share";
-  import QrCode from "$lib/components/assets/qr-code.svelte";
-  import CopyButton from "$lib/components/app/copy-button.svelte";
-  import CalendarHowto from "$lib/components/share/calendar-howto.svelte";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import { m } from "$lib/paraglide/messages";
-  import { absoluteUrl, webcalUrl } from "$lib/share/urls";
+  import type { CalendarFeed } from "#lib/api/schemas/share.ts";
+  import QrCode from "#lib/components/assets/qr-code.svelte";
+  import CopyButton from "#lib/components/app/copy-button.svelte";
+  import CalendarHowto from "#lib/components/share/calendar-howto.svelte";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import * as Alert from "#lib/components/ui/alert/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Dialog from "#lib/components/ui/dialog/index.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { absoluteUrl, webcalUrl } from "#lib/share/urls.ts";
 
   let {
     open = $bindable(false),

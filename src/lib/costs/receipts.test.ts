@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AiTask } from "$lib/api/schemas/ai-tasks";
+import type { AiTask } from "#lib/api/schemas/ai-tasks.ts";
 import {
   appendTasks,
   canDeleteTask,

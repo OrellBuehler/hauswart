@@ -2,10 +2,10 @@
   import GlobeIcon from "@lucide/svelte/icons/globe";
   import MailIcon from "@lucide/svelte/icons/mail";
   import PhoneIcon from "@lucide/svelte/icons/phone";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { telHref } from "$lib/contacts/labels";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { telHref } from "#lib/contacts/labels.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     contact,

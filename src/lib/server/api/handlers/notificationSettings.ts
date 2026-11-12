@@ -1,7 +1,10 @@
-import type { endpoints } from "$lib/api/registry";
-import { performDoneAction } from "$lib/server/notifications/actions";
-import { ApiError } from "$lib/api/errors";
-import { getSettings, saveSettings } from "$lib/server/notifications/settings";
+import type { endpoints } from "#lib/api/registry.ts";
+import { performDoneAction } from "#lib/server/notifications/actions.ts";
+import { ApiError } from "#lib/api/errors.ts";
+import {
+  getSettings,
+  saveSettings,
+} from "#lib/server/notifications/settings.ts";
 import type { Handler } from "../bind";
 
 export const get: Handler<typeof endpoints.notificationSettingsGet> = ({

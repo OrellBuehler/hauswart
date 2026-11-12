@@ -1,18 +1,18 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { createContactRequestSchema } from "$lib/api/schemas/contacts";
-import { MAX_APPOINTMENT_DAYS } from "$lib/appointments/when";
-import { createAsset, deleteAsset } from "$lib/server/assets/assets";
-import { createAttachment } from "$lib/server/attachments/attachments";
-import { createComment } from "$lib/server/comments/comments";
-import { createContact, deleteContact } from "$lib/server/contacts/contacts";
-import { attachments, comments, appointments } from "$lib/server/db";
-import { search } from "$lib/server/search/search";
-import { deleteTask } from "$lib/server/tasks/tasks";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, everyDays, makeTask, NOW } from "$lib/testing/domain";
-import { samplePdf, useTestFilesDir } from "$lib/testing/files";
+import { createContactRequestSchema } from "#lib/api/schemas/contacts.ts";
+import { MAX_APPOINTMENT_DAYS } from "#lib/appointments/when.ts";
+import { createAsset, deleteAsset } from "#lib/server/assets/assets.ts";
+import { createAttachment } from "#lib/server/attachments/attachments.ts";
+import { createComment } from "#lib/server/comments/comments.ts";
+import { createContact, deleteContact } from "#lib/server/contacts/contacts.ts";
+import { attachments, comments, appointments } from "#lib/server/db.ts";
+import { search } from "#lib/server/search/search.ts";
+import { deleteTask } from "#lib/server/tasks/tasks.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, everyDays, makeTask, NOW } from "#lib/testing/domain.ts";
+import { samplePdf, useTestFilesDir } from "#lib/testing/files.ts";
 import {
   createAppointment,
   deleteAppointment,

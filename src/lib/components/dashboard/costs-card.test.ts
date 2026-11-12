@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render } from "svelte/server";
-import type { Dashboard } from "$lib/api/schemas/dashboard";
+import type { Dashboard } from "#lib/api/schemas/dashboard.ts";
 import CostsCard from "./costs-card.svelte";
 
 type Costs = Dashboard["costsYearToDate"];

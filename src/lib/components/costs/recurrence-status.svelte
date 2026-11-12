@@ -2,12 +2,12 @@
   import CircleCheckIcon from "@lucide/svelte/icons/circle-check";
   import FlagIcon from "@lucide/svelte/icons/flag";
   import PauseIcon from "@lucide/svelte/icons/pause";
-  import { Badge } from "$lib/components/ui/badge/index.js";
+  import { Badge } from "#lib/components/ui/badge/index.js";
   import {
     recurrenceStateLabels,
     type RecurrenceState,
-  } from "$lib/costs/recurrences";
-  import { cn } from "$lib/utils";
+  } from "#lib/costs/recurrences.ts";
+  import { cn } from "#lib/utils.ts";
 
   let { state, class: className }: { state: RecurrenceState; class?: string } =
     $props();

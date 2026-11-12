@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { ApiError } from "$lib/api/errors";
-import { integrationErrorMessage } from "$lib/connections/errors";
-import { m } from "$lib/paraglide/messages";
+import { ApiError } from "#lib/api/errors.ts";
+import { integrationErrorMessage } from "#lib/connections/errors.ts";
+import { m } from "#lib/paraglide/messages.js";
 import { deleteFailure, removalPausedTarget, saveFailure } from "./errors";
 
 const calendarRefused = (code: string, message: string) =>

@@ -1,10 +1,10 @@
-import { getDB } from "$lib/server/db";
+import { getDB } from "#lib/server/db.ts";
 import {
   dueForAttempt,
   listEnabledConnections,
   resolveConnection,
-} from "$lib/server/connections/connections";
-import { onEvent } from "$lib/server/events";
+} from "#lib/server/connections/connections.ts";
+import { onEvent } from "#lib/server/events.ts";
 import { KIND } from "./connection";
 import { errorCode } from "./errors";
 import { housekeeping, syncConnection, syncLinksOf } from "./sync";

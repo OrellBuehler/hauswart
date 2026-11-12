@@ -1,12 +1,12 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { ApiError } from "$lib/api/errors";
-import { createGuestLinkRequestSchema } from "$lib/api/schemas/share";
-import { verifyPassword } from "$lib/server/auth/password";
-import { guestLinks } from "$lib/server/db";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, NOW } from "$lib/testing/domain";
+import { ApiError } from "#lib/api/errors.ts";
+import { createGuestLinkRequestSchema } from "#lib/api/schemas/share.ts";
+import { verifyPassword } from "#lib/server/auth/password.ts";
+import { guestLinks } from "#lib/server/db.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, NOW } from "#lib/testing/domain.ts";
 import {
   addPinFailure,
   createGuestLink,

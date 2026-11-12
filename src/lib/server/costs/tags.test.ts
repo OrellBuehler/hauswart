@@ -3,12 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   createCostRequestSchema,
   updateCostRequestSchema,
-} from "$lib/api/schemas/costs";
-import { MAX_COST_TAGS } from "$lib/api/schemas/cost-tags";
-import { costTags } from "$lib/server/db";
-import { createTestUser } from "$lib/testing/auth";
-import { ctxAt } from "$lib/testing/domain";
-import { useTestDB } from "$lib/testing/db";
+} from "#lib/api/schemas/costs.ts";
+import { MAX_COST_TAGS } from "#lib/api/schemas/cost-tags.ts";
+import { costTags } from "#lib/server/db.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import {
   createCost,
   deleteCost,

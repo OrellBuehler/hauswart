@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { SESSION_COOKIE } from "$lib/api/constants";
-import { authEvents, users } from "$lib/server/db";
-import { validateSessionToken } from "$lib/server/auth/sessions";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { callRoute } from "$lib/testing/route";
+import { SESSION_COOKIE } from "#lib/api/constants.ts";
+import { authEvents, users } from "#lib/server/db.ts";
+import { validateSessionToken } from "#lib/server/auth/sessions.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { callRoute } from "#lib/testing/route.ts";
 import { GET, POST } from "./+server";
 
 const body = {

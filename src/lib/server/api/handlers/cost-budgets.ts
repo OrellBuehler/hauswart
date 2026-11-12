@@ -1,10 +1,10 @@
 import type { z } from "zod";
-import type { endpoints } from "$lib/api/registry";
+import type { endpoints } from "#lib/api/registry.ts";
 import type {
   costBudgetSchema,
   costBudgetStatusSchema,
-} from "$lib/api/schemas/cost-budgets";
-import { toIso } from "$lib/api/schemas/common";
+} from "#lib/api/schemas/cost-budgets.ts";
+import { toIso } from "#lib/api/schemas/common.ts";
 import {
   costBudgetStatus,
   createCostBudget,
@@ -13,7 +13,7 @@ import {
   listCostBudgets,
   updateCostBudget,
   type CostBudgetRecord,
-} from "$lib/server/costs/budgets";
+} from "#lib/server/costs/budgets.ts";
 import type { Handler } from "../bind";
 
 export function wireCostBudget(

@@ -5,8 +5,8 @@ import DoorOpenIcon from "@lucide/svelte/icons/door-open";
 import FileTextIcon from "@lucide/svelte/icons/file-text";
 import ListChecksIcon from "@lucide/svelte/icons/list-checks";
 import SirenIcon from "@lucide/svelte/icons/siren";
-import { DOC_SECTIONS, type DocSection } from "$lib/api/enums";
-import { m } from "$lib/paraglide/messages";
+import { DOC_SECTIONS, type DocSection } from "#lib/api/enums.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 export { DOC_SECTIONS };
 

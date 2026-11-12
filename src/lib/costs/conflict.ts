@@ -1,6 +1,6 @@
-import type { CostConflictCode } from "$lib/api/enums";
-import { isApiError } from "$lib/api/errors";
-import { costConflictDetailsSchema } from "$lib/api/schemas/costs";
+import type { CostConflictCode } from "#lib/api/enums.ts";
+import { isApiError } from "#lib/api/errors.ts";
+import { costConflictDetailsSchema } from "#lib/api/schemas/costs.ts";
 
 /**
  * Which conflict a 409 of the cost endpoints is (`details.code`, see `COST_CONFLICT_CODES`), so a form does not have to

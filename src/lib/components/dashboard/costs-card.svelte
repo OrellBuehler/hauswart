@@ -5,33 +5,34 @@
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import ZapIcon from "@lucide/svelte/icons/zap";
   import { resolve } from "$app/paths";
-  import type { Dashboard } from "$lib/api/schemas/dashboard";
-  import SuggestedPayments from "$lib/components/costs/suggested-payments.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
+  import type { Dashboard } from "#lib/api/schemas/dashboard.ts";
+  import SuggestedPayments from "#lib/components/costs/suggested-payments.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
   import {
     dashboardBalanceState,
     dashboardYouLine,
     type BalanceTone,
-  } from "$lib/costs/balances";
-  import { budgetAlertText } from "$lib/costs/budgets";
-  import { formatMoney } from "$lib/format-money";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/costs/balances.ts";
+  import { budgetAlertText } from "#lib/costs/budgets.ts";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     costs,
     balances,
     budgetAlerts = null,
     canWrite = false,
-  }: {
+
     /** What the year has cost so far: all books together and per book. */
-    costs: Dashboard["costsYearToDate"];
     /** Where the caller stands across all books, and the first payments that would square everybody; null when the server could not work it out. */
-    balances: Dashboard["balances"];
     /** How many budgets are nearly used up or over their amount (the dashboard's own `budgetAlerts`); null when that could not be worked out. */
-    budgetAlerts?: Dashboard["budgetAlerts"];
     /** The person may book costs: the card offers the quick entry. */
+  }: {
+    costs: Dashboard["costsYearToDate"];
+    balances: Dashboard["balances"];
+    budgetAlerts?: Dashboard["budgetAlerts"];
     canWrite?: boolean;
   } = $props();
 
@@ -60,7 +61,7 @@
   const books = $derived(costs.byBook.slice(0, BOOKS_SHOWN));
   const moreBooks = $derived(Math.max(0, costs.byBook.length - BOOKS_SHOWN));
   const bookHref = (id: string) =>
-    resolve(`/costs?book=${encodeURIComponent(id)}` as "/");
+    resolve(`costs?book=${encodeURIComponent(id)}`);
 </script>
 
 {#if costs.totalMinor !== 0 || status !== "empty"}
@@ -145,7 +146,7 @@
       </div>
       {#if budgetText}
         <a
-          href={resolve("/costs/budgets")}
+          href={resolve("costs/budgets")}
           class={cn(
             "hover:bg-accent/50 focus-visible:ring-ring/50 flex min-h-11 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium outline-none focus-visible:ring-[3px]",
             budgetAlerts && budgetAlerts.exceeded > 0
@@ -161,7 +162,7 @@
       {/if}
       {#if canWrite}
         <Button
-          href={resolve("/costs/quick")}
+          href={resolve("costs/quick")}
           variant="outline"
           size="lg"
           class="self-start"
@@ -172,14 +173,14 @@
       {/if}
       <div class="flex flex-wrap gap-x-4">
         <a
-          href={resolve("/costs/balances")}
+          href={resolve("costs/balances")}
           class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -mx-1 inline-flex min-h-10 items-center gap-1.5 rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
         >
           {m.balances_open()}
           <ArrowRightIcon class="size-4" aria-hidden="true" />
         </a>
         <a
-          href={resolve("/costs")}
+          href={resolve("costs")}
           class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -mx-1 inline-flex min-h-10 items-center gap-1.5 rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
         >
           {m.dashboard_to_costs()}

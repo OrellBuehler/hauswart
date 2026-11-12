@@ -6,30 +6,30 @@
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import UnplugIcon from "@lucide/svelte/icons/unplug";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
   import type { z } from "zod";
-  import type { testIntegrationResponseSchema } from "$lib/api/schemas/integrations";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Separator } from "$lib/components/ui/separator/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { forgetIntegrations } from "$lib/connections/connection";
+  import type { testIntegrationResponseSchema } from "#lib/api/schemas/integrations.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import * as Alert from "#lib/components/ui/alert/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Separator } from "#lib/components/ui/separator/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { forgetIntegrations } from "#lib/connections/connection.ts";
   import {
     keptErrorMessage,
     keptSaveError,
     keptSettingsSignature,
     readKeptSettings,
     type KeptSettings,
-  } from "$lib/connections/kept";
-  import { formatDateTime, formatRelativeInstant } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/connections/kept.ts";
+  import { formatDateTime, formatRelativeInstant } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { IntegrationCardProps } from "./cards";
   import KeptSettingsForm from "./kept-settings.svelte";
   import KeptSync from "./kept-sync.svelte";
@@ -104,9 +104,11 @@
 
   function validate(): boolean {
     const found: Record<string, string> = {};
+
     if (baseUrl.trim() === "") found.baseUrl = m.field_required();
     else if (!/^https?:\/\//i.test(baseUrl.trim()))
       found.baseUrl = m.integration_ha_url_invalid();
+
     if (showTokenInput && token.trim() === "") {
       found.token = urlChanged
         ? m.integration_ha_token_required_url()
@@ -367,9 +369,8 @@
                   size="sm"
                   class="shrink-0"
                   onclick={() => (replaceToken = true)}
+                  >{m.integration_ha_token_replace()}</Button
                 >
-                  {m.integration_ha_token_replace()}
-                </Button>
               </div>
             </div>
           {/if}
@@ -431,9 +432,8 @@
                 class="text-destructive hover:text-destructive ms-auto"
                 disabled={saving || testing}
                 onclick={() => (disconnectOpen = true)}
+                ><UnplugIcon />{m.integration_disconnect()}</Button
               >
-                <UnplugIcon />{m.integration_disconnect()}
-              </Button>
             {/if}
           </div>
           {#if integration.configured && dirty}
@@ -498,7 +498,7 @@
           <p>
             {m.integration_kept_help_hosts()}
             <a
-              href={resolve("/settings/household")}
+              href={resolve("settings/household")}
               class="text-foreground underline underline-offset-2 pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center"
             >
               {m.integration_kept_help_hosts_link()}

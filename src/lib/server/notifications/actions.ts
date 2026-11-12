@@ -1,15 +1,15 @@
 import { createHash, randomBytes } from "node:crypto";
 import { and, eq, isNull } from "drizzle-orm";
-import { ApiError } from "$lib/api/errors";
+import { ApiError } from "#lib/api/errors.ts";
 import {
   notificationDeliveries,
   notifications,
   taskCompletions,
   tasks,
-} from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
-import { completeTask } from "$lib/server/tasks/completions";
-import { getTask } from "$lib/server/tasks/tasks";
+} from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
+import { completeTask } from "#lib/server/tasks/completions.ts";
+import { getTask } from "#lib/server/tasks/tasks.ts";
 
 /** The action id of the "done" button: `HW_DONE_<token>`. Phones post it back verbatim. */
 export const ACTION_DONE_PREFIX = "HW_DONE_";

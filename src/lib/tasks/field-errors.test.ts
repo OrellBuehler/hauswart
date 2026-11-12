@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createTaskRequestSchema } from "$lib/api/schemas/tasks";
+import { createTaskRequestSchema } from "#lib/api/schemas/tasks.ts";
 import { errorsUnder, issuesToErrors } from "./field-errors";
 
 function errorsFor(body: unknown) {

@@ -3,8 +3,8 @@ import type {
   InsurancePremiumPeriod,
   InsuranceRenewal,
   InsuranceType,
-} from "$lib/api/enums";
-import type { Asset } from "$lib/api/schemas/assets";
+} from "#lib/api/enums.ts";
+import type { Asset } from "#lib/api/schemas/assets.ts";
 import {
   MAX_NOTICE_MONTHS,
   createInsurancePolicyRequestSchema,
@@ -12,13 +12,13 @@ import {
   type CreateInsurancePolicyRequest,
   type InsurancePolicy,
   type UpdateInsurancePolicyRequest,
-} from "$lib/api/schemas/insurance";
-import { currencySchema } from "$lib/api/schemas/household";
-import { isValidDate } from "$lib/dates";
-import { readMoney } from "$lib/format-money";
-import { currencyExponent, minor, toDecimalString } from "$lib/money";
-import { m } from "$lib/paraglide/messages";
-import { issuesToErrors } from "$lib/tasks/field-errors";
+} from "#lib/api/schemas/insurance.ts";
+import { currencySchema } from "#lib/api/schemas/household.ts";
+import { isValidDate } from "#lib/dates.ts";
+import { readMoney } from "#lib/format-money.ts";
+import { currencyExponent, minor, toDecimalString } from "#lib/money.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { issuesToErrors } from "#lib/tasks/field-errors.ts";
 import { cancellationDeadline } from "./policy";
 
 /** What the form edits. Text fields stay text until they are checked on submit. */

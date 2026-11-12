@@ -1,10 +1,10 @@
-import { localDateOf, localTimeOf } from "$lib/dates";
+import { localDateOf, localTimeOf } from "#lib/dates.ts";
 import type {
   CalendarCapabilities,
   CalendarItem,
   RemoteEvent,
-} from "$lib/server/calendar-sync/provider";
-import { markerLine, parseMarker } from "$lib/server/calendar-sync/ref";
+} from "#lib/server/calendar-sync/provider.ts";
+import { markerLine, parseMarker } from "#lib/server/calendar-sync/ref.ts";
 import {
   CALENDAR_FEATURE,
   type HaCalendarEvent,

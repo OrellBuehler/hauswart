@@ -4,11 +4,11 @@
   import DownloadIcon from "@lucide/svelte/icons/download";
   import ExternalLinkIcon from "@lucide/svelte/icons/external-link";
   import XIcon from "@lucide/svelte/icons/x";
-  import type { Attachment } from "$lib/api/schemas/attachments";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import { m } from "$lib/paraglide/messages";
-  import { contentHref, downloadHref } from "$lib/attachments/files";
+  import type { Attachment } from "#lib/api/schemas/attachments.ts";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Dialog from "#lib/components/ui/dialog/index.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { contentHref, downloadHref } from "#lib/attachments/files.ts";
 
   let {
     images,

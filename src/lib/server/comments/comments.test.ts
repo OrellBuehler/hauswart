@@ -1,30 +1,33 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
-import { createAsset, deleteAsset } from "$lib/server/assets/assets";
-import { createContact, deleteContact } from "$lib/server/contacts/contacts";
-import { createContactRequestSchema } from "$lib/api/schemas/contacts";
-import { createDefect, deleteDefect } from "$lib/server/defects/defects";
-import { createHint, deleteHint } from "$lib/server/hints/hints";
-import { createPageRequestSchema } from "$lib/api/schemas/docs";
-import { shutdownMarkdownWorkers } from "$lib/server/docs/markdown-runner";
+import { createAsset, deleteAsset } from "#lib/server/assets/assets.ts";
+import { createContact, deleteContact } from "#lib/server/contacts/contacts.ts";
+import { createContactRequestSchema } from "#lib/api/schemas/contacts.ts";
+import { createDefect, deleteDefect } from "#lib/server/defects/defects.ts";
+import { createHint, deleteHint } from "#lib/server/hints/hints.ts";
+import { createPageRequestSchema } from "#lib/api/schemas/docs.ts";
+import { shutdownMarkdownWorkers } from "#lib/server/docs/markdown-runner.ts";
 import {
   createPage,
   deletePage,
   getPage,
   listPages,
-} from "$lib/server/docs/pages";
-import { notifications } from "$lib/server/db";
+} from "#lib/server/docs/pages.ts";
+import { notifications } from "#lib/server/db.ts";
 import {
   registerNotificationChannel,
   type DeliverableNotification,
-} from "$lib/server/notifications/channels";
-import { createPart, deletePart } from "$lib/server/parts/parts";
-import { createRoom, deleteRoom } from "$lib/server/rooms/rooms";
-import { createEntry, deleteEntry } from "$lib/server/service-log/service-log";
-import { createTask, deleteTask } from "$lib/server/tasks/tasks";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, makeTask, taskInput } from "$lib/testing/domain";
+} from "#lib/server/notifications/channels.ts";
+import { createPart, deletePart } from "#lib/server/parts/parts.ts";
+import { createRoom, deleteRoom } from "#lib/server/rooms/rooms.ts";
+import {
+  createEntry,
+  deleteEntry,
+} from "#lib/server/service-log/service-log.ts";
+import { createTask, deleteTask } from "#lib/server/tasks/tasks.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, makeTask, taskInput } from "#lib/testing/domain.ts";
 import {
   allCommentsOf,
   countCommentsOf,
@@ -35,10 +38,10 @@ import {
   type Viewer,
 } from "./comments";
 import { commentableOf, registerCommentable } from "./registry";
-import { createDefectRequestSchema } from "$lib/api/schemas/defects";
-import { createHintRequestSchema } from "$lib/api/schemas/hints";
-import { createPartRequestSchema } from "$lib/api/schemas/parts";
-import { createServiceLogRequestSchema } from "$lib/api/schemas/service-log";
+import { createDefectRequestSchema } from "#lib/api/schemas/defects.ts";
+import { createHintRequestSchema } from "#lib/api/schemas/hints.ts";
+import { createPartRequestSchema } from "#lib/api/schemas/parts.ts";
+import { createServiceLogRequestSchema } from "#lib/api/schemas/service-log.ts";
 
 afterEach(() => shutdownMarkdownWorkers());
 
@@ -314,7 +317,7 @@ describe("comments", () => {
         entityId: task.id,
         bodyMd: "x",
       });
-      const { users } = await import("$lib/server/db");
+      const { users } = await import("#lib/server/db.ts");
       test.db.delete(users).where(eq(users.id, anna.id)).run();
       const [item] = listComments(
         ctx(),
@@ -518,11 +521,11 @@ describe("comments", () => {
         entityId: defect.id,
         bodyMd: "1",
       });
-      const { getTask, listTasks } = await import("$lib/server/tasks/tasks");
+      const { getTask, listTasks } = await import("#lib/server/tasks/tasks.ts");
       const { getAsset, listAssets } =
-        await import("$lib/server/assets/assets");
+        await import("#lib/server/assets/assets.ts");
       const { getDefect, listDefects } =
-        await import("$lib/server/defects/defects");
+        await import("#lib/server/defects/defects.ts");
       expect(getTask(ctx(), task.id).commentCount).toBe(1);
       expect(listTasks(ctx(), {}, page, anna.id).items[0].commentCount).toBe(1);
       expect(getAsset(ctx(), asset.id).commentCount).toBe(1);

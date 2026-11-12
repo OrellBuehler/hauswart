@@ -1,16 +1,16 @@
 <script lang="ts">
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { CalendarTarget } from "$lib/api/schemas/calendar-sync";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { CalendarTarget } from "#lib/api/schemas/calendar-sync.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import { Checkbox } from "#lib/components/ui/checkbox/index.js";
   import {
     deleteFailure,
     removalPausedTarget,
-  } from "$lib/calendar-sync/errors";
-  import { providerName } from "$lib/calendar-sync/providers";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/calendar-sync/errors.ts";
+  import { providerName } from "#lib/calendar-sync/providers.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     open = $bindable(false),

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { ApiError } from "$lib/api/errors";
-import { tasks } from "$lib/server/db";
-import { createRoom } from "$lib/server/rooms/rooms";
-import { ctxAt, makeTask } from "$lib/testing/domain";
-import { useTestDB } from "$lib/testing/db";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { ApiError } from "#lib/api/errors.ts";
+import { tasks } from "#lib/server/db.ts";
+import { createRoom } from "#lib/server/rooms/rooms.ts";
+import { ctxAt, makeTask } from "#lib/testing/domain.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import {
   createAsset,
   deleteAsset,

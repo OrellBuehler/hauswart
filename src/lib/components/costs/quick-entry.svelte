@@ -2,33 +2,33 @@
   import ChevronDownIcon from "@lucide/svelte/icons/chevron-down";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { onMount, untrack } from "svelte";
-  import { goto, invalidateAll } from "$app/navigation";
+  import { goto, refreshAll } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { Asset } from "$lib/api/schemas/assets";
-  import type { CostBook } from "$lib/api/schemas/cost-books";
-  import type { CostTag } from "$lib/api/schemas/cost-tags";
-  import { COST_TITLE_MAX, type CostEntry } from "$lib/api/schemas/costs";
-  import type { DirectoryUser } from "$lib/api/schemas/users";
-  import { uploadErrorMessage } from "$lib/attachments/errors";
-  import { uploadAttachment } from "$lib/attachments/upload";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Collapsible from "$lib/components/ui/collapsible/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Asset } from "#lib/api/schemas/assets.ts";
+  import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+  import type { CostTag } from "#lib/api/schemas/cost-tags.ts";
+  import { COST_TITLE_MAX, type CostEntry } from "#lib/api/schemas/costs.ts";
+  import type { DirectoryUser } from "#lib/api/schemas/users.ts";
+  import { uploadErrorMessage } from "#lib/attachments/errors.ts";
+  import { uploadAttachment } from "#lib/attachments/upload.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Collapsible from "#lib/components/ui/collapsible/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
   import {
     loadQuickBook,
     loadRememberedBook,
     rememberQuickBook,
-  } from "$lib/costs/book-memory";
-  import { bookIconFor, openBooks } from "$lib/costs/books";
-  import { categoryIcons, categoryLabels } from "$lib/costs/labels";
-  import { parseDraftAmount } from "$lib/costs/form";
-  import { matchQuery, tieFailure, tieRefused } from "$lib/costs/matches";
+  } from "#lib/costs/book-memory.ts";
+  import { bookIconFor, openBooks } from "#lib/costs/books.ts";
+  import { categoryIcons, categoryLabels } from "#lib/costs/labels.ts";
+  import { parseDraftAmount } from "#lib/costs/form.ts";
+  import { matchQuery, tieFailure, tieRefused } from "#lib/costs/matches.ts";
   import {
     buildQuickCostBody,
     chipCategories,
@@ -48,14 +48,14 @@
     withTicked,
     type CategoryHistory,
     type QuickDraft,
-  } from "$lib/costs/quick";
-  import { addDays } from "$lib/dates";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatMoney } from "$lib/format-money";
-  import { newIdempotencyKey } from "$lib/idempotency";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
-  import { cn } from "$lib/utils";
+  } from "#lib/costs/quick.ts";
+  import { addDays } from "#lib/dates.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { newIdempotencyKey } from "#lib/idempotency.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
+  import { cn } from "#lib/utils.ts";
   import ChoiceChips from "./choice-chips.svelte";
   import FinanceMatches from "./finance-matches.svelte";
   import ReceiptPicker from "./receipt-picker.svelte";
@@ -71,20 +71,21 @@
     today,
     currentUserId,
     requestedBook,
-  }: {
+
     /** Every cost book, archived ones included (only open ones are offered). */
+    /** Every cost tag; the chips only show when there are any (new tags are made in the full form). */
+    /** The person has a working finance connection: the form looks for bank transactions that fit the amount. */
+    /** The household's currency: a quick entry is always in it. */
+    /** The book the address names, if it does. */
+  }: {
     books: CostBook[];
     people: DirectoryUser[];
     assets: Asset[];
-    /** Every cost tag; the chips only show when there are any (new tags are made in the full form). */
     tags: CostTag[];
-    /** The person has a working finance connection: the form looks for bank transactions that fit the amount. */
     financeConnected?: boolean;
-    /** The household's currency: a quick entry is always in it. */
     currency: string;
     today: string;
     currentUserId: string;
-    /** The book the address names, if it does. */
     requestedBook: string | null;
   } = $props();
 
@@ -293,7 +294,7 @@
     try {
       await api.call(endpoints.costsDelete, { params: { id: saved.id } });
       toast.success(m.quick_undone_toast({ title: saved.title }));
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       toast.error(apiErrorMessage(err));
     }
@@ -314,15 +315,13 @@
           label: m.quick_another(),
           onClick: () =>
             void goto(
-              resolve(
-                `/costs/quick?book=${encodeURIComponent(saved.bookId)}` as "/",
-              ),
+              resolve(`costs/quick?book=${encodeURIComponent(saved.bookId)}`),
             ),
         },
       },
     );
-    await goto(resolve(`/costs${savedCostsQuery(saved, today)}` as "/"), {
-      invalidateAll: true,
+    await goto(resolve(`costs${savedCostsQuery(saved, today)}`), {
+      refreshAll: true,
     });
   }
 
@@ -684,10 +683,9 @@
                 size="sm"
                 class="pointer-coarse:h-10"
                 disabled={busy !== null || draft.date === today}
-                onclick={() => (draft.date = today)}
+                onclick={() => (draft.date = today)}>{m.quick_today()}</Button
               >
-                {m.quick_today()}
-              </Button>
+
               <Button
                 type="button"
                 variant="outline"
@@ -695,9 +693,8 @@
                 class="pointer-coarse:h-10"
                 disabled={busy !== null || draft.date === addDays(today, -1)}
                 onclick={() => (draft.date = addDays(today, -1))}
+                >{m.quick_yesterday()}</Button
               >
-                {m.quick_yesterday()}
-              </Button>
             </div>
           {/snippet}
         </Field>
@@ -765,7 +762,7 @@
     <p class="text-muted-foreground text-sm text-pretty">
       <a
         href={resolve(
-          `/costs/new${draft.bookId ? `?book=${encodeURIComponent(draft.bookId)}` : ""}` as "/",
+          `costs/new${draft.bookId ? `?book=${encodeURIComponent(draft.bookId)}` : ""}`,
         )}
         class="text-foreground focus-visible:ring-ring/50 rounded font-medium underline underline-offset-4 outline-none focus-visible:ring-[3px]"
         >{m.quick_full_form()}</a
@@ -782,7 +779,7 @@
       <FormAlert message={formError} />
       <div class="flex gap-2">
         <Button
-          href={resolve("/costs")}
+          href={resolve("costs")}
           variant="outline"
           size="lg"
           class={cn(

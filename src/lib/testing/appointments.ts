@@ -1,4 +1,4 @@
-import type { Appointment } from "$lib/api/schemas/appointments";
+import type { Appointment } from "#lib/api/schemas/appointments.ts";
 
 /** An appointment as the API answers it: a planned, timed one from 09:00 to 10:00 on 14 October 2026 in Zurich. */
 export function appointmentDto(over: Partial<Appointment> = {}): Appointment {

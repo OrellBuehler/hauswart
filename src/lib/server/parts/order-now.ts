@@ -1,9 +1,9 @@
 import { and, eq, isNull } from "drizzle-orm";
-import { orderNowItems, type OrderTask } from "$lib/tasks/engine";
-import { parts, taskParts, taskState, tasks } from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
-import { clockAt } from "$lib/server/tasks/evaluator";
-import { stateToDue, toStateRecord } from "$lib/server/tasks/state";
+import { orderNowItems, type OrderTask } from "#lib/tasks/engine/index.ts";
+import { parts, taskParts, taskState, tasks } from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
+import { clockAt } from "#lib/server/tasks/evaluator.ts";
+import { stateToDue, toStateRecord } from "#lib/server/tasks/state.ts";
 
 export interface OrderNowRecord {
   taskId: string;

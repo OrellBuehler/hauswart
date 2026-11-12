@@ -1,15 +1,15 @@
-import { setLenientHostPolicy } from "$lib/server/net/host-policy";
+import { setLenientHostPolicy } from "#lib/server/net/host-policy.ts";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { registerIntegration } from "$lib/server/connections/registry";
-import { IntegrationError } from "$lib/server/connections/errors";
+import { registerIntegration } from "#lib/server/connections/registry.ts";
+import { IntegrationError } from "#lib/server/connections/errors.ts";
 import {
   resolveConnection,
   getConnectionRow,
-} from "$lib/server/connections/connections";
-import { createCaller, errorCode } from "$lib/testing/api";
-import { createTestUser, loginTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { allowIntegrationHosts } from "$lib/testing/integrations";
+} from "#lib/server/connections/connections.ts";
+import { createCaller, errorCode } from "#lib/testing/api.ts";
+import { createTestUser, loginTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { allowIntegrationHosts } from "#lib/testing/integrations.ts";
 import { keptIntegration, validateInput } from "./adapter";
 import { fakeAccount, fakeCategory } from "./fake-server";
 import { useFakeKept } from "./testing";

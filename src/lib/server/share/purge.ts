@@ -1,5 +1,5 @@
 import { and, isNotNull, lt, or } from "drizzle-orm";
-import { getDB, guestLinks, icalFeeds } from "$lib/server/db";
+import { getDB, guestLinks, icalFeeds } from "#lib/server/db.ts";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 export const DEAD_LINK_RETENTION_MS = 30 * DAY_MS;

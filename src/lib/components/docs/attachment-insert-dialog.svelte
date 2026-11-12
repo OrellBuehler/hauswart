@@ -2,13 +2,13 @@
   import FileTextIcon from "@lucide/svelte/icons/file-text";
   import { untrack } from "svelte";
   import UploadIcon from "@lucide/svelte/icons/upload";
-  import type { Attachment } from "$lib/api/schemas/attachments";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import { Skeleton } from "$lib/components/ui/skeleton/index.js";
-  import { formatBytes, isImage } from "$lib/attachments/files";
-  import type { AttachmentList } from "$lib/attachments/list.svelte";
-  import { m } from "$lib/paraglide/messages";
+  import type { Attachment } from "#lib/api/schemas/attachments.ts";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Dialog from "#lib/components/ui/dialog/index.js";
+  import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+  import { formatBytes, isImage } from "#lib/attachments/files.ts";
+  import type { AttachmentList } from "#lib/attachments/list.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     open = $bindable(false),

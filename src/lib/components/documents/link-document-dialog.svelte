@@ -4,33 +4,33 @@
   import SearchIcon from "@lucide/svelte/icons/search";
   import { untrack } from "svelte";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
+  import { api } from "#lib/api/browser.ts";
   import {
     DOCUMENT_LINK_ROLES,
     type DocumentLinkOwnerType,
     type DocumentLinkRole,
     type DocumentProviderKind,
-  } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { ExternalDocument } from "$lib/api/schemas/documents";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { Skeleton } from "$lib/components/ui/skeleton/index.js";
-  import { pickerErrorMessage } from "$lib/connections/errors";
+  } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { ExternalDocument } from "#lib/api/schemas/documents.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+  import { pickerErrorMessage } from "#lib/connections/errors.ts";
   import {
     documentRoleLabels,
     defaultRoleFor,
     linkedPlaces,
-  } from "$lib/documents/labels";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDay } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/documents/labels.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDay } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import DocumentThumb from "./document-thumb.svelte";
 
   let {

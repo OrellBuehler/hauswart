@@ -3,13 +3,13 @@ import {
   type HaCalendarEventWrite,
   type HaState,
 } from "./schemas";
-import type { ResolvedConnection } from "$lib/server/connections/registry";
+import type { ResolvedConnection } from "#lib/server/connections/registry.ts";
 import type {
   CalendarProvider,
   CalendarSession,
   RemoteCalendar,
   TimeRange,
-} from "$lib/server/calendar-sync/provider";
+} from "#lib/server/calendar-sync/provider.ts";
 import { retryTransient, type RetryOptions } from "../http";
 import { appUrlOf } from "./app-url";
 import {

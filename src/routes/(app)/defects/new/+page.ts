@@ -1,5 +1,5 @@
-import { createApiClient } from "$lib/api/client";
-import { loadDefectFormData } from "$lib/defects/load";
+import { createApiClient } from "#lib/api/client.ts";
+import { loadDefectFormData } from "#lib/defects/load.ts";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ fetch, url }) => {

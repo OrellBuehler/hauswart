@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { createCaller, errorCode } from "$lib/testing/api";
+import { createCaller, errorCode } from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { samplePdf, useTestFilesDir } from "$lib/testing/files";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { samplePdf, useTestFilesDir } from "#lib/testing/files.ts";
 
 type Note = {
   id: string;

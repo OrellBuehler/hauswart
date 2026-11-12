@@ -1,7 +1,7 @@
-import { ApiError } from "$lib/api/errors";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { createAsset } from "$lib/server/assets/assets";
-import type { ServiceContext } from "$lib/server/service";
+import { ApiError } from "#lib/api/errors.ts";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 
 /** A vehicle asset for tests. */
 export function makeVehicle(

@@ -1,4 +1,4 @@
-import type { CalendarItemKind } from "$lib/api/enums";
+import type { CalendarItemKind } from "#lib/api/enums.ts";
 
 /**
  * The name an event carries so hauswart can find it again: `hw-ref: <ref>@sync.hauswart`, where

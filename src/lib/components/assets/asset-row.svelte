@@ -1,10 +1,10 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
-  import type { Asset } from "$lib/api/schemas/assets";
-  import { warrantyStatus } from "$lib/assets/warranty";
-  import CommentCount from "$lib/components/comments/comment-count.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import type { Asset } from "#lib/api/schemas/assets.ts";
+  import { warrantyStatus } from "#lib/assets/warranty.ts";
+  import CommentCount from "#lib/components/comments/comment-count.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { m } from "#lib/paraglide/messages.js";
   import AssetPhoto from "./asset-photo.svelte";
   import WarrantyBadge from "./warranty-badge.svelte";
 
@@ -33,7 +33,7 @@
 
 <li>
   <a
-    href={resolve(`/assets/${asset.id}`)}
+    href={resolve(`assets/${asset.id}`)}
     class="hover:bg-accent/50 focus-visible:ring-ring/50 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 px-4 py-3 transition-colors outline-none first:rounded-t-lg last:rounded-b-lg focus-visible:ring-[3px] sm:grid-cols-[auto_1fr_auto]"
   >
     <AssetPhoto kind={asset.kind} photoUrl={asset.photoUrl} />

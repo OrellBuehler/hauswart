@@ -1,11 +1,11 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
-  import type { CostEntry } from "$lib/api/schemas/costs";
-  import CommentCount from "$lib/components/comments/comment-count.svelte";
-  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-  import { categoryLabels } from "$lib/costs/labels";
-  import { formatDay } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  import type { CostEntry } from "#lib/api/schemas/costs.ts";
+  import CommentCount from "#lib/components/comments/comment-count.svelte";
+  import { Checkbox } from "#lib/components/ui/checkbox/index.js";
+  import { categoryLabels } from "#lib/costs/labels.ts";
+  import { formatDay } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import CostAmount from "./cost-amount.svelte";
   import { hasCostFlags } from "./cost-flags";
   import CostFlags from "./cost-flags.svelte";
@@ -89,7 +89,7 @@
     </label>
   {:else}
     <a
-      href={resolve(`/costs/${cost.id}` as "/")}
+      href={resolve(`costs/${cost.id}`)}
       class="hover:bg-accent/50 focus-visible:ring-ring/50 flex flex-col gap-2 px-4 py-3.5 transition-colors outline-none first:rounded-t-xl last:rounded-b-xl focus-visible:ring-[3px]"
     >
       {@render body()}

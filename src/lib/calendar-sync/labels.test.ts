@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { CALENDAR_ITEM_KINDS } from "$lib/api/enums";
-import { m } from "$lib/paraglide/messages";
+import { CALENDAR_ITEM_KINDS } from "#lib/api/enums.ts";
+import { m } from "#lib/paraglide/messages.js";
 import {
   CREATE_ONLY_CAPABILITIES,
   FULL_CAPABILITIES,
-} from "$lib/testing/calendar-targets";
+} from "#lib/testing/calendar-targets.ts";
 import {
   calendarKindHints,
   calendarKindLabels,

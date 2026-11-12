@@ -17,20 +17,20 @@ import {
   type CostDeductible,
   type CostSource,
   type CostSplitMode,
-} from "$lib/api/enums";
+} from "#lib/api/enums.ts";
 import type {
   CreateCostRequest,
   ListCostsQuery,
   UpdateCostRequest,
-} from "$lib/api/schemas/costs";
-import { minor } from "$lib/money";
+} from "#lib/api/schemas/costs.ts";
+import { minor } from "#lib/money.ts";
 import {
   assertTaskOpenForBooking,
   takeLease,
-} from "$lib/server/ai-tasks/booking";
-import type { CostTagRef } from "$lib/api/schemas/cost-tags";
-import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
-import { commentCountSql } from "$lib/server/comments/counts";
+} from "#lib/server/ai-tasks/booking.ts";
+import type { CostTagRef } from "#lib/api/schemas/cost-tags.ts";
+import { removeOwnedAttachments } from "#lib/server/attachments/attachments.ts";
+import { commentCountSql } from "#lib/server/comments/counts.ts";
 import {
   assets,
   costBooks,
@@ -42,25 +42,25 @@ import {
   serviceLog,
   users,
   type DB,
-} from "$lib/server/db";
-import { emitEvent } from "$lib/server/events";
+} from "#lib/server/db.ts";
+import { emitEvent } from "#lib/server/events.ts";
 import {
   claimSuggestion,
   isTiedTo,
   linkWaitingOffer,
   tieSuggestion,
   type TiedOrigin,
-} from "$lib/server/finance/links";
-import { getHousehold } from "$lib/server/household/household";
-import { decodeCursor, pageOf } from "$lib/server/pagination";
+} from "#lib/server/finance/links.ts";
+import { getHousehold } from "#lib/server/household/household.ts";
+import { decodeCursor, pageOf } from "#lib/server/pagination.ts";
 import {
   conflict,
   invalidField,
   isUniqueViolation,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
-import { clockAt } from "$lib/server/tasks/evaluator";
+} from "#lib/server/service.ts";
+import { clockAt } from "#lib/server/tasks/evaluator.ts";
 import {
   defaultCostBook,
   findCostBookRow,

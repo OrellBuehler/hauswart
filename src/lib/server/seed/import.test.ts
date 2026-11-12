@@ -1,14 +1,18 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { ApiError } from "$lib/api/errors";
-import { createApiClient, type FetchLike } from "$lib/api/client";
-import { endpoints } from "$lib/api/registry";
-import { seedSchema, type Seed, type SeedInput } from "$lib/api/schemas/seed";
-import { assets, rooms, taskPreparations, tasks } from "$lib/server/db";
-import { createInProcessFetch } from "$lib/testing/api";
-import { createTestToken, createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
+import { ApiError } from "#lib/api/errors.ts";
+import { createApiClient, type FetchLike } from "#lib/api/client.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import {
+  seedSchema,
+  type Seed,
+  type SeedInput,
+} from "#lib/api/schemas/seed.ts";
+import { assets, rooms, taskPreparations, tasks } from "#lib/server/db.ts";
+import { createInProcessFetch } from "#lib/testing/api.ts";
+import { createTestToken, createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import { importSeed, SeedError } from "./import";
 
 const exampleJson = (): SeedInput =>
@@ -108,7 +112,7 @@ describe("seed import", () => {
       priority: "high",
     });
     const { items } = await api.call(
-      (await import("$lib/api/registry")).endpoints.tasksList,
+      (await import("#lib/api/registry.ts")).endpoints.tasksList,
       {
         query: { limit: 200 },
       },

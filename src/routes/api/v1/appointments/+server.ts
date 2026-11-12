@@ -1,6 +1,6 @@
-import { endpoints } from "$lib/api/registry";
-import { bind } from "$lib/server/api/bind";
-import { create, list } from "$lib/server/api/handlers/appointments";
+import { endpoints } from "#lib/api/registry.ts";
+import { bind } from "#lib/server/api/bind.ts";
+import { create, list } from "#lib/server/api/handlers/appointments.ts";
 
 export const GET = bind(endpoints.appointmentsList, list);
 export const POST = bind(endpoints.appointmentsCreate, create);

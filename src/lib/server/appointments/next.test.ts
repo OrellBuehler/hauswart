@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { completeTask } from "$lib/server/tasks/completions";
-import { getUpcomingTasks } from "$lib/server/tasks/dashboard";
-import { getTask, listTasks } from "$lib/server/tasks/tasks";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, everyDays, makeTask } from "$lib/testing/domain";
+import { completeTask } from "#lib/server/tasks/completions.ts";
+import { getUpcomingTasks } from "#lib/server/tasks/dashboard.ts";
+import { getTask, listTasks } from "#lib/server/tasks/tasks.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, everyDays, makeTask } from "#lib/testing/domain.ts";
 import {
   createAppointment,
   updateAppointment,

@@ -1,20 +1,24 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
-import type { AssetNoteStatus } from "$lib/api/enums";
+import type { AssetNoteStatus } from "#lib/api/enums.ts";
 import type {
   CreateAssetNoteRequest,
   UpdateAssetNoteRequest,
-} from "$lib/api/schemas/asset-notes";
-import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
-import { assetNotes, assets, users, type DB } from "$lib/server/db";
+} from "#lib/api/schemas/asset-notes.ts";
+import { removeOwnedAttachments } from "#lib/server/attachments/attachments.ts";
+import { assetNotes, assets, users, type DB } from "#lib/server/db.ts";
 import {
   getDefect,
   insertDefect,
   type DefectRecord,
-} from "$lib/server/defects/defects";
-import { paginateArray } from "$lib/server/pagination";
-import { conflict, notFound, type ServiceContext } from "$lib/server/service";
-import { clockAt } from "$lib/server/tasks/evaluator";
+} from "#lib/server/defects/defects.ts";
+import { paginateArray } from "#lib/server/pagination.ts";
+import {
+  conflict,
+  notFound,
+  type ServiceContext,
+} from "#lib/server/service.ts";
+import { clockAt } from "#lib/server/tasks/evaluator.ts";
 
 type Db = Pick<ServiceContext, "db">;
 type Now = Pick<ServiceContext, "db" | "now">;

@@ -1,4 +1,4 @@
-import { addDays, dayNumber, localDateOf } from "$lib/dates";
+import { addDays, dayNumber, localDateOf } from "#lib/dates.ts";
 import type { Completion, Estimate, Sample } from "./types";
 
 const DAY_MS = 86_400_000;

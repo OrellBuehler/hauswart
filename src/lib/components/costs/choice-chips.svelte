@@ -1,7 +1,7 @@
 <script lang="ts" generics="T extends string">
   import CheckIcon from "@lucide/svelte/icons/check";
   import type { Component } from "svelte";
-  import { cn } from "$lib/utils";
+  import { cn } from "#lib/utils.ts";
 
   type Option = {
     value: T;

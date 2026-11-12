@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { zonedTimeToInstant } from "$lib/dates";
+import { zonedTimeToInstant } from "#lib/dates.ts";
 import {
   createPreparationRequestSchema,
   createTaskRequestSchema,
-} from "$lib/api/schemas/tasks";
-import { evaluateTask } from "$lib/tasks/engine";
+} from "#lib/api/schemas/tasks.ts";
+import { evaluateTask } from "#lib/tasks/engine/index.ts";
 import {
   VEHICLE_TEMPLATE_IDS,
   acService,

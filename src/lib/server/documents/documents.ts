@@ -1,8 +1,11 @@
 import { and, eq, sql } from "drizzle-orm";
-import { DOCUMENT_PROVIDERS, type DocumentProviderKind } from "$lib/api/enums";
-import { externalDocuments } from "$lib/server/db";
-import { paginateArray } from "$lib/server/pagination";
-import { notFound, type ServiceContext } from "$lib/server/service";
+import {
+  DOCUMENT_PROVIDERS,
+  type DocumentProviderKind,
+} from "#lib/api/enums.ts";
+import { externalDocuments } from "#lib/server/db.ts";
+import { paginateArray } from "#lib/server/pagination.ts";
+import { notFound, type ServiceContext } from "#lib/server/service.ts";
 import { markInvisible, toMeta, upsertDocuments } from "./cache";
 import {
   linkSummaries,

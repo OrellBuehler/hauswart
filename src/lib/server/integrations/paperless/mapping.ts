@@ -1,5 +1,5 @@
-import type { ExternalDocumentMeta } from "$lib/server/documents/provider";
-import type { DocumentProviderConfig } from "$lib/api/schemas/documents";
+import type { ExternalDocumentMeta } from "#lib/server/documents/provider.ts";
+import type { DocumentProviderConfig } from "#lib/api/schemas/documents.ts";
 import type { PaperlessClient } from "./client";
 import { customFieldDate, type PaperlessDocument } from "./schemas";
 

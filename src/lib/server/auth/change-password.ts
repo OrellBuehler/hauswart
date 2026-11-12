@@ -1,6 +1,6 @@
 import { and, eq, ne } from "drizzle-orm";
-import { sessions, users } from "$lib/server/db";
-import { invalidField, type ServiceContext } from "$lib/server/service";
+import { sessions, users } from "#lib/server/db.ts";
+import { invalidField, type ServiceContext } from "#lib/server/service.ts";
 import { logAuthEvent, logPasswordChangeFailed } from "./events";
 import { hashPassword, verifyPassword } from "./password";
 import { loginRateLimiter, type LoginRateLimiter } from "./rate-limit";

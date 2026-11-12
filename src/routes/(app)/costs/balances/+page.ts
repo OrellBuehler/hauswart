@@ -1,22 +1,23 @@
-import { browser } from "$app/environment";
+import { browser } from "$app/env";
 import { redirect } from "@sveltejs/kit";
-import { createApiClient } from "$lib/api/client";
-import { fetchAll } from "$lib/api/fetch-all";
-import { orFail } from "$lib/api/load";
-import { endpoints } from "$lib/api/registry";
-import { forgetBook, loadRememberedBook } from "$lib/costs/book-memory";
-import { chooseBook, parseBookParam } from "$lib/costs/books";
+import { createApiClient } from "#lib/api/client.ts";
+import { fetchAll } from "#lib/api/fetch-all.ts";
+import { orFail } from "#lib/api/load.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import { forgetBook, loadRememberedBook } from "#lib/costs/book-memory.ts";
+import { chooseBook, parseBookParam } from "#lib/costs/books.ts";
 import {
   balancesQuery,
   loadCostBooks,
   loadHouseholdToday,
-} from "$lib/costs/load";
+} from "#lib/costs/load.ts";
+
 import {
   parseSettlementFilters,
   settlementFilterQuery,
   settlementsQuery,
-} from "$lib/costs/settlements";
-import { loadDirectory } from "$lib/tasks/load";
+} from "#lib/costs/settlements.ts";
+import { loadDirectory } from "#lib/tasks/load.ts";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ fetch, url, parent }) => {

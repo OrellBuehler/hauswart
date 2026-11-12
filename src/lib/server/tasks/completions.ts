@@ -1,19 +1,19 @@
 import { and, desc, eq, isNull, lt, or, sql, type SQL } from "drizzle-orm";
-import type { CompletionKind, CompletionSource } from "$lib/api/enums";
-import { UNDO_WINDOW_DAYS } from "$lib/api/schemas/tasks";
-import { isSignalFresh } from "$lib/tasks/engine";
-import { taskCompletions, tasks, users, type DB } from "$lib/server/db";
-import { emitEvent, type CompletionFacts } from "$lib/server/events";
-import { decodeCursor, pageOf } from "$lib/server/pagination";
+import type { CompletionKind, CompletionSource } from "#lib/api/enums.ts";
+import { UNDO_WINDOW_DAYS } from "#lib/api/schemas/tasks.ts";
+import { isSignalFresh } from "#lib/tasks/engine/index.ts";
+import { taskCompletions, tasks, users, type DB } from "#lib/server/db.ts";
+import { emitEvent, type CompletionFacts } from "#lib/server/events.ts";
+import { decodeCursor, pageOf } from "#lib/server/pagination.ts";
 import {
   conflict,
   invalidField,
   isUniqueViolation,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
-import { assetIdOfOdometerKey } from "$lib/vehicles/odometer";
-import { readingOnOrBefore } from "$lib/server/vehicles/summary";
+} from "#lib/server/service.ts";
+import { assetIdOfOdometerKey } from "#lib/vehicles/odometer.ts";
+import { readingOnOrBefore } from "#lib/server/vehicles/summary.ts";
 import { z } from "zod";
 import { clockAt, evaluateTaskById } from "./evaluator";
 import { loadSignals } from "./signals";

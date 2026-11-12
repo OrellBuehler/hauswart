@@ -2,15 +2,15 @@
   import CalendarClockIcon from "@lucide/svelte/icons/calendar-clock";
   import MapPinIcon from "@lucide/svelte/icons/map-pin";
   import PlusIcon from "@lucide/svelte/icons/plus";
-  import { invalidateAll } from "$app/navigation";
-  import type { Appointment } from "$lib/api/schemas/appointments";
-  import { formatWhen } from "$lib/appointments/format";
-  import type { AppointmentDefaults } from "$lib/appointments/form";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { appointmentHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
+  import { refreshAll } from "$app/navigation";
+  import type { Appointment } from "#lib/api/schemas/appointments.ts";
+  import { formatWhen } from "#lib/appointments/format.ts";
+  import type { AppointmentDefaults } from "#lib/appointments/form.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { appointmentHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import AppointmentFormDialog from "./appointment-form-dialog.svelte";
 
   let {
@@ -103,6 +103,6 @@
     {timeZone}
     {today}
     {defaults}
-    onsaved={() => invalidateAll()}
+    onsaved={() => refreshAll()}
   />
 {/if}

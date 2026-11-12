@@ -8,19 +8,19 @@
   import FileTextIcon from "@lucide/svelte/icons/file-text";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import { resolve } from "$app/paths";
-  import type { AiTask } from "$lib/api/schemas/ai-tasks";
-  import { contentHref } from "$lib/attachments/files";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
+  import type { AiTask } from "#lib/api/schemas/ai-tasks.ts";
+  import { contentHref } from "#lib/attachments/files.ts";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
   import {
     closedViaLabel,
     isImageTask,
     statusLabels,
     taskThumbSrc,
-  } from "$lib/costs/receipts";
-  import { formatDateTime, formatDay } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/costs/receipts.ts";
+  import { formatDateTime, formatDay } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import CostAmount from "./cost-amount.svelte";
 
   let {
@@ -161,7 +161,7 @@
           {#each costs as cost (cost.id)}
             <li class="py-1.5 first:pt-0 last:pb-0">
               <a
-                href={resolve(`/costs/${cost.id}` as "/")}
+                href={resolve(`costs/${cost.id}`)}
                 class="hover:bg-accent/50 focus-visible:ring-ring/50 -mx-2 flex min-h-11 items-start justify-between gap-3 rounded-md px-2 py-1.5 outline-none focus-visible:ring-[3px]"
               >
                 <span class="min-w-0">

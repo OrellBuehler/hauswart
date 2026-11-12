@@ -1,14 +1,14 @@
-import type { CompletionSource } from "$lib/api/enums";
-import type { endpoints } from "$lib/api/registry";
-import { RECENT_COMPLETIONS_IN_DETAIL } from "$lib/api/schemas/tasks";
-import type { Principal } from "$lib/server/auth/types";
+import type { CompletionSource } from "#lib/api/enums.ts";
+import type { endpoints } from "#lib/api/registry.ts";
+import { RECENT_COMPLETIONS_IN_DETAIL } from "#lib/api/schemas/tasks.ts";
+import type { Principal } from "#lib/server/auth/types.ts";
 import {
   completeTask,
   listCompletions,
   recentCompletionsOf,
   snoozeTask,
   undoCompletion,
-} from "$lib/server/tasks/completions";
+} from "#lib/server/tasks/completions.ts";
 import {
   createTask,
   deleteTask,
@@ -17,18 +17,18 @@ import {
   previewTrigger,
   updateTask,
   type TaskRecord,
-} from "$lib/server/tasks/tasks";
-import { billUrlVisibility } from "$lib/server/finance/bill-tasks";
+} from "#lib/server/tasks/tasks.ts";
+import { billUrlVisibility } from "#lib/server/finance/bill-tasks.ts";
 import {
   odometerAssetOfCompletion,
   refreshOdometerReaders,
-} from "$lib/server/vehicles/odometer";
-import { listPreparations } from "$lib/server/tasks/preparations";
+} from "#lib/server/vehicles/odometer.ts";
+import { listPreparations } from "#lib/server/tasks/preparations.ts";
 import {
   checkCompletionLog,
   entryOfCompletion,
   logCompletion,
-} from "$lib/server/service-log/service-log";
+} from "#lib/server/service-log/service-log.ts";
 import { reply, type Handler } from "../bind";
 import type { AuthedContext } from "../context";
 import {

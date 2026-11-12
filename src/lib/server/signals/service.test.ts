@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt } from "$lib/testing/domain";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt } from "#lib/testing/domain.ts";
 import {
   SAMPLE_INTERVAL_MS,
   getSignal,
@@ -10,7 +10,7 @@ import {
   replaceExternalDates,
   upsertSignals,
 } from "./service";
-import { loadSignalsFromDb } from "$lib/server/tasks/signals";
+import { loadSignalsFromDb } from "#lib/server/tasks/signals.ts";
 
 const KEY = "sensor.example_counter";
 const reading = (

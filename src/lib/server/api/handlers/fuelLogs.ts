@@ -1,12 +1,12 @@
-import type { endpoints } from "$lib/api/registry";
+import type { endpoints } from "#lib/api/registry.ts";
 import {
   createFuelLog,
   deleteFuelLog,
   getFuelLog,
   listFuelLogs,
   updateFuelLog,
-} from "$lib/server/vehicles/fuel-logs";
-import { refreshOdometerReaders } from "$lib/server/vehicles/odometer";
+} from "#lib/server/vehicles/fuel-logs.ts";
+import { refreshOdometerReaders } from "#lib/server/vehicles/odometer.ts";
 import type { Handler } from "../bind";
 import { wireFuelLog } from "../wire";
 

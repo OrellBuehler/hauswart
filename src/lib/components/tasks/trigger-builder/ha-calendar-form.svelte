@@ -1,7 +1,7 @@
 <script lang="ts">
-  import EntityPicker from "$lib/components/connections/entity-picker.svelte";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import EntityPicker from "#lib/components/connections/entity-picker.svelte";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { m } from "#lib/paraglide/messages.js";
   import Field from "../field.svelte";
   import NumberField from "../number-field.svelte";
   import AdvancedNote from "./advanced-note.svelte";

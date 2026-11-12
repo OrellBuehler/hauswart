@@ -1,9 +1,9 @@
-import { documentProviderConfigSchema } from "$lib/api/schemas/documents";
-import { IntegrationError } from "$lib/server/connections/errors";
+import { documentProviderConfigSchema } from "#lib/api/schemas/documents.ts";
+import { IntegrationError } from "#lib/server/connections/errors.ts";
 import type {
   IntegrationAdapter,
   IntegrationOperation,
-} from "$lib/server/connections/registry";
+} from "#lib/server/connections/registry.ts";
 import { normalizeBaseUrl } from "./client";
 import { KIND, clientFor, guarded, toIntegrationError } from "./connection";
 import { PaperlessError, describeError, errorCode } from "./errors";

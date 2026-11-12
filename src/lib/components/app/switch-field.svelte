@@ -1,8 +1,8 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { Switch } from "$lib/components/ui/switch/index.js";
-  import { cn } from "$lib/utils";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { Switch } from "#lib/components/ui/switch/index.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     id,
@@ -62,7 +62,7 @@
         {hint}
         {#if link}
           <a
-            href={resolve(link.href)}
+            href={resolve(link.href.slice(1))}
             target={link.sameTab ? undefined : "_blank"}
             rel={link.sameTab ? undefined : "noopener"}
             class="text-brand relative z-10 font-medium underline underline-offset-4"

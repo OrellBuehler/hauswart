@@ -1,14 +1,14 @@
-import { COST_TAG_COLORS, type CostTagColor } from "$lib/api/enums";
-import { isApiError } from "$lib/api/errors";
+import { COST_TAG_COLORS, type CostTagColor } from "#lib/api/enums.ts";
+import { isApiError } from "#lib/api/errors.ts";
 import {
   COST_TAG_NAME_MAX,
   MAX_COST_TAGS,
   MAX_TAGS_PER_COST,
   type CostTag,
   type CostTagRef,
-} from "$lib/api/schemas/cost-tags";
-import { nameKey } from "$lib/costs/names";
-import { m } from "$lib/paraglide/messages";
+} from "#lib/api/schemas/cost-tags.ts";
+import { nameKey } from "#lib/costs/names.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 /**
  * The classes of each colour key of a tag. A chip reads its meaning from its name, the colour only helps to find it

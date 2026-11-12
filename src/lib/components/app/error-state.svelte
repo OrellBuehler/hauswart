@@ -3,8 +3,8 @@
   import LockKeyholeIcon from "@lucide/svelte/icons/lock-keyhole";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import { resolve } from "$app/paths";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { m } from "#lib/paraglide/messages.js";
   import EmptyState from "./empty-state.svelte";
 
   let { status, message }: { status: number; message: string } = $props();
@@ -42,7 +42,7 @@
   </p>
   <EmptyState {icon} {title} {description}>
     {#snippet actions()}
-      <Button href={resolve("/")}>{m.common_back_home()}</Button>
+      <Button href={resolve("")}>{m.common_back_home()}</Button>
     {/snippet}
   </EmptyState>
 </div>

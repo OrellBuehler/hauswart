@@ -1,7 +1,7 @@
 import type { Component } from "svelte";
-import type { IntegrationKind } from "$lib/api/enums";
-import type { CostBook } from "$lib/api/schemas/cost-books";
-import type { Integration } from "$lib/api/schemas/integrations";
+import type { IntegrationKind } from "#lib/api/enums.ts";
+import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+import type { Integration } from "#lib/api/schemas/integrations.ts";
 import GenericCard from "./generic-card.svelte";
 import HomeAssistantCard from "./home-assistant-card.svelte";
 import KeptCard from "./kept-card.svelte";

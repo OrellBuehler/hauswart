@@ -1,4 +1,4 @@
-import { addDays, compareDates, diffDays } from "$lib/dates";
+import { addDays, compareDates, diffDays } from "#lib/dates.ts";
 import type {
   Completion,
   DueKind,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allDayDto, appointmentDto } from "$lib/testing/appointments";
+import { allDayDto, appointmentDto } from "#lib/testing/appointments.ts";
 import { formatWhen } from "./format";
 import {
   buildCreateBody,

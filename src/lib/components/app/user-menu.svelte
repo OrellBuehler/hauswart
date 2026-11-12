@@ -5,12 +5,12 @@
   import LogOutIcon from "@lucide/svelte/icons/log-out";
   import SettingsIcon from "@lucide/svelte/icons/settings";
   import { toast } from "svelte-sonner";
-  import { endpoints } from "$lib/api/registry";
-  import { api } from "$lib/api/browser";
-  import type { User } from "$lib/api/schemas/auth";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
+  import { endpoints } from "#lib/api/registry.ts";
+  import { api } from "#lib/api/browser.ts";
+  import type { User } from "#lib/api/schemas/auth.ts";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import LocaleSwitch from "./locale-switch.svelte";
   import ThemeSwitch from "./theme-switch.svelte";
 
@@ -26,7 +26,7 @@
     loggingOut = true;
     try {
       await api.call(endpoints.authLogout);
-      await goto(resolve("/login"), { invalidateAll: true });
+      await goto(resolve("login"), { refreshAll: true });
     } catch (err) {
       toast.error(apiErrorMessage(err, { internal: m.auth_logout_failed() }));
       loggingOut = false;
@@ -59,10 +59,9 @@
     <DropdownMenu.Separator />
     <DropdownMenu.Item>
       {#snippet child({ props })}
-        <a href={resolve("/settings/account")} {...props}>
-          <SettingsIcon />
-          {m.nav_settings()}
-        </a>
+        <a href={resolve("settings/account")} {...props}
+          ><SettingsIcon /> {m.nav_settings()}</a
+        >
       {/snippet}
     </DropdownMenu.Item>
     <DropdownMenu.Separator />

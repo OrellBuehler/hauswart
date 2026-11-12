@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render } from "svelte/server";
-import type { CostBook } from "$lib/api/schemas/cost-books";
-import { readKeptSettings, type KeptCategory } from "$lib/connections/kept";
+import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+import { readKeptSettings, type KeptCategory } from "#lib/connections/kept.ts";
 import KeptCategoryMap from "./kept-category-map.svelte";
 
 const book = (over: Partial<CostBook>): CostBook => ({

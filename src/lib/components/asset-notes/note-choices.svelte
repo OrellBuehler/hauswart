@@ -1,16 +1,16 @@
 <script lang="ts">
-  import { api } from "$lib/api/browser";
-  import { fetchAll } from "$lib/api/fetch-all";
-  import { endpoints } from "$lib/api/registry";
-  import type { AssetNote } from "$lib/api/schemas/asset-notes";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { Skeleton } from "$lib/components/ui/skeleton/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import { api } from "#lib/api/browser.ts";
+  import { fetchAll } from "#lib/api/fetch-all.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { AssetNote } from "#lib/api/schemas/asset-notes.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Checkbox } from "#lib/components/ui/checkbox/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     assetId,

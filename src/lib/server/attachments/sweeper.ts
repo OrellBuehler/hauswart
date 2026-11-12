@@ -1,4 +1,4 @@
-import { getDB } from "$lib/server/db";
+import { getDB } from "#lib/server/db.ts";
 import { sweepOrphanFiles } from "./attachments";
 
 const SWEEP_INTERVAL_MS = 24 * 60 * 60 * 1000;

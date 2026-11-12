@@ -1,11 +1,11 @@
 import type { z } from "zod";
-import { COST_CATEGORIES, type CostCategory } from "$lib/api/enums";
-import { isApiError } from "$lib/api/errors";
-import type { CostBook } from "$lib/api/schemas/cost-books";
-import type { financeCategorySchema } from "$lib/api/schemas/finance";
-import { bookChoices } from "$lib/costs/books";
-import { apiErrorMessage } from "$lib/error-message";
-import { m } from "$lib/paraglide/messages";
+import { COST_CATEGORIES, type CostCategory } from "#lib/api/enums.ts";
+import { isApiError } from "#lib/api/errors.ts";
+import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+import type { financeCategorySchema } from "#lib/api/schemas/finance.ts";
+import { bookChoices } from "#lib/costs/books.ts";
+import { apiErrorMessage } from "#lib/error-message.ts";
+import { m } from "#lib/paraglide/messages.js";
 import { hostOf, integrationErrorMessage } from "./errors";
 
 export type KeptCategory = z.infer<typeof financeCategorySchema>;

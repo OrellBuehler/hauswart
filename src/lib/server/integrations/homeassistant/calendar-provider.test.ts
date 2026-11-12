@@ -1,11 +1,11 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { zonedTimeToInstant } from "$lib/dates";
-import { IntegrationError } from "$lib/server/connections/errors";
-import type { ResolvedConnection } from "$lib/server/connections/registry";
+import { zonedTimeToInstant } from "#lib/dates.ts";
+import { IntegrationError } from "#lib/server/connections/errors.ts";
+import type { ResolvedConnection } from "#lib/server/connections/registry.ts";
 import type {
   CalendarItem,
   CalendarProvider,
-} from "$lib/server/calendar-sync/provider";
+} from "#lib/server/calendar-sync/provider.ts";
 import { createCalendarProvider } from "./calendar-provider";
 import {
   CREATE_DELETE_CALENDAR,

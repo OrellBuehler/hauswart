@@ -2,21 +2,24 @@ import { describe, expect, it } from "vitest";
 import {
   createCostBookRequestSchema,
   updateCostBookRequestSchema,
-} from "$lib/api/schemas/cost-books";
+} from "#lib/api/schemas/cost-books.ts";
 import {
   createCostRequestSchema,
   moveCostsToBookRequestSchema,
   updateCostRequestSchema,
-} from "$lib/api/schemas/costs";
-import { createFuelLogRequestSchema } from "$lib/api/schemas/fuel-logs";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt } from "$lib/testing/domain";
-import { useTestFilesDir } from "$lib/testing/files";
-import { failure, fieldErrors, makeVehicle } from "$lib/testing/vehicles";
-import { costEntries } from "$lib/server/db";
-import { clockAt } from "$lib/server/tasks/evaluator";
-import { createFuelLog, updateFuelLog } from "$lib/server/vehicles/fuel-logs";
+} from "#lib/api/schemas/costs.ts";
+import { createFuelLogRequestSchema } from "#lib/api/schemas/fuel-logs.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
+import { useTestFilesDir } from "#lib/testing/files.ts";
+import { failure, fieldErrors, makeVehicle } from "#lib/testing/vehicles.ts";
+import { costEntries } from "#lib/server/db.ts";
+import { clockAt } from "#lib/server/tasks/evaluator.ts";
+import {
+  createFuelLog,
+  updateFuelLog,
+} from "#lib/server/vehicles/fuel-logs.ts";
 import { costBalances } from "./balances";
 import { createCostBook, listCostBooks, updateCostBook } from "./books";
 import { createCost, getCost, updateCost } from "./costs";

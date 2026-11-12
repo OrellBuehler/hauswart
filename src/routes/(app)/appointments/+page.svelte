@@ -5,17 +5,17 @@
   import PlusIcon from "@lucide/svelte/icons/plus";
   import SearchXIcon from "@lucide/svelte/icons/search-x";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
-  import { goto, invalidateAll } from "$app/navigation";
+  import { goto, refreshAll } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { APPOINTMENT_STATUSES } from "$lib/api/enums";
-  import { fetchAll } from "$lib/api/fetch-all";
-  import { endpoints } from "$lib/api/registry";
-  import type { Appointment } from "$lib/api/schemas/appointments";
-  import { formatDayHeading } from "$lib/appointments/format";
-  import { statusLabels } from "$lib/appointments/labels";
+  import { api } from "#lib/api/browser.ts";
+  import { APPOINTMENT_STATUSES } from "#lib/api/enums.ts";
+  import { fetchAll } from "#lib/api/fetch-all.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Appointment } from "#lib/api/schemas/appointments.ts";
+  import { formatDayHeading } from "#lib/appointments/format.ts";
+  import { statusLabels } from "#lib/appointments/labels.ts";
   import {
     APPOINTMENT_VIEWS,
     appendById,
@@ -29,17 +29,17 @@
     toggleStatus,
     type AppointmentFilters,
     type AppointmentView,
-  } from "$lib/appointments/list";
-  import AppointmentFormDialog from "$lib/components/appointments/appointment-form-dialog.svelte";
-  import AppointmentRow from "$lib/components/appointments/appointment-row.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/appointments/list.ts";
+  import AppointmentFormDialog from "#lib/components/appointments/appointment-form-dialog.svelte";
+  import AppointmentRow from "#lib/components/appointments/appointment-row.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -82,10 +82,9 @@
   }));
 
   async function apply(next: AppointmentFilters, replace: boolean) {
-    await goto(resolve(`/appointments${filterQuery(next)}` as "/"), {
-      keepFocus: true,
-      noScroll: true,
-      replaceState: replace,
+    await goto(resolve(`appointments${filterQuery(next)}`), {
+      reset: false,
+      replace,
     });
   }
 
@@ -302,6 +301,6 @@
     bind:open={createOpen}
     timeZone={data.timeZone}
     today={data.today}
-    onsaved={() => invalidateAll()}
+    onsaved={() => refreshAll()}
   />
 {/if}

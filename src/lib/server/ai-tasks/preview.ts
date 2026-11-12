@@ -1,12 +1,12 @@
 import {
   AI_TASK_PREVIEW_MAX_BYTES,
   AI_TASK_PREVIEW_MAX_SIDE,
-} from "$lib/api/schemas/ai-tasks";
-import { openAttachmentFile } from "$lib/server/attachments/attachments";
-import { defaultFilesRoot } from "$lib/server/files/store";
-import { withExtension } from "$lib/server/files/filename";
-import { previewImage } from "$lib/server/files/preview";
-import { notFound, type ServiceContext } from "$lib/server/service";
+} from "#lib/api/schemas/ai-tasks.ts";
+import { openAttachmentFile } from "#lib/server/attachments/attachments.ts";
+import { defaultFilesRoot } from "#lib/server/files/store.ts";
+import { withExtension } from "#lib/server/files/filename.ts";
+import { previewImage } from "#lib/server/files/preview.ts";
+import { notFound, type ServiceContext } from "#lib/server/service.ts";
 import { getAiTask } from "./ai-tasks";
 
 export interface TaskPreview {

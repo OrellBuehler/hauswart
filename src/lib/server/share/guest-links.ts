@@ -1,20 +1,20 @@
 import { desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
-import { GUEST_SECTIONS, type GuestLinkStatus } from "$lib/api/enums";
+import { GUEST_SECTIONS, type GuestLinkStatus } from "#lib/api/enums.ts";
 import {
   MAX_GUEST_LINK_DAYS,
   type CreateGuestLinkRequest,
   type UpdateGuestLinkRequest,
-} from "$lib/api/schemas/share";
-import { hashPassword } from "$lib/server/auth/password";
-import { docPages, guestLinks, users } from "$lib/server/db";
-import { parseStored } from "$lib/server/json";
+} from "#lib/api/schemas/share.ts";
+import { hashPassword } from "#lib/server/auth/password.ts";
+import { docPages, guestLinks, users } from "#lib/server/db.ts";
+import { parseStored } from "#lib/server/json.ts";
 import {
   conflict,
   invalidField,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
+} from "#lib/server/service.ts";
 import {
   generateShareToken,
   hashShareToken,

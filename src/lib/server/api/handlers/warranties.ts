@@ -1,5 +1,5 @@
-import type { endpoints } from "$lib/api/registry";
-import { listWarranties } from "$lib/server/warranties/warranties";
+import type { endpoints } from "#lib/api/registry.ts";
+import { listWarranties } from "#lib/server/warranties/warranties.ts";
 import type { Handler } from "../bind";
 import { wireWarranty } from "../wire";
 

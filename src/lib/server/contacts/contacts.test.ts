@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createAsset, deleteAsset } from "$lib/server/assets/assets";
+import { createAsset, deleteAsset } from "#lib/server/assets/assets.ts";
 import {
   createContactRequestSchema,
   updateContactRequestSchema,
-} from "$lib/api/schemas/contacts";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt } from "$lib/testing/domain";
+} from "#lib/api/schemas/contacts.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
 import {
   createContact,
   deleteContact,

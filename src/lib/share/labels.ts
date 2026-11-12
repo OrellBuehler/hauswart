@@ -1,5 +1,5 @@
-import type { GuestLinkStatus, GuestSection } from "$lib/api/enums";
-import { m } from "$lib/paraglide/messages";
+import type { GuestLinkStatus, GuestSection } from "#lib/api/enums.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 export const guestSectionLabels: Record<GuestSection, () => string> = {
   emergency: () => m.glinks_section_emergency(),

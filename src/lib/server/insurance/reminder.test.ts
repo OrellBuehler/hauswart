@@ -1,14 +1,14 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { createInsurancePolicyRequestSchema } from "$lib/api/schemas/insurance";
-import { taskCompletions, tasks } from "$lib/server/db";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt } from "$lib/testing/domain";
-import { completeTask, undoCompletion } from "$lib/server/tasks/completions";
-import { evaluateAll } from "$lib/server/tasks/evaluator";
-import { listPreparations } from "$lib/server/tasks/preparations";
-import { getTask } from "$lib/server/tasks/tasks";
+import { createInsurancePolicyRequestSchema } from "#lib/api/schemas/insurance.ts";
+import { taskCompletions, tasks } from "#lib/server/db.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt } from "#lib/testing/domain.ts";
+import { completeTask, undoCompletion } from "#lib/server/tasks/completions.ts";
+import { evaluateAll } from "#lib/server/tasks/evaluator.ts";
+import { listPreparations } from "#lib/server/tasks/preparations.ts";
+import { getTask } from "#lib/server/tasks/tasks.ts";
 import {
   createPolicy,
   deletePolicy,

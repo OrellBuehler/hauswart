@@ -1,19 +1,19 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import CheckIcon from "@lucide/svelte/icons/check";
   import ExternalLinkIcon from "@lucide/svelte/icons/external-link";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { OrderNowItem } from "$lib/api/schemas/parts";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDateShort } from "$lib/format";
-  import { formatMoney } from "$lib/format-money";
-  import { partHref, taskHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { OrderNowItem } from "#lib/api/schemas/parts.ts";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDateShort } from "#lib/format.ts";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { partHref, taskHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   let { item, today }: { item: OrderNowItem; today: string } = $props();
 
@@ -29,7 +29,7 @@
     } catch (err) {
       toast.error(apiErrorMessage(err));
     }
-    await invalidateAll();
+    await refreshAll();
   }
 
   async function ordered() {
@@ -40,7 +40,7 @@
         params: { id: item.partId },
         body: { qty: item.quantity },
       });
-      await invalidateAll();
+      await refreshAll();
       toast.success(
         m.part_ordered_toast_qty({ name: item.partName, qty: item.quantity }),
         { action: { label: m.common_undo(), onClick: () => void undo() } },

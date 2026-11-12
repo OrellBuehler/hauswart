@@ -1,8 +1,8 @@
-import type { ApiClient } from "$lib/api/client";
-import { ApiError } from "$lib/api/errors";
-import { endpoints } from "$lib/api/registry";
-import type { Seed, SeedTask } from "$lib/api/schemas/seed";
-import type { PutVehicleRequest } from "$lib/api/schemas/vehicles";
+import type { ApiClient } from "#lib/api/client.ts";
+import { ApiError } from "#lib/api/errors.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import type { Seed, SeedTask } from "#lib/api/schemas/seed.ts";
+import type { PutVehicleRequest } from "#lib/api/schemas/vehicles.ts";
 
 export const SEED_SOURCE = "seed";
 

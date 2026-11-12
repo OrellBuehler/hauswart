@@ -11,14 +11,14 @@ import {
   type SQL,
 } from "drizzle-orm";
 import { z } from "zod";
-import { ApiError } from "$lib/api/errors";
-import type { OdometerRefusalCode, OdometerSource } from "$lib/api/enums";
+import { ApiError } from "#lib/api/errors.ts";
+import type { OdometerRefusalCode, OdometerSource } from "#lib/api/enums.ts";
 import {
   MAX_ODOMETER_VALUE,
   type OdometerRefusalDetails,
-} from "$lib/api/schemas/vehicles";
-import { isValidDate } from "$lib/dates";
-import { dateInZone, householdTimeZone } from "$lib/server/config";
+} from "#lib/api/schemas/vehicles.ts";
+import { isValidDate } from "#lib/dates.ts";
+import { dateInZone, householdTimeZone } from "#lib/server/config.ts";
 import {
   assets,
   fuelLogs,
@@ -27,19 +27,19 @@ import {
   taskCompletions,
   tireSetEvents,
   type DB,
-} from "$lib/server/db";
-import { generateNotifications } from "$lib/server/notifications/generate";
-import { decodeCursor, pageOf } from "$lib/server/pagination";
+} from "#lib/server/db.ts";
+import { generateNotifications } from "#lib/server/notifications/generate.ts";
+import { decodeCursor, pageOf } from "#lib/server/pagination.ts";
 import {
   invalidField,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
-import { settleSignalChanges } from "$lib/server/signals/ingest";
-import type { SignalChange } from "$lib/server/signals/service";
-import { tasksReading } from "$lib/server/signals/watch";
-import { evaluateTasks } from "$lib/server/tasks/evaluator";
-import { odometerSignalKey } from "$lib/vehicles/odometer";
+} from "#lib/server/service.ts";
+import { settleSignalChanges } from "#lib/server/signals/ingest.ts";
+import type { SignalChange } from "#lib/server/signals/service.ts";
+import { tasksReading } from "#lib/server/signals/watch.ts";
+import { evaluateTasks } from "#lib/server/tasks/evaluator.ts";
+import { odometerSignalKey } from "#lib/vehicles/odometer.ts";
 import { assertVehicleForRead } from "./kind";
 import { syncOdometerSignal } from "./signal";
 import { readingOrder } from "./summary";

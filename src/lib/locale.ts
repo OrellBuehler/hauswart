@@ -1,7 +1,7 @@
-import { endpoints } from "$lib/api/registry";
-import { api } from "$lib/api/browser";
-import type { UserLocale } from "$lib/api/enums";
-import { setLocale } from "$lib/paraglide/runtime";
+import { endpoints } from "#lib/api/registry.ts";
+import { api } from "#lib/api/browser.ts";
+import type { UserLocale } from "#lib/api/enums.ts";
+import { setLocale } from "#lib/paraglide/runtime.js";
 
 /**
  * Switches the UI language by reloading the page. The server already sets the

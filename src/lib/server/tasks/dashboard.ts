@@ -1,23 +1,23 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
-import type { NextAppointment } from "$lib/api/schemas/tasks";
+import type { NextAppointment } from "#lib/api/schemas/tasks.ts";
 import {
   buildUpcoming,
   type UpcomingInput,
   type UpcomingItem,
-} from "$lib/tasks/engine";
+} from "#lib/tasks/engine/index.ts";
 import {
   DASHBOARD_HORIZON_DAYS,
   DASHBOARD_RECENT_COMPLETIONS,
-} from "$lib/api/schemas/dashboard";
+} from "#lib/api/schemas/dashboard.ts";
 import {
   nextAppointmentSql,
   parseNextAppointment,
-} from "$lib/server/appointments/next";
-import { openNoteCountSql } from "$lib/server/asset-notes/counts";
-import { assets, rooms, taskState, tasks, users } from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
-import { odometerAssetOfTrigger } from "$lib/vehicles/odometer";
+} from "#lib/server/appointments/next.ts";
+import { openNoteCountSql } from "#lib/server/asset-notes/counts.ts";
+import { assets, rooms, taskState, tasks, users } from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
+import { odometerAssetOfTrigger } from "#lib/vehicles/odometer.ts";
 import { recentCompletions, type CompletionRecord } from "./completions";
 import { clockAt } from "./evaluator";
 import { preparationsForTasks } from "./preparations";

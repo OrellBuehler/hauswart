@@ -7,7 +7,7 @@ import {
   isValidDate,
   maxDate,
   parseDate,
-} from "$lib/dates";
+} from "#lib/dates.ts";
 import { datedResult, latestByDate } from "./common";
 import type {
   EvalContext,

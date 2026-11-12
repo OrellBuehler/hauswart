@@ -1,19 +1,19 @@
 import type { z } from "zod";
-import type { endpoints } from "$lib/api/registry";
-import type { financeSuggestionSchema } from "$lib/api/schemas/finance";
-import { toIso } from "$lib/api/schemas/common";
-import type { IntegrationKind } from "$lib/api/enums";
+import type { endpoints } from "#lib/api/registry.ts";
+import type { financeSuggestionSchema } from "#lib/api/schemas/finance.ts";
+import { toIso } from "#lib/api/schemas/common.ts";
+import type { IntegrationKind } from "#lib/api/enums.ts";
 import {
   getConnectionRow,
   ownerFor,
   runOperation,
-} from "$lib/server/connections/connections";
-import { openCostBookIds } from "$lib/server/costs/books";
+} from "#lib/server/connections/connections.ts";
+import { openCostBookIds } from "#lib/server/costs/books.ts";
 import {
   linkedEntries,
   type LinkedEntrySummary,
-} from "$lib/server/finance/links";
-import { financeProviders } from "$lib/server/finance/providers";
+} from "#lib/server/finance/links.ts";
+import { financeProviders } from "#lib/server/finance/providers.ts";
 import {
   acceptSuggestion,
   dismissSuggestion,
@@ -21,9 +21,9 @@ import {
   matchingCostSuggestions,
   payloadOf,
   type SuggestionRow,
-} from "$lib/server/finance/suggestions";
-import { getHousehold } from "$lib/server/household/household";
-import { notFound } from "$lib/server/service";
+} from "#lib/server/finance/suggestions.ts";
+import { getHousehold } from "#lib/server/household/household.ts";
+import { notFound } from "#lib/server/service.ts";
 import type { AuthedContext } from "../context";
 import type { Handler } from "../bind";
 

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError } from "$lib/api/errors";
+import { ApiError } from "#lib/api/errors.ts";
 
 type Query = Record<string, unknown>;
 
@@ -8,7 +8,7 @@ const state = vi.hoisted(() => ({
   failWith: null as unknown,
 }));
 
-vi.mock("$lib/api/client", () => ({
+vi.mock("#lib/api/client.ts", () => ({
   createApiClient: () => ({
     call: async (endpoint: { id: string }, input?: { query?: Query }) => {
       if (state.failWith) throw state.failWith;

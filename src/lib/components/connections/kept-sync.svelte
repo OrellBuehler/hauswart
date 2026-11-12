@@ -5,19 +5,19 @@
   import RefreshCwIcon from "@lucide/svelte/icons/refresh-cw";
   import type { z } from "zod";
   import { resolve } from "$app/paths";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { Integration } from "$lib/api/schemas/integrations";
-  import type { financeSyncResponseSchema } from "$lib/api/schemas/finance";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Integration } from "#lib/api/schemas/integrations.ts";
+  import type { financeSyncResponseSchema } from "#lib/api/schemas/finance.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
   import {
     keptErrorMessage,
     offersWaiting,
     syncStatLines,
-  } from "$lib/connections/kept";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/connections/kept.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   type SyncResult = z.infer<typeof financeSyncResponseSchema>;
 
@@ -26,11 +26,12 @@
     unsaved,
     busy,
     onchanged,
+
+    /** The settings have changes that are not saved: a sync would use the saved ones. */
+    /** Something else on the card is saving or testing. */
   }: {
     integration: Integration;
-    /** The settings have changes that are not saved: a sync would use the saved ones. */
     unsaved: boolean;
-    /** Something else on the card is saving or testing. */
     busy: boolean;
     onchanged: () => Promise<void>;
   } = $props();
@@ -98,7 +99,7 @@
             <p class="text-xs font-medium text-pretty">
               {m.integration_kept_sync_review()}
               <a
-                href={resolve("/costs/inbox")}
+                href={resolve("costs/inbox")}
                 class="underline underline-offset-4 pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center"
                 >{m.integration_kept_sync_open_inbox()}</a
               >

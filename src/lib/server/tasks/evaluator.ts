@@ -9,13 +9,13 @@ import {
   type DueResult,
   type EngineState,
   type Trigger,
-} from "$lib/tasks/engine";
-import { localDateOf } from "$lib/dates";
-import { dateInZone, householdTimeZone } from "$lib/server/config";
-import { taskCompletions, taskState, tasks } from "$lib/server/db";
-import { getHousehold } from "$lib/server/household/household";
-import { parseStored } from "$lib/server/json";
-import type { ServiceContext } from "$lib/server/service";
+} from "#lib/tasks/engine/index.ts";
+import { localDateOf } from "#lib/dates.ts";
+import { dateInZone, householdTimeZone } from "#lib/server/config.ts";
+import { taskCompletions, taskState, tasks } from "#lib/server/db.ts";
+import { getHousehold } from "#lib/server/household/household.ts";
+import { parseStored } from "#lib/server/json.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import { loadSignals, triggerSignalNeeds } from "./signals";
 import { toStateRecord, type StateRow, type TaskStateRecord } from "./state";
 

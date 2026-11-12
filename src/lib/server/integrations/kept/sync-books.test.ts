@@ -1,21 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { getConnectionRow } from "$lib/server/connections/connections";
+import { getConnectionRow } from "#lib/server/connections/connections.ts";
 import {
   defaultCostBook,
   listCostBooks,
   updateCostBook,
-} from "$lib/server/costs/books";
-import { getCost } from "$lib/server/costs/costs";
-import { costEntries, financeSuggestions } from "$lib/server/db";
+} from "#lib/server/costs/books.ts";
+import { getCost } from "#lib/server/costs/costs.ts";
+import { costEntries, financeSuggestions } from "#lib/server/db.ts";
 import {
   acceptSuggestion,
   dismissSuggestion,
   listSuggestions,
   type SuggestionRow,
-} from "$lib/server/finance/suggestions";
-import { createTestUser } from "$lib/testing/auth";
-import { ctxAt } from "$lib/testing/domain";
-import { useTestDB } from "$lib/testing/db";
+} from "#lib/server/finance/suggestions.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import { parseConfig } from "./config";
 import { fakeBill, fakeTransaction } from "./fake-server";
 import { syncConnection } from "./sync";

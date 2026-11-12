@@ -3,15 +3,15 @@
   import CircleXIcon from "@lucide/svelte/icons/circle-x";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import type { z } from "zod";
-  import type { testIntegrationResponseSchema } from "$lib/api/schemas/integrations";
-  import { Badge } from "$lib/components/ui/badge/index.js";
+  import type { testIntegrationResponseSchema } from "#lib/api/schemas/integrations.ts";
+  import { Badge } from "#lib/components/ui/badge/index.js";
   import {
     KEPT_SCOPES,
     keptErrorMessage,
     readKeptTestInfo,
-  } from "$lib/connections/kept";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/connections/kept.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let { result }: { result: z.infer<typeof testIntegrationResponseSchema> } =
     $props();

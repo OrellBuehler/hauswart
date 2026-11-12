@@ -1,18 +1,18 @@
 import { and, eq, isNotNull, isNull } from "drizzle-orm";
-import { leadValueSchema } from "$lib/api/schemas/tasks";
-import { signalReactionSchema } from "$lib/api/schemas/hints";
+import { leadValueSchema } from "#lib/api/schemas/tasks.ts";
+import { signalReactionSchema } from "#lib/api/schemas/hints.ts";
 import {
   triggerSchema,
   type AutoCompleteRule,
   type Trigger,
-} from "$lib/tasks/engine";
-import { emitEvent } from "$lib/server/events";
-import { assetHints, assets, taskPreparations, tasks } from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
+} from "#lib/tasks/engine/index.ts";
+import { emitEvent } from "#lib/server/events.ts";
+import { assetHints, assets, taskPreparations, tasks } from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import {
   triggerSignalNeeds,
   type SignalNeeds,
-} from "$lib/server/tasks/signals";
+} from "#lib/server/tasks/signals.ts";
 
 /** Everything the household wants an adapter to keep reading. */
 export type WatchList = SignalNeeds;

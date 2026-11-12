@@ -3,18 +3,18 @@ import {
   createAsset,
   deleteAsset,
   updateAsset,
-} from "$lib/server/assets/assets";
+} from "#lib/server/assets/assets.ts";
 import {
   createHintRequestSchema,
   signalReactionSchema,
   updateHintRequestSchema,
-} from "$lib/api/schemas/hints";
-import { createComment } from "$lib/server/comments/comments";
-import { countCommentsOf } from "$lib/server/comments/comments";
-import { deleteTask } from "$lib/server/tasks/tasks";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, makeTask } from "$lib/testing/domain";
+} from "#lib/api/schemas/hints.ts";
+import { createComment } from "#lib/server/comments/comments.ts";
+import { countCommentsOf } from "#lib/server/comments/comments.ts";
+import { deleteTask } from "#lib/server/tasks/tasks.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, makeTask } from "#lib/testing/domain.ts";
 import {
   createHint,
   deleteHint,

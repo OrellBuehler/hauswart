@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { sessions } from "$lib/server/db";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
+import { sessions } from "#lib/server/db.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import {
   LoginRateLimiter,
   RateLimitedError,

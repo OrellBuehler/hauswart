@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import KeyRoundIcon from "@lucide/svelte/icons/key-round";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import { toast } from "svelte-sonner";
-  import { endpoints } from "$lib/api/registry";
-  import { api } from "$lib/api/browser";
-  import type { ApiToken } from "$lib/api/schemas/tokens";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import TokenRow from "$lib/components/app/token-row.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import { endpoints } from "#lib/api/registry.ts";
+  import { api } from "#lib/api/browser.ts";
+  import type { ApiToken } from "#lib/api/schemas/tokens.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import TokenRow from "#lib/components/app/token-row.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { m } from "#lib/paraglide/messages.js";
   import CreateTokenDialog from "./create-token-dialog.svelte";
   import type { PageProps } from "./$types";
 
@@ -31,7 +31,7 @@
     const { id, name } = target;
     await api.call(endpoints.tokensRevoke, { params: { id } });
     toast.success(m.token_revoked_toast({ name }));
-    await invalidateAll();
+    await refreshAll();
   }
 </script>
 
@@ -80,7 +80,7 @@
 <CreateTokenDialog
   bind:open={createOpen}
   scopes={data.scopes}
-  oncreated={invalidateAll}
+  oncreated={refreshAll}
 />
 
 <ConfirmDialog

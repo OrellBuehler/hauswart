@@ -1,13 +1,13 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { ApiError } from "$lib/api/errors";
-import { createCalendarFeedRequestSchema } from "$lib/api/schemas/share";
-import { decryptSecret } from "$lib/server/crypto";
-import { icalFeeds } from "$lib/server/db";
-import { SHARE_TOKEN_PATTERN } from "$lib/server/share/tokens";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, NOW } from "$lib/testing/domain";
+import { ApiError } from "#lib/api/errors.ts";
+import { createCalendarFeedRequestSchema } from "#lib/api/schemas/share.ts";
+import { decryptSecret } from "#lib/server/crypto.ts";
+import { icalFeeds } from "#lib/server/db.ts";
+import { SHARE_TOKEN_PATTERN } from "#lib/server/share/tokens.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, NOW } from "#lib/testing/domain.ts";
 import {
   createFeed,
   feedUrl,

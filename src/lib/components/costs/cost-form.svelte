@@ -5,33 +5,33 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
+  import { api } from "#lib/api/browser.ts";
   import {
     COST_CATEGORIES,
     COST_CATEGORY_COUNTS_AS_EXPENSE,
     COST_DEDUCTIBLE,
     type CostCategory,
-  } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { Asset } from "$lib/api/schemas/assets";
-  import type { CostBook } from "$lib/api/schemas/cost-books";
-  import type { CostTag } from "$lib/api/schemas/cost-tags";
-  import type { CostEntry } from "$lib/api/schemas/costs";
-  import type { Defect } from "$lib/api/schemas/defects";
-  import type { Room } from "$lib/api/schemas/rooms";
-  import type { ServiceLogEntry } from "$lib/api/schemas/service-log";
-  import type { DirectoryUser } from "$lib/api/schemas/users";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { loadRememberedBook } from "$lib/costs/book-memory";
-  import { openBooks } from "$lib/costs/books";
+  } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Asset } from "#lib/api/schemas/assets.ts";
+  import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+  import type { CostTag } from "#lib/api/schemas/cost-tags.ts";
+  import type { CostEntry } from "#lib/api/schemas/costs.ts";
+  import type { Defect } from "#lib/api/schemas/defects.ts";
+  import type { Room } from "#lib/api/schemas/rooms.ts";
+  import type { ServiceLogEntry } from "#lib/api/schemas/service-log.ts";
+  import type { DirectoryUser } from "#lib/api/schemas/users.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
+  import { loadRememberedBook } from "#lib/costs/book-memory.ts";
+  import { openBooks } from "#lib/costs/books.ts";
   import {
     buildCreateBody,
     buildUpdateBody,
@@ -41,17 +41,17 @@
     taxClassApplies,
     withBook,
     type CostDraft,
-  } from "$lib/costs/form";
-  import { fuelLogOfConflict } from "$lib/costs/fuel-owner";
-  import { categoryLabels, deductibleLabels } from "$lib/costs/labels";
-  import { matchQuery, tieFailure } from "$lib/costs/matches";
-  import { COST_NOTES_MAX, COST_TITLE_MAX } from "$lib/api/schemas/costs";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDay } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
-  import { fuelLogHref } from "$lib/vehicles/links";
-  import { cn } from "$lib/utils";
+  } from "#lib/costs/form.ts";
+  import { fuelLogOfConflict } from "#lib/costs/fuel-owner.ts";
+  import { categoryLabels, deductibleLabels } from "#lib/costs/labels.ts";
+  import { matchQuery, tieFailure } from "#lib/costs/matches.ts";
+  import { COST_NOTES_MAX, COST_TITLE_MAX } from "#lib/api/schemas/costs.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDay } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
+  import { fuelLogHref } from "#lib/vehicles/links.ts";
+  import { cn } from "#lib/utils.ts";
   import BookPicker from "./book-picker.svelte";
   import FinanceMatches from "./finance-matches.svelte";
   import SplitEditor from "./split-editor.svelte";
@@ -70,24 +70,25 @@
     today,
     currentUserId,
     defaults = {},
+
+    /** Every cost book, archived ones included. */
+    /** Every cost tag of the household. */
+    /** The person has a working finance connection: the form looks for bank transactions that fit the entry. */
+    /** The household's currency. */
+    /** The book on screen on the costs page. */
   }: {
     entry?: CostEntry | undefined;
     rooms: Room[];
     assets: Asset[];
     defects: Defect[];
     people: DirectoryUser[];
-    /** Every cost book, archived ones included. */
     books: CostBook[];
-    /** Every cost tag of the household. */
     tags: CostTag[];
-    /** The person has a working finance connection: the form looks for bank transactions that fit the entry. */
     financeConnected?: boolean;
-    /** The household's currency. */
     currency: string;
     today: string;
     currentUserId: string;
     defaults?: {
-      /** The book on screen on the costs page. */
       bookId?: string | undefined;
       assetId?: string | undefined;
       roomId?: string | undefined;
@@ -159,10 +160,7 @@
   ]);
   const defectOptions = $derived([
     { value: "", label: m.cost_no_defect() },
-    ...defects.map((d) => ({
-      value: d.id,
-      label: `#${d.number} ${d.title}`,
-    })),
+    ...defects.map((d) => ({ value: d.id, label: `#${d.number} ${d.title}` })),
     ...(entry?.defectId && !defects.some((d) => d.id === entry.defectId)
       ? [
           {
@@ -185,6 +183,7 @@
         .filter(Boolean)
         .join(" · "),
     })),
+
     ...(draft.serviceLogId &&
     !serviceEntries.some((s) => s.id === draft.serviceLogId)
       ? [
@@ -207,6 +206,7 @@
   const owned = $derived(Boolean(entry?.fuelLogId));
   /** The vehicle whose fuel log holds the entry's fill (the entry's device). */
   const ownerAssetId = $derived(entry?.fuelLogId ? entry.assetId : null);
+
   const amount = $derived(
     parseDraftAmount(draft.amount, draft.refund, draft.currency),
   );
@@ -216,6 +216,7 @@
   const otherCurrency = $derived(
     /^[A-Z]{3}$/.test(draft.currency) && draft.currency !== currency,
   );
+
   /** An entry that is tied to a finance item already, or a fuel fill's, is not offered a transaction. */
   const matchable = $derived(
     financeConnected && !owned && !entry?.financeLinked,
@@ -237,6 +238,7 @@
       serviceLoading = true;
       serviceError = undefined;
     });
+
     api
       .call(endpoints.serviceLogList, {
         query: { limit: 100, ...(asset ? { assetId: asset } : {}) },
@@ -322,7 +324,7 @@
     }
     if (entry && Object.keys(built.body).length === 0) {
       toast.info(m.cost_form_no_changes());
-      await goto(resolve(`/costs/${entry.id}` as "/"));
+      await goto(resolve(`costs/${entry.id}`));
       return;
     }
     pending = true;
@@ -341,8 +343,8 @@
           ? m.cost_saved_toast({ title: saved.title })
           : m.cost_created_toast({ title: saved.title }),
       );
-      await goto(resolve(`/costs/${saved.id}` as "/"), {
-        invalidateAll: true,
+      await goto(resolve(`costs/${saved.id}`), {
+        refreshAll: true,
       });
     } catch (err) {
       errors = apiFieldErrors(err);
@@ -366,7 +368,7 @@
   }
 
   const cancelHref = $derived(
-    entry ? resolve(`/costs/${entry.id}` as "/") : resolve("/costs"),
+    entry ? resolve(`costs/${entry.id}`) : resolve("costs"),
   );
 </script>
 

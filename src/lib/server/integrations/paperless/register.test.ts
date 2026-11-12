@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getIntegration } from "$lib/server/connections/registry";
-import { getDocumentProvider } from "$lib/server/documents/provider";
-import { useTestDB } from "$lib/testing/db";
+import { getIntegration } from "#lib/server/connections/registry.ts";
+import { getDocumentProvider } from "#lib/server/documents/provider.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import { registerPaperless, registerPaperlessAdapter } from "./index";
 
 describe("registering the Paperless adapter", () => {

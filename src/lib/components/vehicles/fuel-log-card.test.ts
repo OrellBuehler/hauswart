@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { render } from "svelte/server";
-import type { FuelLog } from "$lib/api/schemas/fuel-logs";
-import type { VehicleStats } from "$lib/api/schemas/vehicle-stats";
-import type { Vehicle } from "$lib/api/schemas/vehicles";
+import type { FuelLog } from "#lib/api/schemas/fuel-logs.ts";
+import type { VehicleStats } from "#lib/api/schemas/vehicle-stats.ts";
+import type { Vehicle } from "#lib/api/schemas/vehicles.ts";
 import FuelLogCard from "./fuel-log-card.svelte";
 
 const vehicle: Vehicle = {

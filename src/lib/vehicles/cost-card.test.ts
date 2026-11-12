@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCostFilters } from "$lib/costs/filters";
+import { parseCostFilters } from "#lib/costs/filters.ts";
 import { costShare, statsYears, vehicleCostsQuery } from "./cost-card";
 
 describe("statsYears", () => {

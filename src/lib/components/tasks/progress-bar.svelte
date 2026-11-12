@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { Progress } from "$lib/components/ui/progress/index.js";
-  import { formatNumber } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import { Progress } from "#lib/components/ui/progress/index.js";
+  import { formatNumber } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     current,
