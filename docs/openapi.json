@@ -33516,6 +33516,158 @@
         }
       }
     },
+    "/api/v1/attachments/{id}/preview": {
+      "get": {
+        "operationId": "attachmentsPreview",
+        "summary": "An attachment sized for an assistant to read",
+        "description": "The file as something that reads it takes it in, for any attachment (of a device, a page, a task, a receipt, ...). An image is sent as it is stored when its longest side is at most 1600 px and it is at most 1.5 MB, else scaled down and sent as JPEG (a very long, narrow image may keep up to 3200 px on its long side so that its text stays legible). A PDF without `pages` is sent as stored when it is at most 4 MiB, otherwise the answer is a 400 `invalid_request` with `details.code` `too_large` and `details.pageCount`, the number of its pages, so that a range can be asked for. With `pages` (`3` or `3-8`, counted from 1, at most 20 pages) the answer is a PDF of only those pages: a range that reaches past the end is a 400 on `pages` (`details.code` `out_of_range`, `details.pageCount`), `pages` for an image is a 400 on `pages` (`details.code` `not_a_pdf`). A PDF that cannot be opened (encrypted, damaged) is a 400 `details.code` `unreadable` when pages are asked for and when it is over 4 MiB; a smaller one is still sent whole. The header `X-Page-Count` carries the number of pages of the whole stored PDF (left out for images, and for a PDF that cannot be opened). Sent with `nosniff`, an `ETag` and `Cache-Control: private, no-cache` (a copy is kept but asked about every time: `If-None-Match` answers 304); use `GET /attachments/{id}/content` for the original file.",
+        "tags": [
+          "attachments"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "x-required-scopes": [
+          "read"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "pages",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Page-Count": {
+                "description": "The number of pages of the whole stored PDF (not of the pages sent).",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error: `invalid_request`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error: `unauthenticated`, `setup_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error: `forbidden`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: `not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error: `rate_limited`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: `internal`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/attachments/{id}/thumb": {
       "get": {
         "operationId": "attachmentsThumb",

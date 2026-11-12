@@ -229,6 +229,29 @@ describe("openapi document", () => {
     ]);
   });
 
+  it("documents the extra response headers of a binary endpoint", () => {
+    const preview = doc.paths["/api/v1/attachments/{id}/preview"].get as {
+      responses: Record<
+        string,
+        { headers?: Record<string, { description?: string; schema: unknown }> }
+      >;
+    };
+    expect(preview.responses["200"].headers).toMatchObject({
+      "Cache-Control": { schema: { type: "string" } },
+      "X-Page-Count": {
+        description: expect.stringContaining("pages"),
+        schema: { type: "integer" },
+      },
+    });
+    const content = doc.paths["/api/v1/attachments/{id}/content"].get as {
+      responses: Record<string, { headers?: Record<string, unknown> }>;
+    };
+    expect(Object.keys(content.responses["200"].headers ?? {})).toEqual([
+      "Content-Disposition",
+      "Cache-Control",
+    ]);
+  });
+
   it("documents multipart uploads with a binary file field and the upload errors", () => {
     const upload = doc.paths["/api/v1/attachments"].post as {
       requestBody: {

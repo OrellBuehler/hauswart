@@ -45,8 +45,9 @@ export function invalidFieldWith(
   field: string,
   message: string,
   extra: Record<string, unknown>,
+  source: "body" | "query" = "body",
 ): ApiError {
-  const base = invalidField(field, message);
+  const base = invalidField(field, message, source);
   return new ApiError("invalid_request", base.message, {
     details: { ...(base.details as object), ...extra },
   });

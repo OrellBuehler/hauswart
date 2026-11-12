@@ -1,7 +1,9 @@
 import type { AttachmentOwnerType } from "$lib/api/enums";
 import type { endpoints } from "$lib/api/registry";
+import { PAGE_COUNT_HEADER } from "$lib/api/schemas/attachments";
 import { requireScopes } from "$lib/server/auth/guards";
 import { attachFromUrl } from "$lib/server/attachments/from-url";
+import { attachmentPreview } from "$lib/server/attachments/preview";
 import {
   createAttachment,
   deleteAttachment,
@@ -150,3 +152,24 @@ export const thumb: Handler<typeof endpoints.attachmentsThumb> = ({
   params,
   event,
 }) => serve(ctx, params.id, "thumb", false, event.request);
+
+export const preview: Handler<typeof endpoints.attachmentsPreview> = async ({
+  ctx,
+  params,
+  query,
+  event,
+}) => {
+  const file = await attachmentPreview(ctx, params.id, query);
+  const res = fileResponse(new Blob([file.bytes as BlobPart]), {
+    mime: file.mime,
+    filename: file.filename,
+    disposition: "inline",
+    cache: "no-cache",
+    etag: file.etag,
+    request: event.request,
+  });
+  if (file.pageCount !== null) {
+    res.headers.set(PAGE_COUNT_HEADER, String(file.pageCount));
+  }
+  return res;
+};

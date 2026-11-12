@@ -109,9 +109,12 @@ import {
 } from "./schemas/docs";
 import {
   ATTACHMENT_CONTENT_TYPES,
+  ATTACHMENT_PREVIEW_CONTENT_TYPES,
   MAX_UPLOAD_REQUEST_BYTES,
+  PAGE_COUNT_HEADER,
   attachFromUrlRequestSchema,
   attachmentContentQuerySchema,
+  attachmentPreviewQuerySchema,
   attachmentSchema,
   listAttachmentsQuerySchema,
   listAttachmentsResponseSchema,
@@ -422,6 +425,13 @@ export const MAX_MARKDOWN_REQUEST_BYTES = 512 * 1024;
  */
 export type ResponseType = "json" | "binary";
 
+/** A response header an endpoint documents. */
+export interface ResponseHeaderDef {
+  description: string;
+  /** Default `string`. */
+  type?: "string" | "integer";
+}
+
 export interface EndpointDef<
   A extends AuthMode,
   P extends ParamsSchema | undefined,
@@ -450,6 +460,8 @@ export interface EndpointDef<
   responseType?: T;
   /** Binary endpoints: the content types the response can have. */
   contentTypes?: readonly string[];
+  /** Binary endpoints: response headers beyond the usual ones that clients may read (name -> what it says), documented in OpenAPI. */
+  responseHeaders?: Readonly<Record<string, ResponseHeaderDef>>;
   /** Success status; `204` endpoints use `emptySchema` and return no body. Default 200. */
   status?: SuccessStatus;
   /** Extra error codes the handler can raise (beyond those every endpoint can). */
@@ -482,6 +494,7 @@ export interface Endpoint<
   readonly response: R;
   readonly responseType: T;
   readonly contentTypes: readonly string[];
+  readonly responseHeaders: Readonly<Record<string, ResponseHeaderDef>>;
   readonly status: SuccessStatus;
   readonly errors: readonly ErrorCode[];
   readonly setsSession: boolean;
@@ -540,6 +553,7 @@ export function defineEndpoint<
     response: def.response,
     responseType: (def.responseType ?? "json") as T,
     contentTypes: def.contentTypes ?? [],
+    responseHeaders: def.responseHeaders ?? {},
     status,
     errors: def.errors ?? [],
     setsSession: def.setsSession ?? false,
@@ -3538,6 +3552,31 @@ export const endpoints = {
     response: binaryResponseSchema,
     responseType: "binary",
     contentTypes: [...ATTACHMENT_CONTENT_TYPES, "application/octet-stream"],
+    errors: ["not_found"],
+  }),
+
+  attachmentsPreview: defineEndpoint({
+    id: "attachmentsPreview",
+    method: "GET",
+    path: "/api/v1/attachments/{id}/preview",
+    summary: "An attachment sized for an assistant to read",
+    description:
+      "The file as something that reads it takes it in, for any attachment (of a device, a page, a task, a receipt, ...). An image is sent as it is stored when its longest side is at most 1600 px and it is at most 1.5 MB, else scaled down and sent as JPEG (a very long, narrow image may keep up to 3200 px on its long side so that its text stays legible). A PDF without `pages` is sent as stored when it is at most 4 MiB, otherwise the answer is a 400 `invalid_request` with `details.code` `too_large` and `details.pageCount`, the number of its pages, so that a range can be asked for. With `pages` (`3` or `3-8`, counted from 1, at most 20 pages) the answer is a PDF of only those pages: a range that reaches past the end is a 400 on `pages` (`details.code` `out_of_range`, `details.pageCount`), `pages` for an image is a 400 on `pages` (`details.code` `not_a_pdf`). A PDF that cannot be opened (encrypted, damaged) is a 400 `details.code` `unreadable` when pages are asked for and when it is over 4 MiB; a smaller one is still sent whole. The header `X-Page-Count` carries the number of pages of the whole stored PDF (left out for images, and for a PDF that cannot be opened). Sent with `nosniff`, an `ETag` and `Cache-Control: private, no-cache` (a copy is kept but asked about every time: `If-None-Match` answers 304); use `GET /attachments/{id}/content` for the original file.",
+    tags: ["attachments"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    query: attachmentPreviewQuerySchema,
+    response: binaryResponseSchema,
+    responseType: "binary",
+    contentTypes: ATTACHMENT_PREVIEW_CONTENT_TYPES,
+    responseHeaders: {
+      [PAGE_COUNT_HEADER]: {
+        description:
+          "The number of pages of the whole stored PDF (not of the pages sent).",
+        type: "integer",
+      },
+    },
     errors: ["not_found"],
   }),
 

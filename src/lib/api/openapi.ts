@@ -134,6 +134,15 @@ function operation(endpoint: AnyEndpoint, components: Components): Json {
       headers: {
         "Content-Disposition": { schema: { type: "string" } },
         "Cache-Control": { schema: { type: "string" } },
+        ...Object.fromEntries(
+          Object.entries(endpoint.responseHeaders).map(([name, header]) => [
+            name,
+            {
+              description: header.description,
+              schema: { type: header.type ?? "string" },
+            },
+          ]),
+        ),
       },
       content: Object.fromEntries(
         endpoint.contentTypes.map((type) => [

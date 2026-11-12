@@ -131,6 +131,7 @@ describe("registry", () => {
         "PATCH /api/v1/attachments/{id} both",
         "DELETE /api/v1/attachments/{id} both",
         "GET /api/v1/attachments/{id}/content both",
+        "GET /api/v1/attachments/{id}/preview both",
         "GET /api/v1/attachments/{id}/thumb both",
         "GET /api/v1/calendar-feeds session",
         "GET /api/v1/calendar-targets both",

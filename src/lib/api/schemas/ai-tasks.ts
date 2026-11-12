@@ -5,7 +5,13 @@ import {
   AI_TASK_QUEUEABLE_KINDS,
   AI_TASK_STATUSES,
 } from "../enums";
-import { attachmentSchema } from "./attachments";
+import {
+  ATTACHMENT_PDF_READ_MAX_BYTES,
+  ATTACHMENT_PREVIEW_CONTENT_TYPES,
+  ATTACHMENT_PREVIEW_MAX_BYTES,
+  ATTACHMENT_PREVIEW_MAX_SIDE,
+  attachmentSchema,
+} from "./attachments";
 import {
   dateSchema,
   idSchema,
@@ -184,21 +190,16 @@ export type DismissAiTaskRequest = z.output<typeof dismissAiTaskRequestSchema>;
 /**
  * Content types of `GET /ai-tasks/{id}/preview`: images are sent as JPEG when they had to be scaled down, else as stored.
  */
-export const AI_TASK_PREVIEW_CONTENT_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "application/pdf",
-] as const;
+export const AI_TASK_PREVIEW_CONTENT_TYPES = ATTACHMENT_PREVIEW_CONTENT_TYPES;
 
 /**
  * The largest PDF an assistant is handed through the MCP connection (it is embedded in the answer, and base64 makes it a
  * third larger). A bigger one cannot be read there: the queue page warns about it when the file is picked, and the tool
  * tells the assistant to dismiss the task with the reason "PDF zu gross".
  */
-export const AI_TASK_PDF_READ_MAX_BYTES = 4 * 1024 * 1024;
+export const AI_TASK_PDF_READ_MAX_BYTES = ATTACHMENT_PDF_READ_MAX_BYTES;
 
 /** The longest side of the scaled copy an assistant reads, in pixels (more for a very long, narrow receipt). */
-export const AI_TASK_PREVIEW_MAX_SIDE = 1600;
+export const AI_TASK_PREVIEW_MAX_SIDE = ATTACHMENT_PREVIEW_MAX_SIDE;
 /** The most bytes of that copy. */
-export const AI_TASK_PREVIEW_MAX_BYTES = 1_500_000;
+export const AI_TASK_PREVIEW_MAX_BYTES = ATTACHMENT_PREVIEW_MAX_BYTES;
