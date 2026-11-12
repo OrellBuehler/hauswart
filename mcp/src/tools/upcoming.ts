@@ -23,6 +23,7 @@ export const dashboardTaskRow = (t: DashboardTask) => ({
   progress: t.progress,
   asset: t.assetName,
   openNotes: t.openNoteCount || null,
+  steps: t.stepCount || null,
   appointment: appointmentRef(t.nextAppointment),
   room: t.roomName,
   assignee: t.assigneeName,

@@ -130,6 +130,7 @@ export function taskRow(task: Task, users: UserNames) {
     asset: task.assetName,
     assetId: task.assetId,
     openNotes: task.openNoteCount || null,
+    steps: task.stepCount || null,
     appointment: appointmentRef(task.nextAppointment),
     room: task.roomName,
     assignee: nameOf(users, state?.currentAssigneeUserId ?? null),

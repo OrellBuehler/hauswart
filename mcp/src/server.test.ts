@@ -14,6 +14,7 @@ const READ_TOOLS = [
   "list_upcoming",
   "list_tasks",
   "get_task",
+  "get_attachment",
   "preview_trigger",
   "list_rooms",
   "list_assets",
@@ -79,6 +80,8 @@ const WRITE_TOOLS = [
   "create_appointment",
   "update_appointment",
   "complete_appointment",
+  "set_task_steps",
+  "attach_from_url",
 ];
 const DOCS_WRITE_TOOLS = ["create_page", "update_page"];
 const COSTS_WRITE_TOOLS = [

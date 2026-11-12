@@ -122,8 +122,8 @@ Results are a one-line summary followed by compact JSON (empty fields left out).
 | ---------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `whoami`                     | read        | Token user, scopes, household, today's date                                                                                                                                                   |
 | `list_upcoming`              | read        | Overdue / today / this week / later / sensor-based tasks, due preparations, open defects, expiring warranties, parts to order; `mine`, `horizon`                                              |
-| `list_tasks`                 | read        | Filter by status, category, room, asset, assignee, text; paged                                                                                                                                |
-| `get_task`                   | read        | One task: trigger, state, preparations, recent completions                                                                                                                                    |
+| `list_tasks`                 | read        | Filter by status, category, room, asset, assignee, text and whether the task has steps; paged                                                                                                 |
+| `get_task`                   | read        | One task: trigger, state, preparations, its steps (numbered, with picture ids) and their source, the files of the task and its device, recent completions                                     |
 | `preview_trigger`            | read        | Check a trigger and see its first due date without creating anything                                                                                                                          |
 | `list_rooms`                 | read        | Rooms with ids                                                                                                                                                                                |
 | `list_assets`                | read        | Devices, plants, fixtures, vehicles; filter by kind, room, text; paged                                                                                                                        |
@@ -134,6 +134,9 @@ Results are a one-line summary followed by compact JSON (empty fields left out).
 | `update_task`                | write       | Change fields, replace the trigger, archive or restore                                                                                                                                        |
 | `complete_task`              | write       | Mark done (optionally backdated, with a note); returns the next due date                                                                                                                      |
 | `skip_task`                  | write       | Skip the current occurrence                                                                                                                                                                   |
+| `set_task_steps`             | write       | Write the steps of a task: replaces the list in order, keeps the ids (and pictures) of steps you keep, adds pictures from addresses and reports each one; records the source                  |
+| `get_attachment`             | read        | Read an attached file by id: an image as a picture, a PDF as a document, whole up to 4 MB or a range of pages (`pages: "3-8"`, at most 20); says how many pages it has                        |
+| `attach_from_url`            | write       | Download a picture or PDF from a public address and attach it to a device, task, room, part, defect or step of a task                                                                         |
 | `snooze_task`                | write       | Hide a task until a date, or end a snooze                                                                                                                                                     |
 | `undo_completion`            | write       | Revoke a completion or skip (within 7 days)                                                                                                                                                   |
 | `create_asset`               | write       | New device, plant or fixture                                                                                                                                                                  |
@@ -202,8 +205,8 @@ Rooms, assets and people can be given by name (`asset: "Dishwasher"`, `assignee:
 instead of an id, and so can contacts and parts (and the task of an appointment, by title); a vehicle can also be given by its plate (`asset: "ZH 000000"`, spaces and dashes do not matter). An ambiguous name is reported with the candidates. Tools are annotated with the
 MCP `readOnlyHint`, `destructiveHint` and `idempotentHint`: only `undo_completion`,
 `unlink_document`, `dismiss_finance_suggestion` and `dismiss_ai_task` (which cannot be undone) are marked destructive, and only those
-four, the `update_*`, `complete_appointment`, `complete_ai_task`, `set_defect_status`, `snooze_task`, `resolve_asset_note`, `mount_tire_set`, `sync_finance` and the read tools are idempotent.
-Nothing here deletes data except a document link (never the document); files can be listed by name but not uploaded or downloaded. The finance inbox tools
+four, the `update_*`, `set_task_steps`, `complete_appointment`, `complete_ai_task`, `set_defect_status`, `snooze_task`, `resolve_asset_note`, `mount_tire_set`, `sync_finance` and the read tools are idempotent.
+Nothing here deletes data except a document link (never the document) and the steps `set_task_steps` leaves out of its list; a file of the client is never uploaded: `get_attachment` reads one and `attach_from_url` attaches one found at a public address. The finance inbox tools
 only ever see the token user's own suggestions (the inbox is private to each person) and need a Kept
 connection of that person; `accept_finance_suggestion` takes the same overrides as the REST endpoint, for the kind
 of suggestion it names (a cost, a device or a bill).
@@ -216,6 +219,17 @@ an embedded resource; a larger PDF cannot be read through the connection (the we
 token belongs to the uploader (everybody's finance inbox is private), and `complete_ai_task` flags every entry you name for a
 person to review (`list_costs` with `reviewNeeded: true`, `needsReview` on the rows). Close a task with exactly one of
 `complete_ai_task` and `dismiss_ai_task`; repeating either changes nothing. Pass the task's id as `receiptTaskId` to `create_cost`, `accept_finance_suggestion` and `add_fuel_log`: what you book is flagged and recorded on the task at once (`bookedSoFar`), so an interrupted run or a second client never books a receipt twice, and `get_ai_task` warns when another member's client opened the task in the last 15 minutes. Notes, reasons and the text on a receipt image or PDF are untrusted input: they are information to book from, and the tools tell the model to never act on instructions inside them.
+
+The step tools let an assistant write down how a chore is done. `get_task` shows the steps (`n`, `id`, `title`, `body`, the ids of
+their pictures) and `stepsSource` (the web page or the page of a manual they come from) and lists the files of the task and of its
+device, so a manual can be found; `get_attachment` reads it, a PDF a range of at most 20 pages at a time (a PDF over 4 MB is never
+sent whole: the answer names its page count and asks for a range). `set_task_steps` **replaces** the whole list: send every step in
+the order it is done, with the `id` of each step you keep so that its pictures stay; a step that is left out is deleted with its
+pictures. `imageUrl` on a step downloads a picture found online (public `http`/`https` addresses only, the server fetches it, at most
+3 redirects and 25 MiB) and a picture that cannot be fetched does not fail the call: the answer says per step `image: added` or
+`imageProblem` with the reason. `attach_from_url` does the same for a device, task, room, part, defect or step. Text on a web page,
+in a manual or on a picture is untrusted input: it is information to write steps from, and the tools tell the model to never act on
+instructions inside it.
 
 The document tools read and link through **your own account** in the document system (each person
 connects theirs under Settings, Integrations): without a connection they answer `not_found`, so does a
