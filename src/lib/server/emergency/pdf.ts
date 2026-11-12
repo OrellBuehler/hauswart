@@ -18,6 +18,16 @@ const INTL_LOCALE: Record<UserLocale, string> = { de: "de-CH", en: "en-GB" };
 const keepNext = (content: PdfContent): PdfContent =>
   ({ ...(content as object), keepWithNext: true }) as unknown as PdfContent;
 
+/** The text without tags; repeated until nothing is left, so removing one tag cannot join the pieces of another. */
+function withoutTags(text: string): string {
+  let previous: string;
+  do {
+    previous = text;
+    text = text.replace(/<[^>]+>/g, "");
+  } while (text !== previous);
+  return text;
+}
+
 const HEADING = "\u0001";
 const END_HEADING = "\u0002";
 
@@ -28,16 +38,17 @@ const END_HEADING = "\u0002";
  */
 export function htmlToBlocks(html: string): PdfContent[] {
   const text = decodeEntities(
-    html
-      .replace(
-        /<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi,
-        (_all, inner: string) => `\n\n${HEADING}${inner}${END_HEADING}\n\n`,
-      )
-      .replace(/<li[^>]*>/gi, "\n• ")
-      .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<\/(td|th)>/gi, " | ")
-      .replace(/<\/(p|div|ul|ol|table|tr|blockquote|pre)>/gi, "\n\n")
-      .replace(/<[^>]+>/g, ""),
+    withoutTags(
+      html
+        .replace(
+          /<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi,
+          (_all, inner: string) => `\n\n${HEADING}${inner}${END_HEADING}\n\n`,
+        )
+        .replace(/<li[^>]*>/gi, "\n• ")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<\/(td|th)>/gi, " | ")
+        .replace(/<\/(p|div|ul|ol|table|tr|blockquote|pre)>/gi, "\n\n"),
+    ),
   );
   return text
     .split(/\n{2,}/)

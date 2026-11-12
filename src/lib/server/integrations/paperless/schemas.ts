@@ -78,7 +78,12 @@ const searchHitSchema = z.object({
 });
 
 export function stripMarkup(text: string): string {
-  return text.replace(/<[^>]*>/g, "");
+  let previous: string;
+  do {
+    previous = text;
+    text = text.replace(/<[^>]*>/g, "");
+  } while (text !== previous);
+  return text;
 }
 
 function dateOf(value: string | null | undefined): string | null {

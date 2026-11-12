@@ -8,6 +8,23 @@ import { useTestDB } from "#lib/testing/db.ts";
 import { createCost } from "./costs";
 import { CSV_BOM, CSV_COLUMNS, costsCsv, csvAmount, csvField } from "./csv";
 
+/** The records of a CSV text, each with its line end; a line break inside a quoted field does not end one. */
+function csvRecords(text: string): string[] {
+  const records: string[] = [];
+  let start = 0;
+  let quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === '"') quoted = !quoted;
+    else if (!quoted && text.startsWith("\r\n", i)) {
+      records.push(text.slice(start, i + 2));
+      start = i + 2;
+      i++;
+    }
+  }
+  if (start < text.length) records.push(text.slice(start));
+  return records;
+}
+
 describe("csvField", () => {
   it("passes plain text through", () => {
     expect(csvField("Reparatur Küche")).toBe("Reparatur Küche");
@@ -108,9 +125,7 @@ describe("costsCsv", () => {
     const lines = text.slice(1).split("\r\n");
     expect(lines.pop()).toBe("");
     // the note's line break lives inside a quoted field
-    const records = text
-      .slice(1)
-      .match(/(?:[^\r\n"]|"(?:[^"]|"")*")+(?:\r\n|$)/g)!;
+    const records = csvRecords(text.slice(1));
     expect(records.filter((r) => r !== "")).toHaveLength(4);
     expect(text).not.toContain("Letztes Jahr");
 
