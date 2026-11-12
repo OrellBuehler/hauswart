@@ -219,14 +219,14 @@ describe("pages API", () => {
     it("answers 400 too_complex when rendering does not finish in time", async () => {
       const { call } = await member();
       const r = await call("POST", "/api/v1/pages", {
-        json: { title: "Komplex", bodyMd: "*a ".repeat(60_000) },
+        json: { title: "Komplex", bodyMd: "*_a ".repeat(45_000) },
       });
       expect(r.res.status).toBe(400);
       expect(r.body).toMatchObject({
         error: { code: "invalid_request", details: { code: "too_complex" } },
       });
       const preview = await call("POST", "/api/v1/pages/preview", {
-        json: { bodyMd: "*a ".repeat(60_000) },
+        json: { bodyMd: "*_a ".repeat(45_000) },
       });
       expect(preview.body).toMatchObject({
         error: { details: { code: "too_complex" } },
