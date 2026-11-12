@@ -112,6 +112,7 @@ it means the file about that subject.
 - `receipt-queue.md`: `ai_tasks`: upload, booking for a task, complete, dismiss, idempotency, the lease, the preview, its MCP tools
 - `documents.md`: the per-person document provider (Paperless-ngx): seam, cache and sync, links, files, warranty dates, suggestions, pushing, note write-back
 - `docs-attachments-search-backup.md`: documentation pages and renderings, attachments and the file store, binary and multipart endpoints, the FTS5 search index, backup
+- `task-steps.md`: the steps that say how to do a task (`PUT /tasks/{id}/steps`, their pictures, the source), attaching a file from a web address (`POST /attachments/from-url`, the strict host policy), reading an attachment as an assistant does (`GET /attachments/{id}/preview`, PDF pages), and the MCP tools for them
 - `parts-defects-comments.md`: domain events, stock movements, the defect status machine, the comments registry
 - `vehicles.md`: vehicle details, the vehicle-only rule, odometer readings and their signal, tire sets, fuel log, statistics, task templates, and the vehicle UI
 - `insurance-asset-notes.md`: insurance policies and the cancellation reminder, asset notes (to a defect, resolved through the service log), and their UI

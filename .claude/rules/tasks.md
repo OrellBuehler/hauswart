@@ -70,4 +70,6 @@ paths:
   saved when the vehicle has no saved details yet, overwritten (and what the file leaves out cleared)
   only with `--update`; the block cannot carry `costBookId` (a file knows no book ids) and an update keeps the book a
   person chose. Tire sets and fuel logs are not seeded: a set has no key to find it again by, and a fill books
-  a cost entry (`costs:write`).
+  a cost entry (`costs:write`). A task may carry `steps: [{title, body?}]` (written when the task has none, replaced by place only with `--update`; see `task-steps.md`).
+- **Steps** (`task_steps`, `PUT /tasks/{id}/steps`, `stepCount` on every task DTO, `hasSteps`) say how to do a task, with pictures and a source; they never
+  change the task row (`updatedAt` stays, no re-evaluation). Everything about them is in `task-steps.md`.

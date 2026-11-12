@@ -22,8 +22,9 @@ src/lib/server/docs/markdown*.ts markdown -> sanitized html; async variants run 
 src/lib/server/docs/pages.ts     documentation pages: CRUD, rev concurrency, revisions, backlinks, cached renderings
 src/lib/server/docs/render.ts    page rendering for members/guests, link resolution, `{token}` placeholder
 src/lib/server/files/            content-addressed file store, image pipeline, sniffing, serving headers (see `docs-attachments-search-backup.md`); preview.ts: the smaller copy of an
-                                 image an assistant reads (`previewSize`, `previewImage`)
-src/lib/server/attachments/      attachment rows, owner registry, orphan sweeper (see "Documentation" below)
+                                 image an assistant reads (`previewSize`, `previewImage`); pdf-pages.ts: page count and page ranges of a PDF (pdf-lib)
+src/lib/server/attachments/      attachment rows, owner registry, orphan sweeper (see `docs-attachments-search-backup.md`); from-url.ts (download a file from a public address and attach it),
+                                 preview.ts (an attachment as an assistant reads it: scaled image, PDF whole or a range of pages); see `task-steps.md`
 src/lib/server/search/           GET /search over the FTS5 index (`search_fts`, kept by triggers)
 src/lib/server/backup/           daily VACUUM INTO backup + incremental mirror of the files directory
 src/lib/dates.ts                 YYYY-MM-DD date math + time-zone helpers (client-safe)
@@ -35,13 +36,15 @@ src/lib/server/rooms/            rooms CRUD, slugs; areas.ts takes the areas of 
                                  integrations and delivery")
 src/lib/server/assets/           assets (devices, plants, fixtures), slugs, QR slugs, archive
 src/lib/server/tasks/            tasks CRUD, previewTrigger, evaluator (task_state cache), signals (provider seam),
-                                 completions (complete/skip/undo/snooze), preparations, dashboard, stats, scheduler
+                                 completions (complete/skip/undo/snooze), preparations, dashboard, stats, scheduler;
+                                 steps.ts (the steps of a task and their source, replace-all), step-counts.ts (`stepCountSql`); see `task-steps.md`
 src/lib/server/notifications/    in-app notifications, generateNotifications, channel registry, deliveries (preferences, quiet hours,
                                  one-time action tokens, retries), the "done" action, per-person targets and preferences
 src/lib/server/signals/          readings the adapters store (`signals`, `signal_samples`, `external_dates`), watch list,
                                  ingest (auto-complete, hint reactions, re-evaluation), worker for the time-driven parts
 src/lib/server/connections/      generic connections to outside systems (encrypted token, health), adapter registry
-src/lib/server/net/host-policy.ts  which addresses the server may connect to (link-local, metadata, loopback), DNS check
+src/lib/server/net/host-policy.ts  which addresses the server may connect to (link-local, metadata, loopback), DNS check; `assertPublicUrl` is the strict mode (public addresses only)
+src/lib/server/net/public-fetch.ts  `fetchPublicFile`: downloads a file under the strict mode (hand-followed redirects, one timeout, size cap)
 src/lib/hosts.ts                 host allow-list entries: normalisation + exact matching (client-safe)
 src/lib/server/documents/        documents of an outside document system: provider seam (`provider.ts`), per-person cache, links,
                                  warranty from documents, suggestions, uploads, search (see "Documents and the document provider")
@@ -123,7 +126,7 @@ src/lib/costs/                   client-safe: recurrence.ts (the rule of a recur
                                  matches.ts (what the form asks the bank for); see "Costs in the web app", "Quick entry, receipts and the review flag in the web app" and "Tags, budgets, recurring costs and bank matching in the web app"
 src/lib/attachments/             client-safe upload logic: files.ts, list.svelte.ts, upload.ts (XHR with progress), receipt-file.ts (checks and the HEIC
                                  decision), receipt-convert.ts (the canvas conversion, browser only)
-src/lib/testing/                 useTestDB, createTestUser/Token, createTestEvent, callRoute, fixtures/
+src/lib/testing/                 useTestDB, createTestUser/Token, createTestEvent, callRoute, fake-web.ts (a web server on 127.0.0.1 for tests that fetch an address), fixtures/
 src/hooks.server.ts              init (secret key, time zone, migrations) + auth gate + Paraglide locale
 src/routes/api/v1/**             one-liner route files: export const GET = bind(endpoints.x, handler)
 src/routes/api/health            liveness probe, no database
