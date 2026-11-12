@@ -61,8 +61,13 @@ export interface PublicFile {
 
 const REDIRECTS = new Set([301, 302, 303, 307, 308]);
 
+/** What the caller reads: the policy's sentence, except for loopback, which is not for anybody here (its sentence names administrators). */
 const blockedMessage = (err: HostPolicyError) =>
-  `This address is not allowed: ${err.message}`;
+  `This address is not allowed: ${
+    err.reason === "loopback"
+      ? "Loopback addresses are not allowed."
+      : err.message
+  }`;
 
 async function discard(res: Response): Promise<void> {
   try {

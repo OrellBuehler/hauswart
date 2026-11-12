@@ -345,6 +345,12 @@ describe("fetchPublicFile", () => {
       setLenientHostPolicy(true);
     });
 
+    it("words a refused loopback address for what it is here: not for anybody", async () => {
+      const err = await failure(fetchPublicFile("http://127.0.0.1/", OPTIONS));
+      expect(err.message).toMatch(/loopback/i);
+      expect(err.message).not.toMatch(/administrator/i);
+    });
+
     it.each([
       "http://127.0.0.1/",
       "http://10.0.0.1/",
