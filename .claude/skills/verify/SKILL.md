@@ -8,7 +8,7 @@ Run from the repository root; every step must pass without errors:
 ```bash
 bun run verify              # prettier --check, eslint, svelte-check, vitest
 bun run leak-guard --all    # private-term scan over every tracked or unignored file
-bun run build               # production build with svelte-adapter-bun
+bun run build               # production build with @sveltejs/adapter-bun
 ```
 
 Fix the cause of a failure. Never weaken the leak guard, skip a hook (`--no-verify`), loosen a
