@@ -1,11 +1,11 @@
-import type { endpoints } from "$lib/api/registry";
+import type { endpoints } from "#lib/api/registry.ts";
 import {
   deleteOdometerReading,
   listReadings,
   recordOdometer,
-} from "$lib/server/vehicles/odometer";
-import { vehicleStats } from "$lib/server/vehicles/stats";
-import { getVehicle, putVehicle } from "$lib/server/vehicles/vehicles";
+} from "#lib/server/vehicles/odometer.ts";
+import { vehicleStats } from "#lib/server/vehicles/stats.ts";
+import { getVehicle, putVehicle } from "#lib/server/vehicles/vehicles.ts";
 import type { Handler } from "../bind";
 import { wireOdometerReading, wireTireSet, wireVehicle } from "../wire";
 

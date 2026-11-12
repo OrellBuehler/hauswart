@@ -1,34 +1,34 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { ApiError } from "$lib/api/errors";
-import type { endpoints } from "$lib/api/registry";
-import { MOBILE_TOKEN_SCOPES } from "$lib/api/scopes";
-import { toIso } from "$lib/api/schemas/common";
-import { setupToken } from "$lib/server/config";
-import { changePassword } from "$lib/server/auth/change-password";
-import { logAuthEvent } from "$lib/server/auth/events";
-import { setLocaleCookie } from "$lib/server/auth/locale";
-import { AuthError } from "$lib/server/auth/types";
+import { ApiError } from "#lib/api/errors.ts";
+import type { endpoints } from "#lib/api/registry.ts";
+import { MOBILE_TOKEN_SCOPES } from "#lib/api/scopes.ts";
+import { toIso } from "#lib/api/schemas/common.ts";
+import { setupToken } from "#lib/server/config.ts";
+import { changePassword } from "#lib/server/auth/change-password.ts";
+import { logAuthEvent } from "#lib/server/auth/events.ts";
+import { setLocaleCookie } from "#lib/server/auth/locale.ts";
+import { AuthError } from "#lib/server/auth/types.ts";
 import {
   authenticate,
   clientKey,
   verifyCredentials,
-} from "$lib/server/auth/login";
+} from "#lib/server/auth/login.ts";
 import {
   MOBILE_TOKEN_LIFETIME_MS,
   createToken,
   revokeToken,
-} from "$lib/server/auth/tokens";
+} from "#lib/server/auth/tokens.ts";
 import {
   createSession,
   deleteSessionCookie,
   invalidateSession,
   setSessionCookie,
-} from "$lib/server/auth/sessions";
+} from "#lib/server/auth/sessions.ts";
 import {
   countUsers,
   createFirstAdmin,
   updateProfile,
-} from "$lib/server/users/users";
+} from "#lib/server/users/users.ts";
 import type { Handler } from "../bind";
 import { wireUser } from "../wire";
 

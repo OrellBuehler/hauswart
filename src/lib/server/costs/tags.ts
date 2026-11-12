@@ -4,16 +4,16 @@ import {
   type CostTagRef,
   type CreateCostTagRequest,
   type UpdateCostTagRequest,
-} from "$lib/api/schemas/cost-tags";
-import { nameKey } from "$lib/costs/names";
-import { costEntryTags, costTags, type DB } from "$lib/server/db";
+} from "#lib/api/schemas/cost-tags.ts";
+import { nameKey } from "#lib/costs/names.ts";
+import { costEntryTags, costTags, type DB } from "#lib/server/db.ts";
 import {
   conflict,
   invalidField,
   isUniqueViolation,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
+} from "#lib/server/service.ts";
 
 type Db = Pick<ServiceContext, "db">;
 

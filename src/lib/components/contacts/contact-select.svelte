@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { api } from "$lib/api/browser";
-  import type { ContactKind } from "$lib/api/enums";
-  import { fetchAll } from "$lib/api/fetch-all";
-  import { endpoints } from "$lib/api/registry";
-  import type { Contact } from "$lib/api/schemas/contacts";
-  import OptionSelect from "$lib/components/assets/option-select.svelte";
-  import { preferKind as preferContactKind } from "$lib/contacts/order";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import type { ContactKind } from "#lib/api/enums.ts";
+  import { fetchAll } from "#lib/api/fetch-all.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Contact } from "#lib/api/schemas/contacts.ts";
+  import OptionSelect from "#lib/components/assets/option-select.svelte";
+  import { preferKind as preferContactKind } from "#lib/contacts/order.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     id,

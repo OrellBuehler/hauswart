@@ -1,17 +1,17 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { createInsurancePolicyRequestSchema } from "$lib/api/schemas/insurance";
-import { createGuestLinkRequestSchema } from "$lib/api/schemas/share";
-import { createPolicy } from "$lib/server/insurance/policies";
-import { assets, docPages } from "$lib/server/db";
-import { shutdownMarkdownWorkers } from "$lib/server/docs/markdown-runner";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, NOW } from "$lib/testing/domain";
-import { useTestFilesDir } from "$lib/testing/files";
-import { SECRET_TEXT, shareFixture } from "$lib/testing/share";
+import { createInsurancePolicyRequestSchema } from "#lib/api/schemas/insurance.ts";
+import { createGuestLinkRequestSchema } from "#lib/api/schemas/share.ts";
+import { createPolicy } from "#lib/server/insurance/policies.ts";
+import { assets, docPages } from "#lib/server/db.ts";
+import { shutdownMarkdownWorkers } from "#lib/server/docs/markdown-runner.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, NOW } from "#lib/testing/domain.ts";
+import { useTestFilesDir } from "#lib/testing/files.ts";
+import { SECRET_TEXT, shareFixture } from "#lib/testing/share.ts";
 import { eq } from "drizzle-orm";
 import { createGuestLink, type GuestLinkRow } from "./guest-links";
-import { guestLinks } from "$lib/server/db";
+import { guestLinks } from "#lib/server/db.ts";
 import {
   clearGuestRenderCache,
   getGuestFile,

@@ -1,5 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
-import { hashToken } from "$lib/server/auth/sessions";
+import { hashToken } from "#lib/server/auth/sessions.ts";
 
 /** 32 random bytes as base64url: 43 characters. */
 export const SHARE_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;

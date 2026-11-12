@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cn } from "$lib/utils";
+import { cn } from "#lib/utils.ts";
 import { buttonVariants } from "./button.svelte";
 
 type Size = NonNullable<Parameters<typeof buttonVariants>[0]>["size"];

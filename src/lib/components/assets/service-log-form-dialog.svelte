@@ -1,19 +1,22 @@
 <script lang="ts">
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import type { OdometerUnit, ServiceLogKind } from "$lib/api/enums";
-  import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
-  import { parseOdometerValue } from "$lib/vehicles/format";
-  import { refusedMessage, refusedReading } from "$lib/vehicles/odometer-error";
-  import { endpoints } from "$lib/api/registry";
-  import type { ServiceLogEntry } from "$lib/api/schemas/service-log";
-  import NoteChoices from "$lib/components/asset-notes/note-choices.svelte";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { readMoney } from "$lib/format-money";
-  import { minor, toDecimalString } from "$lib/money";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
+  import { api } from "#lib/api/browser.ts";
+  import type { OdometerUnit, ServiceLogKind } from "#lib/api/enums.ts";
+  import { MAX_ODOMETER_VALUE } from "#lib/api/schemas/vehicles.ts";
+  import { parseOdometerValue } from "#lib/vehicles/format.ts";
+  import {
+    refusedMessage,
+    refusedReading,
+  } from "#lib/vehicles/odometer-error.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { ServiceLogEntry } from "#lib/api/schemas/service-log.ts";
+  import NoteChoices from "#lib/components/asset-notes/note-choices.svelte";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { readMoney } from "#lib/format-money.ts";
+  import { minor, toDecimalString } from "#lib/money.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
   import ServiceLogFields from "./service-log-fields.svelte";
 
   let {

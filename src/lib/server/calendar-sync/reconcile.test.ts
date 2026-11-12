@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type {
   CalendarItemKind,
   CalendarRemoteDeletePolicy,
-} from "$lib/api/enums";
+} from "#lib/api/enums.ts";
 import { itemHash, type DesiredItem } from "./items";
 import {
   NO_UID,

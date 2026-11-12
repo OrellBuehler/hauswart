@@ -9,14 +9,14 @@ import {
   sql,
   type SQL,
 } from "drizzle-orm";
-import type { AssetKind } from "$lib/api/enums";
+import type { AssetKind } from "#lib/api/enums.ts";
 import {
   QR_SLUG_LENGTH,
   type CreateAssetRequest,
   type UpdateAssetRequest,
-} from "$lib/api/schemas/assets";
-import type { VehicleSummary } from "$lib/api/schemas/vehicles";
-import { commentCountSql } from "$lib/server/comments/counts";
+} from "#lib/api/schemas/assets.ts";
+import type { VehicleSummary } from "#lib/api/schemas/vehicles.ts";
+import { commentCountSql } from "#lib/server/comments/counts.ts";
 import {
   assetHints,
   assetNotes,
@@ -25,26 +25,26 @@ import {
   serviceLog,
   tireSets,
   vehicleDetails,
-} from "$lib/server/db";
-import { paginateArray } from "$lib/server/pagination";
+} from "#lib/server/db.ts";
+import { paginateArray } from "#lib/server/pagination.ts";
 import {
   conflict,
   invalidField,
   isUniqueViolation,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
-import { slugify, uniqueSlug } from "$lib/server/slug";
-import { storedVehicleData } from "$lib/server/vehicles/kind";
-import { forgetOdometerSignal } from "$lib/server/vehicles/signal";
+} from "#lib/server/service.ts";
+import { slugify, uniqueSlug } from "#lib/server/slug.ts";
+import { storedVehicleData } from "#lib/server/vehicles/kind.ts";
+import { forgetOdometerSignal } from "#lib/server/vehicles/signal.ts";
 import {
   vehicleSummaries,
   vehiclesWithPlateLike,
-} from "$lib/server/vehicles/summary";
+} from "#lib/server/vehicles/summary.ts";
 import {
   assertAssetPhoto,
   removeOwnedAttachments,
-} from "$lib/server/attachments/attachments";
+} from "#lib/server/attachments/attachments.ts";
 
 type Db = Pick<ServiceContext, "db">;
 type Now = Pick<ServiceContext, "db" | "now">;

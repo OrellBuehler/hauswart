@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { createCaller, errorCode } from "$lib/testing/api";
+import { createCaller, errorCode } from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { today } from "$lib/testing/dates";
-import { useTestDB } from "$lib/testing/db";
-import { samplePdf, useTestFilesDir } from "$lib/testing/files";
-import { addDays } from "$lib/dates";
+} from "#lib/testing/auth.ts";
+import { today } from "#lib/testing/dates.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { samplePdf, useTestFilesDir } from "#lib/testing/files.ts";
+import { addDays } from "#lib/dates.ts";
 
 type Appointment = {
   id: string;

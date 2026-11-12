@@ -4,29 +4,29 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import PlugZapIcon from "@lucide/svelte/icons/plug-zap";
   import RefreshCwIcon from "@lucide/svelte/icons/refresh-cw";
-  import { goto, invalidateAll } from "$app/navigation";
+  import { goto, refreshAll } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { FINANCE_SUGGESTION_KINDS } from "$lib/api/enums";
-  import { isApiError } from "$lib/api/errors";
-  import { endpoints } from "$lib/api/registry";
+  import { api } from "#lib/api/browser.ts";
+  import { FINANCE_SUGGESTION_KINDS } from "#lib/api/enums.ts";
+  import { isApiError } from "#lib/api/errors.ts";
+  import { endpoints } from "#lib/api/registry.ts";
   import type {
     AcceptFinanceSuggestionRequest,
     FinanceSuggestion,
-  } from "$lib/api/schemas/finance";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import AcceptSuggestionDialog from "$lib/components/costs/accept-suggestion-dialog.svelte";
-  import SuggestionCard from "$lib/components/costs/suggestion-card.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { suggestionKindLabels } from "$lib/costs/labels";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { assetHref, taskHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/api/schemas/finance.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import AcceptSuggestionDialog from "#lib/components/costs/accept-suggestion-dialog.svelte";
+  import SuggestionCard from "#lib/components/costs/suggestion-card.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { suggestionKindLabels } from "#lib/costs/labels.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { assetHref, taskHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -66,7 +66,7 @@
           ? m.finance_link_conflict()
           : m.finance_conflict(),
     });
-    if (isApiError(err) && err.code === "conflict") await invalidateAll();
+    if (isApiError(err) && err.code === "conflict") await refreshAll();
   }
 
   async function accept(
@@ -81,7 +81,7 @@
     const { entity } = result;
     const target =
       entity.type === "cost"
-        ? resolve(`/costs/${entity.id}` as "/")
+        ? resolve(`costs/${entity.id}`)
         : entity.type === "asset"
           ? assetHref(entity.id)
           : taskHref(entity.id);
@@ -99,7 +99,7 @@
         action: { label: m.finance_view(), onClick: () => void goto(target) },
       },
     );
-    await invalidateAll();
+    await refreshAll();
   }
 
   async function quickAccept(suggestion: FinanceSuggestion) {
@@ -139,9 +139,9 @@
           ? m.finance_dismissed_link_toast({ title: titleOf(suggestion) })
           : m.finance_dismissed_toast({ title: titleOf(suggestion) }),
       );
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
-      if (isApiError(err) && err.code === "conflict") await invalidateAll();
+      if (isApiError(err) && err.code === "conflict") await refreshAll();
       throw err;
     } finally {
       busy = null;
@@ -161,7 +161,7 @@
           code: result.error?.code ?? "unknown",
         });
       }
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       syncError = apiErrorMessage(err, {
         not_found: m.finance_sync_not_connected(),
@@ -189,7 +189,7 @@
 <div class="flex flex-col gap-6">
   <div class="max-md:hidden">
     <a
-      href={resolve("/costs")}
+      href={resolve("costs")}
       class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -ms-1 inline-flex min-h-10 items-center gap-1.5 rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
@@ -231,9 +231,9 @@
         description={m.finance_not_connected_body()}
       >
         {#snippet actions()}
-          <Button href={resolve("/settings/integrations")}>
-            {m.finance_not_connected_action()}
-          </Button>
+          <Button href={resolve("settings/integrations")}
+            >{m.finance_not_connected_action()}</Button
+          >
         {/snippet}
       </EmptyState>
     {/if}

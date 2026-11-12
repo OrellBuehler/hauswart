@@ -1,10 +1,10 @@
 <script lang="ts">
-  import type { CostBook } from "$lib/api/schemas/cost-books";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     id,

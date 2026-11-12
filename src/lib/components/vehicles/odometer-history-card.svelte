@@ -2,26 +2,26 @@
   import GaugeIcon from "@lucide/svelte/icons/gauge";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import type { OdometerSource, OdometerUnit } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { OdometerReading } from "$lib/api/schemas/vehicles";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDay } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { formatOdometer } from "$lib/vehicles/format";
+  import { api } from "#lib/api/browser.ts";
+  import type { OdometerSource, OdometerUnit } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { OdometerReading } from "#lib/api/schemas/vehicles.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDay } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { formatOdometer } from "#lib/vehicles/format.ts";
   import {
     odometerOwnerLabels,
     odometerSourceLabels,
-  } from "$lib/vehicles/labels";
-  import { readingOwner } from "$lib/vehicles/odometer-error";
+  } from "#lib/vehicles/labels.ts";
+  import { readingOwner } from "#lib/vehicles/odometer-error.ts";
 
   let {
     assetId,
@@ -81,7 +81,7 @@
     await api.call(endpoints.odometerDelete, { params: { id: deleting.id } });
     toast.success(m.vehicle_history_deleted_toast());
     more = null;
-    await invalidateAll();
+    await refreshAll();
   }
 
   function deleteError(err: unknown): string {

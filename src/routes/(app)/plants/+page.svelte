@@ -5,19 +5,19 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import SproutIcon from "@lucide/svelte/icons/sprout";
-  import type { Hint } from "$lib/api/schemas/hints";
-  import type { Task } from "$lib/api/schemas/tasks";
-  import { completeWithUndo } from "$lib/assets/complete";
-  import { newAssetHref, newTaskHref } from "$lib/assets/links";
-  import { sortTasks } from "$lib/assets/tasks";
-  import AssetPhoto from "$lib/components/assets/asset-photo.svelte";
-  import DueBadge from "$lib/components/assets/due-badge.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { hintKindIcons, hintTones } from "$lib/hints/labels";
-  import { cn } from "$lib/utils";
-  import { m } from "$lib/paraglide/messages";
+  import type { Hint } from "#lib/api/schemas/hints.ts";
+  import type { Task } from "#lib/api/schemas/tasks.ts";
+  import { completeWithUndo } from "#lib/assets/complete.ts";
+  import { newAssetHref, newTaskHref } from "#lib/assets/links.ts";
+  import { sortTasks } from "#lib/assets/tasks.ts";
+  import AssetPhoto from "#lib/components/assets/asset-photo.svelte";
+  import DueBadge from "#lib/components/assets/due-badge.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { hintKindIcons, hintTones } from "#lib/hints/labels.ts";
+  import { cn } from "#lib/utils.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -114,7 +114,7 @@
             {/if}
             <div class="min-w-0 flex-1">
               <a
-                href={resolve(`/assets/${plant.id}`)}
+                href={resolve(`assets/${plant.id}`)}
                 class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 block truncate rounded-sm font-medium outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:ring-[3px]"
               >
                 {plant.name}

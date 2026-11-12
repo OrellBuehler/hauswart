@@ -2,9 +2,9 @@ import { and, count, eq, inArray, ne, sql, type SQL } from "drizzle-orm";
 import type {
   MoveCostsToBookRequest,
   MoveCostsToBookResult,
-} from "$lib/api/schemas/costs";
-import { assets, costEntries } from "$lib/server/db";
-import { invalidField, type ServiceContext } from "$lib/server/service";
+} from "#lib/api/schemas/costs.ts";
+import { assets, costEntries } from "#lib/server/db.ts";
+import { invalidField, type ServiceContext } from "#lib/server/service.ts";
 import { requireOpenCostBook } from "./books";
 
 /**

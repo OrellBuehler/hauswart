@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { ApiError } from "$lib/api/errors";
-import { decryptSecret } from "$lib/server/crypto";
-import { connections } from "$lib/server/db";
-import { onEvent } from "$lib/server/events";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, NOW } from "$lib/testing/domain";
+import { ApiError } from "#lib/api/errors.ts";
+import { decryptSecret } from "#lib/server/crypto.ts";
+import { connections } from "#lib/server/db.ts";
+import { onEvent } from "#lib/server/events.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, NOW } from "#lib/testing/domain.ts";
 import {
   MAX_BACKOFF_MS,
   backoffMs,

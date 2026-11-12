@@ -2,35 +2,35 @@
   import ChevronDownIcon from "@lucide/svelte/icons/chevron-down";
   import { untrack } from "svelte";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
+  import { api } from "#lib/api/browser.ts";
   import {
     FUEL_UNITS,
     type OdometerUnit,
     type VehicleFuelType,
-  } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { CostBook } from "$lib/api/schemas/cost-books";
-  import type { FuelLog } from "$lib/api/schemas/fuel-logs";
-  import type { DirectoryUser } from "$lib/api/schemas/users";
-  import type { OdometerSummary } from "$lib/api/schemas/vehicles";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import BookPicker from "$lib/components/costs/book-picker.svelte";
-  import SplitEditor from "$lib/components/costs/split-editor.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import * as Collapsible from "$lib/components/ui/collapsible/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
+  } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+  import type { FuelLog } from "#lib/api/schemas/fuel-logs.ts";
+  import type { DirectoryUser } from "#lib/api/schemas/users.ts";
+  import type { OdometerSummary } from "#lib/api/schemas/vehicles.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import BookPicker from "#lib/components/costs/book-picker.svelte";
+  import SplitEditor from "#lib/components/costs/split-editor.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import * as Collapsible from "#lib/components/ui/collapsible/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
   import { resolve } from "$app/paths";
-  import { bookChoices, fuelBook } from "$lib/costs/books";
-  import { splitAfterBook } from "$lib/costs/form";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDay } from "$lib/format";
-  import { readMoney } from "$lib/format-money";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
+  import { bookChoices, fuelBook } from "#lib/costs/books.ts";
+  import { splitAfterBook } from "#lib/costs/form.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDay } from "#lib/format.ts";
+  import { readMoney } from "#lib/format-money.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
   import {
     buildCreateFuelLog,
     buildUpdateFuelLog,
@@ -38,10 +38,13 @@
     draftFromFuelLog,
     newFuelDraft,
     type FuelDraft,
-  } from "$lib/vehicles/fuel-form";
-  import { formatOdometer } from "$lib/vehicles/format";
-  import { fuelUnitLabels } from "$lib/vehicles/labels";
-  import { refusedMessage, refusedReading } from "$lib/vehicles/odometer-error";
+  } from "#lib/vehicles/fuel-form.ts";
+  import { formatOdometer } from "#lib/vehicles/format.ts";
+  import { fuelUnitLabels } from "#lib/vehicles/labels.ts";
+  import {
+    refusedMessage,
+    refusedReading,
+  } from "#lib/vehicles/odometer-error.ts";
 
   let {
     open = $bindable(false),
@@ -419,7 +422,7 @@
           <p class="text-muted-foreground text-xs text-pretty">
             {m.fuel_cost_entry_hint()}
             <a
-              href={resolve(`/costs/${log.costEntryId}` as "/")}
+              href={resolve(`costs/${log.costEntryId}`)}
               class="text-brand font-medium underline underline-offset-4"
             >
               {m.fuel_cost_entry_open()}

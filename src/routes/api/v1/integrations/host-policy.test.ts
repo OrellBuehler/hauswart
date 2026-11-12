@@ -1,20 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { connections } from "$lib/server/db";
-import { saveConnection } from "$lib/server/connections/connections";
-import { updateHousehold } from "$lib/server/household/household";
+import { connections } from "#lib/server/db.ts";
+import { saveConnection } from "#lib/server/connections/connections.ts";
+import { updateHousehold } from "#lib/server/household/household.ts";
 import {
   registerIntegration,
   type ConnectionTestResult,
-} from "$lib/server/connections/registry";
+} from "#lib/server/connections/registry.ts";
 import {
   HostPolicyError,
   assertHostAllowed,
   setHostResolver,
   setLenientHostPolicy,
-} from "$lib/server/net/host-policy";
-import { createCaller, errorCode } from "$lib/testing/api";
-import { createTestUser, loginTestUser, setUserRole } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
+} from "#lib/server/net/host-policy.ts";
+import { createCaller, errorCode } from "#lib/testing/api.ts";
+import {
+  createTestUser,
+  loginTestUser,
+  setUserRole,
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 
 const TOKEN = "a-test-token-value";
 

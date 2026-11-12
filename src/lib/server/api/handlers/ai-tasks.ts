@@ -1,11 +1,11 @@
 import type { z } from "zod";
-import type { AiTaskClosedVia } from "$lib/api/enums";
-import type { endpoints } from "$lib/api/registry";
+import type { AiTaskClosedVia } from "#lib/api/enums.ts";
+import type { endpoints } from "#lib/api/registry.ts";
 import {
   AI_TASK_CLAIM_MINUTES,
   type aiTaskSchema,
-} from "$lib/api/schemas/ai-tasks";
-import { toIso } from "$lib/api/schemas/common";
+} from "#lib/api/schemas/ai-tasks.ts";
+import { toIso } from "#lib/api/schemas/common.ts";
 import {
   claimAiTask,
   claimIsActive,
@@ -17,10 +17,10 @@ import {
   listAiTasks,
   recordAiTask,
   type AiTaskRecord,
-} from "$lib/server/ai-tasks/ai-tasks";
-import { taskPreview } from "$lib/server/ai-tasks/preview";
-import { fileResponse } from "$lib/server/files/serve";
-import type { Principal } from "$lib/server/auth/types";
+} from "#lib/server/ai-tasks/ai-tasks.ts";
+import { taskPreview } from "#lib/server/ai-tasks/preview.ts";
+import { fileResponse } from "#lib/server/files/serve.ts";
+import type { Principal } from "#lib/server/auth/types.ts";
 import { reply, type Handler } from "../bind";
 import { wireAttachment } from "../wire";
 

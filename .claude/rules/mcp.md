@@ -14,7 +14,7 @@ the same tools over stdio from source for development (no compiled binaries). It
 the others: `createApiClient(fetch, baseUrl, {token})` from `src/lib/api`, so endpoint and schema
 changes break its build. It imports only client-safe modules (`src/lib/api/**`,
 `src/lib/tasks/engine/types`, `src/lib/dates`; a test bundles the stdio entry, which pulls in the whole
-server, and fails on any `src/lib/server`, `src/routes` or `src/lib/testing` input). `$lib` aliases
+server, and fails on any `src/lib/server`, `src/routes` or `src/lib/testing` input). `#lib` aliases
 inside those modules resolve through the root tsconfig (Bun and vite both honour it); the root
 tsconfig also includes `mcp/**` so `bun run check` type-checks it. The app imports
 `mcp/src/server.ts` (`buildHauswartServer`) from `handlers/mcp.ts`; never the other way round.

@@ -3,17 +3,17 @@
   import ArrowUpIcon from "@lucide/svelte/icons/arrow-up";
   import EllipsisVerticalIcon from "@lucide/svelte/icons/ellipsis-vertical";
   import XIcon from "@lucide/svelte/icons/x";
-  import type { AssignMode, RotationStrategy } from "$lib/api/enums";
-  import { ROTATION_STRATEGIES } from "$lib/api/enums";
-  import type { DirectoryUser } from "$lib/api/schemas/users";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import type { AssignMode, RotationStrategy } from "#lib/api/enums.ts";
+  import { ROTATION_STRATEGIES } from "#lib/api/enums.ts";
+  import type { DirectoryUser } from "#lib/api/schemas/users.ts";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     assignModeLabels,
     rotationHints,
     rotationLabels,
-  } from "$lib/tasks/labels";
+  } from "#lib/tasks/labels.ts";
   import AssigneeAvatar from "./assignee-avatar.svelte";
   import Field from "./field.svelte";
   import OptionSelect from "./option-select.svelte";

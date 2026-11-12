@@ -50,8 +50,8 @@ message modules leave the dev client with a stale manifest.
 
 ## Stack
 
-Bun · SvelteKit (`svelte-adapter-bun`) · TypeScript strict · Svelte 5 runes · Tailwind CSS v4 ·
-shadcn-svelte (`$lib/components/ui/`, add with `bunx shadcn-svelte@latest add <name>`) ·
+Bun · SvelteKit 3 (`@sveltejs/adapter-bun`, options in `kit.config.ts`) · TypeScript strict · Svelte 5 runes · Tailwind CSS v4 ·
+shadcn-svelte (`#lib/components/ui/`, add with `bunx shadcn-svelte@latest add <name>`) ·
 `@lucide/svelte` · Drizzle ORM on SQLite via `bun:sqlite` · Zod · Paraglide JS (de base locale,
 en) · Vitest.
 
@@ -164,8 +164,11 @@ file over 40,000 characters is cut off when it loads, so split one that grows pa
 
 Runes only: `$state`, `$derived`, `$effect`, `$props`, `{@render children()}`. No `export let`,
 no `$:`, no `<slot />`, no stores for component state. Tailwind classes with `cn()` from
-`$lib/utils`; no component CSS. Use shadcn-svelte components. Pages must work at 360 px width and
+`#lib/utils.ts`; no component CSS. Use shadcn-svelte components. Pages must work at 360 px width and
 in dark mode. Every list has an empty state, every async action a pending and an error state.
+
+Imports of `src/lib` are written `#lib/<path>` with the file extension (`#lib/money.ts`,
+`#lib/paraglide/messages.js`); `$lib` no longer exists.
 
 The rules for phones (bottom bar and `--bottom-nav`, touch sizes from the `ui/*` primitives, overflow,
 dialogs and the back gesture, `invalidateAfterOverlay` / `gotoFromOverlay`) are in
@@ -175,13 +178,13 @@ dialogs and the back gesture, `invalidateAfterOverlay` / `gotoFromOverlay`) are 
 
 - Unit tests sit next to the code (`foo.ts` → `foo.test.ts`); database tests use `useTestDB()`.
 - Route tests call the real handler through the real hook with `callRoute(GET, { session | bearer,
-json, origin, … })` from `$lib/testing/route`; users and tokens come from `createTestUser`,
+json, origin, … })` from `#lib/testing/route.ts`; users and tokens come from `createTestUser`,
   `loginTestUser` and `createTestToken`. Rate limiters are reset before every test.
 - Engine tests are table-driven with an injected `today`/`now` — never read the clock inside the
   engine.
 - Bug fixes start with a failing test.
 - Fixtures are synthetic and live in `src/lib/testing/fixtures/`.
-- File tests call `useTestFilesDir()` (`$lib/testing/files`: temp `HAUSWART_FILES_DIR`, sample pdf/svg/
+- File tests call `useTestFilesDir()` (`#lib/testing/files.ts`: temp `HAUSWART_FILES_DIR`, sample pdf/svg/
   html/heic bytes); `callRoute` returns file bodies as `Uint8Array`.
 
 ## Subagents (`.claude/agents/`)

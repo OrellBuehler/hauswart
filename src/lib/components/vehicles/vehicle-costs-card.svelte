@@ -4,23 +4,23 @@
   import ReceiptIcon from "@lucide/svelte/icons/receipt";
   import WalletIcon from "@lucide/svelte/icons/wallet";
   import { untrack } from "svelte";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { VehicleStats } from "$lib/api/schemas/vehicle-stats";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { categoryIcons, categoryLabels } from "$lib/costs/labels";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatPercent } from "$lib/format";
-  import { formatMoney } from "$lib/format-money";
-  import { m } from "$lib/paraglide/messages";
-  import { costShare } from "$lib/vehicles/cost-card";
-  import { formatRate } from "$lib/vehicles/fuel-format";
-  import { formatOdometer } from "$lib/vehicles/format";
-  import { newVehicleCostHref, vehicleCostsHref } from "$lib/vehicles/links";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { VehicleStats } from "#lib/api/schemas/vehicle-stats.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { categoryIcons, categoryLabels } from "#lib/costs/labels.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatPercent } from "#lib/format.ts";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { costShare } from "#lib/vehicles/cost-card.ts";
+  import { formatRate } from "#lib/vehicles/fuel-format.ts";
+  import { formatOdometer } from "#lib/vehicles/format.ts";
+  import { newVehicleCostHref, vehicleCostsHref } from "#lib/vehicles/links.ts";
 
   let {
     assetId,

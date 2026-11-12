@@ -1,12 +1,12 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import PrinterIcon from "@lucide/svelte/icons/printer";
-  import type { Asset } from "$lib/api/schemas/assets";
-  import { qrLink } from "$lib/assets/links";
-  import CopyButton from "$lib/components/app/copy-button.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import type { Asset } from "#lib/api/schemas/assets.ts";
+  import { qrLink } from "#lib/assets/links.ts";
+  import CopyButton from "#lib/components/app/copy-button.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { m } from "#lib/paraglide/messages.js";
   import QrCode from "./qr-code.svelte";
 
   let { asset, origin }: { asset: Asset; origin: string } = $props();
@@ -34,10 +34,12 @@
     >
       {link}
     </p>
+
     <div class="flex flex-wrap justify-center gap-2 print:hidden">
-      <Button variant="outline" size="sm" onclick={() => window.print()}>
-        <PrinterIcon />{m.qr_print()}
-      </Button>
+      <Button variant="outline" size="sm" onclick={() => window.print()}
+        ><PrinterIcon />{m.qr_print()}</Button
+      >
+
       <CopyButton
         value={link}
         label={m.qr_copy_link()}
@@ -46,7 +48,7 @@
     </div>
     {#if asset.roomId}
       <Button
-        href={resolve(`/rooms/${asset.roomId}/qr`)}
+        href={resolve(`rooms/${asset.roomId}/qr`)}
         variant="link"
         size="sm"
         class="print:hidden"

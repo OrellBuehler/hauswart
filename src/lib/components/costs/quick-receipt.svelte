@@ -2,45 +2,43 @@
   import InfoIcon from "@lucide/svelte/icons/info";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { untrack } from "svelte";
-  import { goto, invalidateAll } from "$app/navigation";
+  import { goto, refreshAll } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { AI_TASK_NOTE_MAX } from "$lib/api/schemas/ai-tasks";
-  import { endpoints } from "$lib/api/registry";
-  import type { Asset } from "$lib/api/schemas/assets";
-  import type { CostBook } from "$lib/api/schemas/cost-books";
-  import { uploadErrorMessage } from "$lib/attachments/errors";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { bookIconFor, openBooks } from "$lib/costs/books";
+  import { api } from "#lib/api/browser.ts";
+  import { AI_TASK_NOTE_MAX } from "#lib/api/schemas/ai-tasks.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Asset } from "#lib/api/schemas/assets.ts";
+  import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+  import { uploadErrorMessage } from "#lib/attachments/errors.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
+  import { bookIconFor, openBooks } from "#lib/costs/books.ts";
   import {
     buildReceiptTaskBody,
     isKeyConflict,
     quickErrorMessage,
     type ReceiptDraft,
-  } from "$lib/costs/quick";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { isApiError } from "$lib/api/errors";
-  import { newIdempotencyKey } from "$lib/idempotency";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
-  import { cn } from "$lib/utils";
+  } from "#lib/costs/quick.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { isApiError } from "#lib/api/errors.ts";
+  import { newIdempotencyKey } from "#lib/idempotency.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
+  import { cn } from "#lib/utils.ts";
   import ChoiceChips from "./choice-chips.svelte";
   import ReceiptPicker from "./receipt-picker.svelte";
 
   let {
     books,
     assets,
-  }: {
+
     /** Every cost book, archived ones included (only open ones are offered). */
-    books: CostBook[];
-    assets: Asset[];
-  } = $props();
+  }: { books: CostBook[]; assets: Asset[] } = $props();
 
   /** The choice that leaves the book to whoever reads the receipt. */
   const OPEN = "__open__";
@@ -100,7 +98,7 @@
     try {
       await api.call(endpoints.aiTasksDelete, { params: { id } });
       toast.success(m.quick_receipt_undone_toast());
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       toast.error(apiErrorMessage(err));
     }
@@ -132,11 +130,11 @@
         action: { label: m.common_undo(), onClick: () => void undo(task.id) },
         cancel: {
           label: m.quick_receipt_another(),
-          onClick: () => void goto(resolve("/costs/quick?mode=receipt" as "/")),
+          onClick: () => void goto(resolve("costs/quick?mode=receipt")),
         },
       });
       idempotencyKey = newIdempotencyKey();
-      await goto(resolve("/costs/receipts"), { invalidateAll: true });
+      await goto(resolve("costs/receipts"), { refreshAll: true });
     } catch (err) {
       errors = apiFieldErrors(err);
       noAnswer = !isApiError(err) && err instanceof TypeError;
@@ -252,14 +250,14 @@
     <FormAlert message={formError} />
     {#if noAnswer}
       <a
-        href={resolve("/costs/receipts?status=pending" as "/")}
+        href={resolve("costs/receipts?status=pending")}
         class="text-foreground focus-visible:ring-ring/50 inline-flex min-h-10 w-fit items-center rounded text-sm font-medium underline underline-offset-4 outline-none focus-visible:ring-[3px]"
         >{m.quick_receipt_check_list()}</a
       >
     {/if}
     <div class="flex gap-2">
       <Button
-        href={resolve("/costs")}
+        href={resolve("costs")}
         variant="outline"
         size="lg"
         class={cn(

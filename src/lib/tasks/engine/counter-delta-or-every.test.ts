@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays } from "$lib/dates";
+import { addDays } from "#lib/dates.ts";
 import { shownDate } from "./shown";
 import { at, done, evaluate, skipped, trigger } from "./testing";
 import type {

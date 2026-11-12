@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { m } from "$lib/paraglide/messages";
+import { m } from "#lib/paraglide/messages.js";
 
 describe("the words of the review flag", () => {
   it("calls the badge 'Zu prüfen' (an entry waits for a person) and the button says what it does", () => {

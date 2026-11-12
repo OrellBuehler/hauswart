@@ -3,7 +3,7 @@ import {
   ATTACHMENT_OWNER_TYPES,
   DOCUMENT_LINK_OWNER_TYPES,
   DOCUMENT_LINK_ROLES,
-} from "$lib/api/enums";
+} from "#lib/api/enums.ts";
 import {
   defaultRoleFor,
   documentOwnerLabels,

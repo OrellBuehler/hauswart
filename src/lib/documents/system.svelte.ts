@@ -1,10 +1,13 @@
-import { DOCUMENT_PROVIDERS, type DocumentProviderKind } from "$lib/api/enums";
-import type { Integration } from "$lib/api/schemas/integrations";
+import {
+  DOCUMENT_PROVIDERS,
+  type DocumentProviderKind,
+} from "#lib/api/enums.ts";
+import type { Integration } from "#lib/api/schemas/integrations.ts";
 import {
   isUsable,
   loadIntegrations,
   onIntegrationsForgotten,
-} from "$lib/connections/connection";
+} from "#lib/connections/connection.ts";
 
 export interface DocumentConnection {
   provider: DocumentProviderKind;

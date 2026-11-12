@@ -10,29 +10,29 @@
   import UnlinkIcon from "@lucide/svelte/icons/unlink";
   import { untrack } from "svelte";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import type { DocumentLinkOwnerType } from "$lib/api/enums";
-  import { fetchAll } from "$lib/api/fetch-all";
-  import { endpointUrl } from "$lib/api/client";
-  import { endpoints } from "$lib/api/registry";
-  import type { DocumentLink } from "$lib/api/schemas/documents";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { Skeleton } from "$lib/components/ui/skeleton/index.js";
+  import { api } from "#lib/api/browser.ts";
+  import type { DocumentLinkOwnerType } from "#lib/api/enums.ts";
+  import { fetchAll } from "#lib/api/fetch-all.ts";
+  import { endpointUrl } from "#lib/api/client.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { DocumentLink } from "#lib/api/schemas/documents.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { Skeleton } from "#lib/components/ui/skeleton/index.js";
   import {
     documentLinkChanges,
     documentLinksChanged,
-  } from "$lib/documents/changes.svelte";
-  import { documentRoleLabels } from "$lib/documents/labels";
-  import { DocumentSystem } from "$lib/documents/system.svelte";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDay } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/documents/changes.svelte.ts";
+  import { documentRoleLabels } from "#lib/documents/labels.ts";
+  import { DocumentSystem } from "#lib/documents/system.svelte.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDay } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import DocumentThumb from "./document-thumb.svelte";
   import LinkDocumentDialog from "./link-document-dialog.svelte";
 
@@ -140,7 +140,7 @@
       endpointUrl(endpoints.documentsDownload, {
         params: { provider: link.provider, externalId: link.externalId },
         query: { original: 1 },
-      }) as "/",
+      }),
     );
 
   function details(link: DocumentLink): string[] {
@@ -177,7 +177,7 @@
           {#snippet child({ props })}
             <a
               {...props}
-              href={resolve(link.previewUrl as "/")}
+              href={resolve(link.previewUrl!)}
               target="_blank"
               rel="noopener"
             >
@@ -189,7 +189,7 @@
           {#snippet child({ props })}
             <a
               {...props}
-              href={resolve(link.downloadUrl as "/")}
+              href={resolve(link.downloadUrl!)}
               download=""
               data-sveltekit-reload
             >
@@ -228,7 +228,7 @@
   <li class="flex items-center gap-1 ps-3 pe-1.5">
     {#if link.available && link.document && link.previewUrl}
       <a
-        href={resolve(link.previewUrl as "/")}
+        href={resolve(link.previewUrl)}
         target="_blank"
         rel="noopener"
         class="hover:text-foreground focus-visible:ring-ring/50 flex min-h-16 min-w-0 flex-1 items-center gap-3 rounded-sm py-2 outline-none focus-visible:ring-[3px]"

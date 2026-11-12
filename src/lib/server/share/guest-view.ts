@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
-import type { HintKind } from "$lib/api/enums";
+import type { HintKind } from "#lib/api/enums.ts";
 import {
   assetHints,
   assets,
@@ -7,20 +7,20 @@ import {
   contacts,
   docPages,
   rooms,
-} from "$lib/server/db";
-import type { AttachmentRecord } from "$lib/server/attachments/attachments";
-import { attachmentsById } from "$lib/server/attachments/attachments";
+} from "#lib/server/db.ts";
+import type { AttachmentRecord } from "#lib/server/attachments/attachments.ts";
+import { attachmentsById } from "#lib/server/attachments/attachments.ts";
 import {
   fillGuestToken,
   guestAttachmentUrl,
   guestPageUrl,
   referencedAttachmentIds,
-} from "$lib/server/docs/render";
-import { MarkdownError } from "$lib/server/docs/markdown-core";
-import { renderMarkdownAsync } from "$lib/server/docs/markdown";
-import { getHousehold } from "$lib/server/household/household";
-import type { ServiceContext } from "$lib/server/service";
-import { slugify } from "$lib/server/slug";
+} from "#lib/server/docs/render.ts";
+import { MarkdownError } from "#lib/server/docs/markdown-core.ts";
+import { renderMarkdownAsync } from "#lib/server/docs/markdown.ts";
+import { getHousehold } from "#lib/server/household/household.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
+import { slugify } from "#lib/server/slug.ts";
 import { sectionsOf, type GuestLinkRow } from "./guest-links";
 
 type Db = Pick<ServiceContext, "db">;

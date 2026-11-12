@@ -1,5 +1,5 @@
-import { MAX_GUEST_LINK_DAYS } from "$lib/api/schemas/share";
-import { addDays, zonedTimeToInstant } from "$lib/dates";
+import { MAX_GUEST_LINK_DAYS } from "#lib/api/schemas/share.ts";
+import { addDays, zonedTimeToInstant } from "#lib/dates.ts";
 
 const DAY_MS = 86_400_000;
 

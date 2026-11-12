@@ -1,4 +1,4 @@
-import type { CostSplitMode } from "$lib/api/enums";
+import type { CostSplitMode } from "#lib/api/enums.ts";
 import { amountsFor, type Share } from "./split";
 
 /**

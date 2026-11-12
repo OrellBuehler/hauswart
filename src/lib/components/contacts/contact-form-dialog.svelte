@@ -1,19 +1,19 @@
 <script lang="ts">
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { CONTACT_KINDS, type ContactKind } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { Contact } from "$lib/api/schemas/contacts";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { contactKindLabels } from "$lib/contacts/labels";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
+  import { api } from "#lib/api/browser.ts";
+  import { CONTACT_KINDS, type ContactKind } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Contact } from "#lib/api/schemas/contacts.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
+  import { contactKindLabels } from "#lib/contacts/labels.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
 
   let {
     open = $bindable(false),

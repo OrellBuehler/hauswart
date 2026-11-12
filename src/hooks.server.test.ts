@@ -1,15 +1,15 @@
 import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { SESSION_COOKIE } from "$lib/api/constants";
-import { getDB, sessions } from "$lib/server/db";
+import { SESSION_COOKIE } from "#lib/api/constants.ts";
+import { getDB, sessions } from "#lib/server/db.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { createTestEvent } from "$lib/testing/event";
-import { handle } from "./hooks.server";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { createTestEvent } from "#lib/testing/event.ts";
+import { handle, handleError } from "./hooks.server";
 
 async function renderedLang(headers: Record<string, string> = {}) {
   const event = createTestEvent({ url: "http://localhost/login", headers });
@@ -409,5 +409,32 @@ describe("unexpected failures", () => {
         handle({ event: event as never, resolve: failing as never }),
       ),
     ).rejects.toThrow("sensitive detail");
+  });
+});
+
+describe("handleError", () => {
+  afterEach(() => vi.restoreAllMocks());
+  const event = createTestEvent({ url: "http://localhost/tasks/1" });
+
+  it("shows the errors of error(...) and of SvelteKit as they are and logs nothing", () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const app = { status: 403, message: "Not yours" };
+    const framework = { status: 404, message: "Not Found" };
+    expect(handleError({ kind: "app", error: app, event } as never)).toBe(app);
+    expect(
+      handleError({ kind: "framework", error: framework, event } as never),
+    ).toBe(framework);
+    expect(log).not.toHaveBeenCalled();
+  });
+
+  it("hides an unexpected error and logs only its name", () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const error = new TypeError("sensitive detail: /srv/secret/path");
+    expect(handleError({ kind: "unknown", error, event } as never)).toEqual({
+      message: "Internal Error",
+    });
+    const logged = String(log.mock.calls[0]?.[0]);
+    expect(logged).toContain('"name":"TypeError"');
+    expect(logged).not.toContain("sensitive");
   });
 });

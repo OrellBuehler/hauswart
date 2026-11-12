@@ -18,18 +18,18 @@ You build hauswart's interface. Read `CLAUDE.md` first, then `.claude/rules/ui.m
   `{@render}`. No `export let`, `$:`, `<slot />` or stores for local state. Check the Svelte 5
   and shadcn-svelte docs via Context7 when unsure — older syntax in your memory is likely wrong.
 - **REST-first**: pages call the typed client from `src/lib/api/client.ts`: `createApiClient(fetch)` with the
-  load's own `fetch` inside `load`, the `api` export of `$lib/api/browser` in event handlers.
+  load's own `fetch` inside `load`, the `api` export of `#lib/api/browser.ts` in event handlers.
   Failed calls throw `ApiError` (`code`, `status`, `details`); show `apiErrorMessage(err)`.
   No SvelteKit form actions for domain logic, no direct imports from `src/lib/server` for
   domain data. Import types from `src/lib/api/schemas`.
-- **Every string goes through Paraglide** (`import { m } from "$lib/paraglide/messages"`). Add
+- **Every string goes through Paraglide** (`import { m } from "#lib/paraglide/messages.js"`). Add
   each key to `messages/de.json` AND `messages/en.json` together; German is the base locale.
   No hard-coded UI text, including aria-labels, placeholders and toasts.
-- Use existing shadcn-svelte components from `$lib/components/ui/`; add missing ones with
+- Use existing shadcn-svelte components from `#lib/components/ui/`; add missing ones with
   `bunx shadcn-svelte@latest add <name>` rather than hand-rolling them. Don't edit generated ui
   components unless the task is about them.
 - Tailwind classes + `cn()`; no component CSS. Must work at 360 px width and in dark mode.
-- Dates display in the household time zone; amounts via `formatAmount` from `$lib/money`,
+- Dates display in the household time zone; amounts via `formatAmount` from `#lib/money.ts`,
   right-aligned with `tabular-nums`.
 - Every list has an empty state, every async action a pending and an error state.
 - Placeholders and demo data are synthetic — never real names, addresses or ids.

@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
-import type { AttachmentOwnerType } from "$lib/api/enums";
-import { assets, docPages, rooms, tasks } from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
+import type { AttachmentOwnerType } from "#lib/api/enums.ts";
+import { assets, docPages, rooms, tasks } from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 
 type Db = Pick<ServiceContext, "db">;
 

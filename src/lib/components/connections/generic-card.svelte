@@ -1,6 +1,6 @@
 <script lang="ts">
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { IntegrationCardProps } from "./cards";
   import { kindMeta } from "./kinds";
   import StatusBadge from "./status-badge.svelte";

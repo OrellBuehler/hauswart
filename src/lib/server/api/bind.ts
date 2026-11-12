@@ -1,20 +1,20 @@
-import { json, isRedirect, type RequestEvent } from "@sveltejs/kit";
+import { isRedirect, type RequestEvent } from "@sveltejs/kit";
 import { z } from "zod";
-import { ApiError } from "$lib/api/errors";
-import type { AnyEndpoint } from "$lib/api/registry";
-import { todayInHouseholdZone } from "$lib/server/config";
-import { getDB } from "$lib/server/db";
-import { clientKey } from "$lib/server/auth/login";
+import { ApiError } from "#lib/api/errors.ts";
+import type { AnyEndpoint } from "#lib/api/registry.ts";
+import { todayInHouseholdZone } from "#lib/server/config.ts";
+import { getDB } from "#lib/server/db.ts";
+import { clientKey } from "#lib/server/auth/login.ts";
 import {
   publicRequestLimiter,
   tokenRequestLimiter,
-} from "$lib/server/auth/rate-limit";
+} from "#lib/server/auth/rate-limit.ts";
 import {
   requirePrincipal,
   requireScopes,
   resolvePrincipal,
-} from "$lib/server/auth/guards";
-import type { Principal } from "$lib/server/auth/types";
+} from "#lib/server/auth/guards.ts";
+import type { Principal } from "#lib/server/auth/types.ts";
 import type { ContextFor } from "./context";
 import { rateLimitedError, toApiError } from "./errors";
 
@@ -299,7 +299,7 @@ function respond(endpoint: AnyEndpoint, result: unknown): Response {
   if (status === 204) {
     return new Response(null, { status, headers: NO_STORE });
   }
-  return json(body, { status, headers: NO_STORE });
+  return Response.json(body, { status, headers: NO_STORE });
 }
 
 function errorResponse(endpoint: AnyEndpoint, err: unknown): Response {
@@ -317,10 +317,13 @@ function errorResponse(endpoint: AnyEndpoint, err: unknown): Response {
             : undefined,
       }),
     );
-    return json(new ApiError("internal", "Internal server error").toBody(), {
-      status: 500,
-      headers: NO_STORE,
-    });
+    return Response.json(
+      new ApiError("internal", "Internal server error").toBody(),
+      {
+        status: 500,
+        headers: NO_STORE,
+      },
+    );
   }
   const headers: Record<string, string> = { ...NO_STORE };
   const details = apiError.details as
@@ -331,7 +334,10 @@ function errorResponse(endpoint: AnyEndpoint, err: unknown): Response {
   ) {
     headers["retry-after"] = String(details.retryAfterSeconds);
   }
-  return json(apiError.toBody(), { status: apiError.status, headers });
+  return Response.json(apiError.toBody(), {
+    status: apiError.status,
+    headers,
+  });
 }
 
 /**

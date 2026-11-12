@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { m } from "#lib/paraglide/messages.js";
   import Field from "../field.svelte";
   import NumberField from "../number-field.svelte";
   import type { WarrantyDraft } from "./types";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { USER_LOCALES } from "$lib/api/enums";
-import { m } from "$lib/paraglide/messages";
+import { USER_LOCALES } from "#lib/api/enums.ts";
+import { m } from "#lib/paraglide/messages.js";
 import { templateMark } from "./template-mark";
 import { tireChange, tireChangeByTitle } from "./tire-task";
 

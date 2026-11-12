@@ -3,8 +3,8 @@ import {
   type AttachmentOwnerType,
   type DocumentLinkOwnerType,
   type DocumentLinkRole,
-} from "$lib/api/enums";
-import { m } from "$lib/paraglide/messages";
+} from "#lib/api/enums.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 export const documentRoleLabels: Record<DocumentLinkRole, () => string> = {
   manual: () => m.document_role_manual(),

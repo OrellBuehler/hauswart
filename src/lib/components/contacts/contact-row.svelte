@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { Badge } from "$lib/components/ui/badge/index.js";
+  import { Badge } from "#lib/components/ui/badge/index.js";
   import SirenIcon from "@lucide/svelte/icons/siren";
   import {
     assetContactRoleLabels,
     contactKindIcons,
-  } from "$lib/contacts/labels";
-  import type { AssetContactRole } from "$lib/api/enums";
-  import type { Contact } from "$lib/api/schemas/contacts";
-  import { contactHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/contacts/labels.ts";
+  import type { AssetContactRole } from "#lib/api/enums.ts";
+  import type { Contact } from "#lib/api/schemas/contacts.ts";
+  import { contactHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
   import ContactActions from "./contact-actions.svelte";
 

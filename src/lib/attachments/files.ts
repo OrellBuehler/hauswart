@@ -1,7 +1,7 @@
 import { resolve } from "$app/paths";
-import { MAX_ATTACHMENT_BYTES } from "$lib/api/schemas/attachments";
-import type { Attachment } from "$lib/api/schemas/attachments";
-import { getLocale } from "$lib/paraglide/runtime";
+import { MAX_ATTACHMENT_BYTES } from "#lib/api/schemas/attachments.ts";
+import type { Attachment } from "#lib/api/schemas/attachments.ts";
+import { getLocale } from "#lib/paraglide/runtime.js";
 
 export const DEFAULT_ACCEPT = "image/jpeg,image/png,image/webp,application/pdf";
 export const IMAGE_ACCEPT = "image/jpeg,image/png,image/webp";
@@ -77,11 +77,11 @@ export function baseName(filename: string): string {
 
 /** The content URL of an attachment (the API's own path, which `resolve` leaves alone). */
 export function contentHref(attachment: Pick<Attachment, "url">) {
-  return resolve(attachment.url as "/");
+  return resolve(attachment.url);
 }
 
 /** The content URL as a download (`?download=1`). */
 export function downloadHref(attachment: Pick<Attachment, "url">) {
   const sep = attachment.url.includes("?") ? "&" : "?";
-  return resolve(`${attachment.url}${sep}download=1` as "/");
+  return resolve(`${attachment.url}${sep}download=1`);
 }

@@ -3,13 +3,13 @@
   import DoorOpenIcon from "@lucide/svelte/icons/door-open";
   import EyeIcon from "@lucide/svelte/icons/eye";
   import PinIcon from "@lucide/svelte/icons/pin";
-  import type { DocPageSummary } from "$lib/api/schemas/docs";
-  import CommentCount from "$lib/components/comments/comment-count.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { sectionIcons, sectionLabels } from "$lib/docs/sections";
-  import { docHref } from "$lib/docs/links";
-  import { formatDate } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  import type { DocPageSummary } from "#lib/api/schemas/docs.ts";
+  import CommentCount from "#lib/components/comments/comment-count.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { sectionIcons, sectionLabels } from "#lib/docs/sections.ts";
+  import { docHref } from "#lib/docs/links.ts";
+  import { formatDate } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     page,

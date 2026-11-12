@@ -3,22 +3,22 @@ import { describe, expect, it } from "vitest";
 import {
   createAssetNoteRequestSchema,
   updateAssetNoteRequestSchema,
-} from "$lib/api/schemas/asset-notes";
-import { createAsset, deleteAsset } from "$lib/server/assets/assets";
-import { createAttachment } from "$lib/server/attachments/attachments";
+} from "#lib/api/schemas/asset-notes.ts";
+import { createAsset, deleteAsset } from "#lib/server/assets/assets.ts";
+import { createAttachment } from "#lib/server/attachments/attachments.ts";
 import {
   assetNotes,
   attachments,
   defectEvents,
   defects,
   tasks,
-} from "$lib/server/db";
-import { deleteDefect } from "$lib/server/defects/defects";
-import { updateHousehold } from "$lib/server/household/household";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt } from "$lib/testing/domain";
-import { samplePdf, useTestFilesDir } from "$lib/testing/files";
+} from "#lib/server/db.ts";
+import { deleteDefect } from "#lib/server/defects/defects.ts";
+import { updateHousehold } from "#lib/server/household/household.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt } from "#lib/testing/domain.ts";
+import { samplePdf, useTestFilesDir } from "#lib/testing/files.ts";
 import {
   createNote,
   deleteNote,

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
-import { apiTokens, users } from "$lib/server/db";
-import { createTestToken, createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
+import { apiTokens, users } from "#lib/server/db.ts";
+import { createTestToken, createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import { hashToken } from "./sessions";
 import {
   LAST_USED_THROTTLE_MS,

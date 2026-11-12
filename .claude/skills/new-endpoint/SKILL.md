@@ -7,7 +7,7 @@ hauswart is REST-first: every domain operation is an `/api/v1` endpoint that the
 the mobile app, Home Assistant and the MCP server consume identically. Do the steps in this order.
 
 1. **Schema** in `src/lib/api/schemas/<domain>.ts`: Zod schemas for the request (`params`, `query`,
-   `body`) and the response. Client-safe: relative imports only, no `$lib/server`. Request bodies
+   `body`) and the response. Client-safe: relative imports only, no `#lib/server`. Request bodies
    are `z.strictObject` (unknown fields are a 400); query values arrive as strings, so use
    `z.coerce`. Dates are `YYYY-MM-DD` (`dateSchema`), instants UTC ISO strings
    (`isoTimestampSchema`, `toIso`), money integer minor units. Lists respond with
@@ -44,7 +44,7 @@ the mobile app, Home Assistant and the MCP server consume identically. Do the st
    `src/routes/api/registry.test.ts` fails otherwise, and when the file location, method or path
    differ from the registry entry.
 6. **Tests**: service tests with `useTestDB()` (happy path, validation, edge cases); route tests
-   next to the route with `callRoute` from `$lib/testing/route` (success, validation 400, not
+   next to the route with `callRoute` from `#lib/testing/route.ts` (success, validation 400, not
    found, per-user invisibility for user-owned resources). The authz matrix
    (`src/routes/authz.test.ts`) and the route guard are generated from the registry — no entry to
    add, but they must pass: they check 401 anonymous, 403 for the wrong credential kind, a token
@@ -53,7 +53,7 @@ the mobile app, Home Assistant and the MCP server consume identically. Do the st
 7. **OpenAPI**: run `bun run openapi` and commit `docs/openapi.json` with the change (a test fails
    when it is stale).
 8. **Client usage**: pages call `createApiClient(fetch).call(endpoints.x, { params, query, body })`
-   in `load` (with the load's own `fetch`) or `api.call(...)` from `$lib/api/browser` in event
+   in `load` (with the load's own `fetch`) or `api.call(...)` from `#lib/api/browser.ts` in event
    handlers. It returns the parsed response or throws `ApiError` (`code`, `status`, `details`);
    render `apiErrorMessage(err)`. No form actions for domain logic. Handle pending, error and empty
    states; every string through Paraglide with keys in both `messages/de.json` and

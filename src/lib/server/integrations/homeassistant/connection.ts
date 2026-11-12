@@ -1,10 +1,10 @@
-import { getDB, type DB } from "$lib/server/db";
+import { getDB, type DB } from "#lib/server/db.ts";
 import {
   getConnectionRow,
   type ConnectionRow,
-} from "$lib/server/connections/connections";
-import { IntegrationError } from "$lib/server/connections/errors";
-import type { ResolvedConnection } from "$lib/server/connections/registry";
+} from "#lib/server/connections/connections.ts";
+import { IntegrationError } from "#lib/server/connections/errors.ts";
+import type { ResolvedConnection } from "#lib/server/connections/registry.ts";
 import { HomeAssistantClient, type ClientOptions } from "./client";
 import { HomeAssistantError, describeError, errorCode } from "./errors";
 

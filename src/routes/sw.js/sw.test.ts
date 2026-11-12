@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { setServiceWorkerSource } from "$lib/server/pwa/service-worker";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { callRoute } from "$lib/testing/route";
+import { setServiceWorkerSource } from "#lib/server/pwa/service-worker.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { callRoute } from "#lib/testing/route.ts";
 import { GET } from "./+server";
 
 describe("GET /sw.js", () => {

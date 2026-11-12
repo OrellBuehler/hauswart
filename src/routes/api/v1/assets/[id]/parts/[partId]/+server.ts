@@ -1,5 +1,5 @@
-import { endpoints } from "$lib/api/registry";
-import { bind } from "$lib/server/api/bind";
-import { unlinkFromAsset } from "$lib/server/api/handlers/parts";
+import { endpoints } from "#lib/api/registry.ts";
+import { bind } from "#lib/server/api/bind.ts";
+import { unlinkFromAsset } from "#lib/server/api/handlers/parts.ts";
 
 export const DELETE = bind(endpoints.assetPartsUnlink, unlinkFromAsset);

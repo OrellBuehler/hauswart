@@ -1,7 +1,10 @@
 import { and, eq, inArray } from "drizzle-orm";
-import { DOCUMENT_PROVIDERS, type DocumentProviderKind } from "$lib/api/enums";
-import { contacts, documentLinks, externalDocuments } from "$lib/server/db";
-import { notFound, type ServiceContext } from "$lib/server/service";
+import {
+  DOCUMENT_PROVIDERS,
+  type DocumentProviderKind,
+} from "#lib/api/enums.ts";
+import { contacts, documentLinks, externalDocuments } from "#lib/server/db.ts";
+import { notFound, type ServiceContext } from "#lib/server/service.ts";
 import { toMeta } from "./cache";
 import type { ExternalDocumentMeta } from "./provider";
 import { ownConnectionRow, parseProviderConfig } from "./session";

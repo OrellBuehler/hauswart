@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { targetDto } from "$lib/testing/calendar-targets";
+import { targetDto } from "#lib/testing/calendar-targets.ts";
 import { awaitsFirstRun, targetState } from "./health";
 
 describe("targetState", () => {

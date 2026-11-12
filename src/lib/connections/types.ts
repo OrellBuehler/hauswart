@@ -4,7 +4,7 @@ import type {
   externalCalendarSchema,
   externalDeviceSchema,
   externalEntitySchema,
-} from "$lib/api/schemas/integrations";
+} from "#lib/api/schemas/integrations.ts";
 
 export type ExternalEntity = z.infer<typeof externalEntitySchema>;
 export type ExternalCalendar = z.infer<typeof externalCalendarSchema>;

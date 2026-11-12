@@ -3,16 +3,20 @@ import {
   MAX_FEEDS_PER_USER,
   type CreateCalendarFeedRequest,
   type UpdateCalendarFeedRequest,
-} from "$lib/api/schemas/share";
-import { decryptSecret, encryptSecret } from "$lib/server/crypto";
-import { icalFeeds, users } from "$lib/server/db";
-import { conflict, notFound, type ServiceContext } from "$lib/server/service";
+} from "#lib/api/schemas/share.ts";
+import { decryptSecret, encryptSecret } from "#lib/server/crypto.ts";
+import { icalFeeds, users } from "#lib/server/db.ts";
+import {
+  conflict,
+  notFound,
+  type ServiceContext,
+} from "#lib/server/service.ts";
 import {
   generateShareToken,
   hashShareToken,
   SHARE_TOKEN_PATTERN,
   sameHash,
-} from "$lib/server/share/tokens";
+} from "#lib/server/share/tokens.ts";
 
 type Db = Pick<ServiceContext, "db">;
 type Now = Pick<ServiceContext, "db" | "now">;

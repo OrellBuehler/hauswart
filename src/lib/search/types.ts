@@ -14,8 +14,8 @@ import type { z } from "zod";
 import {
   SEARCH_HIT_TYPES,
   type searchHitSchema,
-} from "$lib/api/schemas/search";
-import { m } from "$lib/paraglide/messages";
+} from "#lib/api/schemas/search.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 export type SearchHit = z.output<typeof searchHitSchema>;
 export type SearchHitType = (typeof SEARCH_HIT_TYPES)[number];

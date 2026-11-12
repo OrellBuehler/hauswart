@@ -1,6 +1,6 @@
 <script lang="ts">
   import { mode } from "mode-watcher";
-  import { THEME_COLORS } from "$lib/pwa/colors";
+  import { THEME_COLORS } from "#lib/pwa/colors.ts";
 
   // app.html carries one theme-color tag per system palette. The chosen colour mode can differ
   // from the system's, so the tags follow it: the title bar of an installed app and the browser

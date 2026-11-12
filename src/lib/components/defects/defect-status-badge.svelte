@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { DefectStatus } from "$lib/api/enums";
-  import { statusLabels, statusTones } from "$lib/defects/labels";
-  import { cn } from "$lib/utils";
+  import type { DefectStatus } from "#lib/api/enums.ts";
+  import { statusLabels, statusTones } from "#lib/defects/labels.ts";
+  import { cn } from "#lib/utils.ts";
 
   let { status, class: className }: { status: DefectStatus; class?: string } =
     $props();

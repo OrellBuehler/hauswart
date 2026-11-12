@@ -1,20 +1,20 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import PuzzleIcon from "@lucide/svelte/icons/puzzle";
   import UnlinkIcon from "@lucide/svelte/icons/unlink";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { TaskPart } from "$lib/api/schemas/parts";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import StockBadge from "$lib/components/parts/stock-badge.svelte";
-  import TaskPartDialog from "$lib/components/parts/task-part-dialog.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { partHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { TaskPart } from "#lib/api/schemas/parts.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import StockBadge from "#lib/components/parts/stock-badge.svelte";
+  import TaskPartDialog from "#lib/components/parts/task-part-dialog.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { partHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   let { taskId, parts }: { taskId: string; parts: TaskPart[] } = $props();
 
@@ -43,7 +43,7 @@
         params: { id: taskId, partId: link.partId },
       });
       toast.success(m.part_unlinked_toast({ name: link.part.name }));
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       toast.error(apiErrorMessage(err));
     } finally {
@@ -114,10 +114,10 @@
   bind:open={linkOpen}
   {taskId}
   excludeIds={parts.map((link) => link.partId)}
-  onsaved={() => invalidateAll()}
+  onsaved={() => refreshAll()}
 />
 <TaskPartDialog
   bind:open={qtyOpen}
   existing={editing}
-  onsaved={() => invalidateAll()}
+  onsaved={() => refreshAll()}
 />

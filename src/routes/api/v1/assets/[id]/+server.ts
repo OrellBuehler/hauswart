@@ -1,6 +1,6 @@
-import { endpoints } from "$lib/api/registry";
-import { bind } from "$lib/server/api/bind";
-import { get, remove, update } from "$lib/server/api/handlers/assets";
+import { endpoints } from "#lib/api/registry.ts";
+import { bind } from "#lib/server/api/bind.ts";
+import { get, remove, update } from "#lib/server/api/handlers/assets.ts";
 
 export const GET = bind(endpoints.assetsGet, get);
 export const PATCH = bind(endpoints.assetsUpdate, update);

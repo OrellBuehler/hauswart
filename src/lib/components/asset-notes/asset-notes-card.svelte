@@ -4,30 +4,30 @@
   import CopyIcon from "@lucide/svelte/icons/copy";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import PlusIcon from "@lucide/svelte/icons/plus";
-  import { goto, invalidateAll } from "$app/navigation";
+  import { goto, refreshAll } from "$app/navigation";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
   import {
     ASSET_NOTE_MAX_LENGTH,
     type AssetNote,
-  } from "$lib/api/schemas/asset-notes";
-  import { browserShareEnv, shareOrCopy } from "$lib/asset-notes/share";
-  import { formatNotesList, noteExcerpt } from "$lib/asset-notes/text";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { Skeleton } from "$lib/components/ui/skeleton/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { defectHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/api/schemas/asset-notes.ts";
+  import { browserShareEnv, shareOrCopy } from "#lib/asset-notes/share.ts";
+  import { formatNotesList, noteExcerpt } from "#lib/asset-notes/text.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { defectHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import NoteItem from "./note-item.svelte";
 
   let {
@@ -102,7 +102,7 @@
 
   /** A note moved between the lists or went away: the page data refreshes, so does the list of done ones. */
   async function refresh() {
-    await invalidateAll();
+    await refreshAll();
     if (resolvedPhase !== "idle") await loadResolved();
   }
 
@@ -119,7 +119,7 @@
       });
       body = "";
       toast.success(m.asset_notes_added_toast());
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       addError = apiErrorMessage(err);
     } finally {

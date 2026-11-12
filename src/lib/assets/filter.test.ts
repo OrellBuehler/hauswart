@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Asset } from "$lib/api/schemas/assets";
+import type { Asset } from "#lib/api/schemas/assets.ts";
 import { emptyFilter, filterAssets, isFiltered } from "./filter";
 
 const TODAY = "2026-10-06";

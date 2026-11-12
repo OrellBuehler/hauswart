@@ -7,16 +7,20 @@
   import PencilIcon from "@lucide/svelte/icons/pencil";
   import PinIcon from "@lucide/svelte/icons/pin";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
-  import type { Hint } from "$lib/api/schemas/hints";
-  import { planTaskHref } from "$lib/assets/links";
-  import Attachments from "$lib/components/attachments/attachments.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { hintKindIcons, hintKindLabels, hintTones } from "$lib/hints/labels";
-  import { taskHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import type { Hint } from "#lib/api/schemas/hints.ts";
+  import { planTaskHref } from "#lib/assets/links.ts";
+  import Attachments from "#lib/components/attachments/attachments.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import {
+    hintKindIcons,
+    hintKindLabels,
+    hintTones,
+  } from "#lib/hints/labels.ts";
+  import { taskHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import HintReactionNote from "./hint-reaction-note.svelte";
 
   let {

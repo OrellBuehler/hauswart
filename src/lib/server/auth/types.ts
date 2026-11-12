@@ -1,5 +1,5 @@
-import type { TokenKind, UserLocale, UserRole } from "$lib/api/enums";
-import type { Scope } from "$lib/api/scopes";
+import type { TokenKind, UserLocale, UserRole } from "#lib/api/enums.ts";
+import type { Scope } from "#lib/api/scopes.ts";
 
 export interface SessionUser {
   id: string;

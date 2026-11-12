@@ -2,19 +2,19 @@
   import CircleHelpIcon from "@lucide/svelte/icons/circle-help";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
-  import type { ExternalEntity } from "$lib/connections/types";
+  import type { ExternalEntity } from "#lib/connections/types.ts";
   import {
     ENTITY_ID_PATTERN,
     formatReading,
     lookupEntity,
-  } from "$lib/connections/entities";
+  } from "#lib/connections/entities.ts";
   import {
     homeAssistantOf,
     isUsable,
     loadIntegrations,
-  } from "$lib/connections/connection";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/connections/connection.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     entityId,

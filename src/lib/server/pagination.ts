@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ApiError } from "$lib/api/errors";
+import { ApiError } from "#lib/api/errors.ts";
 
 export function encodeCursor(value: unknown): string {
   return Buffer.from(JSON.stringify(value)).toString("base64url");

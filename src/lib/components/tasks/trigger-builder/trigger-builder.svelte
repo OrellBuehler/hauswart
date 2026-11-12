@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { m } from "$lib/paraglide/messages";
-  import type { TriggerType } from "$lib/tasks/engine/types";
-  import { getLocale } from "$lib/paraglide/runtime";
-  import { describeTrigger } from "$lib/tasks/describe";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { TriggerType } from "#lib/tasks/engine/types.ts";
+  import { getLocale } from "#lib/paraglide/runtime.js";
+  import { describeTrigger } from "#lib/tasks/describe.ts";
   import Field from "../field.svelte";
   import OptionSelect from "../option-select.svelte";
   import AutoCompleteEditor from "./auto-complete-editor.svelte";

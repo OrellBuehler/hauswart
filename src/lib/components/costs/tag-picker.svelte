@@ -4,16 +4,16 @@
   import PlusIcon from "@lucide/svelte/icons/plus";
   import { tick } from "svelte";
   import { resolve } from "$app/paths";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
   import {
     COST_TAG_NAME_MAX,
     MAX_COST_TAGS,
     MAX_TAGS_PER_COST,
     type CostTag,
-  } from "$lib/api/schemas/cost-tags";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
+  } from "#lib/api/schemas/cost-tags.ts";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
   import {
     TAG_COLOR_STYLES,
     canAddTag,
@@ -22,10 +22,10 @@
     tagNameProblem,
     tagSaveMessage,
     toggleTagId,
-  } from "$lib/costs/tags";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/costs/tags.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   /** From this many tags on, the chips can be narrowed by typing. */
   const FILTER_FROM = 12;
@@ -40,18 +40,19 @@
     error,
     oncreated,
     class: className,
+
+    /** Every tag of the household. */
+    /** The ids of the chosen tags. */
+    /** Offers a new tag by name, made on the spot (needs the right to book costs, like the forms this sits in). */
+    /** A tag was made here: the page may add it to its own list. */
   }: {
     id: string;
-    /** Every tag of the household. */
     tags: readonly CostTag[];
-    /** The ids of the chosen tags. */
     value?: string[];
     max?: number;
-    /** Offers a new tag by name, made on the spot (needs the right to book costs, like the forms this sits in). */
     creatable?: boolean;
     disabled?: boolean;
     error?: string | undefined;
-    /** A tag was made here: the page may add it to its own list. */
     oncreated?: (tag: CostTag) => void;
     class?: string;
   } = $props();
@@ -139,12 +140,13 @@
 
 <div class={cn("flex min-w-0 flex-col gap-2", className)}>
   <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-    <span id={`${id}-label`} class="text-sm leading-none font-medium"
-      >{m.costtag_picker_label()}
+    <span id={`${id}-label`} class="text-sm leading-none font-medium">
+      {m.costtag_picker_label()}
       <span class="text-muted-foreground font-normal"
         >({m.common_optional()})</span
-      ></span
-    >
+      >
+    </span>
+
     {#if value.length > 0}
       <span
         class="text-muted-foreground text-xs tabular-nums"
@@ -212,7 +214,7 @@
           {m.costtag_picker_none()}
           {#if !creatable}
             <a
-              href={resolve("/settings/cost-tags")}
+              href={resolve("settings/cost-tags")}
               class="text-foreground focus-visible:ring-ring/50 rounded font-medium underline underline-offset-4 outline-none focus-visible:ring-[3px]"
               >{m.costtag_picker_none_settings()}</a
             >

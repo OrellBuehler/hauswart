@@ -4,42 +4,42 @@
   import FileCheckIcon from "@lucide/svelte/icons/file-check";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
+  import { api } from "#lib/api/browser.ts";
   import {
     ASSET_KINDS,
     ODOMETER_UNITS,
     VEHICLE_FUEL_TYPES,
     type AssetKind,
-  } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { Asset } from "$lib/api/schemas/assets";
-  import type { CostBook } from "$lib/api/schemas/cost-books";
-  import type { Room } from "$lib/api/schemas/rooms";
-  import type { Vehicle } from "$lib/api/schemas/vehicles";
-  import { kindLabels } from "$lib/assets/kinds";
-  import { vehicleSetupHref } from "$lib/assets/links";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import Field from "$lib/components/tasks/field.svelte";
-  import FieldSelect from "$lib/components/tasks/option-select.svelte";
-  import { Switch } from "$lib/components/ui/switch/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { bookChoices, defaultBook } from "$lib/costs/books";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
-  import { cn } from "$lib/utils";
+  } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Asset } from "#lib/api/schemas/assets.ts";
+  import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+  import type { Room } from "#lib/api/schemas/rooms.ts";
+  import type { Vehicle } from "#lib/api/schemas/vehicles.ts";
+  import { kindLabels } from "#lib/assets/kinds.ts";
+  import { vehicleSetupHref } from "#lib/assets/links.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Checkbox } from "#lib/components/ui/checkbox/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import Field from "#lib/components/tasks/field.svelte";
+  import FieldSelect from "#lib/components/tasks/option-select.svelte";
+  import { Switch } from "#lib/components/ui/switch/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
+  import { bookChoices, defaultBook } from "#lib/costs/books.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
+  import { cn } from "#lib/utils.ts";
   import {
     buildVehicleBody,
     draftFromVehicle,
     type VehicleDraft,
-  } from "$lib/vehicles/form";
-  import { vehicleKindError } from "$lib/vehicles/kind-error";
-  import { fuelLabels, unitLabels } from "$lib/vehicles/labels";
+  } from "#lib/vehicles/form.ts";
+  import { vehicleKindError } from "#lib/vehicles/kind-error.ts";
+  import { fuelLabels, unitLabels } from "#lib/vehicles/labels.ts";
   import RoomPicker from "./room-picker.svelte";
 
   let {
@@ -50,17 +50,18 @@
     initialRoomId = null,
     today,
     vehicle,
+
+    /** Every cost book: a vehicle picks the one its fuel fills are booked into. */
+    /** The asset to edit; undefined creates a new one. */
+    /** Household "today", the start of a new watering plan. */
+    /** The details of the vehicle being edited, when it is one. */
   }: {
     rooms: Room[];
-    /** Every cost book: a vehicle picks the one its fuel fills are booked into. */
     books?: CostBook[];
-    /** The asset to edit; undefined creates a new one. */
     asset?: Asset;
     initialKind?: AssetKind;
     initialRoomId?: string | null;
-    /** Household "today", the start of a new watering plan. */
     today: string;
-    /** The details of the vehicle being edited, when it is one. */
     vehicle?: Vehicle | null;
   } = $props();
 
@@ -126,6 +127,7 @@
         : book.name,
     })),
   ]);
+
   const unitOptions = ODOMETER_UNITS.map((value) => ({
     value,
     label: unitLabels[value](),
@@ -134,12 +136,13 @@
     value,
     label: kindLabels[value](),
   }));
+
   const backHref = $derived(
     asset
-      ? resolve(`/assets/${asset.id}`)
+      ? resolve(`assets/${asset.id}`)
       : isPlant
-        ? resolve("/plants")
-        : resolve("/inventory"),
+        ? resolve("plants")
+        : resolve("inventory"),
   );
 
   const optionalDate = (value: string) => (value === "" ? null : value);
@@ -152,6 +155,7 @@
     event.preventDefault();
     if (pending) return;
     const plan = !editing && isPlant && makePlan;
+
     if (
       plan &&
       (!validInterval(everyDays) ||
@@ -250,7 +254,8 @@
           toast.error(
             m.asset_form_plan_failed({ error: apiErrorMessage(err) }),
           );
-          await goto(resolve(`/assets/${saved.id}`));
+          await goto(resolve(`assets/${saved.id}`));
+
           return;
         }
       }
@@ -264,7 +269,7 @@
         // eslint-disable-next-line svelte/no-navigation-without-resolve -- the path is resolved, only the query is appended
         await goto(vehicleSetupHref(saved.id));
       } else {
-        await goto(resolve(`/assets/${saved.id}`));
+        await goto(resolve(`assets/${saved.id}`));
       }
     } catch (err) {
       kindError = vehicleKindError(err) ?? undefined;

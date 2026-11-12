@@ -1,20 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { createApiClient } from "$lib/api/client";
-import { endpoints } from "$lib/api/registry";
-import { plainJpeg, plainPng } from "$lib/server/files/test-images";
+import { createApiClient } from "#lib/api/client.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import { plainJpeg, plainPng } from "#lib/server/files/test-images.ts";
 import {
   createCaller,
   createInProcessFetch,
   errorCode,
   errorDetailCode,
-} from "$lib/testing/api";
+} from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { useTestFilesDir } from "$lib/testing/files";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { useTestFilesDir } from "#lib/testing/files.ts";
 
 interface Task {
   id: string;

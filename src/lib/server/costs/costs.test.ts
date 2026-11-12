@@ -1,28 +1,28 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
 import {
   createCostRequestSchema,
   updateCostRequestSchema,
-} from "$lib/api/schemas/costs";
-import { createDefectRequestSchema } from "$lib/api/schemas/defects";
-import { createServiceLogRequestSchema } from "$lib/api/schemas/service-log";
-import { createRoomRequestSchema } from "$lib/api/schemas/rooms";
-import { createAsset } from "$lib/server/assets/assets";
-import { createComment } from "$lib/server/comments/comments";
-import { createDefect, getDefectDetail } from "$lib/server/defects/defects";
+} from "#lib/api/schemas/costs.ts";
+import { createDefectRequestSchema } from "#lib/api/schemas/defects.ts";
+import { createServiceLogRequestSchema } from "#lib/api/schemas/service-log.ts";
+import { createRoomRequestSchema } from "#lib/api/schemas/rooms.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import { createComment } from "#lib/server/comments/comments.ts";
+import { createDefect, getDefectDetail } from "#lib/server/defects/defects.ts";
 import {
   comments,
   costEntries,
   costEntryShares,
   costLinkRemovals,
   users,
-} from "$lib/server/db";
-import { createRoom } from "$lib/server/rooms/rooms";
-import { createEntry, getEntry } from "$lib/server/service-log/service-log";
-import { createTestUser } from "$lib/testing/auth";
-import { ctxAt, NOW } from "$lib/testing/domain";
-import { useTestDB } from "$lib/testing/db";
+} from "#lib/server/db.ts";
+import { createRoom } from "#lib/server/rooms/rooms.ts";
+import { createEntry, getEntry } from "#lib/server/service-log/service-log.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { ctxAt, NOW } from "#lib/testing/domain.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import {
   createCost,
   deleteCost,
@@ -476,7 +476,7 @@ describe("costs service", () => {
         a.id,
       );
       const c = createCost(ctx(), input({ defectId: defect.id }), a.id);
-      const { deleteDefect } = await import("$lib/server/defects/defects");
+      const { deleteDefect } = await import("#lib/server/defects/defects.ts");
       await deleteDefect(ctx(), defect.id);
       expect(getCost(ctx(), c.id)).toMatchObject({
         defectId: null,
@@ -655,8 +655,8 @@ describe("costs service", () => {
 
 async function connectionFor(userId: string): Promise<string> {
   const { saveConnection } =
-    await import("$lib/server/connections/connections");
-  const { getDB } = await import("$lib/server/db");
+    await import("#lib/server/connections/connections.ts");
+  const { getDB } = await import("#lib/server/db.ts");
   return saveConnection({ db: getDB(), now: NOW }, "kept", userId, {
     baseUrl: "https://finance.example.org",
     token: "kept_example-token",

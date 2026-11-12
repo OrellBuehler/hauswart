@@ -1,10 +1,10 @@
 <script lang="ts">
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import PolicyForm from "$lib/components/insurance/policy-form.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { insuranceHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import PolicyForm from "#lib/components/insurance/policy-form.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { insuranceHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();

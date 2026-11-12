@@ -1,5 +1,5 @@
-import type { DefectSeverity, DefectStatus } from "$lib/api/enums";
-import { m } from "$lib/paraglide/messages";
+import type { DefectSeverity, DefectStatus } from "#lib/api/enums.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 export const statusLabels: Record<DefectStatus, () => string> = {
   open: () => m.defect_status_open(),

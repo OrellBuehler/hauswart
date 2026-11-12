@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render } from "svelte/server";
-import type { CostsSummary } from "$lib/api/schemas/costs";
+import type { CostsSummary } from "#lib/api/schemas/costs.ts";
 import CostsSummaryCard from "./costs-summary.svelte";
 
 const summary = (reviewNeededCount: number): CostsSummary => ({

@@ -4,35 +4,36 @@
   import SearchXIcon from "@lucide/svelte/icons/search-x";
   import UmbrellaIcon from "@lucide/svelte/icons/umbrella";
   import { resolve } from "$app/paths";
-  import { INSURANCE_TYPES } from "$lib/api/enums";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import Fab from "$lib/components/app/fab.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import CommentCount from "$lib/components/comments/comment-count.svelte";
-  import DeadlineHint from "$lib/components/insurance/deadline-hint.svelte";
-  import PolicyRow from "$lib/components/insurance/policy-row.svelte";
-  import OptionSelect from "$lib/components/assets/option-select.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { Switch } from "$lib/components/ui/switch/index.js";
-  import * as Table from "$lib/components/ui/table/index.js";
-  import { formatMoney } from "$lib/format-money";
-  import { insuranceHref } from "$lib/links";
+  import { INSURANCE_TYPES } from "#lib/api/enums.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import Fab from "#lib/components/app/fab.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import CommentCount from "#lib/components/comments/comment-count.svelte";
+  import DeadlineHint from "#lib/components/insurance/deadline-hint.svelte";
+  import PolicyRow from "#lib/components/insurance/policy-row.svelte";
+  import OptionSelect from "#lib/components/assets/option-select.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { Switch } from "#lib/components/ui/switch/index.js";
+  import * as Table from "#lib/components/ui/table/index.js";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { insuranceHref } from "#lib/links.ts";
   import {
     insuranceTypeIcons,
     insuranceTypeLabels,
-  } from "$lib/insurance/labels";
+  } from "#lib/insurance/labels.ts";
+
   import {
     annualTotal,
     emptyFilter,
     filterPolicies,
     isFiltered,
     type PolicyFilter,
-  } from "$lib/insurance/list";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/insurance/list.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps, Snapshot } from "./$types";
 
   let { data }: PageProps = $props();
@@ -74,9 +75,9 @@
     description={m.insurance_description()}
   >
     {#snippet actions()}
-      <Button href={resolve("/insurance/new")} size="lg" class="max-md:hidden">
-        <PlusIcon />{m.insurance_new()}
-      </Button>
+      <Button href={resolve("insurance/new")} size="lg" class="max-md:hidden"
+        ><PlusIcon />{m.insurance_new()}</Button
+      >
     {/snippet}
   </PageHeader>
 
@@ -87,9 +88,9 @@
       description={m.insurance_empty_body()}
     >
       {#snippet actions()}
-        <Button href={resolve("/insurance/new")}>
-          <PlusIcon />{m.insurance_new()}
-        </Button>
+        <Button href={resolve("insurance/new")}
+          ><PlusIcon />{m.insurance_new()}</Button
+        >
       {/snippet}
     </EmptyState>
   {:else}
@@ -183,9 +184,9 @@
           description={m.insurance_empty_body()}
         >
           {#snippet actions()}
-            <Button href={resolve("/insurance/new")}>
-              <PlusIcon />{m.insurance_new()}
-            </Button>
+            <Button href={resolve("insurance/new")}
+              ><PlusIcon />{m.insurance_new()}</Button
+            >
           {/snippet}
         </EmptyState>
       {/if}
@@ -279,4 +280,4 @@
   {/if}
 </div>
 
-<Fab href={resolve("/insurance/new")} label={m.insurance_new()} />
+<Fab href={resolve("insurance/new")} label={m.insurance_new()} />

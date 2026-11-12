@@ -11,9 +11,9 @@
   import SmartphoneIcon from "@lucide/svelte/icons/smartphone";
   import TagsIcon from "@lucide/svelte/icons/tags";
   import UserRoundIcon from "@lucide/svelte/icons/user-round";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import * as Tabs from "$lib/components/ui/tabs/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import * as Tabs from "#lib/components/ui/tabs/index.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   let { children } = $props();
 
@@ -121,7 +121,7 @@
         <Tabs.Trigger value={tab.href} class="flex-none px-2.5 py-1.5">
           {#snippet child({ props })}
             <a
-              href={resolve(tab.href)}
+              href={resolve(tab.href.slice(1))}
               aria-current={active === tab.href ? "page" : undefined}
               {...props}
             >

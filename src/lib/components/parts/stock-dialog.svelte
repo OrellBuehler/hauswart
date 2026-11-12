@@ -2,19 +2,19 @@
   import MinusIcon from "@lucide/svelte/icons/minus";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import type { PartMovementReason } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import { MAX_STOCK, type Part } from "$lib/api/schemas/parts";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import NumberField from "$lib/components/tasks/number-field.svelte";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import { movementReasonLabels } from "$lib/parts/labels";
+  import { api } from "#lib/api/browser.ts";
+  import type { PartMovementReason } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import { MAX_STOCK, type Part } from "#lib/api/schemas/parts.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import NumberField from "#lib/components/tasks/number-field.svelte";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { movementReasonLabels } from "#lib/parts/labels.ts";
 
   type Direction = "more" | "less";
 

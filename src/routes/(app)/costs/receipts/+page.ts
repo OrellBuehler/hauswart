@@ -1,14 +1,14 @@
-import { createApiClient } from "$lib/api/client";
-import { fetchAll } from "$lib/api/fetch-all";
-import { orFail } from "$lib/api/load";
-import { endpoints } from "$lib/api/registry";
+import { createApiClient } from "#lib/api/client.ts";
+import { fetchAll } from "#lib/api/fetch-all.ts";
+import { orFail } from "#lib/api/load.ts";
+import { endpoints } from "#lib/api/registry.ts";
 import {
   RECEIPTS_PAGE_SIZE,
   mergePendingFirst,
   parseReceiptView,
   receiptViewStatus,
-} from "$lib/costs/receipts";
-import { loadHousehold } from "$lib/tasks/load";
+} from "#lib/costs/receipts.ts";
+import { loadHousehold } from "#lib/tasks/load.ts";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ fetch, url }) => {

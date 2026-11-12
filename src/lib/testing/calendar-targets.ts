@@ -3,7 +3,7 @@ import type {
   CalendarTarget,
   CalendarTargetCapabilities,
   CalendarTargetConfig,
-} from "$lib/api/schemas/calendar-sync";
+} from "#lib/api/schemas/calendar-sync.ts";
 
 /** A calendar that creates, changes and deletes, like Home Assistant's Local Calendar. */
 export const FULL_CAPABILITIES: CalendarTargetCapabilities = {

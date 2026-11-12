@@ -1,6 +1,6 @@
-import type { Asset } from "$lib/api/schemas/assets";
-import type { Task } from "$lib/api/schemas/tasks";
-import { shownDate } from "$lib/tasks/engine/shown";
+import type { Asset } from "#lib/api/schemas/assets.ts";
+import type { Task } from "#lib/api/schemas/tasks.ts";
+import { shownDate } from "#lib/tasks/engine/shown.ts";
 
 const STATUS_RANK = {
   overdue: 0,

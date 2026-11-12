@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, everyDays, makeTask, NOW } from "$lib/testing/domain";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, everyDays, makeTask, NOW } from "#lib/testing/domain.ts";
 import { setSignalProvider } from "./signals";
 import { afterEach } from "vitest";
 import { completeTask } from "./completions";

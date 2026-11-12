@@ -1,20 +1,20 @@
 <script lang="ts">
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import { ROOM_NAME_MAX, type Room } from "$lib/api/schemas/rooms";
-  import { roomIconNames, roomIcons } from "$lib/assets/room-icons";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import AreaPicker from "$lib/components/connections/area-picker.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import { ROOM_NAME_MAX, type Room } from "#lib/api/schemas/rooms.ts";
+  import { roomIconNames, roomIcons } from "#lib/assets/room-icons.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import AreaPicker from "#lib/components/connections/area-picker.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Dialog from "#lib/components/ui/dialog/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     open = $bindable(false),

@@ -1,8 +1,8 @@
 import { asc, count, desc, eq, sql } from "drizzle-orm";
-import { RECENT_CATEGORY_ENTRIES } from "$lib/api/schemas/costs";
-import type { CostCategory } from "$lib/api/enums";
-import { costBooks, costEntries } from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
+import { RECENT_CATEGORY_ENTRIES } from "#lib/api/schemas/costs.ts";
+import type { CostCategory } from "#lib/api/enums.ts";
+import { costBooks, costEntries } from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import { getCostBookRow } from "./books";
 
 type Db = Pick<ServiceContext, "db">;

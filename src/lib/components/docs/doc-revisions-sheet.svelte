@@ -3,25 +3,25 @@
   import HistoryIcon from "@lucide/svelte/icons/history";
   import RotateCcwIcon from "@lucide/svelte/icons/rotate-ccw";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { DocPage } from "$lib/api/schemas/docs";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Sheet from "$lib/components/ui/sheet/index.js";
-  import { Skeleton } from "$lib/components/ui/skeleton/index.js";
-  import { pageErrorMessage } from "$lib/docs/errors";
-  import { formatDateTime } from "$lib/format";
-  import { formatBytes } from "$lib/attachments/files";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { DocPage } from "#lib/api/schemas/docs.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Sheet from "#lib/components/ui/sheet/index.js";
+  import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+  import { pageErrorMessage } from "#lib/docs/errors.ts";
+  import { formatDateTime } from "#lib/format.ts";
+  import { formatBytes } from "#lib/attachments/files.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import type { z } from "zod";
   import type {
     listRevisionsResponseSchema,
     pageRevisionSchema,
-  } from "$lib/api/schemas/docs";
+  } from "#lib/api/schemas/docs.ts";
 
   type Revisions = z.output<typeof listRevisionsResponseSchema>["items"];
   type Revision = z.output<typeof pageRevisionSchema>;

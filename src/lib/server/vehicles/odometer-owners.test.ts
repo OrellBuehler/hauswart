@@ -1,22 +1,25 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { createFuelLogRequestSchema } from "$lib/api/schemas/fuel-logs";
-import { createServiceLogRequestSchema } from "$lib/api/schemas/service-log";
+import { createFuelLogRequestSchema } from "#lib/api/schemas/fuel-logs.ts";
+import { createServiceLogRequestSchema } from "#lib/api/schemas/service-log.ts";
 import {
   createTireSetRequestSchema,
   mountTireSetRequestSchema,
-} from "$lib/api/schemas/tire-sets";
-import { deleteAsset } from "$lib/server/assets/assets";
-import { odometerReadings } from "$lib/server/db";
-import { createEntry, deleteEntry } from "$lib/server/service-log/service-log";
-import { completeTask } from "$lib/server/tasks/completions";
-import { deleteTask } from "$lib/server/tasks/tasks";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, makeTask, NOW } from "$lib/testing/domain";
-import { useTestFilesDir } from "$lib/testing/files";
-import { failure, makeVehicle } from "$lib/testing/vehicles";
-import { odometerSignalKey } from "$lib/vehicles/odometer";
+} from "#lib/api/schemas/tire-sets.ts";
+import { deleteAsset } from "#lib/server/assets/assets.ts";
+import { odometerReadings } from "#lib/server/db.ts";
+import {
+  createEntry,
+  deleteEntry,
+} from "#lib/server/service-log/service-log.ts";
+import { completeTask } from "#lib/server/tasks/completions.ts";
+import { deleteTask } from "#lib/server/tasks/tasks.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, makeTask, NOW } from "#lib/testing/domain.ts";
+import { useTestFilesDir } from "#lib/testing/files.ts";
+import { failure, makeVehicle } from "#lib/testing/vehicles.ts";
+import { odometerSignalKey } from "#lib/vehicles/odometer.ts";
 import { createFuelLog, deleteFuelLog } from "./fuel-logs";
 import {
   deleteOdometerReading,

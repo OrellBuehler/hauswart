@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render } from "svelte/server";
-import type { OdometerReading } from "$lib/api/schemas/vehicles";
+import type { OdometerReading } from "#lib/api/schemas/vehicles.ts";
 import OdometerHistoryCard from "./odometer-history-card.svelte";
 
 const reading = (

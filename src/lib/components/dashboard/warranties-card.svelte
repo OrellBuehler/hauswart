@@ -2,12 +2,12 @@
   import ArrowRightIcon from "@lucide/svelte/icons/arrow-right";
   import ShieldAlertIcon from "@lucide/svelte/icons/shield-alert";
   import { resolve } from "$app/paths";
-  import type { Dashboard } from "$lib/api/schemas/dashboard";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { formatDay } from "$lib/format";
-  import { assetHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import type { Dashboard } from "#lib/api/schemas/dashboard.ts";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { formatDay } from "#lib/format.ts";
+  import { assetHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let { warranties }: { warranties: Dashboard["expiringWarranties"] } =
     $props();
@@ -65,7 +65,7 @@
       {/each}
     </ul>
     <a
-      href={resolve("/warranties")}
+      href={resolve("warranties")}
       class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -mx-1 inline-flex min-h-10 items-center gap-1.5 self-start rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
     >
       {m.dashboard_to_warranties()}

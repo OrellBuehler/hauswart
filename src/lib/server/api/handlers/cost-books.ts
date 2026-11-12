@@ -1,7 +1,7 @@
 import type { z } from "zod";
-import type { endpoints } from "$lib/api/registry";
-import type { costBookSchema } from "$lib/api/schemas/cost-books";
-import { toIso } from "$lib/api/schemas/common";
+import type { endpoints } from "#lib/api/registry.ts";
+import type { costBookSchema } from "#lib/api/schemas/cost-books.ts";
+import { toIso } from "#lib/api/schemas/common.ts";
 import {
   createCostBook,
   deleteCostBook,
@@ -9,7 +9,7 @@ import {
   listCostBooks,
   updateCostBook,
   type CostBookRecord,
-} from "$lib/server/costs/books";
+} from "#lib/server/costs/books.ts";
 import type { Handler } from "../bind";
 
 export function wireCostBook(

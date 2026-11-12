@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isValidDate } from "$lib/dates";
+import { isValidDate } from "#lib/dates.ts";
 
 const id = z.number().int().positive();
 const nullableId = id.nullish().transform((v) => v ?? null);
@@ -78,7 +78,12 @@ const searchHitSchema = z.object({
 });
 
 export function stripMarkup(text: string): string {
-  return text.replace(/<[^>]*>/g, "");
+  let previous: string;
+  do {
+    previous = text;
+    text = text.replace(/<[^>]*>/g, "");
+  } while (text !== previous);
+  return text;
 }
 
 function dateOf(value: string | null | undefined): string | null {

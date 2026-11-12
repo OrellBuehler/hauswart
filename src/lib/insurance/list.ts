@@ -1,5 +1,5 @@
-import type { InsuranceType } from "$lib/api/enums";
-import type { InsurancePolicy } from "$lib/api/schemas/insurance";
+import type { InsuranceType } from "#lib/api/enums.ts";
+import type { InsurancePolicy } from "#lib/api/schemas/insurance.ts";
 
 export type PolicyFilter = {
   q: string;

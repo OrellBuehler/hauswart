@@ -3,13 +3,13 @@
   import LockKeyholeIcon from "@lucide/svelte/icons/lock-keyhole";
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import QuickEntry from "$lib/components/costs/quick-entry.svelte";
-  import QuickReceipt from "$lib/components/costs/quick-receipt.svelte";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { parseQuickMode, type QuickMode } from "$lib/costs/quick";
-  import { m } from "$lib/paraglide/messages";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import QuickEntry from "#lib/components/costs/quick-entry.svelte";
+  import QuickReceipt from "#lib/components/costs/quick-receipt.svelte";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { parseQuickMode, type QuickMode } from "#lib/costs/quick.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -40,7 +40,7 @@
 <div class="mx-auto flex w-full max-w-xl flex-col gap-5">
   <div class="max-md:hidden">
     <a
-      href={resolve("/costs")}
+      href={resolve("costs")}
       class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -ms-1 inline-flex min-h-10 items-center gap-1.5 rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
@@ -66,7 +66,7 @@
       description={m.quick_forbidden_body()}
     >
       {#snippet actions()}
-        <Button href={resolve("/costs")}>{m.cost_back()}</Button>
+        <Button href={resolve("costs")}>{m.cost_back()}</Button>
       {/snippet}
     </EmptyState>
   {:else}

@@ -1,6 +1,6 @@
-import { endpoints } from "$lib/api/registry";
-import { bind } from "$lib/server/api/bind";
-import { get, remove } from "$lib/server/api/handlers/ai-tasks";
+import { endpoints } from "#lib/api/registry.ts";
+import { bind } from "#lib/server/api/bind.ts";
+import { get, remove } from "#lib/server/api/handlers/ai-tasks.ts";
 
 export const GET = bind(endpoints.aiTasksGet, get);
 export const DELETE = bind(endpoints.aiTasksDelete, remove);

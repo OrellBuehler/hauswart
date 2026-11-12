@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { Room } from "$lib/api/schemas/rooms";
-  import * as Select from "$lib/components/ui/select/index.js";
-  import { roomIconFor } from "$lib/assets/room-icons";
-  import { cn } from "$lib/utils";
+  import type { Room } from "#lib/api/schemas/rooms.ts";
+  import * as Select from "#lib/components/ui/select/index.js";
+  import { roomIconFor } from "#lib/assets/room-icons.ts";
+  import { cn } from "#lib/utils.ts";
 
   const NONE = "__none";
 

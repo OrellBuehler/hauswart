@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render } from "svelte/server";
-import type { RecurrenceRule } from "$lib/costs/recurrence";
+import type { RecurrenceRule } from "#lib/costs/recurrence.ts";
 import RecurrencePreview from "./recurrence-preview.svelte";
 
 const TODAY = "2026-10-12";

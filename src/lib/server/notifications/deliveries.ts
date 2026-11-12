@@ -1,12 +1,12 @@
 import { and, eq, lt, lte, or } from "drizzle-orm";
-import { householdTimeZone } from "$lib/server/config";
+import { householdTimeZone } from "#lib/server/config.ts";
 import {
   notificationDeliveries,
   notifications,
   taskState,
   users,
-} from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
+} from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import { ACTION_TOKEN_TTL_MS, mintActionToken } from "./actions";
 import {
   allChannels,

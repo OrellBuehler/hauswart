@@ -1,14 +1,14 @@
-import { isApiError } from "$lib/api/errors";
-import type { CostBook } from "$lib/api/schemas/cost-books";
+import { isApiError } from "#lib/api/errors.ts";
+import type { CostBook } from "#lib/api/schemas/cost-books.ts";
 import {
   MOVE_COSTS_MAX_IDS,
   type CostEntry,
   type MoveCostsToBookRequest,
   type MoveCostsToBookResult,
-} from "$lib/api/schemas/costs";
-import { apiErrorMessage } from "$lib/error-message";
-import { m } from "$lib/paraglide/messages";
-import { apiFieldErrors } from "$lib/tasks/field-errors";
+} from "#lib/api/schemas/costs.ts";
+import { apiErrorMessage } from "#lib/error-message.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
 import { openBooks } from "./books";
 
 /** What a move applies to: the entries picked in the list, or every entry of a device. */

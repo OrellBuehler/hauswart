@@ -1,6 +1,6 @@
-import { registerCalendarProvider } from "$lib/server/calendar-sync/provider";
-import { registerIntegration } from "$lib/server/connections/registry";
-import { registerNotificationChannel } from "$lib/server/notifications/channels";
+import { registerCalendarProvider } from "#lib/server/calendar-sync/provider.ts";
+import { registerIntegration } from "#lib/server/connections/registry.ts";
+import { registerNotificationChannel } from "#lib/server/notifications/channels.ts";
 import { homeAssistantIntegration } from "./adapter";
 import {
   createCalendarProvider,

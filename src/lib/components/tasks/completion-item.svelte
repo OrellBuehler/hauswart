@@ -1,16 +1,16 @@
 <script lang="ts">
   import Undo2Icon from "@lucide/svelte/icons/undo-2";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import { UNDO_WINDOW_DAYS, type Completion } from "$lib/api/schemas/tasks";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDateTime, formatRelativeInstant } from "$lib/format";
-  import { taskHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
-  import { sourceIcons, sourceLabels } from "$lib/tasks/labels";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import { UNDO_WINDOW_DAYS, type Completion } from "#lib/api/schemas/tasks.ts";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDateTime, formatRelativeInstant } from "#lib/format.ts";
+  import { taskHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { sourceIcons, sourceLabels } from "#lib/tasks/labels.ts";
   import AssigneeAvatar from "./assignee-avatar.svelte";
 
   let {

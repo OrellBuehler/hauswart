@@ -2,10 +2,10 @@ import { eq } from "drizzle-orm";
 import type {
   OdometerSummary,
   PutVehicleRequest,
-} from "$lib/api/schemas/vehicles";
-import { requireOpenCostBook } from "$lib/server/costs/books";
-import { vehicleDetails, type DB } from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
+} from "#lib/api/schemas/vehicles.ts";
+import { requireOpenCostBook } from "#lib/server/costs/books.ts";
+import { vehicleDetails, type DB } from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import { assertVehicleForRead, assertVehicleForWrite } from "./kind";
 import { syncOdometerSignal } from "./signal";
 import { odometerSummary } from "./summary";

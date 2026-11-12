@@ -1,6 +1,6 @@
-import { IntegrationError } from "$lib/server/connections/errors";
-import type { DocumentProvider } from "$lib/server/documents/provider";
-import { parseProviderConfig } from "$lib/server/documents/session";
+import { IntegrationError } from "#lib/server/connections/errors.ts";
+import type { DocumentProvider } from "#lib/server/documents/provider.ts";
+import { parseProviderConfig } from "#lib/server/documents/session.ts";
 import { clientFor, guarded } from "./connection";
 import { toExternalMeta, taxonomyOf } from "./mapping";
 

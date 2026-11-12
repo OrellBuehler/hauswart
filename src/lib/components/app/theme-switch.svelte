@@ -3,8 +3,8 @@
   import MoonIcon from "@lucide/svelte/icons/moon";
   import SunIcon from "@lucide/svelte/icons/sun";
   import { setMode, userPrefersMode } from "mode-watcher";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   const modes = [
     { value: "light", label: () => m.theme_light(), icon: SunIcon },

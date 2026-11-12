@@ -45,10 +45,10 @@ paths:
   link after a live search, preview, download, unlink); the **Documents** page (`/documents`, `GET /documents` with live
   search `q`, tag, correspondent and `linked` filters, a detail sheet from `GET /documents/{provider}/{id}` with the
   places the document is used and unlink) and its sidebar entry exist only for people with a working connection
-  (`DocumentSystem` in `$lib/documents/system.svelte.ts` asks again when a connection is saved or removed); the page
+  (`DocumentSystem` in `#lib/documents/system.svelte.ts` asks again when a connection is saved or removed); the page
   shows the connection's health (`status`, `lastError`) above the list. A device whose dates follow a document
   (`warrantySource = document`) says so on its page and in the edit form. Failure codes of a push are all worded in
-  `$lib/connections/errors.ts` (`consume_failed`, `duplicate`, `interrupted`, `file_missing`, ...).
+  `#lib/connections/errors.ts` (`consume_failed`, `duplicate`, `interrupted`, `file_missing`, ...).
 - **Links** (`GET|POST /document-links`, `DELETE /document-links/{id}`): creating one needs the caller's account to read
   the document (404 otherwise) and caches what it saw; 409 for the same document, owner and role. The link DTO has
   `available` (the caller's own cache row is visible and from the same instance): another person's private document

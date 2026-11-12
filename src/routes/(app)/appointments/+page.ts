@@ -1,9 +1,9 @@
-import { createApiClient } from "$lib/api/client";
-import { fetchAll } from "$lib/api/fetch-all";
-import { loadHousehold } from "$lib/api/household";
-import { orFail } from "$lib/api/load";
-import { endpoints } from "$lib/api/registry";
-import { parseView, viewRange } from "$lib/appointments/list";
+import { createApiClient } from "#lib/api/client.ts";
+import { fetchAll } from "#lib/api/fetch-all.ts";
+import { loadHousehold } from "#lib/api/household.ts";
+import { orFail } from "#lib/api/load.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import { parseView, viewRange } from "#lib/appointments/list.ts";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ fetch, url, untrack }) => {

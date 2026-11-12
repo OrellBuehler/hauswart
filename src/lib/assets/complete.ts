@@ -1,10 +1,10 @@
-import { invalidateAll } from "$app/navigation";
+import { refreshAll } from "$app/navigation";
 import { toast } from "svelte-sonner";
-import { api } from "$lib/api/browser";
-import { endpoints } from "$lib/api/registry";
-import type { Task } from "$lib/api/schemas/tasks";
-import { apiErrorMessage } from "$lib/error-message";
-import { m } from "$lib/paraglide/messages";
+import { api } from "#lib/api/browser.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import type { Task } from "#lib/api/schemas/tasks.ts";
+import { apiErrorMessage } from "#lib/error-message.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 const TOAST_MS = 8000;
 
@@ -22,7 +22,7 @@ export async function completeWithUndo(
       params: { id: task.id },
       body: { source },
     });
-    await invalidateAll();
+    await refreshAll();
     toast.success(message, {
       duration: TOAST_MS,
       action: {
@@ -32,7 +32,7 @@ export async function completeWithUndo(
             await api.call(endpoints.completionsUndo, {
               params: { id: completion.id },
             });
-            await invalidateAll();
+            await refreshAll();
             toast.success(m.common_undone());
           } catch (err) {
             toast.error(apiErrorMessage(err));

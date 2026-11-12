@@ -1,16 +1,16 @@
 import { and, eq, sql } from "drizzle-orm";
-import { COST_DEDUCTIBLE, type CostCategory } from "$lib/api/enums";
-import type { CostsSummary, DashboardCosts } from "$lib/api/schemas/costs";
+import { COST_DEDUCTIBLE, type CostCategory } from "#lib/api/enums.ts";
+import type { CostsSummary, DashboardCosts } from "#lib/api/schemas/costs.ts";
 import {
   assets,
   costBooks,
   costEntries,
   costEntryShares,
   users,
-} from "$lib/server/db";
-import { getHousehold } from "$lib/server/household/household";
-import type { ServiceContext } from "$lib/server/service";
-import { clockAt } from "$lib/server/tasks/evaluator";
+} from "#lib/server/db.ts";
+import { getHousehold } from "#lib/server/household/household.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
+import { clockAt } from "#lib/server/tasks/evaluator.ts";
 import { getCostBookRow } from "./books";
 import { hasTag, yearRange } from "./costs";
 import { bookEntry, newLedger, personBalances } from "./ledger";

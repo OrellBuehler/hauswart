@@ -1,6 +1,6 @@
-import type { endpoints } from "$lib/api/registry";
-import { rateLimitedError } from "$lib/server/api/errors";
-import { previewRequestLimiter } from "$lib/server/auth/rate-limit";
+import type { endpoints } from "#lib/api/registry.ts";
+import { rateLimitedError } from "#lib/server/api/errors.ts";
+import { previewRequestLimiter } from "#lib/server/auth/rate-limit.ts";
 import {
   createPage,
   deletePage,
@@ -10,8 +10,8 @@ import {
   listRevisions,
   restoreRevision,
   updatePage,
-} from "$lib/server/docs/pages";
-import { renderPreview } from "$lib/server/docs/render";
+} from "#lib/server/docs/pages.ts";
+import { renderPreview } from "#lib/server/docs/render.ts";
 import type { Handler } from "../bind";
 import {
   wirePage,

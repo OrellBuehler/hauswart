@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { InsurancePolicy } from "$lib/api/schemas/insurance";
+import type { InsurancePolicy } from "#lib/api/schemas/insurance.ts";
 import { deadlineInfo, termEnded } from "./deadline";
 import { annualTotal, emptyFilter, filterPolicies, isFiltered } from "./list";
 

@@ -1,14 +1,14 @@
-import { api } from "$lib/api/browser";
-import { fetchAll } from "$lib/api/fetch-all";
-import type { AttachmentOwnerType } from "$lib/api/enums";
-import { isApiError } from "$lib/api/errors";
-import { endpoints } from "$lib/api/registry";
+import { api } from "#lib/api/browser.ts";
+import { fetchAll } from "#lib/api/fetch-all.ts";
+import type { AttachmentOwnerType } from "#lib/api/enums.ts";
+import { isApiError } from "#lib/api/errors.ts";
+import { endpoints } from "#lib/api/registry.ts";
 import type {
   Attachment,
   UpdateAttachmentRequest,
-} from "$lib/api/schemas/attachments";
-import { apiErrorMessage } from "$lib/error-message";
-import { m } from "$lib/paraglide/messages";
+} from "#lib/api/schemas/attachments.ts";
+import { apiErrorMessage } from "#lib/error-message.ts";
+import { m } from "#lib/paraglide/messages.js";
 import {
   DEFAULT_ACCEPT,
   MAX_ATTACHMENT_BYTES,

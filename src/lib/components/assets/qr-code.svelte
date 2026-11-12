@@ -1,6 +1,6 @@
 <script lang="ts">
   import { create } from "qrcode";
-  import { cn } from "$lib/utils";
+  import { cn } from "#lib/utils.ts";
 
   let {
     value,

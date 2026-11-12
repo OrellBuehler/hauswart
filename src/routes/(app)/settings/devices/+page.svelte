@@ -1,15 +1,15 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import SmartphoneIcon from "@lucide/svelte/icons/smartphone";
   import { toast } from "svelte-sonner";
-  import { endpoints } from "$lib/api/registry";
-  import { api } from "$lib/api/browser";
-  import type { ApiToken } from "$lib/api/schemas/tokens";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import TokenRow from "$lib/components/app/token-row.svelte";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import { endpoints } from "#lib/api/registry.ts";
+  import { api } from "#lib/api/browser.ts";
+  import type { ApiToken } from "#lib/api/schemas/tokens.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import TokenRow from "#lib/components/app/token-row.svelte";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -27,7 +27,7 @@
     const { id, name } = target;
     await api.call(endpoints.tokensRevoke, { params: { id } });
     toast.success(m.device_signout_toast({ name }));
-    await invalidateAll();
+    await refreshAll();
   }
 </script>
 

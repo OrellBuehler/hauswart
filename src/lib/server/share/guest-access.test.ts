@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createGuestLinkRequestSchema } from "$lib/api/schemas/share";
-import { guestPinRateLimiter } from "$lib/server/auth/rate-limit";
-import { guestLinks } from "$lib/server/db";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, NOW } from "$lib/testing/domain";
+import { createGuestLinkRequestSchema } from "#lib/api/schemas/share.ts";
+import { guestPinRateLimiter } from "#lib/server/auth/rate-limit.ts";
+import { guestLinks } from "#lib/server/db.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, NOW } from "#lib/testing/domain.ts";
 import {
   attemptPin,
   GUEST_COOKIE_TTL_MS,

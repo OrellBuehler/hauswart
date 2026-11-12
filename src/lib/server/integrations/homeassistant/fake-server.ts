@@ -1,4 +1,4 @@
-import { localDateOf, localTimeOf, zonedTimeToInstant } from "$lib/dates";
+import { localDateOf, localTimeOf, zonedTimeToInstant } from "#lib/dates.ts";
 
 /**
  * A small fake Home Assistant for tests (local `Bun.serve`, port 0): REST

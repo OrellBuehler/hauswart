@@ -5,39 +5,39 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
+  import { api } from "#lib/api/browser.ts";
   import {
     COST_CATEGORIES,
     COST_CATEGORY_COUNTS_AS_EXPENSE,
     COST_DEDUCTIBLE,
     COST_RECURRENCE_FREQUENCIES,
     type CostCategory,
-  } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { Asset } from "$lib/api/schemas/assets";
-  import type { CostBook } from "$lib/api/schemas/cost-books";
-  import type { CostTag } from "$lib/api/schemas/cost-tags";
-  import { COST_NOTES_MAX, COST_TITLE_MAX } from "$lib/api/schemas/costs";
-  import type { CostRecurrence } from "$lib/api/schemas/cost-recurrences";
-  import type { Room } from "$lib/api/schemas/rooms";
-  import type { DirectoryUser } from "$lib/api/schemas/users";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { loadRememberedBook } from "$lib/costs/book-memory";
-  import { openBooks } from "$lib/costs/books";
+  } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Asset } from "#lib/api/schemas/assets.ts";
+  import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+  import type { CostTag } from "#lib/api/schemas/cost-tags.ts";
+  import { COST_NOTES_MAX, COST_TITLE_MAX } from "#lib/api/schemas/costs.ts";
+  import type { CostRecurrence } from "#lib/api/schemas/cost-recurrences.ts";
+  import type { Room } from "#lib/api/schemas/rooms.ts";
+  import type { DirectoryUser } from "#lib/api/schemas/users.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
+  import { loadRememberedBook } from "#lib/costs/book-memory.ts";
+  import { openBooks } from "#lib/costs/books.ts";
   import {
     parseDraftAmount,
     splitAfterBook,
     taxClassApplies,
-  } from "$lib/costs/form";
-  import { categoryLabels, deductibleLabels } from "$lib/costs/labels";
+  } from "#lib/costs/form.ts";
+  import { categoryLabels, deductibleLabels } from "#lib/costs/labels.ts";
   import {
     buildRecurrenceCreateBody,
     buildRecurrenceUpdateBody,
@@ -48,11 +48,11 @@
     ruleOfDraft,
     withStartDate,
     type RecurrenceDraft,
-  } from "$lib/costs/recurrences";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
-  import { cn } from "$lib/utils";
+  } from "#lib/costs/recurrences.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
+  import { cn } from "#lib/utils.ts";
   import BookPicker from "./book-picker.svelte";
   import RecurrencePreview from "./recurrence-preview.svelte";
   import SplitEditor from "./split-editor.svelte";
@@ -69,16 +69,17 @@
     today,
     currentUserId,
     defaults = {},
-  }: {
+
     /** The recurring cost to change; undefined sets up a new one. */
+    /** Every cost book, archived ones included. */
+    /** The household's currency. */
+  }: {
     recurrence?: CostRecurrence | undefined;
     rooms: Room[];
     assets: Asset[];
     people: DirectoryUser[];
-    /** Every cost book, archived ones included. */
     books: CostBook[];
     tags: CostTag[];
-    /** The household's currency. */
     currency: string;
     today: string;
     currentUserId: string;
@@ -126,18 +127,19 @@
   const booking = $derived(
     !recurrence || (recurrence.active && recurrence.nextDate !== null),
   );
+
   const ruleHint = $derived(
     recurrence && changesRule(draft, recurrence)
       ? m.recurrence_edit_rule_hint()
       : undefined,
   );
-
   const categoryOptions = $derived(
     COST_CATEGORIES.map((c) => ({ value: c, label: categoryLabels[c]() })),
   );
   const deductibleOptions = $derived(
     COST_DEDUCTIBLE.map((d) => ({ value: d, label: deductibleLabels[d]() })),
   );
+
   const kindOptions = $derived([
     { value: "expense" as const, label: m.cost_kind_expense() },
     { value: "refund" as const, label: m.cost_kind_refund() },
@@ -233,7 +235,7 @@
     }
     if (recurrence && Object.keys(built.body).length === 0) {
       toast.info(m.cost_form_no_changes());
-      await goto(resolve(`/costs/recurring/${recurrence.id}` as "/"));
+      await goto(resolve(`costs/recurring/${recurrence.id}`));
       return;
     }
     pending = true;
@@ -251,8 +253,8 @@
           ? m.recurrence_saved_toast({ title: saved.title })
           : m.recurrence_created_toast({ title: saved.title }),
       );
-      await goto(resolve(`/costs/recurring/${saved.id}` as "/"), {
-        invalidateAll: true,
+      await goto(resolve(`costs/recurring/${saved.id}`), {
+        refreshAll: true,
       });
     } catch (err) {
       errors = apiFieldErrors(err);
@@ -268,8 +270,8 @@
 
   const cancelHref = $derived(
     recurrence
-      ? resolve(`/costs/recurring/${recurrence.id}` as "/")
-      : resolve("/costs/recurring"),
+      ? resolve(`costs/recurring/${recurrence.id}`)
+      : resolve("costs/recurring"),
   );
 </script>
 
@@ -538,10 +540,8 @@
                   size="icon-lg"
                   aria-label={m.recurrence_end_none()}
                   title={m.recurrence_end_none()}
-                  onclick={() => (draft.endDate = "")}
+                  onclick={() => (draft.endDate = "")}><XIcon /></Button
                 >
-                  <XIcon />
-                </Button>
               {/if}
             </div>
           {/snippet}

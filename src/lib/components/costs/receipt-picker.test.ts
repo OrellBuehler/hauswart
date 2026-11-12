@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render } from "svelte/server";
-import { AI_TASK_PDF_READ_MAX_BYTES } from "$lib/api/schemas/ai-tasks";
+import { AI_TASK_PDF_READ_MAX_BYTES } from "#lib/api/schemas/ai-tasks.ts";
 import ReceiptPicker from "./receipt-picker.svelte";
 
 const file = (name: string, type: string, size: number) =>

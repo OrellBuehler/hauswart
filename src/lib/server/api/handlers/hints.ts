@@ -1,4 +1,4 @@
-import type { endpoints } from "$lib/api/registry";
+import type { endpoints } from "#lib/api/registry.ts";
 import {
   createHint,
   deleteHint,
@@ -6,7 +6,7 @@ import {
   listAssetHints,
   listHints,
   updateHint,
-} from "$lib/server/hints/hints";
+} from "#lib/server/hints/hints.ts";
 import type { Handler } from "../bind";
 import { wireHint } from "../wire";
 

@@ -1,4 +1,4 @@
-import { ApiError } from "$lib/api/errors";
+import { ApiError } from "#lib/api/errors.ts";
 import { isApiPath, isVersionedApiPath } from "./routing";
 
 const READ_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);

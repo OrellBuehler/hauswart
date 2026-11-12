@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
-  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
+  import { refreshAll } from "$app/navigation";
+  import { gotoFromOverlay } from "#lib/overlays/use-overlay-history.svelte.ts";
   import { resolve } from "$app/paths";
   import ArchiveIcon from "@lucide/svelte/icons/archive";
   import ArchiveRestoreIcon from "@lucide/svelte/icons/archive-restore";
@@ -18,32 +18,32 @@
   import UnlinkIcon from "@lucide/svelte/icons/unlink";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import type { PartMovementReason } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { PartMovement } from "$lib/api/schemas/parts";
-  import Attachments from "$lib/components/attachments/attachments.svelte";
-  import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import AssetPartDialog from "$lib/components/parts/asset-part-dialog.svelte";
-  import OrderedBadge from "$lib/components/parts/ordered-badge.svelte";
-  import OrderedDialog from "$lib/components/parts/ordered-dialog.svelte";
-  import PartFormDialog from "$lib/components/parts/part-form-dialog.svelte";
-  import StockBadge from "$lib/components/parts/stock-badge.svelte";
-  import StockDialog from "$lib/components/parts/stock-dialog.svelte";
-  import TaskPartDialog from "$lib/components/parts/task-part-dialog.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDateTime } from "$lib/format";
-  import { formatMoney } from "$lib/format-money";
-  import { assetHref, taskHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
-  import { movementReasonLabels } from "$lib/parts/labels";
-  import { cn } from "$lib/utils";
+  import { api } from "#lib/api/browser.ts";
+  import type { PartMovementReason } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { PartMovement } from "#lib/api/schemas/parts.ts";
+  import Attachments from "#lib/components/attachments/attachments.svelte";
+  import LinkedDocuments from "#lib/components/documents/linked-documents.svelte";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import AssetPartDialog from "#lib/components/parts/asset-part-dialog.svelte";
+  import OrderedBadge from "#lib/components/parts/ordered-badge.svelte";
+  import OrderedDialog from "#lib/components/parts/ordered-dialog.svelte";
+  import PartFormDialog from "#lib/components/parts/part-form-dialog.svelte";
+  import StockBadge from "#lib/components/parts/stock-badge.svelte";
+  import StockDialog from "#lib/components/parts/stock-dialog.svelte";
+  import TaskPartDialog from "#lib/components/parts/task-part-dialog.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDateTime } from "#lib/format.ts";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { assetHref, taskHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { movementReasonLabels } from "#lib/parts/labels.ts";
+  import { cn } from "#lib/utils.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -114,7 +114,7 @@
         params: { id: part.id },
         body: { delta: reason === "used" ? -1 : 1, reason },
       });
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       toast.error(apiErrorMessage(err));
     } finally {
@@ -131,7 +131,7 @@
         body: { qty: 0 },
       });
       toast.success(m.part_order_cleared_toast());
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       toast.error(apiErrorMessage(err));
     } finally {
@@ -152,7 +152,7 @@
           ? m.part_restored_toast({ name: part.name })
           : m.part_archived_toast({ name: part.name }),
       );
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       toast.error(apiErrorMessage(err));
     } finally {
@@ -164,7 +164,7 @@
     const { id, name } = part;
     await api.call(endpoints.partsDelete, { params: { id } });
     toast.success(m.part_deleted_toast({ name }));
-    await gotoFromOverlay(resolve("/parts"), { invalidateAll: true });
+    await gotoFromOverlay(resolve("parts"), { refreshAll: true });
   }
 
   async function unlinkAsset(assetId: string, name: string) {
@@ -175,7 +175,7 @@
         params: { id: assetId, partId: part.id },
       });
       toast.success(m.part_unlinked_toast({ name }));
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       toast.error(apiErrorMessage(err));
     } finally {
@@ -191,7 +191,7 @@
         params: { id: taskId, partId: part.id },
       });
       toast.success(m.part_unlinked_toast({ name: title }));
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       toast.error(apiErrorMessage(err));
     } finally {
@@ -223,7 +223,7 @@
 <div class="flex flex-col gap-6">
   <div class="flex flex-col gap-4">
     <Button
-      href={resolve("/parts")}
+      href={resolve("parts")}
       variant="ghost"
       size="sm"
       class="text-muted-foreground -ms-2 w-fit max-md:hidden"
@@ -258,9 +258,9 @@
           variant="outline"
           class="max-sm:hidden"
           onclick={() => (editOpen = true)}
+          ><PencilIcon />{m.common_edit()}</Button
         >
-          <PencilIcon />{m.common_edit()}
-        </Button>
+
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
             {#snippet child({ props })}
@@ -278,9 +278,9 @@
             <DropdownMenu.Item
               class="min-h-10 sm:hidden"
               onSelect={() => (editOpen = true)}
+              ><PencilIcon />{m.common_edit()}</DropdownMenu.Item
             >
-              <PencilIcon />{m.common_edit()}
-            </DropdownMenu.Item>
+
             <DropdownMenu.Item class="min-h-10" onSelect={toggleArchive}>
               {#if archived}
                 <ArchiveRestoreIcon />{m.part_restore()}
@@ -293,9 +293,8 @@
               variant="destructive"
               class="min-h-10"
               onSelect={() => (deleteOpen = true)}
+              ><Trash2Icon />{m.common_delete()}</DropdownMenu.Item
             >
-              <Trash2Icon />{m.common_delete()}
-            </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       </div>
@@ -406,9 +405,8 @@
                 variant="outline"
                 size="lg"
                 onclick={() => (orderedOpen = true)}
+                ><TruckIcon />{m.part_mark_ordered()}</Button
               >
-                <TruckIcon />{m.part_mark_ordered()}
-              </Button>
             {/if}
           </div>
         </Card.Content>
@@ -523,9 +521,8 @@
               size="sm"
               variant="outline"
               onclick={() => (assetLinkOpen = true)}
+              ><PlusIcon />{m.part_link_add()}</Button
             >
-              <PlusIcon />{m.part_link_add()}
-            </Button>
           </Card.Action>
         </Card.Header>
         <Card.Content>
@@ -570,9 +567,8 @@
               size="sm"
               variant="outline"
               onclick={() => (taskLinkOpen = true)}
+              ><PlusIcon />{m.part_link_add()}</Button
             >
-              <PlusIcon />{m.part_link_add()}
-            </Button>
           </Card.Action>
         </Card.Header>
         <Card.Content>
@@ -633,32 +629,34 @@
   bind:open={editOpen}
   {part}
   currency={data.currency}
-  onsaved={() => invalidateAll()}
+  onsaved={() => refreshAll()}
 />
 <StockDialog
   bind:open={stockOpen}
   {part}
   initialReason={stockReason}
   initialQty={stockQty}
-  onsaved={() => invalidateAll()}
+  onsaved={() => refreshAll()}
 />
-<OrderedDialog bind:open={orderedOpen} {part} onsaved={() => invalidateAll()} />
+
+<OrderedDialog bind:open={orderedOpen} {part} onsaved={() => refreshAll()} />
+
 <AssetPartDialog
   bind:open={assetLinkOpen}
   partId={part.id}
   excludeIds={part.assets.map((a) => a.id)}
-  onlinked={() => invalidateAll()}
+  onlinked={() => refreshAll()}
 />
 <TaskPartDialog
   bind:open={taskLinkOpen}
   partId={part.id}
   excludeIds={part.tasks.map((t) => t.id)}
-  onsaved={() => invalidateAll()}
+  onsaved={() => refreshAll()}
 />
 <TaskPartDialog
   bind:open={taskQtyOpen}
   existing={taskQty}
-  onsaved={() => invalidateAll()}
+  onsaved={() => refreshAll()}
 />
 
 <ConfirmDialog

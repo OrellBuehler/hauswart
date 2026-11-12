@@ -1,6 +1,6 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
-  import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+  import * as Sidebar from "#lib/components/ui/sidebar/index.js";
   import { isNavActive, type NavItem } from "./nav";
 
   let { items, pathname }: { items: NavItem[]; pathname: string } = $props();
@@ -19,7 +19,7 @@
       >
         {#snippet child({ props })}
           <a
-            href={resolve(item.href)}
+            href={resolve(item.href.slice(1))}
             {...props}
             aria-current={active ? "page" : undefined}
             onclick={() => sidebar.setOpenMobile(false)}

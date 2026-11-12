@@ -1,10 +1,10 @@
-import { IntegrationError } from "$lib/server/connections/errors";
+import { IntegrationError } from "#lib/server/connections/errors.ts";
 import type {
   IntegrationAdapter,
   IntegrationOperation,
-} from "$lib/server/connections/registry";
-import type { ServiceContext } from "$lib/server/service";
-import { findCostBookRow } from "$lib/server/costs/books";
+} from "#lib/server/connections/registry.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
+import { findCostBookRow } from "#lib/server/costs/books.ts";
 import { normalizeBaseUrl } from "./client";
 import { parseConfig } from "./config";
 import { KIND, appOrigin, clientFor, toIntegrationError } from "./connection";

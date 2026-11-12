@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNull } from "drizzle-orm";
-import { assetNotes } from "$lib/server/db";
-import { invalidField, type ServiceContext } from "$lib/server/service";
+import { assetNotes } from "#lib/server/db.ts";
+import { invalidField, type ServiceContext } from "#lib/server/service.ts";
 
 type Db = Pick<ServiceContext, "db">;
 type Now = Pick<ServiceContext, "db" | "now">;

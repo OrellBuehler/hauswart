@@ -1,18 +1,18 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { COST_BUDGET_PERIODS, COST_CATEGORIES } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { CostBook } from "$lib/api/schemas/cost-books";
-  import type { CostBudget } from "$lib/api/schemas/cost-budgets";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { bookChoices } from "$lib/costs/books";
+  import { api } from "#lib/api/browser.ts";
+  import { COST_BUDGET_PERIODS, COST_CATEGORIES } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+  import type { CostBudget } from "#lib/api/schemas/cost-budgets.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { bookChoices } from "#lib/costs/books.ts";
   import {
     budgetPeriodLabels,
     budgetSaveErrors,
@@ -21,10 +21,10 @@
     draftFromBudget,
     newBudgetDraft,
     type BudgetDraft,
-  } from "$lib/costs/budgets";
-  import { categoryLabels } from "$lib/costs/labels";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
+  } from "#lib/costs/budgets.ts";
+  import { categoryLabels } from "#lib/costs/labels.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
 
   let {
     open = $bindable(false),

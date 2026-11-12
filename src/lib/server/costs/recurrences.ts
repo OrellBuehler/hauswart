@@ -3,22 +3,22 @@ import { alias } from "drizzle-orm/sqlite-core";
 import {
   COST_CATEGORY_COUNTS_AS_EXPENSE,
   type CostCategory,
-} from "$lib/api/enums";
+} from "#lib/api/enums.ts";
 import {
   MAX_COST_RECURRENCES,
   type CreateCostRecurrenceRequest,
   type ListCostRecurrencesQuery,
   type UpdateCostRecurrenceRequest,
-} from "$lib/api/schemas/cost-recurrences";
-import type { CreateCostRequest } from "$lib/api/schemas/costs";
-import type { CostTagRef } from "$lib/api/schemas/cost-tags";
+} from "#lib/api/schemas/cost-recurrences.ts";
+import type { CreateCostRequest } from "#lib/api/schemas/costs.ts";
+import type { CostTagRef } from "#lib/api/schemas/cost-tags.ts";
 import {
   RECURRENCE_BOOKING_CAP,
   firstOccurrence,
   nextOccurrenceAfter,
   nextOccurrenceOnOrAfter,
   type RecurrenceRule,
-} from "$lib/costs/recurrence";
+} from "#lib/costs/recurrence.ts";
 import {
   assets,
   costBooks,
@@ -28,15 +28,15 @@ import {
   rooms,
   users,
   type DB,
-} from "$lib/server/db";
-import { getHousehold } from "$lib/server/household/household";
+} from "#lib/server/db.ts";
+import { getHousehold } from "#lib/server/household/household.ts";
 import {
   conflict,
   invalidField,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
-import { clockAt } from "$lib/server/tasks/evaluator";
+} from "#lib/server/service.ts";
+import { clockAt } from "#lib/server/tasks/evaluator.ts";
 import { defaultCostBook, findCostBookRow } from "./books";
 import { checkCostTemplate, createCost, type CostRecord } from "./costs";
 import { requireTagIds } from "./tags";

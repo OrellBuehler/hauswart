@@ -18,10 +18,10 @@ import TentIcon from "@lucide/svelte/icons/tent";
 import UsersIcon from "@lucide/svelte/icons/users";
 import UtensilsIcon from "@lucide/svelte/icons/utensils";
 import WalletIcon from "@lucide/svelte/icons/wallet";
-import { isApiError } from "$lib/api/errors";
-import type { CostBook } from "$lib/api/schemas/cost-books";
-import { m } from "$lib/paraglide/messages";
-import { apiFieldErrors } from "$lib/tasks/field-errors";
+import { isApiError } from "#lib/api/errors.ts";
+import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
 
 /** What the address says for "every book" (`?book=all`); a book is its id. */
 export const ALL_BOOKS = "all";

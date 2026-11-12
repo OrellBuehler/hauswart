@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { isValidDate, parseDate, weekday } from "$lib/dates";
-  import { formatOrdinalDay } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { getLocale } from "$lib/paraglide/runtime";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { isValidDate, parseDate, weekday } from "#lib/dates.ts";
+  import { formatOrdinalDay } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
   import ChipGroup from "../chip-group.svelte";
   import Field from "../field.svelte";
   import NumberField from "../number-field.svelte";

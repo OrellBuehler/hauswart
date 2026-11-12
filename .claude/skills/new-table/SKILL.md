@@ -17,7 +17,7 @@ description: Add or change a database table in hauswart — Drizzle schema, gene
    migrations with foreign keys off and checks `PRAGMA foreign_key_check` before committing, so a
    generated table rebuild (`__new_` copy, drop, rename) keeps the rows that reference the table and
    needs no stash and restore, and one that leaves a dangling reference fails startup.
-4. Test with `useTestDB()` from `$lib/testing/db`: it opens an in-memory database with every
+4. Test with `useTestDB()` from `#lib/testing/db.ts`: it opens an in-memory database with every
    migration applied. Cover defaults, uniqueness, and cascades. Put the test next to the service
    that owns the table.
 5. hauswart is a single household: domain tables are shared by all users and need no scoping

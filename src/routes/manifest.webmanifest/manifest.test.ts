@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { THEME_COLORS } from "$lib/pwa/colors";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { callRoute } from "$lib/testing/route";
+import { THEME_COLORS } from "#lib/pwa/colors.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { callRoute } from "#lib/testing/route.ts";
 import { GET } from "./+server";
 
 describe("GET /manifest.webmanifest", () => {

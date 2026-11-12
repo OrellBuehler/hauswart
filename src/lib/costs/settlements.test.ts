@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Settlement } from "$lib/api/schemas/settlements";
+import type { Settlement } from "#lib/api/schemas/settlements.ts";
 import {
   buildSettlementBody,
   buildSettlementUpdate,

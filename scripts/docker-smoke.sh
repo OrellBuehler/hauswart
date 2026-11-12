@@ -129,7 +129,7 @@ curl --fail-with-body -sS -D "$work/sw.headers" -o "$work/sw.js" "$base/sw.js"
 case "$(header "$work/sw.headers" content-type)" in "text/javascript"*) ;; *) fail "service worker content type is '$(header "$work/sw.headers" content-type)'" ;; esac
 [ "$(header "$work/sw.headers" cache-control)" = "no-cache" ] || fail "service worker must be served with Cache-Control: no-cache"
 [ "$(header "$work/sw.headers" x-content-type-options)" = "nosniff" ] || fail "service worker lacks the hook's security headers"
-grep -q 'SKIP_WAITING' "$work/sw.js" || fail "sw.js is not the generated service worker"
+grep -q 'SKIP_WAITING' "$work/sw.js" || fail "sw.js is not the service worker of src/service-worker"
 sw_etag="$(header "$work/sw.headers" etag)"
 [ -n "$sw_etag" ] || fail "service worker has no ETag"
 expect_status 304 -H "If-None-Match: $sw_etag" "$base/sw.js"
@@ -142,8 +142,9 @@ if grep -Eq '(href|src)="\.{1,2}/' "$work/offline.html"; then
 fi
 grep -Eq 'href="/_app/immutable/assets/[^"]+\.css"' "$work/offline.html" || fail "the offline page links no absolute stylesheet"
 # Every file the worker precaches must be served (a 404 makes the worker's install fail, so the app
-# would never become installable offline). The entries are relative to /sw.js, which sits at the root.
-grep -Eo '\{url:"[^"]+"' "$work/sw.js" | sed -E 's/^\{url:"//; s/"$//; s#^/##' >"$work/precache.txt"
+# would never become installable offline). The worker carries SvelteKit's file list (`{path:`...`}`,
+# relative to the root) and precaches a part of it plus /offline: check the whole list.
+{ grep -Eo '\{path:`[^`]+`' "$work/sw.js" | sed -E 's/^\{path:`//; s/`$//'; echo offline; } >"$work/precache.txt"
 precached="$(wc -l <"$work/precache.txt")"
 [ "$precached" -gt 10 ] || fail "found only $precached precache entries in sw.js"
 # one curl for all of them: the connection is reused instead of opening hundreds

@@ -1,4 +1,4 @@
-import type { endpoints } from "$lib/api/registry";
+import type { endpoints } from "#lib/api/registry.ts";
 import {
   createAsset,
   deleteAsset,
@@ -6,7 +6,7 @@ import {
   getAssetByQr,
   listAssets,
   updateAsset,
-} from "$lib/server/assets/assets";
+} from "#lib/server/assets/assets.ts";
 import type { Handler } from "../bind";
 import { wireAsset } from "../wire";
 

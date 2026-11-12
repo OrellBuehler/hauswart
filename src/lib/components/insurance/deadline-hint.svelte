@@ -1,9 +1,9 @@
 <script lang="ts">
   import ClockAlertIcon from "@lucide/svelte/icons/clock-alert";
-  import { deadlineInfo, deadlineTones } from "$lib/insurance/deadline";
-  import { formatDateShort, formatRelativeDays } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import { deadlineInfo, deadlineTones } from "#lib/insurance/deadline.ts";
+  import { formatDateShort, formatRelativeDays } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     deadline,

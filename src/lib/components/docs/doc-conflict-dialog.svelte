@@ -3,10 +3,10 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import SaveIcon from "@lucide/svelte/icons/save";
   import DownloadIcon from "@lucide/svelte/icons/download";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Dialog from "#lib/components/ui/dialog/index.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     open = $bindable(false),

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import type { ApiToken } from "$lib/api/schemas/tokens";
-  import { formatDate } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import type { ApiToken } from "#lib/api/schemas/tokens.ts";
+  import { formatDate } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import { kindLabel, scopeLabel } from "./token-labels";
 
   let {

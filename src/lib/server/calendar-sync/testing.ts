@@ -1,9 +1,9 @@
 import { afterEach, beforeEach } from "vitest";
-import { CALENDAR_PROVIDERS, type CalendarItemKind } from "$lib/api/enums";
-import { calendarTargetConfigSchema } from "$lib/api/schemas/calendar-sync";
-import { saveConnection } from "$lib/server/connections/connections";
-import { IntegrationError } from "$lib/server/connections/errors";
-import type { ServiceContext } from "$lib/server/service";
+import { CALENDAR_PROVIDERS, type CalendarItemKind } from "#lib/api/enums.ts";
+import { calendarTargetConfigSchema } from "#lib/api/schemas/calendar-sync.ts";
+import { saveConnection } from "#lib/server/connections/connections.ts";
+import { IntegrationError } from "#lib/server/connections/errors.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import {
   registerCalendarProvider,
   type CalendarCapabilities,

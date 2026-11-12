@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import { resolve } from "$app/paths";
   import ArrowDownIcon from "@lucide/svelte/icons/arrow-down";
   import ArrowUpIcon from "@lucide/svelte/icons/arrow-up";
@@ -10,21 +10,21 @@
   import PlusIcon from "@lucide/svelte/icons/plus";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { Room } from "$lib/api/schemas/rooms";
-  import { roomIconFor } from "$lib/assets/room-icons";
-  import { roomStats } from "$lib/assets/tasks";
-  import RoomFormDialog from "$lib/components/assets/room-form-dialog.svelte";
-  import AreaImportDialog from "$lib/components/connections/area-import-dialog.svelte";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import { movedBy, saveOrder } from "$lib/reorder";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Room } from "#lib/api/schemas/rooms.ts";
+  import { roomIconFor } from "#lib/assets/room-icons.ts";
+  import { roomStats } from "#lib/assets/tasks.ts";
+  import RoomFormDialog from "#lib/components/assets/room-form-dialog.svelte";
+  import AreaImportDialog from "#lib/components/connections/area-import-dialog.svelte";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { movedBy, saveOrder } from "#lib/reorder.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -68,7 +68,7 @@
     const { id, name } = deleting;
     await api.call(endpoints.roomsDelete, { params: { id } });
     toast.success(m.rooms_deleted_toast({ name }));
-    await invalidateAll();
+    await refreshAll();
   }
 
   async function move(index: number, delta: -1 | 1) {
@@ -90,7 +90,7 @@
                   }),
               ],
         ),
-        invalidateAll,
+        refreshAll,
       );
       if (failures.length > 0) toast.error(apiErrorMessage(failures[0]));
     } finally {
@@ -108,9 +108,9 @@
   <PageHeader title={m.nav_rooms()} description={m.rooms_description()}>
     {#snippet actions()}
       {#if data.areasAvailable}
-        <Button variant="outline" onclick={() => (importOpen = true)}>
-          <DownloadIcon />{m.rooms_import_ha()}
-        </Button>
+        <Button variant="outline" onclick={() => (importOpen = true)}
+          ><DownloadIcon />{m.rooms_import_ha()}</Button
+        >
       {/if}
       <Button onclick={openCreate}><PlusIcon />{m.rooms_create()}</Button>
     {/snippet}
@@ -124,9 +124,9 @@
     >
       {#snippet actions()}
         {#if data.areasAvailable}
-          <Button variant="outline" onclick={() => (importOpen = true)}>
-            <DownloadIcon />{m.rooms_import_ha()}
-          </Button>
+          <Button variant="outline" onclick={() => (importOpen = true)}
+            ><DownloadIcon />{m.rooms_import_ha()}</Button
+          >
         {/if}
         <Button onclick={openCreate}><PlusIcon />{m.rooms_create()}</Button>
       {/snippet}
@@ -147,7 +147,7 @@
           </span>
           <div class="min-w-0 flex-1">
             <a
-              href={resolve(`/rooms/${room.id}`)}
+              href={resolve(`rooms/${room.id}`)}
               class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 block truncate rounded-sm font-medium outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:ring-[3px]"
             >
               {room.name}
@@ -217,14 +217,14 @@
   bind:open={formOpen}
   room={editing}
   {nextSortOrder}
-  onsaved={invalidateAll}
+  onsaved={refreshAll}
 />
 
 {#if data.areasAvailable}
   <AreaImportDialog
     bind:open={importOpen}
     rooms={data.rooms}
-    onimported={invalidateAll}
+    onimported={refreshAll}
   />
 {/if}
 

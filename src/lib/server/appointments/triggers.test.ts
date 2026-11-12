@@ -1,11 +1,11 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { appointments, comments } from "$lib/server/db";
-import { commentableOf } from "$lib/server/comments/registry";
-import { search } from "$lib/server/search/search";
-import { isOwnerTypeSupported } from "$lib/server/attachments/owners";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt } from "$lib/testing/domain";
+import { appointments, comments } from "#lib/server/db.ts";
+import { commentableOf } from "#lib/server/comments/registry.ts";
+import { search } from "#lib/server/search/search.ts";
+import { isOwnerTypeSupported } from "#lib/server/attachments/owners.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
 
 const SECRET = "tresor-code-4711";
 const START = Date.UTC(2026, 5, 15, 8);

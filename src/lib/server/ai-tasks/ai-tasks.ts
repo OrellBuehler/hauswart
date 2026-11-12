@@ -13,8 +13,8 @@ import {
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
-import type { AiTaskClosedVia, AiTaskKind, UserRole } from "$lib/api/enums";
-import type { ListAiTasksQuery } from "$lib/api/schemas/ai-tasks";
+import type { AiTaskClosedVia, AiTaskKind, UserRole } from "#lib/api/enums.ts";
+import type { ListAiTasksQuery } from "#lib/api/schemas/ai-tasks.ts";
 import {
   attachmentsById,
   copyAttachment,
@@ -23,10 +23,10 @@ import {
   removeOwnedAttachments,
   storeAttachmentFile,
   type AttachmentRecord,
-} from "$lib/server/attachments/attachments";
-import { requireOpenCostBook } from "$lib/server/costs/books";
-import { costConflict } from "$lib/server/costs/conflicts";
-import { flagForReview } from "$lib/server/costs/costs";
+} from "#lib/server/attachments/attachments.ts";
+import { requireOpenCostBook } from "#lib/server/costs/books.ts";
+import { costConflict } from "#lib/server/costs/conflicts.ts";
+import { flagForReview } from "#lib/server/costs/costs.ts";
 import {
   aiTasks,
   assets,
@@ -36,8 +36,8 @@ import {
   users,
   type AiTaskResult,
   type DB,
-} from "$lib/server/db";
-import { decodeCursor, pageOf } from "$lib/server/pagination";
+} from "#lib/server/db.ts";
+import { decodeCursor, pageOf } from "#lib/server/pagination.ts";
 import {
   conflict,
   forbidden,
@@ -45,7 +45,7 @@ import {
   isUniqueViolation,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
+} from "#lib/server/service.ts";
 import { claimIsActive, takeLease } from "./booking";
 
 export { claimIsActive };

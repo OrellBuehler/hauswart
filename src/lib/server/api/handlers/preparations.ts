@@ -1,11 +1,11 @@
-import type { endpoints } from "$lib/api/registry";
+import type { endpoints } from "#lib/api/registry.ts";
 import {
   completePreparation,
   createPreparation,
   deletePreparation,
   listPreparations,
   updatePreparation,
-} from "$lib/server/tasks/preparations";
+} from "#lib/server/tasks/preparations.ts";
 import type { Handler } from "../bind";
 import { wirePreparation } from "../wire";
 

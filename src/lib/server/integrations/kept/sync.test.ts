@@ -9,27 +9,27 @@ import {
   financeSyncState,
   taskCompletions,
   tasks,
-} from "$lib/server/db";
-import type { Minor } from "$lib/money";
-import { getConnectionRow } from "$lib/server/connections/connections";
-import { defaultCostBook } from "$lib/server/costs/books";
-import { createCostRequestSchema } from "$lib/api/schemas/costs";
+} from "#lib/server/db.ts";
+import type { Minor } from "#lib/money.ts";
+import { getConnectionRow } from "#lib/server/connections/connections.ts";
+import { defaultCostBook } from "#lib/server/costs/books.ts";
+import { createCostRequestSchema } from "#lib/api/schemas/costs.ts";
 import {
   createCost,
   deleteCost,
   getCost,
   updateCost,
-} from "$lib/server/costs/costs";
+} from "#lib/server/costs/costs.ts";
 import {
   acceptSuggestion,
   dismissSuggestion,
   listSuggestions,
   type SuggestionRow,
-} from "$lib/server/finance/suggestions";
-import { getTask } from "$lib/server/tasks/tasks";
-import { createTestUser } from "$lib/testing/auth";
-import { ctxAt, NOW } from "$lib/testing/domain";
-import { useTestDB } from "$lib/testing/db";
+} from "#lib/server/finance/suggestions.ts";
+import { getTask } from "#lib/server/tasks/tasks.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { ctxAt, NOW } from "#lib/testing/domain.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import { fakeBill, fakeTransaction } from "./fake-server";
 import { syncConnection } from "./sync";
 import { useFakeKept } from "./testing";
@@ -934,9 +934,9 @@ describe("Kept sync", () => {
     it("puts the asset's name in the label and refreshes it when the entry changes", async () => {
       const { user, costId } = await booked();
       await run(user.id);
-      const { createAsset } = await import("$lib/server/assets/assets");
+      const { createAsset } = await import("#lib/server/assets/assets.ts");
       const { createAssetRequestSchema } =
-        await import("$lib/api/schemas/assets");
+        await import("#lib/api/schemas/assets.ts");
       const asset = createAsset(
         ctx(),
         createAssetRequestSchema.parse({
@@ -945,7 +945,7 @@ describe("Kept sync", () => {
         }),
       );
       const { updateCostRequestSchema } =
-        await import("$lib/api/schemas/costs");
+        await import("#lib/api/schemas/costs.ts");
       updateCost(
         ctx(),
         costId,
@@ -1117,7 +1117,7 @@ describe("Kept sync", () => {
     it("keeps the link of a cost that was edited while its link was being written current", async () => {
       const { user, costId } = await booked();
       const { updateCostRequestSchema } =
-        await import("$lib/api/schemas/costs");
+        await import("#lib/api/schemas/costs.ts");
       fake.delayMs = 40;
       const running = run(user.id);
       await new Promise((r) => setTimeout(r, 15));

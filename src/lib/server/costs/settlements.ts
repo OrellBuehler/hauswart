@@ -14,18 +14,18 @@ import type {
   CreateSettlementRequest,
   ListSettlementsQuery,
   UpdateSettlementRequest,
-} from "$lib/api/schemas/settlements";
-import { minor } from "$lib/money";
-import { costBooks, settlements, users } from "$lib/server/db";
-import { getHousehold } from "$lib/server/household/household";
-import { decodeCursor, pageOf } from "$lib/server/pagination";
+} from "#lib/api/schemas/settlements.ts";
+import { minor } from "#lib/money.ts";
+import { costBooks, settlements, users } from "#lib/server/db.ts";
+import { getHousehold } from "#lib/server/household/household.ts";
+import { decodeCursor, pageOf } from "#lib/server/pagination.ts";
 import {
   invalidField,
   isUniqueViolation,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
-import { clockAt } from "$lib/server/tasks/evaluator";
+} from "#lib/server/service.ts";
+import { clockAt } from "#lib/server/tasks/evaluator.ts";
 import { getCostBookRow, requireCostBook } from "./books";
 import { costConflict } from "./conflicts";
 import { yearRange } from "./costs";

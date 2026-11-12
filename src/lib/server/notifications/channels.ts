@@ -1,4 +1,4 @@
-import type { UserLocale } from "$lib/api/enums";
+import type { UserLocale } from "#lib/api/enums.ts";
 
 export interface NotificationRecipient {
   id: string;

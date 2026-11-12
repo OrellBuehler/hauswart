@@ -1,5 +1,8 @@
-import type { InsurancePremiumPeriod, InsuranceRenewal } from "$lib/api/enums";
-import { addMonths, monthEnd } from "$lib/dates";
+import type {
+  InsurancePremiumPeriod,
+  InsuranceRenewal,
+} from "#lib/api/enums.ts";
+import { addMonths, monthEnd } from "#lib/dates.ts";
 
 /** How many premium payments make a year. */
 export const PERIODS_PER_YEAR: Record<InsurancePremiumPeriod, number> = {

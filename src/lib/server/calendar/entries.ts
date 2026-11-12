@@ -14,13 +14,13 @@ import type {
   FeedScope,
   TaskCategory,
   UserLocale,
-} from "$lib/api/enums";
-import { endInstant } from "$lib/appointments/when";
-import { addDays, diffDays, localDateOf, maxDate } from "$lib/dates";
-import { cancellationDeadline } from "$lib/insurance/policy";
-import { m } from "$lib/paraglide/messages";
-import { householdTimeZone } from "$lib/server/config";
-import { whenOf } from "$lib/server/appointments/appointments";
+} from "#lib/api/enums.ts";
+import { endInstant } from "#lib/appointments/when.ts";
+import { addDays, diffDays, localDateOf, maxDate } from "#lib/dates.ts";
+import { cancellationDeadline } from "#lib/insurance/policy.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { householdTimeZone } from "#lib/server/config.ts";
+import { whenOf } from "#lib/server/appointments/appointments.ts";
 import {
   appointments,
   assets,
@@ -29,15 +29,15 @@ import {
   rooms,
   taskState,
   tasks,
-} from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
-import { clockAt } from "$lib/server/tasks/evaluator";
-import { preparationsForTasks } from "$lib/server/tasks/preparations";
+} from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
+import { clockAt } from "#lib/server/tasks/evaluator.ts";
+import { preparationsForTasks } from "#lib/server/tasks/preparations.ts";
 import {
   stateToDue,
   toStateRecord,
   type TaskStateRecord,
-} from "$lib/server/tasks/state";
+} from "#lib/server/tasks/state.ts";
 import type { IcsEvent } from "./ical";
 
 export const ESTIMATE_HORIZON_DAYS = 45;

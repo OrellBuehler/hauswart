@@ -1,11 +1,11 @@
 <script lang="ts">
   import PlusIcon from "@lucide/svelte/icons/plus";
   import XIcon from "@lucide/svelte/icons/x";
-  import { normalizeHostEntry } from "$lib/hosts";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import { normalizeHostEntry } from "#lib/hosts.ts";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     id,

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { ApiError } from "$lib/api/errors";
-import type { TireSet } from "$lib/api/schemas/tire-sets";
-import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
-import { formatNumber } from "$lib/format";
+import { ApiError } from "#lib/api/errors.ts";
+import type { TireSet } from "#lib/api/schemas/tire-sets.ts";
+import { MAX_ODOMETER_VALUE } from "#lib/api/schemas/vehicles.ts";
+import { formatNumber } from "#lib/format.ts";
 import {
   buildCreateTireSet,
   buildMount,

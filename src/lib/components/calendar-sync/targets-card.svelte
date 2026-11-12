@@ -1,21 +1,21 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import CalendarSyncIcon from "@lucide/svelte/icons/calendar-sync";
   import PlugZapIcon from "@lucide/svelte/icons/plug-zap";
   import PlusIcon from "@lucide/svelte/icons/plus";
-  import { CALENDAR_PROVIDERS } from "$lib/api/enums";
-  import type { CalendarTarget } from "$lib/api/schemas/calendar-sync";
-  import type { Integration } from "$lib/api/schemas/integrations";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { awaitsFirstRun } from "$lib/calendar-sync/health";
+  import { CALENDAR_PROVIDERS } from "#lib/api/enums.ts";
+  import type { CalendarTarget } from "#lib/api/schemas/calendar-sync.ts";
+  import type { Integration } from "#lib/api/schemas/integrations.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { awaitsFirstRun } from "#lib/calendar-sync/health.ts";
   import {
     creatableProviders,
     providerUsable,
-  } from "$lib/calendar-sync/providers";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/calendar-sync/providers.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import TargetDeleteDialog from "./target-delete-dialog.svelte";
   import TargetFormDialog from "./target-form-dialog.svelte";
   import TargetRow from "./target-row.svelte";
@@ -63,7 +63,7 @@
         clearInterval(handle);
         return;
       }
-      void invalidateAll();
+      void refreshAll();
     }, FIRST_RUN_POLL_MS);
     return () => clearInterval(handle);
   });
@@ -84,7 +84,7 @@
   }
 
   async function reload() {
-    await invalidateAll();
+    await refreshAll();
   }
 </script>
 
@@ -104,7 +104,7 @@
             : m.caltargets_noconn_body_member()}
         >
           {#snippet actions()}
-            <Button href={resolve("/settings/integrations")}>
+            <Button href={resolve("settings/integrations")}>
               {isAdmin
                 ? m.caltargets_noconn_action_admin()
                 : m.caltargets_noconn_action_member()}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render } from "svelte/server";
-import type { TireSet } from "$lib/api/schemas/tire-sets";
-import type { Vehicle } from "$lib/api/schemas/vehicles";
+import type { TireSet } from "#lib/api/schemas/tire-sets.ts";
+import type { Vehicle } from "#lib/api/schemas/vehicles.ts";
 import TireSetsCard from "./tire-sets-card.svelte";
 
 const vehicle: Vehicle = {

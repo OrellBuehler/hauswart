@@ -1,5 +1,5 @@
-import type { endpoints } from "$lib/api/registry";
-import { refreshOdometerReaders } from "$lib/server/vehicles/odometer";
+import type { endpoints } from "#lib/api/registry.ts";
+import { refreshOdometerReaders } from "#lib/server/vehicles/odometer.ts";
 import {
   createTireSet,
   deleteTireSet,
@@ -8,7 +8,7 @@ import {
   measureTread,
   mountTireSet,
   updateTireSet,
-} from "$lib/server/vehicles/tires";
+} from "#lib/server/vehicles/tires.ts";
 import type { Handler } from "../bind";
 import { wireTireSet, wireTireSetDetail } from "../wire";
 

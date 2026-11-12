@@ -2,7 +2,7 @@ import type {
   CalendarItemKind,
   CalendarLinkStatus,
   CalendarRemoteDeletePolicy,
-} from "$lib/api/enums";
+} from "#lib/api/enums.ts";
 import type { DesiredItem } from "./items";
 import {
   NO_UID,

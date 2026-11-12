@@ -1,6 +1,6 @@
-import type { AttachmentOwnerType } from "$lib/api/enums";
-import type { endpoints } from "$lib/api/registry";
-import { requireScopes } from "$lib/server/auth/guards";
+import type { AttachmentOwnerType } from "#lib/api/enums.ts";
+import type { endpoints } from "#lib/api/registry.ts";
+import { requireScopes } from "#lib/server/auth/guards.ts";
 import {
   createAttachment,
   deleteAttachment,
@@ -8,9 +8,9 @@ import {
   listAttachments,
   openAttachmentFile,
   updateAttachment,
-} from "$lib/server/attachments/attachments";
-import { defaultDisposition, fileResponse } from "$lib/server/files/serve";
-import { conflict, invalidField, notFound } from "$lib/server/service";
+} from "#lib/server/attachments/attachments.ts";
+import { defaultDisposition, fileResponse } from "#lib/server/files/serve.ts";
+import { conflict, invalidField, notFound } from "#lib/server/service.ts";
 import type { AuthedContext } from "../context";
 import type { Handler } from "../bind";
 import { wireAttachment } from "../wire";

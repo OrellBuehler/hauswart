@@ -9,36 +9,36 @@
     type CostCategory,
     type CostDeductible,
     type CostSplitMode,
-  } from "$lib/api/enums";
-  import type { Asset } from "$lib/api/schemas/assets";
-  import type { CostBook } from "$lib/api/schemas/cost-books";
-  import type { CostTag } from "$lib/api/schemas/cost-tags";
-  import { COST_NOTES_MAX, COST_TITLE_MAX } from "$lib/api/schemas/costs";
+  } from "#lib/api/enums.ts";
+  import type { Asset } from "#lib/api/schemas/assets.ts";
+  import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+  import type { CostTag } from "#lib/api/schemas/cost-tags.ts";
+  import { COST_NOTES_MAX, COST_TITLE_MAX } from "#lib/api/schemas/costs.ts";
   import type {
     AcceptFinanceSuggestionRequest,
     FinanceSuggestion,
-  } from "$lib/api/schemas/finance";
-  import type { Room } from "$lib/api/schemas/rooms";
-  import type { DirectoryUser } from "$lib/api/schemas/users";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { acceptBook, openBooks } from "$lib/costs/books";
+  } from "#lib/api/schemas/finance.ts";
+  import type { Room } from "#lib/api/schemas/rooms.ts";
+  import type { DirectoryUser } from "#lib/api/schemas/users.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
+  import { acceptBook, openBooks } from "#lib/costs/books.ts";
   import {
     chosenParticipants,
     equalShares,
     narrowedParticipants,
     splitAfterBook,
     validateShares,
-  } from "$lib/costs/form";
-  import { kindLabels } from "$lib/assets/kinds";
-  import { categoryLabels, deductibleLabels } from "$lib/costs/labels";
-  import { formatDay } from "$lib/format";
-  import { formatMoney } from "$lib/format-money";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/costs/form.ts";
+  import { kindLabels } from "#lib/assets/kinds.ts";
+  import { categoryLabels, deductibleLabels } from "#lib/costs/labels.ts";
+  import { formatDay } from "#lib/format.ts";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import BookPicker from "./book-picker.svelte";
   import SplitEditor from "./split-editor.svelte";
   import TagPicker from "./tag-picker.svelte";

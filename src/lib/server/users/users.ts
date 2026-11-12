@@ -1,9 +1,9 @@
 import { and, asc, count, eq, isNull, ne, sql } from "drizzle-orm";
-import type { UserLocale, UserRole } from "$lib/api/enums";
-import { usernameSchema } from "$lib/api/schemas/auth";
-import { getDB, apiTokens, sessions, users, type DB } from "$lib/server/db";
-import { hashPassword } from "$lib/server/auth/password";
-import { AuthError, type SessionUser } from "$lib/server/auth/types";
+import type { UserLocale, UserRole } from "#lib/api/enums.ts";
+import { usernameSchema } from "#lib/api/schemas/auth.ts";
+import { getDB, apiTokens, sessions, users, type DB } from "#lib/server/db.ts";
+import { hashPassword } from "#lib/server/auth/password.ts";
+import { AuthError, type SessionUser } from "#lib/server/auth/types.ts";
 
 export interface NewUser {
   username: string;

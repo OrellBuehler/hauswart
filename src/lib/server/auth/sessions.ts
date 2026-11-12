@@ -1,7 +1,7 @@
 import type { Cookies } from "@sveltejs/kit";
 import { and, eq, lt, ne } from "drizzle-orm";
-import { SESSION_COOKIE } from "$lib/api/constants";
-import { getDB, sessions, users } from "$lib/server/db";
+import { SESSION_COOKIE } from "#lib/api/constants.ts";
+import { getDB, sessions, users } from "#lib/server/db.ts";
 import type { SessionInfo, SessionUser } from "./types";
 
 export { SESSION_COOKIE };

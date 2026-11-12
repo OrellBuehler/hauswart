@@ -1,9 +1,9 @@
 import { toast } from "svelte-sonner";
-import { api } from "$lib/api/browser";
-import { endpoints } from "$lib/api/registry";
-import type { CostRecurrence } from "$lib/api/schemas/cost-recurrences";
-import { apiErrorMessage } from "$lib/error-message";
-import { m } from "$lib/paraglide/messages";
+import { api } from "#lib/api/browser.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import type { CostRecurrence } from "#lib/api/schemas/cost-recurrences.ts";
+import { apiErrorMessage } from "#lib/error-message.ts";
+import { m } from "#lib/paraglide/messages.js";
 import {
   recurrenceBookClosed,
   resumeMessage,

@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
-import { serviceLog } from "$lib/server/db";
-import { onEvent } from "$lib/server/events";
+import { serviceLog } from "#lib/server/db.ts";
+import { onEvent } from "#lib/server/events.ts";
 import { reopenNotesOf } from "./resolve";
 
 /**

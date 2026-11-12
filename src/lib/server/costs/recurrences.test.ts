@@ -1,18 +1,18 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it, vi } from "vitest";
-import { createCostBookRequestSchema } from "$lib/api/schemas/cost-books";
+import { createCostBookRequestSchema } from "#lib/api/schemas/cost-books.ts";
 import {
   MAX_COST_RECURRENCES,
   createCostRecurrenceRequestSchema,
   updateCostRecurrenceRequestSchema,
-} from "$lib/api/schemas/cost-recurrences";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { costEntries, costRecurrences, users } from "$lib/server/db";
-import { createAsset } from "$lib/server/assets/assets";
-import { RECURRENCE_BOOKING_CAP } from "$lib/costs/recurrence";
-import { createTestUser } from "$lib/testing/auth";
-import { at, ctxAt } from "$lib/testing/domain";
-import { useTestDB } from "$lib/testing/db";
+} from "#lib/api/schemas/cost-recurrences.ts";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { costEntries, costRecurrences, users } from "#lib/server/db.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import { RECURRENCE_BOOKING_CAP } from "#lib/costs/recurrence.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { at, ctxAt } from "#lib/testing/domain.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import {
   createCostBook,
   deleteCostBook,

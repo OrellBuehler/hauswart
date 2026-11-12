@@ -1,15 +1,18 @@
 <script lang="ts">
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import SendIcon from "@lucide/svelte/icons/send";
-  import { api } from "$lib/api/browser";
-  import type { CommentEntityType } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import { COMMENT_MAX_LENGTH, type Comment } from "$lib/api/schemas/comments";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import type { CommentEntityType } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import {
+    COMMENT_MAX_LENGTH,
+    type Comment,
+  } from "#lib/api/schemas/comments.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     entityType,

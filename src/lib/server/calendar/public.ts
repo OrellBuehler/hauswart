@@ -1,12 +1,12 @@
 import type { RequestEvent } from "@sveltejs/kit";
-import { clientKey } from "$lib/server/auth/login";
+import { clientKey } from "#lib/server/auth/login.ts";
 import {
   shareMissLimiter,
   shareRequestLimiter,
   shareTokenLimiter,
   type Hit,
-} from "$lib/server/auth/rate-limit";
-import { getDB } from "$lib/server/db";
+} from "#lib/server/auth/rate-limit.ts";
+import { getDB } from "#lib/server/db.ts";
 import { buildFeedCalendar } from "./feed";
 import { findFeedByToken, touchFeedFetched } from "./feeds";
 

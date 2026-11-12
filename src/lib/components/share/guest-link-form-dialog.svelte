@@ -2,46 +2,46 @@
   import DicesIcon from "@lucide/svelte/icons/dices";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
+  import { api } from "#lib/api/browser.ts";
   import {
     GUEST_SECTIONS,
     USER_LOCALES,
     type GuestSection,
     type UserLocale,
-  } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { DocPageSummary } from "$lib/api/schemas/docs";
+  } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { DocPageSummary } from "#lib/api/schemas/docs.ts";
   import {
     GUEST_LABEL_MAX,
     GUEST_PIN_PATTERN,
     type CreatedGuestLink,
     type GuestLink,
-  } from "$lib/api/schemas/share";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { localDateOf } from "$lib/dates";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import { getLocale } from "$lib/paraglide/runtime";
+  } from "#lib/api/schemas/share.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Checkbox } from "#lib/components/ui/checkbox/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { localDateOf } from "#lib/dates.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
   import {
     guestSectionHints,
     guestSectionLabels,
     generatePin,
-  } from "$lib/share/labels";
+  } from "#lib/share/labels.ts";
   import {
     defaultUntil,
     endInstant,
     latestUntil,
     startInstant,
-  } from "$lib/share/window";
-  import { sectionLabels } from "$lib/docs/sections";
-  import { addDays } from "$lib/dates";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
+  } from "#lib/share/window.ts";
+  import { sectionLabels } from "#lib/docs/sections.ts";
+  import { addDays } from "#lib/dates.ts";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
 
   type PinMode = "none" | "set" | "keep";
 

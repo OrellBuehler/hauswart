@@ -1,15 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getConnectionRow } from "$lib/server/connections/connections";
-import { getIntegration } from "$lib/server/connections/registry";
-import { emitEvent } from "$lib/server/events";
-import { financeProviders } from "$lib/server/finance/providers";
+import { getConnectionRow } from "#lib/server/connections/connections.ts";
+import { getIntegration } from "#lib/server/connections/registry.ts";
+import { emitEvent } from "#lib/server/events.ts";
+import { financeProviders } from "#lib/server/finance/providers.ts";
 import {
   acceptSuggestion,
   listSuggestions,
-} from "$lib/server/finance/suggestions";
-import { createTestUser } from "$lib/testing/auth";
-import { ctxAt, NOW } from "$lib/testing/domain";
-import { useTestDB } from "$lib/testing/db";
+} from "#lib/server/finance/suggestions.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { ctxAt, NOW } from "#lib/testing/domain.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import { registerKept } from "./index";
 import { fakeTransaction } from "./fake-server";
 import { startKeptScheduler } from "./scheduler";
@@ -169,7 +169,7 @@ describe("Kept scheduler", () => {
     const fine = await createTestUser();
     const brokenRow = connect(broken.id, { config: CONFIG });
     connect(fine.id, { config: CONFIG });
-    const { connections } = await import("$lib/server/db");
+    const { connections } = await import("#lib/server/db.ts");
     const { eq } = await import("drizzle-orm");
     test.db
       .update(connections)

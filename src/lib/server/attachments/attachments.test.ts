@@ -3,38 +3,45 @@ import { readdir, utimes, writeFile, mkdir, access } from "node:fs/promises";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import { describe, expect, it, vi } from "vitest";
-import { ApiError } from "$lib/api/errors";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { createContactRequestSchema } from "$lib/api/schemas/contacts";
-import { createDefectRequestSchema } from "$lib/api/schemas/defects";
-import { createHintRequestSchema } from "$lib/api/schemas/hints";
-import { createPartRequestSchema } from "$lib/api/schemas/parts";
-import { createServiceLogRequestSchema } from "$lib/api/schemas/service-log";
-import { createContact, deleteContact } from "$lib/server/contacts/contacts";
-import { createDefect, deleteDefect } from "$lib/server/defects/defects";
-import { createHint, deleteHint } from "$lib/server/hints/hints";
-import { createPart, deletePart } from "$lib/server/parts/parts";
-import { createEntry, deleteEntry } from "$lib/server/service-log/service-log";
+import { ApiError } from "#lib/api/errors.ts";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { createContactRequestSchema } from "#lib/api/schemas/contacts.ts";
+import { createDefectRequestSchema } from "#lib/api/schemas/defects.ts";
+import { createHintRequestSchema } from "#lib/api/schemas/hints.ts";
+import { createPartRequestSchema } from "#lib/api/schemas/parts.ts";
+import { createServiceLogRequestSchema } from "#lib/api/schemas/service-log.ts";
+import { createContact, deleteContact } from "#lib/server/contacts/contacts.ts";
+import { createDefect, deleteDefect } from "#lib/server/defects/defects.ts";
+import { createHint, deleteHint } from "#lib/server/hints/hints.ts";
+import { createPart, deletePart } from "#lib/server/parts/parts.ts";
+import {
+  createEntry,
+  deleteEntry,
+} from "#lib/server/service-log/service-log.ts";
 import {
   createAsset,
   deleteAsset,
   updateAsset,
-} from "$lib/server/assets/assets";
-import { assets, attachments } from "$lib/server/db";
-import { FileError } from "$lib/server/files/errors";
-import { plainJpeg, plainPng, plainWebp } from "$lib/server/files/test-images";
-import { createRoom, deleteRoom } from "$lib/server/rooms/rooms";
-import { deleteTask } from "$lib/server/tasks/tasks";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, makeTask } from "$lib/testing/domain";
+} from "#lib/server/assets/assets.ts";
+import { assets, attachments } from "#lib/server/db.ts";
+import { FileError } from "#lib/server/files/errors.ts";
+import {
+  plainJpeg,
+  plainPng,
+  plainWebp,
+} from "#lib/server/files/test-images.ts";
+import { createRoom, deleteRoom } from "#lib/server/rooms/rooms.ts";
+import { deleteTask } from "#lib/server/tasks/tasks.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, makeTask } from "#lib/testing/domain.ts";
 import {
   sampleHeic,
   sampleHtml,
   samplePdf,
   sampleSvg,
   useTestFilesDir,
-} from "$lib/testing/files";
+} from "#lib/testing/files.ts";
 import {
   assertAssetPhoto,
   attachmentsById,

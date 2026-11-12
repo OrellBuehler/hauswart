@@ -5,10 +5,10 @@ import {
   type CalendarSyncCounts,
   type CalendarTargetCapabilities,
   type CalendarTargetConfig,
-} from "$lib/api/schemas/calendar-sync";
-import { calendarTargets, connections } from "$lib/server/db";
-import { parseStored } from "$lib/server/json";
-import type { ServiceContext } from "$lib/server/service";
+} from "#lib/api/schemas/calendar-sync.ts";
+import { calendarTargets, connections } from "#lib/server/db.ts";
+import { parseStored } from "#lib/server/json.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 
 /** The longest calendar name that is kept. */
 export const MAX_REMOTE_NAME = 255;

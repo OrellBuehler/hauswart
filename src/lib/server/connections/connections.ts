@@ -4,22 +4,22 @@ import {
   INTEGRATION_KINDS,
   type IntegrationKind,
   type IntegrationStatus,
-} from "$lib/api/enums";
-import { ApiError } from "$lib/api/errors";
-import { decryptSecret, encryptSecret } from "$lib/server/crypto";
-import { connections, getDB, users, type DB } from "$lib/server/db";
-import { emitEvent } from "$lib/server/events";
-import { getHousehold } from "$lib/server/household/household";
-import { isHostAllowed } from "$lib/hosts";
+} from "#lib/api/enums.ts";
+import { ApiError } from "#lib/api/errors.ts";
+import { decryptSecret, encryptSecret } from "#lib/server/crypto.ts";
+import { connections, getDB, users, type DB } from "#lib/server/db.ts";
+import { emitEvent } from "#lib/server/events.ts";
+import { getHousehold } from "#lib/server/household/household.ts";
+import { isHostAllowed } from "#lib/hosts.ts";
 import {
   HostPolicyError,
   assertHostAllowed,
-} from "$lib/server/net/host-policy";
+} from "#lib/server/net/host-policy.ts";
 import {
   invalidField,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
+} from "#lib/server/service.ts";
 import { IntegrationError } from "./errors";
 import {
   getIntegration,

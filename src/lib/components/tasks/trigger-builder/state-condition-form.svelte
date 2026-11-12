@@ -2,12 +2,12 @@
   import PlusIcon from "@lucide/svelte/icons/plus";
   import TrendingDownIcon from "@lucide/svelte/icons/trending-down";
   import XIcon from "@lucide/svelte/icons/x";
-  import type { ExternalEntity } from "$lib/connections/types";
-  import EntityPicker from "$lib/components/connections/entity-picker.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { commonStates } from "$lib/connections/entities";
-  import { m } from "$lib/paraglide/messages";
+  import type { ExternalEntity } from "#lib/connections/types.ts";
+  import EntityPicker from "#lib/components/connections/entity-picker.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { commonStates } from "#lib/connections/entities.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import Field from "../field.svelte";
   import NumberField from "../number-field.svelte";
   import OptionSelect from "../option-select.svelte";

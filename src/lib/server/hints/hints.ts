@@ -9,24 +9,24 @@ import {
   sql,
   type SQL,
 } from "drizzle-orm";
-import type { HintKind } from "$lib/api/enums";
+import type { HintKind } from "#lib/api/enums.ts";
 import {
   signalReactionSchema,
   type CreateHintRequest,
   type SignalReaction,
   type UpdateHintRequest,
-} from "$lib/api/schemas/hints";
-import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
-import { assetHints, assets, tasks, users, type DB } from "$lib/server/db";
-import { commentCountSql } from "$lib/server/comments/counts";
-import { parseStored } from "$lib/server/json";
-import { signalNeedsChanged } from "$lib/server/signals/watch";
-import { paginateArray } from "$lib/server/pagination";
+} from "#lib/api/schemas/hints.ts";
+import { removeOwnedAttachments } from "#lib/server/attachments/attachments.ts";
+import { assetHints, assets, tasks, users, type DB } from "#lib/server/db.ts";
+import { commentCountSql } from "#lib/server/comments/counts.ts";
+import { parseStored } from "#lib/server/json.ts";
+import { signalNeedsChanged } from "#lib/server/signals/watch.ts";
+import { paginateArray } from "#lib/server/pagination.ts";
 import {
   invalidField,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
+} from "#lib/server/service.ts";
 
 type Db = Pick<ServiceContext, "db">;
 type Now = Pick<ServiceContext, "db" | "now">;

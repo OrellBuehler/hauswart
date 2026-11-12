@@ -3,12 +3,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createAppointment,
   type CreateAppointmentInput,
-} from "$lib/server/appointments/appointments";
-import { calendarTargets, connections } from "$lib/server/db";
-import { emitEvent } from "$lib/server/events";
-import { completeTask } from "$lib/server/tasks/completions";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, everyDays, makeTask, NOW } from "$lib/testing/domain";
+} from "#lib/server/appointments/appointments.ts";
+import { calendarTargets, connections } from "#lib/server/db.ts";
+import { emitEvent } from "#lib/server/events.ts";
+import { completeTask } from "#lib/server/tasks/completions.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, everyDays, makeTask, NOW } from "#lib/testing/domain.ts";
 import { getTargetRow } from "./store";
 import {
   addTarget,

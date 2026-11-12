@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createCostRequestSchema } from "$lib/api/schemas/costs";
-import { createCost } from "$lib/server/costs/costs";
-import { plainPng } from "$lib/server/files/test-images";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, NOW } from "$lib/testing/domain";
-import { useTestFilesDir } from "$lib/testing/files";
+import { createCostRequestSchema } from "#lib/api/schemas/costs.ts";
+import { createCost } from "#lib/server/costs/costs.ts";
+import { plainPng } from "#lib/server/files/test-images.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, NOW } from "#lib/testing/domain.ts";
+import { useTestFilesDir } from "#lib/testing/files.ts";
 import {
   completeAiTask,
   createAiTask,

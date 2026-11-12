@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
-  import { forgetIntegrations } from "$lib/connections/connection";
-  import { cardFor } from "$lib/components/connections/cards";
-  import { m } from "$lib/paraglide/messages";
+  import { refreshAll } from "$app/navigation";
+  import { forgetIntegrations } from "#lib/connections/connection.ts";
+  import { cardFor } from "#lib/components/connections/cards.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -11,7 +11,7 @@
 
   async function reload() {
     forgetIntegrations();
-    await invalidateAll();
+    await refreshAll();
   }
 </script>
 

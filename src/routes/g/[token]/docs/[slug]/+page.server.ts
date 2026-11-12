@@ -1,12 +1,12 @@
 import { error } from "@sveltejs/kit";
-import { getDB } from "$lib/server/db";
-import { getGuestPage } from "$lib/server/share/guest-view";
-import { recordGuestView } from "$lib/server/share/guest-links";
+import { getDB } from "#lib/server/db.ts";
+import { getGuestPage } from "#lib/server/share/guest-view.ts";
+import { recordGuestView } from "#lib/server/share/guest-links.ts";
 import {
   GUEST_ERRORS,
   guestGate,
   unlockAction,
-} from "$lib/server/share/guest-http";
+} from "#lib/server/share/guest-http.ts";
 import type { Actions, PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async (event) => {

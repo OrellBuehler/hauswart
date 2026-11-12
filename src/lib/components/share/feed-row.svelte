@@ -10,14 +10,14 @@
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import { page } from "$app/state";
-  import type { CalendarFeed } from "$lib/api/schemas/share";
-  import CopyButton from "$lib/components/app/copy-button.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { formatDateTime, formatRelativeInstant } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { absoluteUrl, webcalUrl } from "$lib/share/urls";
+  import type { CalendarFeed } from "#lib/api/schemas/share.ts";
+  import CopyButton from "#lib/components/app/copy-button.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { formatDateTime, formatRelativeInstant } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { absoluteUrl, webcalUrl } from "#lib/share/urls.ts";
 
   let {
     feed,

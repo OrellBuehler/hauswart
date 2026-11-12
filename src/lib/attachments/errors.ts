@@ -1,7 +1,7 @@
-import { isApiError } from "$lib/api/errors";
-import { detailsCode } from "$lib/docs/errors";
-import { apiErrorMessage } from "$lib/error-message";
-import { m } from "$lib/paraglide/messages";
+import { isApiError } from "#lib/api/errors.ts";
+import { detailsCode } from "#lib/docs/errors.ts";
+import { apiErrorMessage } from "#lib/error-message.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 /** Messages for the refusals of the upload endpoint (400/413/415 with a `details.code`). */
 export function uploadErrorMessage(err: unknown): string {

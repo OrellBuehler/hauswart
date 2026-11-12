@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sessions, users } from "$lib/server/db";
+import { sessions, users } from "#lib/server/db.ts";
 import { useTestDB } from "./db";
 
 describe("useTestDB", () => {

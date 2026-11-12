@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import { zonedTimeToInstant } from "$lib/dates";
+import { zonedTimeToInstant } from "#lib/dates.ts";
 import { evaluateTask } from "./evaluate";
 import {
   calendarTriggerSchema,

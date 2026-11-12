@@ -12,13 +12,13 @@ import {
   type SQL,
 } from "drizzle-orm";
 import { z } from "zod";
-import type { PartMovementReason } from "$lib/api/enums";
+import type { PartMovementReason } from "#lib/api/enums.ts";
 import type {
   CreatePartRequest,
   UpdatePartRequest,
-} from "$lib/api/schemas/parts";
-import { PART_MOVEMENTS_IN_DETAIL } from "$lib/api/schemas/parts";
-import { minor } from "$lib/money";
+} from "#lib/api/schemas/parts.ts";
+import { PART_MOVEMENTS_IN_DETAIL } from "#lib/api/schemas/parts.ts";
+import { minor } from "#lib/money.ts";
 import {
   assetParts,
   assets,
@@ -28,15 +28,15 @@ import {
   taskPreparations,
   tasks,
   users,
-} from "$lib/server/db";
-import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
-import { getHousehold } from "$lib/server/household/household";
-import { decodeCursor, paginateArray, pageOf } from "$lib/server/pagination";
+} from "#lib/server/db.ts";
+import { removeOwnedAttachments } from "#lib/server/attachments/attachments.ts";
+import { getHousehold } from "#lib/server/household/household.ts";
+import { decodeCursor, paginateArray, pageOf } from "#lib/server/pagination.ts";
 import {
   invalidField,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
+} from "#lib/server/service.ts";
 
 type Db = Pick<ServiceContext, "db">;
 type Now = Pick<ServiceContext, "db" | "now">;

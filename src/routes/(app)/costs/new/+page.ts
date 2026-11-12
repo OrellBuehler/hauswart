@@ -1,5 +1,5 @@
-import { createApiClient } from "$lib/api/client";
-import { loadCostContext, tryLoadFinanceConnected } from "$lib/costs/load";
+import { createApiClient } from "#lib/api/client.ts";
+import { loadCostContext, tryLoadFinanceConnected } from "#lib/costs/load.ts";
 import type { PageLoad } from "./$types";
 
 /** A prefill from the address only counts when it names something that exists. */

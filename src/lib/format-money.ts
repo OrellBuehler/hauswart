@@ -1,5 +1,10 @@
-import { formatAmount, minor, parseAmount, currencyExponent } from "$lib/money";
-import { getLocale } from "$lib/paraglide/runtime";
+import {
+  formatAmount,
+  minor,
+  parseAmount,
+  currencyExponent,
+} from "#lib/money.ts";
+import { getLocale } from "#lib/paraglide/runtime.js";
 
 const INTL_LOCALES = { de: "de-CH", en: "en-GB" } as const;
 

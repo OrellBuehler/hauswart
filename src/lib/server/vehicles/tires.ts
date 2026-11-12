@@ -1,28 +1,28 @@
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
-import type { OdometerUnit } from "$lib/api/enums";
+import type { OdometerUnit } from "#lib/api/enums.ts";
 import type {
   CreateTireSetRequest,
   MeasureTreadRequest,
   MountTireSetRequest,
   UpdateTireSetRequest,
-} from "$lib/api/schemas/tire-sets";
-import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
-import { dateInZone, householdTimeZone } from "$lib/server/config";
+} from "#lib/api/schemas/tire-sets.ts";
+import { removeOwnedAttachments } from "#lib/server/attachments/attachments.ts";
+import { dateInZone, householdTimeZone } from "#lib/server/config.ts";
 import {
   contacts,
   odometerReadings,
   tireSetEvents,
   tireSets,
   type DB,
-} from "$lib/server/db";
-import { paginateArray } from "$lib/server/pagination";
+} from "#lib/server/db.ts";
+import { paginateArray } from "#lib/server/pagination.ts";
 import {
   conflict,
   invalidField,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
-import { tireSetDistance } from "$lib/vehicles/tires";
+} from "#lib/server/service.ts";
+import { tireSetDistance } from "#lib/vehicles/tires.ts";
 import { assertVehicleForRead, assertVehicleForWrite } from "./kind";
 import { removeReadingsOfSource, writeOdometer } from "./odometer";
 import { odometerUnitOf } from "./summary";

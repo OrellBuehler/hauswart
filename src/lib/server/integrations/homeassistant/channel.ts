@@ -1,10 +1,10 @@
-import { getDB } from "$lib/server/db";
+import { getDB } from "#lib/server/db.ts";
 import type {
   DeliveryOutcome,
   NotificationChannel,
-} from "$lib/server/notifications/channels";
-import { enabledTargets } from "$lib/server/notifications/settings";
-import { resolveConnection } from "$lib/server/connections/connections";
+} from "#lib/server/notifications/channels.ts";
+import { enabledTargets } from "#lib/server/notifications/settings.ts";
+import { resolveConnection } from "#lib/server/connections/connections.ts";
 import { appUrlOf } from "./app-url";
 import { clientFor, householdConnection } from "./connection";
 import { errorCode } from "./errors";

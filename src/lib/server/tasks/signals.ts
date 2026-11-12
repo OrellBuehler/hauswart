@@ -1,12 +1,20 @@
 import { and, gte, inArray, or } from "drizzle-orm";
-import { MANUAL_SIGNAL_SOURCE, haCalendarKey } from "$lib/tasks/engine";
-import { externalDates, signalSamples, signals, type DB } from "$lib/server/db";
+import {
+  MANUAL_SIGNAL_SOURCE,
+  haCalendarKey,
+} from "#lib/tasks/engine/index.ts";
+import {
+  externalDates,
+  signalSamples,
+  signals,
+  type DB,
+} from "#lib/server/db.ts";
 import type {
   ExternalDates,
   Samples,
   Signals,
   Trigger,
-} from "$lib/tasks/engine";
+} from "#lib/tasks/engine/index.ts";
 
 export interface SignalNeeds {
   /** Entity ids whose current state (and, for counters, history) the tasks look at. */

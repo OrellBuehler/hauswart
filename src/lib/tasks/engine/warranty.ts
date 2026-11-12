@@ -1,4 +1,4 @@
-import { addDays, maxDate } from "$lib/dates";
+import { addDays, maxDate } from "#lib/dates.ts";
 import { datedResult, noDateResult } from "./common";
 import type { DueResult, EvalContext, Reason, WarrantyTrigger } from "./types";
 

@@ -1,4 +1,4 @@
-import type { FuelUnit } from "$lib/api/enums";
+import type { FuelUnit } from "#lib/api/enums.ts";
 
 /** What the consumption needs of a fuel log entry. */
 export interface FuelFill {

@@ -1,13 +1,16 @@
 import { asc, eq } from "drizzle-orm";
 import { z } from "zod";
-import { ApiError } from "$lib/api/errors";
-import type { IntegrationKind } from "$lib/api/enums";
-import { providerAreaSchema } from "$lib/api/schemas/integrations";
-import { ROOM_NAME_MAX, type RoomImportOutcome } from "$lib/api/schemas/rooms";
-import { matchAreaToRoom, roomWithAreaId } from "$lib/connections/areas";
-import { ownerFor, runOperation } from "$lib/server/connections/connections";
-import { rooms, type DB } from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
+import { ApiError } from "#lib/api/errors.ts";
+import type { IntegrationKind } from "#lib/api/enums.ts";
+import { providerAreaSchema } from "#lib/api/schemas/integrations.ts";
+import {
+  ROOM_NAME_MAX,
+  type RoomImportOutcome,
+} from "#lib/api/schemas/rooms.ts";
+import { matchAreaToRoom, roomWithAreaId } from "#lib/connections/areas.ts";
+import { ownerFor, runOperation } from "#lib/server/connections/connections.ts";
+import { rooms, type DB } from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import { createRoom, type RoomRecord } from "./rooms";
 
 const areasResultSchema = z.object({ items: z.array(providerAreaSchema) });

@@ -1,20 +1,20 @@
 import type { z } from "zod";
-import type { DocumentProviderKind } from "$lib/api/enums";
-import type { endpoints } from "$lib/api/registry";
-import { toIso } from "$lib/api/schemas/common";
+import type { DocumentProviderKind } from "#lib/api/enums.ts";
+import type { endpoints } from "#lib/api/registry.ts";
+import { toIso } from "#lib/api/schemas/common.ts";
 import type {
   documentLinkSchema,
   documentUploadSchema,
   externalDocumentSchema,
-} from "$lib/api/schemas/documents";
-import { requireScopes } from "$lib/server/auth/guards";
-import { findAttachment } from "$lib/server/attachments/attachments";
+} from "#lib/api/schemas/documents.ts";
+import { requireScopes } from "#lib/server/auth/guards.ts";
+import { findAttachment } from "#lib/server/attachments/attachments.ts";
 import {
   getDocumentDetail,
   listDocuments,
   openDocumentFile,
   type DocumentView,
-} from "$lib/server/documents/documents";
+} from "#lib/server/documents/documents.ts";
 import {
   createLink,
   deleteLink,
@@ -22,22 +22,22 @@ import {
   linkViews,
   listLinks,
   type LinkView,
-} from "$lib/server/documents/links";
+} from "#lib/server/documents/links.ts";
 import type {
   DocumentFileKind,
   DocumentFileStream,
-} from "$lib/server/documents/provider";
+} from "#lib/server/documents/provider.ts";
 import {
   assetSuggestions,
   contactSuggestions,
-} from "$lib/server/documents/suggestions";
+} from "#lib/server/documents/suggestions.ts";
 import {
   getUpload,
   startPush,
   type UploadRow,
-} from "$lib/server/documents/uploads";
-import { contentDisposition } from "$lib/server/files/filename";
-import { notFound } from "$lib/server/service";
+} from "#lib/server/documents/uploads.ts";
+import { contentDisposition } from "#lib/server/files/filename.ts";
+import { notFound } from "#lib/server/service.ts";
 import type { Handler } from "../bind";
 import type { AuthedContext } from "../context";
 

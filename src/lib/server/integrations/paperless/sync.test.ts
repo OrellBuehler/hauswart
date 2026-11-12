@@ -3,16 +3,16 @@ import { eq } from "drizzle-orm";
 import {
   getConnectionRow,
   saveConnection,
-} from "$lib/server/connections/connections";
+} from "#lib/server/connections/connections.ts";
 import {
   connections,
   documentLinks,
   externalDocumentSync,
   externalDocuments,
-} from "$lib/server/db";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { makeAsset } from "$lib/testing/documents";
+} from "#lib/server/db.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { makeAsset } from "#lib/testing/documents.ts";
 import { syncAll, syncConnection } from "./sync";
 import { useFakePaperless } from "./testing";
 

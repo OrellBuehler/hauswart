@@ -1,4 +1,4 @@
-import type { endpoints } from "$lib/api/registry";
+import type { endpoints } from "#lib/api/registry.ts";
 import {
   createEntry,
   deleteEntry,
@@ -6,8 +6,8 @@ import {
   listAssetEntries,
   listServiceLog,
   updateEntry,
-} from "$lib/server/service-log/service-log";
-import { refreshOdometerReaders } from "$lib/server/vehicles/odometer";
+} from "#lib/server/service-log/service-log.ts";
+import { refreshOdometerReaders } from "#lib/server/vehicles/odometer.ts";
 import type { Handler } from "../bind";
 import { wireServiceLogEntry } from "../wire";
 

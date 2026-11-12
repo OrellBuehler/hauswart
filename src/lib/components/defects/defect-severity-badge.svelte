@@ -2,10 +2,10 @@
   import ChevronDownIcon from "@lucide/svelte/icons/chevron-down";
   import ChevronsUpIcon from "@lucide/svelte/icons/chevrons-up";
   import EqualIcon from "@lucide/svelte/icons/equal";
-  import type { DefectSeverity } from "$lib/api/enums";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { severityLabels, severityTones } from "$lib/defects/labels";
-  import { cn } from "$lib/utils";
+  import type { DefectSeverity } from "#lib/api/enums.ts";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { severityLabels, severityTones } from "#lib/defects/labels.ts";
+  import { cn } from "#lib/utils.ts";
 
   let {
     severity,

@@ -2,17 +2,20 @@
   import PencilIcon from "@lucide/svelte/icons/pencil";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import { COMMENT_MAX_LENGTH, type Comment } from "$lib/api/schemas/comments";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import AssigneeAvatar from "$lib/components/tasks/assignee-avatar.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDateTime, formatRelativeInstant } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import {
+    COMMENT_MAX_LENGTH,
+    type Comment,
+  } from "#lib/api/schemas/comments.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import AssigneeAvatar from "#lib/components/tasks/assignee-avatar.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDateTime, formatRelativeInstant } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import CommentBody from "./comment-body.svelte";
 
   let {

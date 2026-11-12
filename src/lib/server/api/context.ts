@@ -1,6 +1,6 @@
-import type { AuthMode } from "$lib/api/registry";
-import type { DB } from "$lib/server/db";
-import type { Principal, SessionUser } from "$lib/server/auth/types";
+import type { AuthMode } from "#lib/api/registry.ts";
+import type { DB } from "#lib/server/db.ts";
+import type { Principal, SessionUser } from "#lib/server/auth/types.ts";
 
 interface BaseContext {
   db: DB;

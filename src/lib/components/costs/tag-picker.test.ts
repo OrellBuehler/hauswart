@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render } from "svelte/server";
-import type { CostTag } from "$lib/api/schemas/cost-tags";
+import type { CostTag } from "#lib/api/schemas/cost-tags.ts";
 import TagPicker from "./tag-picker.svelte";
 
 const tag = (

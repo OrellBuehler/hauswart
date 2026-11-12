@@ -1,8 +1,8 @@
-import type { UserLocale } from "$lib/api/enums";
-import type { Appointment } from "$lib/api/schemas/appointments";
-import { diffDays, localDateOf, localTimeOf } from "$lib/dates";
-import { formatDateShort, formatRelativeDays } from "$lib/format";
-import { m } from "$lib/paraglide/messages";
+import type { UserLocale } from "#lib/api/enums.ts";
+import type { Appointment } from "#lib/api/schemas/appointments.ts";
+import { diffDays, localDateOf, localTimeOf } from "#lib/dates.ts";
+import { formatDateShort, formatRelativeDays } from "#lib/format.ts";
+import { m } from "#lib/paraglide/messages.js";
 import type { AppointmentWhen } from "./when";
 
 /** What says when an appointment takes place: the fields of an appointment. */

@@ -10,36 +10,36 @@
   import { onDestroy, untrack } from "svelte";
   import { MediaQuery } from "svelte/reactivity";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { isApiError } from "$lib/api/errors";
-  import type { DocSection } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { Asset } from "$lib/api/schemas/assets";
-  import type { Attachment } from "$lib/api/schemas/attachments";
-  import type { DocPage, DocPageSummary } from "$lib/api/schemas/docs";
-  import { PAGE_TITLE_MAX } from "$lib/api/schemas/docs";
-  import type { Room } from "$lib/api/schemas/rooms";
+  import { api } from "#lib/api/browser.ts";
+  import { isApiError } from "#lib/api/errors.ts";
+  import type { DocSection } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Asset } from "#lib/api/schemas/assets.ts";
+  import type { Attachment } from "#lib/api/schemas/attachments.ts";
+  import type { DocPage, DocPageSummary } from "#lib/api/schemas/docs.ts";
+  import { PAGE_TITLE_MAX } from "#lib/api/schemas/docs.ts";
+  import type { Room } from "#lib/api/schemas/rooms.ts";
   import {
     baseName,
     formatBytes,
     isImage,
     matchesAccept,
-  } from "$lib/attachments/files";
-  import { AttachmentList } from "$lib/attachments/list.svelte";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import OptionSelect from "$lib/components/assets/option-select.svelte";
-  import RoomPicker from "$lib/components/assets/room-picker.svelte";
-  import Attachments from "$lib/components/attachments/attachments.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Skeleton } from "$lib/components/ui/skeleton/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
+  } from "#lib/attachments/files.ts";
+  import { AttachmentList } from "#lib/attachments/list.svelte.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import OptionSelect from "#lib/components/assets/option-select.svelte";
+  import RoomPicker from "#lib/components/assets/room-picker.svelte";
+  import Attachments from "#lib/components/attachments/attachments.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
   import {
     continueList,
     insertBlock,
@@ -52,12 +52,12 @@
     toggleTask,
     wrapSelection,
     type Edit,
-  } from "$lib/docs/editing";
-  import { currentRevOf, pageErrorMessage } from "$lib/docs/errors";
-  import { docEditHref, docHref } from "$lib/docs/links";
-  import { DOC_SECTIONS, sectionLabels } from "$lib/docs/sections";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/docs/editing.ts";
+  import { currentRevOf, pageErrorMessage } from "#lib/docs/errors.ts";
+  import { docEditHref, docHref } from "#lib/docs/links.ts";
+  import { DOC_SECTIONS, sectionLabels } from "#lib/docs/sections.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import AttachmentInsertDialog from "./attachment-insert-dialog.svelte";
   import DocConflictDialog from "./doc-conflict-dialog.svelte";
   import DocProse from "./doc-prose.svelte";
@@ -70,8 +70,9 @@
     assets,
     rooms,
     pages,
-  }: {
+
     /** The page being edited; without it the editor creates a new one. */
+  }: {
     page?: DocPage | undefined;
     defaults?: {
       section?: DocSection | undefined;
@@ -466,6 +467,7 @@
     if (!isNew && !dirty) {
       if (options.stay) toast.info(m.editor_no_changes());
       else await leave(docHref(initial!.slug));
+
       return;
     }
     saving = true;
@@ -510,7 +512,7 @@
 
   async function leave(href: ReturnType<typeof docHref>) {
     leaving = true;
-    await goto(href, { invalidateAll: true });
+    await goto(href, { refreshAll: true });
     leaving = false;
   }
 
@@ -522,6 +524,7 @@
       const fresh = await api.call(endpoints.pagesGet, {
         params: { slug: initial!.slug },
       });
+
       title = fresh.title;
       section = fresh.section;
       assetId = fresh.assetId;
@@ -551,6 +554,7 @@
         const fresh = await api.call(endpoints.pagesGet, {
           params: { slug: initial!.slug },
         });
+
         rev = fresh.rev;
       }
       baseRev = rev;
@@ -576,6 +580,7 @@
 
   /* ---- leaving with unsaved changes ---- */
   beforeNavigate((navigation) => {
+    if (navigation.shallow && navigation.type === "goto") return;
     if (!dirty || leaving) return;
     navigation.cancel();
     if (navigation.type === "leave" || !navigation.to) return;
@@ -587,15 +592,13 @@
     const target = leaveTarget;
     leaving = true;
     if (target) {
-      await goto(
-        resolve((target.pathname + target.search + target.hash) as "/"),
-      );
+      await goto(resolve(target.pathname + target.search + target.hash));
     }
     leaving = false;
   }
 
   function cancel() {
-    const back = isNew ? resolve("/docs") : docHref(initial!.slug);
+    const back = isNew ? resolve("docs") : docHref(initial!.slug);
     void goto(back);
   }
 
@@ -631,10 +634,7 @@
 </script>
 
 <svelte:window onkeydown={onwindowkeydown} />
-
-<svelte:head>
-  <title>{heading} · {m.app_name()}</title>
-</svelte:head>
+<svelte:head><title>{heading} · {m.app_name()}</title></svelte:head>
 
 <div class="flex flex-col gap-4">
   <div

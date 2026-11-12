@@ -1,6 +1,6 @@
-import type { Notification } from "$lib/api/schemas/notifications";
-import { formatDate } from "$lib/format";
-import { m } from "$lib/paraglide/messages";
+import type { Notification } from "#lib/api/schemas/notifications.ts";
+import { formatDate } from "#lib/format.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 type Render = (params: Record<string, string | number>) => string;
 

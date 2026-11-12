@@ -9,31 +9,31 @@
   import SearchXIcon from "@lucide/svelte/icons/search-x";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import { untrack } from "svelte";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { ExternalDocument } from "$lib/api/schemas/documents";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import ProviderPicker from "$lib/components/connections/provider-picker.svelte";
-  import DocumentDetailSheet from "$lib/components/documents/document-detail-sheet.svelte";
-  import DocumentThumb from "$lib/components/documents/document-thumb.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { Skeleton } from "$lib/components/ui/skeleton/index.js";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { ExternalDocument } from "#lib/api/schemas/documents.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import ProviderPicker from "#lib/components/connections/provider-picker.svelte";
+  import DocumentDetailSheet from "#lib/components/documents/document-detail-sheet.svelte";
+  import DocumentThumb from "#lib/components/documents/document-thumb.svelte";
+  import * as Alert from "#lib/components/ui/alert/index.js";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { Skeleton } from "#lib/components/ui/skeleton/index.js";
   import {
     integrationErrorMessage,
     pickerErrorMessage,
-  } from "$lib/connections/errors";
-  import { documentLinkChanges } from "$lib/documents/changes.svelte";
-  import { linkedPlaces } from "$lib/documents/labels";
-  import { DocumentSystem } from "$lib/documents/system.svelte";
-  import { formatDay } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/connections/errors.ts";
+  import { documentLinkChanges } from "#lib/documents/changes.svelte.ts";
+  import { linkedPlaces } from "#lib/documents/labels.ts";
+  import { DocumentSystem } from "#lib/documents/system.svelte.ts";
+  import { formatDay } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -86,7 +86,9 @@
         ? { correspondent: correspondent[0] }
         : {}),
       ...(linked !== "all"
-        ? { linked: linked === "yes" ? ("true" as const) : ("false" as const) }
+        ? {
+            linked: linked === "yes" ? ("true" as const) : ("false" as const),
+          }
         : {}),
       ...(cursor ? { cursor } : {}),
       limit: PAGE_SIZE,
@@ -215,9 +217,9 @@
       description={m.documents_not_connected_body()}
     >
       {#snippet actions()}
-        <Button href={resolve("/settings/integrations")}>
-          {m.documents_to_integrations()}
-        </Button>
+        <Button href={resolve("settings/integrations")}
+          >{m.documents_to_integrations()}</Button
+        >
       {/snippet}
     </EmptyState>
   {:else}
@@ -229,7 +231,7 @@
           {m.documents_connection_error()}
           {integrationErrorMessage(integration.lastError, provider)}
           <a
-            href={resolve("/settings/integrations")}
+            href={resolve("settings/integrations")}
             class="mt-1 block underline underline-offset-2"
           >
             {m.documents_to_integrations()}
@@ -308,10 +310,8 @@
                 : "bg-background hover:bg-accent dark:bg-input/30",
             )}
             aria-pressed={on}
-            onclick={() => (linked = option.value)}
+            onclick={() => (linked = option.value)}>{option.label}</button
           >
-            {option.label}
-          </button>
         {/each}
       </div>
 
@@ -380,9 +380,9 @@
           description={m.documents_empty_body()}
         >
           {#snippet actions()}
-            <Button variant="outline" href={resolve("/settings/integrations")}>
-              {m.documents_to_integrations()}
-            </Button>
+            <Button variant="outline" href={resolve("settings/integrations")}
+              >{m.documents_to_integrations()}</Button
+            >
           {/snippet}
         </EmptyState>
       {/if}
@@ -467,7 +467,7 @@
                   {#snippet child({ props })}
                     <a
                       {...props}
-                      href={resolve(document.previewUrl as "/")}
+                      href={resolve(document.previewUrl)}
                       target="_blank"
                       rel="noopener"
                     >
@@ -479,7 +479,7 @@
                   {#snippet child({ props })}
                     <a
                       {...props}
-                      href={resolve(document.downloadUrl as "/")}
+                      href={resolve(document.downloadUrl)}
                       download=""
                       data-sveltekit-reload
                     >

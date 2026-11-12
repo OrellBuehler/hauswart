@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render } from "svelte/server";
-import type { FinanceSuggestion } from "$lib/api/schemas/finance";
+import type { FinanceSuggestion } from "#lib/api/schemas/finance.ts";
 import SuggestionCard from "./suggestion-card.svelte";
 
 const transaction = {

@@ -2,25 +2,25 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { isApiError } from "$lib/api/errors";
-  import { endpoints } from "$lib/api/registry";
-  import type { Integration } from "$lib/api/schemas/integrations";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { forgetIntegrations } from "$lib/connections/connection";
-  import { connectionSaveMessage } from "$lib/connections/errors";
-  import { forgetPickerItems } from "$lib/connections/provider-lists";
+  import { api } from "#lib/api/browser.ts";
+  import { isApiError } from "#lib/api/errors.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Integration } from "#lib/api/schemas/integrations.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import * as Alert from "#lib/components/ui/alert/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { forgetIntegrations } from "#lib/connections/connection.ts";
+  import { connectionSaveMessage } from "#lib/connections/errors.ts";
+  import { forgetPickerItems } from "#lib/connections/provider-lists.ts";
   import {
     isHttpUrl,
     readProviderConfig,
     sameIds,
-  } from "$lib/documents/config";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/documents/config.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import ProviderPicker from "./provider-picker.svelte";
 
   let {

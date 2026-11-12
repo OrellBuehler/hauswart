@@ -1,28 +1,28 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { createCalendarFeedRequestSchema } from "$lib/api/schemas/share";
-import { createDefectRequestSchema } from "$lib/api/schemas/defects";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { createCalendarFeedRequestSchema } from "#lib/api/schemas/share.ts";
+import { createDefectRequestSchema } from "#lib/api/schemas/defects.ts";
 import {
   createAppointment,
   updateAppointment,
   type CreateAppointmentInput,
-} from "$lib/server/appointments/appointments";
-import { createAsset } from "$lib/server/assets/assets";
-import { changeStatus, createDefect } from "$lib/server/defects/defects";
-import { assets, taskState, tasks } from "$lib/server/db";
-import { updateHousehold } from "$lib/server/household/household";
-import { createRoom } from "$lib/server/rooms/rooms";
+} from "#lib/server/appointments/appointments.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import { changeStatus, createDefect } from "#lib/server/defects/defects.ts";
+import { assets, taskState, tasks } from "#lib/server/db.ts";
+import { updateHousehold } from "#lib/server/household/household.ts";
+import { createRoom } from "#lib/server/rooms/rooms.ts";
 import {
   completePreparation,
   createPreparation,
-} from "$lib/server/tasks/preparations";
-import { snoozeTask } from "$lib/server/tasks/completions";
-import { updateTask } from "$lib/server/tasks/tasks";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, everyDays, makeTask, NOW } from "$lib/testing/domain";
-import { parseIcs } from "$lib/testing/ics";
+} from "#lib/server/tasks/preparations.ts";
+import { snoozeTask } from "#lib/server/tasks/completions.ts";
+import { updateTask } from "#lib/server/tasks/tasks.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, everyDays, makeTask, NOW } from "#lib/testing/domain.ts";
+import { parseIcs } from "#lib/testing/ics.ts";
 import { APPOINTMENT_LOOKBACK_DAYS, buildFeedCalendar } from "./feed";
 import { createFeed, findFeedByToken } from "./feeds";
 

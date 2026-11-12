@@ -1,11 +1,11 @@
 import { and, asc, desc, eq, inArray, isNotNull, lte, sql } from "drizzle-orm";
-import type { OdometerUnit } from "$lib/api/enums";
+import type { OdometerUnit } from "#lib/api/enums.ts";
 import type {
   OdometerSummary,
   VehicleSummary,
-} from "$lib/api/schemas/vehicles";
-import { odometerReadings, vehicleDetails, type DB } from "$lib/server/db";
-import { plateKey } from "$lib/vehicles/plate";
+} from "#lib/api/schemas/vehicles.ts";
+import { odometerReadings, vehicleDetails, type DB } from "#lib/server/db.ts";
+import { plateKey } from "#lib/vehicles/plate.ts";
 
 /** The order of readings in time: by date, then by when they were entered. Newest first when descending. */
 export const readingOrder = (direction: "asc" | "desc") => {
