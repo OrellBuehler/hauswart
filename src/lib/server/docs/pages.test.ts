@@ -151,7 +151,7 @@ describe("doc pages", () => {
         code: "too_large",
       });
       await expect(
-        page({ bodyMd: "*a ".repeat(60_000) }),
+        page({ bodyMd: "*_a ".repeat(45_000) }),
       ).rejects.toBeInstanceOf(MarkdownError);
       expect(test.db.select().from(docPages).all()).toHaveLength(0);
     });
