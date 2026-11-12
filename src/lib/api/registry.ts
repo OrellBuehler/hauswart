@@ -110,6 +110,7 @@ import {
 import {
   ATTACHMENT_CONTENT_TYPES,
   MAX_UPLOAD_REQUEST_BYTES,
+  attachFromUrlRequestSchema,
   attachmentContentQuerySchema,
   attachmentSchema,
   listAttachmentsQuerySchema,
@@ -3445,6 +3446,21 @@ export const endpoints = {
     body: uploadAttachmentRequestSchema,
     bodyType: "multipart",
     maxBodyBytes: MAX_UPLOAD_REQUEST_BYTES,
+    response: attachmentSchema,
+    status: 201,
+  }),
+
+  attachmentsFromUrl: defineEndpoint({
+    id: "attachmentsFromUrl",
+    method: "POST",
+    path: "/api/v1/attachments/from-url",
+    summary: "Attach a file found on the web to an owner",
+    description:
+      "JSON `{ownerType, ownerId, url, caption?, guestVisible?}`. The server downloads the file at `url` and stores it exactly like an upload (`POST /attachments`): the same owners and the same scope rules (a page needs `docs:write`, a cost entry `costs:write`; the owner type `ai_task` is refused), the type is detected from the bytes (JPEG, PNG and WebP images are re-encoded and lose their metadata, PDFs are stored as they are; anything else is refused), at most 25 MiB, and the same `invalid_request` errors with `details.code` as an upload (`empty`, `unsupported_type`, `unsupported_heic`, `corrupt_image`, `image_too_large`). The owner is checked before anything is fetched. Because the server connects to an address it was given, only public ones are fetched: `http` or `https`, no user name or password, the standard ports (80 and 443), and a host that is, or resolves to, public internet addresses only (every address a name resolves to is checked; loopback, private networks, carrier-grade NAT, link-local, unique local, multicast, unspecified and reserved ranges, the cloud metadata endpoints and their IPv4-mapped and NAT64 spellings are refused). Redirects are followed by hand, at most 3, and each hop is checked the same way. One timeout of 15 seconds covers the whole download, which is read with a cap and stops at 25 MiB. The request carries `Accept` for images and PDFs and the user agent `hauswart/<version>` and nothing of the household. A download that fails is a 400 field error on `url` whose `details.code` is `blocked_host` (the address, or a redirect, is not a public one on a standard port), `unreachable` (the name does not resolve, the connection or TLS failed, or the time ran out), `upstream_status` (the server answered with an error; `details.status` is its status), `too_large` (more than 25 MiB) or `too_many_redirects`. The check cannot pin the address the connection is made to, so a name that changes its answer between the check and the connection (DNS rebinding) is not caught by it. Answers the attachment, as an upload does.",
+    tags: ["attachments"],
+    auth: "both",
+    scopes: ["write"],
+    body: attachFromUrlRequestSchema,
     response: attachmentSchema,
     status: 201,
   }),

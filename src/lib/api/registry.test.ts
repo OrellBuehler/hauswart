@@ -125,6 +125,7 @@ describe("registry", () => {
         "POST /api/v1/pages/{slug}/revisions/{rev}/restore both",
         "GET /api/v1/search both",
         "POST /api/v1/attachments both",
+        "POST /api/v1/attachments/from-url both",
         "GET /api/v1/attachments both",
         "GET /api/v1/attachments/{id} both",
         "PATCH /api/v1/attachments/{id} both",

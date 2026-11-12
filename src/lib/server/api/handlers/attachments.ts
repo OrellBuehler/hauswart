@@ -1,6 +1,7 @@
 import type { AttachmentOwnerType } from "$lib/api/enums";
 import type { endpoints } from "$lib/api/registry";
 import { requireScopes } from "$lib/server/auth/guards";
+import { attachFromUrl } from "$lib/server/attachments/from-url";
 import {
   createAttachment,
   deleteAttachment,
@@ -26,17 +27,22 @@ function requireOwnerScope(ctx: AuthedContext, ownerType: AttachmentOwnerType) {
   }
 }
 
-export const upload: Handler<typeof endpoints.attachmentsUpload> = async ({
-  ctx,
-  body,
-}) => {
-  requireOwnerScope(ctx, body.ownerType);
-  if (body.ownerType === "ai_task") {
+/** A task of the receipt queue gets its file from the queue itself. */
+function refuseReceiptQueue(ownerType: AttachmentOwnerType) {
+  if (ownerType === "ai_task") {
     throw invalidField(
       "ownerType",
       "A task of the receipt queue has its file already; put another receipt in the queue with POST /ai-tasks",
     );
   }
+}
+
+export const upload: Handler<typeof endpoints.attachmentsUpload> = async ({
+  ctx,
+  body,
+}) => {
+  requireOwnerScope(ctx, body.ownerType);
+  refuseReceiptQueue(body.ownerType);
   const row = await createAttachment(ctx, {
     bytes: new Uint8Array(await body.file.arrayBuffer()),
     filename: body.file.name,
@@ -48,6 +54,17 @@ export const upload: Handler<typeof endpoints.attachmentsUpload> = async ({
     uploadedBy: ctx.user.id,
   });
   return wireAttachment(row);
+};
+
+export const fromUrl: Handler<typeof endpoints.attachmentsFromUrl> = async ({
+  ctx,
+  body,
+}) => {
+  requireOwnerScope(ctx, body.ownerType);
+  refuseReceiptQueue(body.ownerType);
+  return wireAttachment(
+    await attachFromUrl(ctx, { ...body, uploadedBy: ctx.user.id }),
+  );
 };
 
 export const list: Handler<typeof endpoints.attachmentsList> = ({

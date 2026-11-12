@@ -2,6 +2,7 @@ import { z } from "zod";
 import { ATTACHMENT_OWNER_TYPES } from "../enums";
 import {
   atLeastOne,
+  httpUrlSchema,
   idSchema,
   isoTimestampSchema,
   nullableText,
@@ -52,6 +53,33 @@ export const uploadAttachmentRequestSchema = z.strictObject({
 export type UploadAttachmentRequest = z.output<
   typeof uploadAttachmentRequestSchema
 >;
+
+/** The longest address `POST /attachments/from-url` takes. */
+export const ATTACH_URL_MAX = 2000;
+
+/**
+ * Why `POST /attachments/from-url` could not get the file, as `details.code` of the 400 on `url`: `blocked_host` (the
+ * address, or where a redirect led, is not a public one on a standard port), `unreachable` (no answer: the name does not
+ * resolve, the connection or the TLS handshake failed, or the time ran out), `upstream_status` (the server answered
+ * with an error; `details.status`), `too_large` (more than 25 MiB) and `too_many_redirects` (more than 3).
+ */
+export const FROM_URL_ERROR_CODES = [
+  "blocked_host",
+  "unreachable",
+  "upstream_status",
+  "too_large",
+  "too_many_redirects",
+] as const;
+
+/** JSON body of `POST /attachments/from-url`: the owner as for an upload, and the address of the file. */
+export const attachFromUrlRequestSchema = z.strictObject({
+  ownerType: attachmentOwnerTypeSchema,
+  ownerId: idSchema,
+  url: httpUrlSchema(ATTACH_URL_MAX),
+  caption: z.string().trim().max(CAPTION_MAX).optional(),
+  guestVisible: z.boolean().optional(),
+});
+export type AttachFromUrlRequest = z.output<typeof attachFromUrlRequestSchema>;
 
 export const listAttachmentsQuerySchema = paginationQuerySchema.extend({
   ownerType: attachmentOwnerTypeSchema,
