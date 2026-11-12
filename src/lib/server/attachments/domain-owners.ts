@@ -12,6 +12,7 @@ import {
   insurancePolicies,
   parts,
   serviceLog,
+  taskSteps,
   tireSets,
 } from "$lib/server/db";
 import { registerAttachmentOwner, type OwnerExists } from "./owners";
@@ -37,6 +38,7 @@ const DOMAIN_OWNERS: [AttachmentOwnerType, OwnerExists][] = [
   ["tire_set", existsIn(tireSets)],
   ["appointment", existsIn(appointments)],
   ["ai_task", existsIn(aiTasks)],
+  ["task_step", existsIn(taskSteps)],
 ];
 
 /** Makes the owner types of the domains on top of the core valid for uploads. Safe to call more than once. */

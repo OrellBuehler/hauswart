@@ -143,7 +143,27 @@
         "unit": "month",
         "anchor": "completion",
         "startDate": "2026-10-20"
-      }
+      },
+      "steps": [
+        {
+          "title": "Backofen auskühlen lassen",
+          "body": "Nie einen heissen Ofen mit Reiniger behandeln."
+        },
+        {
+          "title": "Bleche und Roste herausnehmen und einweichen"
+        },
+        {
+          "title": "Innenraum mit Reiniger einsprühen",
+          "body": "Die Heizelemente und den Lüfter aussparen. Etwa 15 Minuten einwirken lassen."
+        },
+        {
+          "title": "Innenraum auswischen",
+          "body": "Mit einem feuchten Tuch nachwischen, bis kein Reiniger mehr zu riechen ist."
+        },
+        {
+          "title": "Bleche und Roste abspülen und wieder einsetzen"
+        }
+      ]
     },
     {
       "key": "dampfabzug-filter",
@@ -167,6 +187,28 @@
           "kind": "order_part",
           "leadDays": 14,
           "qty": 1
+        }
+      ],
+      "steps": [
+        {
+          "title": "Dampfabzug ausschalten",
+          "body": "Lüfter ganz ausschalten und warten, bis er steht."
+        },
+        {
+          "title": "Fettfilter nach unten herausnehmen",
+          "body": "Den Riegel eindrücken und das Gitter nach unten klappen, dann herausziehen."
+        },
+        {
+          "title": "Alten Aktivkohlefilter entnehmen",
+          "body": "Der Filter liegt hinter dem Fettfilter und wird von zwei Klammern gehalten."
+        },
+        {
+          "title": "Neuen Aktivkohlefilter einsetzen",
+          "body": "Die Beschriftung zeigt nach unten. Die Klammern müssen hörbar einrasten."
+        },
+        {
+          "title": "Fettfilter abspülen und wieder einsetzen",
+          "body": "Mit warmem Wasser und Spülmittel reinigen, vollständig trocknen lassen."
         }
       ]
     },

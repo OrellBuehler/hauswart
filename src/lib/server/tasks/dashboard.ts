@@ -21,6 +21,7 @@ import { odometerAssetOfTrigger } from "$lib/vehicles/odometer";
 import { recentCompletions, type CompletionRecord } from "./completions";
 import { clockAt } from "./evaluator";
 import { preparationsForTasks } from "./preparations";
+import { stepCountSql } from "./step-counts";
 import { toStateRecord, type TaskStateRecord } from "./state";
 import type { TaskRow } from "./tasks";
 
@@ -42,6 +43,7 @@ export interface DashboardTaskRecord {
   estimate: TaskStateRecord["estimate"];
   progress: TaskStateRecord["progress"];
   openNoteCount: number;
+  stepCount: number;
   odometerAssetId: string | null;
   nextAppointment: NextAppointment | null;
 }
@@ -102,6 +104,7 @@ export async function getUpcomingTasks(
       ownRoomName: rooms.name,
       assetRoomName: assetRoom.name,
       openNoteCount: openNoteCountSql(tasks.assetId),
+      stepCount: stepCountSql(tasks.id),
       nextAppointment: nextAppointmentSql(tasks.id),
     })
     .from(tasks)
@@ -180,6 +183,7 @@ export async function getUpcomingTasks(
       estimate: item.due.estimate ?? null,
       progress: item.due.progress ?? null,
       openNoteCount: Number(r.openNoteCount),
+      stepCount: Number(r.stepCount),
       odometerAssetId: odometerAssetOfTrigger(r.task.trigger),
       nextAppointment: parseNextAppointment(r.nextAppointment),
     };

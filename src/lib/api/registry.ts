@@ -74,6 +74,10 @@ import {
   updateTaskRequestSchema,
 } from "./schemas/tasks";
 import {
+  putTaskStepsRequestSchema,
+  taskStepsSchema,
+} from "./schemas/task-steps";
+import {
   dashboardSchema,
   statsQuerySchema,
   statsSchema,
@@ -988,7 +992,7 @@ export const endpoints = {
     path: "/api/v1/tasks",
     summary: "List tasks with their due state",
     description:
-      "Ordered overdue first, then by due date. assignee=me or a user id matches the current assignee.",
+      "Ordered overdue first, then by due date. assignee=me or a user id matches the current assignee. hasSteps=true lists only the tasks that have steps telling how to do them, hasSteps=false only those without (every row carries `stepCount`).",
     tags: ["tasks"],
     auth: "both",
     scopes: ["read"],
@@ -1030,7 +1034,9 @@ export const endpoints = {
     id: "tasksGet",
     method: "GET",
     path: "/api/v1/tasks/{id}",
-    summary: "Get a task with preparations and recent completions",
+    summary: "Get a task with preparations, steps and recent completions",
+    description:
+      "Besides the task: its preparations, the most recent completions, the `steps` that say how to do it (in order, each with the pictures attached to it) and `stepsSource`, where those steps come from. `stepsSource` is null when none was given, and when the file it named has been deleted and nothing else was said; otherwise it carries the `label`, the web `url` or the `attachment` (and `page` of it) of hauswart. If only the file is gone, `attachmentId`, `attachment` and `page` read as null.",
     tags: ["tasks"],
     auth: "both",
     scopes: ["read"],
@@ -1061,13 +1067,29 @@ export const endpoints = {
     path: "/api/v1/tasks/{id}",
     summary: "Delete a task",
     description:
-      "Removes the task with its completions, preparations and notifications. Archive instead to keep the history.",
+      "Removes the task with its completions, preparations, steps (and the pictures attached to them) and notifications. Archive instead to keep the history.",
     tags: ["tasks"],
     auth: "both",
     scopes: ["write"],
     params: idParamsSchema,
     response: emptySchema,
     status: 204,
+    errors: ["not_found"],
+  }),
+
+  tasksStepsPut: defineEndpoint({
+    id: "tasksStepsPut",
+    method: "PUT",
+    path: "/api/v1/tasks/{id}/steps",
+    summary: "Replace the steps that say how to do a task",
+    description:
+      "Replaces the whole list in one transaction: `steps` is the new list in order (at most 30; send `[]` to remove them all). A step with the `id` of one of this task's steps keeps its id, its pictures and its creation time and takes the new `title` (one line, at most 200 characters), `body` (plain text, at most 2000, default empty) and place; a step without an `id` is new; a step of the task that the list leaves out is deleted together with its pictures. An `id` that is not a step of this task, or the same `id` twice, is a 400 on `steps`. Pictures are attachments of the owner type `task_step` with the step's id as `ownerId`: upload them with `POST /attachments` (or `POST /attachments/from-url`) after the step exists, and they come back in `images` in upload order. `source` says where the steps come from: left out it is unchanged, `null` removes it, an object replaces it entirely: `label` (at most 200 characters), then either `url` (http or https, at most 2000 characters, no user name or password) or `attachmentId` (a file of hauswart that exists, else a 400 on `source`; typically the manual attached to the device) with an optional `page` (1 to 9999, only together with `attachmentId`); `url` and `attachmentId` exclude each other and an object with nothing in it is a 400 (use `null`). Answers the steps, the resolved source and `stepCount` as `GET /tasks/{id}` carries them. Archived tasks can be edited. The task itself is not touched: it is not re-evaluated and its `updatedAt` stays. 404 for a missing task.",
+    tags: ["tasks"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: putTaskStepsRequestSchema,
+    response: taskStepsSchema,
     errors: ["not_found"],
   }),
 

@@ -24,6 +24,11 @@ import type {
   pageRevisionSummarySchema,
 } from "$lib/api/schemas/docs";
 import type { attachmentSchema } from "$lib/api/schemas/attachments";
+import type {
+  stepsSourceSchema,
+  taskStepSchema,
+  taskStepsSchema,
+} from "$lib/api/schemas/task-steps";
 import type { AttachmentRecord } from "$lib/server/attachments/attachments";
 import {
   excerptOf,
@@ -38,6 +43,11 @@ import type { TaskRecord } from "$lib/server/tasks/tasks";
 import type { TaskStateRecord } from "$lib/server/tasks/state";
 import type { CompletionRecord } from "$lib/server/tasks/completions";
 import type { PreparationRecord } from "$lib/server/tasks/preparations";
+import type {
+  StepRecord,
+  StepsSourceRecord,
+  TaskStepsRecord,
+} from "$lib/server/tasks/steps";
 import type { DashboardRecord } from "$lib/server/tasks/dashboard";
 import type { NotificationRow } from "$lib/server/notifications/notifications";
 import type { HouseholdRecord } from "$lib/server/household/household";
@@ -360,6 +370,7 @@ export function wireTask(
     createdBy: task.createdBy,
     commentCount: task.commentCount,
     openNoteCount: task.openNoteCount,
+    stepCount: task.stepCount,
     nextAppointment: task.nextAppointment,
     createdAt: toIso(task.createdAt),
     updatedAt: toIso(task.updatedAt),
@@ -850,5 +861,45 @@ export function wireAttachment(
     uploadedBy: row.uploadedBy,
     createdAt: toIso(row.createdAt),
     updatedAt: toIso(row.updatedAt),
+  };
+}
+
+export function wireTaskStep(step: StepRecord): z.input<typeof taskStepSchema> {
+  return {
+    id: step.id,
+    position: step.position,
+    title: step.title,
+    body: step.body,
+    images: step.images.map(wireAttachment),
+  };
+}
+
+export function wireStepsSource(
+  source: StepsSourceRecord | null,
+): z.input<typeof stepsSourceSchema> | null {
+  if (!source) return null;
+  return {
+    label: source.label,
+    url: source.url,
+    attachmentId: source.attachmentId,
+    page: source.page,
+    attachment: source.attachment
+      ? {
+          id: source.attachment.id,
+          filename: source.attachment.filename,
+          mime: source.attachment.mime,
+          url: `/api/v1/attachments/${source.attachment.id}/content`,
+        }
+      : null,
+  };
+}
+
+export function wireTaskSteps(
+  record: TaskStepsRecord,
+): z.input<typeof taskStepsSchema> {
+  return {
+    steps: record.steps.map(wireTaskStep),
+    stepsSource: wireStepsSource(record.stepsSource),
+    stepCount: record.stepCount,
   };
 }

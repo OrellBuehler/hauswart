@@ -93,6 +93,7 @@ describe("registry", () => {
         "GET /api/v1/tasks/{id} both",
         "PATCH /api/v1/tasks/{id} both",
         "DELETE /api/v1/tasks/{id} both",
+        "PUT /api/v1/tasks/{id}/steps both",
         "POST /api/v1/tasks/{id}/complete both",
         "POST /api/v1/tasks/{id}/skip both",
         "POST /api/v1/tasks/{id}/snooze both",

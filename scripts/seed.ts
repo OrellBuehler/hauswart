@@ -7,7 +7,7 @@ import { importSeed, SeedError } from "../src/lib/server/seed/import.ts";
 
 const USAGE = `Usage: bun scripts/seed.ts --file <seed.json> [--url <http://host:3000>] [--token <hw_...>] [--update]
 
-Imports rooms, assets (with the details of vehicles), tasks and preparations
+Imports rooms, assets (with the details of vehicles), tasks, their preparations and steps
 through the REST API. Safe to run again: entries are found by their key and
 left alone (use --update to overwrite them). The token needs the read and write
 scopes (create one under Settings > API tokens, kind "integration"). Defaults:

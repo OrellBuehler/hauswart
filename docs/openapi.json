@@ -4027,7 +4027,7 @@
       "get": {
         "operationId": "tasksList",
         "summary": "List tasks with their due state",
-        "description": "Ordered overdue first, then by due date. assignee=me or a user id matches the current assignee.",
+        "description": "Ordered overdue first, then by due date. assignee=me or a user id matches the current assignee. hasSteps=true lists only the tasks that have steps telling how to do them, hasSteps=false only those without (every row carries `stepCount`).",
         "tags": [
           "tasks"
         ],
@@ -4173,6 +4173,18 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 255
+            }
+          },
+          {
+            "name": "hasSteps",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
             }
           }
         ],
@@ -6344,7 +6356,8 @@
     "/api/v1/tasks/{id}": {
       "get": {
         "operationId": "tasksGet",
-        "summary": "Get a task with preparations and recent completions",
+        "summary": "Get a task with preparations, steps and recent completions",
+        "description": "Besides the task: its preparations, the most recent completions, the `steps` that say how to do it (in order, each with the pictures attached to it) and `stepsSource`, where those steps come from. `stepsSource` is null when none was given, and when the file it named has been deleted and nothing else was said; otherwise it carries the `label`, the web `url` or the `attachment` (and `page` of it) of hauswart. If only the file is gone, `attachmentId`, `attachment` and `page` read as null.",
         "tags": [
           "tasks"
         ],
@@ -7546,7 +7559,7 @@
       "delete": {
         "operationId": "tasksDelete",
         "summary": "Delete a task",
-        "description": "Removes the task with its completions, preparations and notifications. Archive instead to keep the history.",
+        "description": "Removes the task with its completions, preparations, steps (and the pictures attached to them) and notifications. Archive instead to keep the history.",
         "tags": [
           "tasks"
         ],
@@ -7636,6 +7649,238 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorEnvelope"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{id}/steps": {
+      "put": {
+        "operationId": "tasksStepsPut",
+        "summary": "Replace the steps that say how to do a task",
+        "description": "Replaces the whole list in one transaction: `steps` is the new list in order (at most 30; send `[]` to remove them all). A step with the `id` of one of this task's steps keeps its id, its pictures and its creation time and takes the new `title` (one line, at most 200 characters), `body` (plain text, at most 2000, default empty) and place; a step without an `id` is new; a step of the task that the list leaves out is deleted together with its pictures. An `id` that is not a step of this task, or the same `id` twice, is a 400 on `steps`. Pictures are attachments of the owner type `task_step` with the step's id as `ownerId`: upload them with `POST /attachments` (or `POST /attachments/from-url`) after the step exists, and they come back in `images` in upload order. `source` says where the steps come from: left out it is unchanged, `null` removes it, an object replaces it entirely: `label` (at most 200 characters), then either `url` (http or https, at most 2000 characters, no user name or password) or `attachmentId` (a file of hauswart that exists, else a 400 on `source`; typically the manual attached to the device) with an optional `page` (1 to 9999, only together with `attachmentId`); `url` and `attachmentId` exclude each other and an object with nothing in it is a 400 (use `null`). Answers the steps, the resolved source and `stepCount` as `GET /tasks/{id}` carries them. Archived tasks can be edited. The task itself is not touched: it is not re-evaluated and its `updatedAt` stays. 404 for a missing task.",
+        "tags": [
+          "tasks"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": [
+              "write"
+            ]
+          }
+        ],
+        "x-required-scopes": [
+          "write"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskSteps"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error: `invalid_request`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error: `unauthenticated`, `setup_required`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error: `forbidden`, `csrf_failed`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error: `not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Error: `invalid_request` (request body too large)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Error: `invalid_request` (unsupported content type)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Error: `rate_limited`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error: `internal`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "steps": {
+                    "maxItems": 30,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        },
+                        "title": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "body": {
+                          "default": "",
+                          "type": "string",
+                          "maxLength": 2000
+                        }
+                      },
+                      "required": [
+                        "title"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "source": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "label": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 200
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "url": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 2000
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "attachmentId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 64
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "page": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 9999
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "steps"
+                ],
+                "additionalProperties": false
               }
             }
           }
@@ -32392,7 +32637,8 @@
                       "asset_note",
                       "tire_set",
                       "appointment",
-                      "ai_task"
+                      "ai_task",
+                      "task_step"
                     ]
                   },
                   "ownerId": {
@@ -32486,7 +32732,8 @@
                 "asset_note",
                 "tire_set",
                 "appointment",
-                "ai_task"
+                "ai_task",
+                "task_step"
               ]
             }
           },
@@ -41903,6 +42150,11 @@
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
           },
+          "stepCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
           "nextAppointment": {
             "anyOf": [
               {
@@ -41960,6 +42212,7 @@
           "createdBy",
           "commentCount",
           "openNoteCount",
+          "stepCount",
           "nextAppointment",
           "createdAt",
           "updatedAt",
@@ -43335,6 +43588,11 @@
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
           },
+          "stepCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
           "nextAppointment": {
             "anyOf": [
               {
@@ -43374,6 +43632,22 @@
             "items": {
               "$ref": "#/components/schemas/Completion"
             }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskStep"
+            }
+          },
+          "stepsSource": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StepsSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -43404,12 +43678,15 @@
           "createdBy",
           "commentCount",
           "openNoteCount",
+          "stepCount",
           "nextAppointment",
           "createdAt",
           "updatedAt",
           "state",
           "preparations",
-          "recentCompletions"
+          "recentCompletions",
+          "steps",
+          "stepsSource"
         ],
         "additionalProperties": false
       },
@@ -43642,6 +43919,265 @@
           "note",
           "revokedAt",
           "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "TaskStep": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Attachment"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "position",
+          "title",
+          "body",
+          "images"
+        ],
+        "additionalProperties": false
+      },
+      "Attachment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "ownerType": {
+            "type": "string",
+            "enum": [
+              "asset",
+              "room",
+              "page",
+              "task",
+              "defect",
+              "service_log",
+              "part",
+              "asset_hint",
+              "contact",
+              "cost",
+              "insurance_policy",
+              "asset_note",
+              "tire_set",
+              "appointment",
+              "ai_task",
+              "task_step"
+            ]
+          },
+          "ownerId": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "mime": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "guestVisible": {
+            "type": "boolean"
+          },
+          "url": {
+            "type": "string"
+          },
+          "thumbUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "uploadedBy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "ownerType",
+          "ownerId",
+          "filename",
+          "mime",
+          "size",
+          "width",
+          "height",
+          "caption",
+          "guestVisible",
+          "url",
+          "thumbUrl",
+          "uploadedBy",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "StepsSource": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "attachmentId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "attachment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StepsSourceAttachment"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "label",
+          "url",
+          "attachmentId",
+          "page",
+          "attachment"
+        ],
+        "additionalProperties": false
+      },
+      "StepsSourceAttachment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "mime": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "filename",
+          "mime",
+          "url"
+        ],
+        "additionalProperties": false
+      },
+      "TaskSteps": {
+        "type": "object",
+        "properties": {
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskStep"
+            }
+          },
+          "stepsSource": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StepsSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stepCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "steps",
+          "stepsSource",
+          "stepCount"
         ],
         "additionalProperties": false
       },
@@ -44136,6 +44672,11 @@
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
           },
+          "stepCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
           "odometerAssetId": {
             "type": [
               "string",
@@ -44171,6 +44712,7 @@
           "estimate",
           "progress",
           "openNoteCount",
+          "stepCount",
           "odometerAssetId",
           "nextAppointment"
         ],
@@ -50855,122 +51397,6 @@
           "title",
           "snippet",
           "url"
-        ],
-        "additionalProperties": false
-      },
-      "Attachment": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "ownerType": {
-            "type": "string",
-            "enum": [
-              "asset",
-              "room",
-              "page",
-              "task",
-              "defect",
-              "service_log",
-              "part",
-              "asset_hint",
-              "contact",
-              "cost",
-              "insurance_policy",
-              "asset_note",
-              "tire_set",
-              "appointment",
-              "ai_task"
-            ]
-          },
-          "ownerId": {
-            "type": "string"
-          },
-          "filename": {
-            "type": "string"
-          },
-          "mime": {
-            "type": "string"
-          },
-          "size": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "width": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": -9007199254740991,
-                "maximum": 9007199254740991
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "height": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": -9007199254740991,
-                "maximum": 9007199254740991
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "caption": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "guestVisible": {
-            "type": "boolean"
-          },
-          "url": {
-            "type": "string"
-          },
-          "thumbUrl": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "uploadedBy": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "id",
-          "ownerType",
-          "ownerId",
-          "filename",
-          "mime",
-          "size",
-          "width",
-          "height",
-          "caption",
-          "guestVisible",
-          "url",
-          "thumbUrl",
-          "uploadedBy",
-          "createdAt",
-          "updatedAt"
         ],
         "additionalProperties": false
       },

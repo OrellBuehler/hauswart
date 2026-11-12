@@ -10,6 +10,26 @@ export const dateSchema = z.iso.date();
 
 export const idSchema = z.string().min(1).max(64);
 
+/** An `http://` or `https://` address with a host and without a user name or password. */
+export function isHttpUrl(value: string): boolean {
+  if (!URL.canParse(value)) return false;
+  const url = new URL(value);
+  return (
+    (url.protocol === "http:" || url.protocol === "https:") &&
+    url.hostname !== "" &&
+    url.username === "" &&
+    url.password === ""
+  );
+}
+
+/** A web address a person or an assistant gives: trimmed, `isHttpUrl`, at most `max` characters. */
+export function httpUrlSchema(max: number) {
+  return z.string().trim().min(1).max(max).refine(isHttpUrl, {
+    error:
+      "Must be an http:// or https:// address without a user name or password.",
+  });
+}
+
 export const idParamsSchema = z.object({ id: idSchema });
 
 export const scopeSchema = z.enum(SCOPES);

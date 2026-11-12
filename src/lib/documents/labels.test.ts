@@ -38,12 +38,13 @@ describe("isLinkableOwner", () => {
     }
   });
 
-  it("refuses the care hints, the notes of an asset, the tire sets, the appointments and the receipt queue, which the server refuses too", () => {
+  it("refuses the care hints, the notes of an asset, the tire sets, the appointments, the receipt queue and the steps of a task, which the server refuses too", () => {
     expect(isLinkableOwner("asset_hint")).toBe(false);
     expect(isLinkableOwner("asset_note")).toBe(false);
     expect(isLinkableOwner("tire_set")).toBe(false);
     expect(isLinkableOwner("appointment")).toBe(false);
     expect(isLinkableOwner("ai_task")).toBe(false);
+    expect(isLinkableOwner("task_step")).toBe(false);
     const refused = ATTACHMENT_OWNER_TYPES.filter((o) => !isLinkableOwner(o));
     expect(refused).toEqual([
       "asset_hint",
@@ -51,6 +52,7 @@ describe("isLinkableOwner", () => {
       "tire_set",
       "appointment",
       "ai_task",
+      "task_step",
     ]);
   });
 });

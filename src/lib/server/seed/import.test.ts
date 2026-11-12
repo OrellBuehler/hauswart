@@ -5,7 +5,13 @@ import { ApiError } from "$lib/api/errors";
 import { createApiClient, type FetchLike } from "$lib/api/client";
 import { endpoints } from "$lib/api/registry";
 import { seedSchema, type Seed, type SeedInput } from "$lib/api/schemas/seed";
-import { assets, rooms, taskPreparations, tasks } from "$lib/server/db";
+import {
+  assets,
+  rooms,
+  taskPreparations,
+  taskSteps,
+  tasks,
+} from "$lib/server/db";
 import { createInProcessFetch } from "$lib/testing/api";
 import { createTestToken, createTestUser } from "$lib/testing/auth";
 import { useTestDB } from "$lib/testing/db";
@@ -18,6 +24,8 @@ const exampleJson = (): SeedInput =>
 const example = (): Seed => seedSchema.parse(exampleJson());
 const vehiclesInFile = (seed: Seed) =>
   seed.assets.filter((a) => a.vehicle !== undefined).length;
+const tasksWithSteps = (seed: Seed) =>
+  seed.tasks.filter((t) => t.steps !== undefined).length;
 
 describe("seed import", () => {
   const test = useTestDB();
@@ -47,6 +55,7 @@ describe("seed import", () => {
     assets: test.db.select().from(assets).all().length,
     tasks: test.db.select().from(tasks).all().length,
     preps: test.db.select().from(taskPreparations).all().length,
+    steps: test.db.select().from(taskSteps).all().length,
   });
 
   it("validates the example seed file", () => {
@@ -87,8 +96,10 @@ describe("seed import", () => {
         updated: 0,
         unchanged: 0,
       },
+      steps: { created: tasksWithSteps(seed), updated: 0, unchanged: 0 },
     });
     expect(lines).toContain("room kueche created");
+    expect(lines).toContain("steps of dampfabzug-filter written");
     expect(lines.some((l) => l.startsWith("household skipped"))).toBe(true);
     expect(rowCounts()).toMatchObject({
       rooms: 5,
@@ -160,6 +171,7 @@ describe("seed import", () => {
         updated: 0,
         unchanged: seed.tasks.reduce((n, t) => n + t.preparations.length, 0),
       },
+      steps: { created: 0, updated: 0, unchanged: tasksWithSteps(seed) },
     });
     expect(rowCounts()).toEqual(before);
   });
@@ -283,7 +295,13 @@ describe("seed import", () => {
     await expect(importSeed(api, example())).rejects.toMatchObject({
       code: "forbidden",
     });
-    expect(rowCounts()).toEqual({ rooms: 0, assets: 0, tasks: 0, preps: 0 });
+    expect(rowCounts()).toEqual({
+      rooms: 0,
+      assets: 0,
+      tasks: 0,
+      preps: 0,
+      steps: 0,
+    });
   });
 
   it("imports plants and fixtures with their fields", async () => {
@@ -300,6 +318,126 @@ describe("seed import", () => {
     });
     expect(monstera?.roomId).toBeTruthy();
     expect(monstera?.qrSlug).toMatch(/^[a-z2-7]{10}$/);
+  });
+
+  describe("steps", () => {
+    const stepsOf = async (
+      api: Awaited<ReturnType<typeof client>>["api"],
+      key: string,
+    ) => {
+      const row = test.db
+        .select()
+        .from(tasks)
+        .all()
+        .find((t) => t.externalRef === key)!;
+      return (await api.call(endpoints.tasksGet, { params: { id: row.id } }))
+        .steps;
+    };
+    const withSteps = (
+      key: string,
+      steps: { title: string; body?: string }[],
+    ) => {
+      const json = exampleJson();
+      json.tasks = (json.tasks ?? []).map((t) =>
+        t.key === key ? { ...t, steps } : t,
+      );
+      return seedSchema.parse(json);
+    };
+
+    it("writes the steps of the example with the task, in order", async () => {
+      const { api } = await client();
+      await importSeed(api, example());
+      const steps = await stepsOf(api, "dampfabzug-filter");
+      expect(steps.map((s) => s.position)).toEqual([0, 1, 2, 3, 4]);
+      expect(steps[0]).toMatchObject({
+        title: "Dampfabzug ausschalten",
+        images: [],
+      });
+      expect((await stepsOf(api, "backofen-reinigen"))[1]).toMatchObject({
+        title: "Bleche und Roste herausnehmen und einweichen",
+        body: "",
+      });
+      expect(await stepsOf(api, "kehricht")).toEqual([]);
+    });
+
+    it("leaves steps alone unless asked to update, but fills in a task that has none", async () => {
+      const { api, writes, reset } = await client();
+      await importSeed(api, example());
+      const edited = withSteps("dampfabzug-filter", [
+        { title: "Nur noch einer" },
+      ]);
+      reset();
+      const skipped = await importSeed(api, edited);
+      expect(skipped.steps).toMatchObject({ created: 0, updated: 0 });
+      expect(writes().filter((w) => w.includes("/steps"))).toEqual([]);
+      expect(await stepsOf(api, "dampfabzug-filter")).toHaveLength(5);
+
+      // A task a run left without steps gets them on the next run, without `update`.
+      test.db.delete(taskSteps).run();
+      const filled = await importSeed(api, example());
+      expect(filled.steps.created).toBe(tasksWithSteps(example()));
+      expect(await stepsOf(api, "dampfabzug-filter")).toHaveLength(5);
+    });
+
+    it("replaces by place with update, keeps the ids (and so the pictures) and deletes nothing", async () => {
+      const { api, writes, reset } = await client();
+      await importSeed(api, example());
+      const before = await stepsOf(api, "dampfabzug-filter");
+
+      const shorter = withSteps("dampfabzug-filter", [
+        { title: "Neu eins", body: "Neuer Text." },
+        { title: before[1]!.title, body: before[1]!.body },
+      ]);
+      const updated = await importSeed(api, shorter, { update: true });
+      expect(updated.steps.updated).toBe(1);
+      const after = await stepsOf(api, "dampfabzug-filter");
+      expect(after.map((s) => s.id)).toEqual(before.map((s) => s.id));
+      expect(after.map((s) => s.title)).toEqual([
+        "Neu eins",
+        before[1]!.title,
+        before[2]!.title,
+        before[3]!.title,
+        before[4]!.title,
+      ]);
+      expect(after[0]!.body).toBe("Neuer Text.");
+
+      reset();
+      const again = await importSeed(api, shorter, { update: true });
+      expect(again.steps.updated).toBe(0);
+      expect(writes().filter((w) => w.includes("/steps"))).toEqual([]);
+    });
+
+    it("appends the steps a longer file adds", async () => {
+      const { api } = await client();
+      await importSeed(api, example());
+      const before = await stepsOf(api, "backofen-reinigen");
+      const longer = withSteps("backofen-reinigen", [
+        ...before.map((s) => ({ title: s.title, body: s.body })),
+        { title: "Fenster innen reinigen" },
+      ]);
+      const report = await importSeed(api, longer, { update: true });
+      expect(report.steps.updated).toBe(1);
+      const after = await stepsOf(api, "backofen-reinigen");
+      expect(after.slice(0, before.length).map((s) => s.id)).toEqual(
+        before.map((s) => s.id),
+      );
+      expect(after.at(-1)).toMatchObject({ title: "Fenster innen reinigen" });
+    });
+
+    it("rejects a step without a title, too many steps and unknown fields", () => {
+      const bad = (steps: unknown) => {
+        const json = exampleJson();
+        (json.tasks ?? [])[0]!.steps = steps as never;
+        return seedSchema.safeParse(json).success;
+      };
+      expect(bad([{ title: "" }])).toBe(false);
+      expect(bad([{ title: "x", image: "a.png" }])).toBe(false);
+      expect(bad(Array.from({ length: 31 }, () => ({ title: "x" })))).toBe(
+        false,
+      );
+      expect(bad([{ title: "Ein Schritt" }])).toBe(true);
+      expect(bad([])).toBe(true);
+    });
   });
 
   describe("vehicles", () => {
