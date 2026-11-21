@@ -54,6 +54,11 @@ targets:
         # the app cannot require TLS for an address it does not know in advance.
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
+        # Local reminders: a background refresh plans them again now and then.
+        UIBackgroundModes:
+          - fetch
+        BGTaskSchedulerPermittedIdentifiers:
+          - ch.orellbuehler.hauswart.refresh
         NSLocalNetworkUsageDescription: hauswart connects to your own server, which may be on your home network.
         # Attachments: a photo taken for an entry, and photos or files picked for it.
         NSCameraUsageDescription: hauswart uses the camera to take photos that you attach to entries.
