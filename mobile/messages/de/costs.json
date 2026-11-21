@@ -1,0 +1,16 @@
+{
+  "m_costs_month_1": "Januar",
+  "m_costs_month_2": "Februar",
+  "m_costs_month_3": "März",
+  "m_costs_month_4": "April",
+  "m_costs_month_5": "Mai",
+  "m_costs_month_6": "Juni",
+  "m_costs_month_7": "Juli",
+  "m_costs_month_8": "August",
+  "m_costs_month_9": "September",
+  "m_costs_month_10": "Oktober",
+  "m_costs_month_11": "November",
+  "m_costs_month_12": "Dezember",
+  "m_costs_more_menu": "Weitere Kostenfunktionen",
+  "m_costs_month_total": "Ausgaben {amount}"
+}
