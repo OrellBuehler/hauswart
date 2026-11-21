@@ -95,6 +95,10 @@ jobs:
       - name: Build debug APK
         run: ./gradlew androidApp:assembleDebug
 
+      # The minified build is what gets released; R8 fails on a missing keep rule, and that must
+      # not surface for the first time in the release workflow. Unsigned here.
+      - name: Build minified release APK
+        run: ./gradlew androidApp:assembleRelease
       - name: Upload debug APK
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:

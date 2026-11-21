@@ -38,3 +38,12 @@
     @kotlinx.serialization.Transient *;
 }
 
+
+# Ktor
+-keep class io.ktor.** { *; }
+-keepclassmembers class io.ktor.** { volatile <fields>; }
+-dontwarn io.ktor.**
+
+# Tink (pulled in by androidx.security.crypto) references compile-time-only annotations.
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn javax.annotation.**
