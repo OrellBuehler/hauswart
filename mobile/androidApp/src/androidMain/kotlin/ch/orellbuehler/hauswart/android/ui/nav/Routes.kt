@@ -34,6 +34,7 @@ object Routes {
     const val TASK_NEW_ROUTE = "tasks/new?assetId={assetId}"
     const val APPOINTMENT_ROUTE = "appointments/{id}"
     const val ASSET_ROUTE = "assets/{id}"
+    const val ASSET_NEW_ROUTE = "assets/new?kind={kind}&roomId={roomId}"
     const val ROOM_ROUTE = "rooms/{id}"
     const val DOC_ROUTE = "docs/{slug}"
     const val DEFECT_ROUTE = "defects/{id}"
@@ -49,6 +50,15 @@ object Routes {
     fun appointment(id: String) = "appointments/${arg(id)}"
 
     fun asset(id: String) = "assets/${arg(id)}"
+
+    /** The form for a new asset; [kind] is device, plant, vehicle, fixture or other. */
+    fun assetNew(
+        kind: String? = null,
+        roomId: String? = null,
+    ): String {
+        val query = listOfNotNull(kind?.let { "kind=${arg(it)}" }, roomId?.let { "roomId=${arg(it)}" }).joinToString("&")
+        return "assets/new" + if (query.isEmpty()) "" else "?$query"
+    }
 
     fun room(id: String) = "rooms/${arg(id)}"
 

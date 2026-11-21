@@ -59,12 +59,12 @@ func destination(for route: Route) -> AnyView {
     case .appointment: return AnyView(ComingSoonScreen(title: tr("nav_appointments")))
 
     // Inventory, rooms, plants, warranties
-    case .inventory: return AnyView(ComingSoonScreen(title: tr("nav_inventory")))
-    case .asset: return AnyView(ComingSoonScreen(title: tr("nav_inventory")))
-    case .rooms: return AnyView(ComingSoonScreen(title: tr("nav_rooms")))
-    case .room: return AnyView(ComingSoonScreen(title: tr("nav_rooms")))
-    case .plants: return AnyView(ComingSoonScreen(title: tr("nav_plants")))
-    case .warranties: return AnyView(ComingSoonScreen(title: tr("nav_warranties")))
+    case .inventory: return AnyView(InventoryScreen())
+    case let .asset(id): return AnyView(AssetDetailScreen(id: id))
+    case .rooms: return AnyView(RoomsScreen())
+    case let .room(id): return AnyView(RoomDetailScreen(id: id))
+    case .plants: return AnyView(PlantsScreen())
+    case .warranties: return AnyView(WarrantiesScreen())
 
     // Documentation and documents
     case .docs: return AnyView(ComingSoonScreen(title: tr("nav_docs")))

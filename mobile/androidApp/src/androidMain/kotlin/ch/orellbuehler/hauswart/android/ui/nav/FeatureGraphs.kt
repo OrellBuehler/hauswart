@@ -13,6 +13,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import ch.orellbuehler.hauswart.android.ui.components.AppScaffold
 import ch.orellbuehler.hauswart.android.ui.components.EmptyState
+import ch.orellbuehler.hauswart.android.ui.inventory.inventoryGraph
 import ch.orellbuehler.hauswart.i18n.tr
 
 private val idArg = listOf(navArgument("id") { type = NavType.StringType })
@@ -40,16 +41,8 @@ fun NavGraphBuilder.featureGraphs(nav: NavController) {
     composable(Routes.APPOINTMENTS) { ComingSoon(nav, "nav_appointments") }
     composable(Routes.APPOINTMENT_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_appointments") }
 
-    // Inventory (devices)
-    composable(Routes.INVENTORY) { ComingSoon(nav, "nav_inventory") }
-    composable(Routes.ASSET_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_inventory") }
-
-    // Rooms
-    composable(Routes.ROOMS) { ComingSoon(nav, "nav_rooms") }
-    composable(Routes.ROOM_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_rooms") }
-
-    // Plants
-    composable(Routes.PLANTS) { ComingSoon(nav, "nav_plants") }
+    // Inventory, rooms, plants, warranties
+    inventoryGraph(nav)
 
     // Documentation
     composable(Routes.DOCS) { ComingSoon(nav, "nav_docs") }
@@ -68,9 +61,6 @@ fun NavGraphBuilder.featureGraphs(nav: NavController) {
 
     // Emergency
     composable(Routes.EMERGENCY) { ComingSoon(nav, "nav_emergency") }
-
-    // Warranties
-    composable(Routes.WARRANTIES) { ComingSoon(nav, "nav_warranties") }
 
     // Insurance
     composable(Routes.INSURANCE) { ComingSoon(nav, "nav_insurance") }
