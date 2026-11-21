@@ -22,6 +22,10 @@ data class SettingsState(
     val language: String,
     val languages: List<LanguageOption>,
     val signingOut: Boolean = false,
+    /** The sub-screens: notifications, reminders, household, integrations, calendar. */
+    val entries: List<SettingsEntry> = emptyList(),
+    /** What only the web app can do, as rows that open the browser. */
+    val browserLinks: List<SettingsBrowserLink> = emptyList(),
 )
 
 class SettingsStore(
@@ -35,6 +39,8 @@ class SettingsStore(
                 serverUrl = app.session.serverUrl ?: "",
                 language = app.locale,
                 languages = I18n.locales.map { LanguageOption(it, tr("locale_name_$it")) },
+                entries = settingsEntries(),
+                browserLinks = settingsBrowserLinks(app.session.serverUrl ?: ""),
             )
         },
     ) {
@@ -49,7 +55,14 @@ class SettingsStore(
     fun setLanguage(code: String) {
         if (code == current.language || code !in I18n.locales) return
         app.locale = code
-        update { it.copy(language = code, languages = I18n.locales.map { l -> LanguageOption(l, tr("locale_name_$l")) }) }
+        update {
+            it.copy(
+                language = code,
+                languages = I18n.locales.map { l -> LanguageOption(l, tr("locale_name_$l")) },
+                entries = settingsEntries(),
+                browserLinks = settingsBrowserLinks(app.session.serverUrl ?: ""),
+            )
+        }
     }
 
     /** Revokes the device token and returns to the sign-in; the app switches screens by itself. */

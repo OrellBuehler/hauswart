@@ -1,0 +1,14 @@
+{
+  "m_settings_section_browser": "Only in the browser",
+  "m_settings_open_browser": "Open in browser",
+  "m_settings_browser_password": "Account and password",
+  "m_settings_browser_feeds": "Calendar subscriptions (iCal)",
+  "m_settings_section_notifications": "Notifications",
+  "m_settings_section_system": "Household and connections",
+  "m_settings_integration_editable": "Personal account",
+  "m_settings_integration_household": "For the whole household",
+  "m_settings_calendar_intro": "hauswart writes appointments, due dates and deadlines into a Home Assistant calendar. You can add, change or remove calendars in the browser.",
+  "m_settings_calendar_sync_paused": "Switch the calendar on to sync it.",
+  "m_settings_test_running": "Testing …",
+  "m_settings_not_available": "This server has no such connection."
+}
