@@ -15,8 +15,10 @@ import ch.orellbuehler.hauswart.android.ui.appointments.appointmentsGraph
 import ch.orellbuehler.hauswart.android.ui.components.AppScaffold
 import ch.orellbuehler.hauswart.android.ui.components.EmptyState
 import ch.orellbuehler.hauswart.android.ui.costs.costsGraph
+import ch.orellbuehler.hauswart.android.ui.defects.defectsGraph
 import ch.orellbuehler.hauswart.android.ui.inventory.inventoryGraph
 import ch.orellbuehler.hauswart.android.ui.notifications.notificationsGraph
+import ch.orellbuehler.hauswart.android.ui.parts.partsGraph
 import ch.orellbuehler.hauswart.android.ui.search.searchGraph
 import ch.orellbuehler.hauswart.android.ui.tasks.tasksGraph
 import ch.orellbuehler.hauswart.android.ui.vehicles.vehiclesGraph
@@ -47,12 +49,10 @@ fun NavGraphBuilder.featureGraphs(nav: NavController) {
     composable(Routes.DOCUMENTS) { ComingSoon(nav, "nav_documents") }
 
     // Defects
-    composable(Routes.DEFECTS) { ComingSoon(nav, "nav_defects") }
-    composable(Routes.DEFECT_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_defects") }
+    defectsGraph(nav)
 
     // Parts
-    composable(Routes.PARTS) { ComingSoon(nav, "nav_parts") }
-    composable(Routes.PART_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_parts") }
+    partsGraph(nav)
 
     // Emergency
     composable(Routes.EMERGENCY) { ComingSoon(nav, "nav_emergency") }

@@ -46,6 +46,9 @@ object Routes {
     const val COSTS_BALANCES_ROUTE = "costs/balances?book={book}"
     const val INSURANCE_ROUTE = "insurance/{id}"
 
+    // Defects: the form is a screen of its own so that devices and rooms can record a defect.
+    const val DEFECT_NEW_ROUTE = "defects/new?assetId={assetId}&roomId={roomId}"
+
     // Appointments: the form is a screen of its own so that the cards on tasks, devices and contacts can link to it.
     const val APPOINTMENT_NEW_ROUTE =
         "appointments/new?taskId={taskId}&assetId={assetId}&contactId={contactId}&occurrenceKey={occurrenceKey}"
@@ -106,6 +109,15 @@ object Routes {
 
     /** Balances and settlements; [bookArg] is a book id or `all`. */
     fun costsBalances(bookArg: String? = null) = "costs/balances" + (bookArg?.let { "?book=${arg(it)}" } ?: "")
+
+    /** The form for a new defect, optionally for a device or a room. */
+    fun defectNew(
+        assetId: String? = null,
+        roomId: String? = null,
+    ): String {
+        val query = listOfNotNull(assetId?.let { "assetId=${arg(it)}" }, roomId?.let { "roomId=${arg(it)}" }).joinToString("&")
+        return "defects/new" + if (query.isEmpty()) "" else "?$query"
+    }
 
     fun insurance(id: String) = "insurance/${arg(id)}"
 
