@@ -44,6 +44,13 @@ enum Route: Hashable {
     case defectNew(String?, String?)
     // Documentation: the saved states of a page (by address)
     case docHistory(String)
+    // Settings sub-screens
+    case settingsNotifications
+    case settingsReminders
+    case settingsHousehold
+    case settingsIntegrations
+    case settingsIntegration(String)
+    case settingsCalendar
 
     // Costs: balances and settlements of a book (`all` for every book, else the id of a book)
     case costsBalances(String)
@@ -67,6 +74,12 @@ func destination(for route: Route) -> AnyView {
 
     // Settings
     case .settings: return AnyView(SettingsScreen())
+    case .settingsNotifications: return AnyView(NotificationSettingsScreen())
+    case .settingsReminders: return AnyView(ReminderSettingsScreen())
+    case .settingsHousehold: return AnyView(HouseholdSettingsScreen())
+    case .settingsIntegrations: return AnyView(IntegrationsScreen())
+    case let .settingsIntegration(kind): return AnyView(IntegrationScreen(kind: kind))
+    case .settingsCalendar: return AnyView(CalendarTargetsScreen())
 
     // Tasks
     case .tasks: return AnyView(TasksScreen())

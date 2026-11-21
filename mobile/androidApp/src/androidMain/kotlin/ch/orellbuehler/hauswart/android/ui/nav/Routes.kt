@@ -49,6 +49,14 @@ object Routes {
     // Defects: the form is a screen of its own so that devices and rooms can record a defect.
     const val DEFECT_NEW_ROUTE = "defects/new?assetId={assetId}&roomId={roomId}"
 
+    // Settings sub-screens
+    const val SETTINGS_NOTIFICATIONS = "settings/notifications"
+    const val SETTINGS_REMINDERS = "settings/reminders"
+    const val SETTINGS_HOUSEHOLD = "settings/household"
+    const val SETTINGS_INTEGRATIONS = "settings/integrations"
+    const val SETTINGS_INTEGRATION_ROUTE = "settings/integrations/{kind}"
+    const val SETTINGS_CALENDAR = "settings/calendar"
+
     // Appointments: the form is a screen of its own so that the cards on tasks, devices and contacts can link to it.
     const val APPOINTMENT_NEW_ROUTE =
         "appointments/new?taskId={taskId}&assetId={assetId}&contactId={contactId}&occurrenceKey={occurrenceKey}"
@@ -120,6 +128,8 @@ object Routes {
     }
 
     fun insurance(id: String) = "insurance/${arg(id)}"
+
+    fun settingsIntegration(kind: String) = "settings/integrations/${arg(kind)}"
 
     fun arg(value: String): String = Uri.encode(value)
 }

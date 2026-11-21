@@ -22,6 +22,22 @@ struct SettingsScreen: View {
                     }
                 }
             }
+            Section(tr("m_settings_section_system")) {
+                ForEach(state.entries, id: \.id) { entry in
+                    if let route = SettingsRoutes.route(for: entry.id) {
+                        NavigationLink(value: route) {
+                            Text(entry.title)
+                        }
+                    }
+                }
+            }
+            if !state.browserLinks.isEmpty {
+                Section(tr("m_settings_section_browser")) {
+                    ForEach(state.browserLinks, id: \.id) { link in
+                        BrowserRow(title: link.title, url: link.url)
+                    }
+                }
+            }
             Section(tr("m_settings_server")) {
                 ValueRow(label: tr("m_settings_server"), value: state.serverUrl)
                 ValueRow(label: tr("m_settings_server_version"), value: state.serverVersion)

@@ -1,0 +1,14 @@
+{
+  "m_settings_section_browser": "Nur im Browser möglich",
+  "m_settings_open_browser": "Im Browser öffnen",
+  "m_settings_browser_password": "Konto und Passwort",
+  "m_settings_browser_feeds": "Kalender-Abos (iCal)",
+  "m_settings_section_notifications": "Benachrichtigungen",
+  "m_settings_section_system": "Haushalt und Verbindungen",
+  "m_settings_integration_editable": "Persönliches Konto",
+  "m_settings_integration_household": "Für den ganzen Haushalt",
+  "m_settings_calendar_intro": "hauswart trägt Termine, Fälligkeiten und Fristen in einen Kalender von Home Assistant ein. Kalender hinzufügen, ändern oder entfernen kannst du im Browser.",
+  "m_settings_calendar_sync_paused": "Schalte den Kalender ein, um zu synchronisieren.",
+  "m_settings_test_running": "Wird getestet …",
+  "m_settings_not_available": "Diese Verbindung gibt es auf diesem Server nicht."
+}
