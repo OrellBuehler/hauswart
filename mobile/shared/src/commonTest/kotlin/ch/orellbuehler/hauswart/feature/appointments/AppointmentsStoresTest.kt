@@ -317,6 +317,8 @@ class AppointmentsStoresTest {
             store.await { it.detail != null }
 
             server.on("PATCH", "/api/v1/appointments/a1", json(a.copy(status = "cancelled")))
+            // The store reloads after its own change; the appointment has to say the same by then.
+            server.on("GET", "/api/v1/appointments/a1", json(a.copy(status = "cancelled")))
             store.cancel()
             val cancelled = store.await { it.detail?.status == "cancelled" && it.busy.isEmpty() }
             assertEquals(tr("appointment_cancelled_toast", "title" to "Visit"), cancelled.notice)
@@ -332,6 +334,7 @@ class AppointmentsStoresTest {
             )
 
             server.on("PATCH", "/api/v1/appointments/a1", json(a))
+            server.on("GET", "/api/v1/appointments/a1", json(a))
             store.reopen()
             val reopened = store.await { it.detail?.status == "planned" && it.busy.isEmpty() }
             assertEquals(tr("appointment_reopened_toast", "title" to "Visit"), reopened.notice)

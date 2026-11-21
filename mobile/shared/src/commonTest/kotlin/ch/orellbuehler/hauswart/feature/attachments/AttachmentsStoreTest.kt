@@ -205,6 +205,8 @@ class AttachmentsStoreTest {
 
             server.offline = false
             server.on("POST", "/api/v1/attachments", attachment("a9", "photo.jpg"), HttpStatusCode.Created)
+            // The store reloads after its own change; the list has to contain the file by then.
+            server.on("GET", "/api/v1/attachments", page(attachment("a9", "photo.jpg")))
             store.retryUpload(failed.id)
             val state = store.await { it.rows.isNotEmpty() && it.uploads.isEmpty() }
             assertEquals("a9", state.rows.single().id)

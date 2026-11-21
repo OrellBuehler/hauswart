@@ -14,11 +14,11 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -153,8 +153,13 @@ class TestApp(
             }
         }
 
+    /**
+     * Stops the app's background work. The main dispatcher stays a test dispatcher on purpose: a
+     * request that is still in flight when a test ends resumes on it, and with no main dispatcher
+     * that resumption fails and is reported against whichever test runs next.
+     */
     fun close() {
-        Dispatchers.resetMain()
+        app.background.cancel()
     }
 }
 
