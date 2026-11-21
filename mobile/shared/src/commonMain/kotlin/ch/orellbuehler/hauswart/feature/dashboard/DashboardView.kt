@@ -29,6 +29,10 @@ const val SECTION_LATER = "later"
 const val SECTION_SIGNAL = "signal"
 const val SECTION_PREPARATIONS = "preparations"
 
+const val ATTENTION_FINANCE = "finance"
+const val ATTENTION_RECEIPTS = "receipts"
+const val ATTENTION_REVIEW = "review"
+
 const val LATER_PREVIEW = 5
 private const val DEADLINE_SOON_DAYS = 30
 private const val BOOKS_SHOWN = 4
@@ -135,6 +139,19 @@ data class CostsCard(
     val budgetExceeded: Boolean,
 )
 
+/** A card that asks for something: bank suggestions to decide, entries to review, receipts to book. */
+data class AttentionCard(
+    /** [ATTENTION_FINANCE], [ATTENTION_RECEIPTS] or [ATTENTION_REVIEW]; the screen maps it to where the card leads. */
+    val id: String,
+    val title: String,
+    val description: String,
+    val count: Long,
+    /** "3 open suggestions" */
+    val text: String,
+    val linkLabel: String,
+    val tone: String,
+)
+
 data class DashboardView(
     val tiles: List<CountTile>,
     val sections: List<TaskSection>,
@@ -143,6 +160,7 @@ data class DashboardView(
     val warranties: List<WarrantyItem>,
     val orderNow: List<OrderItem>,
     val costs: CostsCard?,
+    val attention: List<AttentionCard> = emptyList(),
 ) {
     /** Nothing to do: no task in any section and no preparation. */
     val nothingToDo: Boolean get() = sections.isEmpty()
@@ -230,8 +248,47 @@ fun dashboardView(
                 )
             },
         costs = costsCard(dashboard.costsYearToDate, dashboard.balances, dashboard.budgetAlerts),
+        attention = attentionCards(dashboard),
     )
 }
+
+/** The cards the web home shows for counts above zero, in its order: finance inbox, receipts waiting, entries to review. */
+private fun attentionCards(dashboard: Dashboard): List<AttentionCard> =
+    listOfNotNull(
+        dashboard.pendingFinanceSuggestions.takeIf { it > 0 }?.let {
+            AttentionCard(
+                id = ATTENTION_FINANCE,
+                title = tr("finance_inbox_title"),
+                description = tr("finance_inbox_description"),
+                count = it,
+                text = tr("finance_count", "count" to it),
+                linkLabel = tr("dashboard_to_finance_inbox"),
+                tone = TONE_MUTED,
+            )
+        },
+        dashboard.pendingReceiptCount.takeIf { it > 0 }?.let {
+            AttentionCard(
+                id = ATTENTION_RECEIPTS,
+                title = tr("dashboard_receipts_title"),
+                description = tr("dashboard_receipts_description"),
+                count = it,
+                text = tr("costs_receipts_pending", "count" to it),
+                linkLabel = tr("dashboard_to_receipts"),
+                tone = TONE_DUE,
+            )
+        },
+        dashboard.reviewNeededCount.takeIf { it > 0 }?.let {
+            AttentionCard(
+                id = ATTENTION_REVIEW,
+                title = tr("dashboard_review_title"),
+                description = tr("dashboard_review_description"),
+                count = it,
+                text = tr("costs_review_banner", "count" to it),
+                linkLabel = tr("dashboard_to_review"),
+                tone = TONE_DUE,
+            )
+        },
+    )
 
 fun taskTone(status: String): String =
     when (status) {

@@ -23,6 +23,10 @@ private fun androidx.navigation.NavBackStackEntry.text(name: String): String? = 
 
 fun NavGraphBuilder.costsGraph(nav: NavController) {
     composable(Routes.COSTS) { CostsScreen(nav) }
+    composable(Routes.COSTS_REVIEW) { CostsScreen(nav, reviewAll = true) }
+    composable(Routes.COSTS_REPORT_ROUTE, arguments = listOf(optional("book"), optional("year"))) { entry ->
+        CostsReportScreen(nav, entry.text("book"), entry.text("year")?.toIntOrNull() ?: 0)
+    }
     composable(Routes.COST_ROUTE, arguments = idArgument) { entry ->
         CostDetailScreen(nav, requireNotNull(entry.text("id")))
     }

@@ -146,3 +146,71 @@ struct FormHeading: View {
             .textCase(nil)
     }
 }
+
+/// "Tie to a bank transaction": the pending transactions of the finance app that fit the entry as typed. Sections
+/// of a `Form`; tapping a transaction chooses it, tapping it again lets go. Nothing shows while there is nothing to
+/// pick and nothing failed.
+struct BankMatchesSection: View {
+    let matches: MatchesView
+    let onChoose: (String) -> Void
+    let onRetry: () -> Void
+
+    var body: some View {
+        if matches.visible {
+            Section {
+                if matches.failed {
+                    Text(tr("match_error_load"))
+                        .font(.subheadline)
+                    Button(matches.retryLabel) { onRetry() }
+                } else {
+                    Text(matches.description_)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    ForEach(matches.items, id: \.id) { item in
+                        Button {
+                            onChoose(item.id)
+                        } label: {
+                            HStack(alignment: .top, spacing: 12) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(item.title)
+                                        .foregroundStyle(Color.primary)
+                                        .lineLimit(2)
+                                    Text(item.booked)
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                    if item.chosen {
+                                        Text(tr("match_chosen"))
+                                            .font(.footnote.weight(.semibold))
+                                            .foregroundStyle(Color.accentColor)
+                                    }
+                                }
+                                Spacer()
+                                Text(item.amount)
+                                    .foregroundStyle(Color.primary)
+                                if item.chosen {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundStyle(Color.accentColor)
+                                }
+                            }
+                        }
+                        .accessibilityLabel(item.label)
+                    }
+                }
+            } header: {
+                FormHeading(text: matches.title)
+            }
+        }
+        if matches.released {
+            Section {
+                Text(matches.releasedNote)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        if let error = matches.error {
+            Section {
+                FieldError(text: error)
+            }
+        }
+    }
+}

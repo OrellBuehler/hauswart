@@ -73,6 +73,25 @@ struct DocumentsScreen: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                if !state.tags.isEmpty {
+                    Picker(tr("documents_filter_tag"), selection: tagBinding) {
+                        Text(tr("documents_filter_tag_any")).tag("")
+                        ForEach(state.tags, id: \.value) { option in
+                            Text(option.label).tag(option.value)
+                        }
+                    }
+                }
+                if !state.correspondents.isEmpty {
+                    Picker(tr("documents_filter_correspondent"), selection: correspondentBinding) {
+                        Text(tr("documents_filter_correspondent_any")).tag("")
+                        ForEach(state.correspondents, id: \.value) { option in
+                            Text(option.label).tag(option.value)
+                        }
+                    }
+                }
+                if let error = state.filterError {
+                    ErrorBanner(error: error)
+                }
                 Text(tr(query.trimmingCharacters(in: .whitespaces).isEmpty ? "document_link_search_hint" : "document_link_search_live"))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -125,6 +144,20 @@ struct DocumentsScreen: View {
             }
         }
         .refreshable { model.store.refresh() }
+    }
+
+    private var tagBinding: Binding<String> {
+        Binding(
+            get: { model.state.tag },
+            set: { model.store.setTag(id: $0) }
+        )
+    }
+
+    private var correspondentBinding: Binding<String> {
+        Binding(
+            get: { model.state.correspondent },
+            set: { model.store.setCorrespondent(id: $0) }
+        )
     }
 
     private var linkedBinding: Binding<String> {

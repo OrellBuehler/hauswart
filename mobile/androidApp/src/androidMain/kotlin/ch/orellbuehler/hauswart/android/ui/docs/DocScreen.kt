@@ -51,6 +51,7 @@ import ch.orellbuehler.hauswart.android.ui.sections.CommentsSection
 import ch.orellbuehler.hauswart.android.ui.sections.DocumentLinksSection
 import ch.orellbuehler.hauswart.android.ui.sections.viewFile
 import ch.orellbuehler.hauswart.feature.docs.DocViewStore
+import ch.orellbuehler.hauswart.feature.docs.tocAnchorUrl
 import ch.orellbuehler.hauswart.i18n.tr
 import kotlinx.coroutines.launch
 
@@ -68,6 +69,8 @@ fun DocScreen(
     var extras by rememberSaveable { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var tocOpen by remember { mutableStateOf(false) }
+    var jump by remember { mutableStateOf<Pair<String, Int>?>(null) }
     val cannotOpen = tr("m_cannot_open")
     val reportCannotOpen: () -> Unit = { scope.launch { snackbar.showSnackbar(cannotOpen) } }
     val onLink =
@@ -184,7 +187,24 @@ fun DocScreen(
                             CommentsSection(ownerType = "doc_page", ownerId = state.pageId)
                         }
                     } else {
-                        DocWebView(bodyHtml = state.bodyHtml, onLink = onLink, modifier = Modifier.fillMaxSize())
+                        if (state.toc.isNotEmpty()) {
+                            DocToc(
+                                toc = state.toc,
+                                open = tocOpen,
+                                onToggle = { tocOpen = !tocOpen },
+                                onPick = {
+                                    tocOpen = false
+                                    jump = tocAnchorUrl(it) to ((jump?.second ?: 0) + 1)
+                                },
+                            )
+                        }
+                        DocWebView(
+                            bodyHtml = state.bodyHtml,
+                            onLink = onLink,
+                            modifier = Modifier.fillMaxSize(),
+                            jumpTo = jump?.first,
+                            jumpToken = jump?.second ?: 0,
+                        )
                     }
                 }
             error != null -> ErrorBox(error, Modifier.padding(padding), onRetry = store::refresh)

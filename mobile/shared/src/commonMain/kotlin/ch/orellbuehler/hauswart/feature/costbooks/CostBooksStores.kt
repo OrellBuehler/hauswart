@@ -1,7 +1,6 @@
 package ch.orellbuehler.hauswart.feature.costbooks
 
 import ch.orellbuehler.hauswart.HauswartApp
-import ch.orellbuehler.hauswart.api.ApiException
 import ch.orellbuehler.hauswart.api.Patch
 import ch.orellbuehler.hauswart.api.generated.CostBook
 import ch.orellbuehler.hauswart.api.generated.CostBooksCreateRequest
@@ -81,7 +80,7 @@ data class CostBooksState(
 
 /** The reason a book could not be deleted or archived, in words; null for any other error. */
 internal fun bookConflictMessage(
-    e: ApiException,
+    e: UiError,
     name: String,
 ): String? {
     if (e.code != "conflict") return null
@@ -102,11 +101,11 @@ internal fun bookConflictMessage(
 
 /** Why a book could not be made the default, in words; null for any other error. */
 internal fun bookDefaultMessage(
-    e: ApiException,
+    e: UiError,
     name: String,
 ): String? =
     when {
-        e.code == "invalid_request" && "isDefault" in e.fieldErrors -> tr("costbook_error_default_archived", "name" to name)
+        e.code == "invalid_request" && "isDefault" in e.fields -> tr("costbook_error_default_archived", "name" to name)
         e.code == "conflict" -> tr("costbook_error_default_conflict")
         else -> null
     }
@@ -186,25 +185,18 @@ class CostBooksStore(
 
     private fun run(
         id: String,
-        explain: (ApiException) -> String?,
+        explain: (UiError) -> String?,
         block: suspend () -> String,
     ) {
         if (current.busyId != null) return
         update { it.copy(busyId = id, actionError = null) }
         launch({ e ->
-            update { it.copy(busyId = null, actionError = e) }
+            update { it.copy(busyId = null, actionError = explain(e)?.let { text -> UiError(text, e.code) } ?: e) }
             app.changed("costs")
         }) {
-            try {
-                val message = block()
-                update { it.copy(busyId = null, notice = message) }
-                app.changed("costs")
-            } catch (e: ApiException) {
-                val text = explain(e)
-                if (text == null) throw e
-                update { it.copy(busyId = null, actionError = UiError(text, e.code)) }
-                app.changed("costs")
-            }
+            val message = block()
+            update { it.copy(busyId = null, notice = message) }
+            app.changed("costs")
         }
     }
 

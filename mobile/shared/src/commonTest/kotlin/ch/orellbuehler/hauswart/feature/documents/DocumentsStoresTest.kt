@@ -51,6 +51,56 @@ class DocumentsStoresTest {
         "thumbUrl":"/t","previewUrl":"/p","downloadUrl":"/d"}"""
 
     @Test
+    fun tagAndCorrespondentFiltersNarrowTheListByTheirIds() =
+        runTest {
+            integrations(configured = true)
+            server.on("GET", "/api/v1/documents", page(doc(1, "Invoice")))
+            server.on(
+                "GET",
+                "/api/v1/integrations/paperless/tags",
+                """{"items":[{"id":7,"name":"Invoice","color":null,"documentCount":3}]}""",
+            )
+            server.on(
+                "GET",
+                "/api/v1/integrations/paperless/correspondents",
+                """{"items":[{"id":4,"name":"Example Corp","documentCount":2}]}""",
+            )
+            val store = DocumentsListStore(app)
+            val loaded = store.await { it.tags.isNotEmpty() && it.rows.isNotEmpty() }
+            assertEquals(listOf(DocumentFilterOption("7", "Invoice")), loaded.tags)
+            assertEquals(listOf(DocumentFilterOption("4", "Example Corp")), loaded.correspondents)
+            store.setTag("7")
+            store.setCorrespondent("4")
+            val state = store.await { it.tag == "7" && it.correspondent == "4" && !it.loading }
+            assertTrue(state.filtered)
+            val query = server.requestsTo("GET", "/api/v1/documents").last().query
+            assertTrue(query.contains("tag=7") && query.contains("correspondent=4"), query)
+            store.resetFilters()
+            val reset = store.await { it.tag.isEmpty() && !it.loading }
+            assertTrue(!reset.filtered)
+            assertTrue(
+                !server
+                    .requestsTo("GET", "/api/v1/documents")
+                    .last()
+                    .query
+                    .contains("tag="),
+            )
+            store.close()
+        }
+
+    @Test
+    fun theFiltersFailingLeavesTheListWorking() =
+        runTest {
+            integrations(configured = true)
+            server.on("GET", "/api/v1/documents", page(doc(1, "Invoice")))
+            server.onError("GET", "/api/v1/integrations/paperless/tags", HttpStatusCode.BadGateway, "upstream_error")
+            val store = DocumentsListStore(app)
+            val state = store.await { it.filterError != null && it.rows.isNotEmpty() }
+            assertTrue(state.tags.isEmpty())
+            store.close()
+        }
+
+    @Test
     fun withoutAConnectionTheAreaSaysSo() =
         runTest {
             integrations(configured = false)

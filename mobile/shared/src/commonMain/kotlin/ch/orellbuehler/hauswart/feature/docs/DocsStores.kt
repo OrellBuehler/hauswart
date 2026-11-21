@@ -5,6 +5,7 @@ import ch.orellbuehler.hauswart.api.ApiException
 import ch.orellbuehler.hauswart.api.Patch
 import ch.orellbuehler.hauswart.api.generated.DocPage
 import ch.orellbuehler.hauswart.api.generated.DocPageSummary
+import ch.orellbuehler.hauswart.api.generated.Heading
 import ch.orellbuehler.hauswart.api.generated.PagesCreateRequest
 import ch.orellbuehler.hauswart.api.generated.PagesPreviewRequest
 import ch.orellbuehler.hauswart.api.generated.PagesUpdateRequest
@@ -206,6 +207,26 @@ class OpenedDocFile(
     val file: FilePayload,
 )
 
+/** A line of a page's table of contents; [indent] is how many levels it sits below the highest one. */
+data class TocItem(
+    val id: String,
+    val text: String,
+    val indent: Int,
+)
+
+/** A table of contents is worth showing from two headings on (the web's rule). */
+const val TOC_MIN_HEADINGS = 2
+
+/** The table of contents of a page from its headings; empty while there are fewer than [TOC_MIN_HEADINGS]. */
+fun tocOf(headings: List<Heading>): List<TocItem> {
+    if (headings.size < TOC_MIN_HEADINGS) return emptyList()
+    val base = headings.minOf { it.level }
+    return headings.map { TocItem(it.id, it.text, (it.level - base).toInt().coerceIn(0, 5)) }
+}
+
+/** The address that scrolls the page's web view to the heading [id]; the view is loaded at [DOC_BASE_URL]. */
+fun tocAnchorUrl(id: String): String = "$DOC_BASE_URL#$id"
+
 data class DocViewState(
     val slug: String,
     val loading: Boolean = true,
@@ -218,6 +239,8 @@ data class DocViewState(
     val archived: Boolean = false,
     /** What the web view shows, without the surrounding document: see [docDocument]. */
     val bodyHtml: String = "",
+    /** The headings of the page, to jump to; empty for a page with fewer than two. */
+    val toc: List<TocItem> = emptyList(),
     /** A title for a page that does not exist yet, made from the address. */
     val suggestedTitle: String = "",
     val busy: Boolean = false,
@@ -378,6 +401,7 @@ class DocViewStore(
                     pinned = loaded.pinned,
                     archived = loaded.archivedAt != null,
                     bodyHtml = html,
+                    toc = tocOf(loaded.headings),
                 )
             }
         }
@@ -467,19 +491,20 @@ class DocEditStore(
             return
         }
         update { it.copy(saving = true, error = null, fieldErrors = emptyMap()) }
-        launch({ e -> update { it.copy(saving = false, error = failure(e), fieldErrors = e.fields) } }) {
-            try {
-                val saved = send(form)
-                app.changed("docs")
-                update { it.copy(saving = false, savedSlug = saved) }
-            } catch (e: ApiException) {
-                if (slug == null || e.code != "conflict") throw e
+        launch({ e ->
+            if (slug != null && e.code == "conflict") {
                 conflictRev = ((e.details as? JsonObject)?.get("currentRev") as? JsonPrimitive)?.longOrNull
                 val message =
                     conflictRev?.let { tr("editor_conflict_description", "theirs" to it, "mine" to rev) }
                         ?: tr("editor_conflict_description_unknown", "mine" to rev)
                 update { it.copy(saving = false, conflict = true, conflictMessage = message) }
+            } else {
+                update { it.copy(saving = false, error = failure(e), fieldErrors = e.fields) }
             }
+        }) {
+            val saved = send(form)
+            app.changed("docs")
+            update { it.copy(saving = false, savedSlug = saved) }
         }
     }
 

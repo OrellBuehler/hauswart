@@ -6,6 +6,7 @@ import ch.orellbuehler.hauswart.i18n.tr
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
+const val MENU_REPORT = "report"
 const val MENU_BUDGETS = "budgets"
 const val MENU_RECURRING = "recurring"
 const val MENU_INBOX = "inbox"
@@ -67,6 +68,7 @@ class CostsMenuStore(
             pendingReceipts: Long,
         ): List<CostsMenuEntry> =
             listOfNotNull(
+                CostsMenuEntry(MENU_REPORT, tr("costs_tab_report"), null),
                 CostsMenuEntry(MENU_BUDGETS, tr("budgets_title"), null),
                 CostsMenuEntry(MENU_RECURRING, tr("recurrence_title"), null),
                 if (financeConnected) CostsMenuEntry(MENU_INBOX, tr("finance_inbox_title"), null) else null,

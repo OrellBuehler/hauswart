@@ -10,17 +10,25 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AccountBalance
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import ch.orellbuehler.hauswart.android.ui.components.InlineError
 import ch.orellbuehler.hauswart.android.ui.components.ScreenPadding
 import ch.orellbuehler.hauswart.android.ui.components.StatusChip
 import ch.orellbuehler.hauswart.android.ui.components.toneColor
@@ -28,6 +36,7 @@ import ch.orellbuehler.hauswart.feature.costs.BookOption
 import ch.orellbuehler.hauswart.feature.costs.CostBadge
 import ch.orellbuehler.hauswart.feature.costs.CostOption
 import ch.orellbuehler.hauswart.feature.costs.CostRowView
+import ch.orellbuehler.hauswart.feature.costs.MatchesView
 import ch.orellbuehler.hauswart.feature.costs.TagView
 import ch.orellbuehler.hauswart.feature.dashboard.TONE_OK
 import ch.orellbuehler.hauswart.i18n.tr
@@ -135,10 +144,16 @@ fun CostRowItem(
     row: CostRowView,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    selecting: Boolean = false,
 ) {
     ListItem(
         headlineContent = { Text(row.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
-        modifier = modifier.clickable(onClick = onClick),
+        modifier =
+            modifier.clickable(
+                onClickLabel = if (selecting) tr("costs_select_row", "title" to row.title) else null,
+                onClick = onClick,
+            ),
+        leadingContent = if (selecting) ({ Checkbox(checked = row.selected, onCheckedChange = null) }) else null,
         supportingContent = {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(row.meta, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -173,5 +188,77 @@ fun FormSection(
     Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row { Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary) }
         content()
+    }
+}
+
+/**
+ * "Tie to a bank transaction": the pending transactions of the finance app that fit the entry as typed. Tapping one
+ * chooses it, tapping it again lets go. Shows nothing while there is nothing to pick and nothing failed.
+ */
+@Composable
+fun BankMatchesSection(
+    matches: MatchesView,
+    onChoose: (String) -> Unit,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (matches.visible) {
+            OutlinedCard {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Outlined.AccountBalance, contentDescription = null)
+                        Text(matches.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
+                    if (matches.failed) {
+                        Text(tr("match_error_load"), style = MaterialTheme.typography.bodyMedium)
+                        TextButton(onClick = onRetry) { Text(matches.retryLabel, maxLines = 1) }
+                    } else {
+                        Text(
+                            matches.description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        matches.items.forEach { match ->
+                            ListItem(
+                                headlineContent = { Text(match.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+                                supportingContent = {
+                                    Text(
+                                        if (match.chosen) match.booked + "\n" + tr("match_chosen") else match.booked,
+                                        maxLines = 3,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                },
+                                leadingContent =
+                                    if (match.chosen) {
+                                        {
+                                            Icon(
+                                                Icons.Outlined.CheckCircle,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                            )
+                                        }
+                                    } else {
+                                        null
+                                    },
+                                trailingContent = { Text(match.amount, maxLines = 1) },
+                                modifier =
+                                    Modifier
+                                        .clickable(onClickLabel = match.label) { onChoose(match.id) },
+                                colors =
+                                    ListItemDefaults.colors(
+                                        containerColor =
+                                            if (match.chosen) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                    ),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        if (matches.released) {
+            Text(matches.releasedNote, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        matches.error?.let { InlineError(it) }
     }
 }
