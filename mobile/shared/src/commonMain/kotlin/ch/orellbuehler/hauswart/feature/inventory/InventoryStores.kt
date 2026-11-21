@@ -65,7 +65,9 @@ class InventoryStore(
     private val app: HauswartApp,
 ) : Store<InventoryState>(
         InventoryState(
-            kindOptions = listOf(InventoryChoice("", tr("inventory_filter_all_kinds"))) + INVENTORY_KINDS.map { InventoryChoice(it, assetKindLabel(it)) },
+            kindOptions =
+                listOf(InventoryChoice("", tr("inventory_filter_all_kinds"))) +
+                    INVENTORY_KINDS.map { InventoryChoice(it, assetKindLabel(it)) },
             warrantyOptions =
                 listOf(InventoryChoice("", tr("inventory_filter_all_warranties"))) +
                     WARRANTY_STATUS_FILTERS.map { InventoryChoice(it, tr("warranty_filter_$it")) },
@@ -114,7 +116,8 @@ class InventoryStore(
             all = assets.filter { it.kind != "plant" }
             update {
                 it.copy(
-                    roomOptions = listOf(InventoryChoice("", tr("inventory_filter_all_rooms"))) + rooms.map { r -> InventoryChoice(r.id, r.name) },
+                    roomOptions =
+                        listOf(InventoryChoice("", tr("inventory_filter_all_rooms"))) + rooms.map { r -> InventoryChoice(r.id, r.name) },
                 )
             }
             show()
@@ -270,7 +273,11 @@ internal fun plantItems(
             id = plant.id,
             name = plant.name,
             species = plant.species?.takeIf { it.isNotBlank() },
-            place = listOfNotNull(plant.roomName, plant.light).filter { it.isNotBlank() }.joinToString(" · ").ifEmpty { tr("plants_no_room") },
+            place =
+                listOfNotNull(
+                    plant.roomName,
+                    plant.light,
+                ).filter { it.isNotBlank() }.joinToString(" · ").ifEmpty { tr("plants_no_room") },
             hints = plantHints.take(2).map { PlantHint(it.id, it.kind, it.title) },
             moreHints = if (plantHints.size > 2) tr("plants_hints_more", "count" to plantHints.size - 2) else null,
             taskId = task?.id,
@@ -458,7 +465,12 @@ class RoomDetailStore(
                 it.copy(
                     loading = false,
                     room = room,
-                    assets = inRoom.filter { a -> a.archivedAt == null }.sortedBy { a -> a.name.lowercase() }.map { a -> assetRow(a, today, showRoom = false) },
+                    assets =
+                        inRoom
+                            .filter { a ->
+                                a.archivedAt == null
+                            }.sortedBy { a -> a.name.lowercase() }
+                            .map { a -> assetRow(a, today, showRoom = false) },
                     tasks = sortTasks(tasks.filter { t -> taskRoomId(t, assetRooms) == room.id }).map(::taskLine),
                 )
             }

@@ -87,7 +87,13 @@ fun warrantyInfo(
     today: String,
 ): WarrantyInfo {
     val until =
-        if (warrantyUntil != null && warrantyExtendedUntil != null) maxOf(warrantyUntil, warrantyExtendedUntil) else warrantyExtendedUntil ?: warrantyUntil
+        if (warrantyUntil != null &&
+            warrantyExtendedUntil != null
+        ) {
+            maxOf(warrantyUntil, warrantyExtendedUntil)
+        } else {
+            warrantyExtendedUntil ?: warrantyUntil
+        }
     if (until == null) return buildWarranty("unknown", null, null)
     val daysLeft = Dates.diffDays(today, until)
     val status =
@@ -99,7 +105,10 @@ fun warrantyInfo(
     return buildWarranty(status, until, daysLeft)
 }
 
-fun warrantyInfoOf(asset: Asset, today: String): WarrantyInfo = warrantyInfo(asset.warrantyUntil, asset.warrantyExtendedUntil, today)
+fun warrantyInfoOf(
+    asset: Asset,
+    today: String,
+): WarrantyInfo = warrantyInfo(asset.warrantyUntil, asset.warrantyExtendedUntil, today)
 
 /** The warranty as the server worked it out (the warranty overview). */
 fun warrantyInfoOf(warranty: Warranty): WarrantyInfo =
@@ -174,7 +183,11 @@ fun filterAssets(
     filter: AssetFilter,
     today: String,
 ): List<Asset> {
-    val terms = filter.query.lowercase().split(Regex("\\s+")).filter { it.isNotEmpty() }
+    val terms =
+        filter.query
+            .lowercase()
+            .split(Regex("\\s+"))
+            .filter { it.isNotEmpty() }
     return assets.filter { asset ->
         when {
             !filter.archived && asset.archivedAt != null -> false
@@ -194,7 +207,8 @@ fun filterAssets(
 fun shownDate(state: TaskState): String? =
     if (state.dueKind == "estimated" && state.estimate != null) state.estimate.date else state.dueDate ?: state.estimate?.date
 
-private fun shownDateIsEstimate(state: TaskState): Boolean = shownDate(state) != null && (state.dueKind == "estimated" || state.dueDate == null)
+private fun shownDateIsEstimate(state: TaskState): Boolean =
+    shownDate(state) != null && (state.dueKind == "estimated" || state.dueDate == null)
 
 /** Tasks the household has to act on: overdue, due or open. */
 fun isActionable(task: Task): Boolean = task.state?.status.let { it == "overdue" || it == "due" || it == "open" }

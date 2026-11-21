@@ -269,7 +269,12 @@ fun noteExcerpt(
     body: String,
     max: Int = 60,
 ): String {
-    val first = body.trim().lineSequence().firstOrNull()?.trim() ?: ""
+    val first =
+        body
+            .trim()
+            .lineSequence()
+            .firstOrNull()
+            ?.trim() ?: ""
     return if (first.length > max) first.take(max - 1).trimEnd() + "…" else first
 }
 
@@ -286,7 +291,13 @@ fun formatNotesList(
                 body
                     .split("\n")
                     .mapIndexed { index, line ->
-                        if (index == 0) "- " + line.trimEnd() else if (line.isBlank()) "" else "  " + line.trimEnd()
+                        if (index == 0) {
+                            "- " + line.trimEnd()
+                        } else if (line.isBlank()) {
+                            ""
+                        } else {
+                            "  " + line.trimEnd()
+                        }
                     }.joinToString("\n")
             }
     return if (items.isEmpty()) "" else (listOf(heading) + items).joinToString("\n")
@@ -363,7 +374,24 @@ class AssetNotesStore(
             } else {
                 app.api.assetNotes.assetNotesUpdate(noteId, AssetNotesUpdateRequest(body = body))
             }
-            update { it.copy(saving = false, saved = true, notice = InventoryNotice(tr(if (noteId == null) "asset_notes_added_toast" else "asset_notes_saved_toast"))) }
+            update {
+                it.copy(
+                    saving = false,
+                    saved = true,
+                    notice =
+                        InventoryNotice(
+                            tr(
+                                if (noteId ==
+                                    null
+                                ) {
+                                    "asset_notes_added_toast"
+                                } else {
+                                    "asset_notes_saved_toast"
+                                },
+                            ),
+                        ),
+                )
+            }
             app.changed("assets")
         }
     }
@@ -394,7 +422,19 @@ class AssetNotesStore(
             update {
                 it.copy(
                     busyId = null,
-                    notice = InventoryNotice(tr(if (status == "resolved") "asset_notes_resolved_toast" else "asset_notes_reopened_toast"), undo = status == "resolved"),
+                    notice =
+                        InventoryNotice(
+                            tr(
+                                if (status ==
+                                    "resolved"
+                                ) {
+                                    "asset_notes_resolved_toast"
+                                } else {
+                                    "asset_notes_reopened_toast"
+                                },
+                            ),
+                            undo = status == "resolved",
+                        ),
                 )
             }
             app.changed("assets")
@@ -446,7 +486,16 @@ class AssetNotesStore(
             note.resolvedAt?.let { instant ->
                 val whenText = Dates.dateTime(instant, timeZone)
                 val name = note.resolvedByName
-                if (name != null) tr("asset_notes_resolved_by", "when" to whenText, "name" to name) else tr("asset_notes_resolved_at", "when" to whenText)
+                if (name !=
+                    null
+                ) {
+                    tr("asset_notes_resolved_by", "when" to whenText, "name" to name)
+                } else {
+                    tr(
+                        "asset_notes_resolved_at",
+                        "when" to whenText,
+                    )
+                }
             }
         return NoteItem(
             id = note.id,
@@ -657,7 +706,19 @@ class AssetServiceLogStore(
                 it.copy(
                     saving = false,
                     saved = true,
-                    notice = InventoryNotice(tr(if (entryId == null) "service_created_toast" else "service_saved_toast", "title" to saved.title)),
+                    notice =
+                        InventoryNotice(
+                            tr(
+                                if (entryId ==
+                                    null
+                                ) {
+                                    "service_created_toast"
+                                } else {
+                                    "service_saved_toast"
+                                },
+                                "title" to saved.title,
+                            ),
+                        ),
                 )
             }
             app.changed("assets")
@@ -819,7 +880,12 @@ class AssetContactsStore(
         launch({ e -> update { it.copy(busy = false, actionError = e) } }) {
             app.api.contacts.assetContactsUnlink(assetId, linkId)
             lastUnlinked = link
-            update { it.copy(busy = false, notice = InventoryNotice(tr("contact_unlinked_toast", "name" to link.contact.name), undo = true)) }
+            update {
+                it.copy(
+                    busy = false,
+                    notice = InventoryNotice(tr("contact_unlinked_toast", "name" to link.contact.name), undo = true),
+                )
+            }
             app.changed("assets")
         }
     }
@@ -862,7 +928,14 @@ class AssetContactsStore(
                     loading = false,
                     items =
                         links.map { l ->
-                            ContactLinkItem(l.id, l.contactId, l.contact.name, l.contact.company, assetContactRoleLabel(l.role), l.contact.emergency)
+                            ContactLinkItem(
+                                l.id,
+                                l.contactId,
+                                l.contact.name,
+                                l.contact.company,
+                                assetContactRoleLabel(l.role),
+                                l.contact.emergency,
+                            )
                         },
                     contactOptions = contacts.map { c -> InventoryChoice(c.id, c.name) },
                 )

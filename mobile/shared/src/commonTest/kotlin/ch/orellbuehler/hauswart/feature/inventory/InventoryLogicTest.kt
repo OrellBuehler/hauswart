@@ -84,7 +84,14 @@ class InventoryLogicTest {
     fun filterSearchesEveryTermAndFindsAPlateWithoutSpaces() {
         val assets =
             listOf(
-                assetJson("1", "Waschmaschine", roomId = "bad", roomName = "Bad", manufacturer = "Musterwerk", warrantyUntil = "2027-11-20"),
+                assetJson(
+                    "1",
+                    "Waschmaschine",
+                    roomId = "bad",
+                    roomName = "Bad",
+                    manufacturer = "Musterwerk",
+                    warrantyUntil = "2027-11-20",
+                ),
                 assetJson("2", "Backofen", roomId = "kueche", roomName = "Kueche", warrantyUntil = "2026-12-01"),
                 assetJson("3", "Rollo", kind = "fixture", roomId = "bad", roomName = "Bad"),
                 assetJson("4", "Alter Toaster", archived = true, warrantyUntil = "2020-01-01"),

@@ -113,17 +113,22 @@ class WarrantiesStore(
                         statuses.map { s -> WarrantyChip(s, tr("warranty_filter_$s"), all.count { w -> w.status == s }) },
                 rows =
                     shown.map { w ->
-                        val extended = w.warrantyUntil != null && w.warrantyExtendedUntil != null && w.warrantyExtendedUntil > w.warrantyUntil
+                        val extended =
+                            w.warrantyUntil != null && w.warrantyExtendedUntil != null && w.warrantyExtendedUntil > w.warrantyUntil
                         WarrantyRow(
                             assetId = w.assetId,
                             name = w.assetName,
-                            subtitle = listOfNotNull(w.roomName, w.manufacturer, w.model).filter { s -> s.isNotBlank() }.joinToString(" · "),
+                            subtitle =
+                                listOfNotNull(w.roomName, w.manufacturer, w.model)
+                                    .filter { s ->
+                                        s.isNotBlank()
+                                    }.joinToString(" · "),
                             info = warrantyInfoOf(w),
                             extendedText =
                                 if (extended) {
                                     tr(
                                         "asset_warranty_detail",
-                                        "until" to Dates.format(w.warrantyUntil ?: w.effectiveUntil),
+                                        "until" to Dates.format(w.warrantyUntil),
                                         "extended" to Dates.format(w.effectiveUntil),
                                     )
                                 } else {
@@ -186,7 +191,10 @@ class RoomEditStore(
                     val next = (fetchRooms(app).maxOfOrNull { it.sortOrder } ?: -1) + 1
                     app.api.rooms.roomsCreate(RoomsCreateRequest(name = form.name.trim(), icon = icon, notes = notes, sortOrder = next))
                 } else {
-                    app.api.rooms.roomsUpdate(id, RoomsUpdateRequest(name = form.name.trim(), icon = Patch.of(icon), notes = Patch.of(notes)))
+                    app.api.rooms.roomsUpdate(
+                        id,
+                        RoomsUpdateRequest(name = form.name.trim(), icon = Patch.of(icon), notes = Patch.of(notes)),
+                    )
                 }
             update { it.copy(saving = false, savedId = saved.id) }
             app.changed("rooms")
@@ -428,7 +436,12 @@ class AssetEditStore(
             if (!validInterval(every)) errors["everyDays"] = tr("asset_form_interval_invalid")
             if (form.seasonal && !validInterval(summer)) errors["summerEveryDays"] = tr("asset_form_interval_invalid")
         }
-        for ((field, value) in listOf("purchaseDate" to form.purchaseDate, "installedDate" to form.installedDate, "warrantyUntil" to form.warrantyUntil, "warrantyExtendedUntil" to form.warrantyExtendedUntil)) {
+        for ((field, value) in listOf(
+            "purchaseDate" to form.purchaseDate,
+            "installedDate" to form.installedDate,
+            "warrantyUntil" to form.warrantyUntil,
+            "warrantyExtendedUntil" to form.warrantyExtendedUntil,
+        )) {
             if (value.isNotEmpty() && !Dates.isValid(value)) errors[field] = tr("field_invalid_date")
         }
         if (errors.isNotEmpty()) {
@@ -450,7 +463,10 @@ class AssetEditStore(
                     throw e
                 } catch (e: Exception) {
                     app.changed("assets")
-                    val reason = ch.orellbuehler.hauswart.core.uiErrorOf(e).message
+                    val reason =
+                        ch.orellbuehler.hauswart.core
+                            .uiErrorOf(e)
+                            .message
                     update { it.copy(saving = false, error = UiError(tr("asset_form_plan_failed", "error" to reason), "plan_failed")) }
                     return@launch
                 }

@@ -58,7 +58,13 @@ class InventoryStoresTest {
             assertTrue(state.hasArchived)
             assertEquals(tr("inventory_count", "count" to 1), state.countText)
             assertEquals(listOf("", "r1", "r2"), state.roomOptions.map { it.value })
-            assertEquals("valid", state.rows.single().warranty?.status)
+            assertEquals(
+                "valid",
+                state.rows
+                    .single()
+                    .warranty
+                    ?.status,
+            )
 
             store.setShowArchived(true)
             val all = store.await { it.filter.archived }
@@ -84,9 +90,17 @@ class InventoryStoresTest {
     @Test
     fun wateringCompletesTheTaskAndCanBeUndone() =
         runTest {
-            server.on("GET", "/api/v1/assets", page(assetJson("p1", "Ficus", kind = "plant", roomName = "Bad", species = "Ficus benjamina")))
+            server.on(
+                "GET",
+                "/api/v1/assets",
+                page(assetJson("p1", "Ficus", kind = "plant", roomName = "Bad", species = "Ficus benjamina")),
+            )
             server.on("GET", "/api/v1/tasks", page(taskJson("t1", "overdue", "2026-10-01", assetId = "p1", category = "plant")))
-            server.on("GET", "/api/v1/hints", page(hintJson("h1", "a", assetId = "p1"), hintJson("h2", "b", assetId = "p1"), hintJson("h3", "c", assetId = "p1")))
+            server.on(
+                "GET",
+                "/api/v1/hints",
+                page(hintJson("h1", "a", assetId = "p1"), hintJson("h2", "b", assetId = "p1"), hintJson("h3", "c", assetId = "p1")),
+            )
             server.on(
                 "POST",
                 "/api/v1/tasks/t1/complete",
@@ -106,7 +120,15 @@ class InventoryStoresTest {
             val done = store.await { it.notice != null }
             assertEquals(tr("plants_watered_toast", "name" to "Ficus"), done.notice?.message)
             assertTrue(done.notice?.undo == true)
-            assertEquals("manual", server.requestsTo("POST", "/api/v1/tasks/t1/complete").single().json.getValue("source").jsonPrimitive.content)
+            assertEquals(
+                "manual",
+                server
+                    .requestsTo("POST", "/api/v1/tasks/t1/complete")
+                    .single()
+                    .json
+                    .getValue("source")
+                    .jsonPrimitive.content,
+            )
 
             store.undo()
             store.await { it.notice?.message == tr("toast_undone") }
@@ -150,8 +172,26 @@ class InventoryStoresTest {
 
             store.move("r2", -1)
             store.await { !it.busy && server.requestsTo("PATCH", "/api/v1/rooms/r2").isNotEmpty() }
-            assertEquals(0L, server.requestsTo("PATCH", "/api/v1/rooms/r2").single().json.getValue("sortOrder").jsonPrimitive.content.toLong())
-            assertEquals(1L, server.requestsTo("PATCH", "/api/v1/rooms/r1").single().json.getValue("sortOrder").jsonPrimitive.content.toLong())
+            assertEquals(
+                0L,
+                server
+                    .requestsTo("PATCH", "/api/v1/rooms/r2")
+                    .single()
+                    .json
+                    .getValue("sortOrder")
+                    .jsonPrimitive.content
+                    .toLong(),
+            )
+            assertEquals(
+                1L,
+                server
+                    .requestsTo("PATCH", "/api/v1/rooms/r1")
+                    .single()
+                    .json
+                    .getValue("sortOrder")
+                    .jsonPrimitive.content
+                    .toLong(),
+            )
             store.close()
         }
 
@@ -177,7 +217,11 @@ class InventoryStoresTest {
             server.on(
                 "GET",
                 "/api/v1/tasks",
-                page(taskJson("t1", "due", "2026-10-09", assetId = "a1"), taskJson("t2", "due", roomId = "r9"), taskJson("t3", "overdue", roomId = "r1")),
+                page(
+                    taskJson("t1", "due", "2026-10-09", assetId = "a1"),
+                    taskJson("t2", "due", roomId = "r9"),
+                    taskJson("t3", "overdue", roomId = "r1"),
+                ),
             )
             val store = RoomDetailStore(app, "r1")
             val state = store.await { it.room != null }
@@ -200,7 +244,13 @@ class InventoryStoresTest {
             val body = server.requestsTo("POST", "/api/v1/rooms").single().json
             assertEquals("Keller", body.getValue("name").jsonPrimitive.content)
             assertEquals("warehouse", body.getValue("icon").jsonPrimitive.content)
-            assertEquals(5L, body.getValue("sortOrder").jsonPrimitive.content.toLong())
+            assertEquals(
+                5L,
+                body
+                    .getValue("sortOrder")
+                    .jsonPrimitive.content
+                    .toLong(),
+            )
             assertNull(body["notes"])
             store.close()
 
@@ -242,7 +292,12 @@ class InventoryStoresTest {
             server.on(
                 "GET",
                 "/api/v1/warranties",
-                page(w("old", "expired", "2020-01-01", -100), w("later", "valid", "2099-01-01", 900), w("soon", "expiring", "2026-12-01", 30), w("older", "expired", "2019-01-01", -200)),
+                page(
+                    w("old", "expired", "2020-01-01", -100),
+                    w("later", "valid", "2099-01-01", 900),
+                    w("soon", "expiring", "2026-12-01", 30),
+                    w("older", "expired", "2019-01-01", -200),
+                ),
             )
             val store = WarrantiesStore(app)
             val state = store.await { it.rows.isNotEmpty() }
@@ -256,7 +311,18 @@ class InventoryStoresTest {
     @Test
     fun detailShowsFactsAndArchivesWithPatch() =
         runTest {
-            server.on("GET", "/api/v1/assets/a1", assetJson("a1", "Waschmaschine", roomId = "r1", roomName = "Bad", manufacturer = "Musterwerk", warrantyUntil = "2099-01-01"))
+            server.on(
+                "GET",
+                "/api/v1/assets/a1",
+                assetJson(
+                    "a1",
+                    "Waschmaschine",
+                    roomId = "r1",
+                    roomName = "Bad",
+                    manufacturer = "Musterwerk",
+                    warrantyUntil = "2099-01-01",
+                ),
+            )
             server.on("GET", "/api/v1/tasks", page(taskJson("t1", "due", "2026-10-09", assetId = "a1")))
             server.on("PATCH", "/api/v1/assets/a1", assetJson("a1", "Waschmaschine", archived = true))
             server.on("DELETE", "/api/v1/assets/a1", "", HttpStatusCode.NoContent)
@@ -267,7 +333,14 @@ class InventoryStoresTest {
 
             store.toggleArchive()
             store.await { it.notice != null }
-            assertTrue(server.requestsTo("PATCH", "/api/v1/assets/a1").single().json.getValue("archived").jsonPrimitive.boolean)
+            assertTrue(
+                server
+                    .requestsTo("PATCH", "/api/v1/assets/a1")
+                    .single()
+                    .json
+                    .getValue("archived")
+                    .jsonPrimitive.boolean,
+            )
 
             store.delete()
             assertTrue(store.await { it.deleted }.deleted)
@@ -290,10 +363,32 @@ class InventoryStoresTest {
             val asset = server.requestsTo("POST", "/api/v1/assets").single().json
             assertEquals("plant", asset.getValue("kind").jsonPrimitive.content)
             assertNull(asset["category"])
-            val trigger = server.requestsTo("POST", "/api/v1/tasks").single().json.getValue("trigger").jsonObject
+            val trigger =
+                server
+                    .requestsTo("POST", "/api/v1/tasks")
+                    .single()
+                    .json
+                    .getValue("trigger")
+                    .jsonObject
             assertEquals("interval", trigger.getValue("type").jsonPrimitive.content)
-            assertEquals(10L, trigger.getValue("every").jsonPrimitive.content.toLong())
-            assertEquals(4L, trigger.getValue("seasons").jsonArray.single().jsonObject.getValue("every").jsonPrimitive.content.toLong())
+            assertEquals(
+                10L,
+                trigger
+                    .getValue("every")
+                    .jsonPrimitive.content
+                    .toLong(),
+            )
+            assertEquals(
+                4L,
+                trigger
+                    .getValue("seasons")
+                    .jsonArray
+                    .single()
+                    .jsonObject
+                    .getValue("every")
+                    .jsonPrimitive.content
+                    .toLong(),
+            )
             store.close()
         }
 
@@ -354,7 +449,15 @@ class InventoryStoresTest {
     @Test
     fun hintsCreateTogglePinAndMoveWithinTheirGroup() =
         runTest {
-            server.on("GET", "/api/v1/assets/a1/hints", page(hintJson("h1", "One", pinned = true, sortOrder = 0), hintJson("h2", "Two", sortOrder = 0), hintJson("h3", "Three", sortOrder = 0)))
+            server.on(
+                "GET",
+                "/api/v1/assets/a1/hints",
+                page(
+                    hintJson("h1", "One", pinned = true, sortOrder = 0),
+                    hintJson("h2", "Two", sortOrder = 0),
+                    hintJson("h3", "Three", sortOrder = 0),
+                ),
+            )
             server.on("POST", "/api/v1/assets/a1/hints", hintJson("h4", "New"), HttpStatusCode.Created)
             server.on("PATCH", "/api/v1/hints/h1", hintJson("h1", "One"))
             server.on("PATCH", "/api/v1/hints/h2", hintJson("h2", "Two"))
@@ -374,11 +477,27 @@ class InventoryStoresTest {
 
             store.togglePin("h2")
             store.await { server.requestsTo("PATCH", "/api/v1/hints/h2").isNotEmpty() && !it.busy }
-            assertTrue(server.requestsTo("PATCH", "/api/v1/hints/h2").single().json.getValue("pinned").jsonPrimitive.boolean)
+            assertTrue(
+                server
+                    .requestsTo("PATCH", "/api/v1/hints/h2")
+                    .single()
+                    .json
+                    .getValue("pinned")
+                    .jsonPrimitive.boolean,
+            )
 
             store.move("h2", 1)
             store.await { server.requestsTo("PATCH", "/api/v1/hints/h3").isNotEmpty() && !it.busy }
-            assertEquals(10L, server.requestsTo("PATCH", "/api/v1/hints/h3").single().json.getValue("sortOrder").jsonPrimitive.content.toLong())
+            assertEquals(
+                10L,
+                server
+                    .requestsTo("PATCH", "/api/v1/hints/h3")
+                    .single()
+                    .json
+                    .getValue("sortOrder")
+                    .jsonPrimitive.content
+                    .toLong(),
+            )
             store.move("h1", 1)
             assertTrue(server.requestsTo("PATCH", "/api/v1/hints/h1").isEmpty())
             store.close()
@@ -399,16 +518,34 @@ class InventoryStoresTest {
             assertNotNull(store.await { it.formError != null }.formError)
             store.save(null, " New note ")
             store.await { it.saved }
-            assertEquals("New note", server.requestsTo("POST", "/api/v1/assets/a1/notes").single().json.getValue("body").jsonPrimitive.content)
+            assertEquals(
+                "New note",
+                server
+                    .requestsTo("POST", "/api/v1/assets/a1/notes")
+                    .single()
+                    .json
+                    .getValue("body")
+                    .jsonPrimitive.content,
+            )
 
             store.resolve("n1")
             assertTrue(store.await { it.notice?.undo == true }.notice?.undo == true)
             store.undo()
             store.await { it.notice?.message == tr("asset_notes_reopened_toast") }
-            val statuses = server.requests.filter { it.method == "PATCH" }.map { it.json.getValue("status").jsonPrimitive.content }
+            val statuses =
+                server.requests.filter { it.method == "PATCH" }.map {
+                    it.json
+                        .getValue("status")
+                        .jsonPrimitive.content
+                }
             assertEquals(listOf("resolved", "open"), statuses)
 
-            server.on("POST", "/api/v1/asset-notes/n1/to-defect", """{"note":${noteJson("n1", "x", "resolved")},"defect":${defectJson()}}""", HttpStatusCode.Created)
+            server.on(
+                "POST",
+                "/api/v1/asset-notes/n1/to-defect",
+                """{"note":${noteJson("n1", "x", "resolved")},"defect":${defectJson()}}""",
+                HttpStatusCode.Created,
+            )
             store.toDefect("n1")
             assertEquals("d1", store.await { it.notice?.defectId != null }.notice?.defectId)
             store.close()
@@ -427,9 +564,13 @@ class InventoryStoresTest {
             server.on("GET", "/api/v1/assets/a1/notes", page(noteJson("n1", "open one")))
             val store = AssetNotesStore(app, "a1")
             store.await { it.open.isNotEmpty() }
-            assertTrue(server.requests.none { it.query?.contains("resolved") == true })
+            assertTrue(server.requests.none { it.query.contains("resolved") == true })
             store.toggleResolved()
-            store.await { it.resolvedShown && !it.resolvedLoading && server.requests.any { r -> r.query?.contains("status=resolved") == true } }
+            store.await {
+                it.resolvedShown &&
+                    !it.resolvedLoading &&
+                    server.requests.any { r -> r.query.contains("status=resolved") == true }
+            }
             store.close()
         }
 
@@ -444,7 +585,12 @@ class InventoryStoresTest {
             val store = AssetServiceLogStore(app, "a1")
             val state = store.await { it.items.isNotEmpty() && it.openNotes.isNotEmpty() }
             assertEquals("CHF 45.50", state.items.single().costText)
-            assertEquals("45.50", state.items.single().form.cost)
+            assertEquals(
+                "45.50",
+                state.items
+                    .single()
+                    .form.cost,
+            )
             assertEquals(listOf("", "c1"), state.contactOptions.map { it.value })
             assertEquals(listOf("n1"), state.openNotes.map { it.id })
 
@@ -453,12 +599,31 @@ class InventoryStoresTest {
             store.save(null, state.blank.copy(title = "New", cost = "12.5", contactId = "c1", resolvedNoteIds = listOf("n1")))
             store.await { it.saved }
             val body = server.requestsTo("POST", "/api/v1/assets/a1/service-log").single().json
-            assertEquals(1250L, body.getValue("costMinor").jsonPrimitive.content.toLong())
+            assertEquals(
+                1250L,
+                body
+                    .getValue("costMinor")
+                    .jsonPrimitive.content
+                    .toLong(),
+            )
             assertEquals("CHF", body.getValue("currency").jsonPrimitive.content)
-            assertEquals("n1", body.getValue("resolvedNoteIds").jsonArray.single().jsonPrimitive.content)
+            assertEquals(
+                "n1",
+                body
+                    .getValue("resolvedNoteIds")
+                    .jsonArray
+                    .single()
+                    .jsonPrimitive.content,
+            )
             store.ackSaved()
 
-            store.save("s1", state.items.single().form.copy(cost = ""))
+            store.save(
+                "s1",
+                state.items
+                    .single()
+                    .form
+                    .copy(cost = ""),
+            )
             store.await { it.saved }
             val patch = server.requestsTo("PATCH", "/api/v1/assets/a1/service-log/s1").single().json
             assertEquals(JsonNull, patch["costMinor"])
@@ -480,7 +645,15 @@ class InventoryStoresTest {
             assertEquals(tr("contact_link_choose"), store.await { it.formError != null }.formError?.message)
             store.link("c1", "installer")
             store.await { it.saved }
-            assertEquals("installer", server.requestsTo("POST", "/api/v1/assets/a1/contacts").single().json.getValue("role").jsonPrimitive.content)
+            assertEquals(
+                "installer",
+                server
+                    .requestsTo("POST", "/api/v1/assets/a1/contacts")
+                    .single()
+                    .json
+                    .getValue("role")
+                    .jsonPrimitive.content,
+            )
             store.ackSaved()
 
             server.onError("POST", "/api/v1/assets/a1/contacts", HttpStatusCode.Conflict, "conflict")
@@ -498,7 +671,14 @@ class InventoryStoresTest {
             server.on("DELETE", "/api/v1/assets/a1/contacts/l1", "", HttpStatusCode.NoContent)
             server.on("POST", "/api/v1/assets/a1/contacts", link, HttpStatusCode.Created)
             val store = AssetContactsStore(app, "a1")
-            assertEquals(tr("contact_role_seller"), store.await { it.items.isNotEmpty() }.items.single().roleLabel)
+            assertEquals(
+                tr("contact_role_seller"),
+                store
+                    .await { it.items.isNotEmpty() }
+                    .items
+                    .single()
+                    .roleLabel,
+            )
             store.unlink("l1")
             assertTrue(store.await { it.notice?.undo == true }.notice?.undo == true)
             store.undo()
@@ -511,10 +691,19 @@ class InventoryStoresTest {
     @Test
     fun partsOfferOnlyUnlinkedOnesAndUnlinkCanBeUndone() =
         runTest {
-            server.on("GET", "/api/v1/assets/a1/parts", page("""{"assetId":"a1","partId":"p1","part":${partJson("p1", "Filter", stock = 0)}}"""))
+            server.on(
+                "GET",
+                "/api/v1/assets/a1/parts",
+                page("""{"assetId":"a1","partId":"p1","part":${partJson("p1", "Filter", stock = 0)}}"""),
+            )
             server.on("GET", "/api/v1/parts", page(partJson("p1", "Filter", stock = 0), partJson("p2", "Seal")))
             server.on("DELETE", "/api/v1/assets/a1/parts/p1", "", HttpStatusCode.NoContent)
-            server.on("POST", "/api/v1/assets/a1/parts", """{"assetId":"a1","partId":"p2","part":${partJson("p2", "Seal")}}""", HttpStatusCode.Created)
+            server.on(
+                "POST",
+                "/api/v1/assets/a1/parts",
+                """{"assetId":"a1","partId":"p2","part":${partJson("p2", "Seal")}}""",
+                HttpStatusCode.Created,
+            )
             val store = AssetPartsStore(app, "a1")
             val state = store.await { it.items.isNotEmpty() && it.partOptions.isNotEmpty() }
             assertEquals(tr("part_stock_empty"), state.items.single().stockText)
@@ -523,7 +712,15 @@ class InventoryStoresTest {
 
             store.link("p2")
             store.await { it.saved }
-            assertEquals("p2", server.requestsTo("POST", "/api/v1/assets/a1/parts").single().json.getValue("partId").jsonPrimitive.content)
+            assertEquals(
+                "p2",
+                server
+                    .requestsTo("POST", "/api/v1/assets/a1/parts")
+                    .single()
+                    .json
+                    .getValue("partId")
+                    .jsonPrimitive.content,
+            )
             store.unlink("p1")
             assertTrue(store.await { it.notice?.undo == true }.notice?.undo == true)
             store.close()
