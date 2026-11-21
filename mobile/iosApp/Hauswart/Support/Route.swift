@@ -42,6 +42,13 @@ enum Route: Hashable {
 
     // Costs: balances and settlements of a book (`all` for every book, else the id of a book)
     case costsBalances(String)
+
+    // Vehicles: the screens of a vehicle (the id is the asset id; `vehicleTireSet` takes the id of the set)
+    case vehicleOdometer(String)
+    case vehicleTires(String)
+    case vehicleTireSet(String)
+    case vehicleFuel(String)
+    case vehicleStats(String)
 }
 
 /// Returns a type-erased view on purpose: a `switch` over this many cases inside a view builder
@@ -97,6 +104,13 @@ func destination(for route: Route) -> AnyView {
     // Notifications and search
     case .notifications: return AnyView(NotificationsScreen())
     case .search: return AnyView(SearchScreen())
+
+    // Vehicles
+    case let .vehicleOdometer(id): return AnyView(OdometerScreen(assetId: id))
+    case let .vehicleTires(id): return AnyView(TireSetsScreen(assetId: id))
+    case let .vehicleTireSet(id): return AnyView(TireSetDetailScreen(id: id))
+    case let .vehicleFuel(id): return AnyView(FuelLogScreen(assetId: id))
+    case let .vehicleStats(id): return AnyView(VehicleStatsScreen(assetId: id))
     }
 }
 

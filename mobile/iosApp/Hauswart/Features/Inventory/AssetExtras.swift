@@ -2,13 +2,13 @@ import SwiftUI
 
 /// The asset screen is a `ScrollView` of cards (`CardSection`), so an extension returns a card.
 ///
-/// Extension point: the vehicle sections (odometer, tire sets, fuel log) are attached here by the
-/// vehicles feature. It renders nothing until then; the asset screen calls it for every asset.
+/// The vehicle card (odometer, facts and the links to the vehicle screens); the asset screen calls it for every
+/// asset and it shows something only for a vehicle.
 struct AssetVehicleSection: View {
     let assetId: String
 
     var body: some View {
-        EmptyView()
+        VehicleSectionCard(assetId: assetId)
     }
 }
 
