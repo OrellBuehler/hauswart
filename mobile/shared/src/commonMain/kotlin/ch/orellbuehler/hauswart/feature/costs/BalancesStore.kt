@@ -43,6 +43,8 @@ data class SettlementRowView(
     val amount: String,
     val fromUserId: String,
     val toUserId: String,
+    val fromName: String,
+    val toName: String,
 )
 
 data class BalancesState(
@@ -136,8 +138,8 @@ class BalancesStore(
         update { it.copy(deleting = true, actionError = null) }
         launch({ e -> update { it.copy(deleting = false, actionError = e) } }) {
             app.api.costs.settlementsDelete(id)
-            update { it.copy(deleting = false) }
             app.changed("costs")
+            update { it.copy(deleting = false) }
         }
     }
 
@@ -272,6 +274,8 @@ class BalancesStore(
             amount = Money.format(settlement.amountMinor, settlement.currency),
             fromUserId = settlement.fromUserId,
             toUserId = settlement.toUserId,
+            fromName = from,
+            toName = to,
         )
     }
 

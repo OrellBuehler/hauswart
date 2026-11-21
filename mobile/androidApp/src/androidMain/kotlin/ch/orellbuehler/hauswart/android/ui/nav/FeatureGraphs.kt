@@ -13,6 +13,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import ch.orellbuehler.hauswart.android.ui.components.AppScaffold
 import ch.orellbuehler.hauswart.android.ui.components.EmptyState
+import ch.orellbuehler.hauswart.android.ui.costs.costsGraph
 import ch.orellbuehler.hauswart.i18n.tr
 
 private val idArg = listOf(navArgument("id") { type = NavType.StringType })
@@ -77,8 +78,7 @@ fun NavGraphBuilder.featureGraphs(nav: NavController) {
     composable(Routes.INSURANCE_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_insurance") }
 
     // Costs
-    composable(Routes.COSTS) { ComingSoon(nav, "nav_costs", root = true) }
-    composable(Routes.COST_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_costs") }
+    costsGraph(nav)
 
     // Notifications
     composable(Routes.NOTIFICATIONS) { ComingSoon(nav, "notifications_title") }

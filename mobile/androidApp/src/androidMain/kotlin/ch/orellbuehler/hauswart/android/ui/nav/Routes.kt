@@ -40,6 +40,9 @@ object Routes {
     const val PART_ROUTE = "parts/{id}"
     const val CONTACT_ROUTE = "contacts/{id}"
     const val COST_ROUTE = "costs/entry/{id}"
+    const val COST_NEW_ROUTE = "costs/new?book={book}&asset={asset}"
+    const val COSTS_QUICK_ROUTE = "costs/quick?book={book}"
+    const val COSTS_BALANCES_ROUTE = "costs/balances?book={book}"
     const val INSURANCE_ROUTE = "insurance/{id}"
 
     fun task(id: String) = "tasks/${arg(id)}"
@@ -61,6 +64,18 @@ object Routes {
     fun contact(id: String) = "contacts/${arg(id)}"
 
     fun cost(id: String) = "costs/entry/${arg(id)}"
+
+    /** The full entry form; [bookArg] is a book id or `all`, [assetId] ties the new entry to a device. */
+    fun costNew(
+        bookArg: String? = null,
+        assetId: String? = null,
+    ) = "costs/new?" + listOfNotNull(bookArg?.let { "book=${arg(it)}" }, assetId?.let { "asset=${arg(it)}" }).joinToString("&")
+
+    /** The quick entry form; [bookArg] is a book id or `all`. */
+    fun costsQuick(bookArg: String? = null) = "costs/quick" + (bookArg?.let { "?book=${arg(it)}" } ?: "")
+
+    /** Balances and settlements; [bookArg] is a book id or `all`. */
+    fun costsBalances(bookArg: String? = null) = "costs/balances" + (bookArg?.let { "?book=${arg(it)}" } ?: "")
 
     fun insurance(id: String) = "insurance/${arg(id)}"
 

@@ -160,7 +160,7 @@ class BalancesStoreTest {
             )
             server.on("GET", "/api/v1/settlements", page(settlement("s2", amountMinor = 500, bookId = null)))
             store.deleteSettlement("s1")
-            store.await { it.settlements.map { s -> s.id } == listOf("s2") }
+            store.await { !it.deleting && it.settlements.map { s -> s.id } == listOf("s2") }
             assertEquals(1, server.requestsTo("DELETE", "/api/v1/settlements/s1").size)
             store.close()
         }

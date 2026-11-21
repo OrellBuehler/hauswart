@@ -179,6 +179,8 @@ data class QuickEntryState(
     /** The books that take entries. */
     val books: List<BookOption> = emptyList(),
     val people: List<PersonOption> = emptyList(),
+    /** The people as chips for "paid by": the person looking is marked "(du)". */
+    val payers: List<CostOption> = emptyList(),
     val saving: Boolean = false,
     val error: UiError? = null,
     /** Messages per field: `amountMinor`, `category`, `date`, `participants`. */
@@ -394,6 +396,7 @@ class QuickEntryStore(
                     currency = household.currency,
                     books = openBooks(books).map(::bookOptionOf),
                     people = people,
+                    payers = people.map { p -> CostOption(p.id, if (p.id == me) tr("quick_you", "name" to p.name) else p.name) },
                 )
             }
         }
