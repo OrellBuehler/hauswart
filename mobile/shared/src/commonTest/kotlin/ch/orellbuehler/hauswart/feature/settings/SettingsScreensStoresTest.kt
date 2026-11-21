@@ -429,7 +429,7 @@ class CalendarTargetsStoreTest {
             assertFalse(row.canManage)
             assertEquals(listOf(tr("caltargets_kind_appointments"), tr("caltargets_kind_task_due")), row.kinds)
             assertEquals(tr("caltargets_stats_created", "count" to 2), row.lastRun)
-            assertEquals("Home Assistant · House · calendar.house", row.where)
+            assertEquals("Home Assistant · House · calendar.house", row.place)
             store.close()
         }
 

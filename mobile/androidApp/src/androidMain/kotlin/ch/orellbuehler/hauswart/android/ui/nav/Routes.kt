@@ -46,6 +46,14 @@ object Routes {
     const val COSTS_BALANCES_ROUTE = "costs/balances?book={book}"
     const val INSURANCE_ROUTE = "insurance/{id}"
 
+    // Settings sub-screens
+    const val SETTINGS_NOTIFICATIONS = "settings/notifications"
+    const val SETTINGS_REMINDERS = "settings/reminders"
+    const val SETTINGS_HOUSEHOLD = "settings/household"
+    const val SETTINGS_INTEGRATIONS = "settings/integrations"
+    const val SETTINGS_INTEGRATION_ROUTE = "settings/integrations/{kind}"
+    const val SETTINGS_CALENDAR = "settings/calendar"
+
     // Appointments: the form is a screen of its own so that the cards on tasks, devices and contacts can link to it.
     const val APPOINTMENT_NEW_ROUTE =
         "appointments/new?taskId={taskId}&assetId={assetId}&contactId={contactId}&occurrenceKey={occurrenceKey}"
@@ -108,6 +116,8 @@ object Routes {
     fun costsBalances(bookArg: String? = null) = "costs/balances" + (bookArg?.let { "?book=${arg(it)}" } ?: "")
 
     fun insurance(id: String) = "insurance/${arg(id)}"
+
+    fun settingsIntegration(kind: String) = "settings/integrations/${arg(kind)}"
 
     fun arg(value: String): String = Uri.encode(value)
 }

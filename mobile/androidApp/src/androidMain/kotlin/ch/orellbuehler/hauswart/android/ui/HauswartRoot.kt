@@ -16,6 +16,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
@@ -32,8 +33,10 @@ import ch.orellbuehler.hauswart.android.ui.connect.ConnectScreen
 import ch.orellbuehler.hauswart.android.ui.contacts.contactsGraph
 import ch.orellbuehler.hauswart.android.ui.dashboard.dashboardGraph
 import ch.orellbuehler.hauswart.android.ui.more.moreGraph
+import ch.orellbuehler.hauswart.android.ui.nav.PendingLinks
 import ch.orellbuehler.hauswart.android.ui.nav.Routes
 import ch.orellbuehler.hauswart.android.ui.nav.featureGraphs
+import ch.orellbuehler.hauswart.android.ui.nav.open
 import ch.orellbuehler.hauswart.android.ui.theme.HauswartTheme
 import ch.orellbuehler.hauswart.i18n.tr
 
@@ -71,6 +74,13 @@ private fun MainScaffold() {
     val entry by nav.currentBackStackEntryAsState()
     val current = entry?.destination
     val onTab = tabs.any { it.route == current?.route }
+    val pending by PendingLinks.link.collectAsStateWithLifecycle()
+    LaunchedEffect(pending) {
+        pending?.let {
+            nav.open(it)
+            PendingLinks.consume()
+        }
+    }
     Scaffold(
         bottomBar = {
             if (onTab) {

@@ -29,6 +29,9 @@ class ReminderSync(
     private val app: HauswartApp,
     private val clock: () -> Long = ::nowMillis,
 ) {
+    /** The sync with the real clock; Swift cannot use the default argument above. */
+    constructor(app: HauswartApp) : this(app, ::nowMillis)
+
     private val prefs = ReminderPrefs(app.settings)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 

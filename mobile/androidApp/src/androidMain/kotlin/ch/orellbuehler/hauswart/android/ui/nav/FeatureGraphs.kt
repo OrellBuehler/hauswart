@@ -18,6 +18,7 @@ import ch.orellbuehler.hauswart.android.ui.costs.costsGraph
 import ch.orellbuehler.hauswart.android.ui.inventory.inventoryGraph
 import ch.orellbuehler.hauswart.android.ui.notifications.notificationsGraph
 import ch.orellbuehler.hauswart.android.ui.search.searchGraph
+import ch.orellbuehler.hauswart.android.ui.settings.settingsGraph
 import ch.orellbuehler.hauswart.android.ui.tasks.tasksGraph
 import ch.orellbuehler.hauswart.i18n.tr
 
@@ -68,6 +69,9 @@ fun NavGraphBuilder.featureGraphs(nav: NavController) {
 
     // Search
     searchGraph(nav)
+
+    // Settings sub-screens
+    settingsGraph(nav)
 }
 
 /** [titleKey] is the message key of the section's name; a [root] screen is a tab and has no back arrow. */

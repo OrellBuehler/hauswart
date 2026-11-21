@@ -3,6 +3,7 @@ package ch.orellbuehler.hauswart.android
 import android.app.Application
 import android.os.Build
 import ch.orellbuehler.hauswart.HauswartApp
+import ch.orellbuehler.hauswart.android.reminders.RemindersController
 import ch.orellbuehler.hauswart.platform.DeviceInfo
 import ch.orellbuehler.hauswart.platform.PlainStorage
 import ch.orellbuehler.hauswart.platform.SecureStorage
@@ -20,5 +21,12 @@ class HauswartApplication : Application() {
                     language = Locale.getDefault().language,
                 ),
         )
+    }
+
+    val reminders: RemindersController by lazy { RemindersController(this, app) }
+
+    override fun onCreate() {
+        super.onCreate()
+        reminders.start()
     }
 }

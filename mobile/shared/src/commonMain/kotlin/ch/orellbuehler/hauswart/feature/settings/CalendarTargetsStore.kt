@@ -48,7 +48,7 @@ data class CalendarTargetRow(
     val id: String,
     val name: String,
     /** Home Assistant, the calendar in it and its id. */
-    val where: String,
+    val place: String,
     val level: String,
     val stateText: String,
     val stateTone: String,
@@ -183,7 +183,7 @@ class CalendarTargetsStore(
                 CalendarTargetRow(
                     id = t.id,
                     name = t.name,
-                    where = listOfNotNull(tr("integration_ha_name"), t.remoteName, t.remoteCalendarId).joinToString(" · "),
+                    place = listOfNotNull(tr("integration_ha_name"), t.remoteName, t.remoteCalendarId).joinToString(" · "),
                     level = if (t.level == "household") tr("caltargets_level_household") else tr("caltargets_level_user"),
                     stateText = stateText,
                     stateTone = tone,
