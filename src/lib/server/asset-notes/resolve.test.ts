@@ -1,24 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { createAssetNoteRequestSchema } from "$lib/api/schemas/asset-notes";
+import { createAssetNoteRequestSchema } from "#lib/api/schemas/asset-notes.ts";
 import {
   completionServiceLogSchema,
   createServiceLogRequestSchema,
-} from "$lib/api/schemas/service-log";
-import { createAsset } from "$lib/server/assets/assets";
-import { deleteDefect } from "$lib/server/defects/defects";
-import { defects, serviceLog, taskCompletions } from "$lib/server/db";
+} from "#lib/api/schemas/service-log.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import { deleteDefect } from "#lib/server/defects/defects.ts";
+import { defects, serviceLog, taskCompletions } from "#lib/server/db.ts";
 import {
   checkCompletionLog,
   createEntry,
   deleteEntry,
   logCompletion,
   updateEntry,
-} from "$lib/server/service-log/service-log";
-import { completeTask, undoCompletion } from "$lib/server/tasks/completions";
-import { getTask } from "$lib/server/tasks/tasks";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, makeTask } from "$lib/testing/domain";
+} from "#lib/server/service-log/service-log.ts";
+import { completeTask, undoCompletion } from "#lib/server/tasks/completions.ts";
+import { getTask } from "#lib/server/tasks/tasks.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, makeTask } from "#lib/testing/domain.ts";
 import { createNote, getNote, noteToDefect, updateNote } from "./notes";
 
 describe("notes resolved by service log entries", () => {

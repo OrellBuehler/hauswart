@@ -1,13 +1,13 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { createCostBookRequestSchema } from "$lib/api/schemas/cost-books";
-import { createCostRequestSchema } from "$lib/api/schemas/costs";
-import { createAsset } from "$lib/server/assets/assets";
-import { costEntries } from "$lib/server/db";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, NOW } from "$lib/testing/domain";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { createCostBookRequestSchema } from "#lib/api/schemas/cost-books.ts";
+import { createCostRequestSchema } from "#lib/api/schemas/costs.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import { costEntries } from "#lib/server/db.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, NOW } from "#lib/testing/domain.ts";
 import { createCostBook } from "./books";
 import {
   countReviewNeeded,

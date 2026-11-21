@@ -1,10 +1,10 @@
 <script lang="ts">
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import EntityPicker from "$lib/components/connections/entity-picker.svelte";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { m } from "$lib/paraglide/messages";
-  import type { IntervalUnit } from "$lib/tasks/engine/types";
-  import { odometerSignalKey } from "$lib/vehicles/odometer";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import EntityPicker from "#lib/components/connections/entity-picker.svelte";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { IntervalUnit } from "#lib/tasks/engine/types.ts";
+  import { odometerSignalKey } from "#lib/vehicles/odometer.ts";
   import Field from "../field.svelte";
   import NumberField from "../number-field.svelte";
   import OptionSelect from "../option-select.svelte";

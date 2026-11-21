@@ -1,12 +1,12 @@
 import { resolve } from "$app/paths";
-import type { DocSection } from "$lib/api/enums";
+import type { DocSection } from "#lib/api/enums.ts";
 
 export function docHref(slug: string) {
-  return resolve(`/docs/${encodeURIComponent(slug)}` as "/");
+  return resolve(`docs/${encodeURIComponent(slug)}`);
 }
 
 export function docEditHref(slug: string) {
-  return resolve(`/docs/${encodeURIComponent(slug)}/edit` as "/");
+  return resolve(`docs/${encodeURIComponent(slug)}/edit`);
 }
 
 export interface NewDocDefaults {
@@ -24,7 +24,7 @@ export function newDocHref(defaults: NewDocDefaults = {}) {
   if (defaults.roomId) query.set("roomId", defaults.roomId);
   if (defaults.title) query.set("title", defaults.title);
   const qs = query.toString();
-  return resolve(`/docs/new${qs ? `?${qs}` : ""}` as "/");
+  return resolve(`docs/new${qs ? `?${qs}` : ""}`);
 }
 
 export interface DocsFilter {
@@ -44,11 +44,11 @@ export function docsFilterHref(filter: DocsFilter = {}) {
   if (filter.roomId) query.set("roomId", filter.roomId);
   if (filter.archived) query.set("archived", "1");
   const qs = query.toString();
-  return resolve(`/docs${qs ? `?${qs}` : ""}` as "/");
+  return resolve(`docs${qs ? `?${qs}` : ""}`);
 }
 
 export function searchHref(q: string, type?: string | null) {
   const query = new URLSearchParams({ q });
   if (type) query.set("type", type);
-  return resolve(`/search?${query}` as "/");
+  return resolve(`search?${query}`);
 }

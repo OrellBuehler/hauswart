@@ -12,30 +12,30 @@
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import type { z } from "zod";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
   import type {
     CalendarTarget,
     calendarSyncResponseSchema,
-  } from "$lib/api/schemas/calendar-sync";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { targetState } from "$lib/calendar-sync/health";
+  } from "#lib/api/schemas/calendar-sync.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import * as Alert from "#lib/components/ui/alert/index.js";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { targetState } from "#lib/calendar-sync/health.ts";
   import {
     calendarKindLabels,
     capabilityLevel,
     capabilityNotes,
-  } from "$lib/calendar-sync/labels";
-  import { providerName } from "$lib/calendar-sync/providers";
-  import { statLines, statsSummary } from "$lib/calendar-sync/stats";
-  import { integrationErrorMessage } from "$lib/connections/errors";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDateTime, formatRelativeInstant } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/calendar-sync/labels.ts";
+  import { providerName } from "#lib/calendar-sync/providers.ts";
+  import { statLines, statsSummary } from "#lib/calendar-sync/stats.ts";
+  import { integrationErrorMessage } from "#lib/connections/errors.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDateTime, formatRelativeInstant } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import TargetStatusBadge from "./target-status-badge.svelte";
 
   type SyncResult = z.infer<typeof calendarSyncResponseSchema>;
@@ -47,14 +47,15 @@
     onedit,
     ondelete,
     onchanged,
+
+    /** The connection the target writes through is saved and switched on. */
+    /** Called after the target changed on the server; reloads the list. */
   }: {
     target: CalendarTarget;
     timeZone: string | undefined;
-    /** The connection the target writes through is saved and switched on. */
     connectionUsable: boolean;
     onedit: () => void;
     ondelete: () => void;
-    /** Called after the target changed on the server; reloads the list. */
     onchanged: () => Promise<void>;
   } = $props();
 
@@ -219,7 +220,7 @@
         {m.caltargets_offline_note({ provider: name })}
         {#if target.canManage}
           <a
-            href={resolve("/settings/integrations")}
+            href={resolve("settings/integrations")}
             class="text-foreground mt-1 block font-medium underline underline-offset-4 pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center"
           >
             {m.caltargets_noconn_action_member()}

@@ -2,11 +2,11 @@ import {
   USER_LOCALES,
   type OdometerUnit,
   type UserLocale,
-} from "$lib/api/enums";
-import { isApiError } from "$lib/api/errors";
-import type { Task } from "$lib/api/schemas/tasks";
-import { isValidDate } from "$lib/dates";
-import { m } from "$lib/paraglide/messages";
+} from "#lib/api/enums.ts";
+import { isApiError } from "#lib/api/errors.ts";
+import type { Task } from "#lib/api/schemas/tasks.ts";
+import { isValidDate } from "#lib/dates.ts";
+import { m } from "#lib/paraglide/messages.js";
 import { parseOdometerValue } from "./format";
 import { odometerSignalKey } from "./odometer";
 import {

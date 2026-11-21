@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Task } from "$lib/api/schemas/tasks";
+import type { Task } from "#lib/api/schemas/tasks.ts";
 import { isActionable, roomStats, sortTasks, taskRoomId } from "./tasks";
 
 function task(

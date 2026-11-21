@@ -9,29 +9,29 @@
   import PlusIcon from "@lucide/svelte/icons/plus";
   import StarIcon from "@lucide/svelte/icons/star";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { CostBook } from "$lib/api/schemas/cost-books";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import BookFormDialog from "$lib/components/costs/book-form-dialog.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import BookFormDialog from "#lib/components/costs/book-form-dialog.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
   import {
     bookConflictMessage,
     bookDefaultMessage,
     bookIconFor,
-  } from "$lib/costs/books";
-  import { splitModeLabels } from "$lib/costs/labels";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { invalidateAfterOverlay } from "$lib/overlays/use-overlay-history.svelte";
-  import { m } from "$lib/paraglide/messages";
-  import { movedBy, saveOrder } from "$lib/reorder";
+  } from "#lib/costs/books.ts";
+  import { splitModeLabels } from "#lib/costs/labels.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { invalidateAfterOverlay } from "#lib/overlays/use-overlay-history.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { movedBy, saveOrder } from "#lib/reorder.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -91,7 +91,7 @@
           ? m.costbook_archived_toast({ name: book.name })
           : m.costbook_restored_toast({ name: book.name }),
       );
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       toast.error(bookConflictMessage(err, book) ?? apiErrorMessage(err));
     } finally {
@@ -108,11 +108,11 @@
         body: { isDefault: true },
       });
       toast.success(m.costbook_default_toast({ name: book.name }));
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       toast.error(bookDefaultMessage(err, book) ?? apiErrorMessage(err));
       // The book may have changed meanwhile (archived elsewhere): show what the server has.
-      await invalidateAll();
+      await refreshAll();
     } finally {
       busy = false;
     }
@@ -137,7 +137,7 @@
                   }),
               ],
         ),
-        invalidateAll,
+        refreshAll,
       );
       if (failures.length > 0) toast.error(apiErrorMessage(failures[0]));
     } finally {
@@ -166,7 +166,7 @@
       <p class="flex flex-wrap items-center gap-x-2 gap-y-1">
         <!-- eslint-disable svelte/no-navigation-without-resolve -- the address is resolved here, only the query is appended -->
         <a
-          href={resolve(`/costs?book=${encodeURIComponent(book.id)}` as "/")}
+          href={resolve(`costs?book=${encodeURIComponent(book.id)}`)}
           class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 min-w-0 rounded-sm font-medium wrap-anywhere outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
           >{book.name}</a
         >

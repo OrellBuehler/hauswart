@@ -1,7 +1,7 @@
 import {
   documentProviderConfigSchema,
   type DocumentProviderConfig,
-} from "$lib/api/schemas/documents";
+} from "#lib/api/schemas/documents.ts";
 
 /** The settings a connection stored; anything missing or not valid falls back to the defaults. */
 export function readProviderConfig(

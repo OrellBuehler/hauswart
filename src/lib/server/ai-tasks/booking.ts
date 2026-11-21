@@ -1,8 +1,8 @@
 import { and, eq, sql } from "drizzle-orm";
-import { AI_TASK_CLAIM_MINUTES } from "$lib/api/schemas/ai-tasks";
-import { costConflict } from "$lib/server/costs/conflicts";
-import { aiTasks } from "$lib/server/db";
-import { invalidField, type ServiceContext } from "$lib/server/service";
+import { AI_TASK_CLAIM_MINUTES } from "#lib/api/schemas/ai-tasks.ts";
+import { costConflict } from "#lib/server/costs/conflicts.ts";
+import { aiTasks } from "#lib/server/db.ts";
+import { invalidField, type ServiceContext } from "#lib/server/service.ts";
 
 /**
  * A booking names the receipt task it is for (`receiptTaskId`): that task has to exist (400 on the field) and still wait

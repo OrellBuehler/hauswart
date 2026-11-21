@@ -4,22 +4,22 @@
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import { untrack } from "svelte";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import type { OdometerUnit } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { Task } from "$lib/api/schemas/tasks";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { monthName } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { getLocale } from "$lib/paraglide/runtime";
-  import { describeTrigger } from "$lib/tasks/describe";
+  import { api } from "#lib/api/browser.ts";
+  import type { OdometerUnit } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Task } from "#lib/api/schemas/tasks.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Checkbox } from "#lib/components/ui/checkbox/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { monthName } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
+  import { describeTrigger } from "#lib/tasks/describe.ts";
   import {
     DEFAULT_SELECTED,
     SETUP_TEMPLATE_IDS,
@@ -30,9 +30,9 @@
     type SetupContext,
     type SetupParams,
     type TemplateRun,
-  } from "$lib/vehicles/setup";
-  import type { VehicleTemplateId } from "$lib/vehicles/templates";
-  import { cn } from "$lib/utils";
+  } from "#lib/vehicles/setup.ts";
+  import type { VehicleTemplateId } from "#lib/vehicles/templates.ts";
+  import { cn } from "#lib/utils.ts";
 
   let {
     open = $bindable(false),

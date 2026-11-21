@@ -1,13 +1,13 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { getDB, users } from "$lib/server/db";
-import { createCaller, errorCode } from "$lib/testing/api";
+import { getDB, users } from "#lib/server/db.ts";
+import { createCaller, errorCode } from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 
 describe("users directory API", () => {
   useTestDB();

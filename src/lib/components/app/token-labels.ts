@@ -1,6 +1,6 @@
-import type { TokenKind } from "$lib/api/enums";
-import type { Scope } from "$lib/api/scopes";
-import { m } from "$lib/paraglide/messages";
+import type { TokenKind } from "#lib/api/enums.ts";
+import type { Scope } from "#lib/api/scopes.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 export function kindLabel(kind: TokenKind): string {
   switch (kind) {

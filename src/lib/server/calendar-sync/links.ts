@@ -1,7 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
-import type { CalendarLinkStatus } from "$lib/api/enums";
-import { calendarLinks } from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
+import type { CalendarLinkStatus } from "#lib/api/enums.ts";
+import { calendarLinks } from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import type { DesiredItem } from "./items";
 import type { LinkRecord } from "./reconcile";
 

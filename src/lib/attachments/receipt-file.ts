@@ -1,5 +1,5 @@
-import { AI_TASK_PDF_READ_MAX_BYTES } from "$lib/api/schemas/ai-tasks";
-import { m } from "$lib/paraglide/messages";
+import { AI_TASK_PDF_READ_MAX_BYTES } from "#lib/api/schemas/ai-tasks.ts";
+import { m } from "#lib/paraglide/messages.js";
 import {
   MAX_ATTACHMENT_BYTES,
   fileType,

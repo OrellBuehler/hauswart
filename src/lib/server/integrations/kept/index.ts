@@ -1,5 +1,5 @@
-import { registerIntegration } from "$lib/server/connections/registry";
-import { registerFinanceProvider } from "$lib/server/finance/providers";
+import { registerIntegration } from "#lib/server/connections/registry.ts";
+import { registerFinanceProvider } from "#lib/server/finance/providers.ts";
 import { keptIntegration } from "./adapter";
 import { KIND } from "./connection";
 import { startKeptScheduler, type SchedulerOptions } from "./scheduler";

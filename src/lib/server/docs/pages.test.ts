@@ -1,22 +1,22 @@
 import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it } from "vitest";
-import { ApiError } from "$lib/api/errors";
-import { createPageRequestSchema } from "$lib/api/schemas/docs";
-import { createAsset } from "$lib/server/assets/assets";
+import { ApiError } from "#lib/api/errors.ts";
+import { createPageRequestSchema } from "#lib/api/schemas/docs.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
 import {
   createAttachment,
   deleteAttachment,
   getAttachment,
   settleBackgroundWork,
   updateAttachment,
-} from "$lib/server/attachments/attachments";
-import { attachments, docPageRevisions, docPages } from "$lib/server/db";
-import { createRoom } from "$lib/server/rooms/rooms";
-import { plainPng } from "$lib/server/files/test-images";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt } from "$lib/testing/domain";
-import { useTestFilesDir } from "$lib/testing/files";
+} from "#lib/server/attachments/attachments.ts";
+import { attachments, docPageRevisions, docPages } from "#lib/server/db.ts";
+import { createRoom } from "#lib/server/rooms/rooms.ts";
+import { plainPng } from "#lib/server/files/test-images.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
+import { useTestFilesDir } from "#lib/testing/files.ts";
 import { MarkdownError, MAX_MARKDOWN_BYTES } from "./markdown";
 import { shutdownMarkdownWorkers } from "./markdown-runner";
 import {
@@ -658,7 +658,7 @@ describe("doc pages", () => {
       await user();
       const room = createRoom(ctx(), { name: "Bad" });
       const created = await page({ roomId: room.id });
-      test.db.delete((await import("$lib/server/db")).rooms).run();
+      test.db.delete((await import("#lib/server/db.ts")).rooms).run();
       expect(getPage(ctx(), created.slug).roomId).toBeNull();
     });
   });

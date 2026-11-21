@@ -4,9 +4,9 @@ import {
   type CompletionSource,
   type IntegrationKind,
   type TaskSource,
-} from "$lib/api/enums";
-import type { ConnectionRow } from "$lib/server/connections/connections";
-import type { ServiceContext } from "$lib/server/service";
+} from "#lib/api/enums.ts";
+import type { ConnectionRow } from "#lib/server/connections/connections.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 
 /** What a sync run did, by name (`suggestions`, `autoAccepted`, `tasksCreated`, ...). */
 export interface FinanceSyncResult {

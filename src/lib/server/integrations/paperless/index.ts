@@ -1,6 +1,6 @@
-import { registerIntegration } from "$lib/server/connections/registry";
-import { registerDocumentProvider } from "$lib/server/documents/provider";
-import { resumeUploads } from "$lib/server/documents/uploads";
+import { registerIntegration } from "#lib/server/connections/registry.ts";
+import { registerDocumentProvider } from "#lib/server/documents/provider.ts";
+import { resumeUploads } from "#lib/server/documents/uploads.ts";
 import { paperlessIntegration } from "./adapter";
 import { paperlessDocumentProvider } from "./provider";
 import { startPaperlessScheduler, type SchedulerOptions } from "./scheduler";

@@ -1,5 +1,5 @@
-import { getDB } from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
+import { getDB } from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import { bookDueRecurrences } from "./recurrences";
 
 export const RECURRENCE_INTERVAL_MS = 5 * 60 * 1000;

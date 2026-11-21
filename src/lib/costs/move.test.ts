@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { ApiError } from "$lib/api/errors";
-import type { CostBook } from "$lib/api/schemas/cost-books";
+import { ApiError } from "#lib/api/errors.ts";
+import type { CostBook } from "#lib/api/schemas/cost-books.ts";
 import {
   MOVE_COSTS_MAX_IDS,
   type MoveCostsToBookResult,
-} from "$lib/api/schemas/costs";
+} from "#lib/api/schemas/costs.ts";
 import {
   moveFailure,
   movePreview,

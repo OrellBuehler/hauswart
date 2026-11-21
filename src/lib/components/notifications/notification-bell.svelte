@@ -4,14 +4,14 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { Notification } from "$lib/api/schemas/notifications";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Popover from "$lib/components/ui/popover/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { refreshUnread, unread } from "$lib/notifications/unread.svelte";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Notification } from "#lib/api/schemas/notifications.ts";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Popover from "#lib/components/ui/popover/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { refreshUnread, unread } from "#lib/notifications/unread.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import NotificationItem from "./notification-item.svelte";
 
   const POLL_MS = 60_000;
@@ -154,9 +154,7 @@
       {:else}
         <ul class="flex flex-col gap-0.5">
           {#each items as notification (notification.id)}
-            <li>
-              <NotificationItem {notification} onopen={markRead} />
-            </li>
+            <li><NotificationItem {notification} onopen={markRead} /></li>
           {/each}
         </ul>
       {/if}
@@ -165,11 +163,9 @@
       <Button
         variant="ghost"
         class="h-10 w-full"
-        href={resolve("/notifications")}
-        onclick={() => (open = false)}
+        href={resolve("notifications")}
+        onclick={() => (open = false)}>{m.notifications_view_all()}</Button
       >
-        {m.notifications_view_all()}
-      </Button>
     </div>
   </Popover.Content>
 </Popover.Root>

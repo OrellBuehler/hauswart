@@ -1,10 +1,10 @@
 <script lang="ts">
   import FilePlusIcon from "@lucide/svelte/icons/file-plus";
   import FileTextIcon from "@lucide/svelte/icons/file-text";
-  import type { DocPageSummary } from "$lib/api/schemas/docs";
-  import * as Command from "$lib/components/ui/command/index.js";
-  import { sectionLabels } from "$lib/docs/sections";
-  import { m } from "$lib/paraglide/messages";
+  import type { DocPageSummary } from "#lib/api/schemas/docs.ts";
+  import * as Command from "#lib/components/ui/command/index.js";
+  import { sectionLabels } from "#lib/docs/sections.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     open = $bindable(false),

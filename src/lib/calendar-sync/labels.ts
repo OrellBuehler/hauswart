@@ -2,9 +2,9 @@ import type {
   CalendarItemKind,
   CalendarRemoteDeletePolicy,
   CalendarTimedMode,
-} from "$lib/api/enums";
-import type { CalendarTargetCapabilities } from "$lib/api/schemas/calendar-sync";
-import { m } from "$lib/paraglide/messages";
+} from "#lib/api/enums.ts";
+import type { CalendarTargetCapabilities } from "#lib/api/schemas/calendar-sync.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 export const calendarKindLabels: Record<CalendarItemKind, () => string> = {
   appointments: () => m.caltargets_kind_appointments(),

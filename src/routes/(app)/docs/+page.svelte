@@ -9,23 +9,23 @@
   import SearchXIcon from "@lucide/svelte/icons/search-x";
   import XIcon from "@lucide/svelte/icons/x";
   import { untrack } from "svelte";
-  import type { DocSection } from "$lib/api/enums";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import OptionSelect from "$lib/components/assets/option-select.svelte";
-  import RoomPicker from "$lib/components/assets/room-picker.svelte";
-  import DocRow from "$lib/components/docs/doc-row.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { Switch } from "$lib/components/ui/switch/index.js";
-  import { docsFilterHref, newDocHref } from "$lib/docs/links";
+  import type { DocSection } from "#lib/api/enums.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import OptionSelect from "#lib/components/assets/option-select.svelte";
+  import RoomPicker from "#lib/components/assets/room-picker.svelte";
+  import DocRow from "#lib/components/docs/doc-row.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { Switch } from "#lib/components/ui/switch/index.js";
+  import { docsFilterHref, newDocHref } from "#lib/docs/links.ts";
   import {
     DOC_SECTIONS,
     sectionIcons,
     sectionLabels,
-  } from "$lib/docs/sections";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/docs/sections.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -50,8 +50,7 @@
   const filtered = $derived(
     Boolean(filter.q || filter.section || filter.assetId || filter.roomId),
   );
-  const loading = $derived(navigating.to?.url.pathname === resolve("/docs"));
-
+  const loading = $derived(navigating.to?.url.pathname === resolve("docs"));
   const assetNames = $derived(new Map(data.assets.map((a) => [a.id, a.name])));
   const roomNames = $derived(new Map(data.rooms.map((r) => [r.id, r.name])));
   const sectionOptions = $derived(
@@ -94,9 +93,8 @@
     };
     committed = merged.q ?? "";
     void goto(docsFilterHref(merged), {
-      replaceState: true,
-      keepFocus: true,
-      noScroll: true,
+      replace: true,
+      reset: false,
     });
   }
 
@@ -118,10 +116,9 @@
     clearTimeout(timer);
     q = "";
     committed = "";
-    void goto(resolve("/docs"), {
-      replaceState: true,
-      keepFocus: true,
-      noScroll: true,
+    void goto(resolve("docs"), {
+      replace: true,
+      reset: false,
     });
   }
 

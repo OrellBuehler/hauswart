@@ -1,5 +1,5 @@
-import type { AssetKind } from "$lib/api/enums";
-import type { Asset } from "$lib/api/schemas/assets";
+import type { AssetKind } from "#lib/api/enums.ts";
+import type { Asset } from "#lib/api/schemas/assets.ts";
 import { warrantyStatus, type WarrantyStatus } from "./warranty";
 
 export type AssetFilter = {

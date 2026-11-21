@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { createAssetNoteRequestSchema } from "$lib/api/schemas/asset-notes";
-import { createAsset } from "$lib/server/assets/assets";
-import { notifications } from "$lib/server/db";
-import { createPreparation } from "$lib/server/tasks/preparations";
-import { runEvaluationCycle } from "$lib/server/tasks/scheduler";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, everyDays, makeTask } from "$lib/testing/domain";
+import { createAssetNoteRequestSchema } from "#lib/api/schemas/asset-notes.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import { notifications } from "#lib/server/db.ts";
+import { createPreparation } from "#lib/server/tasks/preparations.ts";
+import { runEvaluationCycle } from "#lib/server/tasks/scheduler.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, everyDays, makeTask } from "#lib/testing/domain.ts";
 import { createNote, updateNote } from "./notes";
 
 describe("notices of a task whose asset has open notes", () => {

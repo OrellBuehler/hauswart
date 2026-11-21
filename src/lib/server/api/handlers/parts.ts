@@ -1,4 +1,4 @@
-import type { endpoints } from "$lib/api/registry";
+import type { endpoints } from "#lib/api/registry.ts";
 import {
   linkAssetPart,
   linkTaskPart,
@@ -7,8 +7,8 @@ import {
   unlinkAssetPart,
   unlinkTaskPart,
   updateTaskPart,
-} from "$lib/server/parts/links";
-import { listOrderNow } from "$lib/server/parts/order-now";
+} from "#lib/server/parts/links.ts";
+import { listOrderNow } from "#lib/server/parts/order-now.ts";
 import {
   bookStock,
   createPart,
@@ -18,7 +18,7 @@ import {
   listParts,
   markOrdered,
   updatePart,
-} from "$lib/server/parts/parts";
+} from "#lib/server/parts/parts.ts";
 import type { Handler } from "../bind";
 import {
   wireAssetPart,

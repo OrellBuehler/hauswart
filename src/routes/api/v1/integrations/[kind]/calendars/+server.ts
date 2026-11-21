@@ -1,5 +1,5 @@
-import { endpoints } from "$lib/api/registry";
-import { bind } from "$lib/server/api/bind";
-import { calendars } from "$lib/server/api/handlers/integrations";
+import { endpoints } from "#lib/api/registry.ts";
+import { bind } from "#lib/server/api/bind.ts";
+import { calendars } from "#lib/server/api/handlers/integrations.ts";
 
 export const GET = bind(endpoints.integrationsCalendars, calendars);

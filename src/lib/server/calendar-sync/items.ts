@@ -1,16 +1,16 @@
 import { createHash } from "node:crypto";
 import { eq } from "drizzle-orm";
-import type { CalendarItemKind } from "$lib/api/enums";
-import type { CalendarTargetConfig } from "$lib/api/schemas/calendar-sync";
-import { addDays, zonedTimeToInstant } from "$lib/dates";
+import type { CalendarItemKind } from "#lib/api/enums.ts";
+import type { CalendarTargetConfig } from "#lib/api/schemas/calendar-sync.ts";
+import { addDays, zonedTimeToInstant } from "#lib/dates.ts";
 import {
   readCalendarEntries,
   type CalendarEntry,
-} from "$lib/server/calendar/entries";
-import { householdTimeZone } from "$lib/server/config";
-import { connections } from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
-import { clockAt } from "$lib/server/tasks/evaluator";
+} from "#lib/server/calendar/entries.ts";
+import { householdTimeZone } from "#lib/server/config.ts";
+import { connections } from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
+import { clockAt } from "#lib/server/tasks/evaluator.ts";
 import {
   getCalendarProvider,
   type CalendarItem,

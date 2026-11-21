@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { DocumentUpload } from "$lib/api/schemas/documents";
+import type { DocumentUpload } from "#lib/api/schemas/documents.ts";
 import { documentLinkChanges } from "./changes.svelte";
 import { dismissPush, isActive, pushes, trackPush } from "./pushes.svelte";
 

@@ -8,7 +8,7 @@ const state = vi.hoisted(() => ({
 
 const task = (id: string, status: string) => ({ id, status });
 
-vi.mock("$lib/api/client", () => ({
+vi.mock("#lib/api/client.ts", () => ({
   createApiClient: () => ({
     call: async (endpoint: { id: string }, input?: { query?: Query }) => {
       if (endpoint.id === "householdGet") {

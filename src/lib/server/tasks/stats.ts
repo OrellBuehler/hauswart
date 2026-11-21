@@ -1,8 +1,8 @@
 import { and, eq, gte, isNull, lte } from "drizzle-orm";
-import { addDays, diffDays } from "$lib/dates";
-import { computeStats, type CompletionStats } from "$lib/tasks/engine";
-import { taskCompletions, tasks } from "$lib/server/db";
-import { invalidField, type ServiceContext } from "$lib/server/service";
+import { addDays, diffDays } from "#lib/dates.ts";
+import { computeStats, type CompletionStats } from "#lib/tasks/engine/index.ts";
+import { taskCompletions, tasks } from "#lib/server/db.ts";
+import { invalidField, type ServiceContext } from "#lib/server/service.ts";
 import { clockAt } from "./evaluator";
 
 export const DEFAULT_STATS_DAYS = 90;

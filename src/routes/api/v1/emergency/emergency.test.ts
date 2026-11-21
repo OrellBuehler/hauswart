@@ -1,16 +1,16 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { shutdownMarkdownWorkers } from "$lib/server/docs/markdown-runner";
-import { createCaller, errorCode } from "$lib/testing/api";
+import { shutdownMarkdownWorkers } from "#lib/server/docs/markdown-runner.ts";
+import { createCaller, errorCode } from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt } from "$lib/testing/domain";
-import { useTestFilesDir } from "$lib/testing/files";
-import { pdfInfo } from "$lib/testing/pdf";
-import { SECRET_TEXT, shareFixture } from "$lib/testing/share";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
+import { useTestFilesDir } from "#lib/testing/files.ts";
+import { pdfInfo } from "#lib/testing/pdf.ts";
+import { SECRET_TEXT, shareFixture } from "#lib/testing/share.ts";
 
 type Emergency = {
   household: { name: string };

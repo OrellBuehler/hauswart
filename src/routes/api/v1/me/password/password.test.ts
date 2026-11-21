@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { PASSWORD_MAX, PASSWORD_MIN } from "$lib/api/schemas/auth";
-import { authEvents, users } from "$lib/server/db";
-import { MAX_FAILURES_PER_USER_IP } from "$lib/server/auth/rate-limit";
-import { validateSessionToken } from "$lib/server/auth/sessions";
-import { verifyToken } from "$lib/server/auth/tokens";
+import { PASSWORD_MAX, PASSWORD_MIN } from "#lib/api/schemas/auth.ts";
+import { authEvents, users } from "#lib/server/db.ts";
+import { MAX_FAILURES_PER_USER_IP } from "#lib/server/auth/rate-limit.ts";
+import { validateSessionToken } from "#lib/server/auth/sessions.ts";
+import { verifyToken } from "#lib/server/auth/tokens.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { callRoute } from "$lib/testing/route";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { callRoute } from "#lib/testing/route.ts";
 import { POST as login } from "../../auth/login/+server";
 import { GET as me } from "../../auth/me/+server";
 import { POST as changePassword } from "./+server";

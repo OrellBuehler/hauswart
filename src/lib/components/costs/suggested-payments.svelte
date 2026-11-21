@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { personName, type SuggestedPayment } from "$lib/costs/balances";
-  import { formatMoney } from "$lib/format-money";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { personName, type SuggestedPayment } from "#lib/costs/balances.ts";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     payments,

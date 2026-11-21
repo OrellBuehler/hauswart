@@ -92,9 +92,11 @@ src/lib/server/vehicles/         vehicle details (`vehicle_details`), odometer r
 src/lib/vehicles/                client-safe: odometer.ts (`odometer:<asset id>` key helpers), plate.ts (plate matching), tires.ts (tread limits,
                                  DOT age, distance per set), fuel.ts (full-to-full consumption), stats.ts (distance per month), templates.ts (task bodies), template-mark.ts (the mark on their tasks, the template ids)
 src/lib/server/pdf/render.ts     shared pdfmake wrapper (A4, Roboto from node_modules, no network or file access)
-src/lib/pwa/                     client-safe PWA parts: colors.ts (theme colours, tested against app.css), manifest.ts, options.ts
-                                 (the service worker's whole behaviour; see "Installable app")
+src/lib/pwa/                     client-safe PWA parts: colors.ts (theme colours, tested against app.css), manifest.ts, worker.ts
+                                 (the service worker's whole behaviour; see "Installable app"); the worker itself is src/service-worker/index.ts
 src/lib/server/pwa/service-worker.ts  serves the built worker (build/server/sw.js) with Cache-Control: no-cache and an ETag
+src/lib/server/public-origin.ts  `ORIGIN` for the production entry (scripts/start.ts -> build/start.js): the adapter has no such setting
+kit.config.ts                    SvelteKit options (csrf, paths, csp, serviceWorker); vite.config.ts spreads them into the plugin
 src/lib/server/seed/import.ts    seed importer (through the REST API); CLI in scripts/seed.ts, data in seed/
 mcp/src/                         MCP server (client-safe imports only): index.ts stdio entry, server.ts (buildHauswartServer =
                                  scope-based registration; createHauswartServer adds the whoami handshake), tool.ts (defineTool),

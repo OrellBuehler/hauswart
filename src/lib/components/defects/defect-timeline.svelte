@@ -1,21 +1,21 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import ArrowRightIcon from "@lucide/svelte/icons/arrow-right";
   import FlagIcon from "@lucide/svelte/icons/flag";
   import MailIcon from "@lucide/svelte/icons/mail";
   import MessageSquarePlusIcon from "@lucide/svelte/icons/message-square-plus";
   import MessageSquareIcon from "@lucide/svelte/icons/message-square";
   import RefreshCcwIcon from "@lucide/svelte/icons/refresh-ccw";
-  import type { Comment } from "$lib/api/schemas/comments";
-  import type { DefectTimelineItem } from "$lib/api/schemas/defects";
-  import CommentBody from "$lib/components/comments/comment-body.svelte";
-  import CommentComposer from "$lib/components/comments/comment-composer.svelte";
-  import CommentItem from "$lib/components/comments/comment-item.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { formatDateTime, formatRelativeInstant } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import type { Comment } from "#lib/api/schemas/comments.ts";
+  import type { DefectTimelineItem } from "#lib/api/schemas/defects.ts";
+  import CommentBody from "#lib/components/comments/comment-body.svelte";
+  import CommentComposer from "#lib/components/comments/comment-composer.svelte";
+  import CommentItem from "#lib/components/comments/comment-item.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { formatDateTime, formatRelativeInstant } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import DefectCorrespondenceDialog from "./defect-correspondence-dialog.svelte";
   import DefectStatusBadge from "./defect-status-badge.svelte";
 
@@ -35,7 +35,7 @@
   let correspondenceOpen = $state(false);
   const now = Date.now();
 
-  const refresh = () => invalidateAll();
+  const refresh = () => refreshAll();
 
   function commentOf(
     item: Extract<DefectTimelineItem, { kind: "comment" }>,

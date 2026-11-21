@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render } from "svelte/server";
-import type { CostBook } from "$lib/api/schemas/cost-books";
-import type { Vehicle } from "$lib/api/schemas/vehicles";
+import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+import type { Vehicle } from "#lib/api/schemas/vehicles.ts";
 import VehicleCard from "./vehicle-card.svelte";
 
 const vehicle: Vehicle = {

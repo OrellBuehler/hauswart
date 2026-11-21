@@ -1,11 +1,11 @@
-import type { endpoints } from "$lib/api/registry";
+import type { endpoints } from "#lib/api/registry.ts";
 import {
   createFeed,
   listFeeds,
   revokeFeed,
   rotateFeed,
   updateFeed,
-} from "$lib/server/calendar/feeds";
+} from "#lib/server/calendar/feeds.ts";
 import type { Handler } from "../bind";
 import { wireCalendarFeed } from "../wire-share";
 

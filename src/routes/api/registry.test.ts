@@ -3,7 +3,7 @@ import {
   endpointList,
   HTTP_METHODS,
   type AnyEndpoint,
-} from "$lib/api/registry";
+} from "#lib/api/registry.ts";
 
 type RouteModule = Record<string, unknown>;
 type Bound = { endpoint?: AnyEndpoint };

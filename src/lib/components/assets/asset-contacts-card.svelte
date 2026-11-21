@@ -1,21 +1,21 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import ContactIcon from "@lucide/svelte/icons/contact";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import UnlinkIcon from "@lucide/svelte/icons/unlink";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import type { AssetContactRole } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { AssetContact } from "$lib/api/schemas/contacts";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import ContactFormDialog from "$lib/components/contacts/contact-form-dialog.svelte";
-  import ContactRow from "$lib/components/contacts/contact-row.svelte";
-  import LinkContactDialog from "$lib/components/contacts/link-contact-dialog.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import type { AssetContactRole } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { AssetContact } from "#lib/api/schemas/contacts.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import ContactFormDialog from "#lib/components/contacts/contact-form-dialog.svelte";
+  import ContactRow from "#lib/components/contacts/contact-row.svelte";
+  import LinkContactDialog from "#lib/components/contacts/link-contact-dialog.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   let { assetId, links }: { assetId: string; links: AssetContact[] } = $props();
 
@@ -38,7 +38,7 @@
     } catch (err) {
       toast.error(apiErrorMessage(err));
     }
-    await invalidateAll();
+    await refreshAll();
   }
 
   async function relink(link: AssetContact) {
@@ -51,7 +51,7 @@
     } catch (err) {
       toast.error(apiErrorMessage(err));
     }
-    await invalidateAll();
+    await refreshAll();
   }
 
   async function unlink(link: AssetContact) {
@@ -61,7 +61,7 @@
       await api.call(endpoints.assetContactsUnlink, {
         params: { id: assetId, linkId: link.id },
       });
-      await invalidateAll();
+      await refreshAll();
       toast.success(m.contact_unlinked_toast({ name: link.contact.name }), {
         action: { label: m.common_undo(), onClick: () => void relink(link) },
       });
@@ -124,6 +124,6 @@
   bind:open={linkOpen}
   {assetId}
   oncreatenew={createNew}
-  onlinked={() => invalidateAll()}
+  onlinked={() => refreshAll()}
 />
 <ContactFormDialog bind:open={createOpen} onsaved={linkCreated} />

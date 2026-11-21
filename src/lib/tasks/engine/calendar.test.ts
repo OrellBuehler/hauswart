@@ -9,7 +9,7 @@ import {
   isValidDate,
   parseDate,
   weekday,
-} from "$lib/dates";
+} from "#lib/dates.ts";
 import { calendarOccurrences } from "./calendar";
 import { done, evaluate, skipped, trigger } from "./testing";
 import type { Completion } from "./types";

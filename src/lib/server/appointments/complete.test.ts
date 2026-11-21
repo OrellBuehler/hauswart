@@ -1,12 +1,12 @@
 import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it } from "vitest";
-import { taskCompletions } from "$lib/server/db";
-import { completeTask, undoCompletion } from "$lib/server/tasks/completions";
-import { evaluateTaskById } from "$lib/server/tasks/evaluator";
-import { setSignalProvider } from "$lib/server/tasks/signals";
-import { getTask, updateTask } from "$lib/server/tasks/tasks";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
+import { taskCompletions } from "#lib/server/db.ts";
+import { completeTask, undoCompletion } from "#lib/server/tasks/completions.ts";
+import { evaluateTaskById } from "#lib/server/tasks/evaluator.ts";
+import { setSignalProvider } from "#lib/server/tasks/signals.ts";
+import { getTask, updateTask } from "#lib/server/tasks/tasks.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import {
   at,
   ctxAt,
@@ -14,7 +14,7 @@ import {
   makeTask,
   NOW,
   weekly,
-} from "$lib/testing/domain";
+} from "#lib/testing/domain.ts";
 import {
   createAppointment,
   getAppointment,

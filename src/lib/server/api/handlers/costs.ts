@@ -1,9 +1,9 @@
 import type { z } from "zod";
-import type { endpoints } from "$lib/api/registry";
-import type { costEntrySchema } from "$lib/api/schemas/costs";
-import { toIso } from "$lib/api/schemas/common";
-import { costBalances } from "$lib/server/costs/balances";
-import { getCostBookRow } from "$lib/server/costs/books";
+import type { endpoints } from "#lib/api/registry.ts";
+import type { costEntrySchema } from "#lib/api/schemas/costs.ts";
+import { toIso } from "#lib/api/schemas/common.ts";
+import { costBalances } from "#lib/server/costs/balances.ts";
+import { getCostBookRow } from "#lib/server/costs/books.ts";
 import {
   deleteCost,
   getCost,
@@ -12,12 +12,12 @@ import {
   reviewCost,
   updateCost,
   type CostRecord,
-} from "$lib/server/costs/costs";
-import { costsCsv } from "$lib/server/costs/csv";
-import { moveCostsToBook } from "$lib/server/costs/move";
-import { recentCategories } from "$lib/server/costs/recent-categories";
-import { costsSummary } from "$lib/server/costs/summary";
-import { invalidField } from "$lib/server/service";
+} from "#lib/server/costs/costs.ts";
+import { costsCsv } from "#lib/server/costs/csv.ts";
+import { moveCostsToBook } from "#lib/server/costs/move.ts";
+import { recentCategories } from "#lib/server/costs/recent-categories.ts";
+import { costsSummary } from "#lib/server/costs/summary.ts";
+import { invalidField } from "#lib/server/service.ts";
 import { reply, type Handler } from "../bind";
 
 const yearOf = (today: string) => Number(today.slice(0, 4));

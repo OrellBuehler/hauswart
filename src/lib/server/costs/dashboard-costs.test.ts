@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { createCostRequestSchema } from "$lib/api/schemas/costs";
-import { createSettlementRequestSchema } from "$lib/api/schemas/settlements";
-import { createTestUser } from "$lib/testing/auth";
-import { ctxAt } from "$lib/testing/domain";
-import { useTestDB } from "$lib/testing/db";
+import { createCostRequestSchema } from "#lib/api/schemas/costs.ts";
+import { createSettlementRequestSchema } from "#lib/api/schemas/settlements.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import { costBalances, dashboardBalances } from "./balances";
 import { listCostBooks, updateCostBook } from "./books";
 import { createCost } from "./costs";

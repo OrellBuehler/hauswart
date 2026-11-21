@@ -1,4 +1,4 @@
-import { backoffMs } from "$lib/server/connections/connections";
+import { backoffMs } from "#lib/server/connections/connections.ts";
 import type { TargetRow } from "./store";
 
 /** Every target is synced at least this often, to notice events somebody deleted in the calendar. */

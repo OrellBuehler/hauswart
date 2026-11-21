@@ -1,11 +1,11 @@
-import type { OdometerUnit } from "$lib/api/enums";
-import { isApiError } from "$lib/api/errors";
+import type { OdometerUnit } from "#lib/api/enums.ts";
+import { isApiError } from "#lib/api/errors.ts";
 import {
   odometerRefusalDetailsSchema,
   type OdometerRefusalDetails,
-} from "$lib/api/schemas/vehicles";
-import { formatDay } from "$lib/format";
-import { m } from "$lib/paraglide/messages";
+} from "#lib/api/schemas/vehicles.ts";
+import { formatDay } from "#lib/format.ts";
+import { m } from "#lib/paraglide/messages.js";
 import { formatOdometer } from "./format";
 
 /** Why the server refused a reading and which neighbouring reading is in the way (`details` of the 400). */

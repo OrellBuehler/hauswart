@@ -1,19 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
-import { createAsset } from "$lib/server/assets/assets";
-import { createHint } from "$lib/server/hints/hints";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import { createHint } from "#lib/server/hints/hints.ts";
 import {
   notificationDeliveries,
   notifications,
   pendingReactions,
-} from "$lib/server/db";
-import * as db from "$lib/server/db";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { createHintRequestSchema } from "$lib/api/schemas/hints";
-import { registerNotificationChannel } from "$lib/server/notifications/channels";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { at } from "$lib/testing/domain";
+} from "#lib/server/db.ts";
+import * as db from "#lib/server/db.ts";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { createHintRequestSchema } from "#lib/api/schemas/hints.ts";
+import { registerNotificationChannel } from "#lib/server/notifications/channels.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at } from "#lib/testing/domain.ts";
 import { ingestSignals } from "./ingest";
 import { listSamples, upsertSignals } from "./service";
 import { registerSignalWorker, runSignalWorker } from "./worker";

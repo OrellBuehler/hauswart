@@ -1,11 +1,11 @@
 import { and, eq, isNull } from "drizzle-orm";
-import { cancellationDeadline } from "$lib/insurance/policy";
-import { m } from "$lib/paraglide/messages";
-import { taskCompletions, tasks } from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
-import { clockAt } from "$lib/server/tasks/evaluator";
-import { createPreparation } from "$lib/server/tasks/preparations";
-import { createTask, getTask, updateTask } from "$lib/server/tasks/tasks";
+import { cancellationDeadline } from "#lib/insurance/policy.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { taskCompletions, tasks } from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
+import { clockAt } from "#lib/server/tasks/evaluator.ts";
+import { createPreparation } from "#lib/server/tasks/preparations.ts";
+import { createTask, getTask, updateTask } from "#lib/server/tasks/tasks.ts";
 import type { PolicyRow } from "./policies";
 
 export const INSURANCE_EXTERNAL_SOURCE = "insurance";

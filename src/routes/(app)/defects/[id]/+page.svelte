@@ -10,30 +10,30 @@
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import UndoIcon from "@lucide/svelte/icons/undo-2";
   import { goto } from "$app/navigation";
-  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
+  import { gotoFromOverlay } from "#lib/overlays/use-overlay-history.svelte.ts";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import type { DefectStatus } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import { DEFECT_TRANSITIONS } from "$lib/api/schemas/defects";
-  import Attachments from "$lib/components/attachments/attachments.svelte";
-  import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import CommentBody from "$lib/components/comments/comment-body.svelte";
-  import DefectDeadline from "$lib/components/defects/defect-deadline.svelte";
-  import DefectSeverityBadge from "$lib/components/defects/defect-severity-badge.svelte";
-  import DefectStatusBadge from "$lib/components/defects/defect-status-badge.svelte";
-  import DefectStatusDialog from "$lib/components/defects/defect-status-dialog.svelte";
-  import DefectStepper from "$lib/components/defects/defect-stepper.svelte";
-  import DefectTimeline from "$lib/components/defects/defect-timeline.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { IMAGE_ACCEPT } from "$lib/attachments/files";
-  import { formatDateTime, formatDay } from "$lib/format";
-  import { assetHref, roomHref, taskHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import type { DefectStatus } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import { DEFECT_TRANSITIONS } from "#lib/api/schemas/defects.ts";
+  import Attachments from "#lib/components/attachments/attachments.svelte";
+  import LinkedDocuments from "#lib/components/documents/linked-documents.svelte";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import CommentBody from "#lib/components/comments/comment-body.svelte";
+  import DefectDeadline from "#lib/components/defects/defect-deadline.svelte";
+  import DefectSeverityBadge from "#lib/components/defects/defect-severity-badge.svelte";
+  import DefectStatusBadge from "#lib/components/defects/defect-status-badge.svelte";
+  import DefectStatusDialog from "#lib/components/defects/defect-status-dialog.svelte";
+  import DefectStepper from "#lib/components/defects/defect-stepper.svelte";
+  import DefectTimeline from "#lib/components/defects/defect-timeline.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { IMAGE_ACCEPT } from "#lib/attachments/files.ts";
+  import { formatDateTime, formatDay } from "#lib/format.ts";
+  import { assetHref, roomHref, taskHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -66,6 +66,7 @@
           ? ["in_progress", "fixed"]
           : ["fixed"],
   );
+
   const more = $derived(
     DEFECT_TRANSITIONS[defect.status].filter((s) => !primary.includes(s)),
   );
@@ -88,7 +89,7 @@
   async function remove() {
     await api.call(endpoints.defectsDelete, { params: { id: defect.id } });
     toast.success(m.defect_deleted_toast({ number: defect.number }));
-    await gotoFromOverlay(resolve("/defects"), { invalidateAll: true });
+    await gotoFromOverlay(resolve("defects"), { refreshAll: true });
   }
 </script>
 
@@ -99,7 +100,7 @@
 <div class="flex flex-col gap-6">
   <div class="max-md:hidden">
     <a
-      href={resolve("/defects")}
+      href={resolve("defects")}
       class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -ms-1 inline-flex min-h-10 items-center gap-1.5 rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
@@ -117,6 +118,7 @@
       >
         {defect.title}
       </h1>
+
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
         <DefectStatusBadge status={defect.status} class="text-sm" />
         <DefectSeverityBadge severity={defect.severity} />
@@ -147,7 +149,7 @@
         size="lg"
         variant="outline"
         class="max-sm:hidden"
-        href={resolve(`/defects/${defect.id}/edit` as "/")}
+        href={resolve(`defects/${defect.id}/edit`)}
       >
         <PencilIcon />
         {m.common_edit()}
@@ -178,7 +180,7 @@
           {/each}
           <DropdownMenu.Item
             class="min-h-10 sm:hidden"
-            onSelect={() => goto(resolve(`/defects/${defect.id}/edit` as "/"))}
+            onSelect={() => goto(resolve(`defects/${defect.id}/edit`))}
           >
             <PencilIcon />
             {m.common_edit()}
@@ -196,10 +198,8 @@
           <DropdownMenu.Item
             class="text-destructive focus:text-destructive min-h-10"
             onSelect={() => (deleteOpen = true)}
+            ><Trash2Icon /> {m.common_delete()}</DropdownMenu.Item
           >
-            <Trash2Icon />
-            {m.common_delete()}
-          </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     </div>

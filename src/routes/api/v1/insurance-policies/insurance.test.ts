@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { cancellationDeadline } from "$lib/insurance/policy";
-import { createCaller, errorCode } from "$lib/testing/api";
+import { cancellationDeadline } from "#lib/insurance/policy.ts";
+import { createCaller, errorCode } from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { today } from "$lib/testing/dates";
-import { useTestDB } from "$lib/testing/db";
-import { samplePdf, useTestFilesDir } from "$lib/testing/files";
+} from "#lib/testing/auth.ts";
+import { today } from "#lib/testing/dates.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { samplePdf, useTestFilesDir } from "#lib/testing/files.ts";
 
 type Policy = {
   id: string;

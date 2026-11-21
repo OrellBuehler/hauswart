@@ -1,4 +1,4 @@
-import { addDays, diffDays, isValidDate, maxDate } from "$lib/dates";
+import { addDays, diffDays, isValidDate, maxDate } from "#lib/dates.ts";
 import { datedResult, noDateResult } from "./common";
 import type { DueResult, EvalContext, HaCalendarTrigger } from "./types";
 

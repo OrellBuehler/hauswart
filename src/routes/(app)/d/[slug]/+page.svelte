@@ -6,18 +6,18 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import QrCodeIcon from "@lucide/svelte/icons/qr-code";
-  import type { Task } from "$lib/api/schemas/tasks";
-  import { completeWithUndo } from "$lib/assets/complete";
-  import { kindLabels } from "$lib/assets/kinds";
-  import { newTaskHref } from "$lib/assets/links";
-  import { isActionable } from "$lib/assets/tasks";
-  import AssetPhoto from "$lib/components/assets/asset-photo.svelte";
-  import DueBadge from "$lib/components/assets/due-badge.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import HintCallout from "$lib/components/hints/hint-callout.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { formatDay } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  import type { Task } from "#lib/api/schemas/tasks.ts";
+  import { completeWithUndo } from "#lib/assets/complete.ts";
+  import { kindLabels } from "#lib/assets/kinds.ts";
+  import { newTaskHref } from "#lib/assets/links.ts";
+  import { isActionable } from "#lib/assets/tasks.ts";
+  import AssetPhoto from "#lib/components/assets/asset-photo.svelte";
+  import DueBadge from "#lib/components/assets/due-badge.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import HintCallout from "#lib/components/hints/hint-callout.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { formatDay } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -52,8 +52,8 @@
       description={m.qr_not_found_body()}
     >
       {#snippet actions()}
-        <Button href={resolve("/inventory")}>{m.nav_inventory()}</Button>
-        <Button href={resolve("/")} variant="outline"
+        <Button href={resolve("inventory")}>{m.nav_inventory()}</Button>
+        <Button href={resolve("")} variant="outline"
           >{m.common_back_home()}</Button
         >
       {/snippet}
@@ -118,7 +118,7 @@
             >
               <div class="flex flex-col gap-1.5">
                 <a
-                  href={resolve(`/tasks/${task.id}` as "/tasks")}
+                  href={resolve(`tasks/${task.id}`)}
                   class="font-medium wrap-anywhere underline-offset-4 hover:underline"
                 >
                   {task.title}
@@ -154,7 +154,7 @@
             <li class="flex items-center justify-between gap-3 px-4 py-3">
               <div class="flex min-w-0 flex-col gap-1">
                 <a
-                  href={resolve(`/tasks/${task.id}` as "/tasks")}
+                  href={resolve(`tasks/${task.id}`)}
                   class="truncate text-sm font-medium underline-offset-4 hover:underline"
                 >
                   {task.title}
@@ -220,9 +220,10 @@
     {/if}
 
     <div class="flex flex-col gap-2">
-      <Button href={resolve(`/assets/${found.asset.id}`)} variant="outline">
-        {m.qr_full_page()}
-      </Button>
+      <Button href={resolve(`assets/${found.asset.id}`)} variant="outline"
+        >{m.qr_full_page()}</Button
+      >
+
       <Button
         href={newTaskHref(found.asset.id)}
         variant="ghost"

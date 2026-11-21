@@ -1,9 +1,9 @@
 import type { z } from "zod";
-import { createAsset } from "$lib/server/assets/assets";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { saveConnection } from "$lib/server/connections/connections";
-import { documentLinks, externalDocuments, type DB } from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { saveConnection } from "#lib/server/connections/connections.ts";
+import { documentLinks, externalDocuments, type DB } from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 
 /** An asset for tests that link documents to something. */
 export function makeAsset(

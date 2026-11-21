@@ -1,21 +1,21 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { describe, expect, it } from "vitest";
-import type { TokenKind } from "$lib/api/enums";
-import type { Scope } from "$lib/api/scopes";
-import { createAiTask } from "$lib/server/ai-tasks/ai-tasks";
-import { plainPng } from "$lib/server/files/test-images";
-import { APP_VERSION } from "$lib/server/version";
-import { createInProcessFetch, errorCode } from "$lib/testing/api";
+import type { TokenKind } from "#lib/api/enums.ts";
+import type { Scope } from "#lib/api/scopes.ts";
+import { createAiTask } from "#lib/server/ai-tasks/ai-tasks.ts";
+import { plainPng } from "#lib/server/files/test-images.ts";
+import { APP_VERSION } from "#lib/server/version.ts";
+import { createInProcessFetch, errorCode } from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt } from "$lib/testing/domain";
-import { useTestFilesDir } from "$lib/testing/files";
-import { callRoute, type CallOptions } from "$lib/testing/route";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
+import { useTestFilesDir } from "#lib/testing/files.ts";
+import { callRoute, type CallOptions } from "#lib/testing/route.ts";
 import { everyDays, parseReply } from "../../../../../mcp/src/test-harness";
 import { tools } from "../../../../../mcp/src/tools";
 import * as route from "./+server";

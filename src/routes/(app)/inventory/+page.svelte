@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import { resolve } from "$app/paths";
   import BoxesIcon from "@lucide/svelte/icons/boxes";
   import CarIcon from "@lucide/svelte/icons/car";
@@ -9,35 +9,35 @@
   import SearchIcon from "@lucide/svelte/icons/search";
   import SearchXIcon from "@lucide/svelte/icons/search-x";
   import SparklesIcon from "@lucide/svelte/icons/sparkles";
-  import { INVENTORY_KINDS, kindLabels } from "$lib/assets/kinds";
+  import { INVENTORY_KINDS, kindLabels } from "#lib/assets/kinds.ts";
   import {
     emptyFilter,
     filterAssets,
     isFiltered,
     type AssetFilter,
-  } from "$lib/assets/filter";
-  import { newAssetHref } from "$lib/assets/links";
-  import { WARRANTY_STATUSES, warrantyStatus } from "$lib/assets/warranty";
-  import AssetKindIcon from "$lib/components/assets/asset-kind-icon.svelte";
-  import AssetPhoto from "$lib/components/assets/asset-photo.svelte";
-  import AssetRow from "$lib/components/assets/asset-row.svelte";
-  import OptionSelect from "$lib/components/assets/option-select.svelte";
-  import RoomPicker from "$lib/components/assets/room-picker.svelte";
-  import WarrantyBadge from "$lib/components/assets/warranty-badge.svelte";
-  import DeviceSuggestionsSheet from "$lib/components/connections/device-suggestions-sheet.svelte";
-  import CommentCount from "$lib/components/comments/comment-count.svelte";
-  import DocumentSuggestionsSheet from "$lib/components/documents/document-suggestions-sheet.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { Switch } from "$lib/components/ui/switch/index.js";
-  import * as Table from "$lib/components/ui/table/index.js";
-  import { DocumentSystem } from "$lib/documents/system.svelte";
-  import { formatDay } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/assets/filter.ts";
+  import { newAssetHref } from "#lib/assets/links.ts";
+  import { WARRANTY_STATUSES, warrantyStatus } from "#lib/assets/warranty.ts";
+  import AssetKindIcon from "#lib/components/assets/asset-kind-icon.svelte";
+  import AssetPhoto from "#lib/components/assets/asset-photo.svelte";
+  import AssetRow from "#lib/components/assets/asset-row.svelte";
+  import OptionSelect from "#lib/components/assets/option-select.svelte";
+  import RoomPicker from "#lib/components/assets/room-picker.svelte";
+  import WarrantyBadge from "#lib/components/assets/warranty-badge.svelte";
+  import DeviceSuggestionsSheet from "#lib/components/connections/device-suggestions-sheet.svelte";
+  import CommentCount from "#lib/components/comments/comment-count.svelte";
+  import DocumentSuggestionsSheet from "#lib/components/documents/document-suggestions-sheet.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { Switch } from "#lib/components/ui/switch/index.js";
+  import * as Table from "#lib/components/ui/table/index.js";
+  import { DocumentSystem } from "#lib/documents/system.svelte.ts";
+  import { formatDay } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps, Snapshot } from "./$types";
 
   let { data }: PageProps = $props();
@@ -61,6 +61,7 @@
     expired: () => m.warranty_filter_expired(),
     unknown: () => m.warranty_filter_unknown(),
   };
+
   const kindOptions = INVENTORY_KINDS.map((kind) => ({
     value: kind,
     label: kindLabels[kind](),
@@ -69,7 +70,6 @@
     value: status,
     label: warrantyLabels[status](),
   }));
-
   const visible = $derived(
     filterAssets(data.assets, filter, data.today).sort((a, b) =>
       a.name.localeCompare(b.name),
@@ -97,17 +97,17 @@
   <PageHeader title={m.nav_inventory()} description={m.inventory_description()}>
     {#snippet actions()}
       {#if data.suggestionsAvailable}
-        <Button variant="outline" onclick={() => (suggestionsOpen = true)}>
-          <SparklesIcon />{m.inventory_suggestions()}
-        </Button>
+        <Button variant="outline" onclick={() => (suggestionsOpen = true)}
+          ><SparklesIcon />{m.inventory_suggestions()}</Button
+        >
       {/if}
       {#if documents.provider}
-        <Button variant="outline" onclick={() => (receiptsOpen = true)}>
-          <FileSearchIcon />{m.inventory_receipts()}
-        </Button>
+        <Button variant="outline" onclick={() => (receiptsOpen = true)}
+          ><FileSearchIcon />{m.inventory_receipts()}</Button
+        >
       {/if}
       <Button
-        href={resolve("/inventory/qr")}
+        href={resolve("inventory/qr")}
         variant="outline"
         class="max-sm:hidden"
       >
@@ -133,14 +133,14 @@
           <PlusIcon />{m.inventory_create()}
         </Button>
         {#if data.suggestionsAvailable}
-          <Button variant="outline" onclick={() => (suggestionsOpen = true)}>
-            <SparklesIcon />{m.inventory_suggestions()}
-          </Button>
+          <Button variant="outline" onclick={() => (suggestionsOpen = true)}
+            ><SparklesIcon />{m.inventory_suggestions()}</Button
+          >
         {/if}
         {#if documents.provider}
-          <Button variant="outline" onclick={() => (receiptsOpen = true)}>
-            <FileSearchIcon />{m.inventory_receipts()}
-          </Button>
+          <Button variant="outline" onclick={() => (receiptsOpen = true)}
+            ><FileSearchIcon />{m.inventory_receipts()}</Button
+          >
         {/if}
       {/snippet}
     </EmptyState>
@@ -242,7 +242,7 @@
               <Table.Row class="relative">
                 <Table.Cell class="font-medium">
                   <a
-                    href={resolve(`/assets/${asset.id}`)}
+                    href={resolve(`assets/${asset.id}`)}
                     class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 flex items-center gap-2.5 rounded-sm outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
                   >
                     {#if asset.photoUrl}
@@ -289,7 +289,7 @@
   <DeviceSuggestionsSheet
     bind:open={suggestionsOpen}
     rooms={data.rooms}
-    onadded={invalidateAll}
+    onadded={refreshAll}
   />
 {/if}
 
@@ -298,6 +298,6 @@
     bind:open={receiptsOpen}
     kind="asset"
     provider={documents.provider}
-    onadded={invalidateAll}
+    onadded={refreshAll}
   />
 {/if}

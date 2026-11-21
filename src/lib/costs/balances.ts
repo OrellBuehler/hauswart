@@ -1,6 +1,9 @@
-import type { CostBalances, DashboardBalances } from "$lib/api/schemas/costs";
-import { formatMoney } from "$lib/format-money";
-import { m } from "$lib/paraglide/messages";
+import type {
+  CostBalances,
+  DashboardBalances,
+} from "#lib/api/schemas/costs.ts";
+import { formatMoney } from "#lib/format-money.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 export type BalancePerson = CostBalances["people"][number];
 export type SuggestedPayment = CostBalances["suggestedPayments"][number];

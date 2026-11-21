@@ -2,16 +2,16 @@
   import InfoIcon from "@lucide/svelte/icons/info";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { untrack } from "svelte";
-  import { api } from "$lib/api/browser";
-  import { isApiError } from "$lib/api/errors";
-  import { endpoints } from "$lib/api/registry";
-  import type { CostBook } from "$lib/api/schemas/cost-books";
+  import { api } from "#lib/api/browser.ts";
+  import { isApiError } from "#lib/api/errors.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { CostBook } from "#lib/api/schemas/cost-books.ts";
   import type {
     CostEntry,
     MoveCostsToBookResult,
-  } from "$lib/api/schemas/costs";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import { openBooks } from "$lib/costs/books";
+  } from "#lib/api/schemas/costs.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import { openBooks } from "#lib/costs/books.ts";
   import {
     moveFailure,
     movePreview,
@@ -19,8 +19,8 @@
     suggestedTarget,
     taxClassLost,
     type MoveTarget,
-  } from "$lib/costs/move";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/costs/move.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import BookPicker from "./book-picker.svelte";
 
   let {

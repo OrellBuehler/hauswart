@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { AI_TASK_PDF_READ_MAX_BYTES } from "$lib/api/schemas/ai-tasks";
+import { AI_TASK_PDF_READ_MAX_BYTES } from "#lib/api/schemas/ai-tasks.ts";
 import { MAX_ATTACHMENT_BYTES } from "./files";
 import {
   CONVERTED_MAX_SIDE,

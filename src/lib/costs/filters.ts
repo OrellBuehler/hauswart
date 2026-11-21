@@ -1,5 +1,5 @@
-import { COST_CATEGORIES, type CostCategory } from "$lib/api/enums";
-import { daysInMonth } from "$lib/dates";
+import { COST_CATEGORIES, type CostCategory } from "#lib/api/enums.ts";
+import { daysInMonth } from "#lib/dates.ts";
 import { bookParam, parseBookParam } from "./books";
 
 export const MIN_YEAR = 1990;

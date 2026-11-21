@@ -1,6 +1,6 @@
-import { REMINDER_LEAD_DAYS } from "$lib/api/schemas/defects";
-import type { DefectStatus } from "$lib/api/enums";
-import { daysUntil } from "$lib/format";
+import { REMINDER_LEAD_DAYS } from "#lib/api/schemas/defects.ts";
+import type { DefectStatus } from "#lib/api/enums.ts";
+import { daysUntil } from "#lib/format.ts";
 import { isActiveStatus } from "./filters";
 
 export type DeadlineTone = "overdue" | "soon" | "ok" | "none";

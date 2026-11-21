@@ -1,5 +1,5 @@
-import { getDB } from "$lib/server/db";
-import { defaultFilesRoot } from "$lib/server/files/store";
+import { getDB } from "#lib/server/db.ts";
+import { defaultFilesRoot } from "#lib/server/files/store.ts";
 import { readBackupConfig, startBackupScheduler } from "./backup";
 
 let stop: (() => void) | null = null;

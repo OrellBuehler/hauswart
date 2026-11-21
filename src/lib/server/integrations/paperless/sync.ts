@@ -6,17 +6,17 @@ import {
   recordConnectionOk,
   resolveConnection,
   type ConnectionRow,
-} from "$lib/server/connections/connections";
+} from "#lib/server/connections/connections.ts";
 import {
   connections,
   documentLinks,
   externalDocumentSync,
   externalDocuments,
-} from "$lib/server/db";
-import { markInvisible, upsertDocuments } from "$lib/server/documents/cache";
-import { parseProviderConfig } from "$lib/server/documents/session";
-import { applyDocumentWarranties } from "$lib/server/documents/warranty";
-import type { ServiceContext } from "$lib/server/service";
+} from "#lib/server/db.ts";
+import { markInvisible, upsertDocuments } from "#lib/server/documents/cache.ts";
+import { parseProviderConfig } from "#lib/server/documents/session.ts";
+import { applyDocumentWarranties } from "#lib/server/documents/warranty.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import { KIND, clientFor } from "./connection";
 import { errorCode } from "./errors";
 import { loadTaxonomy, toExternalMeta } from "./mapping";

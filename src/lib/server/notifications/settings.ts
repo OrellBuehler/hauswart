@@ -3,14 +3,14 @@ import {
   DEFAULT_PUSH_STAGES,
   type NotificationTargetChannel,
   type PushStage,
-} from "$lib/api/enums";
+} from "#lib/api/enums.ts";
 import type {
   NotificationSettings,
   notificationSettingsResponseSchema,
-} from "$lib/api/schemas/notification-settings";
+} from "#lib/api/schemas/notification-settings.ts";
 import type { z } from "zod";
-import { notificationPrefs, notificationTargets } from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
+import { notificationPrefs, notificationTargets } from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 
 type Db = Pick<ServiceContext, "db">;
 

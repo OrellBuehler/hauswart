@@ -3,19 +3,19 @@ import type {
   DocumentLinkOwnerType,
   DocumentLinkRole,
   DocumentProviderKind,
-} from "$lib/api/enums";
-import type { CreateDocumentLinkRequest } from "$lib/api/schemas/documents";
-import { trackBackground } from "$lib/server/attachments/attachments";
-import { connections, documentLinks } from "$lib/server/db";
-import { emitEvent } from "$lib/server/events";
-import { paginateArray } from "$lib/server/pagination";
+} from "#lib/api/enums.ts";
+import type { CreateDocumentLinkRequest } from "#lib/api/schemas/documents.ts";
+import { trackBackground } from "#lib/server/attachments/attachments.ts";
+import { connections, documentLinks } from "#lib/server/db.ts";
+import { emitEvent } from "#lib/server/events.ts";
+import { paginateArray } from "#lib/server/pagination.ts";
 import {
   conflict,
   invalidField,
   isUniqueViolation,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
+} from "#lib/server/service.ts";
 import {
   cachedByIds,
   markInvisible,

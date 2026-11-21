@@ -4,10 +4,10 @@
   import CirclePauseIcon from "@lucide/svelte/icons/circle-pause";
   import CircleXIcon from "@lucide/svelte/icons/circle-x";
   import UnplugIcon from "@lucide/svelte/icons/unplug";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import type { TargetState } from "$lib/calendar-sync/health";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import type { TargetState } from "#lib/calendar-sync/health.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let { state, class: className }: { state: TargetState; class?: string } =
     $props();

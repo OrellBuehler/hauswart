@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { SQLiteTable, AnySQLiteColumn } from "drizzle-orm/sqlite-core";
-import type { AttachmentOwnerType } from "$lib/api/enums";
+import type { AttachmentOwnerType } from "#lib/api/enums.ts";
 import {
   aiTasks,
   appointments,
@@ -13,7 +13,7 @@ import {
   parts,
   serviceLog,
   tireSets,
-} from "$lib/server/db";
+} from "#lib/server/db.ts";
 import { registerAttachmentOwner, type OwnerExists } from "./owners";
 
 const existsIn =

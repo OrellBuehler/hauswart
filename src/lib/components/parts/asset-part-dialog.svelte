@@ -2,15 +2,15 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { fetchAll } from "$lib/api/fetch-all";
-  import { endpoints } from "$lib/api/registry";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import PickerList from "$lib/components/app/picker-list.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import { fetchAll } from "#lib/api/fetch-all.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import PickerList from "#lib/components/app/picker-list.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   type Option = { value: string; label: string; detail: string | null };
 

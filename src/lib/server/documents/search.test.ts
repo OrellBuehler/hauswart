@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import {
   cacheDocument,
   linkDocument,
   makeAsset,
   makeConnection,
-} from "$lib/testing/documents";
+} from "#lib/testing/documents.ts";
 import { searchLinkedDocuments } from "./search";
 
 describe("search over linked documents", () => {

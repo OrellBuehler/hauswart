@@ -8,25 +8,25 @@
   import PlayIcon from "@lucide/svelte/icons/play";
   import SquareCheckBigIcon from "@lucide/svelte/icons/square-check-big";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
-  import { goto, invalidateAll } from "$app/navigation";
+  import { goto, refreshAll } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import CostAmount from "$lib/components/costs/cost-amount.svelte";
-  import RecurrenceStatus from "$lib/components/costs/recurrence-status.svelte";
-  import RecurrenceUpcoming from "$lib/components/costs/recurrence-upcoming.svelte";
-  import TagChips from "$lib/components/costs/tag-chips.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import CostAmount from "#lib/components/costs/cost-amount.svelte";
+  import RecurrenceStatus from "#lib/components/costs/recurrence-status.svelte";
+  import RecurrenceUpcoming from "#lib/components/costs/recurrence-upcoming.svelte";
+  import TagChips from "#lib/components/costs/tag-chips.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
   import {
     categoryIcons,
     categoryLabels,
     deductibleLabels,
     splitModeLabels,
-  } from "$lib/costs/labels";
-  import { RecurrenceControls } from "$lib/costs/recurrence-controls.svelte";
+  } from "#lib/costs/labels.ts";
+  import { RecurrenceControls } from "#lib/costs/recurrence-controls.svelte.ts";
   import {
     clampNote,
     isDue,
@@ -34,12 +34,12 @@
     recurrenceState,
     ruleOf,
     ruleWording,
-  } from "$lib/costs/recurrences";
-  import { formatDay } from "$lib/format";
-  import { assetHref, roomHref } from "$lib/links";
-  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/costs/recurrences.ts";
+  import { formatDay } from "#lib/format.ts";
+  import { assetHref, roomHref } from "#lib/links.ts";
+  import { gotoFromOverlay } from "#lib/overlays/use-overlay-history.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -54,8 +54,8 @@
   const CategoryIcon = $derived(categoryIcons[recurrence.category]);
 
   const controls = new RecurrenceControls({
-    onchanged: () => invalidateAll(),
-    viewEntry: (id) => void goto(resolve(`/costs/${id}` as "/")),
+    onchanged: () => refreshAll(),
+    viewEntry: (id) => void goto(resolve(`costs/${id}`)),
   });
   const running = $derived(
     controls.busy?.id === recurrence.id ? controls.busy.action : null,
@@ -68,7 +68,7 @@
       params: { id: recurrence.id },
     });
     toast.success(m.recurrence_deleted_toast({ title: recurrence.title }));
-    await gotoFromOverlay(resolve("/costs/recurring"), { invalidateAll: true });
+    await gotoFromOverlay(resolve("costs/recurring"), { refreshAll: true });
   }
 
   const linkClass =
@@ -82,7 +82,7 @@
 <div class="flex flex-col gap-6">
   <div class="max-md:hidden">
     <a
-      href={resolve("/costs/recurring")}
+      href={resolve("costs/recurring")}
       class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -ms-1 inline-flex min-h-10 items-center gap-1.5 rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
@@ -103,6 +103,7 @@
       >
         {recurrence.title}
       </h1>
+
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
         <CostAmount
           amountMinor={recurrence.amountMinor}
@@ -119,7 +120,7 @@
         <Button
           size="lg"
           variant="outline"
-          href={resolve(`/costs/recurring/${recurrence.id}/edit` as "/")}
+          href={resolve(`costs/recurring/${recurrence.id}/edit`)}
         >
           <PencilIcon />
           {m.common_edit()}
@@ -171,10 +172,8 @@
           class="text-destructive hover:text-destructive"
           disabled={controls.busy !== null}
           onclick={() => (deleteOpen = true)}
+          ><Trash2Icon /> {m.common_delete()}</Button
         >
-          <Trash2Icon />
-          {m.common_delete()}
-        </Button>
       </div>
       {#if status === "active"}
         <p class="text-muted-foreground -mt-2 text-xs text-pretty">
@@ -282,7 +281,7 @@
               <!-- eslint-disable svelte/no-navigation-without-resolve -- the address is resolved here, only the query is appended -->
               <a
                 href={resolve(
-                  `/costs?book=${encodeURIComponent(recurrence.bookId)}` as "/",
+                  `costs?book=${encodeURIComponent(recurrence.bookId)}`,
                 )}
                 class={linkClass}>{recurrence.bookName}</a
               >

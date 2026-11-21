@@ -1,5 +1,5 @@
-import { endpoints } from "$lib/api/registry";
-import { bind } from "$lib/server/api/bind";
-import { revisions } from "$lib/server/api/handlers/pages";
+import { endpoints } from "#lib/api/registry.ts";
+import { bind } from "#lib/server/api/bind.ts";
+import { revisions } from "#lib/server/api/handlers/pages.ts";
 
 export const GET = bind(endpoints.pageRevisionsList, revisions);

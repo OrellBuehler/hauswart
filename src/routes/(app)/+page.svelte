@@ -5,24 +5,24 @@
   import { SvelteSet } from "svelte/reactivity";
   import { slide } from "svelte/transition";
   import { resolve } from "$app/paths";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import CostsCard from "$lib/components/dashboard/costs-card.svelte";
-  import PendingReceiptsCard from "$lib/components/dashboard/pending-receipts-card.svelte";
-  import ReviewCostsCard from "$lib/components/dashboard/review-costs-card.svelte";
-  import DefectsCard from "$lib/components/dashboard/defects-card.svelte";
-  import FinanceInboxCard from "$lib/components/dashboard/finance-inbox-card.svelte";
-  import OrderNowCard from "$lib/components/dashboard/order-now-card.svelte";
-  import WarrantiesCard from "$lib/components/dashboard/warranties-card.svelte";
-  import CompletionItem from "$lib/components/tasks/completion-item.svelte";
-  import PreparationRow from "$lib/components/tasks/preparation-row.svelte";
-  import TaskRow from "$lib/components/tasks/task-row.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { motion } from "$lib/motion";
-  import { m } from "$lib/paraglide/messages";
-  import { rowFromDashboard } from "$lib/tasks/row";
-  import { cn } from "$lib/utils";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import CostsCard from "#lib/components/dashboard/costs-card.svelte";
+  import PendingReceiptsCard from "#lib/components/dashboard/pending-receipts-card.svelte";
+  import ReviewCostsCard from "#lib/components/dashboard/review-costs-card.svelte";
+  import DefectsCard from "#lib/components/dashboard/defects-card.svelte";
+  import FinanceInboxCard from "#lib/components/dashboard/finance-inbox-card.svelte";
+  import OrderNowCard from "#lib/components/dashboard/order-now-card.svelte";
+  import WarrantiesCard from "#lib/components/dashboard/warranties-card.svelte";
+  import CompletionItem from "#lib/components/tasks/completion-item.svelte";
+  import PreparationRow from "#lib/components/tasks/preparation-row.svelte";
+  import TaskRow from "#lib/components/tasks/task-row.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { motion } from "#lib/motion.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { rowFromDashboard } from "#lib/tasks/row.ts";
+  import { cn } from "#lib/utils.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -126,10 +126,9 @@
     description={m.dashboard_subtitle()}
   >
     {#snippet actions()}
-      <Button href={resolve("/tasks/new")} size="lg">
-        <PlusIcon />
-        {m.task_new()}
-      </Button>
+      <Button href={resolve("tasks/new")} size="lg"
+        ><PlusIcon /> {m.task_new()}</Button
+      >
     {/snippet}
   </PageHeader>
 
@@ -162,10 +161,9 @@
             description={m.dashboard_empty_body()}
           >
             {#snippet actions()}
-              <Button href={resolve("/tasks/new")}>
-                <PlusIcon />
-                {m.task_new()}
-              </Button>
+              <Button href={resolve("tasks/new")}
+                ><PlusIcon /> {m.task_new()}</Button
+              >
             {/snippet}
           </EmptyState>
         {/if}
@@ -289,9 +287,7 @@
           {:else}
             <ul class="divide-y">
               {#each dashboard.recentCompletions as completion (completion.id)}
-                <li>
-                  <CompletionItem {completion} showTask {now} />
-                </li>
+                <li><CompletionItem {completion} showTask {now} /></li>
               {/each}
             </ul>
           {/if}

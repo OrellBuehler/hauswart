@@ -12,8 +12,8 @@ import type {
   InsurancePremiumPeriod,
   InsuranceRenewal,
   InsuranceType,
-} from "$lib/api/enums";
-import { m } from "$lib/paraglide/messages";
+} from "#lib/api/enums.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 export const insuranceTypeLabels: Record<InsuranceType, () => string> = {
   motor_liability: () => m.insurance_type_motor_liability(),

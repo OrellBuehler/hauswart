@@ -1,7 +1,7 @@
-import { localDateOf, localTimeOf } from "$lib/dates";
-import { householdTimeZone } from "$lib/server/config";
-import { getHousehold } from "$lib/server/household/household";
-import type { ServiceContext } from "$lib/server/service";
+import { localDateOf, localTimeOf } from "#lib/dates.ts";
+import { householdTimeZone } from "#lib/server/config.ts";
+import { getHousehold } from "#lib/server/household/household.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import { readCalendarEntries, type CalendarEntry } from "./entries";
 import { buildIcs, etagFor, type IcsAlarm, type IcsEvent } from "./ical";
 import type { FeedRow } from "./feeds";

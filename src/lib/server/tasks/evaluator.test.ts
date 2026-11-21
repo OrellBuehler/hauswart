@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
-import { taskState, tasks } from "$lib/server/db";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
+import { taskState, tasks } from "#lib/server/db.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import {
   at,
   ctxAt,
@@ -10,7 +10,7 @@ import {
   makeTask,
   NOW,
   weekly,
-} from "$lib/testing/domain";
+} from "#lib/testing/domain.ts";
 import { completeTask, snoozeTask, undoCompletion } from "./completions";
 import { evaluateAll, evaluateTaskById } from "./evaluator";
 import { setSignalProvider, type SignalProvider } from "./signals";

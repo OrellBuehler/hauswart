@@ -88,7 +88,7 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   and `fetch` is not closed (no pinning of the connect address); that is why the check repeats per request and a
   connection's responses only ever go to its owner. Tests run with `setLenientHostPolicy(true)` (vitest setup: loopback
   allowed, names not resolved, metadata still blocked); tests of the policy switch it off and stub `setHostResolver`.
-  Members saving in tests need `allowIntegrationHosts(db, host)` (`$lib/testing/integrations`).
+  Members saving in tests need `allowIntegrationHosts(db, host)` (`#lib/testing/integrations.ts`).
 - **Home Assistant adapter** (`registerHomeAssistant()` in `init()`): scheduler (overlap guard, unref,
   injectable intervals) reads the watched entities every 60 s and the calendars (next 60 days, per
   subscription key, household zone) every 6 h and at once for a new calendar; saving a connection reads

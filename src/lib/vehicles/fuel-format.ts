@@ -1,7 +1,7 @@
-import type { FuelUnit, OdometerUnit } from "$lib/api/enums";
-import { formatNumber } from "$lib/format";
-import { currencyExponent } from "$lib/money";
-import { getLocale } from "$lib/paraglide/runtime";
+import type { FuelUnit, OdometerUnit } from "#lib/api/enums.ts";
+import { formatNumber } from "#lib/format.ts";
+import { currencyExponent } from "#lib/money.ts";
+import { getLocale } from "#lib/paraglide/runtime.js";
 
 const INTL_LOCALES = { de: "de-CH", en: "en-GB" } as const;
 

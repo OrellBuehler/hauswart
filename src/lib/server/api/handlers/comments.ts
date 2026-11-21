@@ -1,10 +1,10 @@
-import type { endpoints } from "$lib/api/registry";
+import type { endpoints } from "#lib/api/registry.ts";
 import {
   createComment,
   deleteComment,
   listComments,
   updateComment,
-} from "$lib/server/comments/comments";
+} from "#lib/server/comments/comments.ts";
 import type { Handler } from "../bind";
 import { wireComment } from "../wire";
 

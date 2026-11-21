@@ -1,6 +1,6 @@
 import { afterAll, beforeEach } from "vitest";
-import { getDB } from "$lib/server/db";
-import { saveConnection } from "$lib/server/connections/connections";
+import { getDB } from "#lib/server/db.ts";
+import { saveConnection } from "#lib/server/connections/connections.ts";
 import { startFakeKept, type FakeKept } from "./fake-server";
 
 /**

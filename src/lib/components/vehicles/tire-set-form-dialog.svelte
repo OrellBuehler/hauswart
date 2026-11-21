@@ -1,28 +1,28 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { TIRE_SEASONS, type TireSeason } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { TireSet } from "$lib/api/schemas/tire-sets";
-  import type { Vehicle } from "$lib/api/schemas/vehicles";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import ContactSelect from "$lib/components/contacts/contact-select.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
-  import { tireSeasonOptionLabels } from "$lib/vehicles/labels";
+  import { api } from "#lib/api/browser.ts";
+  import { TIRE_SEASONS, type TireSeason } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { TireSet } from "#lib/api/schemas/tire-sets.ts";
+  import type { Vehicle } from "#lib/api/schemas/vehicles.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import ContactSelect from "#lib/components/contacts/contact-select.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
+  import { tireSeasonOptionLabels } from "#lib/vehicles/labels.ts";
   import {
     buildCreateTireSet,
     buildUpdateTireSet,
     draftFromTireSet,
     newTireSetDraft,
     type TireSetDraft,
-  } from "$lib/vehicles/tire-form";
+  } from "#lib/vehicles/tire-form.ts";
 
   let {
     open = $bindable(false),

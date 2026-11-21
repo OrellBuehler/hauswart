@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createAsset, updateAsset } from "$lib/server/assets/assets";
-import { createRoom } from "$lib/server/rooms/rooms";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt } from "$lib/testing/domain";
+import { createAsset, updateAsset } from "#lib/server/assets/assets.ts";
+import { createRoom } from "#lib/server/rooms/rooms.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt } from "#lib/testing/domain.ts";
 import {
   allWarranties,
   dashboardWarranties,

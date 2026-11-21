@@ -1,7 +1,7 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { DOCUMENT_PROVIDERS } from "$lib/api/enums";
-import { documentLinks, externalDocuments } from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
+import { DOCUMENT_PROVIDERS } from "#lib/api/enums.ts";
+import { documentLinks, externalDocuments } from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import { ownerInfo } from "./owners";
 import { ownConnectionRow } from "./session";
 

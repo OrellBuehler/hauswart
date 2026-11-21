@@ -1,6 +1,6 @@
-import { isApiError } from "$lib/api/errors";
-import { apiErrorMessage } from "$lib/error-message";
-import { m } from "$lib/paraglide/messages";
+import { isApiError } from "#lib/api/errors.ts";
+import { apiErrorMessage } from "#lib/error-message.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 export function detailsCode(err: unknown): string | undefined {
   if (!isApiError(err)) return undefined;

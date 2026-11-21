@@ -1,9 +1,9 @@
-import type { ApiClient } from "$lib/api/client";
-import { fetchAll } from "$lib/api/fetch-all";
-import { orFail } from "$lib/api/load";
-import { endpoints } from "$lib/api/registry";
-import { todayIn } from "$lib/dates";
-import { loadPlaces } from "$lib/tasks/load";
+import type { ApiClient } from "#lib/api/client.ts";
+import { fetchAll } from "#lib/api/fetch-all.ts";
+import { orFail } from "#lib/api/load.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import { todayIn } from "#lib/dates.ts";
+import { loadPlaces } from "#lib/tasks/load.ts";
 
 /** What the defect form needs: places, contacts and the household's handover settings. */
 export async function loadDefectFormData(

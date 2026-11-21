@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { createCaller, errorCode } from "$lib/testing/api";
+import { createCaller, errorCode } from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
   type TestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { today } from "$lib/testing/dates";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { today } from "#lib/testing/dates.ts";
 
 type Json = Record<string, unknown>;
 type TaskBody = {

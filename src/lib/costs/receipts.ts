@@ -1,8 +1,8 @@
-import { endpointUrl } from "$lib/api/client";
-import type { AiTaskClosedVia, AiTaskStatus } from "$lib/api/enums";
-import { endpoints } from "$lib/api/registry";
-import type { AiTask } from "$lib/api/schemas/ai-tasks";
-import { m } from "$lib/paraglide/messages";
+import { endpointUrl } from "#lib/api/client.ts";
+import type { AiTaskClosedVia, AiTaskStatus } from "#lib/api/enums.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import type { AiTask } from "#lib/api/schemas/ai-tasks.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 /** Which tasks the receipts page lists: everything (open ones first) or one status. */
 export const RECEIPT_VIEWS = ["all", "pending", "done", "dismissed"] as const;

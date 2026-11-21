@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createSettlementRequestSchema } from "$lib/api/schemas/settlements";
-import { createTestUser } from "$lib/testing/auth";
-import { ctxAt } from "$lib/testing/domain";
-import { useTestDB } from "$lib/testing/db";
-import { settlements } from "$lib/server/db";
+import { createSettlementRequestSchema } from "#lib/api/schemas/settlements.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { settlements } from "#lib/server/db.ts";
 import { listCostBooks } from "./books";
 import {
   deleteSettlement,

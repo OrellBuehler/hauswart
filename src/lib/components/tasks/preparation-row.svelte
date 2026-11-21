@@ -1,16 +1,16 @@
 <script lang="ts">
   import CheckIcon from "@lucide/svelte/icons/check";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { taskHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
-  import { dueWording } from "$lib/tasks/row";
-  import { cn } from "$lib/utils";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { taskHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { dueWording } from "#lib/tasks/row.ts";
+  import { cn } from "#lib/utils.ts";
 
   let {
     taskId,
@@ -49,7 +49,7 @@
         body: {},
       });
       toast.success(m.toast_prep_done({ title }));
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       onfail?.();
       toast.error(apiErrorMessage(err));

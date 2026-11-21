@@ -1,4 +1,4 @@
-import type { endpoints } from "$lib/api/registry";
+import type { endpoints } from "#lib/api/registry.ts";
 import {
   addEvent,
   changeStatus,
@@ -8,8 +8,8 @@ import {
   getTimeline,
   listDefects,
   updateDefect,
-} from "$lib/server/defects/defects";
-import { exportDefectsPdf } from "$lib/server/defects/pdf";
+} from "#lib/server/defects/defects.ts";
+import { exportDefectsPdf } from "#lib/server/defects/pdf.ts";
 import type { Handler } from "../bind";
 import {
   wireDefect,

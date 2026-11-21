@@ -1,6 +1,6 @@
 import type { z } from "zod";
-import { isApiError } from "$lib/api/errors";
-import { m } from "$lib/paraglide/messages";
+import { isApiError } from "#lib/api/errors.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 type Issue = z.core.$ZodIssue;
 

@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
-import { SESSION_COOKIE } from "$lib/api/constants";
-import { authEvents, users } from "$lib/server/db";
-import { validateSessionToken } from "$lib/server/auth/sessions";
-import { verifyToken } from "$lib/server/auth/tokens";
+import { SESSION_COOKIE } from "#lib/api/constants.ts";
+import { authEvents, users } from "#lib/server/db.ts";
+import { validateSessionToken } from "#lib/server/auth/sessions.ts";
+import { verifyToken } from "#lib/server/auth/tokens.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { callRoute } from "$lib/testing/route";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { callRoute } from "#lib/testing/route.ts";
 import { POST as login } from "../auth/login/+server";
 import { PATCH } from "./[id]/+server";
 import { POST as revokeTokens } from "./[id]/revoke-tokens/+server";

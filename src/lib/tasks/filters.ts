@@ -1,5 +1,5 @@
-import { TASK_CATEGORIES, type TaskCategory } from "$lib/api/enums";
-import { DUE_STATUSES } from "$lib/api/enums";
+import { TASK_CATEGORIES, type TaskCategory } from "#lib/api/enums.ts";
+import { DUE_STATUSES } from "#lib/api/enums.ts";
 import type { DueStatus } from "./engine/types";
 
 export const TASK_VIEWS = ["status", "due", "title"] as const;

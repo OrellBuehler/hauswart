@@ -1,14 +1,14 @@
 import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { INTEGRATION_LEVELS } from "$lib/api/enums";
-import { calendarTargetConfigSchema } from "$lib/api/schemas/calendar-sync";
-import { createAppointment } from "$lib/server/appointments/appointments";
-import { saveConnection } from "$lib/server/connections/connections";
-import { calendarLinks, calendarTargets, connections } from "$lib/server/db";
-import { onEvent } from "$lib/server/events";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, NOW } from "$lib/testing/domain";
+import { INTEGRATION_LEVELS } from "#lib/api/enums.ts";
+import { calendarTargetConfigSchema } from "#lib/api/schemas/calendar-sync.ts";
+import { createAppointment } from "#lib/server/appointments/appointments.ts";
+import { saveConnection } from "#lib/server/connections/connections.ts";
+import { calendarLinks, calendarTargets, connections } from "#lib/server/db.ts";
+import { onEvent } from "#lib/server/events.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, NOW } from "#lib/testing/domain.ts";
 import { listLinks } from "./links";
 import { syncTarget } from "./sync";
 import {

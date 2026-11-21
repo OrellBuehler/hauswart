@@ -1,9 +1,9 @@
 <script lang="ts">
   import ChevronDownIcon from "@lucide/svelte/icons/chevron-down";
   import ListTreeIcon from "@lucide/svelte/icons/list-tree";
-  import type { Heading } from "$lib/api/schemas/docs";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import type { Heading } from "#lib/api/schemas/docs.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     headings,

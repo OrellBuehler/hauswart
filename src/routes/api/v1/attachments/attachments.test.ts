@@ -2,34 +2,34 @@ import { createHash } from "node:crypto";
 import { access, readdir, utimes } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { createApiClient, endpointUrl } from "$lib/api/client";
-import { endpoints } from "$lib/api/registry";
-import { MAX_UPLOAD_REQUEST_BYTES } from "$lib/api/schemas/attachments";
+import { createApiClient, endpointUrl } from "#lib/api/client.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import { MAX_UPLOAD_REQUEST_BYTES } from "#lib/api/schemas/attachments.ts";
 import {
   createCaller,
   createInProcessFetch,
   errorCode,
-} from "$lib/testing/api";
+} from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import {
   sampleHeic,
   sampleHtml,
   samplePdf,
   sampleSvg,
   useTestFilesDir,
-} from "$lib/testing/files";
+} from "#lib/testing/files.ts";
 import {
   plainJpeg,
   plainPng,
   SECRET_MAKE,
   withExif,
-} from "$lib/server/files/test-images";
-import { settleBackgroundWork } from "$lib/server/attachments/attachments";
+} from "#lib/server/files/test-images.ts";
+import { settleBackgroundWork } from "#lib/server/attachments/attachments.ts";
 
 interface AttachmentBody {
   id: string;
@@ -839,7 +839,7 @@ describe("attachments API", () => {
       const created = (
         await upload(call, { ownerType: "asset", ownerId: asset.id })
       ).body as AttachmentBody;
-      const { getDB, attachments } = await import("$lib/server/db");
+      const { getDB, attachments } = await import("#lib/server/db.ts");
       const { eq } = await import("drizzle-orm");
       getDB()
         .update(attachments)

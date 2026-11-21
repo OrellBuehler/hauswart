@@ -1,6 +1,6 @@
-import { getDB } from "$lib/server/db";
-import { generateNotifications } from "$lib/server/notifications/generate";
-import type { ServiceContext } from "$lib/server/service";
+import { getDB } from "#lib/server/db.ts";
+import { generateNotifications } from "#lib/server/notifications/generate.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import { evaluateAll } from "./evaluator";
 
 export const EVALUATION_INTERVAL_MS = 5 * 60 * 1000;

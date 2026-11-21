@@ -1,5 +1,5 @@
 import type { RequestEvent } from "@sveltejs/kit";
-import { SESSION_COOKIE } from "$lib/api/constants";
+import { SESSION_COOKIE } from "#lib/api/constants.ts";
 import { handle } from "../../hooks.server";
 import {
   createTestEvent,

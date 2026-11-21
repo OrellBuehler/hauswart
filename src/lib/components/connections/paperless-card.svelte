@@ -7,29 +7,29 @@
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import UnplugIcon from "@lucide/svelte/icons/unplug";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { isApiError } from "$lib/api/errors";
-  import { endpoints } from "$lib/api/registry";
+  import { api } from "#lib/api/browser.ts";
+  import { isApiError } from "#lib/api/errors.ts";
+  import { endpoints } from "#lib/api/registry.ts";
   import type { z } from "zod";
-  import type { testIntegrationResponseSchema } from "$lib/api/schemas/integrations";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { forgetIntegrations } from "$lib/connections/connection";
+  import type { testIntegrationResponseSchema } from "#lib/api/schemas/integrations.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import * as Alert from "#lib/components/ui/alert/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { forgetIntegrations } from "#lib/connections/connection.ts";
   import {
     connectionFieldErrors,
     connectionSaveMessage,
     integrationErrorMessage,
-  } from "$lib/connections/errors";
-  import { forgetPickerItems } from "$lib/connections/provider-lists";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDateTime, formatRelativeInstant } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/connections/errors.ts";
+  import { forgetPickerItems } from "#lib/connections/provider-lists.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDateTime, formatRelativeInstant } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { IntegrationCardProps } from "./cards";
   import { kindMeta } from "./kinds";
   import PaperlessSettings from "./paperless-settings.svelte";

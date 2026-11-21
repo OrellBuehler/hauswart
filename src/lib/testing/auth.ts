@@ -1,12 +1,12 @@
 import { eq } from "drizzle-orm";
-import type { TokenKind, UserLocale, UserRole } from "$lib/api/enums";
-import { MOBILE_TOKEN_SCOPES, type Scope } from "$lib/api/scopes";
-import { getDB, users } from "$lib/server/db";
-import { hashPassword } from "$lib/server/auth/password";
-import { createSession } from "$lib/server/auth/sessions";
-import { createToken, type TokenRecord } from "$lib/server/auth/tokens";
-import type { SessionUser } from "$lib/server/auth/types";
-import { createUser, toSessionUser } from "$lib/server/users/users";
+import type { TokenKind, UserLocale, UserRole } from "#lib/api/enums.ts";
+import { MOBILE_TOKEN_SCOPES, type Scope } from "#lib/api/scopes.ts";
+import { getDB, users } from "#lib/server/db.ts";
+import { hashPassword } from "#lib/server/auth/password.ts";
+import { createSession } from "#lib/server/auth/sessions.ts";
+import { createToken, type TokenRecord } from "#lib/server/auth/tokens.ts";
+import type { SessionUser } from "#lib/server/auth/types.ts";
+import { createUser, toSessionUser } from "#lib/server/users/users.ts";
 
 export const TEST_PASSWORD = "correct-horse-battery";
 

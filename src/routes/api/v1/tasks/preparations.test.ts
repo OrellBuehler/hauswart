@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createCaller, errorCode } from "$lib/testing/api";
-import { createTestUser, loginTestUser } from "$lib/testing/auth";
-import { today } from "$lib/testing/dates";
-import { useTestDB } from "$lib/testing/db";
+import { createCaller, errorCode } from "#lib/testing/api.ts";
+import { createTestUser, loginTestUser } from "#lib/testing/auth.ts";
+import { today } from "#lib/testing/dates.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 
 type Prep = {
   id: string;

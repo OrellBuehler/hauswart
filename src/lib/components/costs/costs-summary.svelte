@@ -3,12 +3,12 @@
   import EyeIcon from "@lucide/svelte/icons/eye";
   import InfoIcon from "@lucide/svelte/icons/info";
   import FilterIcon from "@lucide/svelte/icons/list-filter";
-  import type { CostBalances, CostsSummary } from "$lib/api/schemas/costs";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { viewerLine } from "$lib/costs/balances";
-  import { formatMoney } from "$lib/format-money";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import type { CostBalances, CostsSummary } from "#lib/api/schemas/costs.ts";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { viewerLine } from "#lib/costs/balances.ts";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import BalanceOverview from "./balance-overview.svelte";
 
   let {

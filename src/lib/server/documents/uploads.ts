@@ -2,22 +2,22 @@ import { and, eq, inArray, lt } from "drizzle-orm";
 import {
   DOCUMENT_LINK_OWNER_TYPES,
   type DocumentLinkOwnerType,
-} from "$lib/api/enums";
-import { ApiError } from "$lib/api/errors";
-import type { PushToDocumentsRequest } from "$lib/api/schemas/documents";
+} from "#lib/api/enums.ts";
+import { ApiError } from "#lib/api/errors.ts";
+import type { PushToDocumentsRequest } from "#lib/api/schemas/documents.ts";
 import {
   getAttachment,
   openAttachmentFile,
   trackBackground,
   type AttachmentRecord,
-} from "$lib/server/attachments/attachments";
-import { getDB, documentUploads } from "$lib/server/db";
-import { IntegrationError } from "$lib/server/connections/errors";
+} from "#lib/server/attachments/attachments.ts";
+import { getDB, documentUploads } from "#lib/server/db.ts";
+import { IntegrationError } from "#lib/server/connections/errors.ts";
 import {
   invalidField,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
+} from "#lib/server/service.ts";
 import { createLink, findLinkByKey } from "./links";
 import { documentSession, viaProvider } from "./session";
 

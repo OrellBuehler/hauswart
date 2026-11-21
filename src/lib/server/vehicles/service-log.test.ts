@@ -1,21 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
 import {
   createServiceLogRequestSchema,
   updateServiceLogRequestSchema,
-} from "$lib/api/schemas/service-log";
-import { createAsset, deleteAsset } from "$lib/server/assets/assets";
-import { odometerReadings, serviceLog } from "$lib/server/db";
-import { getSignal } from "$lib/server/signals/service";
+} from "#lib/api/schemas/service-log.ts";
+import { createAsset, deleteAsset } from "#lib/server/assets/assets.ts";
+import { odometerReadings, serviceLog } from "#lib/server/db.ts";
+import { getSignal } from "#lib/server/signals/service.ts";
 import {
   createEntry,
   deleteEntry,
   updateEntry,
-} from "$lib/server/service-log/service-log";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, NOW } from "$lib/testing/domain";
-import { failure, fieldErrors, makeVehicle } from "$lib/testing/vehicles";
-import { odometerSignalKey } from "$lib/vehicles/odometer";
+} from "#lib/server/service-log/service-log.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, NOW } from "#lib/testing/domain.ts";
+import { failure, fieldErrors, makeVehicle } from "#lib/testing/vehicles.ts";
+import { odometerSignalKey } from "#lib/vehicles/odometer.ts";
 import { listReadings, recordOdometer } from "./odometer";
 
 describe("service log entries with an odometer value", () => {

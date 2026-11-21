@@ -4,8 +4,8 @@ import CarIcon from "@lucide/svelte/icons/car";
 import CpuIcon from "@lucide/svelte/icons/cpu";
 import DoorClosedIcon from "@lucide/svelte/icons/door-closed";
 import SproutIcon from "@lucide/svelte/icons/sprout";
-import type { AssetKind } from "$lib/api/enums";
-import { m } from "$lib/paraglide/messages";
+import type { AssetKind } from "#lib/api/enums.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 export const kindIcons: Record<AssetKind, Component> = {
   device: CpuIcon,

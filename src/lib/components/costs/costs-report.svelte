@@ -1,18 +1,18 @@
 <script lang="ts">
   import type { Component } from "svelte";
-  import type { CostsSummary } from "$lib/api/schemas/costs";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import type { CostFilters } from "$lib/costs/filters";
+  import type { CostsSummary } from "#lib/api/schemas/costs.ts";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import type { CostFilters } from "#lib/costs/filters.ts";
   import {
     categoryIcons,
     categoryLabels,
     deductibleLabels,
-  } from "$lib/costs/labels";
-  import { hasSettlementData, shareBps, taxTotal } from "$lib/costs/summary";
-  import { formatPercent, monthName } from "$lib/format";
-  import { formatMoney } from "$lib/format-money";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/costs/labels.ts";
+  import { hasSettlementData, shareBps, taxTotal } from "#lib/costs/summary.ts";
+  import { formatPercent, monthName } from "#lib/format.ts";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     summary,

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError } from "$lib/api/errors";
+import { ApiError } from "#lib/api/errors.ts";
 
 type Page = { items: unknown[]; nextCursor: string | null };
 
@@ -13,7 +13,7 @@ const empty: Page = { items: [], nextCursor: null };
 const book = { id: "b1", name: "Wohnung", archivedAt: null };
 const tag = { id: "t1", name: "Ferien", color: "blue", entryCount: 2 };
 
-vi.mock("$lib/api/client", () => ({
+vi.mock("#lib/api/client.ts", () => ({
   createApiClient: () => ({
     call: async (endpoint: { id: string }) => {
       state.calls.push(endpoint.id);

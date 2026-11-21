@@ -1,4 +1,4 @@
-import type { TireSet } from "$lib/api/schemas/tire-sets";
+import type { TireSet } from "#lib/api/schemas/tire-sets.ts";
 import { tireSeasonLabels } from "./labels";
 
 export function setTitle(set: Pick<TireSet, "season" | "size">): string {

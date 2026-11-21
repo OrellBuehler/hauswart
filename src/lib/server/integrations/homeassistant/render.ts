@@ -1,10 +1,10 @@
-import type { UserLocale } from "$lib/api/enums";
-import { m } from "$lib/paraglide/messages";
+import type { UserLocale } from "#lib/api/enums.ts";
+import { m } from "#lib/paraglide/messages.js";
 import type {
   ChannelAction,
   DeliverableNotification,
-} from "$lib/server/notifications/channels";
-import { ACTION_DONE_PREFIX } from "$lib/server/notifications/actions";
+} from "#lib/server/notifications/channels.ts";
+import { ACTION_DONE_PREFIX } from "#lib/server/notifications/actions.ts";
 import {
   buildActionableNotification,
   notificationActionToken,

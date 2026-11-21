@@ -1,14 +1,14 @@
 import { and, eq } from "drizzle-orm";
-import type { TaskPriority } from "$lib/api/enums";
+import type { TaskPriority } from "#lib/api/enums.ts";
 import {
   ACTIVE_DEFECT_STATUSES,
   REMINDER_LEAD_DAYS,
-} from "$lib/api/schemas/defects";
-import { m } from "$lib/paraglide/messages";
-import { tasks } from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
-import { createPreparation } from "$lib/server/tasks/preparations";
-import { createTask, updateTask } from "$lib/server/tasks/tasks";
+} from "#lib/api/schemas/defects.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { tasks } from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
+import { createPreparation } from "#lib/server/tasks/preparations.ts";
+import { createTask, updateTask } from "#lib/server/tasks/tasks.ts";
 import type { DefectRow } from "./defects";
 
 export const DEFECT_EXTERNAL_SOURCE = "defect";

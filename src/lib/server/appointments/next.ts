@@ -1,8 +1,8 @@
 import { sql, type AnyColumn } from "drizzle-orm";
 import { z } from "zod";
-import { toIso } from "$lib/api/schemas/common";
-import type { NextAppointment } from "$lib/api/schemas/tasks";
-import { parseStored } from "$lib/server/json";
+import { toIso } from "#lib/api/schemas/common.ts";
+import type { NextAppointment } from "#lib/api/schemas/tasks.ts";
+import { parseStored } from "#lib/server/json.ts";
 
 /**
  * The earliest planned appointment of the task whose id column is given, as a correlated subquery

@@ -1,4 +1,4 @@
-import { authEvents, getDB, type AuthEventType } from "$lib/server/db";
+import { authEvents, getDB, type AuthEventType } from "#lib/server/db.ts";
 
 /** Records a security event. Callers pass ids only, never secrets, codes or credentials. */
 export function logAuthEvent(

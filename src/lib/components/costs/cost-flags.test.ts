@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render } from "svelte/server";
-import type { CostEntry } from "$lib/api/schemas/costs";
+import type { CostEntry } from "#lib/api/schemas/costs.ts";
 import { hasCostFlags } from "./cost-flags";
 import CostFlags from "./cost-flags.svelte";
 

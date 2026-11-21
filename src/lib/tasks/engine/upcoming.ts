@@ -1,4 +1,4 @@
-import { addDays, isoWeekEnd } from "$lib/dates";
+import { addDays, isoWeekEnd } from "#lib/dates.ts";
 import type { PrepState } from "./preparations";
 import { shownDate, shownDateIsEstimate } from "./shown";
 import type { DueResult } from "./types";

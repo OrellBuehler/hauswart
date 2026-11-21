@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import ClipboardListIcon from "@lucide/svelte/icons/clipboard-list";
   import EllipsisVerticalIcon from "@lucide/svelte/icons/ellipsis-vertical";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
@@ -7,25 +7,25 @@
   import PlusIcon from "@lucide/svelte/icons/plus";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { OdometerUnit } from "$lib/api/enums";
-  import type { ServiceLogEntry } from "$lib/api/schemas/service-log";
-  import { formatOdometer } from "$lib/vehicles/format";
-  import Attachments from "$lib/components/attachments/attachments.svelte";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDay } from "$lib/format";
-  import { formatMoney } from "$lib/format-money";
-  import { serviceLogKindLabels } from "$lib/hints/labels";
-  import { contactHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { OdometerUnit } from "#lib/api/enums.ts";
+  import type { ServiceLogEntry } from "#lib/api/schemas/service-log.ts";
+  import { formatOdometer } from "#lib/vehicles/format.ts";
+  import Attachments from "#lib/components/attachments/attachments.svelte";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import LinkedDocuments from "#lib/components/documents/linked-documents.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDay } from "#lib/format.ts";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { serviceLogKindLabels } from "#lib/hints/labels.ts";
+  import { contactHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import ServiceLogFormDialog from "./service-log-form-dialog.svelte";
 
   let {
@@ -102,7 +102,7 @@
       params: { id: assetId, entryId: id },
     });
     toast.success(m.service_deleted_toast({ title }));
-    await invalidateAll();
+    await refreshAll();
   }
 </script>
 
@@ -251,7 +251,7 @@
   {today}
   {currency}
   {odometerUnit}
-  onsaved={() => invalidateAll()}
+  onsaved={() => refreshAll()}
 />
 
 <ConfirmDialog

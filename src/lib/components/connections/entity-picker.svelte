@@ -4,28 +4,28 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
   import type {
     ExternalCalendar,
     ExternalEntity,
-  } from "$lib/connections/types";
-  import * as Command from "$lib/components/ui/command/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import * as Popover from "$lib/components/ui/popover/index.js";
+  } from "#lib/connections/types.ts";
+  import * as Command from "#lib/components/ui/command/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import * as Popover from "#lib/components/ui/popover/index.js";
   import {
     homeAssistantOf,
     isUsable,
     loadIntegrations,
-  } from "$lib/connections/connection";
+  } from "#lib/connections/connection.ts";
   import {
     ENTITY_ID_PATTERN,
     formatReading,
     searchEntities,
-  } from "$lib/connections/entities";
-  import { pickerErrorMessage } from "$lib/connections/errors";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/connections/entities.ts";
+  import { pickerErrorMessage } from "#lib/connections/errors.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import EntityReading from "./entity-reading.svelte";
 
   let {
@@ -39,20 +39,21 @@
     showReading = true,
     onresolve,
     onpick,
+
+    /** The entity id (`sensor.example_washer_cycles`) or calendar id (`calendar.example_waste`). */
+    /** Only entities of this domain (`sensor`, `binary_sensor`, ...). */
+    /** The current value of the chosen entity below the field. */
+    /** The person chose an entry from the list (not on load): the entity, or null for a typed id. */
   }: {
     id: string;
-    /** The entity id (`sensor.example_washer_cycles`) or calendar id (`calendar.example_waste`). */
     value?: string | undefined;
     source?: "entities" | "calendars";
-    /** Only entities of this domain (`sensor`, `binary_sensor`, ...). */
     domain?: string;
     placeholder: string;
     invalid?: boolean;
     describedby?: string | undefined;
-    /** The current value of the chosen entity below the field. */
     showReading?: boolean;
     onresolve?: (entity: ExternalEntity | null | undefined) => void;
-    /** The person chose an entry from the list (not on load): the entity, or null for a typed id. */
     onpick?: (entity: ExternalEntity | null) => void;
   } = $props();
 
@@ -355,7 +356,7 @@
       <p class="text-muted-foreground text-xs text-pretty">
         {m.entity_picker_manual()}
         <a
-          href={resolve("/settings/integrations")}
+          href={resolve("settings/integrations")}
           class="text-foreground underline underline-offset-2 pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center"
         >
           {m.entity_picker_connect()}

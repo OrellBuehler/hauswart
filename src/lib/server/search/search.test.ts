@@ -1,37 +1,37 @@
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { createPageRequestSchema } from "$lib/api/schemas/docs";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { createPageRequestSchema } from "#lib/api/schemas/docs.ts";
 import {
   createAsset,
   deleteAsset,
   updateAsset,
-} from "$lib/server/assets/assets";
-import { assets, rooms, tasks } from "$lib/server/db";
-import { shutdownMarkdownWorkers } from "$lib/server/docs/markdown-runner";
-import { createContactRequestSchema } from "$lib/api/schemas/contacts";
-import { createDefectRequestSchema } from "$lib/api/schemas/defects";
-import { createHintRequestSchema } from "$lib/api/schemas/hints";
-import { createPartRequestSchema } from "$lib/api/schemas/parts";
+} from "#lib/server/assets/assets.ts";
+import { assets, rooms, tasks } from "#lib/server/db.ts";
+import { shutdownMarkdownWorkers } from "#lib/server/docs/markdown-runner.ts";
+import { createContactRequestSchema } from "#lib/api/schemas/contacts.ts";
+import { createDefectRequestSchema } from "#lib/api/schemas/defects.ts";
+import { createHintRequestSchema } from "#lib/api/schemas/hints.ts";
+import { createPartRequestSchema } from "#lib/api/schemas/parts.ts";
 import {
   createContact,
   deleteContact,
   updateContact,
-} from "$lib/server/contacts/contacts";
+} from "#lib/server/contacts/contacts.ts";
 import {
   createDefect,
   deleteDefect,
   updateDefect,
-} from "$lib/server/defects/defects";
-import { createHint, deleteHint, updateHint } from "$lib/server/hints/hints";
-import { createPart, deletePart, updatePart } from "$lib/server/parts/parts";
-import { createPage, deletePage, updatePage } from "$lib/server/docs/pages";
-import { createRoom, deleteRoom, updateRoom } from "$lib/server/rooms/rooms";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, makeTask } from "$lib/testing/domain";
+} from "#lib/server/defects/defects.ts";
+import { createHint, deleteHint, updateHint } from "#lib/server/hints/hints.ts";
+import { createPart, deletePart, updatePart } from "#lib/server/parts/parts.ts";
+import { createPage, deletePage, updatePage } from "#lib/server/docs/pages.ts";
+import { createRoom, deleteRoom, updateRoom } from "#lib/server/rooms/rooms.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, makeTask } from "#lib/testing/domain.ts";
 import { ftsExpression, search, searchRefs } from "./search";
-import { deleteTask, updateTask } from "$lib/server/tasks/tasks";
+import { deleteTask, updateTask } from "#lib/server/tasks/tasks.ts";
 
 const SECRET = "tresor-code-4711";
 

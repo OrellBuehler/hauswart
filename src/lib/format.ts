@@ -1,6 +1,6 @@
-import type { UserLocale } from "$lib/api/enums";
-import { diffDays, parseDate } from "$lib/dates";
-import { getLocale } from "$lib/paraglide/runtime";
+import type { UserLocale } from "#lib/api/enums.ts";
+import { diffDays, parseDate } from "#lib/dates.ts";
+import { getLocale } from "#lib/paraglide/runtime.js";
 
 const INTL_LOCALES = { de: "de-CH", en: "en-GB" } as const;
 

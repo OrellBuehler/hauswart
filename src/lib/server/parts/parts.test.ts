@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
-import { createPartRequestSchema } from "$lib/api/schemas/parts";
-import { partMovements, parts, taskPreparations } from "$lib/server/db";
-import { updateHousehold } from "$lib/server/household/household";
-import { createAsset } from "$lib/server/assets/assets";
-import { createPreparation } from "$lib/server/tasks/preparations";
-import { listPreparations } from "$lib/server/tasks/preparations";
-import { completeTask, undoCompletion } from "$lib/server/tasks/completions";
-import { deleteTask } from "$lib/server/tasks/tasks";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, everyDays, makeTask, NOW } from "$lib/testing/domain";
+import { createPartRequestSchema } from "#lib/api/schemas/parts.ts";
+import { partMovements, parts, taskPreparations } from "#lib/server/db.ts";
+import { updateHousehold } from "#lib/server/household/household.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import { createPreparation } from "#lib/server/tasks/preparations.ts";
+import { listPreparations } from "#lib/server/tasks/preparations.ts";
+import { completeTask, undoCompletion } from "#lib/server/tasks/completions.ts";
+import { deleteTask } from "#lib/server/tasks/tasks.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, everyDays, makeTask, NOW } from "#lib/testing/domain.ts";
 import {
   linkAssetPart,
   linkTaskPart,
@@ -372,7 +372,7 @@ describe("parts", () => {
       linkTaskPart(ctx(), task.id, part.id, 1);
       deleteTask(ctx(), task.id);
       expect(getPartDetail(ctx(), part.id).tasks).toEqual([]);
-      const { deleteAsset } = await import("$lib/server/assets/assets");
+      const { deleteAsset } = await import("#lib/server/assets/assets.ts");
       deleteAsset(ctx(), asset.id);
       expect(getPartDetail(ctx(), part.id).assets).toEqual([]);
     });
@@ -507,13 +507,13 @@ describe("parts", () => {
       const part = make({ stockCount: 4 });
       const task = await makeTask(ctx());
       linkTaskPart(ctx(), task.id, part.id, 1);
-      const { onEvent } = await import("$lib/server/events");
+      const { onEvent } = await import("#lib/server/events.ts");
       const off = onEvent("completionRecorded", () => {
         throw new Error("boom");
       });
       await expect(complete(task.id)).rejects.toThrow("boom");
       off();
-      const { taskCompletions } = await import("$lib/server/db");
+      const { taskCompletions } = await import("#lib/server/db.ts");
       expect(test.db.select().from(taskCompletions).all()).toEqual([]);
       expect(getPart(ctx(), part.id).stockCount).toBe(4);
     });
@@ -660,7 +660,7 @@ describe("parts", () => {
       const first = await setup({ due: "2026-06-25" });
       const second = await setup({ due: "2026-06-22" });
       const third = await setup({ due: "2026-06-23" });
-      const { updateTask } = await import("$lib/server/tasks/tasks");
+      const { updateTask } = await import("#lib/server/tasks/tasks.ts");
       await updateTask(ctx(), first.task.id, { archived: true });
       updatePart(ctx(), third.part.id, { archived: true });
       const items = listOrderNow(ctx(at("2026-06-30")));

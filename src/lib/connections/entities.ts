@@ -1,8 +1,8 @@
-import { api } from "$lib/api/browser";
-import { endpoints } from "$lib/api/registry";
-import type { ExternalEntity } from "$lib/connections/types";
-import { formatNumber } from "$lib/format";
-import { m } from "$lib/paraglide/messages";
+import { api } from "#lib/api/browser.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import type { ExternalEntity } from "#lib/connections/types.ts";
+import { formatNumber } from "#lib/format.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 export const ENTITY_ID_PATTERN = /^[a-z0-9_]+\.[a-z0-9_]+$/;
 

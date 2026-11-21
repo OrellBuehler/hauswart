@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
-import { taskCompletions, tasks } from "$lib/server/db";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, everyDays, makeTask, NOW } from "$lib/testing/domain";
+import { taskCompletions, tasks } from "#lib/server/db.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, everyDays, makeTask, NOW } from "#lib/testing/domain.ts";
 import {
   completeTask,
   getCompletion,

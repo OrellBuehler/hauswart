@@ -1,6 +1,6 @@
-import { api } from "$lib/api/browser";
-import { endpoints } from "$lib/api/registry";
-import type { Integration } from "$lib/api/schemas/integrations";
+import { api } from "#lib/api/browser.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import type { Integration } from "#lib/api/schemas/integrations.ts";
 
 const TTL_MS = 60_000;
 

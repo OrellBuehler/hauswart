@@ -3,12 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   createCalendarFeedRequestSchema,
   createGuestLinkRequestSchema,
-} from "$lib/api/schemas/share";
-import { createFeed, revokeFeed } from "$lib/server/calendar/feeds";
-import { guestLinks, icalFeeds } from "$lib/server/db";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt } from "$lib/testing/domain";
+} from "#lib/api/schemas/share.ts";
+import { createFeed, revokeFeed } from "#lib/server/calendar/feeds.ts";
+import { guestLinks, icalFeeds } from "#lib/server/db.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
 import { createGuestLink } from "./guest-links";
 import { DEAD_LINK_RETENTION_MS, purgeDeadShareLinks } from "./purge";
 

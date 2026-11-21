@@ -1,12 +1,12 @@
 import { and, asc, eq } from "drizzle-orm";
-import { assetParts, assets, parts, taskParts, tasks } from "$lib/server/db";
-import { paginateArray } from "$lib/server/pagination";
+import { assetParts, assets, parts, taskParts, tasks } from "#lib/server/db.ts";
+import { paginateArray } from "#lib/server/pagination.ts";
 import {
   conflict,
   isUniqueViolation,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
+} from "#lib/server/service.ts";
 import { getPart, toPartRecord, type PartRecord } from "./parts";
 
 type Db = Pick<ServiceContext, "db">;

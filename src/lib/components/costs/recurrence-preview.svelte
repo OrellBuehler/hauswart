@@ -2,7 +2,7 @@
   import CalendarClockIcon from "@lucide/svelte/icons/calendar-clock";
   import InfoIcon from "@lucide/svelte/icons/info";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
-  import type { RecurrenceRule } from "$lib/costs/recurrence";
+  import type { RecurrenceRule } from "#lib/costs/recurrence.ts";
   import {
     PREVIEW_DATES,
     clampNote,
@@ -10,10 +10,10 @@
     immediateWarning,
     ruleWording,
     upcomingDates,
-  } from "$lib/costs/recurrences";
-  import { formatDateShort } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/costs/recurrences.ts";
+  import { formatDateShort } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     rule,

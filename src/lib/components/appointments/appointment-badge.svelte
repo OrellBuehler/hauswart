@@ -1,10 +1,10 @@
 <script lang="ts">
   import CalendarClockIcon from "@lucide/svelte/icons/calendar-clock";
-  import type { NextAppointment } from "$lib/api/schemas/tasks";
-  import { formatStart } from "$lib/appointments/format";
-  import { appointmentHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import type { NextAppointment } from "#lib/api/schemas/tasks.ts";
+  import { formatStart } from "#lib/appointments/format.ts";
+  import { appointmentHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     appointment,

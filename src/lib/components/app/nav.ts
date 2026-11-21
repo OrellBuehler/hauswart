@@ -16,7 +16,7 @@ import SproutIcon from "@lucide/svelte/icons/sprout";
 import UmbrellaIcon from "@lucide/svelte/icons/umbrella";
 import UsersIcon from "@lucide/svelte/icons/users";
 import WrenchIcon from "@lucide/svelte/icons/wrench";
-import { m } from "$lib/paraglide/messages";
+import { m } from "#lib/paraglide/messages.js";
 
 export type NavHref =
   | "/"

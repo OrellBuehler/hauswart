@@ -1,10 +1,10 @@
-import { api } from "$lib/api/browser";
-import { endpoints } from "$lib/api/registry";
-import type { Trigger } from "$lib/tasks/engine/types";
+import { api } from "#lib/api/browser.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import type { Trigger } from "#lib/tasks/engine/types.ts";
 import {
   knownOdometerAsset,
   odometerAssetOfTrigger,
-} from "$lib/vehicles/odometer";
+} from "#lib/vehicles/odometer.ts";
 
 /**
  * The vehicle whose odometer a task counts on, else null. A dashboard entry names it

@@ -1,29 +1,32 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { invalidateAll } from "$app/navigation";
-  import { api } from "$lib/api/browser";
-  import { loadHousehold } from "$lib/api/household";
-  import { endpoints } from "$lib/api/registry";
-  import type { TireSet } from "$lib/api/schemas/tire-sets";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
-  import { m } from "$lib/paraglide/messages";
-  import { formatDay } from "$lib/format";
-  import { refusedMessage, refusedReading } from "$lib/vehicles/odometer-error";
-  import { VehicleReading } from "$lib/vehicles/odometer-state.svelte";
-  import { buildMount, mountFieldErrors } from "$lib/vehicles/tire-form";
-  import { setMake, setTitle } from "$lib/vehicles/tire-label";
-  import { tireOffers } from "$lib/vehicles/tire-offer.svelte";
+  import { refreshAll } from "$app/navigation";
+  import { api } from "#lib/api/browser.ts";
+  import { loadHousehold } from "#lib/api/household.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { TireSet } from "#lib/api/schemas/tire-sets.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { gotoFromOverlay } from "#lib/overlays/use-overlay-history.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { formatDay } from "#lib/format.ts";
+  import {
+    refusedMessage,
+    refusedReading,
+  } from "#lib/vehicles/odometer-error.ts";
+  import { VehicleReading } from "#lib/vehicles/odometer-state.svelte.ts";
+  import { buildMount, mountFieldErrors } from "#lib/vehicles/tire-form.ts";
+  import { setMake, setTitle } from "#lib/vehicles/tire-label.ts";
+  import { tireOffers } from "#lib/vehicles/tire-offer.svelte.ts";
   import {
     mountableSets,
     mountedSet,
     mountedSince,
-  } from "$lib/vehicles/tire-view";
+  } from "#lib/vehicles/tire-view.ts";
   import OdometerReadingField from "./odometer-reading-field.svelte";
 
   const offer = $derived(tireOffers.current);
@@ -100,7 +103,7 @@
   async function submit(): Promise<string | void> {
     if (!offer) return;
     if (!selected) {
-      await gotoFromOverlay(resolve(`/assets/${offer.assetId}` as "/"));
+      await gotoFromOverlay(resolve(`assets/${offer.assetId}`));
       return;
     }
     const built = buildMount({
@@ -118,7 +121,7 @@
         body: built.body,
       });
       toast.success(m.tire_mounted_toast({ name: setTitle(selected) }));
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       const refused = refusedReading(err, "odometer");
       if (refused) {

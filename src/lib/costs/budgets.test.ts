@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { ApiError } from "$lib/api/errors";
+import { ApiError } from "#lib/api/errors.ts";
 import type {
   CostBudget,
   CostBudgetStatusItem,
-} from "$lib/api/schemas/cost-budgets";
+} from "#lib/api/schemas/cost-budgets.ts";
 import {
   budgetAlertText,
   budgetDisplay,

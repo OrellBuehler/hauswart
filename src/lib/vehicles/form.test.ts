@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Vehicle } from "$lib/api/schemas/vehicles";
+import type { Vehicle } from "#lib/api/schemas/vehicles.ts";
 import {
   buildVehicleBody,
   draftFromVehicle,

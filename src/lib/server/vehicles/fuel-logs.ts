@@ -1,20 +1,23 @@
 import { and, eq, inArray, lt, or, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
-import { ApiError } from "$lib/api/errors";
-import type { FuelUnit, OdometerUnit } from "$lib/api/enums";
+import { ApiError } from "#lib/api/errors.ts";
+import type { FuelUnit, OdometerUnit } from "#lib/api/enums.ts";
 import type {
   CreateCostRequest,
   UpdateCostRequest,
-} from "$lib/api/schemas/costs";
+} from "#lib/api/schemas/costs.ts";
 import type {
   CreateFuelLogRequest,
   UpdateFuelLogRequest,
-} from "$lib/api/schemas/fuel-logs";
-import { m } from "$lib/paraglide/messages";
-import { minor } from "$lib/money";
-import { dateInZone, householdTimeZone } from "$lib/server/config";
-import { openCostBookId, requireOpenCostBook } from "$lib/server/costs/books";
-import { createCost, deleteCost, updateCost } from "$lib/server/costs/costs";
+} from "#lib/api/schemas/fuel-logs.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { minor } from "#lib/money.ts";
+import { dateInZone, householdTimeZone } from "#lib/server/config.ts";
+import {
+  openCostBookId,
+  requireOpenCostBook,
+} from "#lib/server/costs/books.ts";
+import { createCost, deleteCost, updateCost } from "#lib/server/costs/costs.ts";
 import {
   assets,
   costBooks,
@@ -22,20 +25,20 @@ import {
   fuelLogs,
   vehicleDetails,
   type DB,
-} from "$lib/server/db";
-import { getHousehold } from "$lib/server/household/household";
-import { decodeCursor, pageOf } from "$lib/server/pagination";
+} from "#lib/server/db.ts";
+import { getHousehold } from "#lib/server/household/household.ts";
+import { decodeCursor, pageOf } from "#lib/server/pagination.ts";
 import {
   invalidField,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
+} from "#lib/server/service.ts";
 import {
   fuelStretches,
   pricePerUnitMinor,
   type FuelFill,
   type Stretch,
-} from "$lib/vehicles/fuel";
+} from "#lib/vehicles/fuel.ts";
 import { assertVehicleForRead } from "./kind";
 import { removeReadingsOfSource, writeOdometer } from "./odometer";
 import { odometerUnitOf } from "./summary";

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import CircleDotIcon from "@lucide/svelte/icons/circle-dot";
   import EllipsisVerticalIcon from "@lucide/svelte/icons/ellipsis-vertical";
   import PencilIcon from "@lucide/svelte/icons/pencil";
@@ -10,32 +10,32 @@
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import ArchiveIcon from "@lucide/svelte/icons/archive";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { TireSet } from "$lib/api/schemas/tire-sets";
-  import type { Vehicle } from "$lib/api/schemas/vehicles";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDay, formatNumber } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
-  import { formatOdometer } from "$lib/vehicles/format";
-  import { tireSeasonIcons } from "$lib/vehicles/labels";
-  import type { VehicleReadingState } from "$lib/vehicles/odometer-state.svelte";
-  import { setMake, setTitle } from "$lib/vehicles/tire-label";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { TireSet } from "#lib/api/schemas/tire-sets.ts";
+  import type { Vehicle } from "#lib/api/schemas/vehicles.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import * as Alert from "#lib/components/ui/alert/index.js";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDay, formatNumber } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
+  import { formatOdometer } from "#lib/vehicles/format.ts";
+  import { tireSeasonIcons } from "#lib/vehicles/labels.ts";
+  import type { VehicleReadingState } from "#lib/vehicles/odometer-state.svelte.ts";
+  import { setMake, setTitle } from "#lib/vehicles/tire-label.ts";
   import {
     mountedSet,
     mountedSince,
     tireWarnings,
     type TireWarning,
-  } from "$lib/vehicles/tire-view";
-  import { TIRE_AGE_WARNING_YEARS } from "$lib/vehicles/tires";
+  } from "#lib/vehicles/tire-view.ts";
+  import { TIRE_AGE_WARNING_YEARS } from "#lib/vehicles/tires.ts";
   import TireMountDialog from "./tire-mount-dialog.svelte";
   import TireSetFormDialog from "./tire-set-form-dialog.svelte";
   import TireTreadDialog from "./tire-tread-dialog.svelte";
@@ -125,7 +125,7 @@
     if (!deleting) return;
     await api.call(endpoints.tireSetsDelete, { params: { id: deleting.id } });
     toast.success(m.tire_deleted_toast());
-    await invalidateAll();
+    await refreshAll();
   }
 
   async function changeRetired(set: TireSet, value: boolean) {
@@ -134,7 +134,7 @@
       body: { retired: value },
     });
     toast.success(value ? m.tire_retired_toast() : m.tire_unretired_toast());
-    await invalidateAll();
+    await refreshAll();
   }
 
   async function setRetired(set: TireSet, value: boolean) {
@@ -460,7 +460,7 @@
   set={editing}
   {vehicle}
   {today}
-  onsaved={() => invalidateAll()}
+  onsaved={() => refreshAll()}
 />
 
 <TireMountDialog
@@ -470,7 +470,7 @@
   {today}
   since={mountedSince(sets)}
   vehicle={reading}
-  onmounted={() => invalidateAll()}
+  onmounted={() => refreshAll()}
 />
 
 <TireTreadDialog
@@ -478,7 +478,7 @@
   set={measuring}
   {today}
   vehicle={reading}
-  onsaved={() => invalidateAll()}
+  onsaved={() => refreshAll()}
 />
 
 <ConfirmDialog

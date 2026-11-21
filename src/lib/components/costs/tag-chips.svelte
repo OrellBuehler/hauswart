@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { CostTagRef } from "$lib/api/schemas/cost-tags";
-  import { tagNames } from "$lib/costs/tags";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import type { CostTagRef } from "#lib/api/schemas/cost-tags.ts";
+  import { tagNames } from "#lib/costs/tags.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import TagChip from "./tag-chip.svelte";
 
   let {

@@ -1,7 +1,7 @@
 import type { z } from "zod";
-import type { endpoints } from "$lib/api/registry";
-import type { costTagSchema } from "$lib/api/schemas/cost-tags";
-import { toIso } from "$lib/api/schemas/common";
+import type { endpoints } from "#lib/api/registry.ts";
+import type { costTagSchema } from "#lib/api/schemas/cost-tags.ts";
+import { toIso } from "#lib/api/schemas/common.ts";
 import {
   createCostTag,
   deleteCostTag,
@@ -9,7 +9,7 @@ import {
   listCostTags,
   updateCostTag,
   type CostTagRecord,
-} from "$lib/server/costs/tags";
+} from "#lib/server/costs/tags.ts";
 import type { Handler } from "../bind";
 
 export function wireCostTag(t: CostTagRecord): z.input<typeof costTagSchema> {

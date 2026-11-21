@@ -1,12 +1,12 @@
-import type { endpoints } from "$lib/api/registry";
-import { importAreas as importAreasAsRooms } from "$lib/server/rooms/areas";
+import type { endpoints } from "#lib/api/registry.ts";
+import { importAreas as importAreasAsRooms } from "#lib/server/rooms/areas.ts";
 import {
   createRoom,
   deleteRoom,
   getRoom,
   listRooms,
   updateRoom,
-} from "$lib/server/rooms/rooms";
+} from "#lib/server/rooms/rooms.ts";
 import type { Handler } from "../bind";
 import { wireRoom } from "../wire";
 

@@ -3,19 +3,19 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import UsersIcon from "@lucide/svelte/icons/users";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { COST_CATEGORIES, type CostCategory } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { CostBook } from "$lib/api/schemas/cost-books";
-  import type { Integration } from "$lib/api/schemas/integrations";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { forgetIntegrations } from "$lib/connections/connection";
+  import { api } from "#lib/api/browser.ts";
+  import { COST_CATEGORIES, type CostCategory } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+  import type { Integration } from "#lib/api/schemas/integrations.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import * as Alert from "#lib/components/ui/alert/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { forgetIntegrations } from "#lib/connections/connection.ts";
   import {
     KEPT_LIMITS,
     keptBookOptions,
@@ -29,10 +29,10 @@
     withoutCreditor,
     type KeptCategory,
     type KeptSettings,
-  } from "$lib/connections/kept";
-  import { defaultBook } from "$lib/costs/books";
-  import { categoryLabels } from "$lib/costs/labels";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/connections/kept.ts";
+  import { defaultBook } from "#lib/costs/books.ts";
+  import { categoryLabels } from "#lib/costs/labels.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import KeptCategoryMap from "./kept-category-map.svelte";
   import NameListInput from "./name-list-input.svelte";
 

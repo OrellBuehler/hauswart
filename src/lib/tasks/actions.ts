@@ -1,13 +1,13 @@
-import { invalidateAll } from "$app/navigation";
+import { refreshAll } from "$app/navigation";
 import { toast } from "svelte-sonner";
-import { api } from "$lib/api/browser";
-import { endpoints } from "$lib/api/registry";
-import type { CompletionServiceLogRequest } from "$lib/api/schemas/service-log";
-import { formatDate } from "$lib/format";
-import { m } from "$lib/paraglide/messages";
-import { apiErrorMessage } from "$lib/error-message";
-import { newIdempotencyKey } from "$lib/idempotency";
-import { tireOffers } from "$lib/vehicles/tire-offer.svelte";
+import { api } from "#lib/api/browser.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import type { CompletionServiceLogRequest } from "#lib/api/schemas/service-log.ts";
+import { formatDate } from "#lib/format.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { apiErrorMessage } from "#lib/error-message.ts";
+import { newIdempotencyKey } from "#lib/idempotency.ts";
+import { tireOffers } from "#lib/vehicles/tire-offer.svelte.ts";
 
 const TOAST_MS = 8000;
 
@@ -18,7 +18,7 @@ export async function undoCompletion(completionId: string): Promise<void> {
   } catch (err) {
     toast.error(apiErrorMessage(err));
   }
-  await invalidateAll();
+  await refreshAll();
 }
 
 export type CompleteOptions = {
@@ -59,7 +59,7 @@ export async function completeTask(
       },
     },
   );
-  await invalidateAll();
+  await refreshAll();
   // The answer carries the whole task, so its mark is known even when the caller's row has none (the dashboard).
   tireOffers.offer(done);
 }
@@ -82,7 +82,7 @@ export async function skipTask(
       onClick: () => void undoCompletion(completion.id),
     },
   });
-  await invalidateAll();
+  await refreshAll();
 }
 
 /** Hides a task until `until`; `null` ends a snooze. `previous` is restored by "Undo". */
@@ -105,7 +105,7 @@ export async function snoozeTask(
     } catch (err) {
       toast.error(apiErrorMessage(err));
     }
-    await invalidateAll();
+    await refreshAll();
   };
   toast.success(
     until
@@ -116,5 +116,5 @@ export async function snoozeTask(
       action: { label: m.toast_undo(), onClick: () => void restore() },
     },
   );
-  await invalidateAll();
+  await refreshAll();
 }

@@ -3,11 +3,11 @@
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
   import PrinterIcon from "@lucide/svelte/icons/printer";
   import QrCodeIcon from "@lucide/svelte/icons/qr-code";
-  import type { Asset } from "$lib/api/schemas/assets";
-  import { qrLink } from "$lib/assets/links";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import type { Asset } from "#lib/api/schemas/assets.ts";
+  import { qrLink } from "#lib/assets/links.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { m } from "#lib/paraglide/messages.js";
   import QrCode from "./qr-code.svelte";
 
   let {
@@ -17,13 +17,14 @@
     backHref,
     backLabel,
     showRoom = false,
+
+    /** Prints the room under each name; for sheets that span rooms. */
   }: {
     title: string;
     assets: Asset[];
     origin: string;
     backHref: string;
     backLabel: string;
-    /** Prints the room under each name; for sheets that span rooms. */
     showRoom?: boolean;
   } = $props();
 </script>
@@ -62,9 +63,9 @@
       description={m.qr_sheet_empty_body()}
     >
       {#snippet actions()}
-        <Button href={resolve("/assets/new")} variant="outline">
-          {m.inventory_create()}
-        </Button>
+        <Button href={resolve("assets/new")} variant="outline"
+          >{m.inventory_create()}</Button
+        >
       {/snippet}
     </EmptyState>
   {:else}

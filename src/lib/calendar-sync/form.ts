@@ -7,7 +7,7 @@ import {
   type CalendarTimedMode,
   type FeedScope,
   type UserLocale,
-} from "$lib/api/enums";
+} from "#lib/api/enums.ts";
 import {
   MAX_ALARM_MINUTES,
   MAX_DUE_DURATION,
@@ -18,8 +18,8 @@ import {
   type CalendarTargetConfigChange,
   type createCalendarTargetRequestSchema,
   type updateCalendarTargetRequestSchema,
-} from "$lib/api/schemas/calendar-sync";
-import { m } from "$lib/paraglide/messages";
+} from "#lib/api/schemas/calendar-sync.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 export type CreateTargetBody = z.input<
   typeof createCalendarTargetRequestSchema

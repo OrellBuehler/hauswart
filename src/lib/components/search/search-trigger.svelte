@@ -1,8 +1,8 @@
 <script lang="ts">
   import SearchIcon from "@lucide/svelte/icons/search";
   import { onMount } from "svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { m } from "#lib/paraglide/messages.js";
   import SearchDialog from "./search-dialog.svelte";
 
   let open = $state(false);

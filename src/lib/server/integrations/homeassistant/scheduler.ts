@@ -1,5 +1,5 @@
-import { getDB } from "$lib/server/db";
-import { onEvent } from "$lib/server/events";
+import { getDB } from "#lib/server/db.ts";
+import { onEvent } from "#lib/server/events.ts";
 import { KIND } from "./connection";
 import { clearEntityCache } from "./adapter";
 import { pollStates, syncCalendars } from "./sync";

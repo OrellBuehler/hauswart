@@ -1,7 +1,11 @@
 <script lang="ts">
-  import type { Hint } from "$lib/api/schemas/hints";
-  import { hintKindIcons, hintKindLabels, hintTones } from "$lib/hints/labels";
-  import { cn } from "$lib/utils";
+  import type { Hint } from "#lib/api/schemas/hints.ts";
+  import {
+    hintKindIcons,
+    hintKindLabels,
+    hintTones,
+  } from "#lib/hints/labels.ts";
+  import { cn } from "#lib/utils.ts";
 
   let {
     hint,

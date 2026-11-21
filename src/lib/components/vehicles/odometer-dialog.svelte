@@ -1,27 +1,27 @@
 <script lang="ts">
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import type { OdometerUnit } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
+  import { api } from "#lib/api/browser.ts";
+  import type { OdometerUnit } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
   import {
     MAX_ODOMETER_VALUE,
     type OdometerSummary,
-  } from "$lib/api/schemas/vehicles";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { isValidDate } from "$lib/dates";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDay, formatNumber } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
-  import { formatOdometer, parseOdometerValue } from "$lib/vehicles/format";
+  } from "#lib/api/schemas/vehicles.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { isValidDate } from "#lib/dates.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDay, formatNumber } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
+  import { formatOdometer, parseOdometerValue } from "#lib/vehicles/format.ts";
   import {
     refusedMessage,
     refusedReading,
     refusedShort,
     type RefusedReading,
-  } from "$lib/vehicles/odometer-error";
+  } from "#lib/vehicles/odometer-error.ts";
 
   let {
     open = $bindable(false),

@@ -2,9 +2,9 @@ import {
   COST_CATEGORY_COUNTS_AS_EXPENSE,
   type CostRecurrenceFrequency,
   type UserLocale,
-} from "$lib/api/enums";
-import { isApiError } from "$lib/api/errors";
-import type { CostBook } from "$lib/api/schemas/cost-books";
+} from "#lib/api/enums.ts";
+import { isApiError } from "#lib/api/errors.ts";
+import type { CostBook } from "#lib/api/schemas/cost-books.ts";
 import {
   createCostRecurrenceRequestSchema,
   updateCostRecurrenceRequestSchema,
@@ -12,19 +12,24 @@ import {
   type CostRecurrenceRun,
   type CreateCostRecurrenceRequest,
   type UpdateCostRecurrenceRequest,
-} from "$lib/api/schemas/cost-recurrences";
-import { compareDates, daysInMonth, isValidDate, parseDate } from "$lib/dates";
+} from "#lib/api/schemas/cost-recurrences.ts";
+import {
+  compareDates,
+  daysInMonth,
+  isValidDate,
+  parseDate,
+} from "#lib/dates.ts";
 import {
   formatDay,
   formatList,
   formatOrdinalDay,
   monthInDate,
   monthName,
-} from "$lib/format";
-import { m } from "$lib/paraglide/messages";
-import { issuesToErrors } from "$lib/tasks/field-errors";
-import { currencySchema } from "$lib/api/schemas/household";
-import { currencyExponent, minor, toDecimalString } from "$lib/money";
+} from "#lib/format.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { issuesToErrors } from "#lib/tasks/field-errors.ts";
+import { currencySchema } from "#lib/api/schemas/household.ts";
+import { currencyExponent, minor, toDecimalString } from "#lib/money.ts";
 import {
   chosenParticipants,
   equalShares,

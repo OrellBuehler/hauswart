@@ -1,23 +1,23 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { createTireSetRequestSchema } from "$lib/api/schemas/tire-sets";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { createTireSetRequestSchema } from "#lib/api/schemas/tire-sets.ts";
 import {
   vehicleSchema,
   putVehicleRequestSchema,
-} from "$lib/api/schemas/vehicles";
+} from "#lib/api/schemas/vehicles.ts";
 import {
   createAsset,
   deleteAsset,
   getAsset,
   listAssets,
   updateAsset,
-} from "$lib/server/assets/assets";
-import { vehicleDetails } from "$lib/server/db";
-import { search } from "$lib/server/search/search";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, NOW } from "$lib/testing/domain";
-import { failure, fieldErrors, makeVehicle } from "$lib/testing/vehicles";
+} from "#lib/server/assets/assets.ts";
+import { vehicleDetails } from "#lib/server/db.ts";
+import { search } from "#lib/server/search/search.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, NOW } from "#lib/testing/domain.ts";
+import { failure, fieldErrors, makeVehicle } from "#lib/testing/vehicles.ts";
 import { deleteOdometerReading, recordOdometer } from "./odometer";
 import { createTireSet } from "./tires";
 import { getVehicle, putVehicle } from "./vehicles";

@@ -1,14 +1,14 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { createCostRequestSchema } from "$lib/api/schemas/costs";
-import { createFuelLogRequestSchema } from "$lib/api/schemas/fuel-logs";
+import { createCostRequestSchema } from "#lib/api/schemas/costs.ts";
+import { createFuelLogRequestSchema } from "#lib/api/schemas/fuel-logs.ts";
 import {
   aiTasks,
   attachments,
   costEntries,
   financeSuggestions,
-} from "$lib/server/db";
-import { saveConnection } from "$lib/server/connections/connections";
+} from "#lib/server/db.ts";
+import { saveConnection } from "#lib/server/connections/connections.ts";
 import {
   countReviewNeeded,
   createCost,
@@ -16,18 +16,18 @@ import {
   getCost,
   recordCost,
   reviewCost,
-} from "$lib/server/costs/costs";
+} from "#lib/server/costs/costs.ts";
 import {
   acceptSuggestion,
   recordSuggestion,
-} from "$lib/server/finance/suggestions";
-import { plainPng } from "$lib/server/files/test-images";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, NOW } from "$lib/testing/domain";
-import { useTestFilesDir } from "$lib/testing/files";
-import { failure, fieldErrors, makeVehicle } from "$lib/testing/vehicles";
-import { createFuelLog } from "$lib/server/vehicles/fuel-logs";
+} from "#lib/server/finance/suggestions.ts";
+import { plainPng } from "#lib/server/files/test-images.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, NOW } from "#lib/testing/domain.ts";
+import { useTestFilesDir } from "#lib/testing/files.ts";
+import { failure, fieldErrors, makeVehicle } from "#lib/testing/vehicles.ts";
+import { createFuelLog } from "#lib/server/vehicles/fuel-logs.ts";
 import {
   completeAiTask,
   createAiTask,

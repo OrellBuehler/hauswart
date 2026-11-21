@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
-import type { DocumentLinkOwnerType } from "$lib/api/enums";
+import type { DocumentLinkOwnerType } from "#lib/api/enums.ts";
 import {
   connections,
   contacts,
@@ -13,20 +13,20 @@ import {
   rooms,
   serviceLog,
   tasks,
-} from "$lib/server/db";
-import { minor } from "$lib/money";
-import { deleteAsset } from "$lib/server/assets/assets";
-import { defaultCostBook } from "$lib/server/costs/books";
-import { deleteRoom } from "$lib/server/rooms/rooms";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { makeTask } from "$lib/testing/domain";
+} from "#lib/server/db.ts";
+import { minor } from "#lib/money.ts";
+import { deleteAsset } from "#lib/server/assets/assets.ts";
+import { defaultCostBook } from "#lib/server/costs/books.ts";
+import { deleteRoom } from "#lib/server/rooms/rooms.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { makeTask } from "#lib/testing/domain.ts";
 import {
   cacheDocument,
   linkDocument,
   makeAsset,
   makeConnection,
-} from "$lib/testing/documents";
+} from "#lib/testing/documents.ts";
 import { linkSummaries, linkViews, listLinks } from "./links";
 import { ownerInfo } from "./owners";
 

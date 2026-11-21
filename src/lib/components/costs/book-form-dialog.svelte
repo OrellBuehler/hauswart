@@ -1,27 +1,27 @@
 <script lang="ts">
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
+  import { api } from "#lib/api/browser.ts";
   import {
     COST_BOOK_SPLIT_MODES,
     type CostBookSplitMode,
-  } from "$lib/api/enums";
-  import { isApiError } from "$lib/api/errors";
-  import { endpoints } from "$lib/api/registry";
+  } from "#lib/api/enums.ts";
+  import { isApiError } from "#lib/api/errors.ts";
+  import { endpoints } from "#lib/api/registry.ts";
   import {
     COST_BOOK_NAME_MAX,
     type CostBook,
     type UpdateCostBookRequest,
-  } from "$lib/api/schemas/cost-books";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { bookIconNames, bookIcons } from "$lib/costs/books";
-  import { splitModeLabels } from "$lib/costs/labels";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
-  import { cn } from "$lib/utils";
+  } from "#lib/api/schemas/cost-books.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { bookIconNames, bookIcons } from "#lib/costs/books.ts";
+  import { splitModeLabels } from "#lib/costs/labels.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
+  import { cn } from "#lib/utils.ts";
 
   let {
     open = $bindable(false),

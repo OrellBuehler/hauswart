@@ -1,6 +1,6 @@
 import { error, redirect } from "@sveltejs/kit";
 import { isApiError } from "./errors";
-import { apiErrorMessage } from "$lib/error-message";
+import { apiErrorMessage } from "#lib/error-message.ts";
 
 /**
  * Awaits a client call inside a `load` function: an expired session goes to

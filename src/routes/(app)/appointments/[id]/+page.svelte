@@ -14,30 +14,30 @@
   import RotateCcwIcon from "@lucide/svelte/icons/rotate-ccw";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import type { z } from "zod";
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import type { AppointmentStatus } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { completeAppointmentResponseSchema } from "$lib/api/schemas/appointments";
-  import { diffDays } from "$lib/dates";
-  import { formatWhen, spanOf } from "$lib/appointments/format";
-  import { needsClosing } from "$lib/appointments/list";
-  import AppointmentFormDialog from "$lib/components/appointments/appointment-form-dialog.svelte";
-  import AppointmentStatusBadge from "$lib/components/appointments/appointment-status-badge.svelte";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import Attachments from "$lib/components/attachments/attachments.svelte";
-  import Comments from "$lib/components/comments/comments.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDateTime, formatRelativeDays } from "$lib/format";
-  import { assetHref, contactHref, taskHref } from "$lib/links";
-  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import type { AppointmentStatus } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { completeAppointmentResponseSchema } from "#lib/api/schemas/appointments.ts";
+  import { diffDays } from "#lib/dates.ts";
+  import { formatWhen, spanOf } from "#lib/appointments/format.ts";
+  import { needsClosing } from "#lib/appointments/list.ts";
+  import AppointmentFormDialog from "#lib/components/appointments/appointment-form-dialog.svelte";
+  import AppointmentStatusBadge from "#lib/components/appointments/appointment-status-badge.svelte";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import Attachments from "#lib/components/attachments/attachments.svelte";
+  import Comments from "#lib/components/comments/comments.svelte";
+  import * as Alert from "#lib/components/ui/alert/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDateTime, formatRelativeDays } from "#lib/format.ts";
+  import { assetHref, contactHref, taskHref } from "#lib/links.ts";
+  import { gotoFromOverlay } from "#lib/overlays/use-overlay-history.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   type CompleteResult = z.output<typeof completeAppointmentResponseSchema>;
@@ -57,10 +57,10 @@
           : 0,
     ),
   );
+
   const hasLinks = $derived(
     Boolean(appointment.taskId || appointment.assetId || appointment.contactId),
   );
-
   let editOpen = $state(false);
   let deleteOpen = $state(false);
   let busy = $state<"complete" | "status" | null>(null);
@@ -84,7 +84,7 @@
         toast.success(
           m.appointment_done_toast({ title: done.appointment.title }),
         );
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       toast.error(
         apiErrorMessage(err, { conflict: m.appointment_complete_cancelled() }),
@@ -106,7 +106,7 @@
         params: { id: appointment.id },
         body: { status },
       });
-      await invalidateAll();
+      await refreshAll();
       toast.success(
         done,
         undoTo
@@ -133,7 +133,7 @@
     const { id, title } = appointment;
     await api.call(endpoints.appointmentsDelete, { params: { id } });
     toast.success(m.appointment_deleted_toast({ title }));
-    await gotoFromOverlay(resolve("/appointments"), { invalidateAll: true });
+    await gotoFromOverlay(resolve("appointments"), { refreshAll: true });
   }
 
   const linkClass =
@@ -147,7 +147,7 @@
 <div class="flex flex-col gap-6">
   <div class="max-md:hidden">
     <a
-      href={resolve("/appointments")}
+      href={resolve("appointments")}
       class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -ms-1 inline-flex min-h-10 items-center gap-1.5 rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
@@ -176,6 +176,7 @@
       >
         {appointment.title}
       </h1>
+
       <p class="text-base font-medium wrap-anywhere tabular-nums">
         {formatWhen(appointment, {
           timeZone: data.timeZone,
@@ -229,9 +230,9 @@
             variant="outline"
             class="max-sm:hidden"
             onclick={() => (editOpen = true)}
+            ><PencilIcon />{m.common_edit()}</Button
           >
-            <PencilIcon />{m.common_edit()}
-          </Button>
+
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
               {#snippet child({ props })}
@@ -249,9 +250,9 @@
               <DropdownMenu.Item
                 class="min-h-10 sm:hidden"
                 onSelect={() => (editOpen = true)}
+                ><PencilIcon />{m.common_edit()}</DropdownMenu.Item
               >
-                <PencilIcon />{m.common_edit()}
-              </DropdownMenu.Item>
+
               {#if appointment.status === "planned"}
                 <DropdownMenu.Item
                   class="min-h-10"
@@ -273,9 +274,8 @@
                 variant="destructive"
                 class="min-h-10"
                 onSelect={() => (deleteOpen = true)}
+                ><Trash2Icon />{m.common_delete()}</DropdownMenu.Item
               >
-                <Trash2Icon />{m.common_delete()}
-              </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu.Root>
         </div>
@@ -472,7 +472,7 @@
     {appointment}
     timeZone={data.timeZone}
     today={data.today}
-    onsaved={() => invalidateAll()}
+    onsaved={() => refreshAll()}
   />
 {/if}
 

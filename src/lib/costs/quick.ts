@@ -1,24 +1,24 @@
 import type { z } from "zod";
-import type { CostCategory, CostSplitMode } from "$lib/api/enums";
-import type { ApiClient } from "$lib/api/client";
-import { isApiError } from "$lib/api/errors";
-import { endpoints } from "$lib/api/registry";
+import type { CostCategory, CostSplitMode } from "#lib/api/enums.ts";
+import type { ApiClient } from "#lib/api/client.ts";
+import { isApiError } from "#lib/api/errors.ts";
+import { endpoints } from "#lib/api/registry.ts";
 import {
   AI_TASK_NOTE_MAX,
   createAiTaskRequestSchema,
-} from "$lib/api/schemas/ai-tasks";
-import type { CostBook } from "$lib/api/schemas/cost-books";
+} from "#lib/api/schemas/ai-tasks.ts";
+import type { CostBook } from "#lib/api/schemas/cost-books.ts";
 import {
   COST_TITLE_MAX,
   createCostRequestSchema,
   type CostEntry,
   type CreateCostRequest,
-} from "$lib/api/schemas/costs";
-import { isValidDate } from "$lib/dates";
-import { apiErrorMessage } from "$lib/error-message";
-import { formatList } from "$lib/format";
-import { m } from "$lib/paraglide/messages";
-import { issuesToErrors } from "$lib/tasks/field-errors";
+} from "#lib/api/schemas/costs.ts";
+import { isValidDate } from "#lib/dates.ts";
+import { apiErrorMessage } from "#lib/error-message.ts";
+import { formatList } from "#lib/format.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { issuesToErrors } from "#lib/tasks/field-errors.ts";
 import { defaultBook, openBooks } from "./books";
 import { costConflictCode } from "./conflict";
 import { parseDraftAmount, type BuiltBody } from "./form";

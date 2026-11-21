@@ -10,16 +10,16 @@ import {
   sql,
   type SQL,
 } from "drizzle-orm";
-import type { AssetKind, InsuranceType } from "$lib/api/enums";
+import type { AssetKind, InsuranceType } from "#lib/api/enums.ts";
 import type {
   CreateInsurancePolicyRequest,
   UpdateInsurancePolicyRequest,
-} from "$lib/api/schemas/insurance";
+} from "#lib/api/schemas/insurance.ts";
 import {
   annualPremiumMinor,
   cancellationDeadline,
-} from "$lib/insurance/policy";
-import { minor } from "$lib/money";
+} from "#lib/insurance/policy.ts";
+import { minor } from "#lib/money.ts";
 import {
   assets,
   contacts,
@@ -27,17 +27,17 @@ import {
   insurancePolicyAssets,
   tasks,
   type DB,
-} from "$lib/server/db";
-import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
-import { commentCountSql } from "$lib/server/comments/counts";
-import { getHousehold } from "$lib/server/household/household";
-import { paginateArray } from "$lib/server/pagination";
+} from "#lib/server/db.ts";
+import { removeOwnedAttachments } from "#lib/server/attachments/attachments.ts";
+import { commentCountSql } from "#lib/server/comments/counts.ts";
+import { getHousehold } from "#lib/server/household/household.ts";
+import { paginateArray } from "#lib/server/pagination.ts";
 import {
   invalidField,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
-import { deleteTask } from "$lib/server/tasks/tasks";
+} from "#lib/server/service.ts";
+import { deleteTask } from "#lib/server/tasks/tasks.ts";
 import {
   INSURANCE_EXTERNAL_SOURCE,
   reminderRefPrefix,

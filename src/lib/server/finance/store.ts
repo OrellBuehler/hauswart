@@ -1,16 +1,16 @@
 import { and, eq } from "drizzle-orm";
-import type { FinanceSuggestionKind } from "$lib/api/enums";
+import type { FinanceSuggestionKind } from "#lib/api/enums.ts";
 import {
   assetSuggestionPayloadSchema,
   billTaskSuggestionPayloadSchema,
   costSuggestionPayloadSchema,
   storedLinkPayloadSchema,
-} from "$lib/api/schemas/finance";
-import type { ApiError } from "$lib/api/errors";
-import { costConflict } from "$lib/server/costs/conflicts";
-import { financeSuggestions } from "$lib/server/db";
-import { parseStored } from "$lib/server/json";
-import { notFound, type ServiceContext } from "$lib/server/service";
+} from "#lib/api/schemas/finance.ts";
+import type { ApiError } from "#lib/api/errors.ts";
+import { costConflict } from "#lib/server/costs/conflicts.ts";
+import { financeSuggestions } from "#lib/server/db.ts";
+import { parseStored } from "#lib/server/json.ts";
+import { notFound, type ServiceContext } from "#lib/server/service.ts";
 
 type Db = Pick<ServiceContext, "db">;
 

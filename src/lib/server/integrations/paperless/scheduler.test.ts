@@ -1,14 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
-import { documentLinks, externalDocuments } from "$lib/server/db";
+import { documentLinks, externalDocuments } from "#lib/server/db.ts";
 import {
   getConnectionRow,
   saveConnection,
-} from "$lib/server/connections/connections";
-import { emitEvent } from "$lib/server/events";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { makeAsset } from "$lib/testing/documents";
+} from "#lib/server/connections/connections.ts";
+import { emitEvent } from "#lib/server/events.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { makeAsset } from "#lib/testing/documents.ts";
 import { startPaperlessScheduler } from "./scheduler";
 import { TEST_CONFIG, seedTaxonomy, useFakePaperless } from "./testing";
 

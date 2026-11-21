@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isValidDate } from "$lib/dates";
+import { isValidDate } from "#lib/dates.ts";
 
 export const dateSchema = z
   .string()
