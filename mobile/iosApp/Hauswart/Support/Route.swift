@@ -36,6 +36,9 @@ enum Route: Hashable {
     case contact(String)
     case cost(String)
     case insurancePolicy(String)
+
+    // Tasks: a new task, optionally for an asset
+    case taskNew(String?)
 }
 
 /// Returns a type-erased view on purpose: a `switch` over this many cases inside a view builder
@@ -51,8 +54,9 @@ func destination(for route: Route) -> AnyView {
     case .settings: return AnyView(SettingsScreen())
 
     // Tasks
-    case .tasks: return AnyView(ComingSoonScreen(title: tr("nav_tasks")))
-    case .task: return AnyView(ComingSoonScreen(title: tr("nav_tasks")))
+    case .tasks: return AnyView(TasksScreen())
+    case let .task(id): return AnyView(TaskDetailScreen(id: id))
+    case let .taskNew(assetId): return AnyView(TaskEditScreen(id: nil, assetId: assetId))
 
     // Appointments
     case .appointments: return AnyView(ComingSoonScreen(title: tr("nav_appointments")))

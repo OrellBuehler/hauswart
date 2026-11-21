@@ -14,18 +14,11 @@ import androidx.navigation.navArgument
 import ch.orellbuehler.hauswart.android.ui.components.AppScaffold
 import ch.orellbuehler.hauswart.android.ui.components.EmptyState
 import ch.orellbuehler.hauswart.android.ui.inventory.inventoryGraph
+import ch.orellbuehler.hauswart.android.ui.tasks.tasksGraph
 import ch.orellbuehler.hauswart.i18n.tr
 
 private val idArg = listOf(navArgument("id") { type = NavType.StringType })
 private val slugArg = listOf(navArgument("slug") { type = NavType.StringType })
-private val newTaskArg =
-    listOf(
-        navArgument("assetId") {
-            type = NavType.StringType
-            nullable = true
-            defaultValue = null
-        },
-    )
 
 /**
  * The destinations whose feature has no screen yet, so that every link resolves. A feature replaces
@@ -33,9 +26,7 @@ private val newTaskArg =
  */
 fun NavGraphBuilder.featureGraphs(nav: NavController) {
     // Tasks
-    composable(Routes.TASKS) { ComingSoon(nav, "nav_tasks", root = true) }
-    composable(Routes.TASK_NEW_ROUTE, arguments = newTaskArg) { ComingSoon(nav, "nav_tasks") }
-    composable(Routes.TASK_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_tasks") }
+    tasksGraph(nav)
 
     // Appointments
     composable(Routes.APPOINTMENTS) { ComingSoon(nav, "nav_appointments") }
