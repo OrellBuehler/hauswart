@@ -211,7 +211,7 @@ fun BalancesScreen(
                                     )
                                 }
                                 Text(
-                                    tr("settlements_count", "count" to state.settlements.size),
+                                    state.settlementsCount,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )

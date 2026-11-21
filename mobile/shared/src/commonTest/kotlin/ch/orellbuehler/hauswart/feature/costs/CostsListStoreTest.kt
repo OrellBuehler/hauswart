@@ -73,6 +73,8 @@ class CostsListStoreTest {
             assertEquals("CHF -30.00", state.groups[1].total)
             assertEquals(4, state.total)
             assertEquals(4, state.shown)
+            assertEquals(tr("costs_count", "count" to 4), state.countText)
+            assertEquals(tr("costs_filter_review") + " 1", state.reviewLabel)
             assertEquals(thisYear, state.year)
             store.close()
         }

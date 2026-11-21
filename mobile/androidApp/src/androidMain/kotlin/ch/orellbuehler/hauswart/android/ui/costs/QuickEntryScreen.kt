@@ -61,7 +61,7 @@ fun QuickEntryScreen(
     val focus = remember { FocusRequester() }
 
     LaunchedEffect(state.savedId) { if (state.savedId != null) nav.popBackStack() }
-    LaunchedEffect(initial) { if (initial != null) runCatching { focus.requestFocus() } }
+    LaunchedEffect(initial) { if (initial != null) focus.requestFocus() }
 
     AppScaffold(
         title = tr("quick_title"),

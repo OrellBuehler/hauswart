@@ -49,6 +49,8 @@ data class SettlementRowView(
 
 data class BalancesState(
     val loading: Boolean = true,
+    /** True while the balances and payments are being read, also on a reload that keeps showing the old ones. */
+    val refreshing: Boolean = true,
     val error: UiError? = null,
     val books: List<BookOption> = emptyList(),
     val bookId: String = ALL_BOOKS,
@@ -62,6 +64,8 @@ data class BalancesState(
     val notes: List<String> = emptyList(),
     val scopeNote: String? = null,
     val settlements: List<SettlementRowView> = emptyList(),
+    /** "2 Zahlungen". */
+    val settlementsCount: String = "",
     /** 0 for every year. */
     val year: Int = 0,
     val years: List<CostOption> = emptyList(),
@@ -73,6 +77,12 @@ data class BalancesState(
     val actionError: UiError? = null,
 ) {
     val settlementsFiltered: Boolean get() = year != 0 || person.isNotEmpty()
+
+    /** Somebody owes somebody: there are payments to suggest. */
+    val isOpen: Boolean get() = status == BALANCE_OPEN
+
+    /** Nothing was ever paid, shared or settled. */
+    val isNothingYet: Boolean get() = status == BALANCE_EMPTY
 }
 
 /** Where everybody stands, the payments that would square it and the recorded payments between the people. */
@@ -145,9 +155,9 @@ class BalancesStore(
 
     private fun load() {
         job?.cancel()
-        update { it.copy(loading = !loadedOnce, error = null) }
+        update { it.copy(loading = !loadedOnce, refreshing = true, error = null) }
         job =
-            launch({ e -> update { it.copy(loading = false, error = e) } }) {
+            launch({ e -> update { it.copy(loading = false, refreshing = false, error = e) } }) {
                 val household = app.household.get()
                 books =
                     fetchAll { cursor ->
@@ -203,6 +213,7 @@ class BalancesStore(
                 update {
                     it.copy(
                         loading = false,
+                        refreshing = false,
                         bookId = bookId,
                         books = switcher.map(::bookOptionOf),
                         showSwitcher = switcher.size > 1,
@@ -248,6 +259,7 @@ class BalancesStore(
                                 }
                             } ?: cross,
                         settlements = settlements.map { s -> settlementRow(s) },
+                        settlementsCount = tr("settlements_count", "count" to settlements.size),
                         years =
                             listOf(CostOption("0", tr("settlements_all_years"))) +
                                 (thisYear downTo thisYear - YEARS_BACK).map { y -> CostOption(y.toString(), y.toString()) },

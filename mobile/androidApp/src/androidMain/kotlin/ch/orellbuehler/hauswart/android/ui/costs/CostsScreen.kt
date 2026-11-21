@@ -137,7 +137,7 @@ private fun CostsList(
                         FilterChip(
                             selected = state.reviewOnly,
                             onClick = { store.setReviewOnly(!state.reviewOnly) },
-                            label = { Text(tr("costs_filter_review") + " " + state.reviewCount, maxLines = 1) },
+                            label = { Text(state.reviewLabel, maxLines = 1) },
                             leadingIcon = { Icon(Icons.Outlined.Visibility, contentDescription = null) },
                         )
                     }
@@ -193,7 +193,7 @@ private fun CostsList(
             else ->
                 item(key = "count") {
                     Text(
-                        tr("costs_count", "count" to state.shown),
+                        state.countText,
                         Modifier.padding(horizontal = ScreenPadding),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

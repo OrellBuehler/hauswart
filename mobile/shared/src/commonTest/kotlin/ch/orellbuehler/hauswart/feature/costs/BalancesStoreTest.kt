@@ -4,17 +4,12 @@ import ch.orellbuehler.hauswart.i18n.tr
 import ch.orellbuehler.hauswart.testing.TestApp
 import ch.orellbuehler.hauswart.testing.await
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.seconds
 
 class BalancesStoreTest {
     private val server = TestApp().also { it.signIn() }
@@ -56,6 +51,9 @@ class BalancesStoreTest {
             assertEquals("u2", payment.fromUserId)
             assertEquals("u1", payment.toUserId)
             assertEquals(listOf("s1", "s2"), state.settlements.map { it.id })
+            assertEquals(tr("settlements_count", "count" to 2), state.settlementsCount)
+            assertEquals(true, state.isOpen)
+            assertEquals(false, state.isNothingYet)
             assertEquals("Ben hat Anna bezahlt", state.settlements[0].title)
             assertEquals("CHF 21.25", state.settlements[0].amount)
             assertTrue(state.settlements[0].meta.contains("bar übergeben"))
@@ -114,24 +112,12 @@ class BalancesStoreTest {
             store.await { !it.loading && it.years.isNotEmpty() }
             store.setYear("2026")
             store.setPerson("u2")
-            store.await { it.year == 2026 && it.person == "u2" && it.settlementsFiltered }
-            withContext(Dispatchers.Default) {
-                withTimeout(10.seconds) {
-                    while (server
-                            .requestsTo(
-                                "GET",
-                                "/api/v1/settlements",
-                            ).none { "userId=u2" in it.query && "year=2026" in it.query }
-                    ) {
-                        delay(10)
-                    }
-                }
-            }
-            val last = server.requestsTo("GET", "/api/v1/settlements").last { "userId=u2" in it.query }.query
+            store.await { !it.refreshing && it.year == 2026 && it.person == "u2" }
+            val last = server.requestsTo("GET", "/api/v1/settlements").last().query
             assertTrue("year=2026" in last, last)
             assertTrue("userId=u2" in last, last)
             store.resetFilters()
-            assertEquals(false, store.await { !it.settlementsFiltered }.settlementsFiltered)
+            assertEquals(false, store.await { !it.refreshing && !it.settlementsFiltered }.settlementsFiltered)
             assertEquals(
                 "0",
                 store.value.years

@@ -76,6 +76,8 @@ data class CostBalanceView(
 
 data class CostsListState(
     val loading: Boolean = true,
+    /** True while the entries are being read, also on a reload that keeps showing the old ones. */
+    val refreshing: Boolean = true,
     val error: UiError? = null,
     /** The books the switcher offers; hidden while there is one at most. */
     val books: List<BookOption> = emptyList(),
@@ -100,6 +102,10 @@ data class CostsListState(
     val categories: List<CostOption> = emptyList(),
     val payers: List<CostOption> = emptyList(),
     val yearLabel: String = "",
+    /** "3 Einträge": how many entries pass the filters. */
+    val countText: String = "",
+    /** "Zu prüfen 2": the label of the review filter. */
+    val reviewLabel: String = "",
 ) {
     val filtered: Boolean get() = query.isNotBlank() || category.isNotEmpty() || paidBy.isNotEmpty() || reviewOnly
 }
@@ -167,9 +173,9 @@ class CostsListStore(
 
     private fun load() {
         job?.cancel()
-        update { it.copy(loading = !loadedOnce, error = null) }
+        update { it.copy(loading = !loadedOnce, refreshing = true, error = null) }
         job =
-            launch({ e -> update { it.copy(loading = false, error = e) } }) {
+            launch({ e -> update { it.copy(loading = false, refreshing = false, error = e) } }) {
                 val household = app.household.get()
                 books =
                     fetchAll { cursor ->
@@ -215,6 +221,7 @@ class CostsListStore(
                 update {
                     it.copy(
                         loading = false,
+                        refreshing = false,
                         bookId = bookId,
                         books = switcher.map(::bookOptionOf),
                         showSwitcher = switcher.size > 1,
@@ -248,7 +255,8 @@ class CostsListStore(
         val groups =
             matching
                 .groupBy { it.date.take(7) }
-                .toSortedMap(compareByDescending { it })
+                .entries
+                .sortedByDescending { it.key }
                 .map { (month, rows) ->
                     val expenses = rows.filter { it.countsAsExpense && it.currency == currency }.sumOf { it.amountMinor }
                     CostMonthGroup(
@@ -258,7 +266,14 @@ class CostsListStore(
                         rows = rows.map { rowView(it, state.bookId.isEmpty()) },
                     )
                 }
-        update { it.copy(groups = groups, shown = matching.size) }
+        update {
+            it.copy(
+                groups = groups,
+                shown = matching.size,
+                countText = tr("costs_count", "count" to matching.size),
+                reviewLabel = tr("costs_filter_review") + " " + it.reviewCount,
+            )
+        }
     }
 
     private fun summaryView(
