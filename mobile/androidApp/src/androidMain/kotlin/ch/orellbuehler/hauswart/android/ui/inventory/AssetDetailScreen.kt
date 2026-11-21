@@ -147,14 +147,6 @@ fun AssetDetailScreen(
                             asset.facts.forEach { LabeledValue(it.label, it.value) }
                             LabeledValue(tr("asset_emergency_short"), tr(if (asset.showOnEmergency) "common_yes" else "common_no"))
                             asset.notes?.let { LabeledValue(tr("asset_notes"), it) }
-                            if (asset.isVehicle) {
-                                Text(
-                                    tr("m_asset_vehicle_hint"),
-                                    Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
                         }
                         AddSection(tr("asset_tasks_title"), tr("asset_add_task"), onAdd = { nav.navigate(Routes.taskNew(id)) }) {
                             if (state.tasks.isEmpty()) EmptyState(tr("asset_tasks_empty_title"), tr("asset_tasks_empty_body"))

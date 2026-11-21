@@ -83,6 +83,26 @@ iosApp/Hauswart/
 - Tests: stores are tested in `shared/src/commonTest` against Ktor's `MockEngine` (see
   `feature/contacts/ContactsStoresTest.kt` for the pattern). Bug fixes start with a failing test.
 
+## What exists
+
+Every area of the web app has its screens: home, tasks (with the trigger editor), appointments,
+inventory (devices, plants, rooms, warranties), vehicles, defects, parts, contacts, costs (entries,
+quick entry, balances, budgets, recurring costs, inbox, receipts, books, tags), docs, documents,
+emergency, insurance, notifications, search, settings and local reminders (`feature/reminders`,
+planned on the device from the server's data; there is no push service).
+
+- Sections other screens embed: comments, attachments, document links, appointments (Android
+  `ui/sections/`, iOS `Features/Comments|Attachments|DocumentLinks|Sections`; usage notes at the top
+  of each file). Links between screens go through `AppLink` (`feature/applink`).
+- Store tests use `testing/TestApp.kt` (mock server, `store.await { ... }`). A store reloads after
+  its own `app.changed(...)`, so a test answers the reload too.
+- `SwiftNamesTest` and `MessageKeysUsedTest` (in `shared:testDebugUnitTest`) check the Swift sources
+  for what can be checked without a compiler: duplicate type names, names that shadow shared classes,
+  `FooKt.bar` references that do not exist, reserved Objective-C method families, unknown message keys.
+- Known limit of the generated client: in a POST body an optional nullable field cannot be sent as an
+  explicit `null` (it is left out, so the server's default applies). Where that matters a store builds
+  the body by hand (`feature/defects/DefectRequests.kt`).
+
 ## Android
 
 Compose and Material 3. A screen is `@Composable fun XScreen(nav: NavController, ...)`; it gets its

@@ -144,11 +144,6 @@ struct AssetDetailScreen: View {
             }
             LabeledContent(tr("asset_emergency_short"), value: asset.showOnEmergency ? tr("common_yes") : tr("common_no"))
             ValueRow(label: tr("asset_notes"), value: asset.notes)
-            if asset.isVehicle {
-                Text(tr("m_asset_vehicle_hint"))
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
         }
     }
 
