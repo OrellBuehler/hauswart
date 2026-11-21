@@ -249,7 +249,7 @@ struct CostEditScreen: View {
                 TextEntry(label: tr("cost_payee"), text: $fields.payee, error: errors["payee"], capitalization: .words)
                 TextEntry(label: tr("cost_notes"), text: $fields.notes, error: errors["notes"], multiline: true)
                 if !state.tags.isEmpty {
-                    ChipGrid(
+                    CostChipGrid(
                         options: state.tags.map { Choice(value: $0.id, label: $0.name) },
                         isSelected: { fields.tagIds.contains($0) },
                         onTap: { fields = CostFields(model.store.toggleTag(form: fields.kotlin, tagId: $0)) }

@@ -27,7 +27,7 @@ struct ChipButton: View {
 }
 
 /// Chips that wrap onto several lines. `isSelected` says which are on, `onTap` is called with a chip's value.
-struct ChipGrid: View {
+struct CostChipGrid: View {
     let options: [Choice]
     let isSelected: (String) -> Bool
     let onTap: (String) -> Void

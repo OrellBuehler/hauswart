@@ -131,7 +131,7 @@ struct QuickEntryScreen: View {
                 FieldError(text: state.fieldErrors["amountMinor"])
             }
             Section {
-                ChipGrid(
+                CostChipGrid(
                     options: view.categoryChips.map { Choice(value: $0.value, label: $0.label) },
                     isSelected: { $0 == fields.category },
                     onTap: { fields.category = $0 }
@@ -145,7 +145,7 @@ struct QuickEntryScreen: View {
                 FormHeading(text: tr("cost_category"))
             }
             Section {
-                ChipGrid(
+                CostChipGrid(
                     options: state.payers.map { Choice(value: $0.value, label: $0.label) },
                     isSelected: { $0 == fields.paidByUserId },
                     onTap: { fields.paidByUserId = $0 }
@@ -154,7 +154,7 @@ struct QuickEntryScreen: View {
                 FormHeading(text: tr("cost_paid_by"))
             }
             Section {
-                ChipGrid(
+                CostChipGrid(
                     options: whoOptions(state),
                     isSelected: { value in
                         value == QuickEntryScreen.notSharedValue ? view.notSharedOn : fields.participants
@@ -177,7 +177,7 @@ struct QuickEntryScreen: View {
             }
             if !view.bookChips.isEmpty {
                 Section {
-                    ChipGrid(
+                    CostChipGrid(
                         options: view.bookChips.map { Choice(value: $0.value, label: $0.label) },
                         isSelected: { $0 == fields.bookId },
                         onTap: { fields = QuickFields(model.store.withBook(form: fields.kotlin, bookId: $0)) }
