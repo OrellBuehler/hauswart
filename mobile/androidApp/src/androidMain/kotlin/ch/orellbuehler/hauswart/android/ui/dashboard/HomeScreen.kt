@@ -56,6 +56,8 @@ import ch.orellbuehler.hauswart.android.ui.tasks.NoticeEffect
 import ch.orellbuehler.hauswart.android.ui.tasks.TaskActionDialog
 import ch.orellbuehler.hauswart.android.ui.tasks.TaskActionRequest
 import ch.orellbuehler.hauswart.android.ui.tasks.TaskRowActions
+import ch.orellbuehler.hauswart.feature.dashboard.ATTENTION_FINANCE
+import ch.orellbuehler.hauswart.feature.dashboard.ATTENTION_RECEIPTS
 import ch.orellbuehler.hauswart.feature.dashboard.CostsCard
 import ch.orellbuehler.hauswart.feature.dashboard.DashboardStore
 import ch.orellbuehler.hauswart.feature.dashboard.DashboardView
@@ -197,6 +199,23 @@ private fun LazyListScope.dashboardContent(
     view.sections.forEach { section ->
         item(key = "section-${section.id}") { TaskSectionCard(nav, section, busyId, onToggleLater, onComplete, onAction) }
     }
+    view.attention.forEach { card ->
+        item(key = "attention-${card.id}") {
+            SectionCard(title = card.title + " (" + card.count + ")") {
+                Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        card.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(card.text, style = MaterialTheme.typography.bodyMedium, color = toneColor(card.tone))
+                }
+                TextButton(onClick = { nav.navigate(attentionRoute(card.id)) }, modifier = Modifier.padding(horizontal = 8.dp)) {
+                    Text(card.linkLabel, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
     view.defects?.let { card ->
         item(key = "defects") {
             SectionCard(title = tr("dashboard_open_defects") + " (" + card.total + ")") {
@@ -265,6 +284,14 @@ private fun LazyListScope.dashboardContent(
         }
     }
 }
+
+/** Where a card that asks for something leads: the finance inbox, the pending receipts or the entries to review. */
+private fun attentionRoute(id: String): String =
+    when (id) {
+        ATTENTION_FINANCE -> Routes.COSTS_INBOX
+        ATTENTION_RECEIPTS -> Routes.costsReceipts("pending")
+        else -> Routes.COSTS_REVIEW
+    }
 
 @Composable
 private fun TaskSectionCard(

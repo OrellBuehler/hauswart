@@ -2,6 +2,7 @@ package ch.orellbuehler.hauswart.android.ui.documents
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import ch.orellbuehler.hauswart.android.ui.collect
 import ch.orellbuehler.hauswart.android.ui.components.AppScaffold
+import ch.orellbuehler.hauswart.android.ui.components.ChoiceField
 import ch.orellbuehler.hauswart.android.ui.components.EmptyState
 import ch.orellbuehler.hauswart.android.ui.components.ErrorBox
 import ch.orellbuehler.hauswart.android.ui.components.InlineError
@@ -52,6 +54,7 @@ fun DocumentsScreen(nav: NavController) {
     val state = store.collect()
     val error = state.error
     var menu by remember { mutableStateOf(false) }
+    var filtersOpen by remember { mutableStateOf(false) }
     AppScaffold(
         title = tr("nav_documents"),
         onBack = { nav.popBackStack() },
@@ -121,11 +124,49 @@ fun DocumentsScreen(nav: NavController) {
                                         label = { Text(documentsLinkedLabel(filter), maxLines = 1) },
                                     )
                                 }
+                                if (state.tags.isNotEmpty() || state.correspondents.isNotEmpty()) {
+                                    FilterChip(
+                                        selected = filtersOpen || state.tag.isNotEmpty() || state.correspondent.isNotEmpty(),
+                                        onClick = { filtersOpen = !filtersOpen },
+                                        label = { Text(tr("documents_filters"), maxLines = 1) },
+                                    )
+                                }
                                 if (state.filtered) {
                                     TextButton(onClick = store::resetFilters) { Text(tr("documents_filter_reset"), maxLines = 1) }
                                 }
                             }
                         }
+                        if (filtersOpen) {
+                            item {
+                                Column(
+                                    Modifier.padding(horizontal = ScreenPadding, vertical = 8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    if (state.tags.isNotEmpty()) {
+                                        ChoiceField(
+                                            label = tr("documents_filter_tag"),
+                                            value = state.tag,
+                                            options =
+                                                listOf(
+                                                    "" to tr("documents_filter_tag_any"),
+                                                ) + state.tags.map { it.value to it.label },
+                                            onChange = store::setTag,
+                                        )
+                                    }
+                                    if (state.correspondents.isNotEmpty()) {
+                                        ChoiceField(
+                                            label = tr("documents_filter_correspondent"),
+                                            value = state.correspondent,
+                                            options =
+                                                listOf("" to tr("documents_filter_correspondent_any")) +
+                                                    state.correspondents.map { it.value to it.label },
+                                            onChange = store::setCorrespondent,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        state.filterError?.let { item { InlineError(it.message, Modifier.padding(horizontal = ScreenPadding)) } }
                         if (state.loading) {
                             item { LoadingRow() }
                         } else if (error != null) {

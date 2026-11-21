@@ -2,17 +2,28 @@ import shared
 import SwiftUI
 
 /// The costs tab: the entries of the book on screen, the year's totals and where the person stands.
+///
+/// With `reviewAll` it lists only the entries that wait for a review, of every book and year (the home screen's card
+/// opens it), as a screen pushed on a stack.
 struct CostsScreen: View {
-    @StateObject private var model = Observed(CostsListStore(app: AppEnv.app))
+    private let reviewAll: Bool
+    @StateObject private var model: Observed<CostsListStore, CostsListState>
     @State private var query = ""
     @State private var quick = false
     @State private var creating = false
+    @State private var moving = false
+    @State private var pick: MovePick? = nil
+
+    init(reviewAll: Bool = false) {
+        self.reviewAll = reviewAll
+        _model = StateObject(wrappedValue: Observed(CostsListStore(app: AppEnv.app, reviewAll: reviewAll)))
+    }
 
     var body: some View {
         let state = model.state
         let bookArg = CostsSupportKt.bookArgOf(bookId: state.bookId)
         content(state)
-            .navigationTitle(tr("nav_costs"))
+            .navigationTitle(reviewAll ? tr("dashboard_review_title") : tr("nav_costs"))
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $query, prompt: tr("costs_search_placeholder"))
             .onChange(of: query) { _, value in
@@ -20,30 +31,46 @@ struct CostsScreen: View {
             }
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
-                    NavigationLink(value: Route.costsBalances(bookArg)) {
-                        Label(tr("balances_open"), systemImage: "scalemass")
+                    if state.selecting {
+                        Button(tr("costs_select_done")) { model.store.stopSelecting() }
+                    } else if !reviewAll {
+                        NavigationLink(value: Route.costsBalances(bookArg)) {
+                            Label(tr("balances_open"), systemImage: "scalemass")
+                        }
+                        Button {
+                            creating = true
+                        } label: {
+                            Label(tr("cost_new"), systemImage: "plus")
+                        }
+                        CostsMoreMenu(bookArg: bookArg, year: Int(state.year))
                     }
-                    Button {
-                        creating = true
-                    } label: {
-                        Label(tr("cost_new"), systemImage: "plus")
-                    }
-                    CostsMoreMenu()
                 }
             }
             .overlay(alignment: .bottomTrailing) {
-                Button {
-                    quick = true
-                } label: {
-                    Image(systemName: "bolt.fill")
-                        .font(.title2)
-                        .foregroundStyle(.white)
-                        .frame(width: 56, height: 56)
-                        .background(Color.accentColor, in: Circle())
-                        .shadow(radius: 3, y: 2)
+                if !reviewAll && !state.selecting {
+                    Button {
+                        quick = true
+                    } label: {
+                        Image(systemName: "bolt.fill")
+                            .font(.title2)
+                            .foregroundStyle(.white)
+                            .frame(width: 56, height: 56)
+                            .background(Color.accentColor, in: Circle())
+                            .shadow(radius: 3, y: 2)
+                    }
+                    .accessibilityLabel(tr("quick_fab"))
+                    .padding(16)
                 }
-                .accessibilityLabel(tr("quick_fab"))
-                .padding(16)
+            }
+            .safeAreaInset(edge: .bottom) {
+                VStack(spacing: 8) {
+                    if let text = state.notice {
+                        KnowledgeNoticeBar(text: text) { model.store.consumeNotice() }
+                    }
+                    if state.selecting {
+                        selectionBar(state)
+                    }
+                }
             }
             .sheet(isPresented: $quick) {
                 QuickEntryScreen(bookArg: bookArg)
@@ -51,13 +78,49 @@ struct CostsScreen: View {
             .sheet(isPresented: $creating) {
                 CostEditScreen(id: nil, bookArg: bookArg, assetId: nil)
             }
+            .sheet(isPresented: $moving) {
+                if let pick {
+                    MoveCostsSheet(pick: pick) { text in
+                        model.store.stopSelecting()
+                        model.store.announce(text: text)
+                    }
+                }
+            }
+    }
+
+    private func selectionBar(_ state: CostsListState) -> some View {
+        VStack(spacing: 8) {
+            if let note = state.selectionNote {
+                Text(note)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            HStack {
+                Text(state.selectionText)
+                Spacer()
+                Button(state.allSelected ? tr("costs_select_none") : tr("costs_select_all")) {
+                    model.store.toggleSelectAll()
+                }
+            }
+            Button {
+                pick = model.store.movePick()
+                moving = true
+            } label: {
+                Text(tr("costs_move"))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(state.selectedCount == 0)
+        }
+        .padding(12)
+        .background(.regularMaterial)
     }
 
     @ViewBuilder
     private func content(_ state: CostsListState) -> some View {
         if state.loading {
             LoadingView()
-        } else if let error = state.error, state.summary == nil {
+        } else if let error = state.error, !state.ready {
             ErrorView(error: error) { model.store.refresh() }
         } else {
             list(state)
@@ -66,7 +129,7 @@ struct CostsScreen: View {
 
     private func list(_ state: CostsListState) -> some View {
         List {
-            if state.showSwitcher {
+            if state.showSwitcher && !reviewAll {
                 Section {
                     BookChips(options: bookChoices(state.books), selected: state.bookId) { id in
                         model.store.selectBook(bookId: id)
@@ -75,8 +138,10 @@ struct CostsScreen: View {
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
             }
-            Section {
-                yearRow(state)
+            if !reviewAll {
+                Section {
+                    yearRow(state)
+                }
             }
             if let summary = state.summary {
                 Section {
@@ -86,8 +151,11 @@ struct CostsScreen: View {
                 }
             }
             Section {
-                if state.reviewCount > 0 || state.reviewOnly {
+                if !reviewAll && (state.reviewCount > 0 || state.reviewOnly) {
                     Toggle(state.reviewLabel, isOn: reviewBinding)
+                }
+                if state.shown > 0 && !state.selecting {
+                    Button(tr("costs_select")) { model.store.startSelecting() }
                 }
                 Picker(tr("costs_filter_category"), selection: categoryBinding) {
                     Text(tr("costs_filter_all")).tag("")
@@ -108,7 +176,15 @@ struct CostsScreen: View {
                     }
                 }
             }
-            if state.total == 0 {
+            if state.total == 0 && reviewAll {
+                Section {
+                    EmptyStateView(
+                        title: tr("costs_empty_review_title"),
+                        message: tr("costs_empty_review_body"),
+                        systemImage: "eye"
+                    )
+                }
+            } else if state.total == 0 {
                 Section {
                     EmptyStateView(
                         title: tr("costs_empty_title", ["year": state.yearLabel]),
@@ -135,8 +211,22 @@ struct CostsScreen: View {
             ForEach(state.groups, id: \.key) { group in
                 Section {
                     ForEach(group.rows, id: \.id) { row in
-                        NavigationLink(value: Route.cost(row.id)) {
-                            CostRowLine(row: row)
+                        if state.selecting {
+                            Button {
+                                model.store.toggleSelected(id: row.id)
+                            } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: row.selected ? "checkmark.circle.fill" : "circle")
+                                        .foregroundStyle(row.selected ? Color.accentColor : Color.secondary)
+                                    CostRowLine(row: row)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(tr("costs_select_row", ["title": row.title]))
+                        } else {
+                            NavigationLink(value: Route.cost(row.id)) {
+                                CostRowLine(row: row)
+                            }
                         }
                     }
                 } header: {

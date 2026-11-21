@@ -12,8 +12,10 @@ import ch.orellbuehler.hauswart.core.UiError
 import ch.orellbuehler.hauswart.core.fetchAll
 import ch.orellbuehler.hauswart.i18n.tr
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 
 /** Everyday spending first, for a book that has no history of its own yet. */
 private val EVERYDAY_ORDER: List<String> =
@@ -187,6 +189,8 @@ data class QuickEntryState(
     val fieldErrors: Map<String, String> = emptyMap(),
     /** The id of the booked entry; the screen closes when it is set. */
     val savedId: String? = null,
+    /** The bank transactions that fit the entry as typed, while a finance app is connected. */
+    val matches: MatchesView = MatchesView(),
 )
 
 /** The fast entry form: amount, what for, who paid, who it is for. */
@@ -198,10 +202,39 @@ class QuickEntryStore(
     private var people: List<PersonOption> = emptyList()
     private var history: List<RecentCategoriesItemsItem> = emptyList()
     private var key: String = newIdempotencyKey()
+    private val bank = BankMatching(app)
+    private var matchJob: Job? = null
+    internal var matchDelayMs: Long = MATCH_DEBOUNCE_MS
 
     init {
         load()
     }
+
+    /** Looks up the bank transactions that fit the form, a moment after the last change of amount or date. */
+    fun matchesFor(form: QuickForm) {
+        val ask = bank.ask(matchOf(form))
+        update { it.copy(matches = bank.view()) }
+        if (!ask) return
+        matchJob?.cancel()
+        matchJob =
+            launch({ _ ->
+                bank.fail()
+                update { it.copy(matches = bank.view()) }
+            }) {
+                delay(matchDelayMs)
+                bank.fetch()
+                update { it.copy(matches = bank.view()) }
+            }
+    }
+
+    /** Ties the entry to the transaction, or lets go of it when it is chosen already. */
+    fun chooseMatch(id: String) {
+        bank.choose(id)
+        update { it.copy(matches = bank.view()) }
+    }
+
+    private fun matchOf(form: QuickForm): MatchQuery? =
+        matchQueryOf(parseAmountText(form.amount, current.currency).minor, current.currency, form.date)
 
     fun retry() {
         load()
@@ -295,7 +328,8 @@ class QuickEntryStore(
             return
         }
         update { it.copy(saving = true, error = null, fieldErrors = emptyMap()) }
-        launch({ e -> failed(e) }) {
+        val tie = bank.chosenFor(matchOf(form))
+        launch({ e -> failed(e, tie.isNotEmpty(), form) }) {
             val payee = form.payee.trim()
             val request =
                 CostsCreateRequest(
@@ -317,6 +351,7 @@ class QuickEntryStore(
                         },
                     participantIds = split.participantIds,
                     idempotencyKey = key,
+                    financeSuggestionId = tie.ifEmpty { null },
                 )
             val saved = app.api.costs.costsCreate(request)
             if (form.bookId.isNotEmpty()) app.settings.save(QUICK_BOOK_MEMORY, form.bookId)
@@ -326,7 +361,25 @@ class QuickEntryStore(
         }
     }
 
-    private fun failed(e: UiError) {
+    private fun failed(
+        e: UiError,
+        sentTie: Boolean,
+        form: QuickForm,
+    ) {
+        val refused = tieFailure(e, sentTie)
+        if (refused != null) {
+            bank.refuse(refused)
+            update {
+                it.copy(
+                    saving = false,
+                    error = UiError(tr("form_check_fields"), "invalid_request"),
+                    fieldErrors = e.fields + ("financeSuggestionId" to refused),
+                    matches = bank.view(),
+                )
+            }
+            matchesFor(form)
+            return
+        }
         if (e.code == "conflict" && e.detailCode == "idempotency_key_reused") key = newIdempotencyKey()
         val message =
             when {
@@ -351,7 +404,7 @@ class QuickEntryStore(
         update { it.copy(loading = true, loadError = null) }
         launch({ e -> update { it.copy(loading = false, loadError = e) } }) {
             val household = app.household.get()
-            val (bookList, recent) =
+            val (bookList, recent, connected) =
                 coroutineScope {
                     val bookList =
                         async {
@@ -372,8 +425,10 @@ class QuickEntryStore(
                                 emptyList()
                             }
                         }
-                    bookList.await() to recent.await()
+                    val connected = async { bank.connected() }
+                    Triple(bookList.await(), recent.await(), connected.await())
                 }
+            bank.eligible = connected
             books = bookList
             people = household.members.map { PersonOption(it.id, it.name, it.ownershipBps) }
             history = recent

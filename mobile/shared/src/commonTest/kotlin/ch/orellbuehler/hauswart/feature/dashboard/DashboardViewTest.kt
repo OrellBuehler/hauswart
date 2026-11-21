@@ -53,6 +53,9 @@ class DashboardViewTest {
         later: String = "",
         balances: String = "null",
         preparations: String = "",
+        finance: Int = 0,
+        review: Int = 0,
+        receipts: Int = 0,
     ) = """{"today":"2026-11-21","generatedAt":"2026-11-21T08:00:00.000Z",
         "counts":{"overdue":${if (overdue.isEmpty()) 0 else 1},"today":0,"thisWeek":0,"preparations":0},
         "upcoming":{"overdue":[$overdue],"today":[],"thisWeek":[],"later":[$later],"signalBased":[]},
@@ -60,7 +63,7 @@ class DashboardViewTest {
           {"id":"d1","title":"Leak","date":"2026-11-01","number":4,"status":"open","severity":"high","roomName":"Kitchen","assetName":null}],
         "expiringWarranties":[],"orderNow":[],
         "costsYearToDate":{"year":2026,"currency":"CHF","totalMinor":123450,"byCategory":[],"byBook":[]},
-        "balances":$balances,"budgetAlerts":null,"pendingFinanceSuggestions":0,"reviewNeededCount":0,"pendingReceiptCount":0}"""
+        "balances":$balances,"budgetAlerts":null,"pendingFinanceSuggestions":$finance,"reviewNeededCount":$review,"pendingReceiptCount":$receipts}"""
 
     @Test
     fun loadsTheDashboardIntoSectionsAndCards() =
@@ -89,6 +92,29 @@ class DashboardViewTest {
             val defect = assertNotNull(view.defects).items.single()
             assertEquals(TONE_OVERDUE, defect.deadlineTone)
             assertEquals("CHF 1'234.50", assertNotNull(view.costs).yearTotal)
+            store.close()
+        }
+
+    @Test
+    fun cardsThatAskForSomethingAppearForCountsAboveZeroInTheWebsOrder() =
+        runTest {
+            val store = load(dashboard(finance = 3, review = 1, receipts = 2))
+            val cards = store.await { it.view != null }.view!!.attention
+            assertEquals(listOf(ATTENTION_FINANCE, ATTENTION_RECEIPTS, ATTENTION_REVIEW), cards.map { it.id })
+            assertEquals(listOf(3L, 2L, 1L), cards.map { it.count })
+            assertEquals(tr("finance_count", "count" to 3), cards[0].text)
+            assertEquals(tr("costs_receipts_pending", "count" to 2), cards[1].text)
+            assertEquals(tr("costs_review_banner", "count" to 1), cards[2].text)
+            assertEquals(tr("dashboard_to_review"), cards[2].linkLabel)
+            store.close()
+        }
+
+    @Test
+    fun noCardWithoutACount() =
+        runTest {
+            val store = load(dashboard(review = 4))
+            val cards = store.await { it.view != null }.view!!.attention
+            assertEquals(listOf(ATTENTION_REVIEW), cards.map { it.id })
             store.close()
         }
 

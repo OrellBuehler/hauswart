@@ -18,17 +18,21 @@ import android.graphics.Color as AndroidColor
 /**
  * A rendered documentation page in a web view with JavaScript off, in the colours of the app.
  * [onLink] gets the address of a tapped link and returns true when it dealt with it; false lets the
- * view follow it (a jump inside the page). Give it a bounded height: it scrolls by itself.
+ * view follow it (a jump inside the page). Give it a bounded height: it scrolls by itself. [jumpTo] is the
+ * address of a heading (see `tocAnchorUrl`); it is loaded again whenever [jumpToken] changes, which scrolls the view.
  */
 @Composable
 fun DocWebView(
     bodyHtml: String,
     onLink: (String) -> Boolean,
     modifier: Modifier = Modifier,
+    jumpTo: String? = null,
+    jumpToken: Int = 0,
 ) {
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val html = remember(bodyHtml, dark) { docDocument(bodyHtml, dark) }
     val handler by rememberUpdatedState(onLink)
+    val jumped = remember { intArrayOf(0) }
     AndroidView(
         modifier = modifier,
         factory = { context ->
@@ -51,6 +55,10 @@ fun DocWebView(
             if (view.tag != html) {
                 view.tag = html
                 view.loadDataWithBaseURL(DOC_BASE_URL, html, "text/html", "utf-8", null)
+            }
+            if (jumpTo != null && jumpToken != jumped[0]) {
+                jumped[0] = jumpToken
+                view.loadUrl(jumpTo)
             }
         },
         onRelease = { it.destroy() },

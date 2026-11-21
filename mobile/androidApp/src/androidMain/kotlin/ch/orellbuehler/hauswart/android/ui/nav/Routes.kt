@@ -63,6 +63,8 @@ object Routes {
     const val RECURRING_ROUTE = "costs/recurring/{id}"
     const val COSTS_INBOX = "costs/inbox"
     const val COSTS_RECEIPTS_ROUTE = "costs/receipts?status={status}"
+    const val COSTS_REVIEW = "costs/review"
+    const val COSTS_REPORT_ROUTE = "costs/report?book={book}&year={year}"
     const val COST_BOOKS = "costs/books"
     const val COST_TAGS = "costs/tags"
 
@@ -144,6 +146,15 @@ object Routes {
 
     /** The receipt queue; [status] is `pending`, `done` or `dismissed` (none lists everything). */
     fun costsReceipts(status: String? = null) = "costs/receipts" + (status?.let { "?status=${arg(it)}" } ?: "")
+
+    /** The year's report of a book; [bookArg] is a book id or `all`. */
+    fun costsReport(
+        bookArg: String? = null,
+        year: Int? = null,
+    ): String {
+        val query = listOfNotNull(bookArg?.let { "book=${arg(it)}" }, year?.takeIf { it > 0 }?.let { "year=$it" }).joinToString("&")
+        return "costs/report" + if (query.isEmpty()) "" else "?$query"
+    }
 
     fun arg(value: String): String = Uri.encode(value)
 }

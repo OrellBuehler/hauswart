@@ -90,6 +90,9 @@ struct QuickEntryScreen: View {
         .onChange(of: state.savedId) { _, savedId in
             if savedId != nil { dismiss() }
         }
+        .onChange(of: matchKey) { _, _ in
+            if loaded { model.store.matchesFor(form: fields.kotlin) }
+        }
         .sheet(isPresented: $fullForm) {
             CostEditScreen(id: nil, bookArg: fields.bookId.isEmpty ? nil : fields.bookId, assetId: nil)
         }
@@ -213,7 +216,16 @@ struct QuickEntryScreen: View {
             } footer: {
                 Text(tr("quick_full_form_hint"))
             }
+            BankMatchesSection(
+                matches: state.matches,
+                onChoose: { model.store.chooseMatch(id: $0) },
+                onRetry: { model.store.matchesFor(form: fields.kotlin) }
+            )
         }
+    }
+
+    private var matchKey: String {
+        fields.amount + "|" + fields.date
     }
 
     private static let notSharedValue = "__not_shared"
@@ -227,5 +239,6 @@ struct QuickEntryScreen: View {
         guard !loaded, let initial else { return }
         fields = QuickFields(initial)
         loaded = true
+        model.store.matchesFor(form: fields.kotlin)
     }
 }

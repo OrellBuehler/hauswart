@@ -45,6 +45,8 @@ data class CostRowView(
     val badges: List<CostBadge>,
     val tags: List<TagView>,
     val commentCount: Int,
+    /** Ticked while entries are being picked to move. */
+    val selected: Boolean = false,
 )
 
 data class CostMonthGroup(
@@ -106,14 +108,48 @@ data class CostsListState(
     val countText: String = "",
     /** "Zu prüfen 2": the label of the review filter. */
     val reviewLabel: String = "",
+    /** Only the entries that wait for a review, of every book and year (the home screen's card opens this). */
+    val reviewAll: Boolean = false,
+    /** The first load went through; before that an error replaces the screen. */
+    val ready: Boolean = false,
+    /** Entries are being picked to move to another book. */
+    val selecting: Boolean = false,
+    val selectedCount: Int = 0,
+    /** "3 ausgewählt" */
+    val selectionText: String = "",
+    /** Every entry shown (up to the limit of one move) is ticked. */
+    val allSelected: Boolean = false,
+    /** "At most 500 entries at once" while more are shown than one move takes. */
+    val selectionNote: String? = null,
+    /** What a finished move said; the screen shows it once and calls [CostsListStore.consumeNotice]. */
+    val notice: String? = null,
 ) {
     val filtered: Boolean get() = query.isNotBlank() || category.isNotEmpty() || paidBy.isNotEmpty() || reviewOnly
 }
 
-/** The cost entries of one book (or every book) and year with the year's totals and where the person stands. */
+/** What a move to another book needs to know of the entries that were picked. */
+data class MovePick(
+    val ids: List<String>,
+    /** The books the entries are in now. */
+    val bookIds: List<String>,
+    /** How many of them have a tax class that a book without tax relevance resets. */
+    val taxClassed: Int,
+)
+
+/** How many entries one move takes. */
+const val MOVE_MAX_IDS = 500
+
+/**
+ * The cost entries of one book (or every book) and year with the year's totals and where the person stands; with
+ * [reviewAll] only the entries that wait for a review, of every book and year.
+ */
 class CostsListStore(
     private val app: HauswartApp,
-) : Store<CostsListState>(CostsListState()) {
+    private val reviewAll: Boolean,
+) : Store<CostsListState>(CostsListState(reviewAll = reviewAll)) {
+    constructor(app: HauswartApp) : this(app, false)
+
+    private var picked: Set<String> = emptySet()
     private var books: List<CostBook> = emptyList()
     private var entries: List<CostEntry> = emptyList()
     private var chosen: String? = null
@@ -166,6 +202,49 @@ class CostsListStore(
         show()
     }
 
+    fun startSelecting() {
+        update { it.copy(selecting = true) }
+        show()
+    }
+
+    fun stopSelecting() {
+        picked = emptySet()
+        update { it.copy(selecting = false) }
+        show()
+    }
+
+    fun toggleSelected(id: String) {
+        picked = if (id in picked) picked - id else picked + id
+        show()
+    }
+
+    /** Ticks every entry shown (as many as one move takes), or clears the ticks when they are all ticked. */
+    fun toggleSelectAll() {
+        picked = if (current.allSelected) emptySet() else shownIds().take(MOVE_MAX_IDS).toSet()
+        show()
+    }
+
+    /** The entries ticked, for the dialog that moves them. */
+    fun movePick(): MovePick {
+        val chosen = entries.filter { it.id in picked }
+        return MovePick(
+            ids = chosen.map { it.id },
+            bookIds = chosen.map { it.bookId }.distinct(),
+            taxClassed = chosen.count { it.deductible != "unknown" },
+        )
+    }
+
+    /** Shows what a finished move said. */
+    fun announce(text: String) {
+        update { it.copy(notice = text) }
+    }
+
+    fun consumeNotice() {
+        update { it.copy(notice = null) }
+    }
+
+    private fun shownIds(): List<String> = matchingEntries().map { it.id }
+
     fun resetFilters() {
         update { it.copy(query = "", category = "", paidBy = "", reviewOnly = false) }
         show()
@@ -174,6 +253,10 @@ class CostsListStore(
     private fun load() {
         job?.cancel()
         update { it.copy(loading = !loadedOnce, refreshing = true, error = null) }
+        if (reviewAll) {
+            loadReview()
+            return
+        }
         job =
             launch({ e -> update { it.copy(loading = false, refreshing = false, error = e) } }) {
                 val household = app.household.get()
@@ -231,6 +314,7 @@ class CostsListStore(
                         summary = summaryView(summary, household.currency),
                         balance = balances?.let(::balanceView),
                         balancesUnavailable = balances == null,
+                        ready = true,
                         reviewCount = summary.reviewNeededCount.toInt(),
                         title = books.firstOrNull { b -> b.id == bookId }?.name ?: tr("costbook_all"),
                         categories = costCategoryOptions(),
@@ -241,17 +325,52 @@ class CostsListStore(
             }
     }
 
-    private fun show() {
+    private fun loadReview() {
+        job =
+            launch({ e -> update { it.copy(loading = false, refreshing = false, error = e) } }) {
+                app.household.get()
+                val list =
+                    fetchAll { cursor ->
+                        val page = app.api.costs.costsList(cursor = cursor, limit = 200, reviewNeeded = true)
+                        page.items to page.nextCursor
+                    }
+                entries = list
+                loadedOnce = true
+                update {
+                    it.copy(
+                        loading = false,
+                        refreshing = false,
+                        ready = true,
+                        total = list.size,
+                        reviewCount = list.size,
+                        title = tr("dashboard_review_title"),
+                        categories = costCategoryOptions(),
+                        payers = app.household.members.map { m -> CostOption(m.id, m.name) },
+                    )
+                }
+                show()
+            }
+    }
+
+    private fun matchingEntries(): List<CostEntry> {
         val state = current
         val needle = state.query.trim().lowercase()
+        return entries.filter { e ->
+            (state.category.isEmpty() || e.category == state.category) &&
+                (state.paidBy.isEmpty() || e.paidByUserId == state.paidBy) &&
+                (!state.reviewOnly || e.reviewNeeded) &&
+                (needle.isEmpty() || listOfNotNull(e.title, e.payee, e.notes).any { it.lowercase().contains(needle) })
+        }
+    }
+
+    private fun show() {
+        val state = current
         val currency = app.household.currency
-        val matching =
-            entries.filter { e ->
-                (state.category.isEmpty() || e.category == state.category) &&
-                    (state.paidBy.isEmpty() || e.paidByUserId == state.paidBy) &&
-                    (!state.reviewOnly || e.reviewNeeded) &&
-                    (needle.isEmpty() || listOfNotNull(e.title, e.payee, e.notes).any { it.lowercase().contains(needle) })
-            }
+        val matching = matchingEntries()
+        val shownIds = matching.map { it.id }.toSet()
+        picked = picked.filter { it in shownIds }.toSet()
+        val limited = matching.take(MOVE_MAX_IDS).map { it.id }
+        val withBook = state.bookId.isEmpty()
         val groups =
             matching
                 .groupBy { it.date.take(7) }
@@ -263,13 +382,17 @@ class CostsListStore(
                         key = month,
                         title = costMonthTitle(rows.first().date),
                         total = Money.format(expenses, currency),
-                        rows = rows.map { rowView(it, state.bookId.isEmpty()) },
+                        rows = rows.map { rowView(it, withBook, it.id in picked) },
                     )
                 }
         update {
             it.copy(
                 groups = groups,
                 shown = matching.size,
+                selectedCount = picked.size,
+                selectionText = tr("costs_selected_count", "count" to picked.size),
+                allSelected = limited.isNotEmpty() && limited.all { id -> id in picked },
+                selectionNote = if (it.selecting && matching.size > MOVE_MAX_IDS) tr("costs_select_limit", "max" to MOVE_MAX_IDS) else null,
                 countText = tr("costs_count", "count" to matching.size),
                 reviewLabel = tr("costs_filter_review") + " " + it.reviewCount,
             )
@@ -317,6 +440,7 @@ class CostsListStore(
 internal fun rowView(
     entry: CostEntry,
     withBook: Boolean,
+    selected: Boolean = false,
 ): CostRowView {
     val badges = mutableListOf<CostBadge>()
     if (entry.reviewNeeded) badges += CostBadge(tr("cost_badge_review"), TONE_DUE)
@@ -338,5 +462,6 @@ internal fun rowView(
         badges = badges,
         tags = entry.tags.map { TagView(it.id, it.name, it.color) },
         commentCount = entry.commentCount.toInt(),
+        selected = selected,
     )
 }

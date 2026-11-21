@@ -62,6 +62,7 @@ fun QuickEntryScreen(
 
     LaunchedEffect(state.savedId) { if (state.savedId != null) nav.popBackStack() }
     LaunchedEffect(initial) { if (initial != null) focus.requestFocus() }
+    LaunchedEffect(form?.amount, form?.date) { form?.let(store::matchesFor) }
 
     AppScaffold(
         title = tr("quick_title"),
@@ -166,6 +167,7 @@ fun QuickEntryScreen(
                     TextButton(onClick = { nav.navigate(Routes.costNew(bookOf(current))) }) {
                         Text(tr("quick_full_form"), maxLines = 1)
                     }
+                    BankMatchesSection(state.matches, store::chooseMatch, onRetry = { store.matchesFor(current) })
                     state.error?.let { InlineError(it.message) }
                 }
             }

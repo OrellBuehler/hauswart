@@ -16,8 +16,10 @@ import ch.orellbuehler.hauswart.core.Store
 import ch.orellbuehler.hauswart.core.UiError
 import ch.orellbuehler.hauswart.core.fetchAll
 import ch.orellbuehler.hauswart.i18n.tr
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 
 /** What the full entry form holds: every field as the person typed it. */
 data class CostForm(
@@ -85,6 +87,8 @@ data class CostEditState(
     val fieldErrors: Map<String, String> = emptyMap(),
     /** The id of the saved entry; the screen closes when it is set. */
     val savedId: String? = null,
+    /** The bank transactions that fit the entry as typed, while a finance app is connected. */
+    val matches: MatchesView = MatchesView(),
 )
 
 /** Books an entry in the full form ([id] null) or edits one. */
@@ -97,10 +101,39 @@ class CostEditStore(
     private var books: List<CostBook> = emptyList()
     private var people: List<PersonOption> = emptyList()
     private var entry: CostEntry? = null
+    private val bank = BankMatching(app)
+    private var matchJob: Job? = null
+    internal var matchDelayMs: Long = MATCH_DEBOUNCE_MS
 
     init {
         load()
     }
+
+    /** Looks up the bank transactions that fit the form, a moment after the last change of amount, currency or date. */
+    fun matchesFor(form: CostForm) {
+        val ask = bank.ask(matchQueryOf(parseAmountText(form.amount, form.currency, form.refund).minor, form.currency, form.date))
+        update { it.copy(matches = bank.view()) }
+        if (!ask) return
+        matchJob?.cancel()
+        matchJob =
+            launch({ _ ->
+                bank.fail()
+                update { it.copy(matches = bank.view()) }
+            }) {
+                delay(matchDelayMs)
+                bank.fetch()
+                update { it.copy(matches = bank.view()) }
+            }
+    }
+
+    /** Ties the entry to the transaction, or lets go of it when it is chosen already. */
+    fun chooseMatch(id: String) {
+        bank.choose(id)
+        update { it.copy(matches = bank.view()) }
+    }
+
+    private fun matchOf(form: CostForm): MatchQuery? =
+        matchQueryOf(parseAmountText(form.amount, form.currency, form.refund).minor, form.currency, form.date)
 
     fun retry() {
         load()
@@ -212,15 +245,16 @@ class CostEditStore(
             return
         }
         update { it.copy(saving = true, error = null, fieldErrors = emptyMap()) }
-        launch({ e -> update { it.copy(saving = false, error = if (e.fields.isEmpty()) e else null, fieldErrors = e.fields) } }) {
+        val tie = bank.chosenFor(matchOf(form))
+        launch({ e -> failed(e, tie.isNotEmpty(), form) }) {
             val saved = entry
             val savedId =
                 if (id == null || saved == null) {
                     app.api.costs
-                        .costsCreate(createRequest(form))
+                        .costsCreate(createRequest(form, tie))
                         .id
                 } else {
-                    val request = updateRequest(form, saved)
+                    val request = updateRequest(form, saved, tie)
                     if (request == null) {
                         saved.id
                     } else {
@@ -232,6 +266,28 @@ class CostEditStore(
             app.changed("costs")
             update { it.copy(saving = false, savedId = savedId) }
         }
+    }
+
+    private fun failed(
+        e: UiError,
+        sentTie: Boolean,
+        form: CostForm,
+    ) {
+        val refused = tieFailure(e, sentTie)
+        if (refused == null) {
+            update { it.copy(saving = false, error = if (e.fields.isEmpty()) e else null, fieldErrors = e.fields) }
+            return
+        }
+        bank.refuse(refused)
+        update {
+            it.copy(
+                saving = false,
+                error = UiError(tr("form_check_fields"), "invalid_request"),
+                fieldErrors = e.fields + ("financeSuggestionId" to refused),
+                matches = bank.view(),
+            )
+        }
+        matchesFor(form)
     }
 
     private fun check(form: CostForm): Map<String, String> {
@@ -298,7 +354,10 @@ class CostEditStore(
 
     private fun taxClassApplies(form: CostForm): Boolean = books.firstOrNull { it.id == form.bookId }?.taxRelevant ?: true
 
-    private fun createRequest(form: CostForm): CostsCreateRequest {
+    private fun createRequest(
+        form: CostForm,
+        tie: String,
+    ): CostsCreateRequest {
         val amount = requireNotNull(parseAmountText(form.amount, form.currency, form.refund).minor)
         return CostsCreateRequest(
             bookId = form.bookId.ifEmpty { null },
@@ -324,6 +383,7 @@ class CostEditStore(
             countsAsExpense = form.countsAsExpense,
             deductible = if (taxClassApplies(form)) form.deductible else "unknown",
             tagIds = form.tagIds.takeIf { it.isNotEmpty() },
+            financeSuggestionId = tie.ifEmpty { null },
         )
     }
 
@@ -331,6 +391,7 @@ class CostEditStore(
     private fun updateRequest(
         form: CostForm,
         saved: CostEntry,
+        tie: String,
     ): CostsUpdateRequest? {
         val amount = requireNotNull(parseAmountText(form.amount, form.currency, form.refund).minor)
         val owned = saved.fuelLogId != null
@@ -372,6 +433,7 @@ class CostEditStore(
                 countsAsExpense = form.countsAsExpense.takeIf { it != saved.countsAsExpense || form.category != saved.category },
                 deductible = form.deductible.takeIf { it != saved.deductible && taxClassApplies(form) },
                 tagIds = form.tagIds.takeIf { tagsChanged },
+                financeSuggestionId = tie.ifEmpty { null },
             )
         return request.takeIf { it != CostsUpdateRequest() }
     }
@@ -447,11 +509,13 @@ class CostEditStore(
                             }
                         }
                     val existing = id?.let { wanted -> async { app.api.costs.costsGet(wanted) } }
-                    Loaded(bookList.await(), tagList.await().items, assetList.await(), existing?.await())
+                    val connected = async { bank.connected() }
+                    Loaded(bookList.await(), tagList.await().items, assetList.await(), existing?.await(), connected.await())
                 }
             books = loaded.books
             people = household.members.map { PersonOption(it.id, it.name, it.ownershipBps) }
             entry = loaded.entry
+            bank.eligible = loaded.financeConnected && loaded.entry?.fuelLogId == null && loaded.entry?.financeLinked != true
             val userIds = people.map { it.id }
             val saved = loaded.entry
             val form =
@@ -485,6 +549,7 @@ class CostEditStore(
         val tags: List<CostTag>,
         val assets: List<Asset>,
         val entry: CostEntry?,
+        val financeConnected: Boolean,
     )
 
     private fun newForm(

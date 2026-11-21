@@ -9,6 +9,9 @@ struct DocScreen: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.colorScheme) private var colorScheme
     @State private var extras = false
+    @State private var tocOpen = false
+    @State private var jumpTo = ""
+    @State private var jumpToken = 0
     @State private var editing = false
     @State private var creating = false
     @State private var confirmingDelete = false
@@ -96,7 +99,15 @@ struct DocScreen: View {
                         CommentsSection(ownerType: "doc_page", ownerId: state.pageId)
                     }
                 } else {
-                    DocWebView(bodyHtml: state.bodyHtml, dark: colorScheme == .dark) { url in
+                    if !state.toc.isEmpty {
+                        tocBlock(state.toc)
+                    }
+                    DocWebView(
+                        bodyHtml: state.bodyHtml,
+                        dark: colorScheme == .dark,
+                        jumpTo: jumpTo,
+                        jumpToken: jumpToken
+                    ) { url in
                         handle(url)
                     }
                 }
@@ -105,6 +116,52 @@ struct DocScreen: View {
             ErrorView(error: error) { model.store.refresh() }
         } else {
             LoadingView()
+        }
+    }
+
+    /// The table of contents above the page: folded to one line, opened to the list of headings.
+    private func tocBlock(_ toc: [TocItem]) -> some View {
+        VStack(spacing: 0) {
+            Button {
+                tocOpen.toggle()
+            } label: {
+                HStack {
+                    Image(systemName: "list.bullet")
+                    Text(tr("docs_toc"))
+                        .font(.subheadline.weight(.semibold))
+                    Spacer()
+                    Image(systemName: tocOpen ? "chevron.up" : "chevron.down")
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 10)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if tocOpen {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(toc, id: \.id) { item in
+                            Button {
+                                tocOpen = false
+                                jumpTo = DocsStoresKt.tocAnchorUrl(id: item.id)
+                                jumpToken += 1
+                            } label: {
+                                Text(item.text)
+                                    .font(.subheadline)
+                                    .lineLimit(2)
+                                    .padding(.leading, 16 + 16 * CGFloat(item.indent))
+                                    .padding(.trailing, 16)
+                                    .padding(.vertical, 8)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .frame(maxHeight: 220)
+            }
+            Divider()
         }
     }
 

@@ -69,6 +69,9 @@ enum Route: Hashable {
     case costsReceipts(String)
     case costBooks
     case costTags
+    // Costs: the entries that wait for a review (every book and year), and the report of a book (`all` or an id) for a year (0 = this year)
+    case costsReview
+    case costsReport(String, Int)
 }
 
 /// Returns a type-erased view on purpose: a `switch` over this many cases inside a view builder
@@ -132,6 +135,8 @@ func destination(for route: Route) -> AnyView {
     case let .costsReceipts(status): return AnyView(ReceiptsScreen(status: status))
     case .costBooks: return AnyView(CostBooksScreen())
     case .costTags: return AnyView(CostTagsScreen())
+    case .costsReview: return AnyView(CostsScreen(reviewAll: true))
+    case let .costsReport(book, year): return AnyView(CostsReportScreen(bookArg: book, year: year))
 
     // Insurance
     case .insurance: return AnyView(InsuranceScreen())

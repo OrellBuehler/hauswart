@@ -74,6 +74,12 @@ data class DocumentRowItem(
     val unused: Boolean,
 )
 
+/** A tag or correspondent of the document system to filter by; [value] is its id as text, empty for any. */
+data class DocumentFilterOption(
+    val value: String,
+    val label: String,
+)
+
 data class DocumentsListState(
     val loading: Boolean = true,
     val error: UiError? = null,
@@ -90,8 +96,15 @@ data class DocumentsListState(
     val moreError: UiError? = null,
     /** Changes whenever a thumbnail arrived. */
     val thumbs: Int = 0,
+    /** The id of the tag the list is narrowed to, empty for any. */
+    val tag: String = "",
+    val correspondent: String = "",
+    val tags: List<DocumentFilterOption> = emptyList(),
+    val correspondents: List<DocumentFilterOption> = emptyList(),
+    /** The tags and correspondents could not be read; the other filters still work. */
+    val filterError: UiError? = null,
 ) {
-    val filtered: Boolean get() = query.isNotBlank() || linked != DOCUMENTS_LINKED_ALL
+    val filtered: Boolean get() = query.isNotBlank() || linked != DOCUMENTS_LINKED_ALL || tag.isNotEmpty() || correspondent.isNotEmpty()
 }
 
 /** The documents of the caller's own document system; searching asks the system itself. */
@@ -135,8 +148,18 @@ class DocumentsListStore(
         search(false)
     }
 
+    fun setTag(id: String) {
+        update { it.copy(tag = id) }
+        search(false)
+    }
+
+    fun setCorrespondent(id: String) {
+        update { it.copy(correspondent = id) }
+        search(false)
+    }
+
     fun resetFilters() {
-        update { it.copy(query = "", linked = DOCUMENTS_LINKED_ALL) }
+        update { it.copy(query = "", linked = DOCUMENTS_LINKED_ALL, tag = "", correspondent = "") }
         search(false)
     }
 
@@ -168,6 +191,8 @@ class DocumentsListStore(
             cursor = cursor,
             limit = PAGE_SIZE,
             q = current.query.trim().ifEmpty { null },
+            tag = current.tag.toLongOrNull(),
+            correspondent = current.correspondent.toLongOrNull(),
             linked =
                 when (current.linked) {
                     DOCUMENTS_LINKED_YES -> true
@@ -192,6 +217,27 @@ class DocumentsListStore(
             val warning = if (connection.status == "error") tr("documents_connection_error") + " " + connection.lastError.orEmpty() else ""
             update { it.copy(connected = true, connectionWarning = warning.trim()) }
             search(false)
+            loadFilters()
+        }
+    }
+
+    private fun loadFilters() {
+        launch({ e -> update { it.copy(filterError = e) } }) {
+            val tags =
+                app.api.integrations
+                    .integrationsTags(provider)
+                    .items
+            val correspondents =
+                app.api.integrations
+                    .integrationsCorrespondents(provider)
+                    .items
+            update {
+                it.copy(
+                    filterError = null,
+                    tags = tags.map { t -> DocumentFilterOption(t.id.toString(), t.name) },
+                    correspondents = correspondents.map { c -> DocumentFilterOption(c.id.toString(), c.name) },
+                )
+            }
         }
     }
 

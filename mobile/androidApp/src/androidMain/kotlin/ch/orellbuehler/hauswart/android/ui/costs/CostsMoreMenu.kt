@@ -22,11 +22,17 @@ import ch.orellbuehler.hauswart.feature.inbox.MENU_BUDGETS
 import ch.orellbuehler.hauswart.feature.inbox.MENU_INBOX
 import ch.orellbuehler.hauswart.feature.inbox.MENU_RECEIPTS
 import ch.orellbuehler.hauswart.feature.inbox.MENU_RECURRING
+import ch.orellbuehler.hauswart.feature.inbox.MENU_REPORT
 import ch.orellbuehler.hauswart.feature.inbox.MENU_TAGS
 import ch.orellbuehler.hauswart.i18n.tr
 
-private fun routeOf(key: String): String? =
+private fun routeOf(
+    key: String,
+    bookArg: String,
+    year: Int,
+): String? =
     when (key) {
+        MENU_REPORT -> Routes.costsReport(bookArg, year)
         MENU_BUDGETS -> Routes.COSTS_BUDGETS
         MENU_RECURRING -> Routes.COSTS_RECURRING
         MENU_INBOX -> Routes.COSTS_INBOX
@@ -41,7 +47,11 @@ private fun routeOf(key: String): String? =
  * connected), the receipts, the cost books and the tags.
  */
 @Composable
-fun CostsMoreMenu(nav: NavController) {
+fun CostsMoreMenu(
+    nav: NavController,
+    bookArg: String,
+    year: Int,
+) {
     val store = rememberStore { CostsMenuStore(it) }
     val entries = store.collect().entries
     var open by remember { mutableStateOf(false) }
@@ -54,7 +64,7 @@ fun CostsMoreMenu(nav: NavController) {
                 text = { Text(entry.label + (entry.badge?.let { " ($it)" } ?: ""), maxLines = 1) },
                 onClick = {
                     open = false
-                    routeOf(entry.key)?.let { nav.navigate(it) }
+                    routeOf(entry.key, bookArg, year)?.let { nav.navigate(it) }
                 },
             )
         }

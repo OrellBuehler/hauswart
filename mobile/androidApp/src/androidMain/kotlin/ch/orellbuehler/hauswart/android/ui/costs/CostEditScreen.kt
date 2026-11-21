@@ -56,6 +56,7 @@ fun CostEditScreen(
     var form by remember(initial) { mutableStateOf(initial) }
 
     LaunchedEffect(state.savedId) { if (state.savedId != null) nav.popBackStack() }
+    LaunchedEffect(form?.amount, form?.refund, form?.currency, form?.date) { form?.let(store::matchesFor) }
 
     AppScaffold(
         title = tr(if (state.isNew) "cost_new" else "cost_edit_title"),
@@ -246,6 +247,7 @@ fun CostEditScreen(
                             )
                         }
                     }
+                    BankMatchesSection(state.matches, store::chooseMatch, onRetry = { store.matchesFor(current) })
                     state.error?.let { InlineError(it.message) }
                 }
             }

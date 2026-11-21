@@ -58,6 +58,35 @@ class DocsStoresTest {
     }
 
     @Test
+    fun aPageWithSeveralHeadingsGetsATableOfContentsAndAJumpAddress() =
+        runTest {
+            places()
+            val headings =
+                """[{"level":2,"text":"Setup","id":"setup"},{"level":3,"text":"Water","id":"water"},{"level":2,"text":"Care","id":"care"}]"""
+            server.on("GET", "/api/v1/pages/boiler", pageJson("boiler").replace("\"headings\":[]", "\"headings\":$headings"))
+            val store = DocViewStore(app, "boiler")
+            val state = store.await { it.pageId.isNotEmpty() }
+            assertEquals(listOf("setup", "water", "care"), state.toc.map { it.id })
+            assertEquals(listOf(0, 1, 0), state.toc.map { it.indent })
+            assertEquals(DOC_BASE_URL + "#water", tocAnchorUrl("water"))
+            store.close()
+        }
+
+    @Test
+    fun aSingleHeadingIsNoTableOfContents() =
+        runTest {
+            places()
+            server.on(
+                "GET",
+                "/api/v1/pages/boiler",
+                pageJson("boiler").replace("\"headings\":[]", "\"headings\":[{\"level\":1,\"text\":\"Boiler\",\"id\":\"h-boiler\"}]"),
+            )
+            val store = DocViewStore(app, "boiler")
+            assertTrue(store.await { it.pageId.isNotEmpty() }.toc.isEmpty())
+            store.close()
+        }
+
+    @Test
     fun listGroupsPinnedFirstThenBySection() =
         runTest {
             places()

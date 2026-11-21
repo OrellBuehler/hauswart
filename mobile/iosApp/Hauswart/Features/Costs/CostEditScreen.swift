@@ -122,6 +122,9 @@ struct CostEditScreen: View {
         .onChange(of: state.savedId) { _, savedId in
             if savedId != nil { dismiss() }
         }
+        .onChange(of: matchKey) { _, _ in
+            if loaded { model.store.matchesFor(form: fields.kotlin) }
+        }
     }
 
     @ViewBuilder
@@ -266,7 +269,16 @@ struct CostEditScreen: View {
             } header: {
                 FormHeading(text: tr("cost_form_links"))
             }
+            BankMatchesSection(
+                matches: state.matches,
+                onChoose: { model.store.chooseMatch(id: $0) },
+                onRetry: { model.store.matchesFor(form: fields.kotlin) }
+            )
         }
+    }
+
+    private var matchKey: String {
+        fields.amount + "|" + (fields.refund ? "1" : "0") + "|" + fields.currency + "|" + fields.date
     }
 
     private var bookBinding: Binding<String> {
@@ -322,5 +334,6 @@ struct CostEditScreen: View {
         guard !loaded, let initial else { return }
         fields = CostFields(initial)
         loaded = true
+        model.store.matchesFor(form: fields.kotlin)
     }
 }

@@ -86,6 +86,9 @@ struct DashboardScreen: View {
                 ForEach(view.sections, id: \.id) { section in
                     taskSection(section)
                 }
+                ForEach(view.attention, id: \.id) { card in
+                    attentionSection(card)
+                }
                 if let card = view.defects {
                     defectsSection(card)
                 }
@@ -155,6 +158,29 @@ struct DashboardScreen: View {
         } header: {
             Text(section.title + " (" + String(section.total) + ")")
                 .foregroundStyle(Tone.color(section.tone == "normal" ? "muted" : section.tone))
+        }
+    }
+
+    private func attentionRoute(_ id: String) -> Route {
+        switch id {
+        case DashboardViewKt.ATTENTION_FINANCE: return .costsInbox
+        case DashboardViewKt.ATTENTION_RECEIPTS: return .costsReceipts("pending")
+        default: return .costsReview
+        }
+    }
+
+    private func attentionSection(_ card: AttentionCard) -> some View {
+        Section(card.title + " (" + String(card.count) + ")") {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(card.description_)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                Text(card.text)
+                    .foregroundStyle(Tone.color(card.tone))
+            }
+            NavigationLink(value: attentionRoute(card.id)) {
+                Text(card.linkLabel)
+            }
         }
     }
 
