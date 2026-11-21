@@ -1,4 +1,4 @@
-import type { CalendarItemKind } from "$lib/api/enums";
+import type { CalendarItemKind } from "#lib/api/enums.ts";
 
 /**
  * The name an event carries so hauswart can find it again: `hw-ref: <ref>@sync.hauswart`, where
@@ -9,8 +9,9 @@ import type { CalendarItemKind } from "$lib/api/enums";
 export const REF_DOMAIN = "sync.hauswart";
 const MARKER_PREFIX = "hw-ref: ";
 
+const ESCAPED_DOMAIN = REF_DOMAIN.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const MARKER_LINE = new RegExp(
-  `^hw-ref: ([A-Za-z0-9:._-]{1,300})@${REF_DOMAIN.replace(/\./g, "\\.")}$`,
+  `^hw-ref: ([A-Za-z0-9:._-]{1,300})@${ESCAPED_DOMAIN}$`,
 );
 
 export function markerLine(ref: string): string {

@@ -1,20 +1,28 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
-import { prepState, type PrepConfig, type PrepState } from "$lib/tasks/engine";
+import {
+  prepState,
+  type PrepConfig,
+  type PrepState,
+} from "#lib/tasks/engine/index.ts";
 import type {
   CreatePreparationRequest,
   LeadValue,
   UpdatePreparationRequest,
-} from "$lib/api/schemas/tasks";
-import { leadValueSchema } from "$lib/api/schemas/tasks";
-import { parts, taskPrepCompletions, taskPreparations } from "$lib/server/db";
-import { parseStored } from "$lib/server/json";
+} from "#lib/api/schemas/tasks.ts";
+import { leadValueSchema } from "#lib/api/schemas/tasks.ts";
+import {
+  parts,
+  taskPrepCompletions,
+  taskPreparations,
+} from "#lib/server/db.ts";
+import { parseStored } from "#lib/server/json.ts";
 import {
   invalidField,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
+} from "#lib/server/service.ts";
 import { clockAt, evaluateTaskById } from "./evaluator";
-import { signalNeedsChanged } from "$lib/server/signals/watch";
+import { signalNeedsChanged } from "#lib/server/signals/watch.ts";
 import { loadSignals } from "./signals";
 import { stateToDue, type TaskStateRecord } from "./state";
 import { getTask } from "./tasks";

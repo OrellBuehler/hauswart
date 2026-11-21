@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import { USER_LOCALES } from "$lib/api/enums";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { m } from "$lib/paraglide/messages";
-  import { getLocale, setLocale } from "$lib/paraglide/runtime";
+  import { USER_LOCALES } from "#lib/api/enums.ts";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getLocale, setLocale } from "#lib/paraglide/runtime.js";
   import Logo from "./logo.svelte";
 
   let { children }: { children: Snippet } = $props();

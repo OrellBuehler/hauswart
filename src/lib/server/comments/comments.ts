@@ -1,17 +1,17 @@
 import { and, asc, eq, gt, or, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
-import type { CommentEntityType, UserLocale } from "$lib/api/enums";
-import { comments, users } from "$lib/server/db";
-import type { DeliverableNotification } from "$lib/server/notifications/channels";
-import { deliverToChannels } from "$lib/server/notifications/deliveries";
-import { createNotification } from "$lib/server/notifications/notifications";
-import { decodeCursor, pageOf } from "$lib/server/pagination";
+import type { CommentEntityType, UserLocale } from "#lib/api/enums.ts";
+import { comments, users } from "#lib/server/db.ts";
+import type { DeliverableNotification } from "#lib/server/notifications/channels.ts";
+import { deliverToChannels } from "#lib/server/notifications/deliveries.ts";
+import { createNotification } from "#lib/server/notifications/notifications.ts";
+import { decodeCursor, pageOf } from "#lib/server/pagination.ts";
 import {
   conflict,
   forbidden,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
+} from "#lib/server/service.ts";
 import { commentableOf } from "./registry";
 
 type Now = Pick<ServiceContext, "db" | "now">;

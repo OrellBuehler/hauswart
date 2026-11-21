@@ -8,21 +8,21 @@
   import PlayIcon from "@lucide/svelte/icons/play";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
-  import { goto, invalidateAll } from "$app/navigation";
+  import { goto, refreshAll } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { CostBudget } from "$lib/api/schemas/cost-budgets";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import BudgetCard from "$lib/components/costs/budget-card.svelte";
-  import BudgetFormDialog from "$lib/components/costs/budget-form-dialog.svelte";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { CostBudget } from "#lib/api/schemas/cost-budgets.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import BudgetCard from "#lib/components/costs/budget-card.svelte";
+  import BudgetFormDialog from "#lib/components/costs/budget-form-dialog.svelte";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
   import {
     budgetPeriodLabels,
     budgetScope,
@@ -32,11 +32,11 @@
     itemsForPeriod,
     shiftBudgetView,
     type BudgetView,
-  } from "$lib/costs/budgets";
-  import { formatMoney } from "$lib/format-money";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { invalidateAfterOverlay } from "$lib/overlays/use-overlay-history.svelte";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/costs/budgets.ts";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { invalidateAfterOverlay } from "#lib/overlays/use-overlay-history.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -64,10 +64,9 @@
 
   async function show(target: BudgetView | null) {
     if (!target) return;
-    await goto(
-      resolve(`/costs/budgets${budgetViewQuery(target, data.today)}` as "/"),
-      { keepFocus: true, noScroll: true },
-    );
+    await goto(resolve(`costs/budgets${budgetViewQuery(target, data.today)}`), {
+      reset: false,
+    });
   }
 
   function nameOf(budget: CostBudget): string {
@@ -112,7 +111,7 @@
           ? m.budget_resumed_toast({ name: nameOf(budget) })
           : m.budget_paused_toast({ name: nameOf(budget) }),
       );
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       actionError = apiErrorMessage(err);
       toast.error(actionError);
@@ -129,7 +128,7 @@
 <div class="flex flex-col gap-6">
   <div class="max-md:hidden">
     <a
-      href={resolve("/costs")}
+      href={resolve("costs")}
       class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -ms-1 inline-flex min-h-10 items-center gap-1.5 rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />

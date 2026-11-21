@@ -1,6 +1,6 @@
 import { eq, sql } from "drizzle-orm";
-import { onEvent } from "$lib/server/events";
-import { partMovements, taskParts } from "$lib/server/db";
+import { onEvent } from "#lib/server/events.ts";
+import { partMovements, taskParts } from "#lib/server/db.ts";
 import { applyMovement } from "./parts";
 
 /**

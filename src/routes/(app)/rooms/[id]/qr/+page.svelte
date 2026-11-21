@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
-  import QrSheet from "$lib/components/assets/qr-sheet.svelte";
-  import { m } from "$lib/paraglide/messages";
+  import QrSheet from "#lib/components/assets/qr-sheet.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -16,6 +16,6 @@
   title={m.qr_sheet_title({ name: data.room.name })}
   assets={data.assets}
   origin={page.url.origin}
-  backHref={resolve(`/rooms/${data.room.id}`)}
+  backHref={resolve(`rooms/${data.room.id}`)}
   backLabel={data.room.name}
 />

@@ -1,7 +1,7 @@
 import { and, desc, eq, isNull, lte, or } from "drizzle-orm";
-import type { TokenKind } from "$lib/api/enums";
-import { isScope, type Scope } from "$lib/api/scopes";
-import { apiTokens, getDB, users } from "$lib/server/db";
+import type { TokenKind } from "#lib/api/enums.ts";
+import { isScope, type Scope } from "#lib/api/scopes.ts";
+import { apiTokens, getDB, users } from "#lib/server/db.ts";
 import { hashToken } from "./sessions";
 import type { SessionUser, TokenInfo } from "./types";
 

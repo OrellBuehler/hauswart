@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { createAsset, deleteAsset } from "$lib/server/assets/assets";
-import { createContact, deleteContact } from "$lib/server/contacts/contacts";
-import { createContactRequestSchema } from "$lib/api/schemas/contacts";
+import { createAsset, deleteAsset } from "#lib/server/assets/assets.ts";
+import { createContact, deleteContact } from "#lib/server/contacts/contacts.ts";
+import { createContactRequestSchema } from "#lib/api/schemas/contacts.ts";
 import {
   completionServiceLogSchema,
   createServiceLogRequestSchema,
-} from "$lib/api/schemas/service-log";
-import { updateHousehold } from "$lib/server/household/household";
-import { completeTask } from "$lib/server/tasks/completions";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, makeTask } from "$lib/testing/domain";
+} from "#lib/api/schemas/service-log.ts";
+import { updateHousehold } from "#lib/server/household/household.ts";
+import { completeTask } from "#lib/server/tasks/completions.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, makeTask } from "#lib/testing/domain.ts";
 import {
   checkCompletionLog,
   createEntry,
@@ -315,7 +315,7 @@ describe("service log", () => {
         "2026-06-15",
         null,
       );
-      const { deleteTask } = await import("$lib/server/tasks/tasks");
+      const { deleteTask } = await import("#lib/server/tasks/tasks.ts");
       deleteTask(ctx(), task.id);
       expect(getEntry(ctx(), e.id)).toMatchObject({ completionId: null });
     });

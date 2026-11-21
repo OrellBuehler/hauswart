@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { AppointmentStatus } from "$lib/api/enums";
-  import { statusLabels, statusTones } from "$lib/appointments/labels";
-  import { cn } from "$lib/utils";
+  import type { AppointmentStatus } from "#lib/api/enums.ts";
+  import { statusLabels, statusTones } from "#lib/appointments/labels.ts";
+  import { cn } from "#lib/utils.ts";
 
   let {
     status,

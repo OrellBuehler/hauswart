@@ -1,6 +1,9 @@
-import type { CommentEntityType, DocumentLinkOwnerType } from "$lib/api/enums";
-import { commentableOf } from "$lib/server/comments/registry";
-import type { DB } from "$lib/server/db";
+import type {
+  CommentEntityType,
+  DocumentLinkOwnerType,
+} from "#lib/api/enums.ts";
+import { commentableOf } from "#lib/server/comments/registry.ts";
+import type { DB } from "#lib/server/db.ts";
 
 const COMMENT_TYPE: Record<DocumentLinkOwnerType, CommentEntityType> = {
   asset: "asset",

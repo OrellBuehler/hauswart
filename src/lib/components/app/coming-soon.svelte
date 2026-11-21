@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { m } from "#lib/paraglide/messages.js";
   import EmptyState from "./empty-state.svelte";
   import { navItemFor, type NavHref } from "./nav";
   import PageHeader from "./page-header.svelte";

@@ -1,22 +1,22 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { createInsurancePolicyRequestSchema } from "$lib/api/schemas/insurance";
-import { createAsset, deleteAsset } from "$lib/server/assets/assets";
-import { createAttachment } from "$lib/server/attachments/attachments";
-import { createComment } from "$lib/server/comments/comments";
-import { createContact, deleteContact } from "$lib/server/contacts/contacts";
-import { createContactRequestSchema } from "$lib/api/schemas/contacts";
+import { createInsurancePolicyRequestSchema } from "#lib/api/schemas/insurance.ts";
+import { createAsset, deleteAsset } from "#lib/server/assets/assets.ts";
+import { createAttachment } from "#lib/server/attachments/attachments.ts";
+import { createComment } from "#lib/server/comments/comments.ts";
+import { createContact, deleteContact } from "#lib/server/contacts/contacts.ts";
+import { createContactRequestSchema } from "#lib/api/schemas/contacts.ts";
 import {
   attachments,
   comments,
   insurancePolicies,
   tasks,
-} from "$lib/server/db";
-import { updateHousehold } from "$lib/server/household/household";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt } from "$lib/testing/domain";
-import { samplePdf, useTestFilesDir } from "$lib/testing/files";
+} from "#lib/server/db.ts";
+import { updateHousehold } from "#lib/server/household/household.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
+import { samplePdf, useTestFilesDir } from "#lib/testing/files.ts";
 import {
   createPolicy,
   deletePolicy,

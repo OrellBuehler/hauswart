@@ -1,5 +1,5 @@
-import type { IntegrationKind } from "$lib/api/enums";
-import type { ServiceContext } from "$lib/server/service";
+import type { IntegrationKind } from "#lib/api/enums.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 
 /** A connection with its token decrypted; only adapters ever see this. */
 export interface ResolvedConnection {

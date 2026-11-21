@@ -13,38 +13,38 @@
   import PencilIcon from "@lucide/svelte/icons/pencil";
   import SkipForwardIcon from "@lucide/svelte/icons/skip-forward";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
-  import { invalidateAll } from "$app/navigation";
-  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
+  import { refreshAll } from "$app/navigation";
+  import { gotoFromOverlay } from "#lib/overlays/use-overlay-history.svelte.ts";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { FINANCE_BILL_TASK_SOURCE } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { Completion } from "$lib/api/schemas/tasks";
-  import { pinnableOccurrenceKey } from "$lib/appointments/occurrence";
-  import AppointmentBadge from "$lib/components/appointments/appointment-badge.svelte";
-  import AppointmentsCard from "$lib/components/appointments/appointments-card.svelte";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import OpenNotesBadge from "$lib/components/asset-notes/open-notes-badge.svelte";
-  import Comments from "$lib/components/comments/comments.svelte";
-  import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
-  import AssigneeAvatar from "$lib/components/tasks/assignee-avatar.svelte";
-  import CompleteButton from "$lib/components/tasks/complete-button.svelte";
-  import CompletionItem from "$lib/components/tasks/completion-item.svelte";
-  import DueBadge from "$lib/components/tasks/due-badge.svelte";
-  import ProgressBar from "$lib/components/tasks/progress-bar.svelte";
-  import TaskPartsCard from "$lib/components/tasks/task-parts-card.svelte";
-  import TaskActionDialog from "$lib/components/tasks/task-action-dialog.svelte";
-  import TriggerSummary from "$lib/components/tasks/trigger-summary.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDate, formatDateShort, formatDateTime } from "$lib/format";
-  import { assetHref, roomHref, taskEditHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
-  import { snoozeTask } from "$lib/tasks/actions";
+  import { api } from "#lib/api/browser.ts";
+  import { FINANCE_BILL_TASK_SOURCE } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Completion } from "#lib/api/schemas/tasks.ts";
+  import { pinnableOccurrenceKey } from "#lib/appointments/occurrence.ts";
+  import AppointmentBadge from "#lib/components/appointments/appointment-badge.svelte";
+  import AppointmentsCard from "#lib/components/appointments/appointments-card.svelte";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import OpenNotesBadge from "#lib/components/asset-notes/open-notes-badge.svelte";
+  import Comments from "#lib/components/comments/comments.svelte";
+  import LinkedDocuments from "#lib/components/documents/linked-documents.svelte";
+  import AssigneeAvatar from "#lib/components/tasks/assignee-avatar.svelte";
+  import CompleteButton from "#lib/components/tasks/complete-button.svelte";
+  import CompletionItem from "#lib/components/tasks/completion-item.svelte";
+  import DueBadge from "#lib/components/tasks/due-badge.svelte";
+  import ProgressBar from "#lib/components/tasks/progress-bar.svelte";
+  import TaskPartsCard from "#lib/components/tasks/task-parts-card.svelte";
+  import TaskActionDialog from "#lib/components/tasks/task-action-dialog.svelte";
+  import TriggerSummary from "#lib/components/tasks/trigger-summary.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDate, formatDateShort, formatDateTime } from "#lib/format.ts";
+  import { assetHref, roomHref, taskEditHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { snoozeTask } from "#lib/tasks/actions.ts";
   import {
     categoryLabels,
     notifyModeLabels,
@@ -53,9 +53,9 @@
     priorityLabels,
     reasonLabels,
     rotationLabels,
-  } from "$lib/tasks/labels";
-  import { rowFromTask } from "$lib/tasks/row";
-  import { cn } from "$lib/utils";
+  } from "#lib/tasks/labels.ts";
+  import { rowFromTask } from "#lib/tasks/row.ts";
+  import { cn } from "#lib/utils.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -79,6 +79,7 @@
       ? task.externalUrl
       : null,
   );
+
   const now = Date.now();
   const canWrite = $derived(data.scopes.includes("write"));
 
@@ -106,7 +107,7 @@
           ? m.task_restored_toast({ title: task.title })
           : m.task_archived_toast({ title: task.title }),
       );
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       toast.error(apiErrorMessage(err));
     } finally {
@@ -125,7 +126,7 @@
   async function remove() {
     await api.call(endpoints.tasksDelete, { params: { id: task.id } });
     toast.success(m.task_deleted_toast({ title: task.title }));
-    await gotoFromOverlay(resolve("/tasks"), { invalidateAll: true });
+    await gotoFromOverlay(resolve("tasks"), { refreshAll: true });
   }
 
   async function completePreparation(prepId: string, title: string) {
@@ -137,7 +138,7 @@
         body: {},
       });
       toast.success(m.toast_prep_done({ title }));
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       toast.error(apiErrorMessage(err));
     } finally {
@@ -179,11 +180,13 @@
   const rotation = $derived(
     task.rotationOrder.map((id) => people.get(id) ?? "?"),
   );
+
   const currentAssignee = $derived(
     taskState?.currentAssigneeUserId
       ? (people.get(taskState.currentAssigneeUserId) ?? null)
       : null,
   );
+
   const reasons = $derived(
     (taskState?.reasons ?? []).filter(
       (r) => r !== "never_completed" || history.length === 0,
@@ -198,7 +201,7 @@
 <div class="flex flex-col gap-6">
   <div class="max-md:hidden">
     <a
-      href={resolve("/tasks")}
+      href={resolve("tasks")}
       class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -ms-1 inline-flex min-h-10 items-center gap-1.5 rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
@@ -213,6 +216,7 @@
       >
         {task.title}
       </h1>
+
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
         <DueBadge
           status={row.status}
@@ -257,6 +261,7 @@
     <div class="flex items-center gap-2 sm:flex-wrap">
       {#if !archived}
         <CompleteButton {task} variant="default" class="max-sm:flex-1" />
+
         <Button
           size="lg"
           variant="outline"
@@ -348,10 +353,8 @@
           <DropdownMenu.Item
             class="text-destructive focus:text-destructive min-h-10"
             onSelect={() => (deleteOpen = true)}
+            ><Trash2Icon /> {m.common_delete()}</DropdownMenu.Item
           >
-            <Trash2Icon />
-            {m.common_delete()}
-          </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     </div>
@@ -474,7 +477,7 @@
                     undoable
                     timeZone={data.timeZone}
                     {now}
-                    onundone={() => invalidateAll()}
+                    onundone={() => refreshAll()}
                   />
                 </li>
               {/each}

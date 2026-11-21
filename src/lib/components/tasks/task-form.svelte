@@ -15,11 +15,11 @@
     type RotationStrategy,
     type TaskCategory,
     type TaskPriority,
-  } from "$lib/api/enums";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { Asset } from "$lib/api/schemas/assets";
-  import type { Room } from "$lib/api/schemas/rooms";
+  } from "#lib/api/enums.ts";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Asset } from "#lib/api/schemas/assets.ts";
+  import type { Room } from "#lib/api/schemas/rooms.ts";
   import {
     TASK_TITLE_MAX,
     createTaskRequestSchema,
@@ -27,28 +27,28 @@
     type CreateTaskRequest,
     type TaskDetail,
     type UpdateTaskRequest,
-  } from "$lib/api/schemas/tasks";
-  import type { DirectoryUser } from "$lib/api/schemas/users";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { taskHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
-  import type { PreparationDraft } from "$lib/tasks/draft";
+  } from "#lib/api/schemas/tasks.ts";
+  import type { DirectoryUser } from "#lib/api/schemas/users.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import * as Alert from "#lib/components/ui/alert/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { taskHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { PreparationDraft } from "#lib/tasks/draft.ts";
   import {
     apiFieldErrors,
     errorsUnder,
     issuesToErrors,
-  } from "$lib/tasks/field-errors";
+  } from "#lib/tasks/field-errors.ts";
   import {
     categoryLabels,
     notifyModeLabels,
     priorityLabels,
-  } from "$lib/tasks/labels";
+  } from "#lib/tasks/labels.ts";
   import AssignmentEditor from "./assignment-editor.svelte";
   import Field from "./field.svelte";
   import NumberField from "./number-field.svelte";
@@ -313,7 +313,7 @@
           : m.task_created_toast({ title: saved.title }),
       );
       if (!prepsOk) toast.warning(m.task_form_preparations_failed());
-      await goto(taskHref(saved.id), { invalidateAll: true });
+      await goto(taskHref(saved.id), { refreshAll: true });
     } catch (err) {
       errors = apiFieldErrors(err);
       formError = apiErrorMessage(err);
@@ -555,9 +555,10 @@
         <Card.Title>{m.task_preparations()}</Card.Title>
         <Card.Description>{m.task_preparations_description()}</Card.Description>
       </Card.Header>
-      <Card.Content>
-        <PreparationEditor bind:preparations {errors} />
-      </Card.Content>
+
+      <Card.Content
+        ><PreparationEditor bind:preparations {errors} /></Card.Content
+      >
     </Card.Root>
   </div>
 
@@ -572,10 +573,10 @@
         size="lg"
         class="flex-1 sm:flex-none"
         disabled={pending}
-        href={task ? taskHref(task.id) : resolve("/tasks")}
+        href={task ? taskHref(task.id) : resolve("tasks")}
+        >{m.common_cancel()}</Button
       >
-        {m.common_cancel()}
-      </Button>
+
       <Button
         type="submit"
         size="lg"

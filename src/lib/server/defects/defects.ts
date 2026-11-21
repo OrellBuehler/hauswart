@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, or, sql, type SQL } from "drizzle-orm";
-import { addMonths } from "$lib/dates";
-import type { DefectSeverity, DefectStatus } from "$lib/api/enums";
+import { addMonths } from "#lib/dates.ts";
+import type { DefectSeverity, DefectStatus } from "#lib/api/enums.ts";
 import {
   ACTIVE_DEFECT_STATUSES,
   DEFECT_TRANSITIONS,
@@ -8,7 +8,7 @@ import {
   type ChangeDefectStatusRequest,
   type CreateDefectRequest,
   type UpdateDefectRequest,
-} from "$lib/api/schemas/defects";
+} from "#lib/api/schemas/defects.ts";
 import {
   assets,
   contacts,
@@ -18,21 +18,21 @@ import {
   tasks,
   users,
   type DB,
-} from "$lib/server/db";
-import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
-import { allCommentsOf, type Viewer } from "$lib/server/comments/comments";
-import { commentCountSql } from "$lib/server/comments/counts";
-import { costsOfSql, type CostsOf } from "$lib/server/costs/totals";
-import { getHousehold } from "$lib/server/household/household";
-import { paginateArray } from "$lib/server/pagination";
+} from "#lib/server/db.ts";
+import { removeOwnedAttachments } from "#lib/server/attachments/attachments.ts";
+import { allCommentsOf, type Viewer } from "#lib/server/comments/comments.ts";
+import { commentCountSql } from "#lib/server/comments/counts.ts";
+import { costsOfSql, type CostsOf } from "#lib/server/costs/totals.ts";
+import { getHousehold } from "#lib/server/household/household.ts";
+import { paginateArray } from "#lib/server/pagination.ts";
 import {
   conflict,
   invalidField,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
-import { clockAt } from "$lib/server/tasks/evaluator";
-import { deleteTask } from "$lib/server/tasks/tasks";
+} from "#lib/server/service.ts";
+import { clockAt } from "#lib/server/tasks/evaluator.ts";
+import { deleteTask } from "#lib/server/tasks/tasks.ts";
 import { syncReminder } from "./reminder";
 
 type Db = Pick<ServiceContext, "db">;

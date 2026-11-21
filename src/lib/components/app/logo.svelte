@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { cn } from "$lib/utils";
-  import { m } from "$lib/paraglide/messages";
+  import { cn } from "#lib/utils.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     class: className,

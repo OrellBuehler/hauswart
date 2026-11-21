@@ -21,13 +21,13 @@
 </script>
 
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages";
+  import { m } from "#lib/paraglide/messages.js";
   import { Dialog as SheetPrimitive } from "bits-ui";
   import XIcon from "@lucide/svelte/icons/x";
   import type { Snippet } from "svelte";
   import SheetPortal from "./sheet-portal.svelte";
   import SheetOverlay from "./sheet-overlay.svelte";
-  import { cn, type WithoutChildrenOrChild } from "$lib/utils.js";
+  import { cn, type WithoutChildrenOrChild } from "#lib/utils.js";
   import type { ComponentProps } from "svelte";
 
   let {

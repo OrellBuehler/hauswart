@@ -1,4 +1,4 @@
-import { addDays, weekday } from "$lib/dates";
+import { addDays, weekday } from "#lib/dates.ts";
 import type {
   CalendarTrigger,
   CounterDeltaTrigger,
@@ -11,7 +11,7 @@ import type {
   Trigger,
   TriggerType,
   WarrantyTrigger,
-} from "$lib/tasks/engine/types";
+} from "#lib/tasks/engine/types.ts";
 
 /** An auto-complete rule while it is being edited: the entity and thresholds may still be missing. */
 export type AutoCompleteRuleDraft =

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render } from "svelte/server";
-import type { CostBalances } from "$lib/api/schemas/costs";
+import type { CostBalances } from "#lib/api/schemas/costs.ts";
 import BalanceOverview from "./balance-overview.svelte";
 
 function balances(over: Partial<CostBalances> = {}): CostBalances {

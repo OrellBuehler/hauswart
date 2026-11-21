@@ -1,5 +1,5 @@
-import type { DocumentProviderKind } from "$lib/api/enums";
-import type { ResolvedConnection } from "$lib/server/connections/registry";
+import type { DocumentProviderKind } from "#lib/api/enums.ts";
+import type { ResolvedConnection } from "#lib/server/connections/registry.ts";
 
 /** What the core keeps of a document: the same shape whatever the provider is. */
 export interface ExternalDocumentMeta {

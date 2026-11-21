@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { statusLabels } from "$lib/tasks/labels";
-  import type { DueStatus } from "$lib/tasks/engine/types";
-  import { cn } from "$lib/utils";
+  import { statusLabels } from "#lib/tasks/labels.ts";
+  import type { DueStatus } from "#lib/tasks/engine/types.ts";
+  import { cn } from "#lib/utils.ts";
   import { statusTones } from "./tones";
 
   let {

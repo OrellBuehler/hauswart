@@ -1,7 +1,7 @@
 import type { z } from "zod";
-import type { endpoints } from "$lib/api/registry";
-import type { costRecurrenceSchema } from "$lib/api/schemas/cost-recurrences";
-import { toIso } from "$lib/api/schemas/common";
+import type { endpoints } from "#lib/api/registry.ts";
+import type { costRecurrenceSchema } from "#lib/api/schemas/cost-recurrences.ts";
+import { toIso } from "#lib/api/schemas/common.ts";
 import {
   bookDueRecurrences,
   createCostRecurrence,
@@ -11,7 +11,7 @@ import {
   runCostRecurrenceNow,
   updateCostRecurrence,
   type CostRecurrenceRecord,
-} from "$lib/server/costs/recurrences";
+} from "#lib/server/costs/recurrences.ts";
 import type { Handler } from "../bind";
 import { wireCost } from "./costs";
 

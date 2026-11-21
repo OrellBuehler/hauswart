@@ -1,6 +1,6 @@
 import { redirect } from "@sveltejs/kit";
-import { createApiClient } from "$lib/api/client";
-import { endpoints } from "$lib/api/registry";
+import { createApiClient } from "#lib/api/client.ts";
+import { endpoints } from "#lib/api/registry.ts";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ fetch }) => {

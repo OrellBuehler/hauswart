@@ -8,8 +8,8 @@ import type {
   OdometerUnit,
   TireSeason,
   VehicleFuelType,
-} from "$lib/api/enums";
-import { m } from "$lib/paraglide/messages";
+} from "#lib/api/enums.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 export const fuelLabels: Record<VehicleFuelType, () => string> = {
   petrol: () => m.vehicle_fuel_petrol(),

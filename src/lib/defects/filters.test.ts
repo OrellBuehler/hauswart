@@ -7,7 +7,7 @@ import {
   exportQuery,
   parseDefectFilters,
 } from "./filters";
-import type { Defect } from "$lib/api/schemas/defects";
+import type { Defect } from "#lib/api/schemas/defects.ts";
 
 const parse = (qs: string) => parseDefectFilters(new URLSearchParams(qs));
 

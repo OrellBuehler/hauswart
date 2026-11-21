@@ -2,29 +2,26 @@
   import PlusIcon from "@lucide/svelte/icons/plus";
   import UmbrellaIcon from "@lucide/svelte/icons/umbrella";
   import { resolve } from "$app/paths";
-  import type { InsurancePolicy } from "$lib/api/schemas/insurance";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { formatMoney } from "$lib/format-money";
-  import { insuranceTypeLabels } from "$lib/insurance/labels";
-  import { insuranceHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
+  import type { InsurancePolicy } from "#lib/api/schemas/insurance.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { insuranceTypeLabels } from "#lib/insurance/labels.ts";
+  import { insuranceHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import DeadlineHint from "./deadline-hint.svelte";
 
   let {
     assetId,
     policies,
     today,
-  }: {
-    assetId: string;
+
     /** The active policies that cover the asset. */
-    policies: InsurancePolicy[];
-    today: string;
-  } = $props();
+  }: { assetId: string; policies: InsurancePolicy[]; today: string } = $props();
 
   const newHref = $derived(
-    `${resolve("/insurance/new")}?assetId=${encodeURIComponent(assetId)}`,
+    `${resolve("insurance/new")}?assetId=${encodeURIComponent(assetId)}`,
   );
 </script>
 
@@ -84,6 +81,7 @@
                   >
                 </span>
               </span>
+
               <DeadlineHint deadline={policy.cancellationDeadline} {today} />
             </a>
           </li>

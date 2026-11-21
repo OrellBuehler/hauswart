@@ -2,7 +2,7 @@ import { z } from "zod";
 import {
   HostPolicyError,
   assertHostAllowed,
-} from "$lib/server/net/host-policy";
+} from "#lib/server/net/host-policy.ts";
 
 /**
  * Transport helpers shared by the integration clients: fetch with timeout and

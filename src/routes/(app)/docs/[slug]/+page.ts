@@ -1,8 +1,8 @@
-import { createApiClient } from "$lib/api/client";
-import { isApiError } from "$lib/api/errors";
-import { loadHousehold } from "$lib/api/household";
-import { orFail } from "$lib/api/load";
-import { endpoints } from "$lib/api/registry";
+import { createApiClient } from "#lib/api/client.ts";
+import { isApiError } from "#lib/api/errors.ts";
+import { loadHousehold } from "#lib/api/household.ts";
+import { orFail } from "#lib/api/load.ts";
+import { endpoints } from "#lib/api/registry.ts";
 import type { PageLoad } from "./$types";
 
 /** A linked asset or room that is gone is just not shown; any other failure is a real error. */

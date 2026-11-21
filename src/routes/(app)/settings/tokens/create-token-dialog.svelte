@@ -3,27 +3,27 @@
   import ShareIcon from "@lucide/svelte/icons/share-2";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import { toast } from "svelte-sonner";
-  import { SCOPES, type Scope } from "$lib/api/scopes";
-  import { endpoints } from "$lib/api/registry";
-  import { api } from "$lib/api/browser";
-  import { TOKEN_NAME_MAX } from "$lib/api/schemas/tokens";
-  import { CREATABLE_TOKEN_KINDS } from "$lib/api/schemas/tokens";
-  import CopyButton from "$lib/components/app/copy-button.svelte";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
+  import { SCOPES, type Scope } from "#lib/api/scopes.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import { api } from "#lib/api/browser.ts";
+  import { TOKEN_NAME_MAX } from "#lib/api/schemas/tokens.ts";
+  import { CREATABLE_TOKEN_KINDS } from "#lib/api/schemas/tokens.ts";
+  import CopyButton from "#lib/components/app/copy-button.svelte";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
   import {
     kindLabel,
     scopeHint,
     scopeLabel,
-  } from "$lib/components/app/token-labels";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-  import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import * as Select from "$lib/components/ui/select/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/components/app/token-labels.ts";
+  import * as Alert from "#lib/components/ui/alert/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Checkbox } from "#lib/components/ui/checkbox/index.js";
+  import * as Dialog from "#lib/components/ui/dialog/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import * as Select from "#lib/components/ui/select/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   type Kind = (typeof CREATABLE_TOKEN_KINDS)[number];
 

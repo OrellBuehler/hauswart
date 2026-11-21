@@ -1,4 +1,4 @@
-import type { DueStatus } from "$lib/tasks/engine/types";
+import type { DueStatus } from "#lib/tasks/engine/types.ts";
 
 /** Colours per due status: the dot, and the tinted pill with readable text in light and dark. */
 export const statusTones: Record<DueStatus, { dot: string; pill: string }> = {

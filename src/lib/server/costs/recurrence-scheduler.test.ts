@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createCostRecurrenceRequestSchema } from "$lib/api/schemas/cost-recurrences";
-import { at, ctxAt } from "$lib/testing/domain";
-import { useTestDB } from "$lib/testing/db";
-import type { ServiceContext } from "$lib/server/service";
+import { createCostRecurrenceRequestSchema } from "#lib/api/schemas/cost-recurrences.ts";
+import { at, ctxAt } from "#lib/testing/domain.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import { listCosts } from "./costs";
 import {
   RECURRENCE_INTERVAL_MS,

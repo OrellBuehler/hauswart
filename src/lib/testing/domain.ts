@@ -1,9 +1,9 @@
 import type { z } from "zod";
-import { zonedTimeToInstant } from "$lib/dates";
-import type { DB } from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
-import { createTask, type TaskRecord } from "$lib/server/tasks/tasks";
-import { createTaskRequestSchema } from "$lib/api/schemas/tasks";
+import { zonedTimeToInstant } from "#lib/dates.ts";
+import type { DB } from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
+import { createTask, type TaskRecord } from "#lib/server/tasks/tasks.ts";
+import { createTaskRequestSchema } from "#lib/api/schemas/tasks.ts";
 
 export const TEST_TZ = "Europe/Zurich";
 

@@ -1,20 +1,20 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import PuzzleIcon from "@lucide/svelte/icons/puzzle";
   import UnlinkIcon from "@lucide/svelte/icons/unlink";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { AssetPart } from "$lib/api/schemas/parts";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import AssetPartDialog from "$lib/components/parts/asset-part-dialog.svelte";
-  import PartFormDialog from "$lib/components/parts/part-form-dialog.svelte";
-  import PartRow from "$lib/components/parts/part-row.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { AssetPart } from "#lib/api/schemas/parts.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import AssetPartDialog from "#lib/components/parts/asset-part-dialog.svelte";
+  import PartFormDialog from "#lib/components/parts/part-form-dialog.svelte";
+  import PartRow from "#lib/components/parts/part-row.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     assetId,
@@ -35,7 +35,7 @@
     } catch (err) {
       toast.error(apiErrorMessage(err));
     }
-    await invalidateAll();
+    await refreshAll();
   }
 
   async function relink(partId: string) {
@@ -48,7 +48,7 @@
     } catch (err) {
       toast.error(apiErrorMessage(err));
     }
-    await invalidateAll();
+    await refreshAll();
   }
 
   async function unlink(link: AssetPart) {
@@ -58,7 +58,7 @@
       await api.call(endpoints.assetPartsUnlink, {
         params: { id: assetId, partId: link.partId },
       });
-      await invalidateAll();
+      await refreshAll();
       toast.success(m.part_unlinked_toast({ name: link.part.name }), {
         action: {
           label: m.common_undo(),
@@ -123,6 +123,6 @@
   {assetId}
   excludeIds={parts.map((link) => link.partId)}
   oncreatenew={() => (createOpen = true)}
-  onlinked={() => invalidateAll()}
+  onlinked={() => refreshAll()}
 />
 <PartFormDialog bind:open={createOpen} {currency} onsaved={linkCreated} />

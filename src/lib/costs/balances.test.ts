@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { CostBalances, DashboardBalances } from "$lib/api/schemas/costs";
+import type {
+  CostBalances,
+  DashboardBalances,
+} from "#lib/api/schemas/costs.ts";
 import {
   balanceState,
   balanceTone,

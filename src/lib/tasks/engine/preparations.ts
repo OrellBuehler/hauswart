@@ -1,4 +1,4 @@
-import { addDays } from "$lib/dates";
+import { addDays } from "#lib/dates.ts";
 import { shownDate } from "./shown";
 import { evalPredicate } from "./state-condition";
 import type { ConditionOp, DueResult, Signals } from "./types";

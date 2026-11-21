@@ -3,11 +3,11 @@
   import ShieldCheckIcon from "@lucide/svelte/icons/shield-check";
   import ShieldQuestionMarkIcon from "@lucide/svelte/icons/shield-question-mark";
   import ShieldXIcon from "@lucide/svelte/icons/shield-x";
-  import type { WarrantyInfo, WarrantyStatus } from "$lib/assets/warranty";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { formatDay } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import type { WarrantyInfo, WarrantyStatus } from "#lib/assets/warranty.ts";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { formatDay } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     info,

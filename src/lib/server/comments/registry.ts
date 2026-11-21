@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import type { CommentEntityType } from "$lib/api/enums";
+import type { CommentEntityType } from "#lib/api/enums.ts";
 import {
   appointments,
   assetHints,
@@ -14,7 +14,7 @@ import {
   serviceLog,
   tasks,
   type DB,
-} from "$lib/server/db";
+} from "#lib/server/db.ts";
 
 /**
  * What a kind of entity must offer to be commented on: whether an id exists,

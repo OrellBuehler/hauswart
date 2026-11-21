@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { addMonths } from "$lib/dates";
-import { createCaller, errorCode } from "$lib/testing/api";
+import { addMonths } from "#lib/dates.ts";
+import { createCaller, errorCode } from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { today } from "$lib/testing/dates";
-import { useTestDB } from "$lib/testing/db";
+} from "#lib/testing/auth.ts";
+import { today } from "#lib/testing/dates.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 
 interface Recurrence {
   id: string;

@@ -3,15 +3,15 @@
   import CircleCheckIcon from "@lucide/svelte/icons/circle-check";
   import InfoIcon from "@lucide/svelte/icons/info";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
-  import type { CostBalances } from "$lib/api/schemas/costs";
+  import type { CostBalances } from "#lib/api/schemas/costs.ts";
   import {
     balanceState,
     crossBookNote,
     viewerLine,
     type BalanceTone,
-  } from "$lib/costs/balances";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/costs/balances.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import SuggestedPayments from "./suggested-payments.svelte";
 
   let {

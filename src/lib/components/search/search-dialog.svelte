@@ -2,20 +2,20 @@
   import CornerDownLeftIcon from "@lucide/svelte/icons/corner-down-left";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import SearchIcon from "@lucide/svelte/icons/search";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import * as Command from "$lib/components/ui/command/index.js";
-  import { searchHref } from "$lib/docs/links";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import * as Command from "#lib/components/ui/command/index.js";
+  import { searchHref } from "#lib/docs/links.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     groupHits,
     hitIcons,
     hitLabels,
     safeHitUrl,
     type SearchHit,
-  } from "$lib/search/types";
+  } from "#lib/search/types.ts";
 
   let { open = $bindable(false) }: { open?: boolean } = $props();
 

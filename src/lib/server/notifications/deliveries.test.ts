@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { notificationDeliveries, notifications } from "$lib/server/db";
-import { completeTask } from "$lib/server/tasks/completions";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, everyDays, makeTask } from "$lib/testing/domain";
+import { notificationDeliveries, notifications } from "#lib/server/db.ts";
+import { completeTask } from "#lib/server/tasks/completions.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, everyDays, makeTask } from "#lib/testing/domain.ts";
 import { hashActionToken } from "./actions";
 import {
   registerNotificationChannel,

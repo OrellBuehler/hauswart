@@ -1,14 +1,17 @@
 <script lang="ts">
-  import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatNumber } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
-  import { completeTask } from "$lib/tasks/actions";
-  import { readingToSend } from "$lib/vehicles/odometer-input";
-  import { refusedMessage, refusedReading } from "$lib/vehicles/odometer-error";
-  import { VehicleReading } from "$lib/vehicles/odometer-state.svelte";
+  import { MAX_ODOMETER_VALUE } from "#lib/api/schemas/vehicles.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatNumber } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
+  import { completeTask } from "#lib/tasks/actions.ts";
+  import { readingToSend } from "#lib/vehicles/odometer-input.ts";
+  import {
+    refusedMessage,
+    refusedReading,
+  } from "#lib/vehicles/odometer-error.ts";
+  import { VehicleReading } from "#lib/vehicles/odometer-state.svelte.ts";
   import OdometerReadingField from "./odometer-reading-field.svelte";
 
   let {

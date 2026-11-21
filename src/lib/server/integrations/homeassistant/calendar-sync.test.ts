@@ -3,21 +3,21 @@ import {
   createAppointment,
   deleteAppointment,
   updateAppointment,
-} from "$lib/server/appointments/appointments";
-import { calendarLinks } from "$lib/server/db";
-import { calendarTargetConfigSchema } from "$lib/api/schemas/calendar-sync";
-import { registerCalendarProvider } from "$lib/server/calendar-sync/provider";
-import { listLinks } from "$lib/server/calendar-sync/links";
-import { syncTarget } from "$lib/server/calendar-sync/sync";
+} from "#lib/server/appointments/appointments.ts";
+import { calendarLinks } from "#lib/server/db.ts";
+import { calendarTargetConfigSchema } from "#lib/api/schemas/calendar-sync.ts";
+import { registerCalendarProvider } from "#lib/server/calendar-sync/provider.ts";
+import { listLinks } from "#lib/server/calendar-sync/links.ts";
+import { syncTarget } from "#lib/server/calendar-sync/sync.ts";
 import {
   createTarget,
   deleteTarget,
   type Caller,
-} from "$lib/server/calendar-sync/targets";
-import { getTargetRow } from "$lib/server/calendar-sync/store";
-import { completeTask } from "$lib/server/tasks/completions";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, everyDays, makeTask, NOW } from "$lib/testing/domain";
+} from "#lib/server/calendar-sync/targets.ts";
+import { getTargetRow } from "#lib/server/calendar-sync/store.ts";
+import { completeTask } from "#lib/server/tasks/completions.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, everyDays, makeTask, NOW } from "#lib/testing/domain.ts";
 import { createCalendarProvider } from "./calendar-provider";
 import {
   CREATE_DELETE_CALENDAR,

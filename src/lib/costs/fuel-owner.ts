@@ -1,4 +1,4 @@
-import { isApiError } from "$lib/api/errors";
+import { isApiError } from "#lib/api/errors.ts";
 
 /**
  * The fuel log entry that owns a cost entry, when a change or a delete was refused for that reason: a

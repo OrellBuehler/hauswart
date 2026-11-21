@@ -1,4 +1,4 @@
-import { setLenientHostPolicy } from "$lib/server/net/host-policy";
+import { setLenientHostPolicy } from "#lib/server/net/host-policy.ts";
 import { describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import {
@@ -6,17 +6,17 @@ import {
   docPages,
   documentLinks,
   externalDocuments,
-} from "$lib/server/db";
-import { createCaller, errorCode } from "$lib/testing/api";
+} from "#lib/server/db.ts";
+import { createCaller, errorCode } from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { createPolicy, deletePolicy } from "$lib/server/insurance/policies";
-import { allowIntegrationHosts } from "$lib/testing/integrations";
-import { makeAsset } from "$lib/testing/documents";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { createPolicy, deletePolicy } from "#lib/server/insurance/policies.ts";
+import { allowIntegrationHosts } from "#lib/testing/integrations.ts";
+import { makeAsset } from "#lib/testing/documents.ts";
 import { syncAll } from "./sync";
 import { TEST_CONFIG, seedTaxonomy, useFakePaperless } from "./testing";
 

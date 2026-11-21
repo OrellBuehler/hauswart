@@ -1,4 +1,4 @@
-import { daysUntil } from "$lib/format";
+import { daysUntil } from "#lib/format.ts";
 
 /** From this many days on the deadline is "soon": about when the reminder task starts its preparation. */
 export const DEADLINE_SOON_DAYS = 30;

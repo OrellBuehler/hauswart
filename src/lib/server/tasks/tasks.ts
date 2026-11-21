@@ -1,40 +1,40 @@
 import { and, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
-import type { DueStatus } from "$lib/tasks/engine";
+import type { DueStatus } from "#lib/tasks/engine/index.ts";
 import {
   evaluateTask,
   shownDate,
   triggerSchema,
   type Trigger,
-} from "$lib/tasks/engine";
-import { zonedTimeToInstant } from "$lib/dates";
-import type { TaskCategory } from "$lib/api/enums";
+} from "#lib/tasks/engine/index.ts";
+import { zonedTimeToInstant } from "#lib/dates.ts";
+import type { TaskCategory } from "#lib/api/enums.ts";
 import type {
   CreateTaskRequest,
   NextAppointment,
   UpdateTaskRequest,
-} from "$lib/api/schemas/tasks";
+} from "#lib/api/schemas/tasks.ts";
 import {
   nextAppointmentSql,
   parseNextAppointment,
-} from "$lib/server/appointments/next";
-import { openNoteCountSql } from "$lib/server/asset-notes/counts";
-import { commentCountSql } from "$lib/server/comments/counts";
-import { assets, rooms, taskState, tasks, users } from "$lib/server/db";
-import { parseStored } from "$lib/server/json";
-import { getHousehold } from "$lib/server/household/household";
-import { paginateArray } from "$lib/server/pagination";
+} from "#lib/server/appointments/next.ts";
+import { openNoteCountSql } from "#lib/server/asset-notes/counts.ts";
+import { commentCountSql } from "#lib/server/comments/counts.ts";
+import { assets, rooms, taskState, tasks, users } from "#lib/server/db.ts";
+import { parseStored } from "#lib/server/json.ts";
+import { getHousehold } from "#lib/server/household/household.ts";
+import { paginateArray } from "#lib/server/pagination.ts";
 import {
   conflict,
   invalidField,
   isUniqueViolation,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
-import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
-import { signalNeedsChanged } from "$lib/server/signals/watch";
+} from "#lib/server/service.ts";
+import { removeOwnedAttachments } from "#lib/server/attachments/attachments.ts";
+import { signalNeedsChanged } from "#lib/server/signals/watch.ts";
 import { clockAt, evaluateTaskById } from "./evaluator";
 import { toStateRecord, type StateRow, type TaskStateRecord } from "./state";
-import type { DueResult } from "$lib/tasks/engine";
+import type { DueResult } from "#lib/tasks/engine/index.ts";
 
 export type TaskRow = typeof tasks.$inferSelect;
 

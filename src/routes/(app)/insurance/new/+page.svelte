@@ -1,10 +1,10 @@
 <script lang="ts">
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
   import { resolve } from "$app/paths";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import PolicyForm from "$lib/components/insurance/policy-form.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import PolicyForm from "#lib/components/insurance/policy-form.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -17,7 +17,7 @@
 <div class="flex flex-col gap-6">
   <div class="flex flex-col gap-4">
     <Button
-      href={resolve("/insurance")}
+      href={resolve("insurance")}
       variant="ghost"
       size="sm"
       class="text-muted-foreground -ms-2 w-fit max-md:hidden"

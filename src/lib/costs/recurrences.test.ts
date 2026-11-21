@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { CostBook } from "$lib/api/schemas/cost-books";
-import type { CostRecurrence } from "$lib/api/schemas/cost-recurrences";
+import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+import type { CostRecurrence } from "#lib/api/schemas/cost-recurrences.ts";
 import { RECURRENCE_BOOKING_CAP, type RecurrenceRule } from "./recurrence";
 import {
   buildRecurrenceCreateBody,
@@ -26,7 +26,7 @@ import {
   withStartDate,
   type RecurrenceDraft,
 } from "./recurrences";
-import { ApiError } from "$lib/api/errors";
+import { ApiError } from "#lib/api/errors.ts";
 
 const TODAY = "2026-10-12";
 const USERS = ["u1", "u2", "u3"];

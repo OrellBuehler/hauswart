@@ -1,5 +1,5 @@
-import { endpoints } from "$lib/api/registry";
-import { bind } from "$lib/server/api/bind";
-import { search } from "$lib/server/api/handlers/search";
+import { endpoints } from "#lib/api/registry.ts";
+import { bind } from "#lib/server/api/bind.ts";
+import { search } from "#lib/server/api/handlers/search.ts";
 
 export const GET = bind(endpoints.search, search);

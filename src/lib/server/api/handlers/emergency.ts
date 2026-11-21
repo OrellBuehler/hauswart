@@ -1,6 +1,6 @@
-import type { endpoints } from "$lib/api/registry";
-import { getEmergency } from "$lib/server/emergency/emergency";
-import { exportEmergencyPdf } from "$lib/server/emergency/pdf";
+import type { endpoints } from "#lib/api/registry.ts";
+import { getEmergency } from "#lib/server/emergency/emergency.ts";
+import { exportEmergencyPdf } from "#lib/server/emergency/pdf.ts";
 import type { Handler } from "../bind";
 import { wireEmergency } from "../wire-share";
 

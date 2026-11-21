@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { AssetKind } from "$lib/api/enums";
-  import { cn } from "$lib/utils";
+  import type { AssetKind } from "#lib/api/enums.ts";
+  import { cn } from "#lib/utils.ts";
   import AssetKindIcon from "./asset-kind-icon.svelte";
 
   let {

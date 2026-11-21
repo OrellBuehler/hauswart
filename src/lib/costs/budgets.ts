@@ -1,18 +1,18 @@
-import type { CostBudgetPeriod, CostCategory } from "$lib/api/enums";
-import { isApiError } from "$lib/api/errors";
+import type { CostBudgetPeriod, CostCategory } from "#lib/api/enums.ts";
+import { isApiError } from "#lib/api/errors.ts";
 import {
   type CostBudget,
   type CostBudgetState,
   type CostBudgetStatusItem,
   type CreateCostBudgetRequest,
   type UpdateCostBudgetRequest,
-} from "$lib/api/schemas/cost-budgets";
-import { addMonths, formatDate, parseDate } from "$lib/dates";
-import { monthName } from "$lib/format";
-import { formatMoney } from "$lib/format-money";
-import { currencyExponent, minor, toDecimalString } from "$lib/money";
-import { m } from "$lib/paraglide/messages";
-import { apiFieldErrors } from "$lib/tasks/field-errors";
+} from "#lib/api/schemas/cost-budgets.ts";
+import { addMonths, formatDate, parseDate } from "#lib/dates.ts";
+import { monthName } from "#lib/format.ts";
+import { formatMoney } from "#lib/format-money.ts";
+import { currencyExponent, minor, toDecimalString } from "#lib/money.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
 import { parseDraftAmount, type BuiltBody } from "./form";
 import { categoryLabels } from "./labels";
 

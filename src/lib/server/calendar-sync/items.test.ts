@@ -1,24 +1,29 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import type { CalendarItemKind } from "$lib/api/enums";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { calendarTargetConfigSchema } from "$lib/api/schemas/calendar-sync";
-import { createDefectRequestSchema } from "$lib/api/schemas/defects";
-import { createInsurancePolicyRequestSchema } from "$lib/api/schemas/insurance";
+import type { CalendarItemKind } from "#lib/api/enums.ts";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { calendarTargetConfigSchema } from "#lib/api/schemas/calendar-sync.ts";
+import { createDefectRequestSchema } from "#lib/api/schemas/defects.ts";
+import { createInsurancePolicyRequestSchema } from "#lib/api/schemas/insurance.ts";
 import {
   createAppointment,
   updateAppointment,
   type CreateAppointmentInput,
-} from "$lib/server/appointments/appointments";
-import { createAsset } from "$lib/server/assets/assets";
-import { appointments, assets, insurancePolicies, tasks } from "$lib/server/db";
-import { createDefect } from "$lib/server/defects/defects";
-import { createPolicy } from "$lib/server/insurance/policies";
-import { createRoom } from "$lib/server/rooms/rooms";
-import { createPreparation } from "$lib/server/tasks/preparations";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, everyDays, makeTask, NOW } from "$lib/testing/domain";
+} from "#lib/server/appointments/appointments.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import {
+  appointments,
+  assets,
+  insurancePolicies,
+  tasks,
+} from "#lib/server/db.ts";
+import { createDefect } from "#lib/server/defects/defects.ts";
+import { createPolicy } from "#lib/server/insurance/policies.ts";
+import { createRoom } from "#lib/server/rooms/rooms.ts";
+import { createPreparation } from "#lib/server/tasks/preparations.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, everyDays, makeTask, NOW } from "#lib/testing/domain.ts";
 import {
   buildDesiredItems,
   horizon,

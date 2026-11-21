@@ -1,9 +1,9 @@
 <script lang="ts">
   import EyeIcon from "@lucide/svelte/icons/eye";
-  import type { CostEntry } from "$lib/api/schemas/costs";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import type { CostEntry } from "#lib/api/schemas/costs.ts";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import { hasCostFlags } from "./cost-flags";
 
   let {

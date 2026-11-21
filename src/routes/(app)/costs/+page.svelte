@@ -19,33 +19,33 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { COST_CATEGORIES } from "$lib/api/enums";
-  import { endpointUrl } from "$lib/api/client";
-  import { endpoints } from "$lib/api/registry";
-  import { MOVE_COSTS_MAX_IDS } from "$lib/api/schemas/costs";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import Fab from "$lib/components/app/fab.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import CommentCount from "$lib/components/comments/comment-count.svelte";
-  import BookFormDialog from "$lib/components/costs/book-form-dialog.svelte";
-  import BookSwitcher from "$lib/components/costs/book-switcher.svelte";
-  import CostAmount from "$lib/components/costs/cost-amount.svelte";
-  import CostFlags from "$lib/components/costs/cost-flags.svelte";
-  import CostRow from "$lib/components/costs/cost-row.svelte";
-  import CostsReport from "$lib/components/costs/costs-report.svelte";
-  import CostsSummary from "$lib/components/costs/costs-summary.svelte";
-  import MoveCostsDialog from "$lib/components/costs/move-costs-dialog.svelte";
-  import TagChips from "$lib/components/costs/tag-chips.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import * as Table from "$lib/components/ui/table/index.js";
-  import * as Tabs from "$lib/components/ui/tabs/index.js";
-  import { rememberBook } from "$lib/costs/book-memory";
-  import { bookParam, openBooks } from "$lib/costs/books";
+  import { COST_CATEGORIES } from "#lib/api/enums.ts";
+  import { endpointUrl } from "#lib/api/client.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import { MOVE_COSTS_MAX_IDS } from "#lib/api/schemas/costs.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import Fab from "#lib/components/app/fab.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import CommentCount from "#lib/components/comments/comment-count.svelte";
+  import BookFormDialog from "#lib/components/costs/book-form-dialog.svelte";
+  import BookSwitcher from "#lib/components/costs/book-switcher.svelte";
+  import CostAmount from "#lib/components/costs/cost-amount.svelte";
+  import CostFlags from "#lib/components/costs/cost-flags.svelte";
+  import CostRow from "#lib/components/costs/cost-row.svelte";
+  import CostsReport from "#lib/components/costs/costs-report.svelte";
+  import CostsSummary from "#lib/components/costs/costs-summary.svelte";
+  import MoveCostsDialog from "#lib/components/costs/move-costs-dialog.svelte";
+  import TagChips from "#lib/components/costs/tag-chips.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Checkbox } from "#lib/components/ui/checkbox/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import * as Table from "#lib/components/ui/table/index.js";
+  import * as Tabs from "#lib/components/ui/tabs/index.js";
+  import { rememberBook } from "#lib/costs/book-memory.ts";
+  import { bookParam, openBooks } from "#lib/costs/books.ts";
   import {
     MAX_YEAR,
     MIN_YEAR,
@@ -57,17 +57,17 @@
     reviewFilters,
     yearOptions,
     type CostFilters,
-  } from "$lib/costs/filters";
-  import { categoryLabels } from "$lib/costs/labels";
-  import { moveSummary, pickAll, type MoveTarget } from "$lib/costs/move";
-  import { formatDay, monthName } from "$lib/format";
-  import { formatMoney } from "$lib/format-money";
+  } from "#lib/costs/filters.ts";
+  import { categoryLabels } from "#lib/costs/labels.ts";
+  import { moveSummary, pickAll, type MoveTarget } from "#lib/costs/move.ts";
+  import { formatDay, monthName } from "#lib/format.ts";
+  import { formatMoney } from "#lib/format-money.ts";
   import {
     gotoFromOverlay,
     invalidateAfterOverlay,
-  } from "$lib/overlays/use-overlay-history.svelte";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/overlays/use-overlay-history.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -81,7 +81,7 @@
     filters.reviewNeeded
       ? undefined
       : resolve(
-          `/costs${costFilterQuery(reviewFilters(filters), data.defaultYear)}` as "/",
+          `costs${costFilterQuery(reviewFilters(filters), data.defaultYear)}`,
         ),
   );
   const reviewCount = $derived(
@@ -108,17 +108,17 @@
   );
   const newHref = $derived(
     resolve(
-      `/costs/new${filters.bookId ? `?book=${encodeURIComponent(filters.bookId)}` : ""}` as "/",
+      `costs/new${filters.bookId ? `?book=${encodeURIComponent(filters.bookId)}` : ""}`,
     ),
   );
   const quickHref = $derived(
     resolve(
-      `/costs/quick${filters.bookId ? `?book=${encodeURIComponent(filters.bookId)}` : ""}` as "/",
+      `costs/quick${filters.bookId ? `?book=${encodeURIComponent(filters.bookId)}` : ""}`,
     ),
   );
   const balancesHref = $derived(
     resolve(
-      `/costs/balances?book=${encodeURIComponent(bookParam(filters.bookId))}` as "/",
+      `costs/balances?book=${encodeURIComponent(bookParam(filters.bookId))}`,
     ),
   );
   const expensesShown = $derived(
@@ -138,6 +138,7 @@
         }
       : undefined,
   );
+
   const showInbox = $derived(
     data.financeConnected || data.pendingSuggestions > 0,
   );
@@ -235,16 +236,16 @@
 
   function bookHref(bookId: string): string {
     return resolve(
-      `/costs${costFilterQuery({ ...filters, bookId }, data.defaultYear)}` as "/",
+      `costs${costFilterQuery({ ...filters, bookId }, data.defaultYear)}`,
     );
   }
 
   async function bookCreated(created: { id: string }) {
     await gotoFromOverlay(
       resolve(
-        `/costs${costFilterQuery({ ...filters, bookId: created.id }, data.defaultYear)}` as "/",
+        `costs${costFilterQuery({ ...filters, bookId: created.id }, data.defaultYear)}`,
       ),
-      { invalidateAll: true },
+      { refreshAll: true },
     );
   }
 
@@ -261,10 +262,10 @@
       next.allYears = false;
     }
     next.allYears = next.allYears && next.reviewNeeded;
-    await goto(
-      resolve(`/costs${costFilterQuery(next, data.defaultYear)}` as "/"),
-      { keepFocus: true, noScroll: true, replaceState: replace },
-    );
+    await goto(resolve(`costs${costFilterQuery(next, data.defaultYear)}`), {
+      reset: false,
+      replace,
+    });
   }
 
   function onSearchInput() {
@@ -357,7 +358,7 @@
   <PageHeader title={m.costs_title()} description={m.costs_description()}>
     {#snippet actions()}
       {#if showInbox}
-        <Button href={resolve("/costs/inbox")} variant="outline" size="lg">
+        <Button href={resolve("costs/inbox")} variant="outline" size="lg">
           <InboxIcon />
           {m.costs_inbox()}
           {#if data.pendingSuggestions > 0}
@@ -374,7 +375,8 @@
           {/if}
         </Button>
       {/if}
-      <Button href={resolve("/costs/receipts")} variant="outline" size="lg">
+
+      <Button href={resolve("costs/receipts")} variant="outline" size="lg">
         <ReceiptTextIcon />
         {m.costs_receipts()}
         {#if data.pendingReceipts !== null && data.pendingReceipts > 0}
@@ -389,14 +391,15 @@
           >
         {/if}
       </Button>
-      <Button href={resolve("/costs/budgets")} variant="outline" size="lg">
-        <GaugeIcon />
-        {m.costs_budgets()}
-      </Button>
-      <Button href={resolve("/costs/recurring")} variant="outline" size="lg">
-        <RepeatIcon />
-        {m.costs_recurring()}
-      </Button>
+
+      <Button href={resolve("costs/budgets")} variant="outline" size="lg"
+        ><GaugeIcon /> {m.costs_budgets()}</Button
+      >
+
+      <Button href={resolve("costs/recurring")} variant="outline" size="lg"
+        ><RepeatIcon /> {m.costs_recurring()}</Button
+      >
+
       <Button
         href={csvHref}
         download
@@ -654,10 +657,8 @@
                 variant="outline"
                 size="lg"
                 onclick={() => (selecting = true)}
+                ><ListChecksIcon /> {m.costs_select()}</Button
               >
-                <ListChecksIcon />
-                {m.costs_select()}
-              </Button>
             {/if}
             {#if assetName}
               <Button variant="outline" size="lg" onclick={moveAssetEntries}>
@@ -790,7 +791,7 @@
                       >
                     {:else}
                       <a
-                        href={resolve(`/costs/${cost.id}` as "/")}
+                        href={resolve(`costs/${cost.id}`)}
                         class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 rounded-sm font-medium wrap-anywhere outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
                         >{cost.title}</a
                       >

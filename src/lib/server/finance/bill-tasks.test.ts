@@ -1,15 +1,15 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { taskCompletions, tasks } from "$lib/server/db";
+import { taskCompletions, tasks } from "#lib/server/db.ts";
 import {
   saveConnection,
   deleteConnection,
-} from "$lib/server/connections/connections";
-import { completeTask } from "$lib/server/tasks/completions";
-import { updateTask, getTask } from "$lib/server/tasks/tasks";
-import { createTestUser } from "$lib/testing/auth";
-import { ctxAt, NOW } from "$lib/testing/domain";
-import { useTestDB } from "$lib/testing/db";
+} from "#lib/server/connections/connections.ts";
+import { completeTask } from "#lib/server/tasks/completions.ts";
+import { updateTask, getTask } from "#lib/server/tasks/tasks.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { ctxAt, NOW } from "#lib/testing/domain.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import {
   FINANCE_BILL_SOURCE,
   FINISHED_BILL_TASK_DAYS,

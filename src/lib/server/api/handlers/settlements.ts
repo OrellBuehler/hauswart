@@ -1,7 +1,7 @@
 import type { z } from "zod";
-import type { endpoints } from "$lib/api/registry";
-import { toIso } from "$lib/api/schemas/common";
-import type { settlementSchema } from "$lib/api/schemas/settlements";
+import type { endpoints } from "#lib/api/registry.ts";
+import { toIso } from "#lib/api/schemas/common.ts";
+import type { settlementSchema } from "#lib/api/schemas/settlements.ts";
 import {
   deleteSettlement,
   getSettlement,
@@ -9,7 +9,7 @@ import {
   recordSettlement,
   updateSettlement,
   type SettlementRecord,
-} from "$lib/server/costs/settlements";
+} from "#lib/server/costs/settlements.ts";
 import { reply, type Handler } from "../bind";
 
 export function wireSettlement(

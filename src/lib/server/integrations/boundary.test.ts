@@ -55,7 +55,7 @@ describe("integration boundary", () => {
     ].map((m) => m[1]);
     for (const spec of imports) {
       expect(spec, "import the adapter's index, not its internals").toMatch(
-        /^\$lib\/server\/integrations\/[a-z0-9-]+$/,
+        /^#lib\/server\/integrations\/[a-z0-9-]+\/index\.ts$/,
       );
     }
   });
@@ -102,7 +102,7 @@ describe("integration boundary", () => {
       .filter((f) => f.path.startsWith("lib/server/integrations/"))
       .filter((f) => !f.path.endsWith(".test.ts"))
       .filter((f) =>
-        /from\s+["'](?:\$lib\/server\/api\/|\$app\/|(?:\.\.\/)+routes\/)/.test(
+        /from\s+["'](?:#lib\/server\/api\/|\$app\/|(?:\.\.\/)+routes\/)/.test(
           f.text,
         ),
       )

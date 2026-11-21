@@ -1,39 +1,39 @@
-import type { Handle, HandleServerError } from "@sveltejs/kit";
-import { ApiError } from "$lib/api/errors";
-import { paraglideMiddleware } from "$lib/paraglide/server";
-import { householdTimeZone } from "$lib/server/config";
-import { assertSecretKeyConfigured } from "$lib/server/crypto";
-import { runMigrations } from "$lib/server/db";
-import { registerDomainEventHandlers } from "$lib/server/domain-events";
-import { warmDummyHash } from "$lib/server/auth/password";
-import { startCredentialPurge } from "$lib/server/auth/purge";
+import type { Handle, HandleServerError } from "@sveltejs/kit/hooks";
+import { ApiError } from "#lib/api/errors.ts";
+import { paraglideMiddleware } from "#lib/paraglide/server.js";
+import { householdTimeZone } from "#lib/server/config.ts";
+import { assertSecretKeyConfigured } from "#lib/server/crypto.ts";
+import { runMigrations } from "#lib/server/db.ts";
+import { registerDomainEventHandlers } from "#lib/server/domain-events.ts";
+import { warmDummyHash } from "#lib/server/auth/password.ts";
+import { startCredentialPurge } from "#lib/server/auth/purge.ts";
 import {
   clearedSessionCookieHeader,
   deleteSessionCookie,
   setSessionCookie,
   SESSION_COOKIE,
   validateSessionToken,
-} from "$lib/server/auth/sessions";
-import { crossSiteWriteResponse } from "$lib/server/auth/origin";
-import { verifyToken } from "$lib/server/auth/tokens";
+} from "#lib/server/auth/sessions.ts";
+import { crossSiteWriteResponse } from "#lib/server/auth/origin.ts";
+import { verifyToken } from "#lib/server/auth/tokens.ts";
 import {
   isApiPath,
   isBearerPath,
   isPublicPath,
   isScriptlessPath,
-} from "$lib/server/auth/routing";
-import { startFileSweeper } from "$lib/server/attachments/sweeper";
-import { withGuestHeaders } from "$lib/server/share/guest-http";
-import { registerBackups } from "$lib/server/backup";
-import { registerCalendarSync } from "$lib/server/calendar-sync";
-import { registerCostRecurrences } from "$lib/server/costs/recurrence-scheduler";
-import { startAttachmentRerender } from "$lib/server/docs/pages";
-import { registerHomeAssistant } from "$lib/server/integrations/homeassistant";
-import { registerKept } from "$lib/server/integrations/kept";
-import { registerPaperless } from "$lib/server/integrations/paperless";
-import { registerSignalWorker } from "$lib/server/signals/worker";
-import { registerEvaluator } from "$lib/server/tasks/scheduler";
-import { countUsers } from "$lib/server/users/users";
+} from "#lib/server/auth/routing.ts";
+import { startFileSweeper } from "#lib/server/attachments/sweeper.ts";
+import { withGuestHeaders } from "#lib/server/share/guest-http.ts";
+import { registerBackups } from "#lib/server/backup/index.ts";
+import { registerCalendarSync } from "#lib/server/calendar-sync/index.ts";
+import { registerCostRecurrences } from "#lib/server/costs/recurrence-scheduler.ts";
+import { startAttachmentRerender } from "#lib/server/docs/pages.ts";
+import { registerHomeAssistant } from "#lib/server/integrations/homeassistant/index.ts";
+import { registerKept } from "#lib/server/integrations/kept/index.ts";
+import { registerPaperless } from "#lib/server/integrations/paperless/index.ts";
+import { registerSignalWorker } from "#lib/server/signals/worker.ts";
+import { registerEvaluator } from "#lib/server/tasks/scheduler.ts";
+import { countUsers } from "#lib/server/users/users.ts";
 
 export async function init() {
   assertSecretKeyConfigured();
@@ -156,8 +156,9 @@ const withLocale = (
   event: Parameters<Handle>[0]["event"],
   resolve: Resolve,
 ): Promise<Response> =>
-  paraglideMiddleware(event.request, ({ request, locale }) => {
-    event.request = request;
+  // The strategies (cookie, browser language) leave the address alone, so `event.request` stays as
+  // it is (SvelteKit 3 makes it read-only); Paraglide hands back only a copy of it.
+  paraglideMiddleware(event.request, ({ locale }) => {
     const scriptless = isScriptlessPath(event.url.pathname);
     return resolve(event, {
       transformPageChunk: ({ html }) => {
@@ -214,10 +215,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   try {
     response =
       refused ??
-      (await authHandle({
-        event,
-        resolve: (e) => withLocale(e, resolve),
-      }));
+      (await authHandle({ event, resolve: (e) => withLocale(e, resolve) }));
   } catch (error) {
     if (!isApiPath(event.url.pathname)) throw error;
     // Name only: messages and stacks can contain user data and paths.
@@ -235,17 +233,19 @@ export const handle: Handle = async ({ event, resolve }) => {
     : secured;
 };
 
-/** Unexpected page errors: log the error name only (no message or stack) and show nothing else. */
-export const handleError: HandleServerError = ({ error, event, status }) => {
-  if (status >= 500) {
-    console.error(
-      JSON.stringify({
-        event: "server.error",
-        name: error instanceof Error ? error.name : "NonError",
-        status,
-        route: event.route.id,
-      }),
-    );
-  }
-  return { message: status >= 500 ? "Internal Error" : "Not Found" };
+/**
+ * Errors of `error(...)` and SvelteKit's own (404, 405, ...) are safe to show as they are. Anything else is unexpected:
+ * log the error name only (no message or stack) and show nothing else.
+ */
+export const handleError: HandleServerError = ({ kind, error, event }) => {
+  if (kind !== "unknown") return error;
+  console.error(
+    JSON.stringify({
+      event: "server.error",
+      name: error instanceof Error ? error.name : "NonError",
+      status: 500,
+      route: event.route.id,
+    }),
+  );
+  return { message: "Internal Error" };
 };

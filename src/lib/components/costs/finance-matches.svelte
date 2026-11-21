@@ -2,10 +2,10 @@
   import CheckIcon from "@lucide/svelte/icons/check";
   import LandmarkIcon from "@lucide/svelte/icons/landmark";
   import { untrack } from "svelte";
-  import { api } from "$lib/api/browser";
-  import { isApiError } from "$lib/api/errors";
-  import { endpoints } from "$lib/api/registry";
-  import { Button } from "$lib/components/ui/button/index.js";
+  import { api } from "#lib/api/browser.ts";
+  import { isApiError } from "#lib/api/errors.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import { Button } from "#lib/components/ui/button/index.js";
   import {
     MATCH_DEBOUNCE_MS,
     chosenId,
@@ -15,10 +15,10 @@
     matchWhen,
     type FinanceMatch,
     type MatchQuery,
-  } from "$lib/costs/matches";
-  import { formatDay } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/costs/matches.ts";
+  import { formatDay } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import CostAmount from "./cost-amount.svelte";
 
   /** How long the note that a choice was released stays. */

@@ -1,16 +1,19 @@
 import { and, eq, isNull, like } from "drizzle-orm";
-import { FINANCE_BILL_TASK_SOURCE, type IntegrationKind } from "$lib/api/enums";
-import { m } from "$lib/paraglide/messages";
-import { formatAmount, minor } from "$lib/money";
-import { connections, taskCompletions, tasks } from "$lib/server/db";
-import { completeTask } from "$lib/server/tasks/completions";
-import { evaluateTaskById } from "$lib/server/tasks/evaluator";
+import {
+  FINANCE_BILL_TASK_SOURCE,
+  type IntegrationKind,
+} from "#lib/api/enums.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { formatAmount, minor } from "#lib/money.ts";
+import { connections, taskCompletions, tasks } from "#lib/server/db.ts";
+import { completeTask } from "#lib/server/tasks/completions.ts";
+import { evaluateTaskById } from "#lib/server/tasks/evaluator.ts";
 import {
   createTask,
   updateTask,
   type TaskRecord,
-} from "$lib/server/tasks/tasks";
-import type { ServiceContext } from "$lib/server/service";
+} from "#lib/server/tasks/tasks.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import { completionSourceFor, taskSourceFor } from "./providers";
 
 export const FINANCE_BILL_SOURCE = FINANCE_BILL_TASK_SOURCE;

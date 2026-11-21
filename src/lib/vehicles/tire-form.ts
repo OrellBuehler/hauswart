@@ -1,4 +1,4 @@
-import type { TireSeason } from "$lib/api/enums";
+import type { TireSeason } from "#lib/api/enums.ts";
 import {
   MAX_TREAD_MM,
   createTireSetRequestSchema,
@@ -10,12 +10,12 @@ import {
   type MountTireSetRequest,
   type TireSet,
   type UpdateTireSetRequest,
-} from "$lib/api/schemas/tire-sets";
-import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
-import { isValidDate } from "$lib/dates";
-import { formatDay, formatNumber } from "$lib/format";
-import { m } from "$lib/paraglide/messages";
-import { apiFieldErrors, issuesToErrors } from "$lib/tasks/field-errors";
+} from "#lib/api/schemas/tire-sets.ts";
+import { MAX_ODOMETER_VALUE } from "#lib/api/schemas/vehicles.ts";
+import { isValidDate } from "#lib/dates.ts";
+import { formatDay, formatNumber } from "#lib/format.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { apiFieldErrors, issuesToErrors } from "#lib/tasks/field-errors.ts";
 import { parseDecimalInput } from "./format";
 import { readingToSend } from "./odometer-input";
 import { isValidDot } from "./tires";

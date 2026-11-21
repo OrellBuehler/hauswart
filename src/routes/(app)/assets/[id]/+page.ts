@@ -1,11 +1,11 @@
-import { createApiClient, type ApiClient } from "$lib/api/client";
-import { fetchAll } from "$lib/api/fetch-all";
-import { loadHousehold } from "$lib/api/household";
-import { orFail } from "$lib/api/load";
-import { endpoints } from "$lib/api/registry";
-import { sortTasks } from "$lib/assets/tasks";
-import { loadCostBooks } from "$lib/costs/load";
-import { loadDirectory } from "$lib/tasks/load";
+import { createApiClient, type ApiClient } from "#lib/api/client.ts";
+import { fetchAll } from "#lib/api/fetch-all.ts";
+import { loadHousehold } from "#lib/api/household.ts";
+import { orFail } from "#lib/api/load.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import { sortTasks } from "#lib/assets/tasks.ts";
+import { loadCostBooks } from "#lib/costs/load.ts";
+import { loadDirectory } from "#lib/tasks/load.ts";
 import type { PageLoad } from "./$types";
 
 async function loadVehicleExtras(

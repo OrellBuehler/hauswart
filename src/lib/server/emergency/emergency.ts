@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
-import type { InsuranceType } from "$lib/api/enums";
+import type { InsuranceType } from "#lib/api/enums.ts";
 import {
   assetHints,
   assets,
@@ -7,9 +7,9 @@ import {
   docPages,
   insurancePolicies,
   rooms,
-} from "$lib/server/db";
-import { getHousehold } from "$lib/server/household/household";
-import type { ServiceContext } from "$lib/server/service";
+} from "#lib/server/db.ts";
+import { getHousehold } from "#lib/server/household/household.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 
 type Db = Pick<ServiceContext, "db">;
 

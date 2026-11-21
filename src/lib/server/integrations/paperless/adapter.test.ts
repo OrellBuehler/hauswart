@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { getConnectionRow } from "$lib/server/connections/connections";
+import { getConnectionRow } from "#lib/server/connections/connections.ts";
 import {
   runOperation,
   testConnection,
-} from "$lib/server/connections/connections";
-import { IntegrationError } from "$lib/server/connections/errors";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
+} from "#lib/server/connections/connections.ts";
+import { IntegrationError } from "#lib/server/connections/errors.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import { validateInput } from "./adapter";
 import { useFakePaperless } from "./testing";
 

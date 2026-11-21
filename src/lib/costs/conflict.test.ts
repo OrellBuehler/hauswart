@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { COST_CONFLICT_CODES } from "$lib/api/enums";
-import { ApiError } from "$lib/api/errors";
+import { COST_CONFLICT_CODES } from "#lib/api/enums.ts";
+import { ApiError } from "#lib/api/errors.ts";
 import { costConflictCode } from "./conflict";
 
 const conflict = (details?: unknown) =>

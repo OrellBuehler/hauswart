@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
-import { ApiError } from "$lib/api/errors";
-import { authEvents, sessions, users } from "$lib/server/db";
+import { ApiError } from "#lib/api/errors.ts";
+import { authEvents, sessions, users } from "#lib/server/db.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt } from "$lib/testing/domain";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
 import { changePassword } from "./change-password";
 import { verifyCredentials } from "./login";
 import { verifyPassword } from "./password";

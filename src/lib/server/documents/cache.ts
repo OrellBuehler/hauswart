@@ -1,7 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
-import type { DocumentProviderKind } from "$lib/api/enums";
-import { externalDocuments } from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
+import type { DocumentProviderKind } from "#lib/api/enums.ts";
+import { externalDocuments } from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import type { ExternalDocumentMeta } from "./provider";
 
 type Db = Pick<ServiceContext, "db">;

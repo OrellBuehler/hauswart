@@ -1,5 +1,5 @@
-import type { CalendarSyncCounts } from "$lib/api/schemas/calendar-sync";
-import { m } from "$lib/paraglide/messages";
+import type { CalendarSyncCounts } from "#lib/api/schemas/calendar-sync.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 type CountKey = keyof CalendarSyncCounts;
 

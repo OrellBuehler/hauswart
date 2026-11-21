@@ -3,10 +3,10 @@
   import ShoppingCartIcon from "@lucide/svelte/icons/shopping-cart";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import { resolve } from "$app/paths";
-  import type { Dashboard } from "$lib/api/schemas/dashboard";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { formatDateShort } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  import type { Dashboard } from "#lib/api/schemas/dashboard.ts";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { formatDateShort } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   let { items, today }: { items: Dashboard["orderNow"]; today: string } =
     $props();
@@ -31,7 +31,7 @@
       {#each items as item (item.id)}
         <li>
           <a
-            href={resolve(`/parts/${item.partId}` as "/")}
+            href={resolve(`parts/${item.partId}`)}
             class="hover:bg-accent/50 focus-visible:ring-ring/50 -mx-2 flex flex-col gap-1 rounded-md px-2 py-2.5 outline-none focus-visible:ring-[3px]"
           >
             <span class="flex items-baseline justify-between gap-3 text-sm">
@@ -65,7 +65,7 @@
       {/each}
     </ul>
     <a
-      href={resolve("/parts")}
+      href={resolve("parts")}
       class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -mx-1 inline-flex min-h-10 items-center gap-1.5 self-start rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
     >
       {m.dashboard_to_parts()}

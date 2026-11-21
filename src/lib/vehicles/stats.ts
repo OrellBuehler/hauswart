@@ -1,4 +1,4 @@
-import { dayNumber, monthEnd } from "$lib/dates";
+import { dayNumber, monthEnd } from "#lib/dates.ts";
 
 export interface OdometerPoint {
   date: string;

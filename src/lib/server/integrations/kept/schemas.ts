@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isValidDate } from "$lib/dates";
+import { isValidDate } from "#lib/dates.ts";
 
 /**
  * DTOs of the Kept external API (`/api/external/v1`), written from its

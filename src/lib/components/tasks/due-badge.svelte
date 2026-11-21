@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages";
-  import { dueWording } from "$lib/tasks/row";
-  import { statusLabels } from "$lib/tasks/labels";
-  import type { DueStatus } from "$lib/tasks/engine/types";
-  import { cn } from "$lib/utils";
+  import { m } from "#lib/paraglide/messages.js";
+  import { dueWording } from "#lib/tasks/row.ts";
+  import { statusLabels } from "#lib/tasks/labels.ts";
+  import type { DueStatus } from "#lib/tasks/engine/types.ts";
+  import { cn } from "#lib/utils.ts";
   import StatusDot from "./status-dot.svelte";
   import { statusTones } from "./tones";
 

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { AiTask } from "$lib/api/schemas/ai-tasks";
-import { plainPng } from "$lib/server/files/test-images";
-import { createCaller, errorCode, errorDetailCode } from "$lib/testing/api";
-import { createTestUser, loginTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { useTestFilesDir } from "$lib/testing/files";
+import type { AiTask } from "#lib/api/schemas/ai-tasks.ts";
+import { plainPng } from "#lib/server/files/test-images.ts";
+import { createCaller, errorCode, errorDetailCode } from "#lib/testing/api.ts";
+import { createTestUser, loginTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { useTestFilesDir } from "#lib/testing/files.ts";
 
 interface CostBody {
   id: string;

@@ -1,7 +1,7 @@
 import type { z } from "zod";
-import { toIso } from "$lib/api/schemas/common";
-import type { insurancePolicySchema } from "$lib/api/schemas/insurance";
-import type { endpoints } from "$lib/api/registry";
+import { toIso } from "#lib/api/schemas/common.ts";
+import type { insurancePolicySchema } from "#lib/api/schemas/insurance.ts";
+import type { endpoints } from "#lib/api/registry.ts";
 import {
   createPolicy,
   deletePolicy,
@@ -10,7 +10,7 @@ import {
   listPolicies,
   updatePolicy,
   type PolicyRecord,
-} from "$lib/server/insurance/policies";
+} from "#lib/server/insurance/policies.ts";
 import type { Handler } from "../bind";
 
 export function wireInsurancePolicy(

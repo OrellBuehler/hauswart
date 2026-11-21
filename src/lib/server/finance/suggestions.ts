@@ -3,35 +3,35 @@ import { z } from "zod";
 import type {
   FinanceSuggestionKind,
   FinanceSuggestionStatus,
-} from "$lib/api/enums";
-import type { CreateCostRequest } from "$lib/api/schemas/costs";
+} from "#lib/api/enums.ts";
+import type { CreateCostRequest } from "#lib/api/schemas/costs.ts";
 import {
   assetSuggestionPayloadSchema,
   billTaskSuggestionPayloadSchema,
   costSuggestionPayloadSchema,
   type AcceptFinanceSuggestionRequest,
   type FinanceMatchesQuery,
-} from "$lib/api/schemas/finance";
-import { MATCH_DAYS } from "$lib/costs/match";
-import { addDays, diffDays } from "$lib/dates";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { createAsset } from "$lib/server/assets/assets";
-import { openCostBookId } from "$lib/server/costs/books";
-import { createCost, updateCost } from "$lib/server/costs/costs";
+} from "#lib/api/schemas/finance.ts";
+import { MATCH_DAYS } from "#lib/costs/match.ts";
+import { addDays, diffDays } from "#lib/dates.ts";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import { openCostBookId } from "#lib/server/costs/books.ts";
+import { createCost, updateCost } from "#lib/server/costs/costs.ts";
 import {
   connections,
   costEntries,
   financeSuggestions,
   type DB,
-} from "$lib/server/db";
-import { decodeCursor, pageOf } from "$lib/server/pagination";
+} from "#lib/server/db.ts";
+import { decodeCursor, pageOf } from "#lib/server/pagination.ts";
 import {
   conflict,
   invalidField,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
-import { clockAt } from "$lib/server/tasks/evaluator";
+} from "#lib/server/service.ts";
+import { clockAt } from "#lib/server/tasks/evaluator.ts";
 import { upsertFinanceBillTask } from "./bill-tasks";
 import {
   acceptLink,

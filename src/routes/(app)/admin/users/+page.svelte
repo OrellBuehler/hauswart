@@ -1,18 +1,21 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import KeyRoundIcon from "@lucide/svelte/icons/key-round";
   import PencilIcon from "@lucide/svelte/icons/pencil";
   import UserPlusIcon from "@lucide/svelte/icons/user-plus";
   import UsersIcon from "@lucide/svelte/icons/users";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
-  import { OWNERSHIP_BPS_TOTAL, type AdminUser } from "$lib/api/schemas/users";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { formatDate, formatPercent } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  import {
+    OWNERSHIP_BPS_TOTAL,
+    type AdminUser,
+  } from "#lib/api/schemas/users.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { formatDate, formatPercent } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import ResetPasswordDialog from "./reset-password-dialog.svelte";
   import UserFormDialog from "./user-form-dialog.svelte";
   import type { PageProps } from "./$types";
@@ -144,9 +147,9 @@
   {/if}
 </div>
 
-<UserFormDialog bind:open={formOpen} user={formUser} onsaved={invalidateAll} />
+<UserFormDialog bind:open={formOpen} user={formUser} onsaved={refreshAll} />
 <ResetPasswordDialog
   bind:open={resetOpen}
   user={resetUser}
-  onsaved={invalidateAll}
+  onsaved={refreshAll}
 />

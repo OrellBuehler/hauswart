@@ -1,12 +1,13 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import config from "../svelte.config.js";
+
+import { kitOptions } from "../kit.config.ts";
 
 const html = readFileSync("src/app.html", "utf8");
 const layout = readFileSync("src/routes/+layout.svelte", "utf8");
 
 describe("content security policy", () => {
-  const csp = config.kit?.csp as {
+  const csp = kitOptions.csp as {
     mode: string;
     directives: Record<string, string[]>;
   };

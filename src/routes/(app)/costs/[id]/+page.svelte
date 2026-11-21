@@ -7,38 +7,38 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import PencilIcon from "@lucide/svelte/icons/pencil";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
-  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
-  import { invalidateAll } from "$app/navigation";
+  import { gotoFromOverlay } from "#lib/overlays/use-overlay-history.svelte.ts";
+  import { refreshAll } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import Attachments from "$lib/components/attachments/attachments.svelte";
-  import Comments from "$lib/components/comments/comments.svelte";
-  import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
-  import CostAmount from "$lib/components/costs/cost-amount.svelte";
-  import CostFlags from "$lib/components/costs/cost-flags.svelte";
-  import TagChips from "$lib/components/costs/tag-chips.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { fuelLogOfConflict } from "$lib/costs/fuel-owner";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import Attachments from "#lib/components/attachments/attachments.svelte";
+  import Comments from "#lib/components/comments/comments.svelte";
+  import LinkedDocuments from "#lib/components/documents/linked-documents.svelte";
+  import CostAmount from "#lib/components/costs/cost-amount.svelte";
+  import CostFlags from "#lib/components/costs/cost-flags.svelte";
+  import TagChips from "#lib/components/costs/tag-chips.svelte";
+  import * as Alert from "#lib/components/ui/alert/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { fuelLogOfConflict } from "#lib/costs/fuel-owner.ts";
   import {
     categoryIcons,
     categoryLabels,
     deductibleLabels,
     sourceLabels,
     splitModeLabels,
-  } from "$lib/costs/labels";
-  import { formatDateTime, formatDay, formatPercent } from "$lib/format";
-  import { formatMoney } from "$lib/format-money";
-  import { assetHref, roomHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
-  import { fuelLogHref } from "$lib/vehicles/links";
-  import { cn } from "$lib/utils";
+  } from "#lib/costs/labels.ts";
+  import { formatDateTime, formatDay, formatPercent } from "#lib/format.ts";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { assetHref, roomHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { fuelLogHref } from "#lib/vehicles/links.ts";
+  import { cn } from "#lib/utils.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -54,11 +54,9 @@
   const createdBy = $derived(
     cost.createdBy ? data.people.get(cost.createdBy) : undefined,
   );
-
   const reviewedBy = $derived(
     cost.reviewedByUserId ? data.people.get(cost.reviewedByUserId) : undefined,
   );
-
   let deleteOpen = $state(false);
   let reviewing = $state(false);
   let reviewError = $state<string | undefined>();
@@ -70,7 +68,7 @@
     try {
       await api.call(endpoints.costsReview, { params: { id: cost.id } });
       toast.success(m.cost_review_done_toast({ title: cost.title }));
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       reviewError = apiErrorMessage(err);
     } finally {
@@ -84,7 +82,7 @@
   async function remove() {
     await api.call(endpoints.costsDelete, { params: { id: cost.id } });
     toast.success(m.cost_deleted_toast({ title: cost.title }));
-    await gotoFromOverlay(resolve("/costs"), { invalidateAll: true });
+    await gotoFromOverlay(resolve("costs"), { refreshAll: true });
   }
 
   function deleteError(err: unknown): string {
@@ -105,7 +103,7 @@
 <div class="flex flex-col gap-6">
   <div class="max-md:hidden">
     <a
-      href={resolve("/costs")}
+      href={resolve("costs")}
       class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -ms-1 inline-flex min-h-10 items-center gap-1.5 rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
@@ -126,6 +124,7 @@
       >
         {cost.title}
       </h1>
+
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
         <CostAmount
           amountMinor={cost.amountMinor}
@@ -136,7 +135,7 @@
           {cost}
           recurrenceHref={cost.recurrenceId
             ? resolve(
-                `/costs/recurring/${encodeURIComponent(cost.recurrenceId)}` as "/",
+                `costs/recurring/${encodeURIComponent(cost.recurrenceId)}`,
               )
             : undefined}
         />
@@ -149,7 +148,7 @@
         <Button
           size="lg"
           variant="outline"
-          href={resolve(`/costs/${cost.id}/edit` as "/")}
+          href={resolve(`costs/${cost.id}/edit`)}
         >
           <PencilIcon />
           {m.common_edit()}
@@ -178,10 +177,8 @@
             variant="outline"
             class="text-destructive hover:text-destructive"
             onclick={() => (deleteOpen = true)}
+            ><Trash2Icon /> {m.common_delete()}</Button
           >
-            <Trash2Icon />
-            {m.common_delete()}
-          </Button>
         {/if}
       </div>
     {/if}
@@ -228,9 +225,7 @@
             <dd class="mt-0.5 wrap-anywhere">
               <!-- eslint-disable svelte/no-navigation-without-resolve -- the address is resolved here, only the query is appended -->
               <a
-                href={resolve(
-                  `/costs?book=${encodeURIComponent(cost.bookId)}` as "/",
-                )}
+                href={resolve(`costs?book=${encodeURIComponent(cost.bookId)}`)}
                 class={linkClass}>{cost.bookName}</a
               >
               <!-- eslint-enable svelte/no-navigation-without-resolve -->
@@ -274,9 +269,8 @@
             <dt class="text-muted-foreground text-xs">{m.cost_defect()}</dt>
             <dd class="mt-0.5 wrap-anywhere">
               {#if cost.defectId}
-                <a
-                  href={resolve(`/defects/${cost.defectId}` as "/")}
-                  class={linkClass}>#{cost.defectNumber} {cost.defectTitle}</a
+                <a href={resolve(`defects/${cost.defectId}`)} class={linkClass}
+                  >#{cost.defectNumber} {cost.defectTitle}</a
                 >
               {:else}
                 –
@@ -321,7 +315,7 @@
                 <!-- eslint-disable svelte/no-navigation-without-resolve -- the address is resolved here, only the id is appended -->
                 <a
                   href={resolve(
-                    `/costs/recurring/${encodeURIComponent(cost.recurrenceId)}` as "/",
+                    `costs/recurring/${encodeURIComponent(cost.recurrenceId)}`,
                   )}
                   class={cn("ms-1 block text-xs", linkClass)}
                   >{m.cost_recurrence_open()}</a

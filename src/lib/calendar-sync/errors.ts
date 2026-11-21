@@ -1,8 +1,8 @@
-import type { CalendarProviderKind } from "$lib/api/enums";
-import { isApiError } from "$lib/api/errors";
-import { pickerErrorMessage } from "$lib/connections/errors";
-import { apiErrorMessage } from "$lib/error-message";
-import { m } from "$lib/paraglide/messages";
+import type { CalendarProviderKind } from "#lib/api/enums.ts";
+import { isApiError } from "#lib/api/errors.ts";
+import { pickerErrorMessage } from "#lib/connections/errors.ts";
+import { apiErrorMessage } from "#lib/error-message.ts";
+import { m } from "#lib/paraglide/messages.js";
 import { providerName } from "./providers";
 
 /** What a refused save says: a sentence for the whole form and/or a sentence per field. */

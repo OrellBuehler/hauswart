@@ -4,7 +4,7 @@ import {
   FULL_CAPABILITIES,
   configDto,
   targetDto,
-} from "$lib/testing/calendar-targets";
+} from "#lib/testing/calendar-targets.ts";
 import {
   DEFAULT_KINDS,
   alarmsSupported,

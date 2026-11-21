@@ -1,5 +1,5 @@
-import type { AppointmentStatus } from "$lib/api/enums";
-import { m } from "$lib/paraglide/messages";
+import type { AppointmentStatus } from "#lib/api/enums.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 export const statusLabels: Record<AppointmentStatus, () => string> = {
   planned: () => m.appointment_status_planned(),

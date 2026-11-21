@@ -2,28 +2,31 @@ import { utimes } from "node:fs/promises";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import type { AiTaskKind } from "$lib/api/enums";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { createCostBookRequestSchema } from "$lib/api/schemas/cost-books";
-import { createCostRequestSchema } from "$lib/api/schemas/costs";
-import { createFuelLogRequestSchema } from "$lib/api/schemas/fuel-logs";
-import { createAsset } from "$lib/server/assets/assets";
+import type { AiTaskKind } from "#lib/api/enums.ts";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { createCostBookRequestSchema } from "#lib/api/schemas/cost-books.ts";
+import { createCostRequestSchema } from "#lib/api/schemas/costs.ts";
+import { createFuelLogRequestSchema } from "#lib/api/schemas/fuel-logs.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
 import {
   createAttachment,
   listAttachments,
   onAttachmentsChanged,
   settleBackgroundWork,
-} from "$lib/server/attachments/attachments";
-import { createCostBook, updateCostBook } from "$lib/server/costs/books";
-import { createCost, deleteCost, getCost } from "$lib/server/costs/costs";
-import { aiTasks, attachments, costEntries } from "$lib/server/db";
-import { plainJpeg, plainPng } from "$lib/server/files/test-images";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, NOW } from "$lib/testing/domain";
-import { sampleHeic, samplePdf, useTestFilesDir } from "$lib/testing/files";
-import { failure, fieldErrors, makeVehicle } from "$lib/testing/vehicles";
-import { createFuelLog, deleteFuelLog } from "$lib/server/vehicles/fuel-logs";
+} from "#lib/server/attachments/attachments.ts";
+import { createCostBook, updateCostBook } from "#lib/server/costs/books.ts";
+import { createCost, deleteCost, getCost } from "#lib/server/costs/costs.ts";
+import { aiTasks, attachments, costEntries } from "#lib/server/db.ts";
+import { plainJpeg, plainPng } from "#lib/server/files/test-images.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, NOW } from "#lib/testing/domain.ts";
+import { sampleHeic, samplePdf, useTestFilesDir } from "#lib/testing/files.ts";
+import { failure, fieldErrors, makeVehicle } from "#lib/testing/vehicles.ts";
+import {
+  createFuelLog,
+  deleteFuelLog,
+} from "#lib/server/vehicles/fuel-logs.ts";
 import {
   completeAiTask,
   createAiTask,

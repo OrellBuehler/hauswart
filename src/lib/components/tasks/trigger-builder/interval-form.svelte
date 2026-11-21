@@ -2,16 +2,16 @@
   import PlusIcon from "@lucide/svelte/icons/plus";
   import XIcon from "@lucide/svelte/icons/x";
   import { untrack } from "svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { monthName } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { monthName } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import ChipGroup from "../chip-group.svelte";
   import Field from "../field.svelte";
   import NumberField from "../number-field.svelte";
   import OptionSelect from "../option-select.svelte";
   import Segmented from "../segmented.svelte";
-  import type { IntervalUnit } from "$lib/tasks/engine/types";
+  import type { IntervalUnit } from "#lib/tasks/engine/types.ts";
   import type { IntervalDraft } from "./types";
   import { MONTHS, unitOptions } from "./options";
 

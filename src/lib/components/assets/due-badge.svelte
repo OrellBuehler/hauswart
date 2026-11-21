@@ -1,10 +1,10 @@
 <script lang="ts">
-  import type { TaskState } from "$lib/api/schemas/tasks";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { formatDay } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { shownDate, shownDateIsEstimate } from "$lib/tasks/engine/shown";
-  import { cn } from "$lib/utils";
+  import type { TaskState } from "#lib/api/schemas/tasks.ts";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { formatDay } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { shownDate, shownDateIsEstimate } from "#lib/tasks/engine/shown.ts";
+  import { cn } from "#lib/utils.ts";
 
   let {
     state,

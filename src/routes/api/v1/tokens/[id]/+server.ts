@@ -1,5 +1,5 @@
-import { endpoints } from "$lib/api/registry";
-import { bind } from "$lib/server/api/bind";
-import { revoke } from "$lib/server/api/handlers/tokens";
+import { endpoints } from "#lib/api/registry.ts";
+import { bind } from "#lib/server/api/bind.ts";
+import { revoke } from "#lib/server/api/handlers/tokens.ts";
 
 export const DELETE = bind(endpoints.tokensRevoke, revoke);

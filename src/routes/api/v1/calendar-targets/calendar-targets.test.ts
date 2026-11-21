@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CalendarTarget } from "$lib/api/schemas/calendar-sync";
+import type { CalendarTarget } from "#lib/api/schemas/calendar-sync.ts";
 import {
   addTarget,
   CALENDAR_ID,
@@ -7,18 +7,18 @@ import {
   FULL_CAPABILITIES,
   PROVIDER,
   useFakeCalendars,
-} from "$lib/server/calendar-sync/testing";
-import { createAppointment } from "$lib/server/appointments/appointments";
-import { lockTarget } from "$lib/server/calendar-sync/sync";
-import { calendarTargets, connections } from "$lib/server/db";
-import { createCaller, errorCode } from "$lib/testing/api";
+} from "#lib/server/calendar-sync/testing.ts";
+import { createAppointment } from "#lib/server/appointments/appointments.ts";
+import { lockTarget } from "#lib/server/calendar-sync/sync.ts";
+import { calendarTargets, connections } from "#lib/server/db.ts";
+import { createCaller, errorCode } from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, NOW } from "$lib/testing/domain";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, NOW } from "#lib/testing/domain.ts";
 
 const BODY = {
   provider: PROVIDER,

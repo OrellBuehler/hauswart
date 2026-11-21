@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
-import { signValue, verifySignature } from "$lib/server/crypto";
-import { verifyPassword } from "$lib/server/auth/password";
-import { guestPinRateLimiter } from "$lib/server/auth/rate-limit";
-import type { ServiceContext } from "$lib/server/service";
+import { signValue, verifySignature } from "#lib/server/crypto.ts";
+import { verifyPassword } from "#lib/server/auth/password.ts";
+import { guestPinRateLimiter } from "#lib/server/auth/rate-limit.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import {
   addPinFailure,
   clearPinFailures,
@@ -11,7 +11,7 @@ import {
   linkStatus,
   type GuestLinkRow,
 } from "./guest-links";
-import { GUEST_PIN_PATTERN } from "$lib/api/schemas/share";
+import { GUEST_PIN_PATTERN } from "#lib/api/schemas/share.ts";
 
 type Now = Pick<ServiceContext, "db" | "now">;
 

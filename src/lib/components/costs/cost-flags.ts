@@ -1,4 +1,4 @@
-import type { CostEntry } from "$lib/api/schemas/costs";
+import type { CostEntry } from "#lib/api/schemas/costs.ts";
 
 /** Whether an entry carries a badge (review, refund, equity, imported): rows only make room for the badges when it does. */
 export function hasCostFlags(

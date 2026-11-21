@@ -1,20 +1,20 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import LightbulbIcon from "@lucide/svelte/icons/lightbulb";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { Hint } from "$lib/api/schemas/hints";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import HintCard from "$lib/components/hints/hint-card.svelte";
-  import HintFormDialog from "$lib/components/hints/hint-form-dialog.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import { movedBy, saveOrder } from "$lib/reorder";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Hint } from "#lib/api/schemas/hints.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import HintCard from "#lib/components/hints/hint-card.svelte";
+  import HintFormDialog from "#lib/components/hints/hint-form-dialog.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { movedBy, saveOrder } from "#lib/reorder.ts";
 
   let { assetId, hints }: { assetId: string; hints: Hint[] } = $props();
 
@@ -45,7 +45,7 @@
         params: { id: hint.id },
         body,
       });
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       toast.error(apiErrorMessage(err));
     } finally {
@@ -74,7 +74,7 @@
                   }),
               ],
         ),
-        invalidateAll,
+        refreshAll,
       );
       if (failures.length > 0) toast.error(apiErrorMessage(failures[0]));
     } finally {
@@ -92,7 +92,7 @@
     const { id, title } = deleting;
     await api.call(endpoints.hintsDelete, { params: { id } });
     toast.success(m.hint_deleted_toast({ title }));
-    await invalidateAll();
+    await refreshAll();
   }
 </script>
 
@@ -143,7 +143,7 @@
   bind:open={formOpen}
   {assetId}
   hint={editing}
-  onsaved={() => invalidateAll()}
+  onsaved={() => refreshAll()}
 />
 
 <ConfirmDialog

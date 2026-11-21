@@ -1,6 +1,10 @@
-import type { CostSplitMode, FuelUnit, VehicleFuelType } from "$lib/api/enums";
-import type { CostBook } from "$lib/api/schemas/cost-books";
-import { MAX_COST_MINOR } from "$lib/api/schemas/costs";
+import type {
+  CostSplitMode,
+  FuelUnit,
+  VehicleFuelType,
+} from "#lib/api/enums.ts";
+import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+import { MAX_COST_MINOR } from "#lib/api/schemas/costs.ts";
 import {
   MAX_FUEL_QUANTITY,
   createFuelLogRequestSchema,
@@ -8,17 +12,17 @@ import {
   type CreateFuelLogRequest,
   type FuelLog,
   type UpdateFuelLogRequest,
-} from "$lib/api/schemas/fuel-logs";
-import { currencySchema } from "$lib/api/schemas/household";
-import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
-import { fuelBook } from "$lib/costs/books";
-import { equalShares, validateShares } from "$lib/costs/form";
-import { isValidDate } from "$lib/dates";
-import { formatNumber } from "$lib/format";
-import { formatMoney, readMoney } from "$lib/format-money";
-import { currencyExponent, minor, toDecimalString } from "$lib/money";
-import { m } from "$lib/paraglide/messages";
-import { issuesToErrors } from "$lib/tasks/field-errors";
+} from "#lib/api/schemas/fuel-logs.ts";
+import { currencySchema } from "#lib/api/schemas/household.ts";
+import { MAX_ODOMETER_VALUE } from "#lib/api/schemas/vehicles.ts";
+import { fuelBook } from "#lib/costs/books.ts";
+import { equalShares, validateShares } from "#lib/costs/form.ts";
+import { isValidDate } from "#lib/dates.ts";
+import { formatNumber } from "#lib/format.ts";
+import { formatMoney, readMoney } from "#lib/format-money.ts";
+import { currencyExponent, minor, toDecimalString } from "#lib/money.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { issuesToErrors } from "#lib/tasks/field-errors.ts";
 import { parseDecimalInput, parseOdometerValue } from "./format";
 
 export type FuelDraft = {

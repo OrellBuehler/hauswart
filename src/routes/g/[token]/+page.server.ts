@@ -1,7 +1,7 @@
-import { getDB } from "$lib/server/db";
-import { getGuestHome } from "$lib/server/share/guest-view";
-import { recordGuestView } from "$lib/server/share/guest-links";
-import { guestGate, unlockAction } from "$lib/server/share/guest-http";
+import { getDB } from "#lib/server/db.ts";
+import { getGuestHome } from "#lib/server/share/guest-view.ts";
+import { recordGuestView } from "#lib/server/share/guest-links.ts";
+import { guestGate, unlockAction } from "#lib/server/share/guest-http.ts";
 import type { Actions, PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async (event) => {

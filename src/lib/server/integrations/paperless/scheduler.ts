@@ -1,6 +1,6 @@
-import { getDB } from "$lib/server/db";
-import { pruneFinishedUploads } from "$lib/server/documents/uploads";
-import { onEvent } from "$lib/server/events";
+import { getDB } from "#lib/server/db.ts";
+import { pruneFinishedUploads } from "#lib/server/documents/uploads.ts";
+import { onEvent } from "#lib/server/events.ts";
 import { KIND } from "./connection";
 import { clearTaxonomyCache } from "./mapping";
 import { syncAll } from "./sync";

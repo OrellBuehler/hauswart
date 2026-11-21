@@ -1,17 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
-import { SESSION_COOKIE } from "$lib/api/constants";
-import { MOBILE_TOKEN_SCOPES } from "$lib/api/scopes";
-import { apiTokens, sessions } from "$lib/server/db";
-import { PUBLIC_POSTS_PER_MINUTE } from "$lib/server/auth/rate-limit";
-import { validateSessionToken } from "$lib/server/auth/sessions";
-import { MOBILE_TOKEN_LIFETIME_MS, verifyToken } from "$lib/server/auth/tokens";
+import { SESSION_COOKIE } from "#lib/api/constants.ts";
+import { MOBILE_TOKEN_SCOPES } from "#lib/api/scopes.ts";
+import { apiTokens, sessions } from "#lib/server/db.ts";
+import { PUBLIC_POSTS_PER_MINUTE } from "#lib/server/auth/rate-limit.ts";
+import { validateSessionToken } from "#lib/server/auth/sessions.ts";
+import {
+  MOBILE_TOKEN_LIFETIME_MS,
+  verifyToken,
+} from "#lib/server/auth/tokens.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { callRoute } from "$lib/testing/route";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { callRoute } from "#lib/testing/route.ts";
 import { POST as login } from "./login/+server";
 import { POST as logout } from "./logout/+server";
 import { GET as me, PATCH as updateMe } from "./me/+server";

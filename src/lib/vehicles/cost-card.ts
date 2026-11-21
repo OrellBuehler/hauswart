@@ -1,4 +1,4 @@
-import { MAX_YEAR, MIN_YEAR } from "$lib/costs/filters";
+import { MAX_YEAR, MIN_YEAR } from "#lib/costs/filters.ts";
 
 const MAX_YEARS_BACK = 20;
 const MIN_YEARS_BACK = 1;

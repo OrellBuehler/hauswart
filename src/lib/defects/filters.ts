@@ -3,8 +3,11 @@ import {
   DEFECT_STATUSES,
   type DefectSeverity,
   type DefectStatus,
-} from "$lib/api/enums";
-import { ACTIVE_DEFECT_STATUSES, type Defect } from "$lib/api/schemas/defects";
+} from "#lib/api/enums.ts";
+import {
+  ACTIVE_DEFECT_STATUSES,
+  type Defect,
+} from "#lib/api/schemas/defects.ts";
 
 export const DEFECT_SORTS = ["deadline", "number"] as const;
 export type DefectSort = (typeof DEFECT_SORTS)[number];

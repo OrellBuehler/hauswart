@@ -2,23 +2,23 @@
   import CalendarClockIcon from "@lucide/svelte/icons/calendar-clock";
   import { untrack } from "svelte";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { fetchAll } from "$lib/api/fetch-all";
-  import { endpoints } from "$lib/api/registry";
+  import { api } from "#lib/api/browser.ts";
+  import { fetchAll } from "#lib/api/fetch-all.ts";
+  import { endpoints } from "#lib/api/registry.ts";
   import {
     APPOINTMENT_LOCATION_MAX,
     APPOINTMENT_NOTES_MAX,
     APPOINTMENT_TITLE_MAX,
     type Appointment,
-  } from "$lib/api/schemas/appointments";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import ContactSelect from "$lib/components/contacts/contact-select.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { formatWhen } from "$lib/appointments/format";
+  } from "#lib/api/schemas/appointments.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import ContactSelect from "#lib/components/contacts/contact-select.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
+  import { formatWhen } from "#lib/appointments/format.ts";
   import {
     buildCreateBody,
     buildUpdateBody,
@@ -29,11 +29,11 @@
     newDraft,
     type AppointmentDefaults,
     type AppointmentDraft,
-  } from "$lib/appointments/form";
-  import { pinnableOccurrenceKey } from "$lib/appointments/occurrence";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
+  } from "#lib/appointments/form.ts";
+  import { pinnableOccurrenceKey } from "#lib/appointments/occurrence.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
   import LinkSelect from "./link-select.svelte";
 
   let {

@@ -4,14 +4,14 @@ import {
   type CreateSettlementRequest,
   type Settlement,
   type UpdateSettlementRequest,
-} from "$lib/api/schemas/settlements";
-import { MAX_COST_MINOR } from "$lib/api/schemas/costs";
-import { currencySchema } from "$lib/api/schemas/household";
-import { isValidDate } from "$lib/dates";
-import { formatMoney, readMoney } from "$lib/format-money";
-import { currencyExponent, minor, toDecimalString } from "$lib/money";
-import { m } from "$lib/paraglide/messages";
-import { issuesToErrors } from "$lib/tasks/field-errors";
+} from "#lib/api/schemas/settlements.ts";
+import { MAX_COST_MINOR } from "#lib/api/schemas/costs.ts";
+import { currencySchema } from "#lib/api/schemas/household.ts";
+import { isValidDate } from "#lib/dates.ts";
+import { formatMoney, readMoney } from "#lib/format-money.ts";
+import { currencyExponent, minor, toDecimalString } from "#lib/money.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { issuesToErrors } from "#lib/tasks/field-errors.ts";
 import { bookParam, parseBookParam } from "./books";
 import type { SuggestedPayment } from "./balances";
 import { MAX_YEAR, MIN_YEAR } from "./filters";

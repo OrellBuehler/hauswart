@@ -1,28 +1,28 @@
 <script lang="ts">
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
+  import { api } from "#lib/api/browser.ts";
   import {
     USER_LOCALES,
     type FeedScope,
     type UserLocale,
-  } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
+  } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
   import {
     FEED_NAME_MAX,
     MAX_ALARM_DAYS_BEFORE,
     type CalendarFeed,
-  } from "$lib/api/schemas/share";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import NumberField from "$lib/components/tasks/number-field.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import { getLocale } from "$lib/paraglide/runtime";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
+  } from "#lib/api/schemas/share.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import NumberField from "#lib/components/tasks/number-field.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
 
   let {
     open = $bindable(false),

@@ -1,9 +1,9 @@
 <script lang="ts">
   import CheckIcon from "@lucide/svelte/icons/check";
   import SearchIcon from "@lucide/svelte/icons/search";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   type Item = { value: string; label: string; detail?: string | null };
 

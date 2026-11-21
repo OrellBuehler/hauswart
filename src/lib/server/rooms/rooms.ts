@@ -2,17 +2,17 @@ import { asc, eq, max } from "drizzle-orm";
 import type {
   CreateRoomRequest,
   UpdateRoomRequest,
-} from "$lib/api/schemas/rooms";
-import { rooms } from "$lib/server/db";
-import { paginateArray } from "$lib/server/pagination";
+} from "#lib/api/schemas/rooms.ts";
+import { rooms } from "#lib/server/db.ts";
+import { paginateArray } from "#lib/server/pagination.ts";
 import {
   conflict,
   isUniqueViolation,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
-import { slugify, uniqueSlug } from "$lib/server/slug";
-import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
+} from "#lib/server/service.ts";
+import { slugify, uniqueSlug } from "#lib/server/slug.ts";
+import { removeOwnedAttachments } from "#lib/server/attachments/attachments.ts";
 
 export type RoomRecord = typeof rooms.$inferSelect;
 

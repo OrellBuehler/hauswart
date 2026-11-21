@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { IntegrationError } from "$lib/server/connections/errors";
+import { IntegrationError } from "#lib/server/connections/errors.ts";
 
 /** The settings of this kind: the public address of this app as phones reach it (links in notifications). */
 export const configSchema = z.object({

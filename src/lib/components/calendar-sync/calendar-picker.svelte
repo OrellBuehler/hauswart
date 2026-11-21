@@ -2,24 +2,24 @@
   import CheckIcon from "@lucide/svelte/icons/check";
   import InfoIcon from "@lucide/svelte/icons/info";
   import SearchIcon from "@lucide/svelte/icons/search";
-  import { api } from "$lib/api/browser";
-  import type { CalendarProviderKind } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Skeleton } from "$lib/components/ui/skeleton/index.js";
+  import { api } from "#lib/api/browser.ts";
+  import type { CalendarProviderKind } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Skeleton } from "#lib/components/ui/skeleton/index.js";
   import {
     capabilityLabels,
     capabilityLevel,
     capabilityNotes,
-  } from "$lib/calendar-sync/labels";
-  import { providerName } from "$lib/calendar-sync/providers";
-  import type { ExternalCalendar } from "$lib/connections/types";
-  import { pickerErrorMessage } from "$lib/connections/errors";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/calendar-sync/labels.ts";
+  import { providerName } from "#lib/calendar-sync/providers.ts";
+  import type { ExternalCalendar } from "#lib/connections/types.ts";
+  import { pickerErrorMessage } from "#lib/connections/errors.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     id,

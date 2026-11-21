@@ -1,6 +1,6 @@
 import { redirect } from "@sveltejs/kit";
-import { safeRedirectTo } from "$lib/server/auth/routing";
-import { countUsers } from "$lib/server/users/users";
+import { safeRedirectTo } from "#lib/server/auth/routing.ts";
+import { countUsers } from "#lib/server/users/users.ts";
 import type { PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = ({ locals, url }) => {

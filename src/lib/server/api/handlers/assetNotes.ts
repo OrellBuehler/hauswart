@@ -1,7 +1,7 @@
 import type { z } from "zod";
-import { toIso } from "$lib/api/schemas/common";
-import type { assetNoteSchema } from "$lib/api/schemas/asset-notes";
-import type { endpoints } from "$lib/api/registry";
+import { toIso } from "#lib/api/schemas/common.ts";
+import type { assetNoteSchema } from "#lib/api/schemas/asset-notes.ts";
+import type { endpoints } from "#lib/api/registry.ts";
 import {
   createNote,
   deleteNote,
@@ -9,7 +9,7 @@ import {
   noteToDefect,
   updateNote,
   type AssetNoteRecord,
-} from "$lib/server/asset-notes/notes";
+} from "#lib/server/asset-notes/notes.ts";
 import type { Handler } from "../bind";
 import { wireDefect } from "../wire";
 

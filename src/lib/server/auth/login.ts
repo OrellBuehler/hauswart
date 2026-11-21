@@ -7,7 +7,7 @@ import {
   findUserById,
   findUserByUsername,
   toSessionUser,
-} from "$lib/server/users/users";
+} from "#lib/server/users/users.ts";
 import { AuthError } from "./types";
 import type { SessionInfo, SessionUser } from "./types";
 

@@ -1,9 +1,9 @@
-import { isApiError } from "$lib/api/errors";
-import type { FinanceSuggestion } from "$lib/api/schemas/finance";
-import { currencySchema } from "$lib/api/schemas/household";
-import { diffDays, isValidDate } from "$lib/dates";
-import { m } from "$lib/paraglide/messages";
-import { apiFieldErrors } from "$lib/tasks/field-errors";
+import { isApiError } from "#lib/api/errors.ts";
+import type { FinanceSuggestion } from "#lib/api/schemas/finance.ts";
+import { currencySchema } from "#lib/api/schemas/household.ts";
+import { diffDays, isValidDate } from "#lib/dates.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
 import { costConflictCode } from "./conflict";
 import { MATCH_DAYS } from "./match";
 

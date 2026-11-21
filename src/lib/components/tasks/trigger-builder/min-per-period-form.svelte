@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { m } from "$lib/paraglide/messages";
+  import { m } from "#lib/paraglide/messages.js";
   import Field from "../field.svelte";
   import NumberField from "../number-field.svelte";
   import OptionSelect from "../option-select.svelte";

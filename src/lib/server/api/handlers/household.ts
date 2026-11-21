@@ -1,7 +1,10 @@
-import type { endpoints } from "$lib/api/registry";
-import { getHousehold, updateHousehold } from "$lib/server/household/household";
-import { recomputeHandoverDeadlines } from "$lib/server/defects/defects";
-import { evaluateAll } from "$lib/server/tasks/evaluator";
+import type { endpoints } from "#lib/api/registry.ts";
+import {
+  getHousehold,
+  updateHousehold,
+} from "#lib/server/household/household.ts";
+import { recomputeHandoverDeadlines } from "#lib/server/defects/defects.ts";
+import { evaluateAll } from "#lib/server/tasks/evaluator.ts";
 import type { Handler } from "../bind";
 import type { AuthedContext } from "../context";
 import { wireHousehold } from "../wire";

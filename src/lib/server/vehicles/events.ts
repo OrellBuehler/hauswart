@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
-import { triggerSchema } from "$lib/tasks/engine";
-import { assetIdOfOdometerKey } from "$lib/vehicles/odometer";
-import { dateInZone, householdTimeZone } from "$lib/server/config";
-import { assets, tasks } from "$lib/server/db";
-import { onEvent } from "$lib/server/events";
+import { triggerSchema } from "#lib/tasks/engine/index.ts";
+import { assetIdOfOdometerKey } from "#lib/vehicles/odometer.ts";
+import { dateInZone, householdTimeZone } from "#lib/server/config.ts";
+import { assets, tasks } from "#lib/server/db.ts";
+import { onEvent } from "#lib/server/events.ts";
 import { writeOdometer, removeReadingsOfSource } from "./odometer";
 import { readingOnOrBefore } from "./summary";
 

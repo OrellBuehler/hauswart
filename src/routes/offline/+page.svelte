@@ -1,9 +1,9 @@
 <script lang="ts">
   import WifiOffIcon from "@lucide/svelte/icons/wifi-off";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import Logo from "$lib/components/app/logo.svelte";
-  import { buttonVariants } from "$lib/components/ui/button/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import Logo from "#lib/components/app/logo.svelte";
+  import { buttonVariants } from "#lib/components/ui/button/index.js";
+  import { m } from "#lib/paraglide/messages.js";
 </script>
 
 <svelte:head>

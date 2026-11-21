@@ -1,5 +1,5 @@
-import { isApiError, type ErrorCode } from "$lib/api/errors";
-import { m } from "$lib/paraglide/messages";
+import { isApiError, type ErrorCode } from "#lib/api/errors.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 /**
  * A user-facing, localized message for a failed API call. `overrides` lets a

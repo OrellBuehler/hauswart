@@ -3,22 +3,22 @@ import type {
   CreateCostBudgetRequest,
   DashboardBudgetAlerts,
   UpdateCostBudgetRequest,
-} from "$lib/api/schemas/cost-budgets";
+} from "#lib/api/schemas/cost-budgets.ts";
 import {
   BUDGET_WARNING_PERCENT,
   DASHBOARD_BUDGET_ALERTS_TOP,
-} from "$lib/api/schemas/cost-budgets";
-import { budgetRange, budgetUsage } from "$lib/costs/budget";
-import { costBooks, costBudgets, costEntries } from "$lib/server/db";
-import { getHousehold } from "$lib/server/household/household";
+} from "#lib/api/schemas/cost-budgets.ts";
+import { budgetRange, budgetUsage } from "#lib/costs/budget.ts";
+import { costBooks, costBudgets, costEntries } from "#lib/server/db.ts";
+import { getHousehold } from "#lib/server/household/household.ts";
 import {
   conflict,
   invalidField,
   isUniqueViolation,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
-import { clockAt } from "$lib/server/tasks/evaluator";
+} from "#lib/server/service.ts";
+import { clockAt } from "#lib/server/tasks/evaluator.ts";
 import { requireCostBook } from "./books";
 
 type Db = Pick<ServiceContext, "db">;

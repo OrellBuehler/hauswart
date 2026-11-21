@@ -1,4 +1,4 @@
-import { ApiError } from "$lib/api/errors";
+import { ApiError } from "#lib/api/errors.ts";
 import type { DB } from "./db";
 
 /** What a service needs from the request: the database and the instant to work as of. */

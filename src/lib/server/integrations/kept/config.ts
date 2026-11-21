@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { COST_CATEGORIES } from "$lib/api/enums";
-import { dateSchema } from "$lib/api/schemas/common";
-import { IntegrationError } from "$lib/server/connections/errors";
+import { COST_CATEGORIES } from "#lib/api/enums.ts";
+import { dateSchema } from "#lib/api/schemas/common.ts";
+import { IntegrationError } from "#lib/server/connections/errors.ts";
 
 const categoryId = z.string().trim().min(1).max(128);
 const bookId = z.string().trim().min(1).max(64);

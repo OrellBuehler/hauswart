@@ -1,23 +1,23 @@
 <script lang="ts">
-  import { COST_SPLIT_MODES, type CostSplitMode } from "$lib/api/enums";
-  import type { DirectoryUser } from "$lib/api/schemas/users";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
+  import { COST_SPLIT_MODES, type CostSplitMode } from "#lib/api/enums.ts";
+  import type { DirectoryUser } from "#lib/api/schemas/users.ts";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Checkbox } from "#lib/components/ui/checkbox/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
   import {
     equalPreview,
     equalShares,
     parseShares,
     sharePreview,
-  } from "$lib/costs/form";
-  import { splitModeHints, splitModeLabels } from "$lib/costs/labels";
-  import { formatPercent } from "$lib/format";
-  import { formatMoney } from "$lib/format-money";
-  import { SHARE_BPS_TOTAL } from "$lib/api/schemas/costs";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/costs/form.ts";
+  import { splitModeHints, splitModeLabels } from "#lib/costs/labels.ts";
+  import { formatPercent } from "#lib/format.ts";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { SHARE_BPS_TOTAL } from "#lib/api/schemas/costs.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     id,

@@ -2,13 +2,13 @@
   import ArrowRightIcon from "@lucide/svelte/icons/arrow-right";
   import WrenchIcon from "@lucide/svelte/icons/wrench";
   import { resolve } from "$app/paths";
-  import type { Dashboard } from "$lib/api/schemas/dashboard";
-  import DefectDeadline from "$lib/components/defects/defect-deadline.svelte";
-  import DefectSeverityBadge from "$lib/components/defects/defect-severity-badge.svelte";
-  import DefectStatusBadge from "$lib/components/defects/defect-status-badge.svelte";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { defectPlace } from "$lib/defects/place";
-  import { m } from "$lib/paraglide/messages";
+  import type { Dashboard } from "#lib/api/schemas/dashboard.ts";
+  import DefectDeadline from "#lib/components/defects/defect-deadline.svelte";
+  import DefectSeverityBadge from "#lib/components/defects/defect-severity-badge.svelte";
+  import DefectStatusBadge from "#lib/components/defects/defect-status-badge.svelte";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { defectPlace } from "#lib/defects/place.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   const LIMIT = 5;
 
@@ -32,7 +32,7 @@
       {#each defects.slice(0, LIMIT) as defect (defect.id)}
         <li>
           <a
-            href={resolve(`/defects/${defect.id}` as "/")}
+            href={resolve(`defects/${defect.id}`)}
             class="hover:bg-accent/50 focus-visible:ring-ring/50 -mx-2 flex flex-col gap-1.5 rounded-md px-2 py-2.5 outline-none focus-visible:ring-[3px]"
           >
             <span class="flex items-baseline gap-2 text-sm">
@@ -61,7 +61,7 @@
       {/each}
     </ul>
     <a
-      href={resolve("/defects")}
+      href={resolve("defects")}
       class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -mx-1 inline-flex min-h-10 items-center gap-1.5 self-start rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
     >
       {defects.length > LIMIT

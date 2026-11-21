@@ -1,22 +1,22 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { createApiClient } from "$lib/api/client";
-import { endpoints } from "$lib/api/registry";
-import { PREVIEWS_PER_MINUTE } from "$lib/server/auth/rate-limit";
-import { shutdownMarkdownWorkers } from "$lib/server/docs/markdown-runner";
-import { MAX_REVISIONS } from "$lib/server/docs/pages";
+import { createApiClient } from "#lib/api/client.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import { PREVIEWS_PER_MINUTE } from "#lib/server/auth/rate-limit.ts";
+import { shutdownMarkdownWorkers } from "#lib/server/docs/markdown-runner.ts";
+import { MAX_REVISIONS } from "#lib/server/docs/pages.ts";
 import {
   createCaller,
   createInProcessFetch,
   errorCode,
-} from "$lib/testing/api";
+} from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { samplePdf, useTestFilesDir } from "$lib/testing/files";
-import { plainPng } from "$lib/server/files/test-images";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { samplePdf, useTestFilesDir } from "#lib/testing/files.ts";
+import { plainPng } from "#lib/server/files/test-images.ts";
 
 const SECRET = "hidden-hidden-hidden";
 const BODY = `# Wlan

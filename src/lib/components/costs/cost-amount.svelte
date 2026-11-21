@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { formatMoney } from "$lib/format-money";
-  import { cn } from "$lib/utils";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { cn } from "#lib/utils.ts";
 
   let {
     amountMinor,

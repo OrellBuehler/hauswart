@@ -1,5 +1,5 @@
-import { endpoints } from "$lib/api/registry";
-import { bind } from "$lib/server/api/bind";
-import { areas } from "$lib/server/api/handlers/integrations";
+import { endpoints } from "#lib/api/registry.ts";
+import { bind } from "#lib/server/api/bind.ts";
+import { areas } from "#lib/server/api/handlers/integrations.ts";
 
 export const GET = bind(endpoints.integrationsAreas, areas);

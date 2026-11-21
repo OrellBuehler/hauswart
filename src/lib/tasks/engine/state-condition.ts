@@ -1,4 +1,4 @@
-import { addDays, compareDates, localDateOf } from "$lib/dates";
+import { addDays, compareDates, localDateOf } from "#lib/dates.ts";
 import { lookupSignal, noDateResult } from "./common";
 import { estimateCrossing } from "./estimate";
 import type {

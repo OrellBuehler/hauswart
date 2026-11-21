@@ -1,4 +1,4 @@
-import { addDays, compareDates, isValidDate, localDateOf } from "$lib/dates";
+import { addDays, compareDates, isValidDate, localDateOf } from "#lib/dates.ts";
 import type { HaCalendarEvent, HaState } from "./schemas";
 
 /** Thrown by the pure helpers for input that cannot be used (bad pattern, bad payload field). */

@@ -1,24 +1,24 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import CalendarDaysIcon from "@lucide/svelte/icons/calendar-days";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
   import {
     MAX_FEEDS_PER_USER,
     type CalendarFeed,
-  } from "$lib/api/schemas/share";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import TargetsCard from "$lib/components/calendar-sync/targets-card.svelte";
-  import CalendarHowto from "$lib/components/share/calendar-howto.svelte";
-  import FeedFormDialog from "$lib/components/share/feed-form-dialog.svelte";
-  import FeedRow from "$lib/components/share/feed-row.svelte";
-  import FeedSubscribeDialog from "$lib/components/share/feed-subscribe-dialog.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/api/schemas/share.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import TargetsCard from "#lib/components/calendar-sync/targets-card.svelte";
+  import CalendarHowto from "#lib/components/share/calendar-howto.svelte";
+  import FeedFormDialog from "#lib/components/share/feed-form-dialog.svelte";
+  import FeedRow from "#lib/components/share/feed-row.svelte";
+  import FeedSubscribeDialog from "#lib/components/share/feed-subscribe-dialog.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -50,7 +50,7 @@
   }
 
   async function saved(feed: CalendarFeed, created: boolean) {
-    await invalidateAll();
+    await refreshAll();
     if (created) showQr(feed);
   }
 
@@ -70,7 +70,7 @@
       params: { id: target.id },
     });
     toast.success(m.feeds_rotated_toast({ name: feed.name }));
-    await invalidateAll();
+    await refreshAll();
     showQr(feed);
   }
 
@@ -79,7 +79,7 @@
     const { id, name } = target;
     await api.call(endpoints.calendarFeedsDelete, { params: { id } });
     toast.success(m.feeds_deleted_toast({ name }));
-    await invalidateAll();
+    await refreshAll();
   }
 </script>
 

@@ -2,27 +2,27 @@
   import CheckIcon from "@lucide/svelte/icons/check";
   import { untrack } from "svelte";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { COST_TAG_COLORS, type CostTagColor } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
+  import { api } from "#lib/api/browser.ts";
+  import { COST_TAG_COLORS, type CostTagColor } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
   import {
     COST_TAG_NAME_MAX,
     type CostTag,
     type UpdateCostTagRequest,
-  } from "$lib/api/schemas/cost-tags";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import { Input } from "$lib/components/ui/input/index.js";
+  } from "#lib/api/schemas/cost-tags.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import { Input } from "#lib/components/ui/input/index.js";
   import {
     TAG_COLOR_STYLES,
     nextTagColor,
     tagColorLabels,
     tagNameProblem,
     tagSaveMessage,
-  } from "$lib/costs/tags";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
-  import { cn } from "$lib/utils";
+  } from "#lib/costs/tags.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
+  import { cn } from "#lib/utils.ts";
   import TagChip from "./tag-chip.svelte";
 
   let {
