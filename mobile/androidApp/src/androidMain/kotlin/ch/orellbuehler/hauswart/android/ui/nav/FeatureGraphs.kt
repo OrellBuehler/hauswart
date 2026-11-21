@@ -15,6 +15,10 @@ import ch.orellbuehler.hauswart.android.ui.appointments.appointmentsGraph
 import ch.orellbuehler.hauswart.android.ui.components.AppScaffold
 import ch.orellbuehler.hauswart.android.ui.components.EmptyState
 import ch.orellbuehler.hauswart.android.ui.costs.costsGraph
+import ch.orellbuehler.hauswart.android.ui.docs.docsGraph
+import ch.orellbuehler.hauswart.android.ui.documents.documentsGraph
+import ch.orellbuehler.hauswart.android.ui.emergency.EmergencyScreen
+import ch.orellbuehler.hauswart.android.ui.insurance.insuranceGraph
 import ch.orellbuehler.hauswart.android.ui.inventory.inventoryGraph
 import ch.orellbuehler.hauswart.android.ui.notifications.notificationsGraph
 import ch.orellbuehler.hauswart.android.ui.search.searchGraph
@@ -22,7 +26,6 @@ import ch.orellbuehler.hauswart.android.ui.tasks.tasksGraph
 import ch.orellbuehler.hauswart.i18n.tr
 
 private val idArg = listOf(navArgument("id") { type = NavType.StringType })
-private val slugArg = listOf(navArgument("slug") { type = NavType.StringType })
 
 /**
  * The destinations whose feature has no screen yet, so that every link resolves. A feature replaces
@@ -39,11 +42,10 @@ fun NavGraphBuilder.featureGraphs(nav: NavController) {
     inventoryGraph(nav)
 
     // Documentation
-    composable(Routes.DOCS) { ComingSoon(nav, "nav_docs") }
-    composable(Routes.DOC_ROUTE, arguments = slugArg) { ComingSoon(nav, "nav_docs") }
+    docsGraph(nav)
 
     // Documents (Paperless)
-    composable(Routes.DOCUMENTS) { ComingSoon(nav, "nav_documents") }
+    documentsGraph(nav)
 
     // Defects
     composable(Routes.DEFECTS) { ComingSoon(nav, "nav_defects") }
@@ -54,11 +56,10 @@ fun NavGraphBuilder.featureGraphs(nav: NavController) {
     composable(Routes.PART_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_parts") }
 
     // Emergency
-    composable(Routes.EMERGENCY) { ComingSoon(nav, "nav_emergency") }
+    composable(Routes.EMERGENCY) { EmergencyScreen(nav) }
 
     // Insurance
-    composable(Routes.INSURANCE) { ComingSoon(nav, "nav_insurance") }
-    composable(Routes.INSURANCE_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_insurance") }
+    insuranceGraph(nav)
 
     // Costs
     costsGraph(nav)
