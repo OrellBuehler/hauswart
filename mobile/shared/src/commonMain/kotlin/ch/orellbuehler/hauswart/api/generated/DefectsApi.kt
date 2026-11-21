@@ -169,7 +169,7 @@ data class DefectsUpdateRequest(
     val responsibleContactId: Patch<String> = Patch.Keep,
     /** date */
     val deadlineDate: Patch<String> = Patch.Keep,
-    @EncodeDefault val deadlineSource: String = "handover",
+    val deadlineSource: String? = null,
     /** date */
     val fixedOn: Patch<String> = Patch.Keep,
     val resolutionMd: String? = null,

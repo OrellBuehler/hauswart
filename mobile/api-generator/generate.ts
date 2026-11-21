@@ -398,7 +398,7 @@ export function generateMobileApi(doc: OpenApiDoc): Map<string, string> {
           `${pad}        val ${upperSnake(key)}_VALUES: List<String> = listOf(${values.map(kotlinString).join(", ")})`,
         );
       let decl: string;
-      if (bare.const !== undefined && !typed.nullable) {
+      if (bare.const !== undefined && !typed.nullable && required.has(key)) {
         decl = `@EncodeDefault ${serial}val ${id}: ${render(typed)} = ${literal(bare.const, typed)}`;
       } else if (required.has(key)) {
         decl = `${serial}val ${id}: ${render(typed)}`;

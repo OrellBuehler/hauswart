@@ -42,6 +42,8 @@ enum Route: Hashable {
 
     // Defects: the form for a new defect, optionally for an asset and a room
     case defectNew(String?, String?)
+    // Documentation: the saved states of a page (by address)
+    case docHistory(String)
 
     // Costs: balances and settlements of a book (`all` for every book, else the id of a book)
     case costsBalances(String)
@@ -84,10 +86,11 @@ func destination(for route: Route) -> AnyView {
     case .warranties: return AnyView(WarrantiesScreen())
 
     // Documentation and documents
-    case .docs: return AnyView(ComingSoonScreen(title: tr("nav_docs")))
-    case .doc: return AnyView(ComingSoonScreen(title: tr("nav_docs")))
-    case .documents: return AnyView(ComingSoonScreen(title: tr("nav_documents")))
-    case .emergency: return AnyView(ComingSoonScreen(title: tr("nav_emergency")))
+    case .docs: return AnyView(DocsScreen())
+    case let .doc(slug): return AnyView(DocScreen(slug: slug))
+    case let .docHistory(slug): return AnyView(DocRevisionsScreen(slug: slug))
+    case .documents: return AnyView(DocumentsScreen())
+    case .emergency: return AnyView(EmergencyScreen())
 
     // Defects and parts
     case .defects: return AnyView(DefectsScreen())
@@ -103,8 +106,8 @@ func destination(for route: Route) -> AnyView {
     case let .costsBalances(book): return AnyView(BalancesScreen(bookArg: book))
 
     // Insurance
-    case .insurance: return AnyView(ComingSoonScreen(title: tr("nav_insurance")))
-    case .insurancePolicy: return AnyView(ComingSoonScreen(title: tr("nav_insurance")))
+    case .insurance: return AnyView(InsuranceScreen())
+    case let .insurancePolicy(id): return AnyView(InsuranceDetailScreen(id: id))
 
     // Notifications and search
     case .notifications: return AnyView(NotificationsScreen())
