@@ -27,7 +27,7 @@ data class PartStockState(
     val loading: Boolean = true,
     val loadError: UiError? = null,
     val name: String = "",
-    val description: String = "",
+    val intro: String = "",
     val stockCount: Long = 0,
     val initial: PartStockForm? = null,
     val saving: Boolean = false,
@@ -102,7 +102,7 @@ class PartStockStore(
                 it.copy(
                     loading = false,
                     name = part.name,
-                    description = tr("part_stock_dialog_description", "name" to part.name, "count" to part.stockCount),
+                    intro = tr("part_stock_dialog_description", "name" to part.name, "count" to part.stockCount),
                     stockCount = part.stockCount,
                     initial = PartStockForm(reason = initialReason, qty = initialQty.toString()),
                 )
@@ -116,7 +116,7 @@ class PartStockStore(
 data class PartOrderedState(
     val loading: Boolean = true,
     val loadError: UiError? = null,
-    val description: String = "",
+    val intro: String = "",
     /** The quantity the field starts with: what is on order, else the reorder quantity. */
     val initialQty: String = "",
     val saving: Boolean = false,
@@ -160,7 +160,7 @@ class PartOrderedStore(
             update {
                 it.copy(
                     loading = false,
-                    description = tr("part_ordered_dialog_description", "name" to part.name),
+                    intro = tr("part_ordered_dialog_description", "name" to part.name),
                     initialQty = (if (part.orderedQty > 0) part.orderedQty else part.reorderQty).toString(),
                 )
             }
@@ -295,7 +295,7 @@ class PartTaskLinkStore(
 }
 
 data class PartTaskQtyState(
-    val description: String,
+    val intro: String,
     val saving: Boolean = false,
     val error: UiError? = null,
     val fieldErrors: Map<String, String> = emptyMap(),
@@ -308,7 +308,7 @@ class PartTaskQtyStore(
     private val partId: String,
     private val taskId: String,
     title: String,
-) : Store<PartTaskQtyState>(PartTaskQtyState(description = tr("task_part_edit_description", "name" to title))) {
+) : Store<PartTaskQtyState>(PartTaskQtyState(intro = tr("task_part_edit_description", "name" to title))) {
     fun save(qtyText: String) {
         if (current.saving) return
         val qty = parseCount(qtyText)

@@ -125,14 +125,14 @@ fun DefectDetailScreen(
                         FactsCard(nav, view)
                         SectionCard(title = tr("defect_description")) {
                             Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-                                if (view.description.isEmpty()) {
+                                if (view.body.isEmpty()) {
                                     Text(
                                         tr("defect_description_empty"),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 } else {
-                                    LinkedText(view.description)
+                                    LinkedText(view.body)
                                 }
                             }
                         }

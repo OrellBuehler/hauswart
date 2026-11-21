@@ -77,8 +77,8 @@ fun DefectEditScreen(
                     )
                     TextField(
                         label = tr("defect_description"),
-                        value = current.description,
-                        onChange = { form = current.copy(description = it) },
+                        value = current.details,
+                        onChange = { form = current.copy(details = it) },
                         error = state.fieldErrors["descriptionMd"],
                         singleLine = false,
                         minLines = 3,

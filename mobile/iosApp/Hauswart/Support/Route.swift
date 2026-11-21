@@ -40,6 +40,9 @@ enum Route: Hashable {
     // Tasks: a new task, optionally for an asset
     case taskNew(String?)
 
+    // Defects: the form for a new defect, optionally for an asset and a room
+    case defectNew(String?, String?)
+
     // Costs: balances and settlements of a book (`all` for every book, else the id of a book)
     case costsBalances(String)
 }
@@ -80,10 +83,12 @@ func destination(for route: Route) -> AnyView {
     case .emergency: return AnyView(ComingSoonScreen(title: tr("nav_emergency")))
 
     // Defects and parts
-    case .defects: return AnyView(ComingSoonScreen(title: tr("nav_defects")))
-    case .defect: return AnyView(ComingSoonScreen(title: tr("nav_defects")))
-    case .parts: return AnyView(ComingSoonScreen(title: tr("nav_parts")))
-    case .part: return AnyView(ComingSoonScreen(title: tr("nav_parts")))
+    case .defects: return AnyView(DefectsScreen())
+    case let .defect(id): return AnyView(DefectDetailScreen(id: id))
+    case let .defectNew(assetId, roomId):
+        return AnyView(DefectEditScreen(id: nil, assetId: assetId, roomId: roomId, embedded: true, onSaved: nil))
+    case .parts: return AnyView(PartsScreen())
+    case let .part(id): return AnyView(PartDetailScreen(id: id))
 
     // Costs
     case .costs: return AnyView(CostsScreen())

@@ -21,7 +21,7 @@ data class DefectStatusState(
     val loadError: UiError? = null,
     val target: String,
     val title: String = "",
-    val description: String = "",
+    val intro: String = "",
     val submitLabel: String = "",
     val destructive: Boolean = false,
     /** Reported and fixed ask for the date. */
@@ -107,7 +107,7 @@ class DefectStatusStore(
                 it.copy(
                     loading = false,
                     title = tr("defect_dialog_${dialog}_title"),
-                    description = tr("defect_dialog_${dialog}_description"),
+                    intro = tr("defect_dialog_${dialog}_description"),
                     submitLabel = defectActionLabel(target, defect.status),
                     destructive = target == "rejected",
                     needsDate = needsDate,

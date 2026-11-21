@@ -19,7 +19,7 @@ import kotlinx.serialization.json.JsonPrimitive
 /** Every field of the defect form as typed; dates are `YYYY-MM-DD` or empty, ids are empty for none. */
 data class DefectForm(
     val title: String = "",
-    val description: String = "",
+    val details: String = "",
     val severity: String = "medium",
     val roomId: String = "",
     val assetId: String = "",
@@ -148,7 +148,7 @@ class DefectEditStore(
         val fields =
             mutableMapOf(
                 "title" to JsonPrimitive(form.title.trim()),
-                "descriptionMd" to JsonPrimitive(form.description),
+                "descriptionMd" to JsonPrimitive(form.details),
                 "severity" to JsonPrimitive(form.severity),
                 "roomId" to nullable(form.roomId),
                 "assetId" to nullable(form.assetId),
@@ -265,7 +265,7 @@ class DefectEditStore(
             }
         return DefectForm(
             title = defect.title,
-            description = defect.descriptionMd,
+            details = defect.descriptionMd,
             severity = defect.severity,
             roomId = defect.roomId.orEmpty(),
             assetId = defect.assetId.orEmpty(),

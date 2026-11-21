@@ -311,7 +311,7 @@ data class DefectView(
     val assetId: String?,
     val assetName: String?,
     val facts: List<DefectFact>,
-    val description: List<TextSegment>,
+    val body: List<TextSegment>,
     val resolution: List<TextSegment>,
     /** The task that reminds of the deadline, while there is one. */
     val reminderTaskId: String?,
@@ -361,7 +361,7 @@ fun defectView(
         assetId = defect.assetId,
         assetName = defect.assetName,
         facts = facts,
-        description = if (defect.descriptionMd.isBlank()) emptyList() else linkify(defect.descriptionMd),
+        body = if (defect.descriptionMd.isBlank()) emptyList() else linkify(defect.descriptionMd),
         resolution = if (defect.resolutionMd.isBlank()) emptyList() else linkify(defect.resolutionMd),
         reminderTaskId = defect.reminderTaskId,
         actions = defectActions(defect.status),

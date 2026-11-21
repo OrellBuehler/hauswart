@@ -48,7 +48,7 @@ internal fun DefectStatusDialog(
         val current = form
         when {
             current != null -> {
-                Text(state.description)
+                Text(state.intro)
                 if (state.needsDate) {
                     DateField(
                         label = state.dateLabel,

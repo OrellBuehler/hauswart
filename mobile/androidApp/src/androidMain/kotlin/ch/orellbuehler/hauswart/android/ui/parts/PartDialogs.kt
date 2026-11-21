@@ -184,7 +184,7 @@ internal fun PartStockDialog(
         val current = form
         when {
             current != null -> {
-                Text(state.description, style = MaterialTheme.typography.bodyMedium)
+                Text(state.intro, style = MaterialTheme.typography.bodyMedium)
                 ChoiceField(
                     label = tr("part_stock_reason"),
                     value = current.reason,
@@ -253,7 +253,7 @@ internal fun PartOrderedDialog(
             state.loading && state.loadError == null -> LoadingBox()
             state.loadError != null -> LoadFailure(state.loadError!!, store::retry)
             else -> {
-                Text(state.description, style = MaterialTheme.typography.bodyMedium)
+                Text(state.intro, style = MaterialTheme.typography.bodyMedium)
                 TextField(
                     label = tr("part_ordered_qty"),
                     value = qty,
@@ -361,7 +361,7 @@ internal fun PartTaskQtyDialog(
         pending = state.saving,
     ) {
         Column(verticalArrangement = FieldGap) {
-            Text(state.description, style = MaterialTheme.typography.bodyMedium)
+            Text(state.intro, style = MaterialTheme.typography.bodyMedium)
             TextField(
                 label = tr("task_part_qty"),
                 value = qty,
