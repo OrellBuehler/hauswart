@@ -58,6 +58,10 @@ class TestApp(
     @Volatile
     var offline = false
 
+    /** How long the mock server takes to answer, for tests about what happens while a request is in flight. */
+    @Volatile
+    var latencyMillis = 0L
+
     @Volatile
     private var replies = emptyMap<String, Pair<HttpStatusCode, String>>()
 
@@ -76,6 +80,7 @@ class TestApp(
                         dispatcher = Dispatchers.Default.limitedParallelism(1)
                         addHandler { request ->
                             check(!offline) { "connection refused" }
+                            if (latencyMillis > 0) delay(latencyMillis)
                             val path = request.url.encodedPath
                             recorded = recorded +
                                 Recorded(

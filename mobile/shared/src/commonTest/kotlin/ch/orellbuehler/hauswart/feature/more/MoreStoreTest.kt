@@ -44,8 +44,8 @@ class MoreStoreTest {
     fun theDocumentsRowIsHiddenUntilADocumentSystemIsKnownToWork() =
         runTest {
             server.on("GET", "/api/v1/integrations", """{"items":[${integration(enabled = true)}],"nextCursor":null}""")
+            assertFalse("documents" in ids(MoreState(userName = "", username = "", groups = moreGroups(documentSystem = false))))
             val store = MoreStore(app)
-            assertFalse("documents" in ids(store.value))
             val state = store.await { it.documentSystem }
             assertTrue("documents" in ids(state))
             assertEquals(listOf("inventory", "rooms", "plants", "docs", "documents"), state.groups[1].items.map { it.id })

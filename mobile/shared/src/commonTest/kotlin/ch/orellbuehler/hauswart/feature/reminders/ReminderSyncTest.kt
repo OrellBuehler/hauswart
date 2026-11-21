@@ -150,6 +150,7 @@ class ReminderSyncTest {
             reminders.plan()
             val before = server.requestsTo("GET", "/api/v1/dashboard").size
             notifications(notification("n2"))
+            server.latencyMillis = 300
             val both = listOf(async { reminders.plan() }, async { reminders.plan() }).awaitAll()
             assertEquals(1, server.requestsTo("GET", "/api/v1/dashboard").size - before)
             assertEquals(listOf("note:n2"), both[0].filter { it.id.startsWith("note:") }.map { it.id })

@@ -166,7 +166,7 @@ class AttachmentsStoreTest {
             val store = store()
             store.await { !it.loading }
             store.upload("scan.pdf", null, jpeg)
-            store.await { it.rows.isNotEmpty() }
+            server.awaitRequest("POST", "/api/v1/attachments")
             assertTrue("application/pdf" in server.requestsTo("POST", "/api/v1/attachments").single().body)
             store.close()
         }
