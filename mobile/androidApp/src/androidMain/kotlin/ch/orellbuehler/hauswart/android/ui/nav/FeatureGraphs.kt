@@ -1,0 +1,105 @@
+package ch.orellbuehler.hauswart.android.ui.nav
+
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Construction
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavType
+import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import ch.orellbuehler.hauswart.android.ui.components.AppScaffold
+import ch.orellbuehler.hauswart.android.ui.components.EmptyState
+import ch.orellbuehler.hauswart.i18n.tr
+
+private val idArg = listOf(navArgument("id") { type = NavType.StringType })
+private val slugArg = listOf(navArgument("slug") { type = NavType.StringType })
+private val newTaskArg =
+    listOf(
+        navArgument("assetId") {
+            type = NavType.StringType
+            nullable = true
+            defaultValue = null
+        },
+    )
+
+/**
+ * The destinations whose feature has no screen yet, so that every link resolves. A feature replaces
+ * its own lines with its `<feature>Graph(nav)` call in `HauswartRoot`.
+ */
+fun NavGraphBuilder.featureGraphs(nav: NavController) {
+    // Tasks
+    composable(Routes.TASKS) { ComingSoon(nav, "nav_tasks", root = true) }
+    composable(Routes.TASK_NEW_ROUTE, arguments = newTaskArg) { ComingSoon(nav, "nav_tasks") }
+    composable(Routes.TASK_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_tasks") }
+
+    // Appointments
+    composable(Routes.APPOINTMENTS) { ComingSoon(nav, "nav_appointments") }
+    composable(Routes.APPOINTMENT_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_appointments") }
+
+    // Inventory (devices)
+    composable(Routes.INVENTORY) { ComingSoon(nav, "nav_inventory") }
+    composable(Routes.ASSET_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_inventory") }
+
+    // Rooms
+    composable(Routes.ROOMS) { ComingSoon(nav, "nav_rooms") }
+    composable(Routes.ROOM_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_rooms") }
+
+    // Plants
+    composable(Routes.PLANTS) { ComingSoon(nav, "nav_plants") }
+
+    // Documentation
+    composable(Routes.DOCS) { ComingSoon(nav, "nav_docs") }
+    composable(Routes.DOC_ROUTE, arguments = slugArg) { ComingSoon(nav, "nav_docs") }
+
+    // Documents (Paperless)
+    composable(Routes.DOCUMENTS) { ComingSoon(nav, "nav_documents") }
+
+    // Defects
+    composable(Routes.DEFECTS) { ComingSoon(nav, "nav_defects") }
+    composable(Routes.DEFECT_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_defects") }
+
+    // Parts
+    composable(Routes.PARTS) { ComingSoon(nav, "nav_parts") }
+    composable(Routes.PART_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_parts") }
+
+    // Emergency
+    composable(Routes.EMERGENCY) { ComingSoon(nav, "nav_emergency") }
+
+    // Warranties
+    composable(Routes.WARRANTIES) { ComingSoon(nav, "nav_warranties") }
+
+    // Insurance
+    composable(Routes.INSURANCE) { ComingSoon(nav, "nav_insurance") }
+    composable(Routes.INSURANCE_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_insurance") }
+
+    // Costs
+    composable(Routes.COSTS) { ComingSoon(nav, "nav_costs", root = true) }
+    composable(Routes.COST_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_costs") }
+
+    // Notifications
+    composable(Routes.NOTIFICATIONS) { ComingSoon(nav, "notifications_title") }
+
+    // Search
+    composable(Routes.SEARCH) { ComingSoon(nav, "search_page_title") }
+}
+
+/** [titleKey] is the message key of the section's name; a [root] screen is a tab and has no back arrow. */
+@Composable
+private fun ComingSoon(
+    nav: NavController,
+    titleKey: String,
+    root: Boolean = false,
+) {
+    AppScaffold(title = tr(titleKey), onBack = if (root) null else ({ nav.popBackStack() })) { padding ->
+        EmptyState(
+            title = tr("m_coming_soon"),
+            body = tr("m_coming_soon_body"),
+            icon = Icons.Outlined.Construction,
+            modifier = Modifier.padding(padding).padding(top = 48.dp),
+        )
+    }
+}

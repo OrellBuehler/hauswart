@@ -1,0 +1,68 @@
+package ch.orellbuehler.hauswart.android.ui.nav
+
+import android.net.Uri
+
+/**
+ * Every destination another feature may link to. A feature registers its routes in its own
+ * `<Feature>Nav.kt` (`fun NavGraphBuilder.<feature>Graph(nav: NavController)`) and may add private
+ * routes there; whatever other features link to is named here. Ids go through [arg]. The `*_ROUTE`
+ * constants are the patterns the destinations are registered with.
+ */
+object Routes {
+    const val HOME = "home"
+    const val TASKS = "tasks"
+    const val COSTS = "costs"
+    const val MORE = "more"
+
+    const val APPOINTMENTS = "appointments"
+    const val INVENTORY = "inventory"
+    const val ROOMS = "rooms"
+    const val PLANTS = "plants"
+    const val DOCS = "docs"
+    const val DOCUMENTS = "documents"
+    const val DEFECTS = "defects"
+    const val PARTS = "parts"
+    const val CONTACTS = "contacts"
+    const val EMERGENCY = "emergency"
+    const val WARRANTIES = "warranties"
+    const val INSURANCE = "insurance"
+    const val NOTIFICATIONS = "notifications"
+    const val SEARCH = "search"
+    const val SETTINGS = "settings"
+
+    const val TASK_ROUTE = "tasks/{id}"
+    const val TASK_NEW_ROUTE = "tasks/new?assetId={assetId}"
+    const val APPOINTMENT_ROUTE = "appointments/{id}"
+    const val ASSET_ROUTE = "assets/{id}"
+    const val ROOM_ROUTE = "rooms/{id}"
+    const val DOC_ROUTE = "docs/{slug}"
+    const val DEFECT_ROUTE = "defects/{id}"
+    const val PART_ROUTE = "parts/{id}"
+    const val CONTACT_ROUTE = "contacts/{id}"
+    const val COST_ROUTE = "costs/entry/{id}"
+    const val INSURANCE_ROUTE = "insurance/{id}"
+
+    fun task(id: String) = "tasks/${arg(id)}"
+
+    fun taskNew(assetId: String? = null) = "tasks/new" + (assetId?.let { "?assetId=${arg(it)}" } ?: "")
+
+    fun appointment(id: String) = "appointments/${arg(id)}"
+
+    fun asset(id: String) = "assets/${arg(id)}"
+
+    fun room(id: String) = "rooms/${arg(id)}"
+
+    fun doc(slug: String) = "docs/${arg(slug)}"
+
+    fun defect(id: String) = "defects/${arg(id)}"
+
+    fun part(id: String) = "parts/${arg(id)}"
+
+    fun contact(id: String) = "contacts/${arg(id)}"
+
+    fun cost(id: String) = "costs/entry/${arg(id)}"
+
+    fun insurance(id: String) = "insurance/${arg(id)}"
+
+    fun arg(value: String): String = Uri.encode(value)
+}

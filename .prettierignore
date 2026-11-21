@@ -11,3 +11,7 @@ src/lib/paraglide
 project.inlang
 docs/openapi.json
 dist
+mobile/**/build
+mobile/.gradle
+mobile/.kotlin
+mobile/iosApp/Hauswart/Assets.xcassets
