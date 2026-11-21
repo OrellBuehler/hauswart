@@ -47,12 +47,18 @@ class TestApp(
     val settings: MemoryStore = MemoryStore(),
     val secure: MemoryStore = MemoryStore(),
 ) {
-    val requests = mutableListOf<Recorded>()
+    // The mock engine answers on another thread (one at a time), so both collections are replaced
+    // as a whole instead of mutated: a test may read them at any moment.
+    @Volatile
+    private var recorded = emptyList<Recorded>()
+    val requests: List<Recorded> get() = recorded
 
     /** While true the mock server cannot be reached at all. */
     @Volatile
     var offline = false
-    private val replies = mutableMapOf<String, Pair<HttpStatusCode, String>>()
+
+    @Volatile
+    private var replies = emptyMap<String, Pair<HttpStatusCode, String>>()
 
     init {
         Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -65,20 +71,23 @@ class TestApp(
             device = DeviceInfo(name = "Test phone", platform = "android", language = "de"),
             client =
                 HttpClient(
-                    MockEngine { request ->
-                        check(!offline) { "connection refused" }
-                        val path = request.url.encodedPath
-                        requests +=
-                            Recorded(
-                                request.method.value,
-                                path,
-                                request.url.encodedQuery,
-                                request.body.toByteArray().decodeToString(),
-                            )
-                        val (status, body) =
-                            replies["${request.method.value} $path"]
-                                ?: (HttpStatusCode.NotFound to """{"error":{"code":"not_found","message":"Not found"}}""")
-                        respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))
+                    MockEngine.create {
+                        dispatcher = Dispatchers.Default.limitedParallelism(1)
+                        addHandler { request ->
+                            check(!offline) { "connection refused" }
+                            val path = request.url.encodedPath
+                            recorded = recorded +
+                                Recorded(
+                                    request.method.value,
+                                    path,
+                                    request.url.encodedQuery,
+                                    request.body.toByteArray().decodeToString(),
+                                )
+                            val (status, body) =
+                                replies["${request.method.value} $path"]
+                                    ?: (HttpStatusCode.NotFound to """{"error":{"code":"not_found","message":"Not found"}}""")
+                            respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))
+                        }
                     },
                 ),
         )
@@ -90,7 +99,7 @@ class TestApp(
         body: String,
         status: HttpStatusCode = HttpStatusCode.OK,
     ) {
-        replies["$method $path"] = status to body
+        replies = replies + ("$method $path" to (status to body))
     }
 
     fun onError(
