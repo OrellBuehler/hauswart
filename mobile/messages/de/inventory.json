@@ -1,0 +1,14 @@
+{
+  "m_none": "Keine",
+  "m_inventory_filters_title": "Filter",
+  "m_asset_vehicle_hint": "Fahrzeugangaben wie Kennzeichen und Kilometerstand pflegst du im Browser.",
+  "m_hint_reaction_edit_web": "Die Reaktion lässt sich nur im Browser ändern.",
+  "m_asset_more": "Mehr",
+  "m_asset_share_notes": "Liste teilen",
+  "m_room_new_asset": "Gerät hinzufügen",
+  "m_asset_open_room": "Raum öffnen",
+  "m_plants_undo": "Rückgängig",
+  "m_service_notes_hint": "Hake an, was bei dieser Arbeit erledigt wurde.",
+  "m_hint_move": "Verschieben",
+  "m_notice_dismiss": "Schliessen"
+}

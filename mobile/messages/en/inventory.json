@@ -1,0 +1,14 @@
+{
+  "m_none": "None",
+  "m_inventory_filters_title": "Filters",
+  "m_asset_vehicle_hint": "Vehicle details such as plate and odometer are kept in the browser.",
+  "m_hint_reaction_edit_web": "The reaction can only be changed in the browser.",
+  "m_asset_more": "More",
+  "m_asset_share_notes": "Share list",
+  "m_room_new_asset": "Add device",
+  "m_asset_open_room": "Open room",
+  "m_plants_undo": "Undo",
+  "m_service_notes_hint": "Tick what this work took care of.",
+  "m_hint_move": "Move",
+  "m_notice_dismiss": "Dismiss"
+}
