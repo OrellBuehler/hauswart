@@ -231,6 +231,8 @@ class AttachmentsStoreTest {
             val store = store()
             store.await { !it.loading }
             server.on("PATCH", "/api/v1/attachments/a1", attachment("a1", guest = true))
+            // The store reloads after its own change; the list has to say the same by then.
+            server.on("GET", "/api/v1/attachments", page(attachment("a1", guest = true)))
             store.setGuestVisible("a1", true)
             val state = store.await { it.rows.first().guestVisible && it.busyId == null }
             assertNull(state.busyId)
