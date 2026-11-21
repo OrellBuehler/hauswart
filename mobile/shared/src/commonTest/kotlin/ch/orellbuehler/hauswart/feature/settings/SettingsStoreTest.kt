@@ -40,6 +40,22 @@ class SettingsStoreTest {
         }
 
     @Test
+    fun showsUntilWhenTheDeviceStaysSignedIn() =
+        runTest {
+            server.on("GET", "/api/v1/health", """{"status":"ok","version":"1.2.3"}""")
+            val store = SettingsStore(server.app)
+            assertEquals(null, store.state.value.signedInUntil)
+            store.close()
+
+            server.app.session.signIn("hw_test", server.app.session.user!!, "2027-02-21T09:00:00.000Z")
+            val signedIn = SettingsStore(server.app)
+            assertEquals("21.02.2027", signedIn.state.value.signedInUntil)
+            signedIn.setLanguage("en")
+            assertEquals("21 Feb 2027", signedIn.state.value.signedInUntil)
+            signedIn.close()
+        }
+
+    @Test
     fun choosingALanguageSwitchesTheApp() =
         runTest {
             server.on("GET", "/api/v1/health", """{"status":"ok","version":"1.2.3"}""")

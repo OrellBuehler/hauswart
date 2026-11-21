@@ -101,7 +101,13 @@ planned on the device from the server's data; there is no push service).
   `FooKt.bar` references that do not exist, reserved Objective-C method families, unknown message keys.
 - Known limit of the generated client: in a POST body an optional nullable field cannot be sent as an
   explicit `null` (it is left out, so the server's default applies). Where that matters a store builds
-  the body by hand (`feature/defects/DefectRequests.kt`).
+  the body by hand (`feature/defects/DefectRequests.kt`, `feature/inbox/SuggestionRequests.kt`,
+  `feature/appointments/AppointmentRequests.kt`, `feature/vehicles/FuelRequests.kt`).
+- Work that must outlive its screen (uploads) runs in `app.background` through `Store.launchIn`; the store is
+  updated when it ends, whether or not it is still open, and other screens learn through `app.changed(...)`.
+- Android: `tr()` reads the language as UI state (`LocaleTracker`, hooked into `I18n.onRead`), so a language change
+  draws the screens again and `rememberStore` makes their stores again; the navigation stays. On sign-out
+  `StoreRegistry.closeAll()` closes every store.
 
 ## Android
 

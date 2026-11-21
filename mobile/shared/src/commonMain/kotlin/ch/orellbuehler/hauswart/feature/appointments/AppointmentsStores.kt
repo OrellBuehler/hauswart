@@ -611,11 +611,7 @@ class AppointmentEditStore(
                 update { it.copy(fieldErrors = built.errors, error = null) }
                 return
             }
-            send {
-                app.api.appointments
-                    .appointmentsCreate(body)
-                    .id
-            }
+            send { createAppointmentRaw(app, body).id }
         } else {
             val built = buildUpdateRequest(form, base, zone)
             val body = built.body

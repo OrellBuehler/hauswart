@@ -14,6 +14,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -135,6 +136,22 @@ class TestApp(
         method: String,
         path: String,
     ): List<Recorded> = requests.filter { it.method == method && it.path == path }
+
+    /** Waits until the mock server received `METHOD path` (the work that sends it may run in another scope). */
+    suspend fun awaitRequest(
+        method: String,
+        path: String,
+    ): Recorded =
+        withContext(Dispatchers.Default) {
+            withTimeout(60.seconds) {
+                var found = requestsTo(method, path).firstOrNull()
+                while (found == null) {
+                    delay(10)
+                    found = requestsTo(method, path).firstOrNull()
+                }
+                found
+            }
+        }
 
     fun close() {
         Dispatchers.resetMain()

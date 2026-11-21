@@ -7,5 +7,6 @@
   "m_attach_cannot_read": "The file could not be read.",
   "m_attach_uploading": "Uploading…",
   "m_attach_retry": "Upload again",
-  "m_attach_dismiss": "Dismiss message"
+  "m_attach_dismiss": "Dismiss message",
+  "m_attach_no_camera": "No camera app is available on this device."
 }

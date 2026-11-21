@@ -10,6 +10,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import ch.orellbuehler.hauswart.android.MainActivity
 import ch.orellbuehler.hauswart.android.R
+import ch.orellbuehler.hauswart.feature.reminders.PlannedReminder
+import ch.orellbuehler.hauswart.feature.reminders.ReminderSync
 import ch.orellbuehler.hauswart.i18n.tr
 
 /** What a reminder says and where tapping it leads; travels in the extras of the alarm. */
@@ -20,6 +22,8 @@ data class ReminderContent(
     val linkKind: String,
     val linkId: String?,
 )
+
+internal fun PlannedReminder.content() = ReminderContent(id, title, body, link.kind, link.id)
 
 /** Posts the notification of a reminder. Its own channel, so that the person can mute reminders without muting anything else. */
 object ReminderNotifier {
@@ -58,6 +62,13 @@ object ReminderNotifier {
                 .setContentIntent(tap)
                 .build()
         manager.notify(content.id.hashCode(), notification)
+    }
+
+    /** The system id of the notification that says the session ended; it is the only one that stays when everything else is cancelled. */
+    val SESSION_ENDED_NOTIFICATION_ID = ReminderSync.SESSION_ENDED_ID.hashCode()
+
+    fun cancelSessionEnded(context: Context) {
+        NotificationManagerCompat.from(context).cancel(SESSION_ENDED_NOTIFICATION_ID)
     }
 
     /** Creates the channel (again: this also renames it after a change of language). */

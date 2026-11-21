@@ -7,6 +7,7 @@ import ch.orellbuehler.hauswart.testing.TestApp
 import ch.orellbuehler.hauswart.testing.await
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonNull
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -23,10 +24,12 @@ class InboxStoreTest {
 
     private val stamps = """"createdAt":"2026-11-01T00:00:00.000Z","updatedAt":"2026-11-01T00:00:00.000Z""""
 
-    private fun cost(id: String) =
-        """{"kind":"cost","id":"$id","status":"pending","acceptedEntityId":null,$stamps,"payload":{"source":"finance_transaction",
+    private fun cost(
+        id: String,
+        assetId: String? = null,
+    ) = """{"kind":"cost","id":"$id","status":"pending","acceptedEntityId":null,$stamps,"payload":{"source":"finance_transaction",
         "date":"2026-11-10","amountMinor":4250,"currency":"CHF","title":"Beispiel Markt","payee":"Beispiel Markt","category":"groceries",
-        "url":"https://finance.example.org/t/1","assetId":null,"bookId":null}}"""
+        "url":"https://finance.example.org/t/1","assetId":${assetId?.let { "\"$it\"" } ?: "null"},"bookId":null}}"""
 
     private val entryJson =
         """{"id":"e1","title":"Einkauf","date":"2026-11-10","amountMinor":4250,"currency":"CHF","payee":null,"bookId":"b1","bookName":"Haushalt"}"""
@@ -213,6 +216,75 @@ class InboxStoreTest {
             assertEquals("household", body.getValue("category").toString().trim('"'))
             assertNull(body["bookId"])
             assertNull(body["splitMode"])
+            settle()
+            store.close()
+        }
+
+    private fun answerAcceptForm(assetId: String?) {
+        server.household()
+        server.on("GET", "/api/v1/finance/suggestions", page(cost("s1", assetId)))
+        server.on(
+            "GET",
+            "/api/v1/cost-books",
+            page(
+                ch.orellbuehler.hauswart.feature.costs
+                    .costBook("b1", "Haushalt", isDefault = true, split = "ownership"),
+            ),
+        )
+        server.on("GET", "/api/v1/cost-tags", """{"items":[]}""")
+        server.on("GET", "/api/v1/assets", page())
+        server.on("GET", "/api/v1/rooms", page())
+        server.on(
+            "POST",
+            "/api/v1/finance/suggestions/s1/accept",
+            """{"suggestion":${cost("s1", assetId)},"entity":{"type":"cost","id":"e9"}}""",
+        )
+    }
+
+    @Test
+    fun choosingNoDeviceSendsAnExplicitNull() =
+        runTest {
+            answerAcceptForm(assetId = "a1")
+            val store = SuggestionAcceptStore(app, "s1")
+            val form = assertNotNull(store.await { it.initial != null }.initial)
+            assertEquals("a1", form.assetId)
+            store.save(form.copy(assetId = ""))
+            store.await { it.done != null }
+            val body = server.requestsTo("POST", "/api/v1/finance/suggestions/s1/accept").single().json
+            assertTrue("assetId" in body)
+            assertEquals(JsonNull, body["assetId"])
+            assertNull(body["paidByUserId"])
+            settle()
+            store.close()
+        }
+
+    @Test
+    fun choosingNoPayerSendsAnExplicitNull() =
+        runTest {
+            answerAcceptForm(assetId = null)
+            val store = SuggestionAcceptStore(app, "s1")
+            val form = assertNotNull(store.await { it.initial != null }.initial)
+            assertEquals("u1", form.paidByUserId)
+            store.save(form.copy(paidByUserId = ""))
+            store.await { it.done != null }
+            val body = server.requestsTo("POST", "/api/v1/finance/suggestions/s1/accept").single().json
+            assertEquals(JsonNull, body["paidByUserId"])
+            assertNull(body["assetId"])
+            settle()
+            store.close()
+        }
+
+    @Test
+    fun keepingTheOfferedDeviceAndPayerSendsNeither() =
+        runTest {
+            answerAcceptForm(assetId = "a1")
+            val store = SuggestionAcceptStore(app, "s1")
+            val form = assertNotNull(store.await { it.initial != null }.initial)
+            store.save(form.copy(title = "Wocheneinkauf"))
+            store.await { it.done != null }
+            val body = server.requestsTo("POST", "/api/v1/finance/suggestions/s1/accept").single().json
+            assertNull(body["assetId"])
+            assertNull(body["paidByUserId"])
             settle()
             store.close()
         }

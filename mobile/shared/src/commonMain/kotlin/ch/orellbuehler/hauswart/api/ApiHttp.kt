@@ -2,6 +2,7 @@ package ch.orellbuehler.hauswart.api
 
 import ch.orellbuehler.hauswart.api.generated.generatedSerializersModule
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.header
@@ -87,7 +88,7 @@ class ApiHttp(
         path: String,
         query: List<Pair<String, Any?>>,
     ): BinaryBody {
-        val response = send(method, path, query, null)
+        val response = send(method, path, query, null, LONG_TRANSFER_MS)
         return guarded {
             BinaryBody(response.readRawBytes(), response.contentType()?.toString())
         }
@@ -113,7 +114,7 @@ class ApiHttp(
                     )
                 },
             )
-        return decode(execute("POST", path, emptyList(), content), response)
+        return decode(execute("POST", path, emptyList(), content, LONG_TRANSFER_MS), response)
     }
 
     internal fun clientForProbe(): HttpClient = client
@@ -126,13 +127,16 @@ class ApiHttp(
         path: String,
         query: List<Pair<String, Any?>>,
         jsonBody: String?,
-    ): HttpResponse = execute(method, path, query, jsonBody?.let { TextContent(it, ContentType.Application.Json) })
+        timeoutMillis: Long? = null,
+    ): HttpResponse = execute(method, path, query, jsonBody?.let { TextContent(it, ContentType.Application.Json) }, timeoutMillis)
 
+    /** [timeoutMillis] replaces the client's timeouts for this request (uploads and downloads take longer than a JSON call). */
     private suspend fun execute(
         method: String,
         path: String,
         query: List<Pair<String, Any?>>,
         body: Any?,
+        timeoutMillis: Long? = null,
     ): HttpResponse {
         val base = baseUrl() ?: throw ApiException(0, ApiException.NETWORK, "No server configured")
         val bearer = token()
@@ -147,11 +151,18 @@ class ApiHttp(
                     header(HttpHeaders.Accept, "application/json")
                     if (bearer != null) header(HttpHeaders.Authorization, "Bearer $bearer")
                     if (body != null) setBody(body)
+                    if (timeoutMillis != null) {
+                        timeout {
+                            requestTimeoutMillis = timeoutMillis
+                            socketTimeoutMillis = timeoutMillis
+                        }
+                    }
                 }
             }
         if (response.status.value in 200..299) return response
         val failure = failureOf(response)
-        if (failure.code == "unauthenticated" && bearer != null) onUnauthenticated()
+        // A late refusal of a token that was replaced meanwhile (the person signed in again) must not end the new session.
+        if (failure.code == "unauthenticated" && bearer != null && token() == bearer) onUnauthenticated()
         throw failure
     }
 
@@ -204,6 +215,9 @@ class ApiHttp(
         }
 
     companion object {
+        /** Uploads and downloads may take far longer than the 30 seconds that suit a JSON call. */
+        const val LONG_TRANSFER_MS = 300_000L
+
         val JSON: Json =
             Json {
                 ignoreUnknownKeys = true

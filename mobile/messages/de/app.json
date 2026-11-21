@@ -17,6 +17,7 @@
   "m_connect_invalid_url": "Das ist keine gültige Serveradresse. Beispiel: hauswart.example.org",
   "m_connect_unreachable": "Der Server ist nicht erreichbar. Prüfe die Adresse und deine Verbindung.",
   "m_connect_not_hauswart": "Unter dieser Adresse läuft kein hauswart-Server.",
+  "m_connect_path_hint": "hauswart muss direkt unter der Adresse des Servers laufen, nicht unter einem Unterpfad (zum Beispiel hauswart.example.org statt example.org/hauswart).",
   "m_connect_credentials_required": "Gib Benutzername und Passwort ein.",
   "m_field_required": "Pflichtfeld",
   "m_nav_more": "Mehr",

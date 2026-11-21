@@ -290,7 +290,8 @@ class AttachmentsStore(
         job.failed = false
         job.error = ""
         showUploads()
-        scope.launch {
+        // In the app's scope: leaving the screen must not cancel the upload.
+        app.background.launch {
             try {
                 gate.withPermit {
                     val created = uploadAttachment(app, ownerType, ownerId, job.name, job.mime, job.bytes)

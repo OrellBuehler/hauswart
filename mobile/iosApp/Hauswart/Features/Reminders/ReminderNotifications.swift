@@ -68,10 +68,38 @@ enum ReminderCenter {
         }
     }
 
+    /// The identifier of the notice that the session ended (`ReminderSync.SESSION_ENDED_ID`). Signing out
+    /// leaves it, because it is delivered while the session is being cleared.
+    private static let sessionEndedId = "session_ended"
+
     static func cancelAll() {
         let center = UNUserNotificationCenter.current()
         center.removeAllPendingNotificationRequests()
-        center.removeAllDeliveredNotifications()
+        let keep = sessionEndedId
+        center.getDeliveredNotifications { delivered in
+            let ids = delivered.map { $0.request.identifier }.filter { $0 != keep }
+            center.removeDeliveredNotifications(withIdentifiers: ids)
+        }
+    }
+
+    /// Takes the notice that the session ended away: the person is signed in again.
+    static func clearSessionEnded() {
+        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [sessionEndedId])
+    }
+
+    /// Delivers `item` at once, without touching what is pending.
+    static func deliver(_ item: ReminderItem) {
+        let content = UNMutableNotificationContent()
+        content.title = item.title
+        content.body = item.body
+        content.sound = .default
+        var info: [String: String] = [ReminderUserInfo.kind: item.linkKind]
+        if let linkId = item.linkId { info[ReminderUserInfo.linkId] = linkId }
+        content.userInfo = info
+        let request = UNNotificationRequest(identifier: item.id, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error { NSLog("notification could not be delivered: %@", error.localizedDescription) }
+        }
     }
 
     /// The system's answer as the settings store names it: "granted", "denied" or "undetermined".
@@ -120,7 +148,8 @@ final class ReminderNotificationDelegate: NSObject, UNUserNotificationCenterDele
         let linkId = info[ReminderUserInfo.linkId] as? String
         DispatchQueue.main.async {
             MainActor.assumeIsolated {
-                if let kind { ReminderInbox.shared.offer(kind: kind, linkId: linkId) }
+                // The home screen is the root of the first tab: a tap on the notice that the session ended opens nothing.
+                if let kind, kind != "home" { ReminderInbox.shared.offer(kind: kind, linkId: linkId) }
             }
             completionHandler()
         }

@@ -58,6 +58,7 @@ struct DashboardScreen: View {
     private func content(_ state: DashboardState) -> some View {
         if let view = state.view {
             List {
+                SessionExpiryNotice()
                 if let actionError = state.actionError {
                     Section {
                         ErrorBanner(error: actionError)

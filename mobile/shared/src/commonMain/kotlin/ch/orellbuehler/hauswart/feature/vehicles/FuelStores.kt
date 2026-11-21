@@ -496,7 +496,8 @@ class FuelLogStore(
         val notes = form.notes.trim().ifEmpty { null }
         if (id == null) {
             send(tr("fuel_created_toast")) {
-                app.api.vehicles.fuelLogsCreate(
+                createFuelLogRaw(
+                    app,
                     assetId,
                     FuelLogsCreateRequest(
                         date = form.date,

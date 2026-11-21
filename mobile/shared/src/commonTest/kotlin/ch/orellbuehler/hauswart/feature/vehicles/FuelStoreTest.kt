@@ -131,6 +131,33 @@ class FuelStoreTest {
         }
 
     @Test
+    fun nobodyAsPayerSendsAnExplicitNull() =
+        runTest {
+            val store = store()
+            server.on("POST", "/api/v1/assets/a1/fuel-logs", fuelLogJson("f3"))
+            val form = store.blankForm().copy(odometer = "45600", quantity = "38", amount = "69.30")
+            assertEquals("u1", form.paidByUserId)
+            store.save(null, form.copy(paidByUserId = ""))
+            store.await { it.done }
+            val body = server.requestsTo("POST", "/api/v1/assets/a1/fuel-logs").single().json
+            assertTrue("paidByUserId" in body)
+            assertEquals(JsonNull, body["paidByUserId"])
+            store.close()
+        }
+
+    @Test
+    fun aChosenPayerIsSentAsHisId() =
+        runTest {
+            val store = store()
+            server.on("POST", "/api/v1/assets/a1/fuel-logs", fuelLogJson("f3"))
+            store.save(null, store.blankForm().copy(odometer = "45600", quantity = "38", amount = "69.30"))
+            store.await { it.done }
+            val body = server.requestsTo("POST", "/api/v1/assets/a1/fuel-logs").single().json
+            assertEquals("u1", body["paidByUserId"]?.jsonPrimitive?.content)
+            store.close()
+        }
+
+    @Test
     fun aCustomSplitSendsItsShares() =
         runTest {
             val store = store()

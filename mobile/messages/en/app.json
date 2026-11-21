@@ -17,6 +17,7 @@
   "m_connect_invalid_url": "That is not a valid server address. Example: hauswart.example.org",
   "m_connect_unreachable": "The server cannot be reached. Check the address and your connection.",
   "m_connect_not_hauswart": "No hauswart server runs at this address.",
+  "m_connect_path_hint": "hauswart has to be served at the root of its host, not under a path (for example hauswart.example.org instead of example.org/hauswart).",
   "m_connect_credentials_required": "Enter your user name and password.",
   "m_field_required": "Required",
   "m_nav_more": "More",

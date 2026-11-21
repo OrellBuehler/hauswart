@@ -48,8 +48,19 @@ abstract class Store<S : Any>(
     protected fun launch(
         onError: (UiError) -> Unit,
         block: suspend CoroutineScope.() -> Unit,
+    ): Job = launchIn(scope, onError, block)
+
+    /**
+     * [launch] in another scope, for work that must finish although the screen is closed meanwhile
+     * (an upload): pass [HauswartApp.background]. The store is updated when the work ends, whether
+     * or not anyone still looks at it.
+     */
+    protected fun launchIn(
+        outliving: CoroutineScope,
+        onError: (UiError) -> Unit,
+        block: suspend CoroutineScope.() -> Unit,
     ): Job =
-        scope.launch {
+        outliving.launch {
             try {
                 block()
             } catch (e: CancellationException) {

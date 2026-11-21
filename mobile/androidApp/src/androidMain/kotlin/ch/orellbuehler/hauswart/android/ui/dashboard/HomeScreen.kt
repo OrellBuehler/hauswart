@@ -49,6 +49,7 @@ import ch.orellbuehler.hauswart.android.ui.components.ScreenPadding
 import ch.orellbuehler.hauswart.android.ui.components.SectionCard
 import ch.orellbuehler.hauswart.android.ui.components.StatusChip
 import ch.orellbuehler.hauswart.android.ui.components.toneColor
+import ch.orellbuehler.hauswart.android.ui.connect.SessionExpiryNotice
 import ch.orellbuehler.hauswart.android.ui.nav.Routes
 import ch.orellbuehler.hauswart.android.ui.rememberStore
 import ch.orellbuehler.hauswart.android.ui.tasks.AppointmentBadge
@@ -127,6 +128,7 @@ fun HomeScreen(nav: NavController) {
                                         overflow = TextOverflow.Ellipsis,
                                     )
                                 }
+                                SessionExpiryNotice(Modifier.padding(top = 12.dp))
                             }
                         }
                         dashboardContent(

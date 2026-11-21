@@ -1,5 +1,6 @@
 package ch.orellbuehler.hauswart.android.ui.sections
 
+import android.content.ActivityNotFoundException
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -74,7 +75,6 @@ import ch.orellbuehler.hauswart.i18n.tr
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 
 /**
  * The files of one owner as a card: thumbnails (loaded lazily), upload from the camera, the photo
@@ -101,14 +101,14 @@ fun AttachmentsSection(
     var caption by rememberSaveable { mutableStateOf("") }
     var deleteId by rememberSaveable { mutableStateOf<String?>(null) }
     var viewing by remember { mutableStateOf<OpenedAttachment?>(null) }
-    var cannotOpen by remember { mutableStateOf(false) }
+    var notice by remember { mutableStateOf<String?>(null) }
 
     fun upload(uri: Uri?) {
         if (uri == null) return
         scope.launch {
             val picked = context.readPickedFile(uri)
             when {
-                picked == null -> cannotOpen = true
+                picked == null -> notice = "m_attach_cannot_read"
                 picked.bytes == null -> store.rejectTooLarge(picked.name)
                 else -> store.upload(picked.name, picked.mime, picked.bytes)
             }
@@ -117,12 +117,12 @@ fun AttachmentsSection(
 
     val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { upload(it) }
     val pickFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { upload(it) }
-    var capture by remember { mutableStateOf<Pair<File, Uri>?>(null) }
+    var capture by rememberSaveable { mutableStateOf<String?>(null) }
     val takePhoto =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
-            val target = capture
+            val path = capture
             capture = null
-            if (taken && target != null) upload(target.second)
+            if (taken && path != null) upload(context.captureUri(path))
         }
 
     OnValueChange(state.captioned) { captionId = null }
@@ -134,7 +134,7 @@ fun AttachmentsSection(
         } else {
             scope.launch {
                 val done = if (opened.share) context.shareFile(opened.file) else context.viewFile(opened.file)
-                if (!done) cannotOpen = true
+                if (!done) notice = "m_cannot_open"
             }
         }
     }
@@ -153,8 +153,13 @@ fun AttachmentsSection(
                         onClick = {
                             menuOpen = false
                             val target = context.newCaptureTarget()
-                            capture = target
-                            takePhoto.launch(target.second)
+                            capture = target.first.path
+                            try {
+                                takePhoto.launch(target.second)
+                            } catch (_: ActivityNotFoundException) {
+                                capture = null
+                                notice = "m_attach_no_camera"
+                            }
                         },
                     )
                     DropdownMenuItem(
@@ -186,10 +191,10 @@ fun AttachmentsSection(
                     ) { Icon(Icons.Outlined.Close, contentDescription = tr("m_attach_dismiss")) }
                 }
             }
-            if (cannotOpen) {
+            notice?.let { key ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    InlineError(tr("m_cannot_open"), Modifier.weight(1f))
-                    IconButton(onClick = { cannotOpen = false }) { Icon(Icons.Outlined.Close, contentDescription = tr("m_attach_dismiss")) }
+                    InlineError(tr(key), Modifier.weight(1f))
+                    IconButton(onClick = { notice = null }) { Icon(Icons.Outlined.Close, contentDescription = tr("m_attach_dismiss")) }
                 }
             }
         }
@@ -275,7 +280,7 @@ fun AttachmentsSection(
         ImageViewer(
             file = opened.file,
             onShare = {
-                scope.launch { if (!context.shareFile(opened.file)) cannotOpen = true }
+                scope.launch { if (!context.shareFile(opened.file)) notice = "m_cannot_open" }
             },
             onDismiss = { viewing = null },
         )

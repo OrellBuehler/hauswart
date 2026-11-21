@@ -7,5 +7,6 @@
   "m_attach_cannot_read": "Die Datei konnte nicht gelesen werden.",
   "m_attach_uploading": "Wird hochgeladen …",
   "m_attach_retry": "Erneut hochladen",
-  "m_attach_dismiss": "Meldung schliessen"
+  "m_attach_dismiss": "Meldung schliessen",
+  "m_attach_no_camera": "Auf diesem Gerät ist keine Kamera-App vorhanden."
 }

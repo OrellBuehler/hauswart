@@ -1,5 +1,6 @@
 package ch.orellbuehler.hauswart.android.ui.receipts
 
+import android.content.ActivityNotFoundException
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -24,7 +25,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -44,13 +44,13 @@ import ch.orellbuehler.hauswart.android.ui.components.ScreenPadding
 import ch.orellbuehler.hauswart.android.ui.components.TextField
 import ch.orellbuehler.hauswart.android.ui.nav.Routes
 import ch.orellbuehler.hauswart.android.ui.rememberStore
+import ch.orellbuehler.hauswart.android.ui.sections.captureUri
 import ch.orellbuehler.hauswart.android.ui.sections.newCaptureTarget
 import ch.orellbuehler.hauswart.android.ui.sections.readPickedFile
 import ch.orellbuehler.hauswart.feature.receipts.ReceiptForm
 import ch.orellbuehler.hauswart.feature.receipts.ReceiptSubmitStore
 import ch.orellbuehler.hauswart.i18n.tr
 import kotlinx.coroutines.launch
-import java.io.File
 
 /** Takes a photo of a receipt (or picks a picture or PDF) and puts it in the queue. */
 @Composable
@@ -78,12 +78,13 @@ fun ReceiptSubmitScreen(nav: NavController) {
 
     val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { pick(it) }
     val pickFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { pick(it) }
-    var capture by remember { mutableStateOf<Pair<File, Uri>?>(null) }
+    var capture by rememberSaveable { mutableStateOf<String?>(null) }
+    var noCamera by rememberSaveable { mutableStateOf(false) }
     val takePhoto =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
-            val target = capture
+            val path = capture
             capture = null
-            if (taken && target != null) pick(target.second)
+            if (taken && path != null) pick(context.captureUri(path))
         }
 
     AppScaffold(
@@ -146,8 +147,14 @@ fun ReceiptSubmitScreen(nav: NavController) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilledTonalButton(onClick = {
                             val target = context.newCaptureTarget()
-                            capture = target
-                            takePhoto.launch(target.second)
+                            capture = target.first.path
+                            noCamera = false
+                            try {
+                                takePhoto.launch(target.second)
+                            } catch (_: ActivityNotFoundException) {
+                                capture = null
+                                noCamera = true
+                            }
                         }) {
                             Icon(Icons.Outlined.AddAPhoto, contentDescription = null)
                             Text(tr("quick_receipt_camera"), Modifier.padding(start = 8.dp), maxLines = 1)
@@ -165,6 +172,7 @@ fun ReceiptSubmitScreen(nav: NavController) {
                         state.fileName?.let { it + (state.fileSizeText?.let { size -> " ($size)" } ?: "") } ?: tr("m_receipts_file_none"),
                         style = MaterialTheme.typography.bodyMedium,
                     )
+                    if (noCamera) InlineError(tr("m_attach_no_camera"))
                     state.fileProblem?.let { InlineError(it) }
                     state.fileWarning?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
                     state.fieldErrors["file"]?.let { if (it != state.fileProblem) InlineError(it) }

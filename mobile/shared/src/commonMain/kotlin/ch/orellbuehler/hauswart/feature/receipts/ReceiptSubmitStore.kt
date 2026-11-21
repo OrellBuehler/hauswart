@@ -162,7 +162,8 @@ class ReceiptSubmitStore(
             return
         }
         update { it.copy(saving = true, error = null, fieldErrors = emptyMap(), noAnswer = false) }
-        launch({ e -> failed(e) }) {
+        // In the app's scope: leaving the screen must not cancel the upload.
+        launchIn(app.background, { e -> failed(e) }) {
             val task = uploadReceipt(app, name, mime, bytes, form.note.trim(), form.bookId, form.assetId, key)
             key = newIdempotencyKey()
             update { it.copy(saving = false, createdId = task.id) }

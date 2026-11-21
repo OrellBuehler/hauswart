@@ -41,6 +41,7 @@ struct SettingsScreen: View {
             Section(tr("m_settings_server")) {
                 ValueRow(label: tr("m_settings_server"), value: state.serverUrl)
                 ValueRow(label: tr("m_settings_server_version"), value: state.serverVersion)
+                ValueRow(label: tr("m_settings_signed_in_until"), value: state.signedInUntil)
             }
             Section(tr("m_settings_about")) {
                 ValueRow(label: tr("m_settings_app_version"), value: SettingsScreen.appVersion)

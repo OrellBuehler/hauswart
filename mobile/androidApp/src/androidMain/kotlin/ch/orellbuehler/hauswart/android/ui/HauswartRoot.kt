@@ -59,10 +59,12 @@ private val tabs =
 fun HauswartRoot(app: HauswartApp) {
     val session by app.session.state.collectAsStateWithLifecycle()
     val locale by app.localeFlow.collectAsStateWithLifecycle()
+    LaunchedEffect(locale) { LocaleTracker.set(locale) }
     HauswartTheme {
         CompositionLocalProvider(LocalApp provides app) {
-            // Texts come from tr(), which reads the current language: a change rebuilds everything.
-            key(locale, session.signedIn) {
+            // Texts come from tr(), which reads the language as state (LocaleTracker): a change draws the
+            // screens again and gives them stores in the new language, the navigation stays where it is.
+            key(session.signedIn) {
                 if (session.signedIn) MainScaffold() else ConnectScreen()
             }
         }

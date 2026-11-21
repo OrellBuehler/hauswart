@@ -1,5 +1,6 @@
 package ch.orellbuehler.hauswart.feature.connect
 
+import ch.orellbuehler.hauswart.api.generated.User
 import ch.orellbuehler.hauswart.i18n.tr
 import ch.orellbuehler.hauswart.testing.TestApp
 import ch.orellbuehler.hauswart.testing.await
@@ -66,6 +67,42 @@ class ConnectStoreTest {
         }
 
     @Test
+    fun aFailingCheckSaysThatTheAddressHadAPath() =
+        runTest {
+            val store = ConnectStore(app)
+            store.checkServer("https://home.example.org/hauswart")
+            val state = store.await { !it.busy && it.error != null }
+            assertEquals(tr("m_connect_not_hauswart") + " " + tr("m_connect_path_hint"), state.error)
+            store.close()
+        }
+
+    @Test
+    fun onlyARealPathCountsAsAPrefix() {
+        val cases =
+            mapOf(
+                "home.example.org" to false,
+                "https://home.example.org/" to false,
+                "https://home.example.org" to false,
+                "https://home.example.org?x=1/y" to false,
+                "https://home.example.org/hauswart" to true,
+                "home.example.org/hauswart/" to true,
+                "http://192.168.1.5:3000/app?x=1" to true,
+            )
+        cases.forEach { (input, expected) -> assertEquals(expected, hasPathPrefix(input), input) }
+    }
+
+    @Test
+    fun theSignInScreenStartsWithTheLastUserName() {
+        app.session.setServer("https://home.example.org")
+        app.session.signIn("hw_old", User(id = "u1", username = "anna", displayName = "Anna", role = "member", locale = "de"), null)
+        app.session.signOut()
+        val store = ConnectStore(app)
+        assertEquals("anna", store.state.value.username)
+        assertEquals("login", store.state.value.step)
+        store.close()
+    }
+
+    @Test
     fun anUnreachableServerReportsIt() =
         runTest {
             server.offline = true
@@ -99,6 +136,7 @@ class ConnectStoreTest {
             assertEquals("android", request.getValue("platform").jsonPrimitive.content)
             assertTrue(app.session.state.value.signedIn)
             assertEquals("hw_secret", app.session.token)
+            assertEquals("2027-01-01T00:00:00.000Z", app.session.state.value.tokenExpiresAt)
             assertEquals("en", app.locale)
             store.close()
         }

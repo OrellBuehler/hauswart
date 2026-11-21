@@ -30,6 +30,7 @@ struct ConnectScreen: View {
         }
         .onAppear {
             if server.isEmpty { server = state.serverUrl }
+            if username.isEmpty { username = state.username }
         }
     }
 
