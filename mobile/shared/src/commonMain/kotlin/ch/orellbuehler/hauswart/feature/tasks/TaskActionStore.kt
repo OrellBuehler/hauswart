@@ -1,7 +1,6 @@
 package ch.orellbuehler.hauswart.feature.tasks
 
 import ch.orellbuehler.hauswart.HauswartApp
-import ch.orellbuehler.hauswart.api.ApiException
 import ch.orellbuehler.hauswart.api.generated.TaskDetail
 import ch.orellbuehler.hauswart.api.generated.TasksCompleteRequest
 import ch.orellbuehler.hauswart.api.generated.TasksCompleteRequestServiceLog
@@ -12,6 +11,7 @@ import ch.orellbuehler.hauswart.core.Money
 import ch.orellbuehler.hauswart.core.Store
 import ch.orellbuehler.hauswart.core.UiError
 import ch.orellbuehler.hauswart.core.fetchAll
+import ch.orellbuehler.hauswart.core.formatNumber
 import ch.orellbuehler.hauswart.i18n.tr
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -116,7 +116,7 @@ private data class Refusal(
     val date: String,
 )
 
-private fun refusalOf(e: ApiException): Refusal? {
+private fun refusalOf(e: UiError): Refusal? {
     val details = e.details as? JsonObject ?: return null
     val code = details["code"]?.jsonPrimitive?.content ?: return null
     if (code != "lower_than_previous" && code != "higher_than_next") return null
@@ -337,66 +337,68 @@ class TaskActionStore(
             return
         }
         update { it.copy(saving = true, error = null, fieldErrors = emptyMap()) }
-        launch({ e -> update { it.copy(saving = false, error = e, fieldErrors = e.fields.filterKeys { k -> k == "date" }) } }) {
-            try {
-                val note = form.note.trim().ifEmpty { null }
-                when (s.mode) {
-                    ACTION_COMPLETE -> {
-                        val backdated = form.date.isNotEmpty() && form.date < today
-                        val result =
-                            app.api.tasks.tasksComplete(
-                                taskId,
-                                TasksCompleteRequest(
-                                    note = note,
-                                    completedAt = if (backdated) noonInstant(form.date, app.household.timezone) else null,
-                                    idempotencyKey = idempotencyKey,
-                                    counterValue = reading,
-                                    serviceLog = serviceLog,
-                                ),
-                            )
-                        val message = tr(if (serviceLog != null) "toast_completed_logged" else "toast_completed", "title" to t.title)
-                        update {
-                            it.copy(
-                                saving = false,
-                                notice = TaskNotice(message, UndoToken("completion", result.completion.id, taskId, null)),
-                            )
-                        }
-                        app.changed("tasks", "parts", "assets")
+        launch({ e -> update { refused(it, e) } }) {
+            val note = form.note.trim().ifEmpty { null }
+            when (s.mode) {
+                ACTION_COMPLETE -> {
+                    val backdated = form.date.isNotEmpty() && form.date < today
+                    val result =
+                        app.api.tasks.tasksComplete(
+                            taskId,
+                            TasksCompleteRequest(
+                                note = note,
+                                completedAt = if (backdated) noonInstant(form.date, app.household.timezone) else null,
+                                idempotencyKey = idempotencyKey,
+                                counterValue = reading,
+                                serviceLog = serviceLog,
+                            ),
+                        )
+                    val message = tr(if (serviceLog != null) "toast_completed_logged" else "toast_completed", "title" to t.title)
+                    update {
+                        it.copy(
+                            saving = false,
+                            notice = TaskNotice(message, UndoToken("completion", result.completion.id, taskId, null)),
+                        )
                     }
-                    ACTION_SKIP -> {
-                        val result = app.api.tasks.tasksSkip(taskId, TasksSkipRequest(note = note, idempotencyKey = idempotencyKey))
-                        update {
-                            it.copy(
-                                saving = false,
-                                notice =
-                                    TaskNotice(
-                                        tr("toast_skipped", "title" to t.title),
-                                        UndoToken("completion", result.completion.id, taskId, null),
-                                    ),
-                            )
-                        }
-                        app.changed("tasks")
-                    }
-                    else -> {
-                        app.api.tasks.tasksSnooze(taskId, TasksSnoozeRequest(until = form.date))
-                        val message = tr("toast_snoozed", "title" to t.title, "date" to Dates.format(form.date))
-                        update { it.copy(saving = false, notice = TaskNotice(message, UndoToken("snooze", "", taskId, t.snoozedUntil))) }
-                        app.changed("tasks")
-                    }
+                    app.changed("tasks", "parts", "assets")
                 }
-            } catch (e: ApiException) {
-                val refusal = refusalOf(e)
-                if (refusal == null) throw e
-                val value = "${formatNumber(refusal.value)} $unit"
-                val key = if (refusal.code == "lower_than_previous") "vehicle_odometer_refused_lower" else "vehicle_odometer_refused_higher"
-                update {
-                    it.copy(
-                        saving = false,
-                        error = UiError(tr("form_check_fields"), e.code),
-                        fieldErrors = mapOf("odometer" to tr(key, "value" to value, "date" to Dates.format(refusal.date))),
-                    )
+                ACTION_SKIP -> {
+                    val result = app.api.tasks.tasksSkip(taskId, TasksSkipRequest(note = note, idempotencyKey = idempotencyKey))
+                    update {
+                        it.copy(
+                            saving = false,
+                            notice =
+                                TaskNotice(
+                                    tr("toast_skipped", "title" to t.title),
+                                    UndoToken("completion", result.completion.id, taskId, null),
+                                ),
+                        )
+                    }
+                    app.changed("tasks")
+                }
+                else -> {
+                    app.api.tasks.tasksSnooze(taskId, TasksSnoozeRequest(until = form.date))
+                    val message = tr("toast_snoozed", "title" to t.title, "date" to Dates.format(form.date))
+                    update { it.copy(saving = false, notice = TaskNotice(message, UndoToken("snooze", "", taskId, t.snoozedUntil))) }
+                    app.changed("tasks")
                 }
             }
         }
+    }
+
+    /** A rejected odometer reading names the neighbouring reading in the error's details; it belongs to the odometer field. */
+    private fun refused(
+        s: TaskActionState,
+        e: UiError,
+    ): TaskActionState {
+        val refusal = refusalOf(e)
+        if (refusal == null) return s.copy(saving = false, error = e, fieldErrors = e.fields.filterKeys { k -> k == "date" })
+        val value = "${formatNumber(refusal.value)} $unit"
+        val key = if (refusal.code == "lower_than_previous") "vehicle_odometer_refused_lower" else "vehicle_odometer_refused_higher"
+        return s.copy(
+            saving = false,
+            error = UiError(tr("form_check_fields"), e.code),
+            fieldErrors = mapOf("odometer" to tr(key, "value" to value, "date" to Dates.format(refusal.date))),
+        )
     }
 }

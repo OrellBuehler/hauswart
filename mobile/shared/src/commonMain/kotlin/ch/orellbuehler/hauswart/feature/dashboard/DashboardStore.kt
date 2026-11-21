@@ -4,6 +4,10 @@ import ch.orellbuehler.hauswart.HauswartApp
 import ch.orellbuehler.hauswart.api.generated.Dashboard
 import ch.orellbuehler.hauswart.core.Store
 import ch.orellbuehler.hauswart.core.UiError
+import ch.orellbuehler.hauswart.feature.tasks.TaskNotice
+import ch.orellbuehler.hauswart.feature.tasks.UndoToken
+import ch.orellbuehler.hauswart.feature.tasks.completeWithoutDialog
+import ch.orellbuehler.hauswart.feature.tasks.runUndo
 import ch.orellbuehler.hauswart.i18n.tr
 
 data class DashboardState(
@@ -17,6 +21,10 @@ data class DashboardState(
     val laterExpanded: Boolean = false,
     /** What the screen shows of [dashboard]: sections, cards and their texts, ready to render. */
     val view: DashboardView? = null,
+    /** The task a quick action is running for. */
+    val busyId: String? = null,
+    val notice: TaskNotice? = null,
+    val actionError: UiError? = null,
 )
 
 class DashboardStore(
@@ -38,6 +46,45 @@ class DashboardStore(
         val view = dashboardView(dashboard, expanded, app.household.timezone)
         update { it.copy(laterExpanded = expanded, view = view) }
     }
+
+    /** Completes the task without a dialog (not for a task whose row says it [TaskItem.needsReading]). */
+    fun complete(taskId: String) {
+        val title = titleOf(taskId) ?: return
+        if (current.busyId != null) return
+        update { it.copy(busyId = taskId, actionError = null) }
+        launch({ e -> update { it.copy(busyId = null, actionError = e) } }) {
+            completeWithoutDialog(app, taskId, title) { notice -> update { it.copy(busyId = null, notice = notice) } }
+        }
+    }
+
+    /** Shows what a dialog did (the dialog's store reports it, the screen hands it on). */
+    fun announce(notice: TaskNotice) {
+        update { it.copy(notice = notice) }
+    }
+
+    fun undo(token: UndoToken) {
+        update { it.copy(notice = null) }
+        launch({ e -> update { it.copy(actionError = e) } }) {
+            runUndo(app, token)
+            update { it.copy(notice = TaskNotice(tr("toast_undone"), null)) }
+        }
+    }
+
+    fun consumeNotice() {
+        update { it.copy(notice = null) }
+    }
+
+    fun dismissActionError() {
+        update { it.copy(actionError = null) }
+    }
+
+    private fun titleOf(taskId: String): String? =
+        current.view
+            ?.sections
+            ?.filter { it.id != SECTION_PREPARATIONS }
+            ?.flatMap { it.items }
+            ?.firstOrNull { it.id == taskId }
+            ?.title
 
     private fun load() {
         update { it.copy(loading = it.dashboard == null, error = null) }

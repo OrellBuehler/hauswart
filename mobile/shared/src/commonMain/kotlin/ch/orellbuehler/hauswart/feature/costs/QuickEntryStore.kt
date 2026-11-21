@@ -351,7 +351,7 @@ class QuickEntryStore(
         update { it.copy(loading = true, loadError = null) }
         launch({ e -> update { it.copy(loading = false, loadError = e) } }) {
             val household = app.household.get()
-            val (bookList, directory, recent) =
+            val (bookList, recent) =
                 coroutineScope {
                     val bookList =
                         async {
@@ -360,7 +360,6 @@ class QuickEntryStore(
                                 page.items to page.nextCursor
                             }
                         }
-                    val directory = async { app.api.users.usersDirectory() }
                     val recent =
                         async {
                             try {
@@ -373,10 +372,10 @@ class QuickEntryStore(
                                 emptyList()
                             }
                         }
-                    Triple(bookList.await(), directory.await(), recent.await())
+                    bookList.await() to recent.await()
                 }
             books = bookList
-            people = directory.items.map { PersonOption(it.id, it.displayName, it.ownershipBps) }
+            people = household.members.map { PersonOption(it.id, it.name, it.ownershipBps) }
             history = recent
             val userIds = people.map { it.id }
             val bookId =

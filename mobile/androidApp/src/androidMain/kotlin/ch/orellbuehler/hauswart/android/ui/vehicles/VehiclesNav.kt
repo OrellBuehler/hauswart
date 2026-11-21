@@ -18,18 +18,8 @@ private const val SETUP = "vehicles/{id}/setup"
 private val idArgument = listOf(navArgument("id") { type = NavType.StringType })
 private val setArguments = listOf(navArgument("id") { type = NavType.StringType }, navArgument("setId") { type = NavType.StringType })
 
-/**
- * The navigation controller of the running app. The vehicle card on the asset screen is called with the asset id
- * only, so it opens the vehicle screens through this; [vehiclesGraph] sets it each time the graph is built.
- */
-internal object VehicleNav {
-    @Volatile
-    var controller: NavController? = null
-}
-
 /** The vehicle screens: odometer, tire sets, fuel log, statistics, details and the task setup. */
 fun NavGraphBuilder.vehiclesGraph(nav: NavController) {
-    VehicleNav.controller = nav
     composable(ODOMETER, arguments = idArgument) { OdometerScreen(nav, requireNotNull(it.arguments?.getString("id"))) }
     composable(TIRES, arguments = idArgument) { TireSetsScreen(nav, requireNotNull(it.arguments?.getString("id"))) }
     composable(TIRE_SET, arguments = setArguments) { TireSetDetailScreen(nav, requireNotNull(it.arguments?.getString("setId"))) }

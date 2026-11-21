@@ -85,6 +85,7 @@ struct ContactDetailScreen: View {
                         Text(notes)
                     }
                 }
+                AppointmentsSection(contactId: id)
                 Section(tr("contact_assets_title")) {
                     if contact.assets.isEmpty {
                         Text(tr("contact_assets_empty_title"))
@@ -96,6 +97,8 @@ struct ContactDetailScreen: View {
                         }
                     }
                 }
+                AttachmentsSection(ownerType: "contact", ownerId: id)
+                DocumentLinksSection(ownerType: "contact", ownerId: id)
             }
             .refreshable { model.store.refresh() }
         } else if let error = state.error {

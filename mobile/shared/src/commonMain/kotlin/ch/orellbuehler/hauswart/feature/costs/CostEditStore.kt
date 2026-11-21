@@ -10,7 +10,6 @@ import ch.orellbuehler.hauswart.api.generated.CostsCreateRequest
 import ch.orellbuehler.hauswart.api.generated.CostsCreateRequestSharesItem
 import ch.orellbuehler.hauswart.api.generated.CostsUpdateRequest
 import ch.orellbuehler.hauswart.api.generated.CostsUpdateRequestSharesItem
-import ch.orellbuehler.hauswart.api.generated.DirectoryUser
 import ch.orellbuehler.hauswart.core.Dates
 import ch.orellbuehler.hauswart.core.Money
 import ch.orellbuehler.hauswart.core.Store
@@ -439,7 +438,6 @@ class CostEditStore(
                                 page.items to page.nextCursor
                             }
                         }
-                    val directory = async { app.api.users.usersDirectory() }
                     val tagList = async { app.api.costs.costTagsList() }
                     val assetList =
                         async {
@@ -449,10 +447,10 @@ class CostEditStore(
                             }
                         }
                     val existing = id?.let { wanted -> async { app.api.costs.costsGet(wanted) } }
-                    Loaded(bookList.await(), directory.await().items, tagList.await().items, assetList.await(), existing?.await())
+                    Loaded(bookList.await(), tagList.await().items, assetList.await(), existing?.await())
                 }
             books = loaded.books
-            people = loaded.users.map { PersonOption(it.id, it.displayName, it.ownershipBps) }
+            people = household.members.map { PersonOption(it.id, it.name, it.ownershipBps) }
             entry = loaded.entry
             val userIds = people.map { it.id }
             val saved = loaded.entry
@@ -484,7 +482,6 @@ class CostEditStore(
 
     private class Loaded(
         val books: List<CostBook>,
-        val users: List<DirectoryUser>,
         val tags: List<CostTag>,
         val assets: List<Asset>,
         val entry: CostEntry?,

@@ -13,7 +13,7 @@ import ch.orellbuehler.hauswart.core.Dates
 import ch.orellbuehler.hauswart.core.Store
 import ch.orellbuehler.hauswart.core.UiError
 import ch.orellbuehler.hauswart.core.fetchAll
-import ch.orellbuehler.hauswart.feature.tasks.formatNumber
+import ch.orellbuehler.hauswart.core.formatNumber
 import ch.orellbuehler.hauswart.feature.tasks.readingToSend
 import ch.orellbuehler.hauswart.i18n.tr
 

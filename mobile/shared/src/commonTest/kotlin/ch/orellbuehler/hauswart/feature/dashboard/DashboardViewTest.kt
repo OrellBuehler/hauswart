@@ -1,17 +1,28 @@
 package ch.orellbuehler.hauswart.feature.dashboard
 
+import ch.orellbuehler.hauswart.feature.tasks.completionJson
+import ch.orellbuehler.hauswart.feature.tasks.taskJson
 import ch.orellbuehler.hauswart.i18n.I18n
 import ch.orellbuehler.hauswart.i18n.tr
 import ch.orellbuehler.hauswart.testing.TestApp
 import ch.orellbuehler.hauswart.testing.await
+import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 class DashboardViewTest {
     private val server = TestApp().also { it.signIn() }
@@ -29,19 +40,23 @@ class DashboardViewTest {
         status: String,
         date: String?,
         room: String? = null,
+        odometerAssetId: String? = null,
+        nextAppointment: String = "null",
     ) = """{"taskId":"$id","title":"Task $id","category":"cleaning","priority":"normal","assetId":null,"assetName":null,
         "roomId":null,"roomName":${if (room == null) "null" else "\"$room\""},"assigneeUserId":null,"assigneeName":"Anna","status":"$status",
         "dueKind":"exact","date":${if (date == null) "null" else "\"$date\""},"estimated":false,"estimate":null,"progress":null,
-        "openNoteCount":0,"odometerAssetId":null,"nextAppointment":null}"""
+        "openNoteCount":0,"odometerAssetId":${if (odometerAssetId == null) "null" else "\"$odometerAssetId\""},
+        "nextAppointment":$nextAppointment}"""
 
     private fun dashboard(
         overdue: String = "",
         later: String = "",
         balances: String = "null",
+        preparations: String = "",
     ) = """{"today":"2026-11-21","generatedAt":"2026-11-21T08:00:00.000Z",
         "counts":{"overdue":${if (overdue.isEmpty()) 0 else 1},"today":0,"thisWeek":0,"preparations":0},
         "upcoming":{"overdue":[$overdue],"today":[],"thisWeek":[],"later":[$later],"signalBased":[]},
-        "preparations":[],"recentCompletions":[],"openDefects":[
+        "preparations":[$preparations],"recentCompletions":[],"openDefects":[
           {"id":"d1","title":"Leak","date":"2026-11-01","number":4,"status":"open","severity":"high","roomName":"Kitchen","assetName":null}],
         "expiringWarranties":[],"orderNow":[],
         "costsYearToDate":{"year":2026,"currency":"CHF","totalMinor":123450,"byCategory":[],"byBook":[]},
@@ -102,6 +117,93 @@ class DashboardViewTest {
                     .sections
                     .single()
             assertEquals(7, open.items.size)
+            store.close()
+        }
+
+    private fun load(dashboard: String): DashboardStore {
+        server.household()
+        server.on("GET", "/api/v1/notifications/unread-count", """{"count":0}""")
+        server.on("GET", "/api/v1/dashboard", dashboard)
+        return DashboardStore(server.app)
+    }
+
+    @Test
+    fun rowsKnowTheirAppointmentTheReadingAndWhetherTheyCanBeActedOn() =
+        runTest {
+            val appointment = """{"id":"ap1","allDay":true,"startsAt":null,"startDate":"2099-05-04"}"""
+            val prep =
+                """{"taskId":"t9","taskTitle":"Service car","prepId":"p1","title":"Order oil","state":"now","date":"2026-11-20"}"""
+            val store =
+                load(
+                    dashboard(
+                        overdue =
+                            task("t1", "overdue", "2026-11-19", nextAppointment = appointment) + "," +
+                                task("t2", "due", "2026-11-20", odometerAssetId = "a1"),
+                        preparations = prep,
+                    ),
+                )
+            val view = assertNotNull(store.await { it.view != null }.view)
+            val items = view.sections.first { it.id == SECTION_OVERDUE }.items
+            val chip = assertNotNull(items[0].appointment)
+            assertEquals("ap1", chip.id)
+            assertTrue(chip.text.contains("04.05.2099"), chip.text)
+            assertEquals("Termin: " + chip.text, chip.label)
+            assertFalse(items[0].needsReading)
+            assertNull(items[1].appointment)
+            assertTrue(items[1].needsReading)
+            assertTrue(items.all { it.actionable })
+            val preps = view.sections.first { it.id == SECTION_PREPARATIONS }.items
+            assertTrue(preps.none { it.actionable })
+            store.close()
+        }
+
+    @Test
+    fun aQuickCompletionOffersUndoAndTellsTheOtherScreens() =
+        runTest {
+            val store = load(dashboard(overdue = task("t1", "overdue", "2026-11-19")))
+            store.await { it.view != null }
+            server.on(
+                "POST",
+                "/api/v1/tasks/t1/complete",
+                """{"completion":${completionJson("c1", "t1")},"task":${taskJson("t1", "Task t1")},"serviceLog":null}""",
+                HttpStatusCode.Created,
+            )
+            server.on("DELETE", "/api/v1/completions/c1", "{}", HttpStatusCode.NoContent)
+            val changes = async(start = CoroutineStart.UNDISPATCHED) { server.app.changes.first { it == "tasks" } }
+            store.complete("t1")
+            val done = store.await { it.notice != null }
+            assertEquals("Erledigt: «Task t1»", done.notice?.message)
+            assertNull(done.busyId)
+            assertTrue(
+                server
+                    .requestsTo("POST", "/api/v1/tasks/t1/complete")
+                    .single()
+                    .json
+                    .containsKey("idempotencyKey"),
+            )
+            withContext(Dispatchers.Default) { withTimeout(10.seconds) { changes.await() } }
+            store.undo(assertNotNull(done.notice?.undo))
+            store.await { it.notice != null && it.notice?.undo == null }
+            assertEquals(1, server.requestsTo("DELETE", "/api/v1/completions/c1").size)
+            store.close()
+        }
+
+    @Test
+    fun aFailedQuickCompletionShowsTheErrorAndAPreparationIsNotCompletedByTheRow() =
+        runTest {
+            val prep =
+                """{"taskId":"t9","taskTitle":"Service car","prepId":"p1","title":"Order oil","state":"now","date":"2026-11-20"}"""
+            val store = load(dashboard(overdue = task("t1", "overdue", "2026-11-19"), preparations = prep))
+            store.await { it.view != null }
+            server.onError("POST", "/api/v1/tasks/t1/complete", HttpStatusCode.InternalServerError, "internal_error")
+            store.complete("t9")
+            store.complete("t1")
+            val failed = store.await { it.actionError != null }
+            assertNull(failed.busyId)
+            assertNull(failed.notice)
+            assertTrue(server.requestsTo("POST", "/api/v1/tasks/t9/complete").isEmpty())
+            store.dismissActionError()
+            assertNull(store.await { it.actionError == null }.actionError)
             store.close()
         }
 

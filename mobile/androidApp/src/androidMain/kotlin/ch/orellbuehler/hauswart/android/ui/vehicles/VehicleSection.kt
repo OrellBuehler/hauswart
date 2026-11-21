@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import ch.orellbuehler.hauswart.android.ui.collect
 import ch.orellbuehler.hauswart.android.ui.components.InlineError
 import ch.orellbuehler.hauswart.android.ui.components.LabeledValue
@@ -36,6 +37,7 @@ import ch.orellbuehler.hauswart.android.ui.components.RowIcon
 import ch.orellbuehler.hauswart.android.ui.components.ScreenPadding
 import ch.orellbuehler.hauswart.android.ui.components.SectionCard
 import ch.orellbuehler.hauswart.android.ui.components.StatusChip
+import ch.orellbuehler.hauswart.android.ui.nav.LocalNav
 import ch.orellbuehler.hauswart.android.ui.rememberStore
 import ch.orellbuehler.hauswart.feature.vehicles.VehicleSectionStore
 import ch.orellbuehler.hauswart.i18n.tr
@@ -51,7 +53,7 @@ fun VehicleSectionCard(assetId: String) {
     val state = store.collect()
     var recording by remember { mutableStateOf(false) }
     if (state.notVehicle) return
-    val nav = VehicleNav.controller
+    val nav: NavController? = LocalNav.current
     SectionCard(title = tr("vehicle_card_title")) {
         val error = state.error
         when {

@@ -7,6 +7,9 @@ import ch.orellbuehler.hauswart.api.generated.TriggerIntervalAutoCompleteItem
 import ch.orellbuehler.hauswart.api.generated.TriggerIntervalSeasonsItem
 import ch.orellbuehler.hauswart.api.generated.TriggerStateConditionEstimateFrom
 import ch.orellbuehler.hauswart.core.Dates
+import ch.orellbuehler.hauswart.core.monthName
+import ch.orellbuehler.hauswart.core.monthShort
+import ch.orellbuehler.hauswart.core.weekdayShort
 import ch.orellbuehler.hauswart.i18n.tr
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive

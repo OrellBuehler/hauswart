@@ -19,11 +19,21 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -41,11 +51,20 @@ import ch.orellbuehler.hauswart.android.ui.components.StatusChip
 import ch.orellbuehler.hauswart.android.ui.components.toneColor
 import ch.orellbuehler.hauswart.android.ui.nav.Routes
 import ch.orellbuehler.hauswart.android.ui.rememberStore
+import ch.orellbuehler.hauswart.android.ui.tasks.AppointmentBadge
+import ch.orellbuehler.hauswart.android.ui.tasks.NoticeEffect
+import ch.orellbuehler.hauswart.android.ui.tasks.TaskActionDialog
+import ch.orellbuehler.hauswart.android.ui.tasks.TaskActionRequest
+import ch.orellbuehler.hauswart.android.ui.tasks.TaskRowActions
 import ch.orellbuehler.hauswart.feature.dashboard.CostsCard
 import ch.orellbuehler.hauswart.feature.dashboard.DashboardStore
 import ch.orellbuehler.hauswart.feature.dashboard.DashboardView
 import ch.orellbuehler.hauswart.feature.dashboard.SECTION_LATER
+import ch.orellbuehler.hauswart.feature.dashboard.TaskItem
 import ch.orellbuehler.hauswart.feature.dashboard.TaskSection
+import ch.orellbuehler.hauswart.feature.tasks.ACTION_COMPLETE
+import ch.orellbuehler.hauswart.feature.tasks.ACTION_SKIP
+import ch.orellbuehler.hauswart.feature.tasks.ACTION_SNOOZE
 import ch.orellbuehler.hauswart.i18n.tr
 
 @Composable
@@ -53,8 +72,18 @@ fun HomeScreen(nav: NavController) {
     val store = rememberStore { DashboardStore(it) }
     val state = store.collect()
     val unread = state.unreadNotifications
+    val snackbar = remember { SnackbarHostState() }
+    var action by remember { mutableStateOf<TaskActionRequest?>(null) }
+    NoticeEffect(state.notice, snackbar, onUndo = store::undo, onConsumed = store::consumeNotice)
+    LaunchedEffect(state.actionError) {
+        state.actionError?.let {
+            snackbar.showSnackbar(it.message)
+            store.dismissActionError()
+        }
+    }
     AppScaffold(
         title = tr("dashboard_title"),
+        snackbarHostState = snackbar,
         actions = {
             IconButton(onClick = { nav.navigate(Routes.SEARCH) }) {
                 Icon(Icons.Outlined.Search, contentDescription = tr("search_open"))
@@ -100,19 +129,35 @@ fun HomeScreen(nav: NavController) {
                                 }
                             }
                         }
-                        dashboardContent(nav, view, store::toggleLater)
+                        dashboardContent(
+                            nav = nav,
+                            view = view,
+                            busyId = state.busyId,
+                            onToggleLater = store::toggleLater,
+                            onComplete = { item ->
+                                if (item.needsReading) action = TaskActionRequest(item.id, ACTION_COMPLETE) else store.complete(item.id)
+                            },
+                            onAction = { item, mode -> action = TaskActionRequest(item.id, mode) },
+                        )
                     }
                 }
             error != null -> ErrorBox(error, Modifier.padding(padding), onRetry = store::refresh)
             else -> LoadingBox(Modifier.padding(padding))
         }
     }
+
+    action?.let { open ->
+        TaskActionDialog(open.taskId, open.mode, onDismiss = { action = null }, onDone = store::announce)
+    }
 }
 
 private fun LazyListScope.dashboardContent(
     nav: NavController,
     view: DashboardView,
+    busyId: String?,
     onToggleLater: () -> Unit,
+    onComplete: (TaskItem) -> Unit,
+    onAction: (TaskItem, String) -> Unit,
 ) {
     item {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -150,7 +195,7 @@ private fun LazyListScope.dashboardContent(
         }
     }
     view.sections.forEach { section ->
-        item(key = "section-${section.id}") { TaskSectionCard(nav, section, onToggleLater) }
+        item(key = "section-${section.id}") { TaskSectionCard(nav, section, busyId, onToggleLater, onComplete, onAction) }
     }
     view.defects?.let { card ->
         item(key = "defects") {
@@ -225,30 +270,21 @@ private fun LazyListScope.dashboardContent(
 private fun TaskSectionCard(
     nav: NavController,
     section: TaskSection,
+    busyId: String?,
     onToggleLater: () -> Unit,
+    onComplete: (TaskItem) -> Unit,
+    onAction: (TaskItem, String) -> Unit,
 ) {
     SectionCard(title = section.title + " (" + section.total + ")") {
         section.items.forEach { task ->
-            ListRow(
-                title = task.title,
-                subtitle =
-                    listOf(
-                        task.place,
-                        listOfNotNull(
-                            task.whenText.ifBlank {
-                                null
-                            },
-                            task.assignee,
-                        ).joinToString(" · "),
-                    ).filter { it.isNotBlank() }.joinToString("\n"),
-                subtitleLines = 2,
-                trailing =
-                    if (task.statusLabel.isNotBlank()) {
-                        { StatusChip(task.statusLabel, tone = task.tone) }
-                    } else {
-                        null
-                    },
-                onClick = { nav.navigate(Routes.task(task.id)) },
+            DashboardTaskRow(
+                task = task,
+                busy = busyId == task.id,
+                onOpen = { nav.navigate(Routes.task(task.id)) },
+                onOpenAppointment = { nav.navigate(Routes.appointment(it)) },
+                onComplete = { onComplete(task) },
+                onSkip = { onAction(task, ACTION_SKIP) },
+                onSnooze = { onAction(task, ACTION_SNOOZE) },
             )
         }
         if (section.id == SECTION_LATER && section.collapsible) {
@@ -260,6 +296,47 @@ private fun TaskSectionCard(
             }
         }
     }
+}
+
+/** A task of a section: what the list row shows, with the check and the menu of a task that can be acted on. */
+@Composable
+private fun DashboardTaskRow(
+    task: TaskItem,
+    busy: Boolean,
+    onOpen: () -> Unit,
+    onOpenAppointment: (String) -> Unit,
+    onComplete: () -> Unit,
+    onSkip: () -> Unit,
+    onSnooze: () -> Unit,
+) {
+    val appointment = task.appointment
+    ListItem(
+        headlineContent = { Text(task.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        modifier = Modifier.clickable(onClick = onOpen),
+        supportingContent = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                val text =
+                    listOf(
+                        task.place,
+                        listOfNotNull(task.whenText.ifBlank { null }, task.assignee).joinToString(" · "),
+                    ).filter { it.isNotBlank() }.joinToString("\n")
+                if (text.isNotBlank()) Text(text, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (task.statusLabel.isNotBlank() || appointment != null) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        if (task.statusLabel.isNotBlank()) StatusChip(task.statusLabel, tone = task.tone)
+                        if (appointment != null) AppointmentBadge(appointment, onClick = { onOpenAppointment(appointment.id) })
+                    }
+                }
+            }
+        },
+        trailingContent =
+            if (task.actionable) {
+                { TaskRowActions(task.title, busy, snoozed = false, onComplete, onSkip, onSnooze, onUnsnooze = {}) }
+            } else {
+                null
+            },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+    )
 }
 
 @Composable

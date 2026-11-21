@@ -43,4 +43,37 @@ class SwiftNamesTest {
                 swift.filter { it.first in kotlin }.map { "${it.first} (${it.second}) is also a class of the shared module" }
         assertTrue(problems.isEmpty(), problems.joinToString("\n"))
     }
+
+    private val facadeCall = Regex("""\b([A-Z][A-Za-z0-9]*)Kt\.([A-Za-z_][A-Za-z0-9_]*)""")
+
+    /** `FooKt.bar` in Swift is the top-level `bar` of `Foo.kt`: it breaks silently when `bar` moves to another file. */
+    @Test
+    fun swiftCallsOfTopLevelKotlinDeclarationsResolve() {
+        val root = repoRoot()
+        val kotlinFiles =
+            File(root, "mobile/shared/src")
+                .walkTopDown()
+                .filter { it.isFile && it.extension == "kt" && (it.path.contains("/commonMain/") || it.path.contains("/iosMain/")) }
+                .groupBy { it.nameWithoutExtension }
+        val problems = mutableListOf<String>()
+        File(root, "mobile/iosApp/Hauswart").walkTopDown().filter { it.isFile && it.extension == "swift" }.forEach { swift ->
+            facadeCall.findAll(swift.readText()).forEach { match ->
+                val (file, name) = match.destructured
+                val sources = kotlinFiles[file]
+                val declared =
+                    sources?.any { source ->
+                        source.readLines().any { line ->
+                            Regex(
+                                """^(?:internal |public )?(?:const |inline |suspend )*(?:fun|val|var) (?:<[^>]+> )?(?:[A-Za-z0-9_<>?., ]+\.)?$name\b""",
+                            ).containsMatchIn(line)
+                        }
+                    } ?: false
+                if (!declared) problems += "${swift.name}: ${file}Kt.$name" + if (sources == null) " ($file.kt does not exist)" else ""
+            }
+        }
+        assertTrue(
+            problems.isEmpty(),
+            "Swift refers to top-level Kotlin declarations that are not there:\n" + problems.distinct().joinToString("\n"),
+        )
+    }
 }

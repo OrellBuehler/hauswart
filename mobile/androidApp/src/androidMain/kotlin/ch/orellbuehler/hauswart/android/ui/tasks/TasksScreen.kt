@@ -54,11 +54,6 @@ import ch.orellbuehler.hauswart.feature.tasks.taskStatusOptions
 import ch.orellbuehler.hauswart.feature.tasks.taskViewOptions
 import ch.orellbuehler.hauswart.i18n.tr
 
-private data class OpenAction(
-    val taskId: String,
-    val mode: String,
-)
-
 /** The tab with every task: filters, search, grouped rows with quick actions. */
 @Composable
 fun TasksScreen(nav: NavController) {
@@ -66,7 +61,7 @@ fun TasksScreen(nav: NavController) {
     val state = store.collect()
     val snackbar = remember { SnackbarHostState() }
     var filtersOpen by remember { mutableStateOf(false) }
-    var action by remember { mutableStateOf<OpenAction?>(null) }
+    var action by remember { mutableStateOf<TaskActionRequest?>(null) }
     val error = state.error
 
     NoticeEffect(state.notice, snackbar, onUndo = store::undo, onConsumed = store::consumeNotice)
@@ -206,10 +201,11 @@ fun TasksScreen(nav: NavController) {
                                     row = row,
                                     busy = state.busyId == row.id,
                                     onOpen = { nav.navigate(Routes.task(row.id)) },
+                                    onOpenAppointment = { nav.navigate(Routes.appointment(it)) },
                                     onComplete = {
                                         if (row.needsReading) {
                                             action =
-                                                OpenAction(
+                                                TaskActionRequest(
                                                     row.id,
                                                     ACTION_COMPLETE,
                                                 )
@@ -217,8 +213,8 @@ fun TasksScreen(nav: NavController) {
                                             store.complete(row.id)
                                         }
                                     },
-                                    onSkip = { action = OpenAction(row.id, ACTION_SKIP) },
-                                    onSnooze = { action = OpenAction(row.id, ACTION_SNOOZE) },
+                                    onSkip = { action = TaskActionRequest(row.id, ACTION_SKIP) },
+                                    onSnooze = { action = TaskActionRequest(row.id, ACTION_SNOOZE) },
                                     onUnsnooze = { store.unsnooze(row.id) },
                                 )
                             }

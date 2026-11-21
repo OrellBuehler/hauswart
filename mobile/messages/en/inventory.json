@@ -3,5 +3,6 @@
   "m_asset_vehicle_hint": "Vehicle details such as plate and odometer are kept in the browser.",
   "m_hint_reaction_edit_web": "The reaction can only be changed in the browser.",
   "m_asset_share_notes": "Share list",
-  "m_room_new_asset": "Add device"
+  "m_room_new_asset": "Add device",
+  "m_asset_extras": "Appointments, files, documents, comments"
 }

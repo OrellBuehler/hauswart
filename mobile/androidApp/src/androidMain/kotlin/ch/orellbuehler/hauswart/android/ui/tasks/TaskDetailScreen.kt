@@ -47,6 +47,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import ch.orellbuehler.hauswart.android.ui.appointments.AppointmentsSection
 import ch.orellbuehler.hauswart.android.ui.collect
 import ch.orellbuehler.hauswart.android.ui.components.AppScaffold
 import ch.orellbuehler.hauswart.android.ui.components.ConfirmDialog
@@ -64,6 +65,8 @@ import ch.orellbuehler.hauswart.android.ui.components.TextField
 import ch.orellbuehler.hauswart.android.ui.components.rememberUriOpener
 import ch.orellbuehler.hauswart.android.ui.nav.Routes
 import ch.orellbuehler.hauswart.android.ui.rememberStore
+import ch.orellbuehler.hauswart.android.ui.sections.CommentsSection
+import ch.orellbuehler.hauswart.android.ui.sections.DocumentLinksSection
 import ch.orellbuehler.hauswart.feature.tasks.ACTION_COMPLETE
 import ch.orellbuehler.hauswart.feature.tasks.ACTION_SKIP
 import ch.orellbuehler.hauswart.feature.tasks.ACTION_SNOOZE
@@ -188,6 +191,7 @@ fun TaskDetailScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         DetailBody(
+                            nav = nav,
                             view = view,
                             state = state,
                             onComplete = { if (view.needsReading) action = ACTION_COMPLETE else store.complete() },
@@ -238,6 +242,7 @@ fun TaskDetailScreen(
 
 @Composable
 private fun DetailBody(
+    nav: NavController,
     view: TaskDetailView,
     state: TaskDetailState,
     onComplete: () -> Unit,
@@ -262,6 +267,7 @@ private fun DetailBody(
             view.chips.forEach { StatusChip(it.label, tone = it.tone) }
         }
         view.progress?.let { ProgressLine(it) }
+        view.appointment?.let { chip -> AppointmentBadge(chip, onClick = { nav.navigate(Routes.appointment(chip.id)) }) }
     }
     if (!view.archived) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -288,6 +294,7 @@ private fun DetailBody(
             )
         }
     }
+    AppointmentsSection(nav, taskId = view.id)
     SectionCard(title = tr("task_description")) {
         Text(
             view.description.ifBlank { tr("task_description_empty") },
@@ -345,6 +352,7 @@ private fun DetailBody(
         }
         TextButton(onClick = onAddPart, Modifier.padding(horizontal = 8.dp)) { Text(tr("part_link_add"), maxLines = 1) }
     }
+    DocumentLinksSection(ownerType = "task", ownerId = view.id)
     SectionCard(title = tr("task_history")) {
         Text(
             tr("task_history_description"),
@@ -382,6 +390,7 @@ private fun DetailBody(
             }
         }
     }
+    CommentsSection(ownerType = "task", ownerId = view.id)
     SectionCard(title = tr("task_assignment")) {
         view.assignmentLines.forEach {
             Text(it, Modifier.padding(horizontal = 16.dp, vertical = 2.dp), style = MaterialTheme.typography.bodyMedium)

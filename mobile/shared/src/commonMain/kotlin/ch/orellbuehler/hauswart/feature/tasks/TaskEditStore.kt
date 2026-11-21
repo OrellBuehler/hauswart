@@ -11,6 +11,7 @@ import ch.orellbuehler.hauswart.api.generated.TasksUpdateRequest
 import ch.orellbuehler.hauswart.core.Store
 import ch.orellbuehler.hauswart.core.UiError
 import ch.orellbuehler.hauswart.core.fetchAll
+import ch.orellbuehler.hauswart.core.formatNumber
 import ch.orellbuehler.hauswart.feature.dashboard.TONE_MUTED
 import ch.orellbuehler.hauswart.feature.dashboard.taskStatusLabel
 import ch.orellbuehler.hauswart.feature.dashboard.taskTone

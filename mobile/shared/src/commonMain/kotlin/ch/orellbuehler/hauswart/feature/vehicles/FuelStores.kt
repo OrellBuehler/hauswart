@@ -15,6 +15,7 @@ import ch.orellbuehler.hauswart.core.Money
 import ch.orellbuehler.hauswart.core.Store
 import ch.orellbuehler.hauswart.core.UiError
 import ch.orellbuehler.hauswart.core.fetchAll
+import ch.orellbuehler.hauswart.core.formatNumber
 import ch.orellbuehler.hauswart.feature.costs.MAX_COST_MINOR
 import ch.orellbuehler.hauswart.feature.costs.SHARE_BPS_TOTAL
 import ch.orellbuehler.hauswart.feature.costs.ShareBps
@@ -27,7 +28,6 @@ import ch.orellbuehler.hauswart.feature.costs.isCurrencyCode
 import ch.orellbuehler.hauswart.feature.costs.openBooks
 import ch.orellbuehler.hauswart.feature.costs.parseSharePercent
 import ch.orellbuehler.hauswart.feature.costs.shareToInput
-import ch.orellbuehler.hauswart.feature.tasks.formatNumber
 import ch.orellbuehler.hauswart.feature.tasks.parseOdometer
 import ch.orellbuehler.hauswart.i18n.tr
 

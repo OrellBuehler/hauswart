@@ -7,7 +7,7 @@ import ch.orellbuehler.hauswart.api.generated.OdometerReading
 import ch.orellbuehler.hauswart.core.Dates
 import ch.orellbuehler.hauswart.core.Store
 import ch.orellbuehler.hauswart.core.UiError
-import ch.orellbuehler.hauswart.feature.tasks.formatNumber
+import ch.orellbuehler.hauswart.core.formatNumber
 import ch.orellbuehler.hauswart.feature.tasks.parseOdometer
 import ch.orellbuehler.hauswart.i18n.tr
 

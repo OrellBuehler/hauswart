@@ -28,9 +28,45 @@ struct ProgressLine: View {
     }
 }
 
-/// One task of a list: title, place, status and date, assignee, progress.
+/// The earliest planned appointment of a task as a small pill; a tap calls `onOpen` with the appointment's id.
+struct AppointmentBadgeView: View {
+    let chip: AppointmentChip
+    let onOpen: (String) -> Void
+
+    var body: some View {
+        Button {
+            onOpen(chip.id)
+        } label: {
+            Label(chip.text, systemImage: "calendar.badge.clock")
+                .font(.caption2.weight(.semibold))
+                .lineLimit(1)
+                .foregroundStyle(Color.primary)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Color.secondary.opacity(0.15), in: Capsule())
+        }
+        .buttonStyle(.borderless)
+        .accessibilityLabel(chip.label)
+    }
+}
+
+/// The number of comments of a task; `label` is the spoken form ("3 comments").
+struct CommentCountView: View {
+    let count: Int32
+    let label: String
+
+    var body: some View {
+        Label(String(count), systemImage: "bubble.left")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .accessibilityLabel(label)
+    }
+}
+
+/// One task of a list: title, place, status and date, assignee, comments, appointment, progress.
 struct TaskRowView: View {
     let row: TaskRow
+    let onOpenAppointment: (String) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -49,6 +85,16 @@ struct TaskRowView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                }
+            }
+            if row.commentCount > 0 || row.appointment != nil {
+                HStack(spacing: 8) {
+                    if row.commentCount > 0 {
+                        CommentCountView(count: row.commentCount, label: row.commentsLabel)
+                    }
+                    if let chip = row.appointment {
+                        AppointmentBadgeView(chip: chip, onOpen: onOpenAppointment)
+                    }
                 }
             }
             if let assignee = row.assigneeName {

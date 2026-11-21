@@ -11,6 +11,8 @@ import ch.orellbuehler.hauswart.core.Money
 import ch.orellbuehler.hauswart.core.dueText
 import ch.orellbuehler.hauswart.core.relativeDays
 import ch.orellbuehler.hauswart.core.shortDate
+import ch.orellbuehler.hauswart.feature.appointments.AppointmentChip
+import ch.orellbuehler.hauswart.feature.appointments.appointmentChipOf
 import ch.orellbuehler.hauswart.i18n.tr
 import kotlin.math.abs
 
@@ -50,6 +52,12 @@ data class TaskItem(
     val assignee: String?,
     val statusLabel: String,
     val tone: String,
+    /** The earliest planned appointment of the task, null without one. */
+    val appointment: AppointmentChip? = null,
+    /** Completing it asks for an odometer reading first, so it cannot be done with one tap. */
+    val needsReading: Boolean = false,
+    /** A task can be completed, skipped and snoozed from its row; a preparation row only opens its task. */
+    val actionable: Boolean = true,
 )
 
 data class TaskSection(
@@ -150,20 +158,21 @@ fun dashboardView(
     val later = up.later
     val sections =
         listOfNotNull(
-            taskSection(SECTION_OVERDUE, tr("dashboard_overdue"), TONE_OVERDUE, up.overdue, today),
-            taskSection(SECTION_TODAY, tr("dashboard_today"), TONE_NORMAL, up.today, today),
-            taskSection(SECTION_WEEK, tr("dashboard_this_week"), TONE_NORMAL, up.thisWeek, today),
+            taskSection(SECTION_OVERDUE, tr("dashboard_overdue"), TONE_OVERDUE, up.overdue, today, timezone),
+            taskSection(SECTION_TODAY, tr("dashboard_today"), TONE_NORMAL, up.today, today, timezone),
+            taskSection(SECTION_WEEK, tr("dashboard_this_week"), TONE_NORMAL, up.thisWeek, today, timezone),
             taskSection(
                 SECTION_LATER,
                 tr("dashboard_later"),
                 TONE_NORMAL,
                 if (laterExpanded) later else later.take(LATER_PREVIEW),
                 today,
+                timezone,
                 total = later.size,
                 collapsible = later.size > LATER_PREVIEW,
                 expanded = laterExpanded,
             ),
-            taskSection(SECTION_SIGNAL, tr("dashboard_signal"), TONE_NORMAL, up.signalBased, today),
+            taskSection(SECTION_SIGNAL, tr("dashboard_signal"), TONE_NORMAL, up.signalBased, today, timezone),
             preparationSection(dashboard),
         )
     return DashboardView(
@@ -240,17 +249,19 @@ private fun taskSection(
     tone: String,
     tasks: List<DashboardTask>,
     today: String,
+    timeZone: String,
     total: Int = tasks.size,
     collapsible: Boolean = false,
     expanded: Boolean = false,
 ): TaskSection? {
     if (total == 0) return null
-    return TaskSection(id, title, tone, total, tasks.map { taskItem(it, today) }, collapsible, expanded)
+    return TaskSection(id, title, tone, total, tasks.map { taskItem(it, today, timeZone) }, collapsible, expanded)
 }
 
 private fun taskItem(
     task: DashboardTask,
     today: String,
+    timeZone: String,
 ): TaskItem =
     TaskItem(
         id = task.taskId,
@@ -260,6 +271,8 @@ private fun taskItem(
         assignee = task.assigneeName,
         statusLabel = taskStatusLabel(task.status),
         tone = taskTone(task.status),
+        appointment = appointmentChipOf(task.nextAppointment, timeZone, today),
+        needsReading = task.odometerAssetId != null,
     )
 
 private fun preparationSection(dashboard: Dashboard): TaskSection? {
@@ -275,6 +288,7 @@ private fun preparationSection(dashboard: Dashboard): TaskSection? {
                 assignee = null,
                 statusLabel = "",
                 tone = if (p.state == "now") TONE_DUE else TONE_MUTED,
+                actionable = false,
             )
         }
     return TaskSection(SECTION_PREPARATIONS, tr("dashboard_preparations"), TONE_NORMAL, items.size, items)

@@ -109,6 +109,8 @@ class HauswartApp(
 data class Member(
     val id: String,
     val name: String,
+    /** The person's share of shared costs in basis points (10000 = everything). */
+    val ownershipBps: Long = 0,
 )
 
 data class HouseholdInfo(
@@ -158,7 +160,7 @@ class HouseholdContext internal constructor(
                 name = household.name,
                 timezone = household.timezone,
                 currency = household.currency,
-                members = directory.items.map { Member(it.id, it.displayName) },
+                members = directory.items.map { Member(it.id, it.displayName, it.ownershipBps) },
             )
         _info.value = loaded
         return loaded

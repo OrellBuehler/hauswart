@@ -25,6 +25,8 @@ internal fun taskJson(
     openNotes: Int = 0,
     description: String = "",
     externalSource: String? = null,
+    commentCount: Int = 0,
+    nextAppointment: String = "null",
     extra: String = "",
 ): String =
     """{"id":"$id","title":"$title","descriptionMd":"$description","category":"$category","priority":"normal","effortMinutes":null,
@@ -32,7 +34,7 @@ internal fun taskJson(
         "trigger":$trigger,"assignMode":"none","assigneeUserId":null,"rotationOrder":[],"rotationStrategy":"alternate",
         "notifyMode":"assignee","graceDays":0,"dueSoonDays":null,"snoozedUntil":${snoozedUntil.json()},
         "archivedAt":${if (archived) "\"2026-01-01T00:00:00.000Z\"" else "null"},"source":"manual","externalSource":${externalSource.json()},
-        "externalRef":null,"externalUrl":null,"createdBy":null,"commentCount":0,"openNoteCount":$openNotes,"nextAppointment":null,
+        "externalRef":null,"externalUrl":null,"createdBy":null,"commentCount":$commentCount,"openNoteCount":$openNotes,"nextAppointment":$nextAppointment,
         "createdAt":"2026-01-01T00:00:00.000Z","updatedAt":"2026-01-01T00:00:00.000Z",
         "state":{"status":"$status","dueDate":${dueDate.json()},"dueKind":"exact","occurrenceKey":"k1","windowStart":null,"progress":null,
         "estimate":null,"missedCount":0,"reasons":["never_completed"],"currentAssigneeUserId":${assignee.json()},"evaluatedAt":"2026-01-01T00:00:00.000Z"}$extra}"""

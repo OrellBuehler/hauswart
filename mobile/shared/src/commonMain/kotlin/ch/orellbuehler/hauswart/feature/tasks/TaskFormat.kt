@@ -5,11 +5,9 @@ import ch.orellbuehler.hauswart.api.generated.Preparation
 import ch.orellbuehler.hauswart.api.generated.Task
 import ch.orellbuehler.hauswart.api.generated.Trigger
 import ch.orellbuehler.hauswart.core.Dates
-import ch.orellbuehler.hauswart.i18n.I18n
 import ch.orellbuehler.hauswart.i18n.tr
 import kotlinx.datetime.toInstant
 import kotlin.math.abs
-import kotlin.math.roundToLong
 import kotlin.random.Random
 
 /** A value of a dropdown or a chip group with the text to show. */
@@ -17,23 +15,6 @@ data class ChoiceOption(
     val value: String,
     val label: String,
 )
-
-/** Up to two decimals and grouped like the web ("15'000" and "250.5" in German, "15,000" in English). */
-fun formatNumber(value: Double): String {
-    if (!value.isFinite()) return value.toString()
-    val scaled = abs(value * 100).roundToLong()
-    val whole = (scaled / 100).toString()
-    val fraction = (scaled % 100).toString().padStart(2, '0').trimEnd('0')
-    val separator = if (I18n.locale == "de") "'" else ","
-    val grouped =
-        whole
-            .reversed()
-            .chunked(3)
-            .joinToString(separator)
-            .reversed()
-    val sign = if (value < 0 && scaled != 0L) "-" else ""
-    return sign + grouped + if (fraction.isEmpty()) "" else ".$fraction"
-}
 
 /** A number as a person edits it: "15000", "2.5". */
 fun plainNumber(value: Double): String =

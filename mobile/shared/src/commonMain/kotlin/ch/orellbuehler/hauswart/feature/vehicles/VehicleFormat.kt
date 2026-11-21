@@ -7,7 +7,7 @@ import ch.orellbuehler.hauswart.api.generated.TireSetsCreateRequest
 import ch.orellbuehler.hauswart.api.generated.Vehicle
 import ch.orellbuehler.hauswart.core.Dates
 import ch.orellbuehler.hauswart.core.Money
-import ch.orellbuehler.hauswart.feature.tasks.formatNumber
+import ch.orellbuehler.hauswart.core.formatNumber
 import ch.orellbuehler.hauswart.i18n.I18n
 import ch.orellbuehler.hauswart.i18n.tr
 import kotlinx.serialization.json.JsonObject

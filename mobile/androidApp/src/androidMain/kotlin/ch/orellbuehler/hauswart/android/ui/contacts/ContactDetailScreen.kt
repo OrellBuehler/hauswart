@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import ch.orellbuehler.hauswart.android.ui.appointments.AppointmentsSection
 import ch.orellbuehler.hauswart.android.ui.collect
 import ch.orellbuehler.hauswart.android.ui.components.AppScaffold
 import ch.orellbuehler.hauswart.android.ui.components.ConfirmDialog
@@ -47,6 +48,8 @@ import ch.orellbuehler.hauswart.android.ui.components.StatusChip
 import ch.orellbuehler.hauswart.android.ui.components.rememberUriOpener
 import ch.orellbuehler.hauswart.android.ui.nav.Routes
 import ch.orellbuehler.hauswart.android.ui.rememberStore
+import ch.orellbuehler.hauswart.android.ui.sections.AttachmentsSection
+import ch.orellbuehler.hauswart.android.ui.sections.DocumentLinksSection
 import ch.orellbuehler.hauswart.feature.contacts.ContactDetailStore
 import ch.orellbuehler.hauswart.feature.contacts.contactKindLabel
 import ch.orellbuehler.hauswart.feature.contacts.mailUri
@@ -155,6 +158,7 @@ fun ContactDetailScreen(
                             LabeledValue(tr("contact_guest_visible"), tr(if (contact.guestVisible) "common_yes" else "common_no"))
                             if (!contact.notes.isNullOrBlank()) LabeledValue(tr("contact_notes"), contact.notes)
                         }
+                        AppointmentsSection(nav, contactId = contact.id)
                         SectionCard(title = tr("contact_assets_title")) {
                             if (contact.assets.isEmpty()) {
                                 EmptyState(tr("contact_assets_empty_title"), tr("contact_assets_empty_body"))
@@ -167,6 +171,8 @@ fun ContactDetailScreen(
                                 )
                             }
                         }
+                        AttachmentsSection(ownerType = "contact", ownerId = contact.id)
+                        DocumentLinksSection(ownerType = "contact", ownerId = contact.id)
                     }
                 }
             error != null -> ErrorBox(error, Modifier.padding(padding), onRetry = store::refresh)

@@ -3,20 +3,15 @@ package ch.orellbuehler.hauswart.feature.tasks
 import ch.orellbuehler.hauswart.api.generated.Trigger
 import ch.orellbuehler.hauswart.api.generated.TriggerIntervalSeasonsItem
 import ch.orellbuehler.hauswart.core.Dates
+import ch.orellbuehler.hauswart.core.formatNumber
+import ch.orellbuehler.hauswart.core.monthName
+import ch.orellbuehler.hauswart.core.weekdayName
 import ch.orellbuehler.hauswart.i18n.I18n
 import ch.orellbuehler.hauswart.i18n.tr
 import kotlinx.datetime.isoDayNumber
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.doubleOrNull
-
-fun monthName(month: Int): String = tr("m_tasks_month_long_$month")
-
-fun monthShort(month: Int): String = tr("m_tasks_month_short_$month")
-
-fun weekdayName(day: Int): String = tr("m_tasks_weekday_long_$day")
-
-fun weekdayShort(day: Int): String = tr("m_tasks_weekday_short_$day")
 
 fun ordinalDay(day: Int): String {
     if (I18n.locale == "de") return "$day."
