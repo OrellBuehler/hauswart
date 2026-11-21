@@ -6,16 +6,12 @@
   "m_appt_wd_fri": "Fri",
   "m_appt_wd_sat": "Sat",
   "m_appt_wd_sun": "Sun",
-  "m_appt_pick_none": "No selection",
   "m_appt_pick_search": "Search",
   "m_appt_pick_empty": "Nothing found.",
   "m_appt_time_pick": "Choose time",
   "m_appt_time_clear": "Clear time",
   "m_appt_end_other_day": "Ends on another day",
   "m_appt_end_same_day": "Ends on the same day",
-  "m_appt_open_task": "Open task",
-  "m_appt_status_filter": "Status",
   "m_appt_choices_failed": "Tasks, devices and contacts could not be loaded.",
-  "m_appt_count": "{count, plural, one {1 appointment} other {{count} appointments}}",
-  "m_appt_create_for": "Schedule appointment"
+  "m_appt_contact_none": "No contact"
 }

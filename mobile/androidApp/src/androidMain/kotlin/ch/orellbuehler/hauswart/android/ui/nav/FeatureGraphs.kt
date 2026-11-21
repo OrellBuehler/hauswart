@@ -11,8 +11,11 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import ch.orellbuehler.hauswart.android.ui.appointments.appointmentsGraph
 import ch.orellbuehler.hauswart.android.ui.components.AppScaffold
 import ch.orellbuehler.hauswart.android.ui.components.EmptyState
+import ch.orellbuehler.hauswart.android.ui.notifications.notificationsGraph
+import ch.orellbuehler.hauswart.android.ui.search.searchGraph
 import ch.orellbuehler.hauswart.i18n.tr
 
 private val idArg = listOf(navArgument("id") { type = NavType.StringType })
@@ -37,8 +40,7 @@ fun NavGraphBuilder.featureGraphs(nav: NavController) {
     composable(Routes.TASK_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_tasks") }
 
     // Appointments
-    composable(Routes.APPOINTMENTS) { ComingSoon(nav, "nav_appointments") }
-    composable(Routes.APPOINTMENT_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_appointments") }
+    appointmentsGraph(nav)
 
     // Inventory (devices)
     composable(Routes.INVENTORY) { ComingSoon(nav, "nav_inventory") }
@@ -81,10 +83,10 @@ fun NavGraphBuilder.featureGraphs(nav: NavController) {
     composable(Routes.COST_ROUTE, arguments = idArg) { ComingSoon(nav, "nav_costs") }
 
     // Notifications
-    composable(Routes.NOTIFICATIONS) { ComingSoon(nav, "notifications_title") }
+    notificationsGraph(nav)
 
     // Search
-    composable(Routes.SEARCH) { ComingSoon(nav, "search_page_title") }
+    searchGraph(nav)
 }
 
 /** [titleKey] is the message key of the section's name; a [root] screen is a tab and has no back arrow. */

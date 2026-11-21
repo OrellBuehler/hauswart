@@ -156,6 +156,13 @@ class AttachmentsStore(
         if (problem == null) start(id)
     }
 
+    /** Reports a file that is too large to be read at all (the apps check the size a picker states before reading it). */
+    fun rejectTooLarge(name: String) {
+        val id = nextUpload++
+        pending[id] = PendingUpload(name, "", ByteArray(0), true, tr("attach_error_too_large"), false)
+        showUploads()
+    }
+
     /** [upload] for Swift, which hands the bytes over as Base64 text. */
     fun uploadEncoded(
         name: String,

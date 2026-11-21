@@ -42,6 +42,26 @@ object Routes {
     const val COST_ROUTE = "costs/entry/{id}"
     const val INSURANCE_ROUTE = "insurance/{id}"
 
+    // Appointments: the form is a screen of its own so that the cards on tasks, devices and contacts can link to it.
+    const val APPOINTMENT_NEW_ROUTE =
+        "appointments/new?taskId={taskId}&assetId={assetId}&contactId={contactId}&occurrenceKey={occurrenceKey}"
+    const val APPOINTMENT_EDIT_ROUTE = "appointments/{id}/edit"
+
+    fun appointmentNew(
+        taskId: String = "",
+        assetId: String = "",
+        contactId: String = "",
+        occurrenceKey: String = "",
+    ): String {
+        val query =
+            listOf("taskId" to taskId, "assetId" to assetId, "contactId" to contactId, "occurrenceKey" to occurrenceKey)
+                .filter { it.second.isNotEmpty() }
+                .joinToString("&") { "${it.first}=${arg(it.second)}" }
+        return "appointments/new" + if (query.isEmpty()) "" else "?$query"
+    }
+
+    fun appointmentEdit(id: String) = "appointments/${arg(id)}/edit"
+
     fun task(id: String) = "tasks/${arg(id)}"
 
     fun taskNew(assetId: String? = null) = "tasks/new" + (assetId?.let { "?assetId=${arg(it)}" } ?: "")
