@@ -1,0 +1,15 @@
+{
+  "m_appt_wd_mon": "Mo",
+  "m_appt_wd_tue": "Di",
+  "m_appt_wd_wed": "Mi",
+  "m_appt_wd_thu": "Do",
+  "m_appt_wd_fri": "Fr",
+  "m_appt_wd_sat": "Sa",
+  "m_appt_wd_sun": "So",
+  "m_appt_pick_search": "Suchen",
+  "m_appt_pick_empty": "Nichts gefunden.",
+  "m_appt_time_pick": "Uhrzeit wählen",
+  "m_appt_time_clear": "Uhrzeit löschen",
+  "m_appt_choices_failed": "Aufgaben, Geräte und Kontakte konnten nicht geladen werden.",
+  "m_appt_contact_none": "Kein Kontakt"
+}

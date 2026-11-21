@@ -1,0 +1,5 @@
+{
+  "m_instant_now": "gerade eben",
+  "m_instant_minutes_ago": "{count, plural, one {vor 1 Minute} other {vor {count} Minuten}}",
+  "m_instant_hours_ago": "{count, plural, one {vor 1 Stunde} other {vor {count} Stunden}}"
+}

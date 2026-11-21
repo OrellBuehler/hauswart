@@ -5,6 +5,12 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!-- Taking a photo for an attachment goes through the camera app (no CAMERA permission needed);
+         a device without a camera can still pick files. -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
     <!-- usesCleartextTraffic: the server is self-hosted and often reached as http://<address> on
          the home network. -->
     <application
@@ -33,5 +39,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Hands cached files (an attachment to open, a photo to take) to other apps. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 </manifest>

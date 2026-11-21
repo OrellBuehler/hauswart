@@ -1,0 +1,5 @@
+{
+  "m_instant_now": "just now",
+  "m_instant_minutes_ago": "{count, plural, one {1 minute ago} other {{count} minutes ago}}",
+  "m_instant_hours_ago": "{count, plural, one {1 hour ago} other {{count} hours ago}}"
+}

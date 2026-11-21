@@ -1,0 +1,15 @@
+{
+  "m_appt_wd_mon": "Mon",
+  "m_appt_wd_tue": "Tue",
+  "m_appt_wd_wed": "Wed",
+  "m_appt_wd_thu": "Thu",
+  "m_appt_wd_fri": "Fri",
+  "m_appt_wd_sat": "Sat",
+  "m_appt_wd_sun": "Sun",
+  "m_appt_pick_search": "Search",
+  "m_appt_pick_empty": "Nothing found.",
+  "m_appt_time_pick": "Choose time",
+  "m_appt_time_clear": "Clear time",
+  "m_appt_choices_failed": "Tasks, devices and contacts could not be loaded.",
+  "m_appt_contact_none": "No contact"
+}
