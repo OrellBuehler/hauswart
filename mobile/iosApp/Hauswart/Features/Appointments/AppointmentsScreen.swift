@@ -72,7 +72,6 @@ struct AppointmentsScreen: View {
         }
     }
 
-    @ViewBuilder
     private func filters(_ state: AppointmentsListState) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Picker(tr("appointments_view_label"), selection: viewBinding) {
@@ -127,7 +126,6 @@ struct AppointmentsScreen: View {
         }
     }
 
-    @ViewBuilder
     private func olderRow(_ state: AppointmentsListState) -> some View {
         VStack(spacing: 8) {
             if state.loadingOlder {

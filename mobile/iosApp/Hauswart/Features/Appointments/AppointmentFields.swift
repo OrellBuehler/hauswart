@@ -5,7 +5,7 @@ import SwiftUI
 struct TimeEntry: View {
     let label: String
     @Binding var value: String
-    var error: String? = nil
+    var error: String?
     var clearable = false
 
     var body: some View {
@@ -67,19 +67,26 @@ enum WallClock {
 }
 
 /// A task, device or contact to link: shows the chosen one and opens a searchable list. `selection`
-/// is the chosen id ("" for none). With `onPick` the caller sets the selection itself (it may change more than this field).
+/// is the chosen id ("" for none). With `onPick` the caller sets the selection itself (it may change more than this
+/// field).
 struct ApptChoiceEntry: View {
     let label: String
     let noneLabel: String
     let options: [ApptChoice]
     @Binding var selection: String
-    var error: String? = nil
-    var onPick: ((String) -> Void)? = nil
+    var error: String?
+    var onPick: ((String) -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             NavigationLink {
-                ApptChoiceList(title: label, noneLabel: noneLabel, options: options, selection: $selection, onPick: onPick)
+                ApptChoiceList(
+                    title: label,
+                    noneLabel: noneLabel,
+                    options: options,
+                    selection: $selection,
+                    onPick: onPick
+                )
             } label: {
                 LabeledContent(label) {
                     Text(shown)

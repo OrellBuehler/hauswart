@@ -10,7 +10,11 @@ struct SearchScreen: View {
         content(state)
             .navigationTitle(tr("search_page_title"))
             .navigationBarTitleDisplayMode(.inline)
-            .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: tr("search_placeholder"))
+            .searchable(
+                text: $query,
+                placement: .navigationBarDrawer(displayMode: .always),
+                prompt: tr("search_placeholder")
+            )
             .onChange(of: query) { _, value in
                 model.store.setQuery(query: value)
             }
@@ -19,10 +23,14 @@ struct SearchScreen: View {
     @ViewBuilder
     private func content(_ state: SearchState) -> some View {
         if state.idle {
-            EmptyStateView(title: tr("search_page_idle_title"), message: tr("search_idle"), systemImage: "magnifyingglass")
+            EmptyStateView(
+                title: tr("search_page_idle_title"),
+                message: tr("search_idle"),
+                systemImage: "magnifyingglass"
+            )
         } else if let error = state.error {
             ErrorView(error: error) { model.store.retry() }
-        } else if state.loading && state.groups.isEmpty {
+        } else if state.loading, state.groups.isEmpty {
             LoadingView()
         } else if state.empty {
             EmptyStateView(
@@ -45,9 +53,12 @@ struct SearchScreen: View {
                     }
                 }
                 Section {
-                    Text(tr("search_result_count", ["count": String(state.shown), "q": query.trimmingCharacters(in: .whitespaces)]))
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                    Text(tr(
+                        "search_result_count",
+                        ["count": String(state.shown), "q": query.trimmingCharacters(in: .whitespaces)]
+                    ))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
                 }
                 ForEach(state.groups, id: \.type) { group in
                     Section(group.title) {

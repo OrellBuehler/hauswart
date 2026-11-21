@@ -80,10 +80,14 @@ struct AppointmentEditScreen: View {
                 }
                 Section {
                     TextEntry(label: tr("appointment_title_label"), text: $title, error: errors["title"])
-                    ToggleEntry(label: tr("appointment_all_day_label"), isOn: $allDay, hint: tr("appointment_all_day_hint"))
-                        .onChange(of: allDay) { _, value in
-                            showEndDate = !value && !endDate.isEmpty
-                        }
+                    ToggleEntry(
+                        label: tr("appointment_all_day_label"),
+                        isOn: $allDay,
+                        hint: tr("appointment_all_day_hint")
+                    )
+                    .onChange(of: allDay) { _, value in
+                        showEndDate = !value && !endDate.isEmpty
+                    }
                 }
                 Section {
                     timeFields(errors)
@@ -128,7 +132,12 @@ struct AppointmentEditScreen: View {
                     }
                 }
                 Section {
-                    TextEntry(label: tr("appointment_notes_label"), text: $notes, error: errors["notes"], multiline: true)
+                    TextEntry(
+                        label: tr("appointment_notes_label"),
+                        text: $notes,
+                        error: errors["notes"],
+                        multiline: true
+                    )
                 }
             }
         }
@@ -137,17 +146,37 @@ struct AppointmentEditScreen: View {
     @ViewBuilder
     private func timeFields(_ errors: [String: String]) -> some View {
         if allDay {
-            DateEntry(label: tr("appointment_from_label"), value: $startDate, error: errors["startDate"], clearable: false)
+            DateEntry(
+                label: tr("appointment_from_label"),
+                value: $startDate,
+                error: errors["startDate"],
+                clearable: false
+            )
             DateEntry(label: tr("appointment_to_label"), value: $endDate, error: errors["endDate"])
             Text(tr("appointment_to_hint"))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         } else {
-            DateEntry(label: tr("appointment_date_label"), value: $startDate, error: errors["startDate"], clearable: false)
+            DateEntry(
+                label: tr("appointment_date_label"),
+                value: $startDate,
+                error: errors["startDate"],
+                clearable: false
+            )
             TimeEntry(label: tr("appointment_start_time_label"), value: $startTime, error: errors["startTime"])
-            TimeEntry(label: tr("appointment_end_time_label"), value: $endTime, error: errors["endTime"], clearable: true)
+            TimeEntry(
+                label: tr("appointment_end_time_label"),
+                value: $endTime,
+                error: errors["endTime"],
+                clearable: true
+            )
             if showEndDate {
-                DateEntry(label: tr("appointment_end_date_label"), value: $endDate, error: errors["endDate"], clearable: false)
+                DateEntry(
+                    label: tr("appointment_end_date_label"),
+                    value: $endDate,
+                    error: errors["endDate"],
+                    clearable: false
+                )
             }
             Text(tr("appointment_end_time_hint"))
                 .font(.footnote)

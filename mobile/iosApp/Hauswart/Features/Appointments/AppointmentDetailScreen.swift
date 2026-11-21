@@ -129,7 +129,8 @@ struct AppointmentDetailScreen: View {
                             }
                         }
                     }
-                    Text(detail.updatedText.isEmpty ? detail.createdText : detail.createdText + "\n" + detail.updatedText)
+                    Text(detail.updatedText.isEmpty ? detail.createdText : detail.createdText + "\n" + detail
+                        .updatedText)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -192,9 +193,9 @@ struct AppointmentDetailScreen: View {
 
     private func route(for link: ApptLinkRef) -> Route {
         switch link.kind {
-        case "task": return Route.task(link.id)
-        case "asset": return Route.asset(link.id)
-        default: return Route.contact(link.id)
+        case "task": Route.task(link.id)
+        case "asset": Route.asset(link.id)
+        default: Route.contact(link.id)
         }
     }
 }

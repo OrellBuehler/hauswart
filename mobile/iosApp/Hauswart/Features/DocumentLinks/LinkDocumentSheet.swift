@@ -11,7 +11,11 @@ struct LinkDocumentSheet: View {
     @State private var label = ""
 
     init(ownerType: String, ownerId: String) {
-        _model = StateObject(wrappedValue: Observed(LinkDocumentStore(app: AppEnv.app, ownerType: ownerType, ownerId: ownerId)))
+        _model = StateObject(wrappedValue: Observed(LinkDocumentStore(
+            app: AppEnv.app,
+            ownerType: ownerType,
+            ownerId: ownerId
+        )))
         _role = State(initialValue: LinkDocumentStoreKt.defaultDocumentRole(ownerType: ownerType))
     }
 
@@ -42,17 +46,16 @@ struct LinkDocumentSheet: View {
         }
     }
 
-    @ViewBuilder
     private func content(_ state: LinkDocumentState) -> some View {
         List {
             Section {
                 if let error = state.error {
                     ErrorView(error: error) { model.store.retry() }
-                } else if state.loading && state.rows.isEmpty {
+                } else if state.loading, state.rows.isEmpty {
                     ProgressView()
                         .frame(maxWidth: .infinity)
                 } else if state.rows.isEmpty {
-                    Text(state.query.trimmingCharacters(in: .whitespaces).isEmpty ? tr("document_link_none_synced") : tr("document_link_no_match"))
+                    Text(blank(state) ? tr("document_link_none_synced") : tr("document_link_no_match"))
                         .foregroundStyle(.secondary)
                 }
                 ForEach(state.rows, id: \.id) { row in
@@ -71,7 +74,7 @@ struct LinkDocumentSheet: View {
                         .disabled(state.loadingMore)
                 }
             } header: {
-                Text(state.query.trimmingCharacters(in: .whitespaces).isEmpty ? tr("document_link_search_hint") : tr("document_link_search_live"))
+                Text(blank(state) ? tr("document_link_search_hint") : tr("document_link_search_live"))
                     .textCase(nil)
             } footer: {
                 if let title = state.selectedTitle {
@@ -84,12 +87,19 @@ struct LinkDocumentSheet: View {
                 ChoiceEntry(
                     label: tr("document_link_role"),
                     selection: $role,
-                    options: LinkDocumentStoreKt.DOCUMENT_LINK_ROLES.map { Choice(value: $0, label: LinkDocumentStoreKt.documentRoleLabel(role: $0)) }
+                    options: LinkDocumentStoreKt.DOCUMENT_LINK_ROLES.map { Choice(
+                        value: $0,
+                        label: LinkDocumentStoreKt.documentRoleLabel(role: $0)
+                    ) }
                 )
                 TextEntry(label: tr("document_link_label"), text: $label)
                 FieldError(text: state.submitError)
             }
         }
+    }
+
+    private func blank(_ state: LinkDocumentState) -> Bool {
+        state.query.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
     private func resultRow(_ row: DocumentChoiceRow, _ state: LinkDocumentState) -> some View {

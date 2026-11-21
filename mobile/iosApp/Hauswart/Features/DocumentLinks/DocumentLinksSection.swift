@@ -20,7 +20,11 @@ struct DocumentLinksSection: View {
     init(ownerType: String, ownerId: String) {
         self.ownerType = ownerType
         self.ownerId = ownerId
-        _model = StateObject(wrappedValue: Observed(DocumentLinksStore(app: AppEnv.app, ownerType: ownerType, ownerId: ownerId)))
+        _model = StateObject(wrappedValue: Observed(DocumentLinksStore(
+            app: AppEnv.app,
+            ownerType: ownerType,
+            ownerId: ownerId
+        )))
     }
 
     var body: some View {
@@ -40,7 +44,7 @@ struct DocumentLinksSection: View {
                     }
                 }
                 ErrorBanner(error: state.actionError)
-                if state.rows.isEmpty && state.error == nil {
+                if state.rows.isEmpty, state.error == nil {
                     Text(state.canLink ? tr("document_links_empty_body") : tr("document_links_empty_readonly"))
                         .foregroundStyle(.secondary)
                 }
@@ -123,7 +127,9 @@ private struct DocumentLinkRowView: View {
         }
         .confirmDelete(
             tr("document_unlink_title"),
-            message: row.available ? tr("document_unlink_description", ["title": row.title]) : tr("document_unlink_description_unavailable"),
+            message: row
+                .available ? tr("document_unlink_description", ["title": row.title]) :
+                tr("document_unlink_description_unavailable"),
             isPresented: $confirmingUnlink
         ) {
             store.unlink(id: row.id)

@@ -22,7 +22,11 @@ struct AttachmentsSection: View {
     @State private var notice: String? = nil
 
     init(ownerType: String, ownerId: String) {
-        _model = StateObject(wrappedValue: Observed(AttachmentsStore(app: AppEnv.app, ownerType: ownerType, ownerId: ownerId)))
+        _model = StateObject(wrappedValue: Observed(AttachmentsStore(
+            app: AppEnv.app,
+            ownerType: ownerType,
+            ownerId: ownerId
+        )))
     }
 
     var body: some View {
@@ -46,7 +50,7 @@ struct AttachmentsSection: View {
                     Button(tr("common_retry")) { model.store.refresh() }
                         .buttonStyle(.borderless)
                 }
-            } else if state.rows.isEmpty && state.uploads.isEmpty {
+            } else if state.rows.isEmpty, state.uploads.isEmpty {
                 Text(tr("attach_empty_title"))
                     .foregroundStyle(.secondary)
             }
@@ -58,7 +62,6 @@ struct AttachmentsSection: View {
         }
     }
 
-    @ViewBuilder
     private func addRow(_ state: AttachmentsState) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Menu {
@@ -110,7 +113,11 @@ struct AttachmentsSection: View {
                 }
             }
         }
-        .fileImporter(isPresented: $choosingFile, allowedContentTypes: [.pdf, .image], allowsMultipleSelection: false) { result in
+        .fileImporter(
+            isPresented: $choosingFile,
+            allowedContentTypes: [.pdf, .image],
+            allowsMultipleSelection: false
+        ) { result in
             switch result {
             case let .success(urls):
                 if let url = urls.first { importFile(url) }
@@ -304,7 +311,10 @@ private struct AttachmentRowView: View {
                 Button {
                     store.setGuestVisible(id: row.id, visible: !row.guestVisible)
                 } label: {
-                    Label(tr("attach_guest_visible"), systemImage: row.guestVisible ? "checkmark.circle.fill" : "circle")
+                    Label(
+                        tr("attach_guest_visible"),
+                        systemImage: row.guestVisible ? "checkmark.circle.fill" : "circle"
+                    )
                 }
             }
             Button(role: .destructive) {
@@ -321,9 +331,9 @@ private struct AttachmentRowView: View {
 
     private var placeholder: String {
         switch row.kind {
-        case "image": return "photo"
-        case "pdf": return "doc.richtext"
-        default: return "doc"
+        case "image": "photo"
+        case "pdf": "doc.richtext"
+        default: "doc"
         }
     }
 

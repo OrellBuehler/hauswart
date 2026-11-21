@@ -20,7 +20,12 @@ struct AppointmentsSection: View {
         self.taskId = taskId
         self.assetId = assetId
         self.contactId = contactId
-        _model = StateObject(wrappedValue: Observed(AppointmentsSectionStore(app: AppEnv.app, taskId: taskId, assetId: assetId, contactId: contactId)))
+        _model = StateObject(wrappedValue: Observed(AppointmentsSectionStore(
+            app: AppEnv.app,
+            taskId: taskId,
+            assetId: assetId,
+            contactId: contactId
+        )))
     }
 
     var body: some View {

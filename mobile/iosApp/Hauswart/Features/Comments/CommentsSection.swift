@@ -18,7 +18,11 @@ struct CommentsSection: View {
     @State private var confirmingDelete = false
 
     init(ownerType: String, ownerId: String) {
-        _model = StateObject(wrappedValue: Observed(CommentsStore(app: AppEnv.app, ownerType: ownerType, ownerId: ownerId)))
+        _model = StateObject(wrappedValue: Observed(CommentsStore(
+            app: AppEnv.app,
+            ownerType: ownerType,
+            ownerId: ownerId
+        )))
     }
 
     var body: some View {
@@ -75,7 +79,6 @@ struct CommentsSection: View {
         }
     }
 
-    @ViewBuilder
     private func commentView(_ row: CommentRow, _ state: CommentsState) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline) {
@@ -87,7 +90,7 @@ struct CommentsSection: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
-                if editingId != row.id && row.canEdit {
+                if editingId != row.id, row.canEdit {
                     Button {
                         editDraft = row.body
                         editingId = row.id
@@ -98,7 +101,7 @@ struct CommentsSection: View {
                     .buttonStyle(.borderless)
                     .accessibilityLabel(tr("comments_edit"))
                 }
-                if editingId != row.id && row.canDelete {
+                if editingId != row.id, row.canDelete {
                     Button {
                         deleteId = row.id
                         confirmingDelete = true
@@ -148,7 +151,6 @@ struct CommentsSection: View {
         }
     }
 
-    @ViewBuilder
     private func composer(_ state: CommentsState) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             TextField(tr("comments_composer_placeholder"), text: $draft, axis: .vertical)

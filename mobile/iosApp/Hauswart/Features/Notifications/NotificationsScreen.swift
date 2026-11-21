@@ -21,7 +21,6 @@ struct NotificationsScreen: View {
             }
     }
 
-    @ViewBuilder
     private func content(_ state: NotificationsState) -> some View {
         List {
             Section {
@@ -117,22 +116,22 @@ private struct NotificationItemView: View {
 
     private var symbol: String {
         switch row.kind {
-        case "prep": return "shippingbox"
-        case "due_soon": return "alarm"
-        case "due": return "bell.badge"
-        case "overdue": return "exclamationmark.triangle"
-        case "digest": return "list.bullet"
-        case "comment": return "bubble.left"
-        case "hint": return "lightbulb"
-        default: return "info.circle"
+        case "prep": "shippingbox"
+        case "due_soon": "alarm"
+        case "due": "bell.badge"
+        case "overdue": "exclamationmark.triangle"
+        case "digest": "list.bullet"
+        case "comment": "bubble.left"
+        case "hint": "lightbulb"
+        default: "info.circle"
         }
     }
 
     private var tint: Color {
         switch row.kind {
-        case "overdue": return .red
-        case "due", "due_soon", "hint": return .orange
-        default: return .secondary
+        case "overdue": .red
+        case "due", "due_soon", "hint": .orange
+        default: .secondary
         }
     }
 }

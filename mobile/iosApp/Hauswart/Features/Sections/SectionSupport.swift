@@ -4,7 +4,8 @@ import UIKit
 
 /// Files that were fetched to be opened or shared live in the temporary directory, one at a time.
 enum CacheFiles {
-    /// Writes `file` (replacing what an earlier open left there) and returns where it is, or nil when it cannot be written.
+    /// Writes `file` (replacing what an earlier open left there) and returns where it is, or nil when it cannot be
+    /// written.
     static func write(_ file: FilePayload) -> URL? {
         guard let data = Data(base64Encoded: file.base64()) else { return nil }
         let manager = FileManager.default
