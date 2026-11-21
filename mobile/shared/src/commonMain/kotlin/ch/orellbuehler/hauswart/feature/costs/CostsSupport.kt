@@ -4,6 +4,7 @@ import ch.orellbuehler.hauswart.HauswartApp
 import ch.orellbuehler.hauswart.api.generated.CostBook
 import ch.orellbuehler.hauswart.api.generated.CostEntry
 import ch.orellbuehler.hauswart.api.generated.CostsCreateRequest
+import ch.orellbuehler.hauswart.core.monthName
 import ch.orellbuehler.hauswart.i18n.tr
 
 /** A value and the text to show for it: the choices of a dropdown or a row of chips. */
@@ -134,7 +135,7 @@ data class TagOption(
 fun costMonthTitle(date: String): String {
     val year = date.take(4)
     val month = date.drop(5).take(2).toIntOrNull() ?: return date
-    return if (month in 1..12) "${tr("m_costs_month_$month")} $year" else date
+    return if (month in 1..12) "${monthName(month)} $year" else date
 }
 
 internal fun CostEntry.isRefund(): Boolean = amountMinor < 0

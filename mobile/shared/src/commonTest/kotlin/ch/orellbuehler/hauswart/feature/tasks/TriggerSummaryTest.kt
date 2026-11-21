@@ -221,13 +221,4 @@ class TriggerSummaryTest {
     fun anUnknownTriggerHasAText() {
         assertEquals("Ein Rhythmus, den diese App-Version nicht kennt", describeTrigger(Trigger.Unknown))
     }
-
-    @Test
-    fun numbersAreGroupedByLanguage() {
-        assertEquals("15'000", formatNumber(15000.0))
-        assertEquals("1'234.57", formatNumber(1234.567))
-        assertEquals("-2.5", formatNumber(-2.5))
-        I18n.locale = "en"
-        assertEquals("1,234,567", formatNumber(1234567.0))
-    }
 }

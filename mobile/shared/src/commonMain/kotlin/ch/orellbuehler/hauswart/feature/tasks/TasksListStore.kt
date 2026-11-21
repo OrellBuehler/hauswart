@@ -44,6 +44,21 @@ internal suspend fun runUndo(
     app.changed("tasks", "parts", "assets")
 }
 
+/**
+ * Completes a task without a dialog (not for one that asks for an odometer reading). [shown] gets the notice with its
+ * way back before the other screens are told.
+ */
+internal suspend fun completeWithoutDialog(
+    app: HauswartApp,
+    taskId: String,
+    title: String,
+    shown: (TaskNotice) -> Unit,
+) {
+    val result = app.api.tasks.tasksComplete(taskId, TasksCompleteRequest(idempotencyKey = newIdempotencyKey()))
+    shown(TaskNotice(tr("toast_completed", "title" to title), UndoToken("completion", result.completion.id, taskId, null)))
+    app.changed("tasks", "parts")
+}
+
 data class TaskGroup(
     val key: String,
     val title: String,
@@ -194,7 +209,7 @@ class TasksListStore(
                         (s.roomId.isEmpty() || t.roomId == s.roomId) &&
                         (s.assetId.isEmpty() || t.assetId == s.assetId) &&
                         (needle.isEmpty() || t.title.lowercase().contains(needle) || t.descriptionMd.lowercase().contains(needle))
-                }.map { taskRowOf(it, today, people) }
+                }.map { taskRowOf(it, today, people, app.household.timezone) }
         val groups =
             when (s.view) {
                 VIEW_STATUS ->
@@ -224,18 +239,7 @@ class TasksListStore(
         if (current.busyId != null) return
         update { it.copy(busyId = taskId, actionError = null) }
         launch({ e -> update { it.copy(busyId = null, actionError = e) } }) {
-            val result = app.api.tasks.tasksComplete(taskId, TasksCompleteRequest(idempotencyKey = newIdempotencyKey()))
-            update {
-                it.copy(
-                    busyId = null,
-                    notice =
-                        TaskNotice(
-                            tr("toast_completed", "title" to task.title),
-                            UndoToken("completion", result.completion.id, taskId, null),
-                        ),
-                )
-            }
-            app.changed("tasks", "parts")
+            completeWithoutDialog(app, taskId, task.title) { notice -> update { it.copy(busyId = null, notice = notice) } }
         }
     }
 

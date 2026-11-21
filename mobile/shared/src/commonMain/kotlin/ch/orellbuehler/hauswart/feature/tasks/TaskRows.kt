@@ -4,7 +4,10 @@ import ch.orellbuehler.hauswart.api.generated.Task
 import ch.orellbuehler.hauswart.api.generated.TaskState
 import ch.orellbuehler.hauswart.core.Dates
 import ch.orellbuehler.hauswart.core.dueText
+import ch.orellbuehler.hauswart.core.formatNumber
 import ch.orellbuehler.hauswart.core.shortDate
+import ch.orellbuehler.hauswart.feature.appointments.AppointmentChip
+import ch.orellbuehler.hauswart.feature.appointments.appointmentChipOf
 import ch.orellbuehler.hauswart.feature.dashboard.taskStatusLabel
 import ch.orellbuehler.hauswart.feature.dashboard.taskTone
 import ch.orellbuehler.hauswart.i18n.tr
@@ -47,6 +50,11 @@ data class TaskRow(
     /** The task counts a vehicle's odometer: completing it asks for the reading first. */
     val needsReading: Boolean,
     val openNotes: Long,
+    val commentCount: Int,
+    /** "3 comments"; empty without comments. */
+    val commentsLabel: String,
+    /** The earliest planned appointment, null without one. */
+    val appointment: AppointmentChip?,
     val archivedLabel: String?,
     val snoozedLabel: String?,
     val roomId: String?,
@@ -61,6 +69,7 @@ fun taskRowOf(
     task: Task,
     today: String,
     people: Map<String, String>,
+    timeZone: String,
 ): TaskRow {
     val state = task.state
     val date = state?.let { shownDate(it) }
@@ -81,6 +90,9 @@ fun taskRowOf(
         snoozed = status == "snoozed" && task.snoozedUntil != null,
         needsReading = odometerAssetOf(task.trigger) != null,
         openNotes = task.openNoteCount,
+        commentCount = task.commentCount.toInt(),
+        commentsLabel = if (task.commentCount > 0) tr("comments_count", "count" to task.commentCount) else "",
+        appointment = appointmentChipOf(task.nextAppointment, timeZone, today),
         archivedLabel = if (task.archivedAt != null) tr("task_archived") else null,
         snoozedLabel = snoozedUntil?.let { tr("task_snoozed_until", "date" to Dates.format(it)) },
         roomId = task.roomId,

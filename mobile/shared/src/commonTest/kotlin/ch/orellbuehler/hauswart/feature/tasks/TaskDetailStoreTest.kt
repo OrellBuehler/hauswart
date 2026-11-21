@@ -59,6 +59,23 @@ class TaskDetailStoreTest {
         }
 
     @Test
+    fun theViewCarriesTheBadgeOfTheNextAppointment() =
+        runTest {
+            setup(
+                taskJson(
+                    "t1",
+                    "Clean filter",
+                    nextAppointment = """{"id":"ap1","allDay":true,"startsAt":null,"startDate":"2099-05-04"}""",
+                ),
+            )
+            val store = TaskDetailStore(app, "t1")
+            val chip = assertNotNull(assertNotNull(store.await { !it.loading }.view).appointment)
+            assertEquals("ap1", chip.id)
+            assertTrue(chip.text.contains("04.05.2099"), chip.text)
+            store.close()
+        }
+
+    @Test
     fun archivingSendsTheFlagAndSaysSo() =
         runTest {
             setup()

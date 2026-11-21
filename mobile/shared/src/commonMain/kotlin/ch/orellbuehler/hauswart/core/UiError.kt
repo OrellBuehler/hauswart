@@ -2,6 +2,7 @@ package ch.orellbuehler.hauswart.core
 
 import ch.orellbuehler.hauswart.api.ApiException
 import ch.orellbuehler.hauswart.i18n.tr
+import kotlinx.serialization.json.JsonElement
 
 /**
  * A failure as the user sees it. [message] is localized and ready to show; [fields] are the
@@ -12,6 +13,8 @@ data class UiError(
     val code: String,
     val fields: Map<String, String> = emptyMap(),
     val detailCode: String? = null,
+    /** The response's `details` as the server sent them (a rejected reading names its neighbour there), else null. */
+    val details: JsonElement? = null,
 ) {
     val isNetwork: Boolean get() = code == ApiException.NETWORK
     val isNotFound: Boolean get() = code == "not_found"
@@ -40,5 +43,5 @@ fun uiErrorOf(e: Throwable): UiError {
                     ?: tr("m_error_invalid_request")
             else -> tr("m_error_server")
         }
-    return UiError(message, e.code, e.fieldErrors, e.detailCode)
+    return UiError(message, e.code, e.fieldErrors, e.detailCode, e.details)
 }

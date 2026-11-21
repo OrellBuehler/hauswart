@@ -9,6 +9,8 @@ import ch.orellbuehler.hauswart.api.generated.TaskDetail
 import ch.orellbuehler.hauswart.api.generated.TaskPart
 import ch.orellbuehler.hauswart.core.Dates
 import ch.orellbuehler.hauswart.core.shortDate
+import ch.orellbuehler.hauswart.feature.appointments.AppointmentChip
+import ch.orellbuehler.hauswart.feature.appointments.appointmentChipOf
 import ch.orellbuehler.hauswart.feature.dashboard.TONE_DUE
 import ch.orellbuehler.hauswart.feature.dashboard.TONE_MUTED
 import ch.orellbuehler.hauswart.feature.dashboard.TONE_OK
@@ -65,6 +67,8 @@ data class TaskDetailView(
     val tone: String,
     val dueText: String,
     val chips: List<DetailChip>,
+    /** The earliest planned appointment, null without one. */
+    val appointment: AppointmentChip?,
     val archived: Boolean,
     val snoozed: Boolean,
     val needsReading: Boolean,
@@ -208,6 +212,7 @@ fun taskDetailView(
                         .dueText(it, today, shownDateIsEstimate(state))
                 }.orEmpty(),
         chips = chips,
+        appointment = appointmentChipOf(task.nextAppointment, timeZone, today),
         archived = archived,
         snoozed = snoozed,
         needsReading = odometerAssetOf(task.trigger) != null,

@@ -120,6 +120,37 @@ class TasksListStoreTest {
             store.close()
         }
 
+    @Test
+    fun aRowCarriesItsCommentCountAndTheNextAppointment() =
+        runTest {
+            server.household()
+            server.places()
+            server.tasks(
+                taskJson(
+                    "t1",
+                    "Clean filter",
+                    commentCount = 3,
+                    nextAppointment = """{"id":"ap1","allDay":false,"startsAt":"2099-05-04T07:30:00.000Z","startDate":null}""",
+                ),
+                taskJson("t2", "Water plants"),
+            )
+            val store = TasksListStore(app)
+            val rows = store.await { !it.loading }.groups.flatMap { it.rows }
+            val busy = rows.first { it.id == "t1" }
+            assertEquals(3, busy.commentCount)
+            assertEquals("3 Kommentare", busy.commentsLabel)
+            val chip = assertNotNull(busy.appointment)
+            assertEquals("ap1", chip.id)
+            assertTrue(chip.text.contains("04.05.2099"), chip.text)
+            assertTrue(chip.text.endsWith("09:30"), chip.text)
+            assertEquals("Termin: " + chip.text, chip.label)
+            val quiet = rows.first { it.id == "t2" }
+            assertEquals(0, quiet.commentCount)
+            assertEquals("", quiet.commentsLabel)
+            assertNull(quiet.appointment)
+            store.close()
+        }
+
     private suspend fun TasksListStore.setViewAndAwait(): TasksListState {
         setView(VIEW_DUE)
         return await { it.view == VIEW_DUE && !it.mine }
