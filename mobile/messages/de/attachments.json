@@ -1,0 +1,16 @@
+{
+  "m_attach_add": "Datei hinzufügen",
+  "m_attach_from_library": "Foto aus der Mediathek",
+  "m_attach_open": "Öffnen",
+  "m_attach_share": "Teilen",
+  "m_attach_caption_save": "Beschriftung speichern",
+  "m_attach_viewer_close": "Bildansicht schliessen",
+  "m_attach_viewer_zoom_hint": "Mit zwei Fingern vergrössern, doppelt tippen zum Wechseln.",
+  "m_attach_cannot_read": "Die Datei konnte nicht gelesen werden.",
+  "m_attach_uploading": "Wird hochgeladen …",
+  "m_attach_retry": "Erneut hochladen",
+  "m_attach_dismiss": "Meldung schliessen",
+  "m_attach_thumb_missing": "Keine Vorschau",
+  "m_attach_image": "Bild",
+  "m_attach_pdf": "PDF"
+}
