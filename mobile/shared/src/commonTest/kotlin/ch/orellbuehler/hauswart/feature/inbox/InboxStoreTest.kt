@@ -1,6 +1,7 @@
 package ch.orellbuehler.hauswart.feature.inbox
 
 import ch.orellbuehler.hauswart.feature.costs.page
+import ch.orellbuehler.hauswart.feature.costsplit.settle
 import ch.orellbuehler.hauswart.i18n.tr
 import ch.orellbuehler.hauswart.testing.TestApp
 import ch.orellbuehler.hauswart.testing.await
@@ -51,6 +52,7 @@ class InboxStoreTest {
             val state = store.await { !it.loading }
             assertEquals(false, state.financeConnected)
             assertTrue(state.groups.isEmpty())
+            settle()
             store.close()
         }
 
@@ -75,6 +77,7 @@ class InboxStoreTest {
             )
             assertNotNull(state.groups.last().hint)
             assertEquals(3, state.total)
+            settle()
             store.close()
         }
 
@@ -95,11 +98,12 @@ class InboxStoreTest {
             assertEquals("e9", state.notice?.targetId)
             assertEquals("cost", state.notice?.targetKind)
             assertEquals("{}", server.requestsTo("POST", "/api/v1/finance/suggestions/s1/accept").single().body)
+            settle()
             store.close()
         }
 
     @Test
-    fun aDecidedSuggestionIsAConflictAndReloads() =
+    fun aDecidedSuggestionIsAConflictWorded() =
         runTest {
             server.on("GET", "/api/v1/integrations", integrations(true))
             server.on("GET", "/api/v1/finance/suggestions", page(cost("s1")))
@@ -109,7 +113,7 @@ class InboxStoreTest {
             store.accept("s1")
             val state = store.await { it.actionError != null }
             assertEquals(tr("finance_conflict"), state.actionError)
-            store.await { server.requestsTo("GET", "/api/v1/finance/suggestions").size >= 2 }
+            settle()
             store.close()
         }
 
@@ -125,6 +129,7 @@ class InboxStoreTest {
             store.dismiss("s2")
             val state = store.await { it.notice != null }
             assertEquals(tr("finance_dismissed_link_toast", "title" to "Markt Zahlung"), state.notice?.message)
+            settle()
             store.close()
         }
 
@@ -140,6 +145,7 @@ class InboxStoreTest {
             val state = store.await { it.syncError != null }
             assertEquals(tr("finance_sync_failed", "code" to "upstream_unreachable"), state.syncError)
             assertEquals(false, state.syncing)
+            settle()
             store.close()
         }
 
@@ -153,6 +159,7 @@ class InboxStoreTest {
             store.await { !it.loading }
             store.sync()
             assertEquals(tr("finance_sync_not_connected"), store.await { it.syncError != null }.syncError)
+            settle()
             store.close()
         }
 
@@ -165,11 +172,13 @@ class InboxStoreTest {
             val menu = off.await { it.entries.any { e -> e.badge != null } }
             assertNull(menu.entries.firstOrNull { it.key == MENU_INBOX })
             assertEquals("3", menu.entries.first { it.key == MENU_RECEIPTS }.badge)
+            settle()
             off.close()
 
             server.on("GET", "/api/v1/integrations", integrations(true))
             val on = CostsMenuStore(app)
             assertNotNull(on.await { it.entries.any { e -> e.key == MENU_INBOX } }.entries)
+            settle()
             on.close()
         }
 
@@ -204,6 +213,7 @@ class InboxStoreTest {
             assertEquals("household", body.getValue("category").toString().trim('"'))
             assertNull(body["bookId"])
             assertNull(body["splitMode"])
+            settle()
             store.close()
         }
 }

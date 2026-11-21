@@ -2,6 +2,7 @@ package ch.orellbuehler.hauswart.feature.receipts
 
 import ch.orellbuehler.hauswart.feature.costs.costBook
 import ch.orellbuehler.hauswart.feature.costs.page
+import ch.orellbuehler.hauswart.feature.costsplit.settle
 import ch.orellbuehler.hauswart.i18n.tr
 import ch.orellbuehler.hauswart.testing.TestApp
 import ch.orellbuehler.hauswart.testing.await
@@ -60,6 +61,7 @@ class ReceiptsStoresTest {
             val done = state.rows.first { it.id == "t2" }
             assertEquals("Benzin", done.costs.single().title)
             assertTrue(done.costs.single().reviewNeeded)
+            settle()
             store.close()
         }
 
@@ -74,6 +76,7 @@ class ReceiptsStoresTest {
             assertEquals("dismissed", state.view)
             assertEquals(tr("receipts_empty_dismissed_title"), state.emptyTitle)
             assertTrue(server.requestsTo("GET", "/api/v1/ai-tasks").all { "status=dismissed" in it.query })
+            settle()
             store.close()
         }
 
@@ -102,6 +105,7 @@ class ReceiptsStoresTest {
             store.dismissNotice()
             store.dismiss("t1", "")
             assertEquals(tr("receipts_conflict"), store.await { it.actionError != null }.actionError?.message)
+            settle()
             store.close()
         }
 
@@ -114,6 +118,7 @@ class ReceiptsStoresTest {
             val store = ReceiptsStore(app, null)
             val rows = store.await { !it.loading }.rows
             assertTrue(rows.all { it.canDelete })
+            settle()
             store.close()
 
             server.signIn(
@@ -129,6 +134,7 @@ class ReceiptsStoresTest {
             val member = ReceiptsStore(app, null)
             val memberRows = member.await { !it.loading }.rows
             assertTrue(memberRows.none { it.canDelete })
+            settle()
             member.close()
         }
 
@@ -149,6 +155,7 @@ class ReceiptsStoresTest {
             store.submit(ReceiptForm())
             assertEquals(heic.fileProblem, store.await { it.fieldErrors["file"] != null }.fieldErrors["file"])
             assertTrue(server.requestsTo("POST", "/api/v1/ai-tasks").isEmpty())
+            settle()
             store.close()
         }
 
@@ -163,6 +170,7 @@ class ReceiptsStoresTest {
             val state = store.await { it.fileName != null }
             assertNull(state.fileProblem)
             assertNotNull(state.fileWarning)
+            settle()
             store.close()
         }
 
@@ -183,6 +191,7 @@ class ReceiptsStoresTest {
             store.undo()
             assertTrue(store.await { it.undone }.undone)
             assertEquals(1, server.requestsTo("DELETE", "/api/v1/ai-tasks/t7").size)
+            settle()
             store.close()
         }
 
@@ -199,6 +208,7 @@ class ReceiptsStoresTest {
             val state = store.await { it.noAnswer }
             assertEquals(tr("quick_error_network_receipt"), state.error)
             server.offline = false
+            settle()
             store.close()
         }
 }

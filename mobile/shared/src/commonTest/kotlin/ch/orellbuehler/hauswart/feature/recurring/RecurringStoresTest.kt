@@ -3,6 +3,7 @@ package ch.orellbuehler.hauswart.feature.recurring
 import ch.orellbuehler.hauswart.feature.costs.costBook
 import ch.orellbuehler.hauswart.feature.costs.costEntry
 import ch.orellbuehler.hauswart.feature.costs.page
+import ch.orellbuehler.hauswart.feature.costsplit.settle
 import ch.orellbuehler.hauswart.i18n.tr
 import ch.orellbuehler.hauswart.testing.TestApp
 import ch.orellbuehler.hauswart.testing.await
@@ -71,6 +72,7 @@ class RecurringStoresTest {
                     .single()
                     .nextText,
             )
+            settle()
             store.close()
         }
 
@@ -93,6 +95,7 @@ class RecurringStoresTest {
             store.runNow("r1")
             val state = store.await { it.notice != null }
             assertEquals("e1", state.notice?.entryId)
+            settle()
             store.close()
         }
 
@@ -114,6 +117,7 @@ class RecurringStoresTest {
                     .orEmpty()
                     .contains("2099"),
             )
+            settle()
             store.close()
         }
 
@@ -134,6 +138,7 @@ class RecurringStoresTest {
             store.runNow("r1")
             val state = store.await { it.actionError != null }
             assertEquals(tr("recurrence_error_book_archived", "book" to "Haushalt"), state.actionError?.message)
+            settle()
             store.close()
         }
 
@@ -157,6 +162,7 @@ class RecurringStoresTest {
                     .getValue("active")
                     .jsonPrimitive.booleanOrNull,
             )
+            settle()
             store.close()
         }
 
@@ -170,6 +176,7 @@ class RecurringStoresTest {
             store.await { it.recurrence != null }
             store.delete()
             assertTrue(store.await { it.deleted }.deleted)
+            settle()
             store.close()
         }
 
@@ -201,6 +208,7 @@ class RecurringStoresTest {
                     .toString(),
                 form.dayOfMonth,
             )
+            settle()
             store.close()
         }
 
@@ -214,6 +222,7 @@ class RecurringStoresTest {
             assertEquals("17", moved.dayOfMonth)
             val typed = store.withDay(moved, "31")
             assertEquals("31", store.withStartDate(typed, "2030-06-03").dayOfMonth)
+            settle()
             store.close()
         }
 
@@ -229,6 +238,7 @@ class RecurringStoresTest {
             assertEquals(tr("recurrence_error_interval"), state.fieldErrors["interval"])
             assertEquals(tr("recurrence_error_day"), state.fieldErrors["dayOfMonth"])
             assertTrue(server.requestsTo("POST", "/api/v1/cost-recurrences").isEmpty())
+            settle()
             store.close()
         }
 
@@ -254,6 +264,7 @@ class RecurringStoresTest {
             assertEquals("1", body.getValue("dayOfMonth").jsonPrimitive.content)
             assertEquals("2099-02-01", body.getValue("startDate").jsonPrimitive.content)
             assertNull(body["endDate"])
+            settle()
             store.close()
         }
 
@@ -273,6 +284,7 @@ class RecurringStoresTest {
             assertEquals("Wohnung", body.getValue("title").jsonPrimitive.content)
             assertNull(body["amountMinor"])
             assertNull(body["frequency"])
+            settle()
             store.close()
         }
 
@@ -289,6 +301,7 @@ class RecurringStoresTest {
             assertNull(future.immediateWarning)
             assertEquals(3, future.upcoming.size)
             assertNull(store.view(form.copy(interval = "0")).ruleText)
+            settle()
             store.close()
         }
 }

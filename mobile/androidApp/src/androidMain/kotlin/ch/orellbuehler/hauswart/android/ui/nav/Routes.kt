@@ -46,6 +46,15 @@ object Routes {
     const val COSTS_BALANCES_ROUTE = "costs/balances?book={book}"
     const val INSURANCE_ROUTE = "insurance/{id}"
 
+    // Costs: budgets, recurring costs, the finance inbox, receipts, books and tags
+    const val COSTS_BUDGETS = "costs/budgets"
+    const val COSTS_RECURRING = "costs/recurring"
+    const val RECURRING_ROUTE = "costs/recurring/{id}"
+    const val COSTS_INBOX = "costs/inbox"
+    const val COSTS_RECEIPTS_ROUTE = "costs/receipts?status={status}"
+    const val COST_BOOKS = "costs/books"
+    const val COST_TAGS = "costs/tags"
+
     // Appointments: the form is a screen of its own so that the cards on tasks, devices and contacts can link to it.
     const val APPOINTMENT_NEW_ROUTE =
         "appointments/new?taskId={taskId}&assetId={assetId}&contactId={contactId}&occurrenceKey={occurrenceKey}"
@@ -108,6 +117,11 @@ object Routes {
     fun costsBalances(bookArg: String? = null) = "costs/balances" + (bookArg?.let { "?book=${arg(it)}" } ?: "")
 
     fun insurance(id: String) = "insurance/${arg(id)}"
+
+    fun recurring(id: String) = "costs/recurring/${arg(id)}"
+
+    /** The receipt queue; [status] is `pending`, `done` or `dismissed` (none lists everything). */
+    fun costsReceipts(status: String? = null) = "costs/receipts" + (status?.let { "?status=${arg(it)}" } ?: "")
 
     fun arg(value: String): String = Uri.encode(value)
 }

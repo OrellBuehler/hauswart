@@ -42,6 +42,15 @@ enum Route: Hashable {
 
     // Costs: balances and settlements of a book (`all` for every book, else the id of a book)
     case costsBalances(String)
+
+    // Costs: budgets, recurring costs, the finance inbox, receipts (the status to list or `all`), books and tags
+    case costsBudgets
+    case costsRecurring
+    case recurringDetail(String)
+    case costsInbox
+    case costsReceipts(String)
+    case costBooks
+    case costTags
 }
 
 /// Returns a type-erased view on purpose: a `switch` over this many cases inside a view builder
@@ -89,6 +98,13 @@ func destination(for route: Route) -> AnyView {
     case .costs: return AnyView(CostsScreen())
     case let .cost(id): return AnyView(CostDetailScreen(id: id))
     case let .costsBalances(book): return AnyView(BalancesScreen(bookArg: book))
+    case .costsBudgets: return AnyView(BudgetsScreen())
+    case .costsRecurring: return AnyView(RecurringScreen())
+    case let .recurringDetail(id): return AnyView(RecurringDetailScreen(id: id))
+    case .costsInbox: return AnyView(InboxScreen())
+    case let .costsReceipts(status): return AnyView(ReceiptsScreen(status: status))
+    case .costBooks: return AnyView(CostBooksScreen())
+    case .costTags: return AnyView(CostTagsScreen())
 
     // Insurance
     case .insurance: return AnyView(ComingSoonScreen(title: tr("nav_insurance")))

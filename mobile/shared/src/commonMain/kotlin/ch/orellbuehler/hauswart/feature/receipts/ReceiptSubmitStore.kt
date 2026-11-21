@@ -126,6 +126,16 @@ class ReceiptSubmitStore(
         update { it.copy(fileName = name, fileSizeText = null, fileProblem = tr("attach_error_too_large"), fileWarning = null) }
     }
 
+    /** Call before reading a file of a known [size]: true, with the problem shown, when the server would not take it. */
+    fun rejectIfTooLarge(
+        name: String,
+        size: Long,
+    ): Boolean {
+        if (size <= MAX_UPLOAD_BYTES) return false
+        rejectTooLarge(name)
+        return true
+    }
+
     /** The picked file could not be read. */
     fun rejectUnreadable() {
         bytes = ByteArray(0)

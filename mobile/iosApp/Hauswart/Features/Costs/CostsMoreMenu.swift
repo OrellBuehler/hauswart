@@ -1,26 +1,18 @@
+import shared
 import SwiftUI
 
-/// One entry of the menu of the costs tab: its text and where it leads.
-struct CostsMoreEntry: Identifiable {
-    let id: String
-    let label: String
-    let systemImage: String
-    let action: () -> Void
-}
-
-/// The slot in the toolbar of the costs tab where budgets, recurring costs, the inbox and the receipts are added: a
-/// feature that provides one adds its `CostsMoreEntry` to `costsMoreEntries`. With no entries the menu is not shown.
+/// The menu in the toolbar of the costs tab: budgets, recurring costs, the finance inbox (only while a finance app is
+/// connected), the receipts, the cost books and the tags.
 struct CostsMoreMenu: View {
-    private var entries: [CostsMoreEntry] {
-        costsMoreEntries()
-    }
+    @StateObject private var model = Observed(CostsMenuStore(app: AppEnv.app))
 
     var body: some View {
+        let entries = model.state.entries
         if !entries.isEmpty {
             Menu {
-                ForEach(entries) { entry in
-                    Button(action: entry.action) {
-                        Label(entry.label, systemImage: entry.systemImage)
+                ForEach(entries, id: \.key) { entry in
+                    NavigationLink(value: route(for: entry.key)) {
+                        Label(entry.label + (entry.badge.map { " (" + $0 + ")" } ?? ""), systemImage: symbol(for: entry.key))
                     }
                 }
             } label: {
@@ -28,8 +20,26 @@ struct CostsMoreMenu: View {
             }
         }
     }
-}
 
-private func costsMoreEntries() -> [CostsMoreEntry] {
-    []
+    private func route(for key: String) -> Route {
+        switch key {
+        case CostsMenuStoreKt.MENU_BUDGETS: return .costsBudgets
+        case CostsMenuStoreKt.MENU_RECURRING: return .costsRecurring
+        case CostsMenuStoreKt.MENU_INBOX: return .costsInbox
+        case CostsMenuStoreKt.MENU_RECEIPTS: return .costsReceipts("all")
+        case CostsMenuStoreKt.MENU_BOOKS: return .costBooks
+        default: return .costTags
+        }
+    }
+
+    private func symbol(for key: String) -> String {
+        switch key {
+        case CostsMenuStoreKt.MENU_BUDGETS: return "gauge.with.dots.needle.50percent"
+        case CostsMenuStoreKt.MENU_RECURRING: return "repeat"
+        case CostsMenuStoreKt.MENU_INBOX: return "tray"
+        case CostsMenuStoreKt.MENU_RECEIPTS: return "doc.text.image"
+        case CostsMenuStoreKt.MENU_BOOKS: return "books.vertical"
+        default: return "tag"
+        }
+    }
 }

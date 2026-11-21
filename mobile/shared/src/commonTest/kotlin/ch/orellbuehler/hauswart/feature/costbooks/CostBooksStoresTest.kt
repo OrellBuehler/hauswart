@@ -1,6 +1,7 @@
 package ch.orellbuehler.hauswart.feature.costbooks
 
 import ch.orellbuehler.hauswart.feature.costs.page
+import ch.orellbuehler.hauswart.feature.costsplit.settle
 import ch.orellbuehler.hauswart.i18n.tr
 import ch.orellbuehler.hauswart.testing.TestApp
 import ch.orellbuehler.hauswart.testing.await
@@ -54,6 +55,7 @@ class CostBooksStoresTest {
             assertEquals(false, state.open.first().canMoveUp)
             assertEquals(true, state.open.first().canMoveDown)
             assertEquals(true, state.open.last().canMakeDefault)
+            settle()
             store.close()
         }
 
@@ -85,6 +87,7 @@ class CostBooksStoresTest {
                     .getValue("sortOrder")
                     .jsonPrimitive.content,
             )
+            settle()
             store.close()
         }
 
@@ -115,6 +118,7 @@ class CostBooksStoresTest {
                     .orEmpty()
                     .contains(tr("costbook_entry_count", "count" to 4)),
             )
+            settle()
             store.close()
         }
 
@@ -127,6 +131,7 @@ class CostBooksStoresTest {
             store.await { !it.loading }
             store.archive("b2")
             assertEquals(tr("costbook_error_last"), store.await { it.actionError != null }.actionError?.message)
+            settle()
             store.close()
         }
 
@@ -148,6 +153,7 @@ class CostBooksStoresTest {
                     .getValue("isDefault")
                     .jsonPrimitive.content,
             )
+            settle()
             store.close()
         }
 
@@ -163,12 +169,14 @@ class CostBooksStoresTest {
             val body = server.requestsTo("POST", "/api/v1/cost-books").single().json
             assertEquals("Ferien", body.getValue("name").jsonPrimitive.content)
             assertEquals("plane", body.getValue("icon").jsonPrimitive.content)
+            settle()
             store.close()
 
             server.onError("POST", "/api/v1/cost-books", HttpStatusCode.Conflict, "conflict")
             val again = BookEditStore(app, null)
             again.save(BookForm(name = "Ferien"))
             assertEquals(tr("costbook_error_name_taken"), again.await { !it.saving && it.fieldErrors.isNotEmpty() }.fieldErrors["name"])
+            settle()
             again.close()
         }
 
@@ -185,6 +193,7 @@ class CostBooksStoresTest {
             val body = server.requestsTo("PATCH", "/api/v1/cost-books/b1").single().json
             assertEquals(JsonNull, body["icon"])
             assertNull(body["name"])
+            settle()
             store.close()
         }
 
@@ -208,6 +217,7 @@ class CostBooksStoresTest {
             assertEquals(tr("costtag_delete_description_unused", "name" to "Leer"), store.deleteText("t2"))
             store.delete("t1")
             assertNotNull(store.await { it.notice != null }.notice)
+            settle()
             store.close()
         }
 
@@ -221,6 +231,7 @@ class CostBooksStoresTest {
             store.save(form.copy(name = "ferien"))
             assertEquals(tr("costtag_error_name_taken"), store.await { it.fieldErrors.isNotEmpty() }.fieldErrors["name"])
             assertTrue(server.requestsTo("POST", "/api/v1/cost-tags").isEmpty())
+            settle()
             store.close()
         }
 
@@ -236,6 +247,7 @@ class CostBooksStoresTest {
             val body = server.requestsTo("PATCH", "/api/v1/cost-tags/t1").single().json
             assertEquals("Urlaub", body.getValue("name").jsonPrimitive.content)
             assertNull(body["color"])
+            settle()
             store.close()
         }
 }

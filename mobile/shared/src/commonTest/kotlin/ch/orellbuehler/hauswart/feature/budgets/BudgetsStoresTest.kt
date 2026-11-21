@@ -2,6 +2,7 @@ package ch.orellbuehler.hauswart.feature.budgets
 
 import ch.orellbuehler.hauswart.feature.costs.costBook
 import ch.orellbuehler.hauswart.feature.costs.page
+import ch.orellbuehler.hauswart.feature.costsplit.settle
 import ch.orellbuehler.hauswart.i18n.tr
 import ch.orellbuehler.hauswart.testing.TestApp
 import ch.orellbuehler.hauswart.testing.await
@@ -99,6 +100,7 @@ class BudgetsStoresTest {
             val year = store.await { it.period == "year" }
             assertEquals(listOf("y1"), year.rows.map { it.id })
             assertEquals(tr("budgets_empty_year_title"), year.emptyTitle)
+            settle()
             store.close()
         }
 
@@ -121,6 +123,7 @@ class BudgetsStoresTest {
                     .jsonPrimitive.booleanOrNull,
             )
             assertNotNull(state.notice)
+            settle()
             store.close()
         }
 
@@ -135,6 +138,7 @@ class BudgetsStoresTest {
             val state = store.await { it.actionError != null }
             assertEquals(tr("m_error_forbidden"), state.actionError?.message)
             assertEquals(2, state.rows.size)
+            settle()
             store.close()
         }
 
@@ -154,6 +158,7 @@ class BudgetsStoresTest {
             assertEquals(tr("budget_error_scope"), state.fieldErrors["bookId"])
             assertNotNull(state.fieldErrors["amountMinor"])
             assertTrue(server.requestsTo("POST", "/api/v1/cost-budgets").isEmpty())
+            settle()
             store.close()
         }
 
@@ -171,6 +176,7 @@ class BudgetsStoresTest {
             assertEquals("b2", body.getValue("bookId").jsonPrimitive.content)
             assertEquals("120050", body.getValue("amountMinor").jsonPrimitive.content)
             assertEquals("year", body.getValue("period").jsonPrimitive.content)
+            settle()
             store.close()
         }
 
@@ -189,6 +195,7 @@ class BudgetsStoresTest {
             assertEquals(JsonNull, body["category"])
             assertNull(body["bookId"])
             assertNull(body["amountMinor"])
+            settle()
             store.close()
         }
 
@@ -202,6 +209,7 @@ class BudgetsStoresTest {
             store.save(BudgetForm(bookId = "b1", amount = "10"))
             val state = store.await { !it.saving && it.fieldErrors.isNotEmpty() }
             assertEquals(tr("budget_error_exists"), state.fieldErrors["bookId"])
+            settle()
             store.close()
         }
 }
