@@ -87,6 +87,11 @@ jobs:
       - name: Run ktlint
         run: ./gradlew shared:ktlintCheck androidApp:ktlintCheck
 
+      # The shared code is compiled for iOS only on the macOS runner; this catches a JVM-only API
+      # in common code (which the Android build accepts) on the cheap Linux runner already.
+      - name: Compile common code against the common standard library
+        run: ./gradlew shared:compileCommonMainKotlinMetadata
+
       - name: Build debug APK
         run: ./gradlew androidApp:assembleDebug
 

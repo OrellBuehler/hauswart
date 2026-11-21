@@ -13,6 +13,7 @@ source ~/.sdkman/bin/sdkman-init.sh && export ANDROID_HOME=~/android-sdk && cd m
 ./gradlew shared:testDebugUnitTest androidApp:testDebugUnitTest   # shared:allTests adds the iOS targets on a Mac
 ./gradlew shared:ktlintCheck androidApp:ktlintCheck               # fix with shared:ktlintFormat androidApp:ktlintFormat
 ./gradlew androidApp:lintDebug
+./gradlew shared:compileCommonMainKotlinMetadata                    # common code against the common stdlib: catches JVM-only API (toSortedSet, String.format, java.*) that the iOS build would reject
 bun run mobile:api                                                # from the repo root, after docs/openapi.json changed
 ```
 

@@ -711,14 +711,14 @@ private fun TriggerForm.buildCalendar(c: Checker): Trigger? {
         weekdays
             .mapNotNull { parseWhole(it) }
             .filter { it in 1..7 }
-            .toSortedSet()
-            .toList()
+            .distinct()
+            .sorted()
     val chosenMonths =
         months
             .mapNotNull { parseWhole(it) }
             .filter { it in 1..12 }
-            .toSortedSet()
-            .toList()
+            .distinct()
+            .sorted()
             .ifEmpty { null }
     var byWeekday: List<Long>? = null
     var byMonthDay: Long? = null

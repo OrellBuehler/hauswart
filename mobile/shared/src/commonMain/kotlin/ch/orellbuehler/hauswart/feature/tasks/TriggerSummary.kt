@@ -50,9 +50,9 @@ private fun every(
     n: Long,
 ): String = if (unit in TriggerIntervalSeasonsItem.UNIT_VALUES) tr("trigger_every_$unit", "n" to n) else "$n $unit"
 
-private fun months(values: List<Long>): String = joinList(values.toSortedSet().map { monthName(it.toInt()) })
+private fun months(values: List<Long>): String = joinList(values.distinct().sorted().map { monthName(it.toInt()) })
 
-private fun weekdays(values: List<Long>): String = joinList(values.toSortedSet().map { weekdayName(it.toInt()) })
+private fun weekdays(values: List<Long>): String = joinList(values.distinct().sorted().map { weekdayName(it.toInt()) })
 
 /** The text of a JSON value of a state condition: a number without a needless ".0", else the text. */
 fun jsonValueText(value: JsonElement): String {
