@@ -7,7 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import ch.orellbuehler.hauswart.android.ui.nav.Routes
 
-private const val DOC_NEW = "docs/new?section={section}&assetId={assetId}&roomId={roomId}&title={title}"
+private const val DOC_NEW = "docs-new?section={section}&assetId={assetId}&roomId={roomId}&title={title}"
 private const val DOC_EDIT = "docs/{slug}/edit"
 private const val DOC_HISTORY = "docs/{slug}/history"
 
@@ -47,7 +47,7 @@ fun NavGraphBuilder.docsGraph(nav: NavController) {
 internal fun NavController.openDocNew(
     section: String = "",
     title: String = "",
-) = navigate("docs/new?section=${Routes.arg(section)}&assetId=&roomId=&title=${Routes.arg(title)}")
+) = navigate("docs-new?section=${Routes.arg(section)}&assetId=&roomId=&title=${Routes.arg(title)}")
 
 internal fun NavController.openDocEdit(slug: String) = navigate("docs/${Routes.arg(slug)}/edit")
 

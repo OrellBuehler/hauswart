@@ -7,7 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import ch.orellbuehler.hauswart.android.ui.nav.Routes
 
-private const val INSURANCE_NEW = "insurance/new?assetId={assetId}&type={type}"
+private const val INSURANCE_NEW = "insurance-new?assetId={assetId}&type={type}"
 private const val INSURANCE_EDIT = "insurance/{id}/edit"
 
 private val idArgument = listOf(navArgument("id") { type = NavType.StringType })
@@ -32,6 +32,6 @@ fun NavGraphBuilder.insuranceGraph(nav: NavController) {
     }
 }
 
-internal fun NavController.openInsuranceNew() = navigate("insurance/new?assetId=&type=")
+internal fun NavController.openInsuranceNew() = navigate("insurance-new?assetId=&type=")
 
 internal fun NavController.openInsuranceEdit(id: String) = navigate("insurance/${Routes.arg(id)}/edit")
