@@ -579,7 +579,7 @@ internal fun AssetServiceLogSection(
                         entry.dateText,
                         entry.contactName,
                         entry.costText,
-                        entry.description.ifEmpty {
+                        entry.details.ifEmpty {
                             null
                         },
                     ).joinToString(" · "),
@@ -643,8 +643,8 @@ internal fun AssetServiceLogSection(
             )
             TextField(
                 label = tr("service_description"),
-                value = form.description,
-                onChange = { form = form.copy(description = it) },
+                value = form.details,
+                onChange = { form = form.copy(details = it) },
                 error = state.fieldErrors["descriptionMd"],
                 singleLine = false,
                 minLines = 3,
