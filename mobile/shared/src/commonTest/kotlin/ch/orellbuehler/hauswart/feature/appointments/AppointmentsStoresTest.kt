@@ -79,8 +79,8 @@ class AppointmentsStoresTest {
             val store = AppointmentsListStore(app)
             val state = store.await { !it.loading }
             assertNull(state.error)
-            assertEquals(listOf("o"), state.open.map { it.id })
-            assertTrue(state.open.single().needsClosing)
+            assertEquals(listOf("o"), state.stillOpen.map { it.id })
+            assertTrue(state.stillOpen.single().needsClosing)
             assertEquals(listOf(day(0), day(4)), state.days.map { it.date })
             assertEquals(3, state.total)
             assertEquals(

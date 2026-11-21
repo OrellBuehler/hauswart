@@ -81,15 +81,12 @@ fun DocumentLinksSection(
     var linking by rememberSaveable { mutableStateOf(false) }
     var unlinkId by rememberSaveable { mutableStateOf<String?>(null) }
     var cannotOpen by remember { mutableStateOf(false) }
-    var sharing by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.opened) {
         val opened = state.opened ?: return@LaunchedEffect
         store.clearOpened()
-        val asShare = sharing
-        sharing = false
         scope.launch {
-            val done = if (asShare) context.shareFile(opened) else context.viewFile(opened)
+            val done = if (opened.share) context.shareFile(opened.file) else context.viewFile(opened.file)
             if (!done) cannotOpen = true
         }
     }
@@ -130,10 +127,7 @@ fun DocumentLinksSection(
                 thumbs = state.thumbs,
                 store = store,
                 onOpen = { store.open(row.id) },
-                onDownload = {
-                    sharing = true
-                    store.openOriginal(row.id)
-                },
+                onDownload = { store.openOriginal(row.id) },
                 onUnlink = { unlinkId = row.id },
             )
         }

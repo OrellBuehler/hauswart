@@ -165,15 +165,17 @@ class DocumentLinksStoreTest {
             store.await { !it.loading }
             store.open("l1")
             val opened = assertNotNull(store.await { it.opened != null }.opened)
-            assertEquals("Boiler manual", opened.name)
-            assertEquals("application/json", opened.mime)
-            assertContentEquals("%PDF".encodeToByteArray(), opened.bytes)
+            assertEquals("l1", opened.linkId)
+            assertFalse(opened.share)
+            assertEquals("Boiler manual", opened.file.name)
+            assertEquals("application/json", opened.file.mime)
+            assertContentEquals("%PDF".encodeToByteArray(), opened.file.bytes)
             store.clearOpened()
             assertNull(store.value.opened)
 
             server.on("GET", "/api/v1/documents/paperless/7/download", "ORIGINAL")
             store.openOriginal("l1")
-            store.await { it.opened != null }
+            assertTrue(store.await { it.opened != null }.opened!!.share)
             assertTrue("original=1" in server.requestsTo("GET", "/api/v1/documents/paperless/7/download").single().query)
             store.close()
         }

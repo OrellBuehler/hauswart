@@ -15,6 +15,14 @@ import ch.orellbuehler.hauswart.i18n.tr
 /** The document systems the app knows; only Paperless-ngx so far. */
 private const val DOCUMENT_PROVIDER = "paperless"
 
+/** A linked document's file the person asked for: shown by the system viewer, or handed to the share sheet when [share]. */
+class OpenedDocument(
+    /** The link it is, so that the row that asked can react. */
+    val linkId: String,
+    val file: FilePayload,
+    val share: Boolean,
+)
+
 /** One linked document as the screen shows it. */
 data class DocumentLinkRow(
     val id: String,
@@ -43,8 +51,8 @@ data class DocumentLinksState(
     val actionError: UiError? = null,
     /** Changes whenever a thumbnail arrived. */
     val thumbs: Int = 0,
-    /** Ready for the system viewer; the screen calls [DocumentLinksStore.clearOpened] once it did. */
-    val opened: FilePayload? = null,
+    /** Ready for the system viewer or the share sheet; the screen calls [DocumentLinksStore.clearOpened] once it did. */
+    val opened: OpenedDocument? = null,
 ) {
     /**
      * Without a document system and without links there is nothing to show or do, so the section
@@ -148,7 +156,12 @@ class DocumentLinksStore(
                     .orEmpty()
             val mime = if (sent.isEmpty() || sent == "application/octet-stream") link.document?.mimeType ?: sent else sent
             val title = link.document?.title ?: tr("document_unavailable")
-            update { it.copy(opening = null, opened = FilePayload(fileNameFor(title, mime), mime, body.bytes)) }
+            update {
+                it.copy(
+                    opening = null,
+                    opened = OpenedDocument(id, FilePayload(fileNameFor(title, mime), mime, body.bytes), original),
+                )
+            }
         }
     }
 

@@ -1,9 +1,5 @@
 {
   "m_instant_now": "gerade eben",
   "m_instant_minutes_ago": "{count, plural, one {vor 1 Minute} other {vor {count} Minuten}}",
-  "m_instant_hours_ago": "{count, plural, one {vor 1 Stunde} other {vor {count} Stunden}}",
-  "m_sections_open": "Öffnen",
-  "m_sections_share": "Teilen",
-  "m_sections_more_actions": "Weitere Aktionen",
-  "m_sections_opening": "Wird geöffnet …"
+  "m_instant_hours_ago": "{count, plural, one {vor 1 Stunde} other {vor {count} Stunden}}"
 }

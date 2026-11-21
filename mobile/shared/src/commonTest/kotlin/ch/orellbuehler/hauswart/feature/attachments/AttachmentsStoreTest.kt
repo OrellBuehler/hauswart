@@ -286,6 +286,7 @@ class AttachmentsStoreTest {
             store.await { !it.loading }
             store.open("a1")
             val opened = assertNotNull(store.await { it.opened != null }.opened)
+            assertEquals("a1", opened.attachmentId)
             assertEquals("manual.pdf", opened.file.name)
             assertEquals("application/pdf", opened.file.mime)
             assertContentEquals("PDFBYTES".encodeToByteArray(), opened.file.bytes)

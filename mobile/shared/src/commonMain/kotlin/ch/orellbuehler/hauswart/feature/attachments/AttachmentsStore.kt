@@ -59,6 +59,8 @@ data class AttachmentUploadRow(
 
 /** A file the person asked for: shown by the system viewer, or handed to the share sheet when [share]. */
 class OpenedAttachment(
+    /** The attachment it is, so that the row that asked can react. */
+    val attachmentId: String,
     val file: FilePayload,
     val share: Boolean,
 )
@@ -163,6 +165,16 @@ class AttachmentsStore(
         showUploads()
     }
 
+    /** Call before reading a file of a known [size]: true, with a refused upload shown, when the server would not take it. */
+    fun rejectIfTooLarge(
+        name: String,
+        size: Long,
+    ): Boolean {
+        if (size <= MAX_UPLOAD_BYTES) return false
+        rejectTooLarge(name)
+        return true
+    }
+
     /** [upload] for Swift, which hands the bytes over as Base64 text. */
     fun uploadEncoded(
         name: String,
@@ -256,7 +268,7 @@ class AttachmentsStore(
         launch({ e -> update { it.copy(opening = null, actionError = e) } }) {
             val body = app.api.attachments.attachmentsContent(id, if (share) "1" else null)
             val mime = attachment.mime.ifEmpty { body.contentType.orEmpty() }
-            update { it.copy(opening = null, opened = OpenedAttachment(FilePayload(attachment.filename, mime, body.bytes), share)) }
+            update { it.copy(opening = null, opened = OpenedAttachment(id, FilePayload(attachment.filename, mime, body.bytes), share)) }
         }
     }
 

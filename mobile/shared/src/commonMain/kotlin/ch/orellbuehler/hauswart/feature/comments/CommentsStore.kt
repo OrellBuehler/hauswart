@@ -54,13 +54,13 @@ data class CommentsState(
 )
 
 /**
- * The comments of one entity (`entityType` + `entityId`, e.g. `task` and a task id): list, add, edit
+ * The comments of one owner (`ownerType` + `ownerId`, the comments registry's entity type and id, e.g. `task` and a task id): list, add, edit
  * and delete. Used by [CommentsSection] on the detail screens of every commentable entity.
  */
 class CommentsStore(
     private val app: HauswartApp,
-    private val entityType: String,
-    private val entityId: String,
+    private val ownerType: String,
+    private val ownerId: String,
 ) : Store<CommentsState>(CommentsState()) {
     private var comments: List<Comment> = emptyList()
 
@@ -83,7 +83,7 @@ class CommentsStore(
         }
         update { it.copy(adding = true, addError = null) }
         launch({ e -> update { it.copy(adding = false, addError = e) } }) {
-            val created = app.api.comments.commentsCreate(CommentsCreateRequest(entityType, entityId, body))
+            val created = app.api.comments.commentsCreate(CommentsCreateRequest(ownerType, ownerId, body))
             comments = comments.filterNot { it.id == created.id } + created
             show()
             update { it.copy(adding = false, added = it.added + 1) }
@@ -145,7 +145,7 @@ class CommentsStore(
         launch({ e -> update { it.copy(loading = false, error = e) } }) {
             comments =
                 fetchAll { cursor ->
-                    val page = app.api.comments.commentsList(cursor = cursor, limit = 200, entityType = entityType, entityId = entityId)
+                    val page = app.api.comments.commentsList(cursor = cursor, limit = 200, entityType = ownerType, entityId = ownerId)
                     page.items to page.nextCursor
                 }
             app.household.get()

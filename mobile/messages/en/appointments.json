@@ -10,8 +10,6 @@
   "m_appt_pick_empty": "Nothing found.",
   "m_appt_time_pick": "Choose time",
   "m_appt_time_clear": "Clear time",
-  "m_appt_end_other_day": "Ends on another day",
-  "m_appt_end_same_day": "Ends on the same day",
   "m_appt_choices_failed": "Tasks, devices and contacts could not be loaded.",
   "m_appt_contact_none": "No contact"
 }

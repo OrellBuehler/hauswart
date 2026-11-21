@@ -55,8 +55,8 @@ func destination(for route: Route) -> AnyView {
     case .task: return AnyView(ComingSoonScreen(title: tr("nav_tasks")))
 
     // Appointments
-    case .appointments: return AnyView(ComingSoonScreen(title: tr("nav_appointments")))
-    case .appointment: return AnyView(ComingSoonScreen(title: tr("nav_appointments")))
+    case .appointments: return AnyView(AppointmentsScreen())
+    case let .appointment(id): return AnyView(AppointmentDetailScreen(id: id))
 
     // Inventory, rooms, plants, warranties
     case .inventory: return AnyView(ComingSoonScreen(title: tr("nav_inventory")))
@@ -87,8 +87,8 @@ func destination(for route: Route) -> AnyView {
     case .insurancePolicy: return AnyView(ComingSoonScreen(title: tr("nav_insurance")))
 
     // Notifications and search
-    case .notifications: return AnyView(ComingSoonScreen(title: tr("notifications_title")))
-    case .search: return AnyView(ComingSoonScreen(title: tr("search_page_title")))
+    case .notifications: return AnyView(NotificationsScreen())
+    case .search: return AnyView(SearchScreen())
     }
 }
 

@@ -75,7 +75,7 @@ data class AppointmentsListState(
     /** The statuses switched on, in the order of [APPOINTMENT_STATUSES]. */
     val statuses: List<String> = listOf("planned"),
     /** Planned and over: still to be closed. Only the upcoming view has them. */
-    val open: List<ApptItem> = emptyList(),
+    val stillOpen: List<ApptItem> = emptyList(),
     val days: List<ApptDayGroup> = emptyList(),
     /** How many appointments are shown. */
     val total: Int = 0,
@@ -117,7 +117,7 @@ class AppointmentsListStore(
             it.copy(
                 view = view,
                 statuses = defaultStatuses(view),
-                open = emptyList(),
+                stillOpen = emptyList(),
                 days = emptyList(),
                 total = 0,
                 olderLoaded = false,
@@ -181,7 +181,7 @@ class AppointmentsListStore(
         val sections = sectionsFor(all, state.view, state.statuses, today, zone)
         update {
             it.copy(
-                open = sections.open.map { a -> itemOf(a, zone, today) },
+                stillOpen = sections.open.map { a -> itemOf(a, zone, today) },
                 days =
                     sections.days.map { group ->
                         ApptDayGroup(

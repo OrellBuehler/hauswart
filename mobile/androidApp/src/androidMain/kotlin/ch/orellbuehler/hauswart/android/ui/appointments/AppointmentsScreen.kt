@@ -110,10 +110,10 @@ fun AppointmentsScreen(nav: NavController) {
                         if (state.total == 0) {
                             item(key = "empty") { EmptyList(state.filtered, state.view == "upcoming", store, nav) }
                         }
-                        if (state.open.isNotEmpty()) {
+                        if (state.stillOpen.isNotEmpty()) {
                             item(key = "open-title") {
                                 Column(Modifier.padding(horizontal = ScreenPadding)) {
-                                    SectionTitle(tr("appointments_open_title"), trailing = state.open.size.toString())
+                                    SectionTitle(tr("appointments_open_title"), trailing = state.stillOpen.size.toString())
                                     Text(
                                         tr("appointments_open_hint"),
                                         style = MaterialTheme.typography.bodySmall,
@@ -122,7 +122,7 @@ fun AppointmentsScreen(nav: NavController) {
                                 }
                             }
                             items(
-                                state.open,
+                                state.stillOpen,
                                 key = { "open-${it.id}" },
                             ) { item -> AppointmentRow(item) { nav.navigate(Routes.appointment(item.id)) } }
                         }

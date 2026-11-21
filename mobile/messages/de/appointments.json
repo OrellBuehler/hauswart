@@ -10,8 +10,6 @@
   "m_appt_pick_empty": "Nichts gefunden.",
   "m_appt_time_pick": "Uhrzeit wählen",
   "m_appt_time_clear": "Uhrzeit löschen",
-  "m_appt_end_other_day": "Endet an einem anderen Tag",
-  "m_appt_end_same_day": "Endet am selben Tag",
   "m_appt_choices_failed": "Aufgaben, Geräte und Kontakte konnten nicht geladen werden.",
   "m_appt_contact_none": "Kein Kontakt"
 }
