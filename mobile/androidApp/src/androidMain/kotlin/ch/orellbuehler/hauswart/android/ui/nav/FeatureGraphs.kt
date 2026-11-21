@@ -12,17 +12,22 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import ch.orellbuehler.hauswart.android.ui.appointments.appointmentsGraph
+import ch.orellbuehler.hauswart.android.ui.budgets.budgetsGraph
 import ch.orellbuehler.hauswart.android.ui.components.AppScaffold
 import ch.orellbuehler.hauswart.android.ui.components.EmptyState
+import ch.orellbuehler.hauswart.android.ui.costbooks.costBooksGraph
 import ch.orellbuehler.hauswart.android.ui.costs.costsGraph
 import ch.orellbuehler.hauswart.android.ui.defects.defectsGraph
 import ch.orellbuehler.hauswart.android.ui.docs.docsGraph
 import ch.orellbuehler.hauswart.android.ui.documents.documentsGraph
 import ch.orellbuehler.hauswart.android.ui.emergency.EmergencyScreen
+import ch.orellbuehler.hauswart.android.ui.inbox.inboxGraph
 import ch.orellbuehler.hauswart.android.ui.insurance.insuranceGraph
 import ch.orellbuehler.hauswart.android.ui.inventory.inventoryGraph
 import ch.orellbuehler.hauswart.android.ui.notifications.notificationsGraph
 import ch.orellbuehler.hauswart.android.ui.parts.partsGraph
+import ch.orellbuehler.hauswart.android.ui.receipts.receiptsGraph
+import ch.orellbuehler.hauswart.android.ui.recurring.recurringGraph
 import ch.orellbuehler.hauswart.android.ui.search.searchGraph
 import ch.orellbuehler.hauswart.android.ui.settings.settingsGraph
 import ch.orellbuehler.hauswart.android.ui.tasks.tasksGraph
@@ -65,6 +70,11 @@ fun NavGraphBuilder.featureGraphs(nav: NavController) {
 
     // Costs
     costsGraph(nav)
+    budgetsGraph(nav)
+    recurringGraph(nav)
+    inboxGraph(nav)
+    receiptsGraph(nav)
+    costBooksGraph(nav)
 
     // Notifications
     notificationsGraph(nav)
