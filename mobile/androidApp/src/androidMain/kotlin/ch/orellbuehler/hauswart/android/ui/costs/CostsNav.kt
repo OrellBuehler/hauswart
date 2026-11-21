@@ -60,12 +60,5 @@ internal fun NavController.openSettlement(
     amount: String? = null,
     bookArg: String? = null,
 ) = navigate(
-    "costs/settlement?" +
-        listOfNotNull(
-            id?.let { "id=${Routes.arg(it)}" },
-            from?.let { "from=${Routes.arg(it)}" },
-            to?.let { "to=${Routes.arg(it)}" },
-            amount?.let { "amount=${Routes.arg(it)}" },
-            bookArg?.let { "book=${Routes.arg(it)}" },
-        ).joinToString("&"),
+    Routes.withQuery("costs/settlement", "id" to id, "from" to from, "to" to to, "amount" to amount, "book" to bookArg),
 )

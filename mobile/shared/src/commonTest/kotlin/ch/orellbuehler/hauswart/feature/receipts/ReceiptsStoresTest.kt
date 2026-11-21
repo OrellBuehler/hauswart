@@ -7,7 +7,12 @@ import ch.orellbuehler.hauswart.i18n.tr
 import ch.orellbuehler.hauswart.testing.TestApp
 import ch.orellbuehler.hauswart.testing.await
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.AfterTest
 import kotlin.test.Test
@@ -15,6 +20,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 class ReceiptsStoresTest {
     private val server = TestApp().also { it.signIn() }
@@ -193,6 +199,25 @@ class ReceiptsStoresTest {
             assertEquals(1, server.requestsTo("DELETE", "/api/v1/ai-tasks/t7").size)
             settle()
             store.close()
+        }
+
+    @Test
+    fun aReceiptIsStillSentWhenTheScreenIsLeft() =
+        runTest {
+            server.on("GET", "/api/v1/cost-books", page(costBook("b1", "Haushalt")))
+            server.on("GET", "/api/v1/assets", page())
+            server.on("POST", "/api/v1/ai-tasks", task("t7"), HttpStatusCode.Created)
+            val store = ReceiptSubmitStore(app)
+            store.await { !it.loading }
+            store.pickFile("beleg.jpg", "image/jpeg", byteArrayOf(1, 2, 3))
+            val changes = mutableListOf<String>()
+            val watching = launch(Dispatchers.Unconfined) { app.changes.collect { changes += it } }
+            store.submit(ReceiptForm(note = "Tanken"))
+            store.close()
+            server.awaitRequest("POST", "/api/v1/ai-tasks")
+            withContext(Dispatchers.Default) { withTimeout(60.seconds) { while ("costs" !in changes) delay(10) } }
+            watching.cancel()
+            assertEquals("t7", store.value.createdId)
         }
 
     @Test

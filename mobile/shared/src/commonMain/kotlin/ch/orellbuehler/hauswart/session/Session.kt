@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.update
 data class SessionState(
     val serverUrl: String?,
     val user: User?,
+    /** When the device token stops working (UTC ISO string from the sign-in); null when not known. */
+    val tokenExpiresAt: String? = null,
 ) {
     val hasServer: Boolean get() = serverUrl != null
     val signedIn: Boolean get() = serverUrl != null && user != null
@@ -31,14 +33,21 @@ class Session(
     val serverUrl: String? get() = _state.value.serverUrl
     val user: User? get() = _state.value.user
 
+    /** The user name of the last sign-in, to fill the sign-in screen again after the session ended. */
+    val lastUsername: String? get() = plain.load(LAST_USERNAME)
+
     fun setServer(url: String) {
-        if (url != _state.value.serverUrl) clearSignIn()
+        if (url != _state.value.serverUrl) {
+            clearSignIn()
+            plain.delete(LAST_USERNAME)
+        }
         plain.save(SERVER, url)
         _state.update { it.copy(serverUrl = url) }
     }
 
     fun forgetServer() {
         clearSignIn()
+        plain.delete(LAST_USERNAME)
         plain.delete(SERVER)
         _state.value = SessionState(null, null)
     }
@@ -46,8 +55,12 @@ class Session(
     fun signIn(
         token: String,
         user: User,
+        expiresAt: String? = null,
     ) {
         secure.save(TOKEN, token)
+        if (expiresAt != null) plain.save(EXPIRES_AT, expiresAt) else plain.delete(EXPIRES_AT)
+        plain.save(LAST_USERNAME, user.username)
+        _state.update { it.copy(tokenExpiresAt = expiresAt) }
         saveUser(user)
     }
 
@@ -57,7 +70,7 @@ class Session(
 
     fun signOut() {
         clearSignIn()
-        _state.update { it.copy(user = null) }
+        _state.update { it.copy(user = null, tokenExpiresAt = null) }
     }
 
     private fun saveUser(user: User) {
@@ -68,6 +81,7 @@ class Session(
     private fun clearSignIn() {
         secure.delete(TOKEN)
         plain.delete(USER)
+        plain.delete(EXPIRES_AT)
     }
 
     private fun load(): SessionState {
@@ -75,12 +89,14 @@ class Session(
         val user =
             plain.load(USER)?.let { runCatching { ApiHttp.JSON.decodeFromString(User.serializer(), it) }.getOrNull() }
         val signedIn = server != null && user != null && secure.load(TOKEN) != null
-        return SessionState(server, if (signedIn) user else null)
+        return SessionState(server, if (signedIn) user else null, if (signedIn) plain.load(EXPIRES_AT) else null)
     }
 
     private companion object {
         const val SERVER = "server_url"
         const val USER = "user"
         const val TOKEN = "device_token"
+        const val EXPIRES_AT = "token_expires_at"
+        const val LAST_USERNAME = "last_username"
     }
 }

@@ -1,12 +1,16 @@
 package ch.orellbuehler.hauswart.feature.reminders
 
 import ch.orellbuehler.hauswart.feature.applink.AppLink
+import ch.orellbuehler.hauswart.feature.applink.LINK_HOME
 import ch.orellbuehler.hauswart.feature.applink.LINK_TASK
 import ch.orellbuehler.hauswart.feature.notifications.notificationText
 import ch.orellbuehler.hauswart.i18n.I18n
+import ch.orellbuehler.hauswart.i18n.tr
 import ch.orellbuehler.hauswart.testing.TestApp
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -137,6 +141,43 @@ class ReminderSyncTest {
             val again = reminders.plan()
             assertEquals(good, again)
             assertNotNull(reminders.lastError)
+        }
+
+    @Test
+    fun twoSyncsAtOnceShareOneRun() =
+        runTest {
+            val reminders = sync()
+            reminders.plan()
+            val before = server.requestsTo("GET", "/api/v1/dashboard").size
+            notifications(notification("n2"))
+            val both = listOf(async { reminders.plan() }, async { reminders.plan() }).awaitAll()
+            assertEquals(1, server.requestsTo("GET", "/api/v1/dashboard").size - before)
+            assertEquals(listOf("note:n2"), both[0].filter { it.id.startsWith("note:") }.map { it.id })
+            assertEquals(both[0], both[1])
+        }
+
+    @Test
+    fun aRefusedTokenEndsTheSessionAndIsReported() =
+        runTest {
+            val reminders = sync()
+            server.onError("GET", "/api/v1/dashboard", HttpStatusCode.Unauthorized, "unauthenticated")
+            reminders.plan()
+            assertTrue(reminders.sessionEnded)
+            assertTrue(!app.session.state.value.signedIn)
+            val notice = reminders.sessionEndedNotice()
+            assertEquals(tr("m_session_ended_title"), notice.title)
+            assertEquals(tr("m_session_ended_body"), notice.body)
+            assertEquals(AppLink(LINK_HOME, null), notice.link)
+        }
+
+    @Test
+    fun aFailureThatLeavesTheSessionAloneIsNotReported() =
+        runTest {
+            val reminders = sync()
+            server.onError("GET", "/api/v1/dashboard", HttpStatusCode.InternalServerError, "internal_error")
+            reminders.plan()
+            assertTrue(!reminders.sessionEnded)
+            assertTrue(app.session.state.value.signedIn)
         }
 
     @Test

@@ -15,6 +15,8 @@ data class ConnectState(
     val serverVersion: String? = null,
     /** The server has no users yet: it must be set up in the browser first. */
     val needsSetup: Boolean = false,
+    /** The user name of the last sign-in on this server; the sign-in screen starts with it. */
+    val username: String = "",
     val busy: Boolean = false,
     val error: String? = null,
 )
@@ -30,6 +32,7 @@ class ConnectStore(
         ConnectState(
             step = if (app.session.serverUrl == null) "server" else "login",
             serverUrl = app.session.serverUrl ?: "",
+            username = app.session.lastUsername ?: "",
         ),
     ) {
     fun checkServer(input: String) {
@@ -39,12 +42,13 @@ class ConnectStore(
             return
         }
         update { it.copy(busy = true, error = null, serverUrl = url) }
+        val hint = if (hasPathPrefix(input)) " " + tr("m_connect_path_hint") else ""
         launch(
             { e ->
                 update {
                     it.copy(
                         busy = false,
-                        error = if (e.isNetwork) tr("m_connect_unreachable") else tr("m_connect_not_hauswart"),
+                        error = (if (e.isNetwork) tr("m_connect_unreachable") else tr("m_connect_not_hauswart")) + hint,
                     )
                 }
             },
@@ -96,10 +100,17 @@ class ConnectStore(
                     throw e
                 }
             if (app.settingsLocaleUnset()) app.locale = response.user.locale
-            app.session.signIn(response.token, response.user)
+            app.session.signIn(response.token, response.user, response.expiresAt)
             update { it.copy(busy = false) }
         }
     }
+}
+
+/** Whether [input] names a path after the host (`example.org/hauswart`); [normalizeServerUrl] cuts it. */
+fun hasPathPrefix(input: String): Boolean {
+    val text = input.trim()
+    val rest = (if (text.contains("://")) text.substringAfter("://") else text).substringBefore('?').substringBefore('#')
+    return rest.substringAfter('/', "").trim('/').isNotEmpty()
 }
 
 /**

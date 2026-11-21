@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import ch.orellbuehler.hauswart.core.Dates
 import ch.orellbuehler.hauswart.core.dateOfPickerMillis
 import ch.orellbuehler.hauswart.core.pickerMillisOf
+import ch.orellbuehler.hauswart.core.pickerYearRange
 import ch.orellbuehler.hauswart.i18n.tr
 
 private fun supporting(
@@ -121,7 +122,7 @@ fun TextField(
                 imeAction = if (singleLine) imeAction else ImeAction.Default,
                 autoCorrectEnabled = !secret && keyboardType != KeyboardType.Uri && keyboardType != KeyboardType.Email,
             ),
-        keyboardActions = KeyboardActions(onAny = { onImeAction?.invoke() }),
+        keyboardActions = if (onImeAction != null) KeyboardActions(onAny = { onImeAction() }) else KeyboardActions.Default,
     )
 }
 
@@ -243,7 +244,7 @@ fun DateField(
         )
     }
     if (open) {
-        val state = rememberDatePickerState(initialSelectedDateMillis = pickerMillisOf(value))
+        val state = rememberDatePickerState(initialSelectedDateMillis = pickerMillisOf(value), yearRange = pickerYearRange(value))
         DatePickerDialog(
             onDismissRequest = { open = false },
             confirmButton = {

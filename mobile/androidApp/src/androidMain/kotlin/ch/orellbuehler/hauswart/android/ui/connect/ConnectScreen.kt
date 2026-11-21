@@ -43,7 +43,7 @@ fun ConnectScreen() {
     val store = rememberStore { ConnectStore(it) }
     val state = store.collect()
     var server by remember { mutableStateOf(state.serverUrl) }
-    var username by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf(state.username) }
     var password by remember { mutableStateOf("") }
 
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {

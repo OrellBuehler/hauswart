@@ -9,6 +9,8 @@ import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.toByteArray
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.HttpTimeoutCapability
 import io.ktor.client.request.HttpRequestData
 import io.ktor.client.request.HttpResponseData
 import io.ktor.http.HttpHeaders
@@ -16,6 +18,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.JsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -26,14 +29,26 @@ import kotlin.test.assertTrue
 class ApiHttpTest {
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
     private var unauthenticated = 0
+    private var currentToken: String? = "hw_test"
+
+    private fun http(
+        token: () -> String?,
+        handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData,
+    ): ApiHttp =
+        ApiHttp(
+            HttpClient(MockEngine(handler)) { install(HttpTimeout) { requestTimeoutMillis = 30_000 } },
+            { "https://home.example.org/" },
+            token,
+            { unauthenticated++ },
+        )
 
     private fun api(
         token: String? = "hw_test",
         handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData,
-    ): HauswartApi =
-        HauswartApi(
-            ApiHttp(HttpClient(MockEngine(handler)), { "https://home.example.org/" }, { token }, { unauthenticated++ }),
-        )
+    ): HauswartApi {
+        currentToken = token
+        return HauswartApi(http({ currentToken }, handler))
+    }
 
     @Test
     fun sendsBearerQueryAndDecodes() =
@@ -93,6 +108,36 @@ class ApiHttpTest {
                 }
             assertFailsWith<ApiException> { api.tasks.tasksGet("x") }
             assertEquals(1, unauthenticated)
+        }
+
+    @Test
+    fun aLateRefusalOfAnOldTokenDoesNotEndTheNewSession() =
+        runTest {
+            val api =
+                api {
+                    // The person signed in again while this request was on its way.
+                    currentToken = "hw_new"
+                    respond("""{"error":{"code":"unauthenticated","message":"Sign in"}}""", HttpStatusCode.Unauthorized, jsonHeaders)
+                }
+            assertFailsWith<ApiException> { api.tasks.tasksGet("x") }
+            assertEquals(0, unauthenticated)
+        }
+
+    @Test
+    fun uploadsAndDownloadsGetFiveMinutesAndJsonCallsTheClientsThirty() =
+        runTest {
+            val seen = mutableMapOf<String, Long?>()
+            val http =
+                http({ "hw_test" }) { request ->
+                    seen[request.url.encodedPath] = request.getCapabilityOrNull(HttpTimeoutCapability)?.requestTimeoutMillis
+                    respond("""{"id":"a1"}""", HttpStatusCode.OK, jsonHeaders)
+                }
+            http.binary("GET", "/download", emptyList())
+            http.multipart("/upload", emptyList(), UploadFile("file", "a.pdf", "application/pdf", ByteArray(1)), JsonObject.serializer())
+            http.json("GET", "/plain", emptyList(), JsonObject.serializer())
+            assertEquals(300_000L, seen["/download"])
+            assertEquals(300_000L, seen["/upload"])
+            assertEquals(30_000L, seen["/plain"])
         }
 
     @Test

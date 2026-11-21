@@ -9,6 +9,7 @@ import ch.orellbuehler.hauswart.testing.TestApp
 import ch.orellbuehler.hauswart.testing.await
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -423,6 +424,37 @@ class AppointmentsStoresTest {
             assertEquals("Boiler", body.getValue("title").jsonPrimitive.content)
             assertEquals("2026-06-15T07:00:00.000Z", body.getValue("startsAt").jsonPrimitive.content)
             assertNull(body["endsAt"])
+            store.close()
+        }
+
+    @Test
+    fun anAppointmentForATaskWithoutADeviceSaysSo() =
+        runTest {
+            server.household()
+            choicesAnswered()
+            server.on("POST", "/api/v1/appointments", json(planned("n1", 0)), HttpStatusCode.Created)
+            val store = AppointmentEditStore(app, "", "t1", "", "", "")
+            val form = assertNotNull(store.await { it.initial != null }.initial)
+            store.save(form.copy(title = "Filter", assetId = "", startTime = "09:00"))
+            store.await { it.savedId != null }
+            val body = server.requestsTo("POST", "/api/v1/appointments").single().json
+            assertEquals("t1", body.getValue("taskId").jsonPrimitive.content)
+            assertTrue("assetId" in body)
+            assertEquals(JsonNull, body["assetId"])
+            store.close()
+        }
+
+    @Test
+    fun anAppointmentWithoutATaskSendsNoDeviceAtAll() =
+        runTest {
+            server.household()
+            choicesAnswered()
+            server.on("POST", "/api/v1/appointments", json(planned("n1", 0)), HttpStatusCode.Created)
+            val store = AppointmentEditStore(app, "", "", "", "", "")
+            val form = assertNotNull(store.await { it.initial != null }.initial)
+            store.save(form.copy(title = "Boiler", startTime = "09:00"))
+            store.await { it.savedId != null }
+            assertNull(server.requestsTo("POST", "/api/v1/appointments").single().json["assetId"])
             store.close()
         }
 

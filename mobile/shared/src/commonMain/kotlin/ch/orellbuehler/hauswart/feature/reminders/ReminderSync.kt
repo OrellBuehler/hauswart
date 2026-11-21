@@ -7,17 +7,23 @@ import ch.orellbuehler.hauswart.core.UiError
 import ch.orellbuehler.hauswart.core.fetchAll
 import ch.orellbuehler.hauswart.core.uiErrorOf
 import ch.orellbuehler.hauswart.feature.applink.AppLink
+import ch.orellbuehler.hauswart.feature.applink.LINK_HOME
 import ch.orellbuehler.hauswart.feature.applink.LINK_TASK
 import ch.orellbuehler.hauswart.feature.applink.routeForUrl
 import ch.orellbuehler.hauswart.feature.files.nowMillis
 import ch.orellbuehler.hauswart.feature.notifications.notificationText
+import ch.orellbuehler.hauswart.i18n.tr
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Fetches what [ReminderPlanner] needs with the signed-in session and returns the plan. The platform
@@ -39,8 +45,35 @@ class ReminderSync(
     var lastError: UiError? = null
         private set
 
-    /** Plans from the server's current data. Never throws; on a failure the stored plan comes back and [lastError] is set. */
+    /** True when the last sync ended the session (the server refused the token); [sessionEndedNotice] says so to the person. */
+    var sessionEnded: Boolean = false
+        private set
+
+    private val lock = Mutex()
+    private var inFlight: Deferred<List<PlannedReminder>>? = null
+
+    /**
+     * Plans from the server's current data. Never throws; on a failure the stored plan comes back and
+     * [lastError] is set. A call while another sync runs waits for that one and gets its plan, so
+     * that a server notification is not announced twice.
+     */
     suspend fun plan(): List<PlannedReminder> {
+        val run = lock.withLock { inFlight?.takeIf { it.isActive } ?: scope.async { planNow() }.also { inFlight = it } }
+        return run.await()
+    }
+
+    /** What to post when [sessionEnded]: the sync cannot sign in again by itself, the person has to open the app. */
+    fun sessionEndedNotice(): PlannedReminder =
+        PlannedReminder(
+            id = SESSION_ENDED_ID,
+            fireAt = 0L,
+            title = tr("m_session_ended_title"),
+            body = tr("m_session_ended_body"),
+            link = AppLink(LINK_HOME, null),
+        )
+
+    private suspend fun planNow(): List<PlannedReminder> {
+        sessionEnded = false
         val settings = prefs.settings()
         val now = clock()
         if (!settings.enabled || !app.session.state.value.signedIn) {
@@ -103,6 +136,11 @@ class ReminderSync(
             throw e
         } catch (e: Exception) {
             lastError = uiErrorOf(e)
+            sessionEnded = !app.session.state.value.signedIn
+            if (sessionEnded) {
+                prefs.forget()
+                return emptyList()
+            }
             return stored()
         }
     }
@@ -146,11 +184,14 @@ class ReminderSync(
         prefs.forget()
     }
 
-    private companion object {
-        const val DAY_MS = 86_400_000L
-        const val IMMEDIATE_MS = 1_000L
-        const val DEBOUNCE_MS = 2_000L
-        const val MAX_NEW_NOTIFICATIONS = 5
-        const val MAX_SEEN = 200
+    companion object {
+        /** The id of the notification that says the session ended; fixed, so that it is posted once. */
+        const val SESSION_ENDED_ID = "session_ended"
+
+        private const val DAY_MS = 86_400_000L
+        private const val IMMEDIATE_MS = 1_000L
+        private const val DEBOUNCE_MS = 2_000L
+        private const val MAX_NEW_NOTIFICATIONS = 5
+        private const val MAX_SEEN = 200
     }
 }

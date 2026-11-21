@@ -76,6 +76,7 @@ fun SettingsScreen(nav: NavController) {
             SectionCard(title = tr("m_settings_server")) {
                 LabeledValue(tr("m_settings_server"), state.serverUrl)
                 LabeledValue(tr("m_settings_server_version"), state.serverVersion)
+                state.signedInUntil?.let { LabeledValue(tr("m_settings_signed_in_until"), it) }
             }
             SectionCard(title = tr("m_settings_about")) {
                 LabeledValue(tr("m_settings_app_version"), BuildConfig.VERSION_NAME)

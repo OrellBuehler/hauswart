@@ -15,6 +15,7 @@ enum ReminderRunner {
 
     /// Plans now and replaces what is pending.
     static func syncNow() {
+        ReminderCenter.clearSessionEnded()
         sync.run { plan in
             ReminderCenter.apply(items(of: plan))
         }
@@ -58,12 +59,36 @@ enum ReminderRunner {
         }
     }
 
+    /// The background run that is going on, so that it is completed once only.
+    private static var running: BGTask?
+
     private static func handle(_ task: BGTask) {
         scheduleRefresh()
+        running = task
+        // iOS ends the run when its time is up: complete the task, or the system holds it against the app.
+        task.expirationHandler = {
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    finish(task, success: false)
+                }
+            }
+        }
         sync.run { plan in
             ReminderCenter.apply(items(of: plan))
-            task.setTaskCompleted(success: true)
+            // The server refused the token: nobody sees the app, so say that the person has to sign in again.
+            if sync.sessionEnded {
+                for item in items(of: [sync.sessionEndedNotice()]) {
+                    ReminderCenter.deliver(item)
+                }
+            }
+            finish(task, success: true)
         }
+    }
+
+    private static func finish(_ task: BGTask, success: Bool) {
+        guard running === task else { return }
+        running = nil
+        task.setTaskCompleted(success: success)
     }
 
     private static func items(of plan: [PlannedReminder]) -> [ReminderItem] {

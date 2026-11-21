@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
+        CacheFiles.removeLeftovers()
         UNUserNotificationCenter.current().delegate = ReminderNotificationDelegate.shared
         ReminderRunner.registerBackgroundTask()
         return true

@@ -77,3 +77,13 @@ fun Context.newCaptureTarget(): Pair<File, Uri> {
     val file = File(dir, "photo-${System.currentTimeMillis()}.jpg")
     return file to FileProvider.getUriForFile(this, authority(), file)
 }
+
+/** The address other apps write the capture at [path] to (the path of a file from [newCaptureTarget]). */
+fun Context.captureUri(path: String): Uri = FileProvider.getUriForFile(this, authority(), File(path))
+
+/** Deletes what opening, sharing and capturing left in the cache; called when the app starts. */
+fun Context.deleteLeftoverFiles() {
+    listOf("shared", "captures").forEach { name ->
+        File(cacheDir, name).listFiles()?.forEach { it.deleteRecursively() }
+    }
+}

@@ -4,7 +4,12 @@ import ch.orellbuehler.hauswart.i18n.tr
 import ch.orellbuehler.hauswart.testing.TestApp
 import ch.orellbuehler.hauswart.testing.await
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.AfterTest
@@ -15,6 +20,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 class AttachmentsStoreTest {
     private val server = TestApp().also { it.signIn() }
@@ -102,6 +108,25 @@ class AttachmentsStoreTest {
             assertTrue("name=\"ownerId\"\r\nContent-Length: 2\r\n\r\nt1" in request.body)
             assertTrue("name=\"file\"; filename=\"photo.jpg\"\r\nContent-Type: image/jpeg" in request.body)
             store.close()
+        }
+
+    @Test
+    fun anUploadSurvivesLeavingTheScreenAndReportsTheChange() =
+        runTest {
+            server.on("GET", "/api/v1/attachments", page())
+            val store = store()
+            store.await { !it.loading }
+            server.on("POST", "/api/v1/attachments", attachment("a9", "photo.jpg"), HttpStatusCode.Created)
+            val changes = mutableListOf<String>()
+            val watching = launch(Dispatchers.Unconfined) { app.changes.collect { changes += it } }
+
+            store.upload("photo.jpg", "image/jpeg", jpeg)
+            store.close()
+            server.awaitRequest("POST", "/api/v1/attachments")
+            withContext(Dispatchers.Default) { withTimeout(60.seconds) { while ("attachments" !in changes) delay(10) } }
+            watching.cancel()
+            assertTrue(store.value.uploads.isEmpty())
+            assertEquals(listOf("a9"), store.value.rows.map { it.id })
         }
 
     @Test

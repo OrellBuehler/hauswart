@@ -36,6 +36,7 @@ import ch.orellbuehler.hauswart.feature.inventory.assetKindLabel
 import ch.orellbuehler.hauswart.i18n.tr
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.serialization.json.JsonObject
 
 const val ACCEPT_MAX_TAGS = 10
 
@@ -206,7 +207,7 @@ class SuggestionAcceptStore(
         val body = body(s, form, title) ?: return
         update { it.copy(saving = true, error = null, fieldErrors = emptyMap()) }
         launch({ e -> failed(e, s) }) {
-            val result = app.api.finance.financeSuggestionsAccept(id, body)
+            val result = acceptSuggestionRaw(app, id, body)
             val key =
                 when (result.entity.type) {
                     "cost" -> "finance_accepted_cost_toast"
@@ -239,25 +240,27 @@ class SuggestionAcceptStore(
         s: FinanceSuggestion,
         form: AcceptForm,
         title: String,
-    ): FinanceSuggestionsAcceptRequest? =
+    ): JsonObject? =
         when (s) {
             is FinanceSuggestion.BillTask ->
-                FinanceSuggestionsAcceptRequest(title = title.takeIf { it != s.payload.title })
+                acceptBody(FinanceSuggestionsAcceptRequest(title = title.takeIf { it != s.payload.title }))
             is FinanceSuggestion.Asset ->
-                FinanceSuggestionsAcceptRequest(
-                    name = title.takeIf { it != s.payload.name },
-                    assetKind = form.assetKind.takeIf { it != "device" },
-                    roomId = form.roomId.ifEmpty { null },
+                acceptBody(
+                    FinanceSuggestionsAcceptRequest(
+                        name = title.takeIf { it != s.payload.name },
+                        assetKind = form.assetKind.takeIf { it != "device" },
+                        roomId = form.roomId.ifEmpty { null },
+                    ),
                 )
             is FinanceSuggestion.Cost -> costBody(s, form, title)
-            else -> FinanceSuggestionsAcceptRequest()
+            else -> acceptBody(FinanceSuggestionsAcceptRequest())
         }
 
     private fun costBody(
         s: FinanceSuggestion.Cost,
         form: AcceptForm,
         title: String,
-    ): FinanceSuggestionsAcceptRequest? {
+    ): JsonObject? {
         val cost = s.payload
         var mode: String? = null
         var participantIds: List<String>? = null
@@ -287,21 +290,28 @@ class SuggestionAcceptStore(
         val me = app.session.user?.id
         val defaultPayer = if (me != null && people.any { it.id == me }) me else ""
         val offeredBook = acceptBook(cost.bookId)
-        return FinanceSuggestionsAcceptRequest(
-            title = title.takeIf { it != cost.title },
-            bookId = form.bookId.takeIf { it.isNotEmpty() && it != offeredBook?.id },
-            category = form.category.takeIf { it != cost.category },
-            notes = form.notes.trim().ifEmpty { null },
-            assetId = form.assetId.takeIf { it != (cost.assetId ?: "") }?.ifEmpty { null },
-            roomId = form.roomId.ifEmpty { null },
-            paidByUserId = form.paidByUserId.takeIf { it != defaultPayer }?.ifEmpty { null },
-            splitMode = mode,
-            shares = shares,
-            participantIds = participantIds,
-            countsAsExpense = form.countsAsExpense.takeIf { form.countsTouched || form.category != cost.category },
-            deductible = form.deductible.takeIf { (book?.taxRelevant ?: true) && it != "unknown" },
-            tagIds = form.tagIds.takeIf { it.isNotEmpty() },
-        )
+        val nulls = mutableSetOf<String>()
+        val assetChanged = form.assetId != (cost.assetId ?: "")
+        if (assetChanged && form.assetId.isEmpty()) nulls += "assetId"
+        val payerChanged = form.paidByUserId != defaultPayer
+        if (payerChanged && form.paidByUserId.isEmpty()) nulls += "paidByUserId"
+        val request =
+            FinanceSuggestionsAcceptRequest(
+                title = title.takeIf { it != cost.title },
+                bookId = form.bookId.takeIf { it.isNotEmpty() && it != offeredBook?.id },
+                category = form.category.takeIf { it != cost.category },
+                notes = form.notes.trim().ifEmpty { null },
+                assetId = form.assetId.takeIf { assetChanged }?.ifEmpty { null },
+                roomId = form.roomId.ifEmpty { null },
+                paidByUserId = form.paidByUserId.takeIf { payerChanged }?.ifEmpty { null },
+                splitMode = mode,
+                shares = shares,
+                participantIds = participantIds,
+                countsAsExpense = form.countsAsExpense.takeIf { form.countsTouched || form.category != cost.category },
+                deductible = form.deductible.takeIf { (book?.taxRelevant ?: true) && it != "unknown" },
+                tagIds = form.tagIds.takeIf { it.isNotEmpty() },
+            )
+        return acceptBody(request, nulls)
     }
 
     private fun acceptBook(offered: String?): CostBook? = openBooks(books).firstOrNull { it.id == offered } ?: defaultBook(books)

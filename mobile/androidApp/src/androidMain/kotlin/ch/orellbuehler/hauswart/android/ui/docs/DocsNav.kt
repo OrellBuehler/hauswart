@@ -16,7 +16,8 @@ private val newArguments =
     listOf("section", "assetId", "roomId", "title").map { name ->
         navArgument(name) {
             type = NavType.StringType
-            defaultValue = ""
+            nullable = true
+            defaultValue = null
         }
     }
 
@@ -45,9 +46,9 @@ fun NavGraphBuilder.docsGraph(nav: NavController) {
 }
 
 internal fun NavController.openDocNew(
-    section: String = "",
-    title: String = "",
-) = navigate("docs-new?section=${Routes.arg(section)}&assetId=&roomId=&title=${Routes.arg(title)}")
+    section: String? = null,
+    title: String? = null,
+) = navigate(Routes.withQuery("docs-new", "section" to section, "title" to title))
 
 internal fun NavController.openDocEdit(slug: String) = navigate("docs/${Routes.arg(slug)}/edit")
 

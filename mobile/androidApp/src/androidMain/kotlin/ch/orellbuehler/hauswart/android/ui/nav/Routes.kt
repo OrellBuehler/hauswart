@@ -121,7 +121,7 @@ object Routes {
     fun costNew(
         bookArg: String? = null,
         assetId: String? = null,
-    ) = "costs/new?" + listOfNotNull(bookArg?.let { "book=${arg(it)}" }, assetId?.let { "asset=${arg(it)}" }).joinToString("&")
+    ) = withQuery("costs/new", "book" to bookArg, "asset" to assetId)
 
     /** The quick entry form; [bookArg] is a book id or `all`. */
     fun costsQuick(bookArg: String? = null) = "costs/quick" + (bookArg?.let { "?book=${arg(it)}" } ?: "")
@@ -157,4 +157,13 @@ object Routes {
     }
 
     fun arg(value: String): String = Uri.encode(value)
+
+    /** [path] with the parameters that have a value; null and empty ones are left out, and no bare `?` is left behind. */
+    fun withQuery(
+        path: String,
+        vararg params: Pair<String, String?>,
+    ): String {
+        val query = params.mapNotNull { (name, value) -> value?.takeIf { it.isNotEmpty() }?.let { "$name=${arg(it)}" } }.joinToString("&")
+        return if (query.isEmpty()) path else "$path?$query"
+    }
 }

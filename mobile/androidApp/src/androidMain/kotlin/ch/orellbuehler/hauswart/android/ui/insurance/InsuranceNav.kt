@@ -15,7 +15,8 @@ private val newArguments =
     listOf("assetId", "type").map { name ->
         navArgument(name) {
             type = NavType.StringType
-            defaultValue = ""
+            nullable = true
+            defaultValue = null
         }
     }
 
@@ -32,6 +33,6 @@ fun NavGraphBuilder.insuranceGraph(nav: NavController) {
     }
 }
 
-internal fun NavController.openInsuranceNew() = navigate("insurance-new?assetId=&type=")
+internal fun NavController.openInsuranceNew() = navigate("insurance-new")
 
 internal fun NavController.openInsuranceEdit(id: String) = navigate("insurance/${Routes.arg(id)}/edit")

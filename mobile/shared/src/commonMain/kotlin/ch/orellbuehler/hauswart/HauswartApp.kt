@@ -10,6 +10,9 @@ import ch.orellbuehler.hauswart.platform.KeyValueStore
 import ch.orellbuehler.hauswart.session.Session
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -45,6 +48,12 @@ class HauswartApp(
         )
     val api: HauswartApi = HauswartApi(http)
     val household: HouseholdContext = HouseholdContext(this)
+
+    /**
+     * A scope that is never cancelled: work that must finish although the screen that started it is
+     * closed meanwhile (uploads). It reports through [changed], and through the store when it is still open.
+     */
+    val background: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     private val _changes = MutableSharedFlow<String>(extraBufferCapacity = 64)
 

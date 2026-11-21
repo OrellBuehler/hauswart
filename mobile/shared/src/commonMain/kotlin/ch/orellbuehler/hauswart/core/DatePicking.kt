@@ -18,3 +18,12 @@ fun dateOfPickerMillis(millis: Long): String =
 
 /** The value a date picker starts with for [date]; null when it is not a date. */
 fun pickerMillisOf(date: String): Long? = Dates.parse(date)?.atStartOfDayIn(TimeZone.UTC)?.toEpochMilliseconds()
+
+/**
+ * The years a date picker offers: 1900 to 2100, widened to [initial]'s year when a stored date lies
+ * outside (the server takes any year; a picker whose state starts outside its range throws).
+ */
+fun pickerYearRange(initial: String): IntRange {
+    val year = Dates.parse(initial)?.year ?: return 1900..2100
+    return minOf(1900, year)..maxOf(2100, year)
+}

@@ -48,7 +48,11 @@ object ReminderScheduler {
             .edit()
             .remove(CODES)
             .apply()
-        context.getSystemService(android.app.NotificationManager::class.java)?.cancelAll()
+        val manager = context.getSystemService(android.app.NotificationManager::class.java) ?: return
+        // The notice that the session ended is posted while the session is being cleared: it stays.
+        manager.activeNotifications
+            .filter { it.id != ReminderNotifier.SESSION_ENDED_NOTIFICATION_ID }
+            .forEach { manager.cancel(it.id) }
     }
 
     private fun cancelAlarms(

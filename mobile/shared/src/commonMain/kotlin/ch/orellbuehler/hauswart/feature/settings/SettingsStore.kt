@@ -3,6 +3,7 @@ package ch.orellbuehler.hauswart.feature.settings
 import ch.orellbuehler.hauswart.HauswartApp
 import ch.orellbuehler.hauswart.core.Store
 import ch.orellbuehler.hauswart.core.UiError
+import ch.orellbuehler.hauswart.feature.connect.sessionExpiryOf
 import ch.orellbuehler.hauswart.i18n.I18n
 import ch.orellbuehler.hauswart.i18n.tr
 
@@ -17,6 +18,8 @@ data class SettingsState(
     val username: String,
     val serverUrl: String,
     val serverVersion: String? = null,
+    /** The day the device token ends, written out; null when it is not known. */
+    val signedInUntil: String? = null,
     val loading: Boolean = true,
     val error: UiError? = null,
     val language: String,
@@ -37,6 +40,7 @@ class SettingsStore(
                 userName = user?.displayName?.ifBlank { null } ?: user?.username ?: "",
                 username = user?.username ?: "",
                 serverUrl = app.session.serverUrl ?: "",
+                signedInUntil = signedInUntil(app),
                 language = app.locale,
                 languages = I18n.locales.map { LanguageOption(it, tr("locale_name_$it")) },
                 entries = settingsEntries(),
@@ -58,6 +62,7 @@ class SettingsStore(
         update {
             it.copy(
                 language = code,
+                signedInUntil = signedInUntil(app),
                 languages = I18n.locales.map { l -> LanguageOption(l, tr("locale_name_$l")) },
                 entries = settingsEntries(),
                 browserLinks = settingsBrowserLinks(app.session.serverUrl ?: ""),
@@ -78,7 +83,10 @@ class SettingsStore(
         update { it.copy(loading = it.serverVersion == null, error = null) }
         launch({ e -> update { it.copy(loading = false, error = e) } }) {
             val health = app.api.system.health()
-            update { it.copy(loading = false, serverVersion = health.version) }
+            update { it.copy(loading = false, serverVersion = health.version, signedInUntil = signedInUntil(app)) }
         }
     }
 }
+
+private fun signedInUntil(app: HauswartApp): String? =
+    sessionExpiryOf(app.session.state.value.tokenExpiresAt, app.household.today(), app.household.timezone)?.dateText

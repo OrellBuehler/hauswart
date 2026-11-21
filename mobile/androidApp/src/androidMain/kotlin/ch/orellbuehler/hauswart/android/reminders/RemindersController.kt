@@ -19,6 +19,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlin.concurrent.Volatile
 
 /**
  * Keeps the alarms of the reminders in step with the data: plans again when the app comes to the
@@ -33,12 +34,16 @@ class RemindersController(
     private val prefs = ReminderPrefs(app.settings)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
+    /** The app is on screen: a session that ends then shows the sign-in screen, no notification is needed. */
+    @Volatile
+    var foreground = false
+
     fun start() {
         scope.launch {
             app.session.state
                 .map { it.signedIn }
                 .distinctUntilChanged()
-                .collect { signedIn -> if (!signedIn) signedOut() }
+                .collect { signedIn -> if (signedIn) ReminderNotifier.cancelSessionEnded(context) else signedOut() }
         }
         sync.watch { plan -> apply(plan) }
     }
@@ -50,6 +55,8 @@ class RemindersController(
 
     suspend fun syncNow() {
         apply(sync.plan())
+        // A sync in the background that the server refused ends the session: say so once, as nobody sees the app.
+        if (sync.sessionEnded && !foreground) ReminderNotifier.show(context, sync.sessionEndedNotice().content())
     }
 
     /** Sets the alarms again from the last plan, without a network. */

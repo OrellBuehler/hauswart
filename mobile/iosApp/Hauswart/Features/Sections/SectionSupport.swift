@@ -23,6 +23,20 @@ enum CacheFiles {
         }
     }
 
+    /// Deletes what opening and sharing left in the temporary directory; called when the app starts.
+    static func removeLeftovers() {
+        let manager = FileManager.default
+        for name in ["shared", "captures"] {
+            let directory = manager.temporaryDirectory.appendingPathComponent(name, isDirectory: true)
+            guard manager.fileExists(atPath: directory.path) else { continue }
+            do {
+                try manager.removeItem(at: directory)
+            } catch {
+                NSLog("leftover files could not be removed: %@", error.localizedDescription)
+            }
+        }
+    }
+
     private static func safeName(_ name: String) -> String {
         let cleaned = name.map { character -> Character in
             "/\\:".contains(character) ? "_" : character

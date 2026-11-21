@@ -25,7 +25,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        (application as HauswartApplication).reminders.sync()
+        val reminders = (application as HauswartApplication).reminders
+        reminders.foreground = true
+        reminders.sync()
+    }
+
+    override fun onStop() {
+        (application as HauswartApplication).reminders.foreground = false
+        super.onStop()
     }
 
     /** A tap on a reminder brings the link it leads to; the screen that is showing opens it. */
