@@ -66,7 +66,7 @@ class TireStoresTest {
     fun anAddedSetStartsWithTheSizeOfItsSeason() =
         runTest {
             val store = store()
-            val form = store.newForm("winter")
+            val form = store.blankForm("winter")
             assertEquals("195/65 R15", form.size)
             val summer = store.withSeason(form, "summer")
             assertEquals("205/55 R16", summer.size)
@@ -146,7 +146,7 @@ class TireStoresTest {
     fun theReadingThatIsAlreadyKnownIsNotSentAgain() =
         runTest {
             val store = store()
-            val form = store.newMountForm()
+            val form = store.blankMountForm()
             assertEquals("45200", form.odometer)
             server.on("POST", "/api/v1/assets/a1/tire-sets/t2/mount", tireSetJson("t2").dropLast(1) + ""","events":[]}""")
             store.mount("t2", form)

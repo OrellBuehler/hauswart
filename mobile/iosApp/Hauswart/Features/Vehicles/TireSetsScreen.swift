@@ -235,7 +235,7 @@ private struct TireSetFormSheet: View {
         self.store = store
         self.state = state
         self.id = id
-        var start = store.newForm(season: "winter")
+        var start = store.blankForm(season: "winter")
         if let id, let existing = store.editForm(id: id) {
             start = existing
         }
@@ -343,7 +343,7 @@ private struct TireMountSheet: View {
         self.store = store
         self.state = state
         self.id = id
-        let start = store.newMountForm()
+        let start = store.blankMountForm()
         _date = State(initialValue: start.date)
         _odometer = State(initialValue: start.odometer)
     }
@@ -390,7 +390,7 @@ private struct TireMeasureSheet: View {
         self.store = store
         self.state = state
         self.id = id
-        let start = store.newTreadForm()
+        let start = store.blankTreadForm()
         _date = State(initialValue: start.date)
         _odometer = State(initialValue: start.odometer)
     }

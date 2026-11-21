@@ -243,7 +243,7 @@ private struct FuelFormSheet: View {
         self.store = store
         self.state = state
         self.logId = logId
-        var start = store.newForm()
+        var start = store.blankForm()
         if let logId, let existing = store.editForm(id: logId) {
             start = existing
         }

@@ -277,7 +277,7 @@ class FuelLogStore(
     private val members get() = app.household.members
 
     /** The form for a new fill: today, the vehicle's usual unit, the vehicle's book, the signed-in person as payer. */
-    fun newForm(): FuelForm {
+    fun blankForm(): FuelForm {
         val book = fuelBookOf(books, vehicle?.costBookId)
         val me = app.session.user?.id
         val ids = members.map { it.id }

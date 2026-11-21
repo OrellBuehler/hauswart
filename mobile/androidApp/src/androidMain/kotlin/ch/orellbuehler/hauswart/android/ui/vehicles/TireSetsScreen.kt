@@ -270,7 +270,7 @@ private fun TireSetFormDialog(
     id: String?,
     onDismiss: () -> Unit,
 ) {
-    var form by remember { mutableStateOf(if (id == null) store.newForm("winter") else store.editForm(id) ?: store.newForm("winter")) }
+    var form by remember { mutableStateOf(if (id == null) store.blankForm("winter") else store.editForm(id) ?: store.blankForm("winter")) }
     val errors = state.fieldErrors
     FormDialog(
         title = tr(if (id == null) "tire_form_create_title" else "tire_form_edit_title"),
@@ -342,7 +342,7 @@ private fun TireMountDialog(
     id: String,
     onDismiss: () -> Unit,
 ) {
-    var form by remember { mutableStateOf(store.newMountForm()) }
+    var form by remember { mutableStateOf(store.blankMountForm()) }
     FormDialog(
         title = tr("tire_mount_title"),
         onDismiss = onDismiss,
@@ -377,7 +377,7 @@ private fun TireMeasureDialog(
     id: String,
     onDismiss: () -> Unit,
 ) {
-    var form by remember { mutableStateOf(store.newTreadForm()) }
+    var form by remember { mutableStateOf(store.blankTreadForm()) }
     FormDialog(
         title = tr("tire_tread_title"),
         onDismiss = onDismiss,

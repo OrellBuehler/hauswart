@@ -74,7 +74,7 @@ class FuelStoreTest {
     fun aNewFormStartsInTheVehiclesBookAndUnit() =
         runTest {
             val store = store(vehicleJson(costBookId = "b2", fuelType = "electric"))
-            val form = store.newForm()
+            val form = store.blankForm()
             assertEquals("kWh", form.unit)
             assertEquals("b2", form.bookId)
             assertEquals("u1", form.paidByUserId)
@@ -89,7 +89,7 @@ class FuelStoreTest {
     fun theFormIsCheckedBeforeSending() =
         runTest {
             val store = store()
-            store.save(null, store.newForm().copy(odometer = "", quantity = "0", amount = "abc"))
+            store.save(null, store.blankForm().copy(odometer = "", quantity = "0", amount = "abc"))
             val errors = store.await { it.fieldErrors.isNotEmpty() }.fieldErrors
             assertEquals(tr("m_field_required"), errors["odometer"])
             assertEquals(tr("fuel_error_quantity", "max" to "10'000"), errors["quantity"])
@@ -98,7 +98,7 @@ class FuelStoreTest {
 
             val custom =
                 store.withShare(
-                    store.withSplitMode(store.newForm().copy(odometer = "45000", quantity = "40", amount = "72"), "custom"),
+                    store.withSplitMode(store.blankForm().copy(odometer = "45000", quantity = "40", amount = "72"), "custom"),
                     "u1",
                     "60",
                 )
@@ -115,7 +115,7 @@ class FuelStoreTest {
             server.on("POST", "/api/v1/assets/a1/fuel-logs", fuelLogJson("f3"))
             store.save(
                 null,
-                store.newForm().copy(odometer = "45'600", quantity = "38,5", amount = "69.30", station = " Beispiel ", fullTank = false),
+                store.blankForm().copy(odometer = "45'600", quantity = "38,5", amount = "69.30", station = " Beispiel ", fullTank = false),
             )
             store.await { it.done }
             val body = server.requestsTo("POST", "/api/v1/assets/a1/fuel-logs").single().json
@@ -135,7 +135,7 @@ class FuelStoreTest {
         runTest {
             val store = store()
             server.on("POST", "/api/v1/assets/a1/fuel-logs", fuelLogJson("f3"))
-            val form = store.withSplitMode(store.newForm().copy(odometer = "45600", quantity = "40", amount = "70"), "custom")
+            val form = store.withSplitMode(store.blankForm().copy(odometer = "45600", quantity = "40", amount = "70"), "custom")
             store.save(null, store.withShare(form, "u1", "100"))
             store.await { it.done }
             val shares =
@@ -174,7 +174,7 @@ class FuelStoreTest {
                 "invalid_request",
                 details = """{"code":"higher_than_next","field":"odometer","reading":{"value":46000,"date":"2026-11-01"}}""",
             )
-            store.save(null, store.newForm().copy(odometer = "47000", quantity = "40", amount = "70"))
+            store.save(null, store.blankForm().copy(odometer = "47000", quantity = "40", amount = "70"))
             val state = store.await { it.fieldErrors["odometer"] != null }
             assertEquals(
                 tr("vehicle_odometer_refused_higher", "value" to "46'000 km", "date" to "01.11.2026"),

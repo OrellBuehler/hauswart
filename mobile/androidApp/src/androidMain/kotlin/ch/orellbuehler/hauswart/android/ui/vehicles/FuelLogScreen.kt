@@ -259,7 +259,7 @@ private fun FuelFormDialog(
     id: String?,
     onDismiss: () -> Unit,
 ) {
-    var form by remember { mutableStateOf(if (id == null) store.newForm() else store.editForm(id) ?: store.newForm()) }
+    var form by remember { mutableStateOf(if (id == null) store.blankForm() else store.editForm(id) ?: store.blankForm()) }
     val view = store.view(form, id)
     val errors = state.fieldErrors
     FormDialog(

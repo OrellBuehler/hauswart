@@ -328,7 +328,7 @@ class TireSetsStore(
     }
 
     /** The form for a new set of [season]; the size comes from the vehicle's details. */
-    fun newForm(season: String): TireSetForm =
+    fun blankForm(season: String): TireSetForm =
         TireSetForm(season = season, size = tireSizes[season].orEmpty(), treadMeasuredOn = current.today)
 
     /** [form] after another season was picked: the size follows unless the person typed one. */
@@ -358,9 +358,9 @@ class TireSetsStore(
             )
         }
 
-    fun newMountForm(): TireMountForm = TireMountForm(date = current.today, odometer = known?.let { plainReading(it) }.orEmpty())
+    fun blankMountForm(): TireMountForm = TireMountForm(date = current.today, odometer = known?.let { plainReading(it) }.orEmpty())
 
-    fun newTreadForm(): TireTreadForm = TireTreadForm(date = current.today, odometer = known?.let { plainReading(it) }.orEmpty())
+    fun blankTreadForm(): TireTreadForm = TireTreadForm(date = current.today, odometer = known?.let { plainReading(it) }.orEmpty())
 
     /** The dialog title and text of a set: "Winterreifen 205/55 R16". */
     fun titleOf(id: String): String = sets.firstOrNull { it.id == id }?.let { tireSetTitle(it.season, it.size) }.orEmpty()

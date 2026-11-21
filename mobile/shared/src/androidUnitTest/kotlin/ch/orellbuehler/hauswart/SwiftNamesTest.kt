@@ -76,4 +76,23 @@ class SwiftNamesTest {
             "Swift refers to top-level Kotlin declarations that are not there:\n" + problems.distinct().joinToString("\n"),
         )
     }
+
+    /**
+     * Objective-C treats methods named `new...`, `init...`, `alloc...` and `copy...` specially, and
+     * Kotlin/Native exports such a function under another name: Swift does not find it.
+     */
+    @Test
+    fun swiftCallsNoKotlinFunctionOfASpecialObjectiveCFamily() {
+        val call = Regex("""\b(?:store|model\.store|sync)\.((?:new|init|alloc|copy|mutableCopy)[A-Z][A-Za-z0-9]*)\(""")
+        val problems =
+            File(repoRoot(), "mobile/iosApp/Hauswart")
+                .walkTopDown()
+                .filter { it.isFile && it.extension == "swift" }
+                .flatMap { file -> call.findAll(file.readText()).map { "${file.name}: ${it.groupValues[1]}" } }
+                .toList()
+        assertTrue(
+            problems.isEmpty(),
+            "Rename these store functions (for example blankForm instead of newForm):\n" + problems.joinToString("\n"),
+        )
+    }
 }

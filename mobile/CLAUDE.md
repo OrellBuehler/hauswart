@@ -108,6 +108,9 @@ conservatively and copy the patterns of existing screens exactly:
 - The generated models `Task` and `Notification` share their names with Swift's `Task` and
   Foundation's `Notification`: write `shared.Task` / `shared.Notification` for the models, and do not
   start Swift concurrency tasks at all (stores do the asynchronous work).
+- A Kotlin function Swift calls must not be named `new...`, `init...`, `alloc...` or `copy...`:
+  Objective-C reserves those families and the function is exported under another name. Name it
+  `blankForm`, `startForm`, `duplicate` and the like.
 - Kotlin `Int` is `Int32` in Swift (`String(value)` and comparisons work; convert with `Int(value)`
   where a Swift `Int` is needed).
 - Sealed classes are switched with `onEnum(of: value)` (SKIE).
