@@ -124,7 +124,7 @@ private struct PlantCard: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 Spacer()
-                NavigationLink(value: Route.tasks) {
+                NavigationLink(value: Route.taskNew(plant.id)) {
                     Text(tr("plants_add_plan"))
                         .font(.footnote)
                 }

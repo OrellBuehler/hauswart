@@ -32,6 +32,7 @@ import ch.orellbuehler.hauswart.android.ui.connect.ConnectScreen
 import ch.orellbuehler.hauswart.android.ui.contacts.contactsGraph
 import ch.orellbuehler.hauswart.android.ui.dashboard.dashboardGraph
 import ch.orellbuehler.hauswart.android.ui.more.moreGraph
+import ch.orellbuehler.hauswart.android.ui.nav.LocalNav
 import ch.orellbuehler.hauswart.android.ui.nav.Routes
 import ch.orellbuehler.hauswart.android.ui.nav.featureGraphs
 import ch.orellbuehler.hauswart.android.ui.theme.HauswartTheme
@@ -88,11 +89,13 @@ private fun MainScaffold() {
         },
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding)) {
-            NavHost(navController = nav, startDestination = Routes.HOME) {
-                dashboardGraph(nav)
-                contactsGraph(nav)
-                moreGraph(nav)
-                featureGraphs(nav)
+            CompositionLocalProvider(LocalNav provides nav) {
+                NavHost(navController = nav, startDestination = Routes.HOME) {
+                    dashboardGraph(nav)
+                    contactsGraph(nav)
+                    moreGraph(nav)
+                    featureGraphs(nav)
+                }
             }
         }
     }

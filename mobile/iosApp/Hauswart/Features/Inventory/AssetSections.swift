@@ -13,12 +13,14 @@ private struct HintSheet: Identifiable {
 }
 
 struct AssetHintsSection: View {
+    private let assetId: String
     @StateObject private var model: Observed<AssetHintsStore, HintsState>
     @State private var sheet: HintSheet?
     @State private var deleting: HintItem?
     @State private var confirmingDelete = false
 
     init(assetId: String) {
+        self.assetId = assetId
         _model = StateObject(wrappedValue: Observed(AssetHintsStore(app: AppEnv.app, assetId: assetId)))
     }
 
@@ -41,6 +43,7 @@ struct AssetHintsSection: View {
             ForEach(state.items, id: \.id) { hint in
                 HintRowView(
                     hint: hint,
+                    assetId: assetId,
                     busy: state.busy,
                     onTogglePin: { model.store.togglePin(hintId: hint.id) },
                     onEdit: {
@@ -84,6 +87,7 @@ struct AssetHintsSection: View {
 
 private struct HintRowView: View {
     let hint: HintItem
+    let assetId: String
     let busy: Bool
     let onTogglePin: () -> Void
     let onEdit: () -> Void
@@ -156,6 +160,12 @@ private struct HintRowView: View {
             if let taskId = hint.taskId, let taskTitle = hint.taskTitle {
                 LinkRow(route: Route.task(taskId)) {
                     Text(tr("hint_task_linked", ["title": taskTitle]))
+                        .font(.footnote)
+                        .lineLimit(1)
+                }
+            } else {
+                LinkRow(route: Route.taskNew(assetId)) {
+                    Text(tr("hint_plan_task"))
                         .font(.footnote)
                         .lineLimit(1)
                 }

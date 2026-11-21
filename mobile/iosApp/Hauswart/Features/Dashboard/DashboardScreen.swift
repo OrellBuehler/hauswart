@@ -3,6 +3,8 @@ import SwiftUI
 
 struct DashboardScreen: View {
     @StateObject private var model = Observed(DashboardStore(app: AppEnv.app))
+    @State private var action: TaskActionRequest? = nil
+    @State private var appointmentId: String? = nil
 
     var body: some View {
         let state = model.state
@@ -21,6 +23,31 @@ struct DashboardScreen: View {
                     }
                 }
             }
+            .sheet(item: $action) { request in
+                TaskActionSheet(taskId: request.taskId, mode: request.mode) { notice in
+                    model.store.announce(notice: notice)
+                }
+            }
+            .navigationDestination(item: $appointmentId) { appointment in
+                destination(for: Route.appointment(appointment))
+            }
+            .safeAreaInset(edge: .bottom) {
+                if let notice = state.notice {
+                    NoticeBar(
+                        notice: notice,
+                        onUndo: { token in model.store.undo(token: token) },
+                        onDismiss: { model.store.consumeNotice() }
+                    )
+                }
+            }
+    }
+
+    private func complete(_ item: TaskItem) {
+        if item.needsReading {
+            action = TaskActionRequest(taskId: item.id, mode: TaskActionStoreKt.ACTION_COMPLETE)
+        } else {
+            model.store.complete(taskId: item.id)
+        }
     }
 
     private func bellLabel(_ unread: Int64) -> String {
@@ -31,6 +58,11 @@ struct DashboardScreen: View {
     private func content(_ state: DashboardState) -> some View {
         if let view = state.view {
             List {
+                if let actionError = state.actionError {
+                    Section {
+                        ErrorBanner(error: actionError)
+                    }
+                }
                 Section {
                     HStack(spacing: 8) {
                         ForEach(view.tiles, id: \.id) { tile in
@@ -82,7 +114,33 @@ struct DashboardScreen: View {
         Section {
             ForEach(section.items, id: \.id) { item in
                 NavigationLink(value: Route.task(item.id)) {
-                    TaskItemRow(item: item)
+                    TaskItemRow(item: item, onOpenAppointment: { appointmentId = $0 })
+                }
+                .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                    if item.actionable {
+                        Button {
+                            complete(item)
+                        } label: {
+                            Label(tr("task_complete"), systemImage: "checkmark")
+                        }
+                        .tint(.green)
+                    }
+                }
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    if item.actionable {
+                        Button {
+                            action = TaskActionRequest(taskId: item.id, mode: TaskActionStoreKt.ACTION_SKIP)
+                        } label: {
+                            Label(tr("task_skip"), systemImage: "forward.end")
+                        }
+                        .tint(.gray)
+                        Button {
+                            action = TaskActionRequest(taskId: item.id, mode: TaskActionStoreKt.ACTION_SNOOZE)
+                        } label: {
+                            Label(tr("task_snooze"), systemImage: "moon.zzz")
+                        }
+                        .tint(.orange)
+                    }
                 }
             }
             if section.collapsible {
@@ -168,30 +226,39 @@ struct DashboardScreen: View {
 
     private func costsSection(_ card: CostsCard) -> some View {
         Section(tr("costs_title")) {
-            if let you = card.youLine {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(you)
-                        .font(.headline)
-                        .foregroundStyle(Tone.color(card.youTone))
-                    Text(tr("dashboard_costs_balance_hint"))
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+            NavigationLink(value: Route.costs) {
+                VStack(alignment: .leading, spacing: 6) {
+                    if let you = card.youLine {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(you)
+                                .font(.headline)
+                                .foregroundStyle(Tone.color(card.youTone))
+                            Text(tr("dashboard_costs_balance_hint"))
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    if card.balancesUnavailable {
+                        Text(tr("balances_unavailable"))
+                    }
+                    if let square = card.squareText {
+                        Text(square)
+                    }
+                    ForEach(card.payments, id: \.self) { payment in
+                        Text(payment)
+                            .font(.footnote)
+                    }
+                    if let more = card.morePayments {
+                        Text(more)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    if let budget = card.budgetText {
+                        Label(budget, systemImage: "exclamationmark.triangle")
+                            .font(.footnote)
+                            .foregroundStyle(card.budgetExceeded ? Color.red : Color.orange)
+                    }
                 }
-            }
-            if card.balancesUnavailable {
-                Text(tr("balances_unavailable"))
-            }
-            if let square = card.squareText {
-                Text(square)
-            }
-            ForEach(card.payments, id: \.self) { payment in
-                Text(payment)
-                    .font(.footnote)
-            }
-            if let more = card.morePayments {
-                Text(more)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
             }
             LabeledContent(card.yearLabel, value: card.yearTotal)
             ForEach(card.books, id: \.id) { book in
@@ -202,11 +269,6 @@ struct DashboardScreen: View {
                 Text(more)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-            }
-            if let budget = card.budgetText {
-                Label(budget, systemImage: "exclamationmark.triangle")
-                    .font(.footnote)
-                    .foregroundStyle(card.budgetExceeded ? Color.red : Color.orange)
             }
         }
     }
@@ -251,6 +313,7 @@ private struct CountTileView: View {
 /// A task as the dashboard and the task lists show it.
 struct TaskItemRow: View {
     let item: TaskItem
+    let onOpenAppointment: (String) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -273,6 +336,9 @@ struct TaskItemRow: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
+            }
+            if let chip = item.appointment {
+                AppointmentBadgeView(chip: chip, onOpen: onOpenAppointment)
             }
         }
     }

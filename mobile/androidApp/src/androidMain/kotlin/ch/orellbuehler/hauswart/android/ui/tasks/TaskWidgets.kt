@@ -6,8 +6,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AlarmOff
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.SkipNext
@@ -33,13 +37,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ch.orellbuehler.hauswart.android.ui.components.ScreenPadding
 import ch.orellbuehler.hauswart.android.ui.components.SectionCard
 import ch.orellbuehler.hauswart.android.ui.components.StatusChip
 import ch.orellbuehler.hauswart.android.ui.components.toneColor
+import ch.orellbuehler.hauswart.feature.appointments.AppointmentChip
 import ch.orellbuehler.hauswart.feature.tasks.PreviewState
 import ch.orellbuehler.hauswart.feature.tasks.ProgressInfo
 import ch.orellbuehler.hauswart.feature.tasks.TaskNotice
@@ -84,22 +92,121 @@ fun ProgressLine(
     }
 }
 
+/** What a quick action or a dialog is asked to do: complete, skip or snooze one task. */
+data class TaskActionRequest(
+    val taskId: String,
+    val mode: String,
+)
+
+/** The earliest planned appointment of a task as a small pill; a tap opens it. */
+@Composable
+fun AppointmentBadge(
+    chip: AppointmentChip,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    StatusChip(
+        chip.text,
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(50))
+                .clickable(onClick = onClick)
+                .semantics(mergeDescendants = true) { contentDescription = chip.label },
+        icon = Icons.Outlined.CalendarMonth,
+    )
+}
+
+/** The number of comments of a task, with a speech bubble; [label] is the spoken form ("3 comments"). */
+@Composable
+fun CommentCount(
+    count: Int,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier.semantics(mergeDescendants = true) { contentDescription = label },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Icon(Icons.Outlined.ChatBubbleOutline, contentDescription = null, modifier = Modifier.size(14.dp))
+        Text(count.toString(), style = MaterialTheme.typography.labelMedium, maxLines = 1)
+    }
+}
+
 /**
- * One task of a list: title, place, status and date, assignee, progress. The check completes it (or opens the
- * dialog for a task that asks for a reading), the menu skips, snoozes or ends a snooze.
+ * The check and the menu at the end of a task row: the check completes the task (or [onComplete] opens the dialog for a
+ * task that asks for a reading), the menu skips, snoozes or, for a [snoozed] task, ends the snooze.
+ */
+@Composable
+fun TaskRowActions(
+    title: String,
+    busy: Boolean,
+    snoozed: Boolean,
+    onComplete: () -> Unit,
+    onSkip: () -> Unit,
+    onSnooze: () -> Unit,
+    onUnsnooze: () -> Unit,
+) {
+    var menu by remember { mutableStateOf(false) }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (busy) {
+            CircularProgressIndicator(Modifier.padding(12.dp), strokeWidth = 2.dp)
+        } else {
+            IconButton(onClick = onComplete) {
+                Icon(Icons.Outlined.Check, contentDescription = tr("task_complete_aria", "title" to title))
+            }
+        }
+        IconButton(onClick = { menu = true }) {
+            Icon(Icons.Outlined.MoreVert, contentDescription = tr("task_menu_aria", "title" to title))
+        }
+        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+            DropdownMenuItem(
+                text = { Text(tr("task_skip")) },
+                leadingIcon = { Icon(Icons.Outlined.SkipNext, contentDescription = null) },
+                onClick = {
+                    menu = false
+                    onSkip()
+                },
+            )
+            if (snoozed) {
+                DropdownMenuItem(
+                    text = { Text(tr("task_unsnooze")) },
+                    leadingIcon = { Icon(Icons.Outlined.AlarmOff, contentDescription = null) },
+                    onClick = {
+                        menu = false
+                        onUnsnooze()
+                    },
+                )
+            } else {
+                DropdownMenuItem(
+                    text = { Text(tr("task_snooze")) },
+                    leadingIcon = { Icon(Icons.Outlined.Snooze, contentDescription = null) },
+                    onClick = {
+                        menu = false
+                        onSnooze()
+                    },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * One task of a list: title, place, status and date, assignee, comments, appointment, progress. The check completes it
+ * (or opens the dialog for a task that asks for a reading), the menu skips, snoozes or ends a snooze.
  */
 @Composable
 fun TaskListRow(
     row: TaskRow,
     busy: Boolean,
     onOpen: () -> Unit,
+    onOpenAppointment: (String) -> Unit,
     onComplete: () -> Unit,
     onSkip: () -> Unit,
     onSnooze: () -> Unit,
     onUnsnooze: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var menu by remember { mutableStateOf(false) }
     ListItem(
         headlineContent = { Text(row.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
         modifier = modifier.clickableRow(onOpen),
@@ -120,6 +227,13 @@ fun TaskListRow(
                         )
                     }
                 }
+                val appointment = row.appointment
+                if (row.commentCount > 0 || appointment != null) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        if (row.commentCount > 0) CommentCount(row.commentCount, row.commentsLabel)
+                        if (appointment != null) AppointmentBadge(appointment, onClick = { onOpenAppointment(appointment.id) })
+                    }
+                }
                 val extra = listOfNotNull(row.assigneeName, row.archivedLabel).joinToString(" · ")
                 if (extra.isNotBlank()) {
                     Text(extra, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -131,49 +245,7 @@ fun TaskListRow(
             if (row.archived) {
                 null
             } else {
-                {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (busy) {
-                            CircularProgressIndicator(Modifier.padding(12.dp), strokeWidth = 2.dp)
-                        } else {
-                            IconButton(onClick = onComplete) {
-                                Icon(Icons.Outlined.Check, contentDescription = tr("task_complete_aria", "title" to row.title))
-                            }
-                        }
-                        IconButton(onClick = { menu = true }) {
-                            Icon(Icons.Outlined.MoreVert, contentDescription = tr("task_menu_aria", "title" to row.title))
-                        }
-                        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                            DropdownMenuItem(
-                                text = { Text(tr("task_skip")) },
-                                leadingIcon = { Icon(Icons.Outlined.SkipNext, contentDescription = null) },
-                                onClick = {
-                                    menu = false
-                                    onSkip()
-                                },
-                            )
-                            if (row.snoozed) {
-                                DropdownMenuItem(
-                                    text = { Text(tr("task_unsnooze")) },
-                                    leadingIcon = { Icon(Icons.Outlined.AlarmOff, contentDescription = null) },
-                                    onClick = {
-                                        menu = false
-                                        onUnsnooze()
-                                    },
-                                )
-                            } else {
-                                DropdownMenuItem(
-                                    text = { Text(tr("task_snooze")) },
-                                    leadingIcon = { Icon(Icons.Outlined.Snooze, contentDescription = null) },
-                                    onClick = {
-                                        menu = false
-                                        onSnooze()
-                                    },
-                                )
-                            }
-                        }
-                    }
-                }
+                { TaskRowActions(row.title, busy, row.snoozed, onComplete, onSkip, onSnooze, onUnsnooze) }
             },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
     )

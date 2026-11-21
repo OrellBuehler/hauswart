@@ -124,7 +124,10 @@ struct TaskDetailScreen: View {
                     }
                 }
                 headerSection(view, state)
-                scheduleSection(view)
+                Group {
+                    scheduleSection(view)
+                    AppointmentsSection(taskId: id)
+                }
                 Section(tr("task_description")) {
                     if view.description_.isEmpty {
                         Text(tr("task_description_empty"))
@@ -134,8 +137,14 @@ struct TaskDetailScreen: View {
                     }
                 }
                 preparationsSection(view, state)
-                partsSection(view, state)
-                historySection(view, state)
+                Group {
+                    partsSection(view, state)
+                    DocumentLinksSection(ownerType: "task", ownerId: id)
+                }
+                Group {
+                    historySection(view, state)
+                    CommentsSection(ownerType: "task", ownerId: id)
+                }
                 Section(tr("task_assignment")) {
                     ForEach(view.assignmentLines, id: \.self) { line in
                         Text(line)
@@ -147,6 +156,10 @@ struct TaskDetailScreen: View {
                 Section(tr("task_details")) {
                     if let assetId = view.assetId, !view.place.isEmpty {
                         NavigationLink(value: Route.asset(assetId)) {
+                            LabeledContent(tr("task_location"), value: view.place)
+                        }
+                    } else if let roomId = view.roomId, !view.place.isEmpty {
+                        NavigationLink(value: Route.room(roomId)) {
                             LabeledContent(tr("task_location"), value: view.place)
                         }
                     } else {
@@ -188,6 +201,12 @@ struct TaskDetailScreen: View {
             }
             if let progress = view.progress {
                 ProgressLine(progress: progress)
+            }
+            if let chip = view.appointment {
+                NavigationLink(value: Route.appointment(chip.id)) {
+                    Label(chip.label, systemImage: "calendar.badge.clock")
+                        .font(.subheadline)
+                }
             }
             if !view.archived {
                 Button {

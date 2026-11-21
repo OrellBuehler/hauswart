@@ -8,6 +8,7 @@ struct TasksScreen: View {
     @State private var creating = false
     @State private var filtersOpen = false
     @State private var action: TaskActionRequest? = nil
+    @State private var appointmentId: String? = nil
 
     var body: some View {
         let state = model.state
@@ -43,6 +44,9 @@ struct TasksScreen: View {
                 TaskActionSheet(taskId: request.taskId, mode: request.mode) { notice in
                     model.store.announce(notice: notice)
                 }
+            }
+            .navigationDestination(item: $appointmentId) { appointment in
+                destination(for: Route.appointment(appointment))
             }
             .safeAreaInset(edge: .bottom) {
                 if let notice = state.notice {
@@ -106,7 +110,7 @@ struct TasksScreen: View {
                     Section(group.title.isEmpty ? "" : group.title + " (" + String(group.rows.count) + ")") {
                         ForEach(group.rows, id: \.id) { row in
                             NavigationLink(value: Route.task(row.id)) {
-                                TaskRowView(row: row)
+                                TaskRowView(row: row, onOpenAppointment: { appointmentId = $0 })
                             }
                             .swipeActions(edge: .leading, allowsFullSwipe: true) {
                                 if !row.archived {

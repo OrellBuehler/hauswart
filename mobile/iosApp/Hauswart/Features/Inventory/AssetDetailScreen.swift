@@ -164,8 +164,7 @@ struct AssetDetailScreen: View {
                 }
                 Divider()
             }
-            // The task editor belongs to the tasks feature; until it has a route for a new task the tasks list opens.
-            LinkRow(route: Route.tasks) {
+            LinkRow(route: Route.taskNew(id)) {
                 Label(tr("asset_add_task"), systemImage: "plus")
             }
         }
