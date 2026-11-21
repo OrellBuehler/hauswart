@@ -1,15 +1,12 @@
 package ch.orellbuehler.hauswart.android.ui.inventory
 
 import androidx.compose.runtime.Composable
+import ch.orellbuehler.hauswart.android.ui.vehicles.VehicleSectionCard
 
-/**
- * Extension point: the vehicle sections (odometer, tire sets, fuel log) are attached here by the
- * vehicles feature. It renders nothing until then; the asset screen calls it for every asset and
- * the implementation shows something only for a vehicle.
- */
+/** The vehicle card (odometer, facts and the links to the vehicle screens); it shows something only for a vehicle. */
 @Composable
 fun AssetVehicleSection(assetId: String) {
-    // Filled in by the vehicles feature.
+    VehicleSectionCard(assetId)
 }
 
 /**

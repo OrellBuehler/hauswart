@@ -1,0 +1,18 @@
+{
+  "m_vehicle_none": "None",
+  "m_vehicle_link_odometer": "Odometer readings",
+  "m_vehicle_link_stats": "Costs and statistics",
+  "m_vehicle_edit_title": "Vehicle details",
+  "m_vehicle_edit_action": "Edit vehicle details",
+  "m_vehicle_odometer_screen_title": "Odometer readings",
+  "m_vehicle_stats_title": "Costs and statistics",
+  "m_vehicle_distance_by_month": "Distance driven per month",
+  "m_vehicle_next_tasks": "Next tasks",
+  "m_vehicle_next_tasks_none": "No upcoming tasks.",
+  "m_vehicle_setup_title": "Set up tasks",
+  "m_vehicle_tire_detail_title": "Tire set",
+  "m_tire_event_mounted": "Mounted",
+  "m_tire_event_unmounted": "Taken off",
+  "m_tire_event_tread_measured": "Tread measured",
+  "m_tire_event_unknown": "Event"
+}
