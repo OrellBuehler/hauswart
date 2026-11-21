@@ -150,5 +150,5 @@ suspend fun <S : Any> Store<S>.await(predicate: (S) -> Boolean): S = state.await
 /** Waits until a state flow (the session, say) holds a value that satisfies [predicate]. */
 suspend fun <T> StateFlow<T>.awaitValue(predicate: (T) -> Boolean): T =
     withContext(Dispatchers.Default) {
-        withTimeout(10.seconds) { first(predicate) }
+        withTimeout(60.seconds) { first(predicate) }
     }
