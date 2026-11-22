@@ -1,0 +1,133 @@
+@font-face {
+  font-family: "Inter";
+  src: url("inter.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+:root {
+  --bg: hsl(38 40% 97%);
+  --fg: hsl(24 22% 11%);
+  --card: hsl(40 50% 99.5%);
+  --muted-fg: hsl(26 10% 36%);
+  --border: hsl(32 22% 86%);
+  --brand-text: hsl(170 82% 22%);
+  --brand-soft: hsl(170 60% 28% / 0.11);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: hsl(24 14% 7.5%);
+    --fg: hsl(36 24% 94%);
+    --card: hsl(24 12% 11%);
+    --muted-fg: hsl(30 10% 68%);
+    --border: hsl(24 9% 19%);
+    --brand-text: hsl(168 70% 60%);
+    --brand-soft: hsl(168 70% 50% / 0.14);
+    color-scheme: dark;
+  }
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+}
+.wrap {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+header,
+footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.925rem;
+}
+header {
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+footer {
+  margin-top: 3rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted-fg);
+}
+.brand {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-weight: 650;
+  color: var(--fg);
+  text-decoration: none;
+}
+.brand img {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+a {
+  color: var(--brand-text);
+}
+nav a[aria-current="page"] {
+  color: var(--fg);
+  font-weight: 600;
+  text-decoration: none;
+}
+h1 {
+  margin: 2rem 0 0.25rem;
+  font-size: 1.9rem;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+h2 {
+  margin: 2rem 0 0.4rem;
+  font-size: 1.15rem;
+}
+.meta {
+  margin: 0;
+  color: var(--muted-fg);
+  font-size: 0.925rem;
+}
+.summary {
+  margin: 1.25rem 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--brand-soft);
+}
+.summary p {
+  margin: 0;
+}
+ul {
+  padding-left: 1.25rem;
+}
+li {
+  margin: 0.3rem 0;
+}
+code {
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+}
+hr {
+  margin: 3rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
