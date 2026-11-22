@@ -271,6 +271,20 @@ claude mcp add --transport http hauswart https://hauswart.example.org/api/v1/mcp
 Claude Desktop and the OAuth-only connectors of claude.ai are covered in [mcp/README.md](mcp/README.md),
 which also has the scopes and the tool list.
 
+## Mobile apps
+
+Native apps for Android and iOS live in [`mobile/`](mobile/) (Kotlin Multiplatform: shared logic,
+Jetpack Compose and SwiftUI on top). At first start the app asks for the address of your hauswart
+server, then signs in with your user name and password and keeps a device token (listed under
+Settings, Devices in the web app, where it can be revoked). The apps cover the same areas as the web
+app and remind you of due tasks and appointments with local notifications; nothing passes through a
+third-party push service.
+
+What stays in the browser, because the server allows it with a browser session only: changing the
+password, API tokens, user management, calendar feeds and guest links.
+
+Building and releasing them is described in [`mobile/RELEASING.md`](mobile/RELEASING.md).
+
 ## Development
 
 Requires [Bun](https://bun.sh) 1.4 or newer.

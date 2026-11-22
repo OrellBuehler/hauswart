@@ -1,0 +1,12 @@
+{
+  "m_attach_add": "Add file",
+  "m_attach_from_library": "Photo from library",
+  "m_attach_open": "Open",
+  "m_attach_share": "Share",
+  "m_attach_viewer_close": "Close image view",
+  "m_attach_cannot_read": "The file could not be read.",
+  "m_attach_uploading": "Uploading…",
+  "m_attach_retry": "Upload again",
+  "m_attach_dismiss": "Dismiss message",
+  "m_attach_no_camera": "No camera app is available on this device."
+}

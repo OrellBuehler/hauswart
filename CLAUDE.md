@@ -34,6 +34,7 @@ bun run test:coverage
 bun run build && bun run start
 bun run db:generate      # after editing src/lib/server/schema.ts
 bun run openapi          # regenerate docs/openapi.json from the registry (a test fails if stale)
+bun run mobile:api       # regenerate the mobile apps' Kotlin client from docs/openapi.json (a test fails if stale)
 bun run i18n             # recompile Paraglide messages (also runs on install and in check)
 bun run leak-guard --all # scan the whole tree for private terms
 bun scripts/seed.ts --file seed/example.de.json --token hw_… [--url http://localhost:3000] [--update]
@@ -200,6 +201,24 @@ json, origin, … })` from `#lib/testing/route.ts`; users and tokens come from `
 Workflow: backend first (with tests and the API contract), then frontend against that contract,
 integration work in parallel where it is independent, then `reviewer`. Skills in
 `.claude/skills/`: `new-endpoint`, `new-table`, `new-trigger`, `verify`.
+
+## Mobile apps (`mobile/`)
+
+Native Android and iOS apps (Kotlin Multiplatform: shared logic, Compose and SwiftUI on top). Their
+rules, layout and commands are in `mobile/CLAUDE.md`; read it before touching `mobile/`. What the rest
+of the repository has to know:
+
+- They are REST clients with a device token (`POST /api/v1/auth/token`, scopes `MOBILE_TOKEN_SCOPES`)
+  against a server whose address the person enters. Session-only endpoints are out of their reach.
+- Their typed client is generated from `docs/openapi.json`: after a contract change run
+  `bun run openapi`, then `bun run mobile:api`, and commit both (`src/lib/api/mobile-client.test.ts`
+  fails otherwise).
+- Released apps keep talking to newer servers, so the API changes additively: new endpoints and new
+  optional fields, never a removed or renamed field, a narrowed type or a new required request field.
+- They render `messages/{de,en}.json` (notifications arrive as a message key plus params). Removing
+  or renaming a key the apps use fails their `MessageKeysUsedTest`.
+- CI: `mobile-android.yml` and `mobile-ios.yml` (the only place Swift is compiled). Releases are
+  separate from the server's: tag `mobile-v<version>`, see `mobile/RELEASING.md`.
 
 ## Releasing
 

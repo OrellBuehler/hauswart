@@ -1,0 +1,20 @@
+{
+  "m_settings_section_browser": "Nur im Browser möglich",
+  "m_settings_open_browser": "Im Browser öffnen",
+  "m_settings_browser_password": "Konto und Passwort",
+  "m_settings_browser_feeds": "Kalender-Abos (iCal)",
+  "m_settings_section_notifications": "Benachrichtigungen",
+  "m_settings_section_system": "Haushalt und Verbindungen",
+  "m_settings_integration_editable": "Persönliches Konto",
+  "m_settings_integration_household": "Für den ganzen Haushalt",
+  "m_settings_calendar_intro": "hauswart trägt Termine, Fälligkeiten und Fristen in einen Kalender von Home Assistant ein. Kalender hinzufügen, ändern oder entfernen kannst du im Browser.",
+  "m_settings_calendar_sync_paused": "Schalte den Kalender ein, um zu synchronisieren.",
+  "m_settings_test_running": "Wird getestet …",
+  "m_settings_not_available": "Diese Verbindung gibt es auf diesem Server nicht.",
+  "m_settings_signed_in_until": "Angemeldet bis",
+  "m_session_expiring_notice": "Diese Anmeldung läuft am {date} ab. Melde dich vorher neu an, damit nichts unterbrochen wird.",
+  "m_session_ended_notice": "Diese Anmeldung ist am {date} abgelaufen. Melde dich neu an.",
+  "m_session_sign_in_again": "Neu anmelden",
+  "m_session_ended_title": "Abgemeldet",
+  "m_session_ended_body": "Du wurdest abgemeldet. Öffne hauswart, um dich wieder anzumelden."
+}

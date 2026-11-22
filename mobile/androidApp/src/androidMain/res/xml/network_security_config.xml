@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- The server is self-hosted. At home it is often reached through a certificate that a private
+         certificate authority (a home CA) issued, and the person installs that authority on the phone as a
+         user certificate. Android trusts those only when the app asks for it, so without this the
+         connection is refused. Cleartext stays allowed for a server that is reached as http://<address>
+         on the home network. -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
