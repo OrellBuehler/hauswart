@@ -7,6 +7,7 @@ enum SettingsRoutes {
         switch id {
         case "notifications": .settingsNotifications
         case "reminders": .settingsReminders
+        case "contact_sync": .settingsContactSync
         case "household": .settingsHousehold
         case "integrations": .settingsIntegrations
         case "calendar": .settingsCalendar

@@ -17,14 +17,20 @@ struct RootView: View {
         .id(model.state.locale)
         .onAppear {
             ReminderRunner.start()
-            if model.state.signedIn { ReminderRunner.syncNow() }
+            PhoneContactRunner.start()
+            if model.state.signedIn { syncNow() }
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active, model.state.signedIn { ReminderRunner.syncNow() }
+            if phase == .active, model.state.signedIn { syncNow() }
         }
         .onChange(of: model.state.signedIn) { _, signedIn in
-            if signedIn { ReminderRunner.syncNow() } else { ReminderRunner.signedOut() }
+            if signedIn { syncNow() } else { ReminderRunner.signedOut() }
         }
+    }
+
+    private func syncNow() {
+        ReminderRunner.syncNow()
+        PhoneContactRunner.syncNow()
     }
 }
 

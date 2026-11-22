@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Plans the reminders from the server's data and hands the plan to the notification center: when the
 /// app comes to the foreground, after tasks or appointments changed, and in the background through
-/// a `BGAppRefreshTask`.
+/// a `BGAppRefreshTask`, which also syncs the phone's contacts (`PhoneContactRunner`).
 @MainActor
 enum ReminderRunner {
     /// Must be listed under `BGTaskSchedulerPermittedIdentifiers` in project.yml.
@@ -81,7 +81,10 @@ enum ReminderRunner {
                     ReminderCenter.deliver(item)
                 }
             }
-            finish(task, success: true)
+            // The same run brings the phone's contacts up to date; it cannot ask for permission here.
+            PhoneContactRunner.syncNow(mayAsk: false) {
+                finish(task, success: true)
+            }
         }
     }
 

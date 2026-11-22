@@ -9,6 +9,11 @@ import ch.orellbuehler.hauswart.api.generated.ContactsUpdateRequest
 import ch.orellbuehler.hauswart.core.Store
 import ch.orellbuehler.hauswart.core.UiError
 import ch.orellbuehler.hauswart.core.fetchAll
+import ch.orellbuehler.hauswart.feature.contactsync.PHONE_ACCESS_DENIED
+import ch.orellbuehler.hauswart.feature.contactsync.PHONE_ACCESS_UNKNOWN
+import ch.orellbuehler.hauswart.feature.contactsync.PhoneContactPrefs
+import ch.orellbuehler.hauswart.feature.contactsync.TOPIC_CONTACT_SYNC
+import ch.orellbuehler.hauswart.feature.contactsync.canBeOnPhone
 import ch.orellbuehler.hauswart.i18n.tr
 
 val CONTACT_KINDS: List<String> = Contact.KIND_VALUES
@@ -99,19 +104,48 @@ data class ContactDetailState(
     val actionError: UiError? = null,
     /** True once the contact is gone: the screen closes. */
     val deleted: Boolean = false,
+    /** This device keeps the contact in the phone's address book (iOS; the choice is stored on the device only). */
+    val onPhone: Boolean = false,
+    /** False for a contact with neither phone number nor e-mail address: the switch is not offered. */
+    val canBeOnPhone: Boolean = false,
+    /** [onPhone] is set but the system blocks the address book: the person has to allow it in the system settings. */
+    val phoneAccessBlocked: Boolean = false,
 )
 
 class ContactDetailStore(
     private val app: HauswartApp,
     private val id: String,
 ) : Store<ContactDetailState>(ContactDetailState()) {
+    private val phonePrefs = PhoneContactPrefs(app.settings)
+    private var phoneAccess = PHONE_ACCESS_UNKNOWN
+
     init {
         onChange(app, "contacts") { if (!current.deleted) load() }
+        onChange(app, TOPIC_CONTACT_SYNC) { showPhone() }
         load()
     }
 
     fun refresh() {
         load()
+    }
+
+    fun setOnPhone(value: Boolean) {
+        phonePrefs.setChosen(id, value)
+        app.changed(TOPIC_CONTACT_SYNC)
+    }
+
+    /** The app reports what the system allows: one of the `PHONE_ACCESS_` values. */
+    fun setPhoneAccess(value: String) {
+        phoneAccess = value
+        showPhone()
+    }
+
+    private fun showPhone() {
+        update {
+            val possible = it.contact?.let { c -> canBeOnPhone(c.phone, c.email) } ?: false
+            val onPhone = possible && id in phonePrefs.chosen()
+            it.copy(onPhone = onPhone, canBeOnPhone = possible, phoneAccessBlocked = onPhone && phoneAccess == PHONE_ACCESS_DENIED)
+        }
     }
 
     fun delete() {
@@ -133,6 +167,7 @@ class ContactDetailStore(
         launch({ e -> update { it.copy(loading = false, error = e) } }) {
             val contact = app.api.contacts.contactsGet(id)
             update { it.copy(loading = false, contact = contact) }
+            showPhone()
         }
     }
 }

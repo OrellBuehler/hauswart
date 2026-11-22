@@ -6,6 +6,7 @@ struct ContactDetailScreen: View {
     @StateObject private var model: Observed<ContactDetailStore, ContactDetailState>
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
+    @ObservedObject private var phoneStatus = PhoneContactStatus.shared
     @State private var editing = false
     @State private var confirmingDelete = false
 
@@ -52,6 +53,13 @@ struct ContactDetailScreen: View {
             .onChange(of: state.deleted) { _, deleted in
                 if deleted { dismiss() }
             }
+            .onAppear {
+                phoneStatus.refresh()
+                model.store.setPhoneAccess(value: phoneStatus.access)
+            }
+            .onChange(of: phoneStatus.access) { _, access in
+                model.store.setPhoneAccess(value: access)
+            }
     }
 
     @ViewBuilder
@@ -79,6 +87,26 @@ struct ContactDetailScreen: View {
                         linkRow(tr("contact_url"), url, "globe", url)
                     }
                     ValueRow(label: tr("contact_address"), value: contact.address)
+                }
+                if state.canBeOnPhone {
+                    Section {
+                        ToggleEntry(
+                            label: tr("m_contact_sync_toggle"),
+                            isOn: Binding(
+                                get: { model.state.onPhone },
+                                set: { model.store.setOnPhone(value: $0) }
+                            ),
+                            hint: tr("m_contact_sync_toggle_hint")
+                        )
+                        if state.phoneAccessBlocked {
+                            Text(tr("m_contact_sync_blocked"))
+                                .font(.footnote)
+                                .foregroundStyle(.red)
+                            Button(tr("m_reminders_open_system")) {
+                                if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                            }
+                        }
+                    }
                 }
                 if let notes = contact.notes, !notes.isEmpty {
                     Section(tr("contact_notes")) {

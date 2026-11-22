@@ -63,6 +63,8 @@ targets:
         # Attachments: a photo taken for an entry, and photos or files picked for it.
         NSCameraUsageDescription: hauswart uses the camera to take photos that you attach to entries.
         NSPhotoLibraryUsageDescription: hauswart reads the photos you choose to attach to entries.
+        # Phone contacts: the contacts chosen in the app are written into the address book.
+        NSContactsUsageDescription: hauswart adds the contacts you choose to your phone's contacts and keeps them up to date.
     dependencies:
       - framework: "../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)/shared.framework"
         embed: false

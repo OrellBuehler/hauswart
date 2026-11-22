@@ -27,7 +27,7 @@ fun browserUrl(
     path: String,
 ): String = serverUrl.trimEnd('/') + "/" + path.trimStart('/')
 
-/** One row of the settings list that opens a screen of its own; [id] is `notifications`, `reminders`, `household`, `integrations` or `calendar`. */
+/** One row of the settings list that opens a screen of its own; [id] is `notifications`, `reminders`, `contact_sync`, `household`, `integrations` or `calendar`. */
 data class SettingsEntry(
     val id: String,
     val title: String,
@@ -40,10 +40,12 @@ data class SettingsBrowserLink(
     val url: String,
 )
 
-internal fun settingsEntries(): List<SettingsEntry> =
-    listOf(
+/** The phone contacts exist on iOS only so far, so only [platform] `ios` gets that row. */
+internal fun settingsEntries(platform: String): List<SettingsEntry> =
+    listOfNotNull(
         SettingsEntry("notifications", tr("settings_tab_notifications")),
         SettingsEntry("reminders", tr("m_reminders_title")),
+        if (platform == "ios") SettingsEntry("contact_sync", tr("m_contact_sync_title")) else null,
         SettingsEntry("household", tr("settings_tab_household")),
         SettingsEntry("integrations", tr("settings_tab_integrations")),
         SettingsEntry("calendar", tr("settings_tab_calendar")),
