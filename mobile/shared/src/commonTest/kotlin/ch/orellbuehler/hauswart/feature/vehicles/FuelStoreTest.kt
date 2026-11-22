@@ -239,14 +239,14 @@ class FuelStoreTest {
         runTest {
             val store = store()
             server.on("DELETE", "/api/v1/fuel-logs/f2", "", HttpStatusCode.NoContent)
-            store.delete("f2")
-            assertEquals(tr("fuel_deleted_toast"), store.await { it.notice != null }.notice)
+            // The store reloads after its own change; the list has to be the one it reads then.
             server.on(
                 "GET",
                 "/api/v1/assets/a1/fuel-logs",
                 """{"items":[${fuelLogJson("f2")}],"nextCursor":"n1"}""",
             )
-            store.refresh()
+            store.delete("f2")
+            assertEquals(tr("fuel_deleted_toast"), store.await { it.notice != null }.notice)
             store.await { it.hasMore }
             server.on("GET", "/api/v1/assets/a1/fuel-logs", page(fuelLogJson("f0", date = "2026-05-01")))
             store.loadMore()

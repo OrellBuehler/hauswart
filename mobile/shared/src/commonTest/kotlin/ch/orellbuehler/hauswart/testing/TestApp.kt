@@ -142,17 +142,21 @@ class TestApp(
         path: String,
     ): List<Recorded> = requests.filter { it.method == method && it.path == path }
 
-    /** Waits until the mock server received `METHOD path` (the work that sends it may run in another scope). */
+    /**
+     * Waits until the mock server received `METHOD path` (the work that sends it may run in another scope); with
+     * [matching] the first such request that satisfies it (a query parameter, say).
+     */
     suspend fun awaitRequest(
         method: String,
         path: String,
+        matching: (Recorded) -> Boolean = { true },
     ): Recorded =
         withContext(Dispatchers.Default) {
             withTimeout(60.seconds) {
-                var found = requestsTo(method, path).firstOrNull()
+                var found = requestsTo(method, path).firstOrNull(matching)
                 while (found == null) {
                     delay(10)
-                    found = requestsTo(method, path).firstOrNull()
+                    found = requestsTo(method, path).firstOrNull(matching)
                 }
                 found
             }

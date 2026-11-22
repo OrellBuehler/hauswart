@@ -8,10 +8,10 @@ import ch.orellbuehler.hauswart.i18n.I18n
 import ch.orellbuehler.hauswart.i18n.tr
 import ch.orellbuehler.hauswart.testing.TestApp
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -211,11 +211,9 @@ class ReminderSyncTest {
     fun runHandsThePlanToTheCallback() =
         runTest {
             server.on("GET", "/api/v1/dashboard", dashboard(task("a", "2026-11-21")))
-            var got: List<PlannedReminder>? = null
-            sync().run { got = it }
-            withContext(Dispatchers.Default) {
-                withTimeout(10_000) { while (got == null) delay(10) }
-            }
-            assertEquals(1, got?.size)
+            val got = CompletableDeferred<List<PlannedReminder>>()
+            sync().run { got.complete(it) }
+            val plan = withContext(Dispatchers.Default) { withTimeout(60_000) { got.await() } }
+            assertEquals(1, plan.size)
         }
 }

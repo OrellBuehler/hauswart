@@ -249,6 +249,8 @@ class AppointmentsStoresTest {
             server.on("GET", "/api/v1/appointments/a1", json(a))
             val store = AppointmentDetailStore(app, "a1")
             store.await { it.detail != null }
+            // The store reloads after its own change; the appointment has to say the same by then.
+            server.on("GET", "/api/v1/appointments/a1", json(a.copy(status = "done")))
             server.on(
                 "POST",
                 "/api/v1/appointments/a1/complete",

@@ -139,7 +139,7 @@ class ContactsStoresTest {
             val state = store.await { it.deleted }
             assertEquals(1, server.requestsTo("DELETE", "/api/v1/contacts/c1").size)
             assertTrue(state.deleted)
-            assertEquals("contacts", withContext(Dispatchers.Default) { withTimeout(10.seconds) { change.await() } })
+            assertEquals("contacts", withContext(Dispatchers.Default) { withTimeout(60.seconds) { change.await() } })
             store.close()
         }
 

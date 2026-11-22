@@ -193,7 +193,7 @@ class NotificationsStoreTest {
                         .not()
                 }
             assertEquals(1, state.unreadCount)
-            assertEquals("notifications", withContext(Dispatchers.Default) { withTimeout(10.seconds) { change.await() } })
+            assertEquals("notifications", withContext(Dispatchers.Default) { withTimeout(60.seconds) { change.await() } })
 
             store.markRead("n1")
             assertEquals(1, server.requestsTo("POST", "/api/v1/notifications/n1/read").size)

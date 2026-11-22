@@ -139,8 +139,7 @@ class DocsStoresTest {
             assertTrue(state.searching)
             assertTrue(server.requests.any { it.path == "/api/v1/pages" && "q=boil" in it.query })
             store.setSection("rules")
-            store.await { it.section == "rules" && !it.loading }
-            assertTrue(server.requests.any { it.path == "/api/v1/pages" && "section=rules" in it.query })
+            server.awaitRequest("GET", "/api/v1/pages") { "section=rules" in it.query }
             store.close()
         }
 

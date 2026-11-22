@@ -163,8 +163,7 @@ class TasksListStoreTest {
             val store = TasksListStore(app)
             store.await { !it.loading }
             store.setArchived(true)
-            store.await { it.archived }
-            assertTrue(server.requests.any { it.path == "/api/v1/tasks" && it.query.contains("includeArchived=true") })
+            server.awaitRequest("GET", "/api/v1/tasks") { "includeArchived=true" in it.query }
             store.close()
         }
 

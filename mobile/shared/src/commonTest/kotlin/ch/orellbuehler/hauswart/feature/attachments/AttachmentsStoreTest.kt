@@ -4,9 +4,10 @@ import ch.orellbuehler.hauswart.i18n.tr
 import ch.orellbuehler.hauswart.testing.TestApp
 import ch.orellbuehler.hauswart.testing.await
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -117,14 +118,14 @@ class AttachmentsStoreTest {
             val store = store()
             store.await { !it.loading }
             server.on("POST", "/api/v1/attachments", attachment("a9", "photo.jpg"), HttpStatusCode.Created)
-            val changes = mutableListOf<String>()
-            val watching = launch(Dispatchers.Unconfined) { app.changes.collect { changes += it } }
+            // The upload may finish before the store is closed, and the store then reloads: it has to read the file.
+            server.on("GET", "/api/v1/attachments", page(attachment("a9", "photo.jpg")))
+            val change = async(start = CoroutineStart.UNDISPATCHED) { app.changes.first { it == "attachments" } }
 
             store.upload("photo.jpg", "image/jpeg", jpeg)
             store.close()
             server.awaitRequest("POST", "/api/v1/attachments")
-            withContext(Dispatchers.Default) { withTimeout(60.seconds) { while ("attachments" !in changes) delay(10) } }
-            watching.cancel()
+            withContext(Dispatchers.Default) { withTimeout(60.seconds) { change.await() } }
             assertTrue(store.value.uploads.isEmpty())
             assertEquals(listOf("a9"), store.value.rows.map { it.id })
         }

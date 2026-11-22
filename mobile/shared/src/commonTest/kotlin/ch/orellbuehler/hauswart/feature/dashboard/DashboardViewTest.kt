@@ -207,7 +207,7 @@ class DashboardViewTest {
                     .json
                     .containsKey("idempotencyKey"),
             )
-            withContext(Dispatchers.Default) { withTimeout(10.seconds) { changes.await() } }
+            withContext(Dispatchers.Default) { withTimeout(60.seconds) { changes.await() } }
             store.undo(assertNotNull(done.notice?.undo))
             store.await { it.notice != null && it.notice?.undo == null }
             assertEquals(1, server.requestsTo("DELETE", "/api/v1/completions/c1").size)

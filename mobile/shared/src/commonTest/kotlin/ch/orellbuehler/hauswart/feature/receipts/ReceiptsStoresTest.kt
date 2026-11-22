@@ -7,9 +7,10 @@ import ch.orellbuehler.hauswart.i18n.tr
 import ch.orellbuehler.hauswart.testing.TestApp
 import ch.orellbuehler.hauswart.testing.await
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -210,13 +211,11 @@ class ReceiptsStoresTest {
             val store = ReceiptSubmitStore(app)
             store.await { !it.loading }
             store.pickFile("beleg.jpg", "image/jpeg", byteArrayOf(1, 2, 3))
-            val changes = mutableListOf<String>()
-            val watching = launch(Dispatchers.Unconfined) { app.changes.collect { changes += it } }
+            val change = async(start = CoroutineStart.UNDISPATCHED) { app.changes.first { it == "costs" } }
             store.submit(ReceiptForm(note = "Tanken"))
             store.close()
             server.awaitRequest("POST", "/api/v1/ai-tasks")
-            withContext(Dispatchers.Default) { withTimeout(60.seconds) { while ("costs" !in changes) delay(10) } }
-            watching.cancel()
+            withContext(Dispatchers.Default) { withTimeout(60.seconds) { change.await() } }
             assertEquals("t7", store.value.createdId)
         }
 

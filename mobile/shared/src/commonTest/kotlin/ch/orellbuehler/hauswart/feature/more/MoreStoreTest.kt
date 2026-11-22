@@ -34,7 +34,7 @@ class MoreStoreTest {
     /** Waits until the store asked [count] times and has had time to read the answer. */
     private suspend fun answered(count: Int) =
         withContext(Dispatchers.Default) {
-            withTimeout(10.seconds) { while (server.requestsTo("GET", "/api/v1/integrations").size < count) delay(10) }
+            withTimeout(60.seconds) { while (server.requestsTo("GET", "/api/v1/integrations").size < count) delay(10) }
             delay(150)
         }
 

@@ -95,7 +95,11 @@ planned on the device from the server's data; there is no push service).
   `ui/sections/`, iOS `Features/Comments|Attachments|DocumentLinks|Sections`; usage notes at the top
   of each file). Links between screens go through `AppLink` (`feature/applink`).
 - Store tests use `testing/TestApp.kt` (mock server, `store.await { ... }`). A store reloads after
-  its own `app.changed(...)`, so a test answers the reload too.
+  its own `app.changed(...)`, so a test sets the answers of the reload's GETs to the data after the
+  write before it triggers the write; otherwise a state the test waits for holds only between the
+  write's response and the reload's, and `await` can miss it. To check what a store sent, use
+  `server.awaitRequest(...)`, not a state that is set before the request goes out. Two calls that must
+  overlap need `server.latencyMillis`.
 - `SwiftNamesTest` and `MessageKeysUsedTest` (in `shared:testDebugUnitTest`) check the Swift sources
   for what can be checked without a compiler: duplicate type names, names that shadow shared classes,
   `FooKt.bar` references that do not exist, reserved Objective-C method families, unknown message keys.
