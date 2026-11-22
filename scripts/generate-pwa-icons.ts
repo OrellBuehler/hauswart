@@ -1,4 +1,4 @@
-// Renders the app icons in static/icons from the house glyph of static/favicon.svg: white on the
+// Renders the app icons in static/icons from the mark in static/logo.svg: white on the
 // brand colour, like the logo in the sidebar. Run `bun scripts/generate-pwa-icons.ts` after the
 // logo or the brand colour changes and commit the PNGs. It uses @napi-rs/canvas, which the image
 // pipeline already depends on, so there is no extra dependency.
@@ -8,17 +8,17 @@ import { BRAND_COLOR } from "../src/lib/pwa/colors.ts";
 
 const OUT_DIR = "static/icons";
 
-const svg = await readFile("static/favicon.svg", "utf8");
+const svg = await readFile("static/logo.svg", "utf8");
 const glyphPath = /<path[^>]*\sd="([^"]+)"/.exec(svg)?.[1];
-if (!glyphPath) throw new Error("static/favicon.svg has no <path d=…>");
-// Bounding box of the glyph in the 256 x 256 view box of the favicon.
-const GLYPH = { x: 20, y: 28, width: 216, height: 200 };
+if (!glyphPath) throw new Error("static/logo.svg has no <path d=…>");
+// Bounding box of the glyph in the 256 x 256 view box of the logo.
+const GLYPH = { x: 40, y: 20, width: 176, height: 216 };
 const glyph = new Path2D(glyphPath);
 
 interface Icon {
   file: string;
   size: number;
-  /** Width of the glyph as a share of the icon. */
+  /** The longer side of the glyph as a share of the icon. */
   glyphShare: number;
   /** Corner radius as a share of the icon; 0 = full bleed (the platform masks it). */
   radius: number;
@@ -44,14 +44,14 @@ function render({ size, glyphShare, radius }: Icon): Buffer {
   } else {
     ctx.fillRect(0, 0, size, size);
   }
-  const scale = (size * glyphShare) / GLYPH.width;
+  const scale = (size * glyphShare) / Math.max(GLYPH.width, GLYPH.height);
   ctx.translate(
     (size - GLYPH.width * scale) / 2 - GLYPH.x * scale,
     (size - GLYPH.height * scale) / 2 - GLYPH.y * scale,
   );
   ctx.scale(scale, scale);
   ctx.fillStyle = "#ffffff";
-  ctx.fill(glyph);
+  ctx.fill(glyph, "evenodd");
   return canvas.toBuffer("image/png");
 }
 

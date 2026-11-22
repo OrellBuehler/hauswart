@@ -1,4 +1,4 @@
-// Renders the iOS app icon from the house glyph of static/favicon.svg: white on the brand colour,
+// Renders the iOS app icon from the mark in static/logo.svg: white on the brand colour,
 // full bleed and without transparency (iOS masks the corners itself). Run from the repo root with
 // `bun mobile/scripts/generate-app-icon.ts` after the logo or the brand colour changes and commit
 // the PNG. The Android icon is a vector (androidApp/src/androidMain/res/drawable).
@@ -11,8 +11,8 @@ const OUT =
   "mobile/iosApp/Hauswart/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png";
 const SIZE = 1024;
 const GLYPH_SHARE = 0.54;
-// Bounding box of the glyph in the 256 x 256 view box of the favicon.
-const GLYPH = { x: 20, y: 28, width: 216, height: 200 };
+// Bounding box of the glyph in the 256 x 256 view box of the logo.
+const GLYPH = { x: 40, y: 20, width: 176, height: 216 };
 
 const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
   let c = n;
@@ -56,21 +56,21 @@ function opaquePng(rgba: Uint8ClampedArray): Buffer {
   ]);
 }
 
-const svg = await readFile("static/favicon.svg", "utf8");
+const svg = await readFile("static/logo.svg", "utf8");
 const glyphPath = /<path[^>]*\sd="([^"]+)"/.exec(svg)?.[1];
-if (!glyphPath) throw new Error("static/favicon.svg has no <path d=…>");
+if (!glyphPath) throw new Error("static/logo.svg has no <path d=…>");
 
 const canvas = createCanvas(SIZE, SIZE);
 const ctx = canvas.getContext("2d");
 ctx.fillStyle = BRAND_COLOR;
 ctx.fillRect(0, 0, SIZE, SIZE);
-const scale = (SIZE * GLYPH_SHARE) / GLYPH.width;
+const scale = (SIZE * GLYPH_SHARE) / Math.max(GLYPH.width, GLYPH.height);
 ctx.translate(
   (SIZE - GLYPH.width * scale) / 2 - GLYPH.x * scale,
   (SIZE - GLYPH.height * scale) / 2 - GLYPH.y * scale,
 );
 ctx.scale(scale, scale);
 ctx.fillStyle = "#ffffff";
-ctx.fill(new Path2D(glyphPath));
+ctx.fill(new Path2D(glyphPath), "evenodd");
 await writeFile(OUT, opaquePng(ctx.getImageData(0, 0, SIZE, SIZE).data));
 console.log(`wrote ${OUT}`);

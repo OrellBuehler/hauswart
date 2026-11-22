@@ -38,7 +38,8 @@ bun run mobile:api       # regenerate the mobile apps' Kotlin client from docs/o
 bun run i18n             # recompile Paraglide messages (also runs on install and in check)
 bun run leak-guard --all # scan the whole tree for private terms
 bun scripts/seed.ts --file seed/example.de.json --token hw_… [--url http://localhost:3000] [--update]
-bun scripts/generate-pwa-icons.ts  # re-render static/icons from the logo (commit the PNGs)
+bun scripts/generate-pwa-icons.ts  # re-render static/icons from static/logo.svg (commit the PNGs)
+bun mobile/scripts/generate-app-icon.ts  # re-render the iOS app icon from static/logo.svg (commit the PNG)
 bun run mcp              # stdio MCP server from source, for development (HAUSWART_URL, HAUSWART_TOKEN); the app serves MCP at /api/v1/mcp
 bun run security         # semgrep, bun audit, trivy
 ```
