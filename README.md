@@ -297,7 +297,8 @@ bun run build && bun run start  # start runs with NODE_ENV=production: HAUSWART_
 bun run db:generate      # after editing src/lib/server/schema.ts
 bun run openapi          # regenerate docs/openapi.json (the versioned /api/v1 contract)
 bun run leak-guard --all # scan the tree for configured private terms
-bun scripts/generate-pwa-icons.ts  # re-render static/icons from the logo
+bun scripts/generate-pwa-icons.ts  # re-render static/icons from static/logo.svg
+bun mobile/scripts/generate-app-icon.ts  # re-render the iOS app icon from static/logo.svg
 ```
 
 Hooks run through [prek](https://github.com/j178/prek): `prek install` once per clone.

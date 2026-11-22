@@ -14,7 +14,9 @@
     aria-hidden="true"
   >
     <svg viewBox="0 0 256 256" class="size-5" fill="currentColor">
-      <path d="M128 28 20 124h32v104h56v-64h40v64h56V124h32z" />
+      <path
+        d="M40 20H88V104L128 64L216 152V236H120V188L168 168L128 128L88 168V236H40Z"
+      />
     </svg>
   </span>
   {#if showName}
