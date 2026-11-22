@@ -1,0 +1,15 @@
+{
+  "m_contact_sync_title": "Telefonkontakte",
+  "m_contact_sync_description": "Ausgewählte Kontakte werden in die Kontakte dieses Telefons geschrieben und dort in der Liste «hauswart» gesammelt. Die Auswahl gilt nur für dieses Gerät. Änderungen aus hauswart kommen an, wenn du die App öffnest und von Zeit zu Zeit im Hintergrund. Was du am Telefon änderst, geht nicht zurück, und Notizen werden nicht übertragen.",
+  "m_contact_sync_toggle": "In den Telefonkontakten",
+  "m_contact_sync_toggle_hint": "Nur auf diesem Gerät.",
+  "m_contact_sync_not_possible": "Ohne Telefonnummer und E-Mail",
+  "m_contact_sync_blocked": "hauswart darf nicht auf die Kontakte zugreifen. Erlaube den Zugriff in den Systemeinstellungen, sonst wird nichts geschrieben.",
+  "m_contact_sync_limited": "hauswart hat nur eingeschränkten Zugriff auf die Kontakte. Die Kontakte werden geschrieben, die Liste «hauswart» braucht aber den vollen Zugriff.",
+  "m_contact_sync_list_missing": "Das Konto, in dem dieses Telefon neue Kontakte ablegt, kennt keine Listen. Die Kontakte wurden ohne Liste geschrieben.",
+  "m_contact_sync_write_failed": "Die Kontakte konnten nicht auf das Telefon geschrieben werden. hauswart versucht es beim nächsten Öffnen wieder.",
+  "m_contact_sync_now": "Jetzt abgleichen",
+  "m_contact_sync_remove_all": "Alle vom Telefon entfernen",
+  "m_contact_sync_remove_all_title": "Alle vom Telefon entfernen?",
+  "m_contact_sync_remove_all_message": "Die ausgewählten Kontakte werden aus den Kontakten dieses Telefons gelöscht. In hauswart bleiben sie erhalten."
+}

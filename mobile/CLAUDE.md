@@ -91,6 +91,14 @@ quick entry, balances, budgets, recurring costs, inbox, receipts, books, tags), 
 emergency, insurance, notifications, search, settings and local reminders (`feature/reminders`,
 planned on the device from the server's data; there is no push service).
 
+- Phone contacts (`feature/contactsync`, iOS only so far): the contacts a person switches on are written
+  into the phone's address book and kept in a list "hauswart". One-way, hauswart is the source. The
+  choice and the links to the phone's entries are stored on the device only (`PhoneContactPrefs`), never
+  on the server. `PhoneContactSync` plans, `iosApp/.../ContactSync/PhoneContacts.swift` is the only code
+  that touches the address book and reports back with `applied` or `failed`. A failed request plans
+  nothing, so it never deletes; signing out leaves the entries (a session also ends when the device
+  token runs out). Notes are not written: iOS wants a special entitlement for that field. Android would
+  need its own writer (an account with a sync adapter) for the same plan.
 - Sections other screens embed: comments, attachments, document links, appointments (Android
   `ui/sections/`, iOS `Features/Comments|Attachments|DocumentLinks|Sections`; usage notes at the top
   of each file). Links between screens go through `AppLink` (`feature/applink`).

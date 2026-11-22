@@ -43,7 +43,7 @@ class SettingsStore(
                 signedInUntil = signedInUntil(app),
                 language = app.locale,
                 languages = I18n.locales.map { LanguageOption(it, tr("locale_name_$it")) },
-                entries = settingsEntries(),
+                entries = settingsEntries(app.device.platform),
                 browserLinks = settingsBrowserLinks(app.session.serverUrl ?: ""),
             )
         },
@@ -64,7 +64,7 @@ class SettingsStore(
                 language = code,
                 signedInUntil = signedInUntil(app),
                 languages = I18n.locales.map { l -> LanguageOption(l, tr("locale_name_$l")) },
-                entries = settingsEntries(),
+                entries = settingsEntries(app.device.platform),
                 browserLinks = settingsBrowserLinks(app.session.serverUrl ?: ""),
             )
         }

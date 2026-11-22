@@ -47,6 +47,7 @@ enum Route: Hashable {
     // Settings sub-screens
     case settingsNotifications
     case settingsReminders
+    case settingsContactSync
     case settingsHousehold
     case settingsIntegrations
     case settingsIntegration(String)
@@ -87,6 +88,7 @@ func destination(for route: Route) -> AnyView {
     case .settings: return AnyView(SettingsScreen())
     case .settingsNotifications: return AnyView(NotificationSettingsScreen())
     case .settingsReminders: return AnyView(ReminderSettingsScreen())
+    case .settingsContactSync: return AnyView(PhoneContactsScreen())
     case .settingsHousehold: return AnyView(HouseholdSettingsScreen())
     case .settingsIntegrations: return AnyView(IntegrationsScreen())
     case let .settingsIntegration(kind): return AnyView(IntegrationScreen(kind: kind))
