@@ -1,5 +1,65 @@
 # Changelog
 
+## 0.4.0
+
+Still early development. **Back up `/data` before you upgrade**; sixteen new database migrations run at
+start and cannot be undone. hauswart now writes a safety copy of a database that holds data before it
+migrates it.
+
+### Added
+
+- **Vehicles.** A device of the kind vehicle gets its own page: plate and details, odometer readings, tire
+  sets (with the offer to mount a set after a tire change), a fuel log with consumption measured full to
+  full and a price trend, and cost statistics. Tasks can count on the odometer and still fall due by time,
+  whichever comes first (`counter_delta.orEvery`); completing such a task asks for the reading. Task
+  templates set up the usual vehicle tasks.
+- **Insurance policies** with a cancellation deadline and a reminder task; they appear on the emergency
+  page and sheet and can carry comments, attachments and linked documents.
+- **Device notes** with photos: a note can become a defect and is resolved through the service log. Tasks
+  of a device with open notes say so in their notifications.
+- **Appointments**, timed or all-day, on tasks, devices and contacts. An appointment can complete the
+  task's occurrence it was made for. They show on the dashboard and in the iCal feeds.
+- **Calendar sync.** hauswart can push tasks and appointments into calendars of a connected system; the
+  first provider is Home Assistant. Settings show per calendar what was written and when it is tried next.
+- **Cost books, splits and balances.** Costs live in books, an entry is split between the people who share
+  it, and the balance page suggests payments and records settlements. Entries can be moved between books,
+  and a vehicle's fuel fills are booked into its book.
+- **Quick entry and a receipt queue.** A page for booking an expense in a few taps or handing in a receipt
+  (photo or PDF) to be booked later, by a person or through the MCP tools. Entries booked that way are
+  marked "to review" until someone confirms them.
+- **Tags, budgets and recurring costs.** Tag entries and filter, summarise and export by tag; set a budget
+  for a book or category per month or year (the dashboard points out budgets that are close to or over
+  their amount); let hauswart book rent and other recurring costs on their dates.
+- **Bank matching.** A transaction from the connected finance app can be tied to an entry made by hand
+  instead of being booked twice, and a cost book can be chosen per Kept category.
+- **Phones.** A bottom navigation, dialogs and sheets that close with the back gesture, app shortcuts for
+  expenses and receipts, and many fixes for narrow screens.
+- **Native apps for Android and iOS** in `mobile/` (Kotlin Multiplatform, Jetpack Compose and SwiftUI).
+  They sign in with a device token (Settings, Devices) and are released separately, see
+  `mobile/RELEASING.md`. On iOS the app can copy chosen contacts into the phone's contacts and keep them
+  current.
+- MCP tools for vehicles, the fuel log, tire sets, insurance policies, device notes, appointments, cost
+  books, balances, settlements, the receipt queue and calendar targets. A vehicle can be named by its plate.
+- Booking a cost, queueing a receipt and recording a payment accept an idempotency key, so a retry never
+  books twice.
+
+### Changed
+
+- A new logo: the letter h with an open door. Installed apps pick up the new icon.
+- hauswart now runs on SvelteKit 3 with the official Bun adapter. Nothing changes for the container; the
+  service worker is still served at `/sw.js` and must not be cached by a proxy.
+- Migrations run with foreign keys off and are checked before they are committed. A database that already
+  has dangling references upgrades; only a migration that adds to them is refused.
+- The user directory needs the `read` scope.
+
+### Fixed
+
+- A counter task keeps its hard time limit as due date when the counter estimate comes first.
+- Forms that hold a password or a token are posted, and browsers no longer fill a saved login into token
+  fields.
+- Going back keeps list filters; closing a dialog leaves no dead history entry.
+- The light status colours reach a contrast of 4.5:1.
+
 ## 0.3.1
 
 ### Changed
