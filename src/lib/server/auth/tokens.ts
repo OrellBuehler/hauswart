@@ -11,6 +11,8 @@ export const TOKEN_PATTERN = /^hw_[A-Za-z0-9_-]{43}$/;
 export const DISPLAY_PREFIX_LENGTH = 8;
 export const LAST_USED_THROTTLE_MS = 60_000;
 export const MOBILE_TOKEN_LIFETIME_MS = 90 * 24 * 60 * 60 * 1000;
+/** A mobile token that is used gets its full lifetime again, at most this often. */
+export const MOBILE_TOKEN_RENEW_AFTER_MS = 24 * 60 * 60 * 1000;
 
 export interface TokenRecord {
   id: string;
@@ -80,7 +82,10 @@ export interface VerifiedToken {
 /**
  * Resolves a plaintext bearer token to its owner. Revoked and expired tokens
  * do not verify. `lastUsedAt` is refreshed at most once a minute so hot
- * clients do not turn every request into a write.
+ * clients do not turn every request into a write. A `mobile` token that is
+ * used ends `MOBILE_TOKEN_LIFETIME_MS` from now again (written at most once
+ * a day), so an app in use never has to sign in again; one that has ended
+ * stays ended.
  */
 export function verifyToken(
   plaintext: string,
@@ -108,6 +113,20 @@ export function verifyToken(
   if (!row || row.revokedAt) return null;
   if (row.expiresAt && row.expiresAt.getTime() <= now) return null;
 
+  let expiresAt = row.expiresAt;
+  if (
+    row.kind === "mobile" &&
+    expiresAt &&
+    expiresAt.getTime() - now <
+      MOBILE_TOKEN_LIFETIME_MS - MOBILE_TOKEN_RENEW_AFTER_MS
+  ) {
+    expiresAt = new Date(now + MOBILE_TOKEN_LIFETIME_MS);
+    db.update(apiTokens)
+      .set({ expiresAt })
+      .where(eq(apiTokens.id, row.tokenId))
+      .run();
+  }
+
   db.update(apiTokens)
     .set({ lastUsedAt: new Date(now) })
     .where(
@@ -129,7 +148,12 @@ export function verifyToken(
       role: row.role,
       locale: row.locale,
     },
-    token: { id: row.tokenId, kind: row.kind, scopes: cleanScopes(row.scopes) },
+    token: {
+      id: row.tokenId,
+      kind: row.kind,
+      scopes: cleanScopes(row.scopes),
+      expiresAt,
+    },
   };
 }
 

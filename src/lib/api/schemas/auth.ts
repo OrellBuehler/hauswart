@@ -64,6 +64,12 @@ export const meResponseSchema = z.object({
   user: userSchema,
   auth: z.enum(AUTH_KINDS),
   scopes: z.array(scopeSchema),
+  tokenExpiresAt: isoTimestampSchema
+    .nullable()
+    .optional()
+    .describe(
+      "For a bearer token: when it ends, null when it never does. A mobile token that is used is renewed by the server, so this moves on. Absent for a session.",
+    ),
 });
 
 export const updateMeRequestSchema = z

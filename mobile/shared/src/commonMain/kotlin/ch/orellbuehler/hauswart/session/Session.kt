@@ -64,6 +64,13 @@ class Session(
         saveUser(user)
     }
 
+    /** The server moved the end of the device token to [expiresAt] (it does whenever the token is used). */
+    fun renewed(expiresAt: String) {
+        if (_state.value.user == null || _state.value.tokenExpiresAt == expiresAt) return
+        plain.save(EXPIRES_AT, expiresAt)
+        _state.update { it.copy(tokenExpiresAt = expiresAt) }
+    }
+
     fun updateUser(user: User) {
         if (_state.value.user != null) saveUser(user)
     }

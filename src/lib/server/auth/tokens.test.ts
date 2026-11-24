@@ -6,6 +6,8 @@ import { useTestDB } from "#lib/testing/db.ts";
 import { hashToken } from "./sessions";
 import {
   LAST_USED_THROTTLE_MS,
+  MOBILE_TOKEN_LIFETIME_MS,
+  MOBILE_TOKEN_RENEW_AFTER_MS,
   TOKEN_PATTERN,
   createToken,
   listTokens,
@@ -65,7 +67,12 @@ describe("tokens", () => {
         role: "member",
         locale: "en",
       },
-      token: { id: record.id, kind: "ha", scopes: ["read", "ha:action"] },
+      token: {
+        id: record.id,
+        kind: "ha",
+        scopes: ["read", "ha:action"],
+        expiresAt: null,
+      },
     });
   });
 
@@ -83,7 +90,10 @@ describe("tokens", () => {
 
   it("rejects expired tokens at and after the expiry instant", async () => {
     const user = await createTestUser();
-    const { token } = createTestToken(user, { expiresAt: new Date(T0 + 1000) });
+    const { token } = createTestToken(user, {
+      kind: "integration",
+      expiresAt: new Date(T0 + 1000),
+    });
     expect(verifyToken(token, T0 + 999)).not.toBeNull();
     expect(verifyToken(token, T0 + 1000)).toBeNull();
     expect(verifyToken(token, T0 + 5000)).toBeNull();
@@ -93,6 +103,56 @@ describe("tokens", () => {
     const user = await createTestUser();
     const { token } = createTestToken(user, { expiresAt: null });
     expect(verifyToken(token, T0 + 10 * 365 * 24 * 3600 * 1000)).not.toBeNull();
+  });
+
+  it("moves the end of a mobile token on when it is used, at most once a day", async () => {
+    const user = await createTestUser();
+    const { token, record } = createTestToken(user, {
+      kind: "mobile",
+      expiresAt: new Date(T0 + MOBILE_TOKEN_LIFETIME_MS),
+    });
+    const stored = () =>
+      ctx.db
+        .select({ expiresAt: apiTokens.expiresAt })
+        .from(apiTokens)
+        .where(eq(apiTokens.id, record.id))
+        .get()
+        ?.expiresAt?.getTime();
+
+    const early = T0 + MOBILE_TOKEN_RENEW_AFTER_MS - 1;
+    expect(verifyToken(token, early)?.token.expiresAt?.getTime()).toBe(
+      T0 + MOBILE_TOKEN_LIFETIME_MS,
+    );
+    expect(stored()).toBe(T0 + MOBILE_TOKEN_LIFETIME_MS);
+
+    const later = T0 + MOBILE_TOKEN_RENEW_AFTER_MS + 1;
+    expect(verifyToken(token, later)?.token.expiresAt?.getTime()).toBe(
+      later + MOBILE_TOKEN_LIFETIME_MS,
+    );
+    expect(stored()).toBe(later + MOBILE_TOKEN_LIFETIME_MS);
+  });
+
+  it("does not bring back a mobile token that has ended", async () => {
+    const user = await createTestUser();
+    const { token } = createTestToken(user, {
+      kind: "mobile",
+      expiresAt: new Date(T0 + 1000),
+    });
+    expect(verifyToken(token, T0 + 1000)).toBeNull();
+    expect(verifyToken(token, T0)).not.toBeNull();
+    expect(
+      verifyToken(token, T0 + MOBILE_TOKEN_LIFETIME_MS - 1),
+    ).not.toBeNull();
+  });
+
+  it("leaves the end of every other kind of token alone", async () => {
+    const user = await createTestUser();
+    const { token } = createTestToken(user, {
+      kind: "integration",
+      expiresAt: new Date(T0 + 1000),
+    });
+    expect(verifyToken(token, T0)?.token.expiresAt?.getTime()).toBe(T0 + 1000);
+    expect(verifyToken(token, T0 + 1000)).toBeNull();
   });
 
   it("rejects revoked tokens", async () => {

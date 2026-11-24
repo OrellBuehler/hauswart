@@ -56,6 +56,7 @@ describe("resolvePrincipal", () => {
       id: "t",
       kind: "mcp" as const,
       scopes: ["read" as const, "admin" as const],
+      expiresAt: null,
     };
     expect(resolvePrincipal({ user: member, token })?.scopes).toEqual(["read"]);
     expect(resolvePrincipal({ user: admin, token })?.scopes).toEqual([
@@ -70,6 +71,7 @@ describe("resolvePrincipal", () => {
       id: "t",
       kind: "mobile" as const,
       scopes: ["read" as const],
+      expiresAt: null,
     };
     expect(resolvePrincipal({ user: member, token, session })?.auth).toBe(
       "token",
