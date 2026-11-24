@@ -80,9 +80,9 @@
           <Icon class="size-4 shrink-0" aria-hidden="true" />
           <span class="truncate">{book.name}</span>
           {#if book.archivedAt}
-            <span class="text-xs font-normal opacity-70"
-              >{m.costbook_archived_badge()}</span
-            >
+            <span class="text-xs font-normal opacity-70">
+              {m.costbook_archived_badge()}
+            </span>
           {/if}
         </a>
       </li>

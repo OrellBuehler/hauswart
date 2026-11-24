@@ -75,9 +75,9 @@
   </Card.Header>
   <Card.Content class="flex flex-col gap-4">
     {#if canWrite && data.tags.length > 0}
-      <Button class="sm:hidden" onclick={openCreate}
-        ><PlusIcon />{m.costtag_new()}</Button
-      >
+      <Button class="sm:hidden" onclick={openCreate}>
+        <PlusIcon />{m.costtag_new()}
+      </Button>
     {/if}
     {#if data.tags.length === 0}
       <EmptyState
@@ -109,8 +109,9 @@
                       `costs?book=all&tag=${encodeURIComponent(tag.id)}`,
                     )}
                     class="hover:text-foreground focus-visible:ring-ring/50 rounded underline-offset-4 outline-none hover:underline focus-visible:ring-[3px]"
-                    >{m.costtag_entry_count({ count: tag.entryCount })}</a
                   >
+                    {m.costtag_entry_count({ count: tag.entryCount })}
+                  </a>
                 {:else}
                   {m.costtag_entry_count({ count: 0 })}
                 {/if}

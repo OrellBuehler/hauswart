@@ -165,8 +165,9 @@
                 <a
                   href={fuelLogHref(cost.assetId)}
                   class="text-foreground focus-visible:ring-ring/50 rounded font-medium underline underline-offset-4 outline-none focus-visible:ring-[3px]"
-                  >{m.cost_fuel_owned_link()}</a
                 >
+                  {m.cost_fuel_owned_link()}
+                </a>
                 <!-- eslint-enable svelte/no-navigation-without-resolve -->
               {/if}
             </span>
@@ -177,8 +178,10 @@
             variant="outline"
             class="text-destructive hover:text-destructive"
             onclick={() => (deleteOpen = true)}
-            ><Trash2Icon /> {m.common_delete()}</Button
           >
+            <Trash2Icon />
+            {m.common_delete()}
+          </Button>
         {/if}
       </div>
     {/if}
@@ -226,8 +229,10 @@
               <!-- eslint-disable svelte/no-navigation-without-resolve -- the address is resolved here, only the query is appended -->
               <a
                 href={resolve(`costs?book=${encodeURIComponent(cost.bookId)}`)}
-                class={linkClass}>{cost.bookName}</a
+                class={linkClass}
               >
+                {cost.bookName}
+              </a>
               <!-- eslint-enable svelte/no-navigation-without-resolve -->
             </dd>
           </div>
@@ -245,9 +250,9 @@
             <dt class="text-muted-foreground text-xs">{m.cost_asset()}</dt>
             <dd class="mt-0.5 wrap-anywhere">
               {#if cost.assetId && cost.assetName}
-                <a href={assetHref(cost.assetId)} class={linkClass}
-                  >{cost.assetName}</a
-                >
+                <a href={assetHref(cost.assetId)} class={linkClass}>
+                  {cost.assetName}
+                </a>
               {:else}
                 –
               {/if}
@@ -257,9 +262,9 @@
             <dt class="text-muted-foreground text-xs">{m.cost_room()}</dt>
             <dd class="mt-0.5 wrap-anywhere">
               {#if cost.roomId && cost.roomName}
-                <a href={roomHref(cost.roomId)} class={linkClass}
-                  >{cost.roomName}</a
-                >
+                <a href={roomHref(cost.roomId)} class={linkClass}>
+                  {cost.roomName}
+                </a>
               {:else}
                 –
               {/if}
@@ -269,9 +274,10 @@
             <dt class="text-muted-foreground text-xs">{m.cost_defect()}</dt>
             <dd class="mt-0.5 wrap-anywhere">
               {#if cost.defectId}
-                <a href={resolve(`defects/${cost.defectId}`)} class={linkClass}
-                  >#{cost.defectNumber} {cost.defectTitle}</a
-                >
+                <a href={resolve(`defects/${cost.defectId}`)} class={linkClass}>
+                  #{cost.defectNumber}
+                  {cost.defectTitle}
+                </a>
               {:else}
                 –
               {/if}
@@ -283,9 +289,9 @@
             </dt>
             <dd class="mt-0.5 wrap-anywhere">
               {#if cost.serviceLogId && cost.assetId}
-                <a href={assetHref(cost.assetId)} class={linkClass}
-                  >{cost.serviceLogTitle}</a
-                >
+                <a href={assetHref(cost.assetId)} class={linkClass}>
+                  {cost.serviceLogTitle}
+                </a>
               {:else}
                 {cost.serviceLogTitle ?? "–"}
               {/if}
@@ -318,8 +324,9 @@
                     `costs/recurring/${encodeURIComponent(cost.recurrenceId)}`,
                   )}
                   class={cn("ms-1 block text-xs", linkClass)}
-                  >{m.cost_recurrence_open()}</a
                 >
+                  {m.cost_recurrence_open()}
+                </a>
                 <!-- eslint-enable svelte/no-navigation-without-resolve -->
               {/if}
             </dd>
@@ -340,9 +347,9 @@
               <dd class="mt-0.5 wrap-anywhere tabular-nums">
                 {formatDateTime(cost.reviewedAt, { timeZone: data.timeZone })}
                 {#if reviewedBy}
-                  <span class="text-muted-foreground block text-xs"
-                    >{m.cost_created_by({ name: reviewedBy })}</span
-                  >
+                  <span class="text-muted-foreground block text-xs">
+                    {m.cost_created_by({ name: reviewedBy })}
+                  </span>
                 {/if}
               </dd>
             </div>
@@ -352,9 +359,9 @@
             <dd class="mt-0.5 wrap-anywhere tabular-nums">
               {formatDateTime(cost.createdAt, { timeZone: data.timeZone })}
               {#if createdBy}
-                <span class="text-muted-foreground block text-xs"
-                  >{m.cost_created_by({ name: createdBy })}</span
-                >
+                <span class="text-muted-foreground block text-xs">
+                  {m.cost_created_by({ name: createdBy })}
+                </span>
               {/if}
             </dd>
           </div>
@@ -401,15 +408,17 @@
                     {share.userName ?? m.cost_person_unknown()}
                     <span
                       class="text-muted-foreground ms-1 text-xs tabular-nums"
-                      >{m.cost_percent({
-                        value: formatPercent(share.shareBps),
-                      })}</span
                     >
+                      {m.cost_percent({
+                        value: formatPercent(share.shareBps),
+                      })}
+                    </span>
                   </span>
                   <span
                     class="shrink-0 font-medium whitespace-nowrap tabular-nums"
-                    >{formatMoney(share.amountMinor, cost.currency)}</span
                   >
+                    {formatMoney(share.amountMinor, cost.currency)}
+                  </span>
                 </li>
               {/each}
             </ul>

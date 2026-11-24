@@ -128,9 +128,9 @@
       class="flex flex-col gap-1"
     >
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <span id={`${id}-whom`} class="text-sm leading-none font-medium"
-          >{m.cost_for_whom()}</span
-        >
+        <span id={`${id}-whom`} class="text-sm leading-none font-medium">
+          {m.cost_for_whom()}
+        </span>
         {#if participants.length < people.length}
           <Button
             type="button"
@@ -154,13 +154,13 @@
                 onCheckedChange={(checked) => toggle(person.id, checked)}
                 aria-invalid={Boolean(participantsError) || undefined}
               />
-              <span class="min-w-0 flex-1 truncate text-sm"
-                >{person.displayName}</span
-              >
+              <span class="min-w-0 flex-1 truncate text-sm">
+                {person.displayName}
+              </span>
               {#if part !== undefined}
-                <span class="text-muted-foreground text-xs tabular-nums"
-                  >{formatMoney(part, currency)}</span
-                >
+                <span class="text-muted-foreground text-xs tabular-nums">
+                  {formatMoney(part, currency)}
+                </span>
               {/if}
             </label>
           </li>
@@ -189,12 +189,13 @@
               <Label
                 for={`${id}-${person.id}`}
                 class="block truncate leading-snug font-normal"
-                >{person.displayName}</Label
               >
+                {person.displayName}
+              </Label>
               {#if part !== undefined}
-                <span class="text-muted-foreground text-xs tabular-nums"
-                  >{formatMoney(part, currency)}</span
-                >
+                <span class="text-muted-foreground text-xs tabular-nums">
+                  {formatMoney(part, currency)}
+                </span>
               {/if}
             </div>
             <div class="relative w-28">
@@ -213,8 +214,10 @@
               />
               <span
                 class="text-muted-foreground pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-sm"
-                aria-hidden="true">%</span
+                aria-hidden="true"
               >
+                %
+              </span>
             </div>
           </li>
         {/each}

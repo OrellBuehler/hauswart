@@ -231,9 +231,9 @@
         description={m.finance_not_connected_body()}
       >
         {#snippet actions()}
-          <Button href={resolve("settings/integrations")}
-            >{m.finance_not_connected_action()}</Button
-          >
+          <Button href={resolve("settings/integrations")}>
+            {m.finance_not_connected_action()}
+          </Button>
         {/snippet}
       </EmptyState>
     {/if}
@@ -251,9 +251,9 @@
           class="text-muted-foreground flex items-baseline gap-2 text-sm font-semibold"
         >
           {suggestionKindLabels[group.kind]()}
-          <span class="text-xs font-normal tabular-nums"
-            >{group.items.length}</span
-          >
+          <span class="text-xs font-normal tabular-nums">
+            {group.items.length}
+          </span>
         </h2>
         {#if group.kind === "link"}
           <p class="text-muted-foreground -mt-1 text-xs text-pretty">

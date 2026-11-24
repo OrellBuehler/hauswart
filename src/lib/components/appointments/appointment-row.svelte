@@ -49,13 +49,13 @@
   )}
 >
   <p class="pt-0.5 text-xs leading-snug tabular-nums">
-    <span class="text-foreground block font-medium wrap-anywhere"
-      >{time.primary}</span
-    >
+    <span class="text-foreground block font-medium wrap-anywhere">
+      {time.primary}
+    </span>
     {#if time.secondary}
-      <span class="text-muted-foreground block wrap-anywhere"
-        >{time.secondary}</span
-      >
+      <span class="text-muted-foreground block wrap-anywhere">
+        {time.secondary}
+      </span>
     {/if}
   </p>
   <div class="min-w-0">
@@ -65,8 +65,10 @@
         class={cn(
           "focus-visible:after:ring-ring/50 rounded-sm text-sm font-medium text-pretty wrap-anywhere outline-none after:absolute after:inset-0 hover:underline focus-visible:after:ring-[3px]",
           appointment.status === "cancelled" && "line-through",
-        )}>{appointment.title}</a
+        )}
       >
+        {appointment.title}
+      </a>
       <CommentCount count={appointment.commentCount} class="mt-0.5 shrink-0" />
     </div>
     {#if appointment.location}
@@ -84,8 +86,9 @@
         {#if open}
           <span
             class="bg-warning/15 text-warning inline-flex items-center rounded-full px-2 py-0.5 font-medium whitespace-nowrap"
-            >{m.appointment_open_badge()}</span
           >
+            {m.appointment_open_badge()}
+          </span>
         {:else if appointment.status !== "planned"}
           <AppointmentStatusBadge status={appointment.status} />
         {/if}

@@ -259,8 +259,9 @@
         target="_blank"
         rel="noopener"
         class="text-brand -mt-3 w-fit text-sm font-medium underline underline-offset-4"
-        >{m.insurance_insurer_new()}</a
       >
+        {m.insurance_insurer_new()}
+      </a>
     </Card.Content>
   </Card.Root>
 
@@ -436,9 +437,9 @@
       </p>
 
       <div class="flex flex-col gap-2">
-        <span class="text-sm leading-none font-medium"
-          >{m.insurance_renewal_label()}</span
-        >
+        <span class="text-sm leading-none font-medium">
+          {m.insurance_renewal_label()}
+        </span>
         <Segmented
           options={renewalOptions}
           bind:value={draft.renewal}

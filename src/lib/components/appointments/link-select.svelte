@@ -86,9 +86,9 @@
     {:else if value !== null && loading}
       <span class="text-muted-foreground truncate">{m.common_loading()}</span>
     {:else if value !== null}
-      <span class="text-muted-foreground truncate"
-        >{m.picker_unknown_item({ id: value })}</span
-      >
+      <span class="text-muted-foreground truncate">
+        {m.picker_unknown_item({ id: value })}
+      </span>
     {:else}
       <span class="text-muted-foreground truncate">{noneLabel}</span>
     {/if}
@@ -148,9 +148,9 @@
                 <span class="flex min-w-0 flex-1 flex-col">
                   <span class="truncate font-medium">{item.label}</span>
                   {#if item.detail}
-                    <span class="text-muted-foreground truncate text-xs"
-                      >{item.detail}</span
-                    >
+                    <span class="text-muted-foreground truncate text-xs">
+                      {item.detail}
+                    </span>
                   {/if}
                 </span>
                 {#if item.value === value}

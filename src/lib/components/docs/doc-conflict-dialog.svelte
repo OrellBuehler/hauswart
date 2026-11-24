@@ -56,9 +56,9 @@
         <DownloadIcon />
         <span class="flex flex-col items-start gap-0.5">
           <span>{m.editor_conflict_reload()}</span>
-          <span class="text-muted-foreground text-xs font-normal"
-            >{m.editor_conflict_reload_hint()}</span
-          >
+          <span class="text-muted-foreground text-xs font-normal">
+            {m.editor_conflict_reload_hint()}
+          </span>
         </span>
       </Button>
       <Button
@@ -73,9 +73,9 @@
           />{/if}
         <span class="flex flex-col items-start gap-0.5">
           <span>{m.editor_conflict_keep()}</span>
-          <span class="text-muted-foreground text-xs font-normal"
-            >{m.editor_conflict_keep_hint()}</span
-          >
+          <span class="text-muted-foreground text-xs font-normal">
+            {m.editor_conflict_keep_hint()}
+          </span>
         </span>
       </Button>
       <Button
@@ -89,9 +89,9 @@
         <ClipboardCopyIcon />
         <span class="flex flex-col items-start gap-0.5">
           <span>{m.editor_conflict_copy()}</span>
-          <span class="text-muted-foreground text-xs font-normal"
-            >{m.editor_conflict_copy_hint()}</span
-          >
+          <span class="text-muted-foreground text-xs font-normal">
+            {m.editor_conflict_copy_hint()}
+          </span>
         </span>
       </Button>
     </div>

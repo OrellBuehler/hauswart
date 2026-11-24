@@ -58,27 +58,26 @@
             >
               <span class="flex items-start justify-between gap-3">
                 <span class="min-w-0">
-                  <span class="block text-sm font-medium wrap-anywhere"
-                    >{policy.title}</span
-                  >
+                  <span class="block text-sm font-medium wrap-anywhere">
+                    {policy.title}
+                  </span>
                   <span
                     class="text-muted-foreground block text-xs wrap-anywhere"
-                    >{[insuranceTypeLabels[policy.type](), policy.insurerName]
-                      .filter(Boolean)
-                      .join(" · ")}</span
                   >
+                    {[insuranceTypeLabels[policy.type](), policy.insurerName]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
                 </span>
                 <span class="shrink-0 text-end">
                   <span
                     class="block text-sm font-medium whitespace-nowrap tabular-nums"
-                    >{formatMoney(
-                      policy.annualPremiumMinor,
-                      policy.currency,
-                    )}</span
                   >
-                  <span class="text-muted-foreground block text-xs"
-                    >{m.insurance_per_annual()}</span
-                  >
+                    {formatMoney(policy.annualPremiumMinor, policy.currency)}
+                  </span>
+                  <span class="text-muted-foreground block text-xs">
+                    {m.insurance_per_annual()}
+                  </span>
                 </span>
               </span>
 

@@ -246,9 +246,9 @@
           description={m.docs_no_results_body()}
         >
           {#snippet actions()}
-            <Button variant="outline" onclick={reset}
-              >{m.docs_filter_reset()}</Button
-            >
+            <Button variant="outline" onclick={reset}>
+              {m.docs_filter_reset()}
+            </Button>
             <Button href={createHref}><PlusIcon />{m.docs_new()}</Button>
           {/snippet}
         </EmptyState>
@@ -314,9 +314,9 @@
             <Icon class="size-4" aria-hidden="true" />{sectionLabels[
               group.section
             ]()}
-            <span class="text-xs font-normal tabular-nums"
-              >{group.items.length}</span
-            >
+            <span class="text-xs font-normal tabular-nums">
+              {group.items.length}
+            </span>
           </h2>
           <ul class="divide-y rounded-lg border">
             {#each group.items as page (page.id)}

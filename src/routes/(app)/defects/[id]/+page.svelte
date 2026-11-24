@@ -198,8 +198,10 @@
           <DropdownMenu.Item
             class="text-destructive focus:text-destructive min-h-10"
             onSelect={() => (deleteOpen = true)}
-            ><Trash2Icon /> {m.common_delete()}</DropdownMenu.Item
           >
+            <Trash2Icon />
+            {m.common_delete()}
+          </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     </div>
@@ -239,8 +241,9 @@
                     <a
                       href={roomHref(defect.roomId)}
                       class="focus-visible:ring-ring/50 rounded underline-offset-4 outline-none hover:underline focus-visible:ring-[3px]"
-                      >{defect.roomName}</a
                     >
+                      {defect.roomName}
+                    </a>
                   {/if}
                   {#if defect.roomName && defect.assetName}
                     <span class="mx-1" aria-hidden="true">·</span>
@@ -249,8 +252,9 @@
                     <a
                       href={assetHref(defect.assetId)}
                       class="focus-visible:ring-ring/50 rounded underline-offset-4 outline-none hover:underline focus-visible:ring-[3px]"
-                      >{defect.assetName}</a
                     >
+                      {defect.assetName}
+                    </a>
                   {/if}
                 </dd>
               </div>
@@ -295,13 +299,13 @@
               </dt>
               <dd class="mt-0.5">
                 {#if defect.deadlineDate}
-                  <span class="tabular-nums"
-                    >{formatDay(defect.deadlineDate)}</span
-                  >
+                  <span class="tabular-nums">
+                    {formatDay(defect.deadlineDate)}
+                  </span>
                   {#if defect.deadlineSource === "handover"}
-                    <span class="text-muted-foreground block text-xs"
-                      >{m.defect_deadline_from_handover()}</span
-                    >
+                    <span class="text-muted-foreground block text-xs">
+                      {m.defect_deadline_from_handover()}
+                    </span>
                   {/if}
                 {:else}
                   {m.defect_deadline_none()}
@@ -336,9 +340,9 @@
         <Card.Root>
           <Card.Header>
             <Card.Title class="text-base">{m.defect_reminder()}</Card.Title>
-            <Card.Description
-              >{m.defect_reminder_description()}</Card.Description
-            >
+            <Card.Description>
+              {m.defect_reminder_description()}
+            </Card.Description>
           </Card.Header>
           <Card.Content>
             <Button

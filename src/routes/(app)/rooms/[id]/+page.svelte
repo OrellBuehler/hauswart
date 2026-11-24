@@ -84,8 +84,9 @@
           variant="outline"
           class="max-sm:hidden"
           onclick={() => (editOpen = true)}
-          ><PencilIcon />{m.common_edit()}</Button
         >
+          <PencilIcon />{m.common_edit()}
+        </Button>
 
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
@@ -104,20 +105,23 @@
             <DropdownMenu.Item
               class="sm:hidden"
               onclick={() => (editOpen = true)}
-              ><PencilIcon />{m.common_edit()}</DropdownMenu.Item
             >
+              <PencilIcon />{m.common_edit()}
+            </DropdownMenu.Item>
 
             <DropdownMenu.Item
               onclick={() => goto(resolve(`rooms/${data.room.id}/qr`))}
-              ><QrCodeIcon />{m.rooms_qr_sheet()}</DropdownMenu.Item
             >
+              <QrCodeIcon />{m.rooms_qr_sheet()}
+            </DropdownMenu.Item>
 
             <DropdownMenu.Separator />
             <DropdownMenu.Item
               variant="destructive"
               onclick={() => (deleteOpen = true)}
-              ><Trash2Icon />{m.common_delete()}</DropdownMenu.Item
             >
+              <Trash2Icon />{m.common_delete()}
+            </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       </div>

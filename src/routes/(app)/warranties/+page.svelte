@@ -110,9 +110,9 @@
       description={m.warranties_empty_body()}
     >
       {#snippet actions()}
-        <Button href={resolve("inventory")}
-          >{m.warranties_empty_action()}</Button
-        >
+        <Button href={resolve("inventory")}>
+          {m.warranties_empty_action()}
+        </Button>
       {/snippet}
     </EmptyState>
   {:else}
@@ -153,9 +153,9 @@
         description={m.warranties_filter_empty_body()}
       >
         {#snippet actions()}
-          <Button variant="outline" onclick={() => select("")}
-            >{m.warranties_filter_all()}</Button
-          >
+          <Button variant="outline" onclick={() => select("")}>
+            {m.warranties_filter_all()}
+          </Button>
         {/snippet}
       </EmptyState>
     {:else}
@@ -167,14 +167,15 @@
                 href={assetHref(w.assetId)}
                 class="hover:bg-accent/50 focus-visible:ring-ring/50 flex flex-col gap-2 px-4 py-3.5 transition-colors outline-none first:rounded-t-xl last:rounded-b-xl focus-visible:ring-[3px]"
               >
-                <span class="block text-sm font-medium break-words"
-                  >{w.assetName}</span
-                >
+                <span class="block text-sm font-medium break-words">
+                  {w.assetName}
+                </span>
                 {#if subtitle(w)}
                   <span
                     class="text-muted-foreground -mt-1 block text-xs break-words"
-                    >{subtitle(w)}</span
                   >
+                    {subtitle(w)}
+                  </span>
                 {/if}
                 <span class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                   <WarrantyBadge info={info(w)} />
@@ -186,8 +187,10 @@
                         : w.status === "expiring"
                           ? "text-warning"
                           : "text-muted-foreground",
-                    )}>{daysText(w.daysLeft)}</span
+                    )}
                   >
+                    {daysText(w.daysLeft)}
+                  </span>
                 </span>
                 {#if extended(w)}
                   <span class="text-muted-foreground text-xs">
@@ -221,15 +224,15 @@
                   <a
                     href={assetHref(w.assetId)}
                     class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 rounded-sm break-words outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
-                    >{w.assetName}</a
                   >
+                    {w.assetName}
+                  </a>
                   {#if w.manufacturer || w.model}
                     <span
                       class="text-muted-foreground block text-xs font-normal"
-                      >{[w.manufacturer, w.model]
-                        .filter(Boolean)
-                        .join(" ")}</span
                     >
+                      {[w.manufacturer, w.model].filter(Boolean).join(" ")}
+                    </span>
                   {/if}
                 </Table.Cell>
                 <Table.Cell class="text-muted-foreground">
@@ -240,9 +243,9 @@
                 </Table.Cell>
                 <Table.Cell class="tabular-nums">
                   {formatDay(w.effectiveUntil)}
-                  <span class="text-muted-foreground block text-xs"
-                    >{formatRelativeDays(w.daysLeft)}</span
-                  >
+                  <span class="text-muted-foreground block text-xs">
+                    {formatRelativeDays(w.daysLeft)}
+                  </span>
                   {#if extended(w)}
                     <span class="text-muted-foreground block text-xs">
                       {m.warranty_extended_marker()}

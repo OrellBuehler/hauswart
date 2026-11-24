@@ -104,8 +104,9 @@
   class="grid-cols-[minmax(0,1fr)] wrap-anywhere"
 >
   <div class="flex flex-col gap-2">
-    <span class="text-sm leading-none font-medium">{m.part_stock_reason()}</span
-    >
+    <span class="text-sm leading-none font-medium">
+      {m.part_stock_reason()}
+    </span>
     <Segmented
       options={reasonOptions}
       bind:value={reason}

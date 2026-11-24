@@ -308,18 +308,19 @@
                       {/if}
                     </span>
                     <span class="flex min-w-0 flex-1 flex-col">
-                      <span class="truncate text-sm font-medium"
-                        >{prettyName(target)}</span
-                      >
+                      <span class="truncate text-sm font-medium">
+                        {prettyName(target)}
+                      </span>
                       <span
                         class="text-muted-foreground font-mono text-xs break-all"
-                        >notify.{target}</span
                       >
+                        notify.{target}
+                      </span>
                     </span>
                     {#if missing}
-                      <span class="text-warning shrink-0 text-xs"
-                        >{m.notify_target_missing()}</span
-                      >
+                      <span class="text-warning shrink-0 text-xs">
+                        {m.notify_target_missing()}
+                      </span>
                     {/if}
                   </label>
                 </li>
@@ -410,12 +411,12 @@
                     aria-label={stageLabels[stage].label()}
                   />
                   <span class="flex min-w-0 flex-col">
-                    <span class="text-sm font-medium"
-                      >{stageLabels[stage].label()}</span
-                    >
-                    <span class="text-muted-foreground text-xs text-pretty"
-                      >{stageLabels[stage].hint()}</span
-                    >
+                    <span class="text-sm font-medium">
+                      {stageLabels[stage].label()}
+                    </span>
+                    <span class="text-muted-foreground text-xs text-pretty">
+                      {stageLabels[stage].hint()}
+                    </span>
                   </span>
                 </label>
               </li>

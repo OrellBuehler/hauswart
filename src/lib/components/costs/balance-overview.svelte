@@ -78,11 +78,11 @@
         class="text-muted-foreground flex items-start gap-2 border-t pt-3 text-xs text-pretty"
       >
         <InfoIcon class="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-        <span
-          >{m.balances_unassigned({
+        <span>
+          {m.balances_unassigned({
             count: balances.unassignedPayerCount,
-          })}</span
-        >
+          })}
+        </span>
       </p>
     {/if}
     {#if crossBook}

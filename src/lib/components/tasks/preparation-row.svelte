@@ -73,8 +73,9 @@
       <a
         href={taskHref(taskId)}
         class="focus-visible:ring-ring/50 rounded outline-none hover:underline focus-visible:ring-[3px]"
-        >{taskTitle}</a
       >
+        {taskTitle}
+      </a>
       {#if wording}
         <span class="mx-1" aria-hidden="true">·</span>{m.dashboard_prep_due({
           when: wording.relative,

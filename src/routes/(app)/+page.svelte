@@ -126,9 +126,10 @@
     description={m.dashboard_subtitle()}
   >
     {#snippet actions()}
-      <Button href={resolve("tasks/new")} size="lg"
-        ><PlusIcon /> {m.task_new()}</Button
-      >
+      <Button href={resolve("tasks/new")} size="lg">
+        <PlusIcon />
+        {m.task_new()}
+      </Button>
     {/snippet}
   </PageHeader>
 
@@ -161,9 +162,10 @@
             description={m.dashboard_empty_body()}
           >
             {#snippet actions()}
-              <Button href={resolve("tasks/new")}
-                ><PlusIcon /> {m.task_new()}</Button
-              >
+              <Button href={resolve("tasks/new")}>
+                <PlusIcon />
+                {m.task_new()}
+              </Button>
             {/snippet}
           </EmptyState>
         {/if}
@@ -181,8 +183,9 @@
                 {bucket.title}
                 <span
                   class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
-                  >{bucket.items.length}</span
                 >
+                  {bucket.items.length}
+                </span>
               </h3>
               {@render taskList(bucket.items)}
             </section>
@@ -198,8 +201,9 @@
               {m.dashboard_later()}
               <span
                 class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
-                >{later.length}</span
               >
+                {later.length}
+              </span>
             </h3>
             {@render taskList(laterShown)}
             {#if later.length > LATER_PREVIEW}
@@ -226,8 +230,9 @@
               {m.dashboard_signal()}
               <span
                 class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
-                >{signal.length}</span
               >
+                {signal.length}
+              </span>
             </h3>
             {@render taskList(signal)}
           </section>
@@ -242,8 +247,9 @@
               {m.dashboard_preparations()}
               <span
                 class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
-                >{preparations.length}</span
               >
+                {preparations.length}
+              </span>
             </h3>
             <ul class="divide-y">
               {#each preparations.filter((p) => !hidden.has(p.prepId)) as prep (prep.prepId)}

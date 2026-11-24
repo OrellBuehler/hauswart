@@ -20,17 +20,20 @@
     <span class="flex items-start gap-3">
       <span
         class="text-muted-foreground mt-0.5 shrink-0 text-sm font-medium tabular-nums"
-        >#{defect.number}</span
       >
+        #{defect.number}
+      </span>
       <span class="flex min-w-0 flex-1 flex-col gap-2">
         <span class="min-w-0">
-          <span class="block text-sm font-medium text-pretty break-words"
-            >{defect.title}</span
-          >
+          <span class="block text-sm font-medium text-pretty break-words">
+            {defect.title}
+          </span>
           {#if place}
-            <span class="text-muted-foreground mt-0.5 block text-xs break-words"
-              >{place}</span
+            <span
+              class="text-muted-foreground mt-0.5 block text-xs break-words"
             >
+              {place}
+            </span>
           {/if}
         </span>
         <span class="flex flex-wrap items-center gap-x-3 gap-y-1.5">

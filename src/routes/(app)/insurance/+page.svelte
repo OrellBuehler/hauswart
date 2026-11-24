@@ -75,9 +75,9 @@
     description={m.insurance_description()}
   >
     {#snippet actions()}
-      <Button href={resolve("insurance/new")} size="lg" class="max-md:hidden"
-        ><PlusIcon />{m.insurance_new()}</Button
-      >
+      <Button href={resolve("insurance/new")} size="lg" class="max-md:hidden">
+        <PlusIcon />{m.insurance_new()}
+      </Button>
     {/snippet}
   </PageHeader>
 
@@ -88,9 +88,9 @@
       description={m.insurance_empty_body()}
     >
       {#snippet actions()}
-        <Button href={resolve("insurance/new")}
-          ><PlusIcon />{m.insurance_new()}</Button
-        >
+        <Button href={resolve("insurance/new")}>
+          <PlusIcon />{m.insurance_new()}
+        </Button>
       {/snippet}
     </EmptyState>
   {:else}
@@ -131,11 +131,11 @@
           {m.insurance_count({ count: shown.length })}
           {#if !filter.archived && shown.length > 0}
             <span aria-hidden="true">·</span>
-            <span class="text-foreground font-medium tabular-nums"
-              >{m.insurance_total_per_year({
+            <span class="text-foreground font-medium tabular-nums">
+              {m.insurance_total_per_year({
                 amount: formatMoney(total.totalMinor, data.currency),
-              })}</span
-            >
+              })}
+            </span>
           {/if}
         </p>
         {#if filtered}
@@ -184,9 +184,9 @@
           description={m.insurance_empty_body()}
         >
           {#snippet actions()}
-            <Button href={resolve("insurance/new")}
-              ><PlusIcon />{m.insurance_new()}</Button
-            >
+            <Button href={resolve("insurance/new")}>
+              <PlusIcon />{m.insurance_new()}
+            </Button>
           {/snippet}
         </EmptyState>
       {/if}
@@ -205,13 +205,13 @@
             <Table.Row>
               <Table.Head>{m.insurance_col_policy()}</Table.Head>
               <Table.Head>{m.insurance_col_insurer()}</Table.Head>
-              <Table.Head class="text-end"
-                >{m.insurance_col_premium()}</Table.Head
-              >
+              <Table.Head class="text-end">
+                {m.insurance_col_premium()}
+              </Table.Head>
               <Table.Head>{m.insurance_col_deadline()}</Table.Head>
-              <Table.Head class="w-12"
-                ><span class="sr-only">{m.comments_title()}</span></Table.Head
-              >
+              <Table.Head class="w-12">
+                <span class="sr-only">{m.comments_title()}</span>
+              </Table.Head>
             </Table.Row>
           </Table.Header>
           <Table.Body>
@@ -229,8 +229,9 @@
                     />
                     <span class="min-w-0">{policy.title}</span>
                     {#if policy.archivedAt}
-                      <Badge variant="secondary">{m.insurance_archived()}</Badge
-                      >
+                      <Badge variant="secondary">
+                        {m.insurance_archived()}
+                      </Badge>
                     {/if}
                   </a>
                   <span
@@ -251,8 +252,9 @@
                   {#if policy.policyNumber}
                     <span
                       class="text-muted-foreground block text-xs wrap-anywhere"
-                      >{policy.policyNumber}</span
                     >
+                      {policy.policyNumber}
+                    </span>
                   {/if}
                 </Table.Cell>
                 <Table.Cell class="text-end tabular-nums">

@@ -46,5 +46,7 @@
   )}
   role="img"
   aria-label={name ?? undefined}
-  title={name ?? undefined}>{initials}</span
+  title={name ?? undefined}
 >
+  {initials}
+</span>

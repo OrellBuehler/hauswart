@@ -107,12 +107,12 @@
       {/if}
       <div class="flex flex-col gap-1 border-t pt-3 text-sm">
         <p class="flex items-baseline justify-between gap-3">
-          <span class="text-muted-foreground"
-            >{m.dashboard_costs_year({ year: costs.year })}</span
-          >
-          <span class="font-medium whitespace-nowrap tabular-nums"
-            >{formatMoney(costs.totalMinor, costs.currency)}</span
-          >
+          <span class="text-muted-foreground">
+            {m.dashboard_costs_year({ year: costs.year })}
+          </span>
+          <span class="font-medium whitespace-nowrap tabular-nums">
+            {formatMoney(costs.totalMinor, costs.currency)}
+          </span>
         </p>
         {#if books.length > 1}
           <ul class="flex flex-col">
@@ -125,14 +125,14 @@
                   <span class="min-w-0 wrap-anywhere">
                     {book.bookName}
                     {#if book.archived}
-                      <span class="opacity-75"
-                        >({m.costbook_archived_badge()})</span
-                      >
+                      <span class="opacity-75">
+                        ({m.costbook_archived_badge()})
+                      </span>
                     {/if}
                   </span>
-                  <span class="whitespace-nowrap tabular-nums"
-                    >{formatMoney(book.totalMinor, costs.currency)}</span
-                  >
+                  <span class="whitespace-nowrap tabular-nums">
+                    {formatMoney(book.totalMinor, costs.currency)}
+                  </span>
                 </a>
               </li>
             {/each}

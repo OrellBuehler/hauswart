@@ -48,9 +48,9 @@
   >
     <Dialog.Header>
       <Dialog.Title>{m.editor_attachment_title()}</Dialog.Title>
-      <Dialog.Description
-        >{m.editor_attachment_description()}</Dialog.Description
-      >
+      <Dialog.Description>
+        {m.editor_attachment_description()}
+      </Dialog.Description>
     </Dialog.Header>
 
     {#if list.phase === "loading" || list.phase === "idle"}

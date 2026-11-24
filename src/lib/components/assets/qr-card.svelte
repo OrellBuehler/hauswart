@@ -36,9 +36,9 @@
     </p>
 
     <div class="flex flex-wrap justify-center gap-2 print:hidden">
-      <Button variant="outline" size="sm" onclick={() => window.print()}
-        ><PrinterIcon />{m.qr_print()}</Button
-      >
+      <Button variant="outline" size="sm" onclick={() => window.print()}>
+        <PrinterIcon />{m.qr_print()}
+      </Button>
 
       <CopyButton
         value={link}

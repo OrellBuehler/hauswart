@@ -236,9 +236,9 @@
       >
         {#snippet actions()}
           {#if canWrite}
-            <Button variant="outline" onclick={openCreate}
-              ><PlusIcon />{m.budgets_new()}</Button
-            >
+            <Button variant="outline" onclick={openCreate}>
+              <PlusIcon />{m.budgets_new()}
+            </Button>
           {/if}
         {/snippet}
       </EmptyState>
@@ -277,9 +277,9 @@
               <div class="min-w-0 flex-1">
                 <p class="text-sm font-medium text-pretty wrap-anywhere">
                   {scope.title}
-                  <Badge variant="outline" class="ms-1 align-middle"
-                    >{m.budgets_inactive_row()}</Badge
-                  >
+                  <Badge variant="outline" class="ms-1 align-middle">
+                    {m.budgets_inactive_row()}
+                  </Badge>
                 </p>
                 <p class="text-muted-foreground mt-0.5 text-xs wrap-anywhere">
                   {scope.subtitle}

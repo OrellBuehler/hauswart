@@ -179,8 +179,9 @@
               variant="destructive"
               class="min-h-10"
               onSelect={() => (deleteOpen = true)}
-              ><Trash2Icon />{m.common_delete()}</DropdownMenu.Item
             >
+              <Trash2Icon />{m.common_delete()}
+            </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       </div>
@@ -228,8 +229,10 @@
                 {#if policy.insurerContactId && policy.insurerName}
                   <a
                     href={contactHref(policy.insurerContactId)}
-                    class={linkClass}>{policy.insurerName}</a
+                    class={linkClass}
                   >
+                    {policy.insurerName}
+                  </a>
                 {:else}
                   –
                 {/if}
@@ -246,9 +249,9 @@
                 {m.insurance_premium()}
               </dt>
               <dd class="mt-0.5 tabular-nums">
-                <span class="font-medium whitespace-nowrap"
-                  >{formatMoney(policy.premiumMinor, policy.currency)}</span
-                >
+                <span class="font-medium whitespace-nowrap">
+                  {formatMoney(policy.premiumMinor, policy.currency)}
+                </span>
                 <span class="text-muted-foreground text-xs">
                   {premiumPerLabels[policy.premiumPeriod]()}
                 </span>
@@ -283,9 +286,9 @@
               <dd class="mt-0.5 tabular-nums">
                 {#if policy.endDate}
                   {formatDay(policy.endDate)}
-                  <span class="text-muted-foreground block text-xs"
-                    >{m.insurance_end_hint()}</span
-                  >
+                  <span class="text-muted-foreground block text-xs">
+                    {m.insurance_end_hint()}
+                  </span>
                 {:else}
                   {m.insurance_end_open()}
                 {/if}
@@ -343,9 +346,9 @@
                       class="text-muted-foreground size-4 shrink-0"
                       aria-hidden="true"
                     />
-                    <span class="min-w-0 font-medium wrap-anywhere"
-                      >{asset.name}</span
-                    >
+                    <span class="min-w-0 font-medium wrap-anywhere">
+                      {asset.name}
+                    </span>
                   </a>
                 </li>
               {/each}

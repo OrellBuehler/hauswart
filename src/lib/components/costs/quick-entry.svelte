@@ -500,8 +500,10 @@
         <div class="relative">
           <span
             class="text-muted-foreground pointer-events-none absolute start-4 top-1/2 -translate-y-1/2 text-lg font-medium"
-            aria-hidden="true">{currency}</span
+            aria-hidden="true"
           >
+            {currency}
+          </span>
           <Input
             id="quick-amount"
             bind:ref={amountEl}
@@ -532,9 +534,9 @@
 
     {#if open.length > 1}
       <div class="flex min-w-0 flex-col gap-2">
-        <span id="quick-book-label" class="text-sm leading-none font-medium"
-          >{m.cost_book()}</span
-        >
+        <span id="quick-book-label" class="text-sm leading-none font-medium">
+          {m.cost_book()}
+        </span>
         {#if open.length <= BOOK_CHIPS_MAX}
           <ChoiceChips
             options={bookOptions}
@@ -555,9 +557,9 @@
     {/if}
 
     <div class="flex min-w-0 flex-col gap-2">
-      <span id="quick-category-label" class="text-sm leading-none font-medium"
-        >{m.cost_category()}</span
-      >
+      <span id="quick-category-label" class="text-sm leading-none font-medium">
+        {m.cost_category()}
+      </span>
       <ChoiceChips
         options={categoryOptions}
         label={m.cost_category()}
@@ -590,12 +592,12 @@
     </div>
 
     <div class="flex min-w-0 flex-col gap-2">
-      <span class="text-sm leading-none font-medium"
-        >{m.quick_receipt_file()}
-        <span class="text-muted-foreground font-normal"
-          >({m.common_optional()})</span
-        ></span
-      >
+      <span class="text-sm leading-none font-medium">
+        {m.quick_receipt_file()}
+        <span class="text-muted-foreground font-normal">
+          ({m.common_optional()})
+        </span>
+      </span>
       <ReceiptPicker id="quick-receipt" bind:file disabled={busy !== null} />
     </div>
 
@@ -683,8 +685,10 @@
                 size="sm"
                 class="pointer-coarse:h-10"
                 disabled={busy !== null || draft.date === today}
-                onclick={() => (draft.date = today)}>{m.quick_today()}</Button
+                onclick={() => (draft.date = today)}
               >
+                {m.quick_today()}
+              </Button>
 
               <Button
                 type="button"
@@ -693,8 +697,9 @@
                 class="pointer-coarse:h-10"
                 disabled={busy !== null || draft.date === addDays(today, -1)}
                 onclick={() => (draft.date = addDays(today, -1))}
-                >{m.quick_yesterday()}</Button
               >
+                {m.quick_yesterday()}
+              </Button>
             </div>
           {/snippet}
         </Field>
@@ -765,8 +770,9 @@
           `costs/new${draft.bookId ? `?book=${encodeURIComponent(draft.bookId)}` : ""}`,
         )}
         class="text-foreground focus-visible:ring-ring/50 rounded font-medium underline underline-offset-4 outline-none focus-visible:ring-[3px]"
-        >{m.quick_full_form()}</a
       >
+        {m.quick_full_form()}
+      </a>
       {m.quick_full_form_hint()}
     </p>
 

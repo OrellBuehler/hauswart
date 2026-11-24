@@ -35,17 +35,17 @@
       <span aria-hidden="true">·</span>
       <span>{formatRelativeDays(info.days)}</span>
     {:else}
-      <span
-        >{m.insurance_deadline_cancel_by({
+      <span>
+        {m.insurance_deadline_cancel_by({
           date: formatDateShort(deadline, { today }),
-        })}</span
-      >
+        })}
+      </span>
       <span aria-hidden="true">·</span>
       <span>{formatRelativeDays(info.days)}</span>
     {/if}
   </span>
 {:else}
-  <span class={cn("text-muted-foreground text-xs", className)}
-    >{m.insurance_deadline_none()}</span
-  >
+  <span class={cn("text-muted-foreground text-xs", className)}>
+    {m.insurance_deadline_none()}
+  </span>
 {/if}

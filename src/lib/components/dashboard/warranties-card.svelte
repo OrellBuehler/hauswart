@@ -30,8 +30,9 @@
       {m.dashboard_expiring_warranties()}
       <span
         class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
-        >{warranties.length}</span
       >
+        {warranties.length}
+      </span>
     </Card.Title>
   </Card.Header>
   <Card.Content class="flex flex-col gap-2">
@@ -42,9 +43,9 @@
             href={assetHref(warranty.assetId)}
             class="hover:bg-accent/50 focus-visible:ring-ring/50 -mx-2 flex items-start justify-between gap-3 rounded-md px-2 py-2.5 outline-none focus-visible:ring-[3px]"
           >
-            <span class="min-w-0 text-sm font-medium break-words"
-              >{warranty.title}</span
-            >
+            <span class="min-w-0 text-sm font-medium break-words">
+              {warranty.title}
+            </span>
             <span class="shrink-0 text-end text-xs tabular-nums">
               <span
                 class={cn(
@@ -52,12 +53,14 @@
                   warranty.status === "expired"
                     ? "text-destructive"
                     : "text-warning",
-                )}>{wording(warranty.daysLeft)}</span
+                )}
               >
+                {wording(warranty.daysLeft)}
+              </span>
               {#if warranty.date}
-                <span class="text-muted-foreground block"
-                  >{formatDay(warranty.date)}</span
-                >
+                <span class="text-muted-foreground block">
+                  {formatDay(warranty.date)}
+                </span>
               {/if}
             </span>
           </a>

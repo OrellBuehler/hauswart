@@ -145,9 +145,9 @@
                     href={resolve(href)}
                     class="hover:bg-accent/50 focus-visible:ring-ring/50 flex flex-col gap-0.5 px-4 py-3 outline-none first:rounded-t-lg last:rounded-b-lg focus-visible:ring-[3px]"
                   >
-                    <span class="line-clamp-2 text-sm font-medium break-words"
-                      >{hit.title}</span
-                    >
+                    <span class="line-clamp-2 text-sm font-medium break-words">
+                      {hit.title}
+                    </span>
                     {#if hit.snippet}
                       <span
                         class="text-muted-foreground line-clamp-2 text-xs text-pretty"

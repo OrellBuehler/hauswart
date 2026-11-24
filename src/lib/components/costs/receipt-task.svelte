@@ -165,9 +165,9 @@
                 class="hover:bg-accent/50 focus-visible:ring-ring/50 -mx-2 flex min-h-11 items-start justify-between gap-3 rounded-md px-2 py-1.5 outline-none focus-visible:ring-[3px]"
               >
                 <span class="min-w-0">
-                  <span class="block text-sm font-medium wrap-anywhere"
-                    >{cost.title}</span
-                  >
+                  <span class="block text-sm font-medium wrap-anywhere">
+                    {cost.title}
+                  </span>
                   <span
                     class="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-xs"
                   >
@@ -210,9 +210,9 @@
       {[closer, closedAt, via].filter(Boolean).join(" · ")}
       {#if task.status === "dismissed"}
         {#if task.dismissReason}
-          <span class="block"
-            >{m.receipts_dismissed_reason({ reason: task.dismissReason })}</span
-          >
+          <span class="block">
+            {m.receipts_dismissed_reason({ reason: task.dismissReason })}
+          </span>
         {/if}
       {/if}
     </p>

@@ -81,9 +81,9 @@
   {#if trigger.type === "kept_bill"}
     <p class="text-muted-foreground text-sm text-pretty">
       {m.trigger_managed()}
-      <strong class="text-foreground font-medium"
-        >{describeTrigger(trigger, getLocale())}</strong
-      >
+      <strong class="text-foreground font-medium">
+        {describeTrigger(trigger, getLocale())}
+      </strong>
     </p>
   {:else}
     <Field
@@ -101,9 +101,9 @@
             onchange={setType}
           />
           {#if ADVANCED_TYPES.includes(trigger.type)}
-            <Badge variant="secondary" class="shrink-0 max-sm:hidden"
-              >{m.trigger_advanced_badge()}</Badge
-            >
+            <Badge variant="secondary" class="shrink-0 max-sm:hidden">
+              {m.trigger_advanced_badge()}
+            </Badge>
           {/if}
         </div>
       {/snippet}

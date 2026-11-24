@@ -97,14 +97,14 @@
   <PageHeader title={m.nav_inventory()} description={m.inventory_description()}>
     {#snippet actions()}
       {#if data.suggestionsAvailable}
-        <Button variant="outline" onclick={() => (suggestionsOpen = true)}
-          ><SparklesIcon />{m.inventory_suggestions()}</Button
-        >
+        <Button variant="outline" onclick={() => (suggestionsOpen = true)}>
+          <SparklesIcon />{m.inventory_suggestions()}
+        </Button>
       {/if}
       {#if documents.provider}
-        <Button variant="outline" onclick={() => (receiptsOpen = true)}
-          ><FileSearchIcon />{m.inventory_receipts()}</Button
-        >
+        <Button variant="outline" onclick={() => (receiptsOpen = true)}>
+          <FileSearchIcon />{m.inventory_receipts()}
+        </Button>
       {/if}
       <Button
         href={resolve("inventory/qr")}
@@ -133,14 +133,14 @@
           <PlusIcon />{m.inventory_create()}
         </Button>
         {#if data.suggestionsAvailable}
-          <Button variant="outline" onclick={() => (suggestionsOpen = true)}
-            ><SparklesIcon />{m.inventory_suggestions()}</Button
-          >
+          <Button variant="outline" onclick={() => (suggestionsOpen = true)}>
+            <SparklesIcon />{m.inventory_suggestions()}
+          </Button>
         {/if}
         {#if documents.provider}
-          <Button variant="outline" onclick={() => (receiptsOpen = true)}
-            ><FileSearchIcon />{m.inventory_receipts()}</Button
-          >
+          <Button variant="outline" onclick={() => (receiptsOpen = true)}>
+            <FileSearchIcon />{m.inventory_receipts()}
+          </Button>
         {/if}
       {/snippet}
     </EmptyState>

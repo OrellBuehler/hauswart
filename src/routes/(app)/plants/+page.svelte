@@ -147,9 +147,9 @@
                       )}
                       aria-hidden="true"
                     />
-                    <span class="line-clamp-2 min-w-0 break-words"
-                      >{hint.title}</span
-                    >
+                    <span class="line-clamp-2 min-w-0 break-words">
+                      {hint.title}
+                    </span>
                   </li>
                 {/each}
               </ul>
@@ -179,9 +179,9 @@
                 {m.plants_water()}
               </Button>
             {:else}
-              <span class="text-muted-foreground text-xs"
-                >{m.plants_no_plan()}</span
-              >
+              <span class="text-muted-foreground text-xs">
+                {m.plants_no_plan()}
+              </span>
               <Button href={newTaskHref(plant.id)} size="sm" variant="outline">
                 {m.plants_add_plan()}
               </Button>

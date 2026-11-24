@@ -34,9 +34,9 @@
   <Label for={id}>
     {label}
     {#if optional}
-      <span class="text-muted-foreground font-normal"
-        >({m.common_optional()})</span
-      >
+      <span class="text-muted-foreground font-normal">
+        ({m.common_optional()})
+      </span>
     {/if}
   </Label>
   {@render children({ describedby, invalid: Boolean(error) })}

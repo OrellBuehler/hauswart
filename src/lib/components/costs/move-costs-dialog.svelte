@@ -149,27 +149,27 @@
           class="mt-0.5 size-4 shrink-0 animate-spin"
           aria-hidden="true"
         />
-        <span class="text-muted-foreground"
-          >{m.costs_move_preview_loading()}</span
-        >
+        <span class="text-muted-foreground">
+          {m.costs_move_preview_loading()}
+        </span>
       {:else if preview.state === "ready"}
         <span class="min-w-0 wrap-anywhere">{preview.text}</span>
       {:else}
         <InfoIcon class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-        <span class="text-muted-foreground min-w-0 wrap-anywhere"
-          >{preview.message}</span
-        >
+        <span class="text-muted-foreground min-w-0 wrap-anywhere">
+          {preview.message}
+        </span>
       {/if}
     </p>
   {/if}
   {#if chosen && !chosen.taxRelevant && ((onAsset && preview.state !== "ready") || lost > 0)}
     <p class="text-muted-foreground flex items-start gap-2 text-sm text-pretty">
       <InfoIcon class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-      <span
-        >{onAsset
+      <span>
+        {onAsset
           ? m.costs_move_tax_asset()
-          : m.costs_move_tax_ids({ count: lost })}</span
-      >
+          : m.costs_move_tax_ids({ count: lost })}
+      </span>
     </p>
   {/if}
 </FormDialog>

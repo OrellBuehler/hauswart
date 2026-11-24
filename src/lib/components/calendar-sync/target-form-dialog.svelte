@@ -199,9 +199,9 @@
 
   {#if !editing && providers.length > 1}
     <div class="flex flex-col gap-2">
-      <span class="text-sm leading-none font-medium"
-        >{m.caltargets_provider()}</span
-      >
+      <span class="text-sm leading-none font-medium">
+        {m.caltargets_provider()}
+      </span>
       <Segmented
         options={providerOptions}
         bind:value={provider}
@@ -213,9 +213,9 @@
 
   {#if editing && target}
     <div class="flex flex-col gap-2">
-      <span class="text-sm leading-none font-medium"
-        >{m.caltargets_calendar()}</span
-      >
+      <span class="text-sm leading-none font-medium">
+        {m.caltargets_calendar()}
+      </span>
       <div
         class="bg-muted/50 flex flex-col gap-0.5 rounded-lg border px-3 py-2"
       >
@@ -223,9 +223,9 @@
         {#if target.remoteName}
           <span class="text-sm break-words">{target.remoteName}</span>
         {/if}
-        <span class="text-muted-foreground font-mono text-xs break-all"
-          >{target.remoteCalendarId}</span
-        >
+        <span class="text-muted-foreground font-mono text-xs break-all">
+          {target.remoteCalendarId}
+        </span>
       </div>
       <p class="text-muted-foreground text-xs text-pretty">
         {m.caltargets_calendar_fixed()}
@@ -302,9 +302,9 @@
 
   {#if level === "user"}
     <div class="flex flex-col gap-2">
-      <span class="text-sm leading-none font-medium"
-        >{m.caltargets_scope()}</span
-      >
+      <span class="text-sm leading-none font-medium">
+        {m.caltargets_scope()}
+      </span>
       <Segmented
         options={scopeOptions}
         bind:value={draft.scope}
@@ -319,8 +319,9 @@
   {/if}
 
   <div class="flex flex-col gap-2">
-    <span class="text-sm leading-none font-medium">{m.caltargets_timing()}</span
-    >
+    <span class="text-sm leading-none font-medium">
+      {m.caltargets_timing()}
+    </span>
     <Segmented
       options={timedOptions}
       bind:value={draft.timedMode}
@@ -424,9 +425,9 @@
   </Field>
 
   <div class="flex flex-col gap-2">
-    <span class="text-sm leading-none font-medium"
-      >{m.caltargets_remote_delete()}</span
-    >
+    <span class="text-sm leading-none font-medium">
+      {m.caltargets_remote_delete()}
+    </span>
     <Segmented
       options={deleteOptions}
       bind:value={draft.onRemoteDelete}

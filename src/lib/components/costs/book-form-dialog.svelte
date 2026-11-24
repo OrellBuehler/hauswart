@@ -164,9 +164,9 @@
   </fieldset>
 
   <div class="flex min-w-0 flex-col gap-2">
-    <span class="text-sm leading-none font-medium"
-      >{m.costbook_default_split()}</span
-    >
+    <span class="text-sm leading-none font-medium">
+      {m.costbook_default_split()}
+    </span>
     <Segmented
       options={splitOptions}
       bind:value={defaultSplitMode}

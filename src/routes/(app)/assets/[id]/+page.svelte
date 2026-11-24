@@ -218,8 +218,9 @@
             <DropdownMenu.Item
               class="sm:hidden"
               onclick={() => goto(resolve(`assets/${asset.id}/edit`))}
-              ><PencilIcon />{m.common_edit()}</DropdownMenu.Item
             >
+              <PencilIcon />{m.common_edit()}
+            </DropdownMenu.Item>
 
             <DropdownMenu.Item onclick={toggleArchive}>
               {#if asset.archivedAt}
@@ -232,8 +233,9 @@
             <DropdownMenu.Item
               variant="destructive"
               onclick={() => (deleteOpen = true)}
-              ><Trash2Icon />{m.common_delete()}</DropdownMenu.Item
             >
+              <Trash2Icon />{m.common_delete()}
+            </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       </div>
@@ -386,9 +388,9 @@
                   <PlusIcon />{m.asset_add_task()}
                 </Button>
                 {#if isVehicle && canWrite}
-                  <Button variant="outline" onclick={() => (setupOpen = true)}
-                    ><CalendarCheckIcon />{m.vehicle_setup_open()}</Button
-                  >
+                  <Button variant="outline" onclick={() => (setupOpen = true)}>
+                    <CalendarCheckIcon />{m.vehicle_setup_open()}
+                  </Button>
                 {/if}
               {/snippet}
             </EmptyState>
@@ -400,9 +402,9 @@
             />
             {#if isVehicle && canWrite}
               <div class="mt-3">
-                <Button variant="outline" onclick={() => (setupOpen = true)}
-                  ><CalendarCheckIcon />{m.vehicle_setup_open()}</Button
-                >
+                <Button variant="outline" onclick={() => (setupOpen = true)}>
+                  <CalendarCheckIcon />{m.vehicle_setup_open()}
+                </Button>
               </div>
             {/if}
           {/if}

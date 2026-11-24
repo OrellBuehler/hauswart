@@ -175,13 +175,14 @@
                 onclick={() => pick(calendar)}
               >
                 <span class="flex min-w-0 flex-1 flex-col gap-1">
-                  <span class="text-sm font-medium wrap-anywhere"
-                    >{calendar.name}</span
-                  >
+                  <span class="text-sm font-medium wrap-anywhere">
+                    {calendar.name}
+                  </span>
                   <span
                     class="text-muted-foreground font-mono text-xs break-all"
-                    >{calendar.id}</span
                   >
+                    {calendar.id}
+                  </span>
                   <span class="flex flex-wrap items-center gap-1">
                     <Badge variant="outline">{capabilityLabels[level]()}</Badge>
                     {#if blocked}

@@ -106,8 +106,10 @@
         {#if unread.count > 0}
           <span
             class="bg-destructive absolute end-1 top-1 flex min-w-4.5 items-center justify-center rounded-full px-1 text-[10px] leading-4.5 font-semibold text-white tabular-nums"
-            aria-hidden="true">{unread.count > 99 ? "99+" : unread.count}</span
+            aria-hidden="true"
           >
+            {unread.count > 99 ? "99+" : unread.count}
+          </span>
         {/if}
       </Button>
     {/snippet}
@@ -164,8 +166,10 @@
         variant="ghost"
         class="h-10 w-full"
         href={resolve("notifications")}
-        onclick={() => (open = false)}>{m.notifications_view_all()}</Button
+        onclick={() => (open = false)}
       >
+        {m.notifications_view_all()}
+      </Button>
     </div>
   </Popover.Content>
 </Popover.Root>

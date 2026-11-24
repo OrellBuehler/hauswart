@@ -89,13 +89,13 @@
                 aria-hidden="true"
               />
               <span class="min-w-0">
-                <span class="block truncate text-sm font-medium"
-                  >{item.name}</span
-                >
+                <span class="block truncate text-sm font-medium">
+                  {item.name}
+                </span>
                 {#if item.roomName}
-                  <span class="text-muted-foreground block truncate text-xs"
-                    >{item.roomName}</span
-                  >
+                  <span class="text-muted-foreground block truncate text-xs">
+                    {item.roomName}
+                  </span>
                 {/if}
               </span>
             </Label>

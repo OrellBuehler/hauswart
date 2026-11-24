@@ -63,9 +63,9 @@
   <Dialog.Content class="max-h-[calc(100svh-2rem)] overflow-y-auto">
     <Dialog.Header>
       <Dialog.Title>{m.defect_correspondence_title()}</Dialog.Title>
-      <Dialog.Description
-        >{m.defect_correspondence_description()}</Dialog.Description
-      >
+      <Dialog.Description>
+        {m.defect_correspondence_description()}
+      </Dialog.Description>
     </Dialog.Header>
     <form class="flex flex-col gap-5" onsubmit={submit}>
       <div class="flex flex-col gap-2">
@@ -82,9 +82,9 @@
       <div class="flex flex-col gap-2">
         <Label for="corr-ref">
           {m.defect_correspondence_reference()}
-          <span class="text-muted-foreground font-normal"
-            >({m.common_optional()})</span
-          >
+          <span class="text-muted-foreground font-normal">
+            ({m.common_optional()})
+          </span>
         </Label>
         <Input
           id="corr-ref"

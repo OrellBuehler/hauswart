@@ -7,6 +7,12 @@ updates:
     groups:
       minor-patch:
         update-types: ["minor", "patch"]
+    # vitest 5.1.1 cannot stop its workers under the bun runtime (setMaxListeners(-1)); no test runs.
+    ignore:
+      - dependency-name: "vitest"
+        versions: ["5.1.1"]
+      - dependency-name: "@vitest/coverage-v8"
+        versions: ["5.1.1"]
 
   - package-ecosystem: "github-actions"
     directory: "/"

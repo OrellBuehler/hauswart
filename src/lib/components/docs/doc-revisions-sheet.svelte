@@ -196,9 +196,9 @@
                     {m.docs_revision_label({ rev: revision.rev })}
                   </span>
                   {#if current}
-                    <Badge class="bg-brand text-brand-foreground"
-                      >{m.docs_revision_current()}</Badge
-                    >
+                    <Badge class="bg-brand text-brand-foreground">
+                      {m.docs_revision_current()}
+                    </Badge>
                   {/if}
                   <span
                     class="text-muted-foreground ms-auto text-xs tabular-nums"

@@ -79,8 +79,9 @@
       class="text-muted-foreground mt-0.5 block text-xs"
       datetime={notification.createdAt}
       title={formatDateTime(notification.createdAt)}
-      >{formatRelativeInstant(notification.createdAt, now)}</time
     >
+      {formatRelativeInstant(notification.createdAt, now)}
+    </time>
   </span>
   {#if unread}
     <span class="bg-brand mt-2 size-2 shrink-0 rounded-full" aria-hidden="true"

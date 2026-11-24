@@ -15,8 +15,9 @@
       {m.finance_inbox_title()}
       <span
         class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
-        >{count}</span
       >
+        {count}
+      </span>
     </Card.Title>
     <Card.Description>{m.finance_inbox_description()}</Card.Description>
   </Card.Header>

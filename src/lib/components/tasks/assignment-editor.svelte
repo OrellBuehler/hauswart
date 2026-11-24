@@ -104,9 +104,9 @@
     </Field>
   {:else if mode === "rotate"}
     <div class="flex flex-col gap-3">
-      <span class="text-sm font-medium" id="rotation-label"
-        >{m.task_rotation_members()}</span
-      >
+      <span class="text-sm font-medium" id="rotation-label">
+        {m.task_rotation_members()}
+      </span>
       <p class="text-muted-foreground -mt-2 text-xs text-pretty">
         {m.task_rotation_hint()}
       </p>
@@ -117,9 +117,9 @@
             <li
               class="bg-muted/40 flex items-center gap-2 rounded-lg border px-3 py-1.5"
             >
-              <span class="text-muted-foreground w-5 text-xs tabular-nums"
-                >{index + 1}.</span
-              >
+              <span class="text-muted-foreground w-5 text-xs tabular-nums">
+                {index + 1}.
+              </span>
               <AssigneeAvatar {name} {id} />
               <span class="min-w-0 flex-1 truncate text-sm">{name}</span>
               <Button

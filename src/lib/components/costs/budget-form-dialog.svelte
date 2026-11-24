@@ -206,8 +206,10 @@
       <div class="relative">
         <span
           class="text-muted-foreground pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm"
-          aria-hidden="true">{budgetCurrency}</span
+          aria-hidden="true"
         >
+          {budgetCurrency}
+        </span>
         <Input
           id="budget-amount"
           class="h-10 ps-14 text-end tabular-nums"

@@ -189,9 +189,11 @@
           <span class="flex min-w-0 flex-col leading-tight">
             {#if source === "calendars" && chosenCalendar}
               <span class="truncate">{chosenCalendar.name}</span>
-              <span class="text-muted-foreground truncate font-mono text-[11px]"
-                >{value}</span
+              <span
+                class="text-muted-foreground truncate font-mono text-[11px]"
               >
+                {value}
+              </span>
             {:else}
               <span class="truncate font-mono text-sm">{value}</span>
             {/if}
@@ -307,8 +309,9 @@
                       <span class="truncate font-medium">{calendar.name}</span>
                       <span
                         class="text-muted-foreground line-clamp-2 font-mono text-[11px] break-all"
-                        >{calendar.id}</span
                       >
+                        {calendar.id}
+                      </span>
                     </span>
                   </Command.Item>
                 {/each}

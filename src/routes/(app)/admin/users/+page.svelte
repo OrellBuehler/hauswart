@@ -57,9 +57,9 @@
     description={m.admin_users_description()}
   >
     {#snippet actions()}
-      <Button onclick={openCreate}
-        ><UserPlusIcon />{m.admin_users_create()}</Button
-      >
+      <Button onclick={openCreate}>
+        <UserPlusIcon />{m.admin_users_create()}
+      </Button>
     {/snippet}
   </PageHeader>
 
@@ -70,9 +70,9 @@
       description={m.admin_users_empty_body()}
     >
       {#snippet actions()}
-        <Button onclick={openCreate}
-          ><UserPlusIcon />{m.admin_users_create()}</Button
-        >
+        <Button onclick={openCreate}>
+          <UserPlusIcon />{m.admin_users_create()}
+        </Button>
       {/snippet}
     </EmptyState>
   {:else}
@@ -86,8 +86,10 @@
             <div class="flex min-w-0 items-center gap-3">
               <span
                 class="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
-                aria-hidden="true">{name.charAt(0).toUpperCase()}</span
+                aria-hidden="true"
               >
+                {name.charAt(0).toUpperCase()}
+              </span>
               <div class="flex min-w-0 flex-col gap-1">
                 <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <span class="min-w-0 font-medium break-words">{name}</span>

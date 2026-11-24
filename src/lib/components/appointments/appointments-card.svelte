@@ -72,12 +72,12 @@
               href={appointmentHref(appointment.id)}
               class="hover:bg-accent/50 focus-visible:ring-ring/50 flex flex-col gap-0.5 px-4 py-3 transition-colors outline-none first:rounded-t-lg last:rounded-b-lg focus-visible:ring-[3px]"
             >
-              <span class="text-sm font-medium wrap-anywhere"
-                >{appointment.title}</span
-              >
-              <span class="text-muted-foreground text-xs tabular-nums"
-                >{formatWhen(appointment, { timeZone, today })}</span
-              >
+              <span class="text-sm font-medium wrap-anywhere">
+                {appointment.title}
+              </span>
+              <span class="text-muted-foreground text-xs tabular-nums">
+                {formatWhen(appointment, { timeZone, today })}
+              </span>
               {#if appointment.location}
                 <span
                   class="text-muted-foreground flex items-start gap-1 text-xs wrap-anywhere"

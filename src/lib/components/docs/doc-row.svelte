@@ -49,8 +49,9 @@
         {/if}
         <CommentCount count={page.commentCount} class="shrink-0" />
         {#if page.archivedAt}
-          <Badge variant="secondary" class="shrink-0">{m.docs_archived()}</Badge
-          >
+          <Badge variant="secondary" class="shrink-0">
+            {m.docs_archived()}
+          </Badge>
         {/if}
       </span>
       {#if page.excerpt}

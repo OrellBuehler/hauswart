@@ -178,9 +178,9 @@
         class="max-w-full"
       >
         <CalendarPlusIcon />
-        <span class="truncate"
-          >{m.hint_task_linked({ title: hint.taskTitle })}</span
-        >
+        <span class="truncate">
+          {m.hint_task_linked({ title: hint.taskTitle })}
+        </span>
       </Button>
     {:else}
       <Button

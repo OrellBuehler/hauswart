@@ -29,17 +29,17 @@
       </Badge>
     {/if}
     {#if cost.amountMinor < 0}
-      <Badge variant="outline" class="border-success/40 text-success"
-        >{m.cost_badge_refund()}</Badge
-      >
+      <Badge variant="outline" class="border-success/40 text-success">
+        {m.cost_badge_refund()}
+      </Badge>
     {/if}
     {#if !cost.countsAsExpense}
       <Badge variant="secondary">{m.cost_badge_equity()}</Badge>
     {/if}
     {#if cost.source === "recurring"}
-      <Badge variant="outline" href={recurrenceHref}
-        >{m.cost_badge_recurring()}</Badge
-      >
+      <Badge variant="outline" href={recurrenceHref}>
+        {m.cost_badge_recurring()}
+      </Badge>
     {:else if cost.source !== "manual"}
       <Badge variant="outline">{m.cost_badge_imported()}</Badge>
     {/if}

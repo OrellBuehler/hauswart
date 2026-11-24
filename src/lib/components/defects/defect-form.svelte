@@ -269,9 +269,9 @@
         {/snippet}
       </Field>
       <div class="flex flex-col gap-2">
-        <span class="text-sm leading-none font-medium"
-          >{m.defect_severity()}</span
-        >
+        <span class="text-sm leading-none font-medium">
+          {m.defect_severity()}
+        </span>
         <Segmented
           options={severityOptions}
           bind:value={severity}
@@ -378,9 +378,9 @@
       </div>
 
       <div class="flex flex-col gap-2">
-        <span class="text-sm leading-none font-medium"
-          >{m.defect_deadline()}</span
-        >
+        <span class="text-sm leading-none font-medium">
+          {m.defect_deadline()}
+        </span>
         <Segmented
           options={modeOptions}
           bind:value={mode}
@@ -427,8 +427,9 @@
             <a
               href={resolve("settings/household")}
               class="text-foreground underline underline-offset-2"
-              >{m.defect_deadline_no_handover_link()}</a
             >
+              {m.defect_deadline_no_handover_link()}
+            </a>
           </p>
         {:else if mode !== "none"}
           <p class="text-muted-foreground text-xs text-pretty">

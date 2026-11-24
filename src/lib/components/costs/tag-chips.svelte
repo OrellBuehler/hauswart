@@ -30,8 +30,10 @@
       <span
         class="bg-muted text-muted-foreground rounded-full border px-2 py-0.5 text-xs leading-tight font-medium tabular-nums"
         title={tagNames(rest)}
-        aria-hidden="true">{m.costtag_more({ count: rest.length })}</span
+        aria-hidden="true"
       >
+        {m.costtag_more({ count: rest.length })}
+      </span>
       <span class="sr-only">{tagNames(rest)}</span>
     {/if}
   </span>

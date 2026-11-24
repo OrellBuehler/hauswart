@@ -267,9 +267,9 @@
               <ul class="mt-2 divide-y rounded-lg border">
                 {#each ignored as device (device.id)}
                   <li class="flex items-center justify-between gap-3 px-3 py-2">
-                    <span class="min-w-0 text-sm break-words"
-                      >{device.name}</span
-                    >
+                    <span class="min-w-0 text-sm break-words">
+                      {device.name}
+                    </span>
                     <Button
                       variant="ghost"
                       size="sm"

@@ -251,9 +251,9 @@
       <div class="flex flex-col gap-5 px-6 pb-6">
         {#if mode === "snooze"}
           <div class="flex flex-col gap-2">
-            <span class="text-sm font-medium" id="snooze-presets"
-              >{m.task_snooze_quick()}</span
-            >
+            <span class="text-sm font-medium" id="snooze-presets">
+              {m.task_snooze_quick()}
+            </span>
             <div
               class="flex flex-wrap gap-2"
               role="group"
@@ -316,9 +316,9 @@
           <div class="flex flex-col gap-2">
             <Label for="action-note">
               {m.task_note()}
-              <span class="text-muted-foreground font-normal"
-                >({m.common_optional()})</span
-              >
+              <span class="text-muted-foreground font-normal">
+                ({m.common_optional()})
+              </span>
             </Label>
             <Textarea
               id="action-note"

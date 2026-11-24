@@ -21,8 +21,9 @@
         target="_blank"
         rel="noopener noreferrer"
         class="text-brand focus-visible:ring-ring/50 rounded underline underline-offset-2 outline-none focus-visible:ring-[3px]"
-        >{segment.text}</a
       >
+        {segment.text}
+      </a>
     {:else}
       {segment.text}
     {/if}

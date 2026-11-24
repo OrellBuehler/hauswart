@@ -129,9 +129,9 @@
               checked={selected.includes(note.id)}
               onCheckedChange={(on) => toggle(note.id, on)}
             />
-            <span class="min-w-0 text-sm wrap-anywhere whitespace-pre-line"
-              >{note.body}</span
-            >
+            <span class="min-w-0 text-sm wrap-anywhere whitespace-pre-line">
+              {note.body}
+            </span>
           </Label>
         </li>
       {/each}

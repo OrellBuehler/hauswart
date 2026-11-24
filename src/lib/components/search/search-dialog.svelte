@@ -129,9 +129,9 @@
               <span class="min-w-0 flex-1">
                 <span class="block truncate font-medium">{hit.title}</span>
                 {#if hit.snippet}
-                  <span class="text-muted-foreground line-clamp-1 text-xs"
-                    >{hit.snippet}</span
-                  >
+                  <span class="text-muted-foreground line-clamp-1 text-xs">
+                    {hit.snippet}
+                  </span>
                 {/if}
               </span>
             </Command.LinkItem>
@@ -165,9 +165,9 @@
       {m.search_hint_navigate()}
     </span>
     <span class="flex items-center gap-1">
-      <kbd class="bg-muted rounded border px-1 font-sans"
-        ><CornerDownLeftIcon class="size-3" /></kbd
-      >
+      <kbd class="bg-muted rounded border px-1 font-sans">
+        <CornerDownLeftIcon class="size-3" />
+      </kbd>
       {m.search_hint_open()}
     </span>
     <span class="flex items-center gap-1">

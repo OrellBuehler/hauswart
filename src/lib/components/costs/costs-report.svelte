@@ -114,16 +114,17 @@
       {/if}
       <span class="break-words">{label}</span>
     </span>
-    <span class="shrink-0 font-medium whitespace-nowrap tabular-nums"
-      >{money(value)}</span
-    >
+    <span class="shrink-0 font-medium whitespace-nowrap tabular-nums">
+      {money(value)}
+    </span>
   </span>
   <span class="flex items-center gap-2">
     {@render bar(value, max)}
     <span
       class="text-muted-foreground w-16 shrink-0 text-end text-xs whitespace-nowrap tabular-nums"
-      >{percent === null ? "" : m.cost_percent({ value: percent })}</span
     >
+      {percent === null ? "" : m.cost_percent({ value: percent })}
+    </span>
   </span>
 {/snippet}
 
@@ -195,9 +196,9 @@
                     : `height: ${barWidth(entry.totalMinor, maxMonth)}%`}
                 ></span>
               </span>
-              <span class="text-muted-foreground text-center text-xs"
-                >{monthName(number, "short").slice(0, 1)}</span
-              >
+              <span class="text-muted-foreground text-center text-xs">
+                {monthName(number, "short").slice(0, 1)}
+              </span>
             </button>
           {/each}
         </div>
@@ -289,9 +290,9 @@
               class="text-muted-foreground mt-2 flex items-baseline justify-between gap-3 border-t pt-3 text-xs"
             >
               <span>{m.costs_by_tax_total()}</span>
-              <span class="font-medium whitespace-nowrap tabular-nums"
-                >{money(taxSum)}</span
-              >
+              <span class="font-medium whitespace-nowrap tabular-nums">
+                {money(taxSum)}
+              </span>
             </p>
           {/if}
         </Card.Content>
@@ -312,9 +313,9 @@
           <ul class="divide-y">
             {#each summary.people as person (person.userId)}
               <li class="flex flex-col gap-2 py-3 first:pt-0 last:pb-0">
-                <span class="text-sm font-medium break-words"
-                  >{person.userName ?? m.cost_person_unknown()}</span
-                >
+                <span class="text-sm font-medium break-words">
+                  {person.userName ?? m.cost_person_unknown()}
+                </span>
                 <dl class="grid gap-1.5 text-sm sm:grid-cols-3 sm:gap-3">
                   <div
                     class="flex items-baseline justify-between gap-3 sm:block"

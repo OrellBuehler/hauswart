@@ -31,12 +31,12 @@
         onrecord && "sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center",
       )}
     >
-      <span class="min-w-0 wrap-anywhere"
-        >{m.costs_settlement_who({ from, to })}</span
-      >
-      <span class="shrink-0 font-semibold whitespace-nowrap tabular-nums"
-        >{formatMoney(payment.amountMinor, currency)}</span
-      >
+      <span class="min-w-0 wrap-anywhere">
+        {m.costs_settlement_who({ from, to })}
+      </span>
+      <span class="shrink-0 font-semibold whitespace-nowrap tabular-nums">
+        {formatMoney(payment.amountMinor, currency)}
+      </span>
       {#if onrecord}
         <Button
           variant="outline"
