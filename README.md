@@ -283,7 +283,18 @@ third-party push service.
 What stays in the browser, because the server allows it with a browser session only: changing the
 password, API tokens, user management, calendar feeds and guest links.
 
-Building and releasing them is described in [`mobile/RELEASING.md`](mobile/RELEASING.md).
+### Android beta
+
+The Android app is in a closed test on Google Play. To take part, in this order:
+
+1. Join the Google Group [hauswart-test](https://groups.google.com/g/hauswart-test) with the Google
+   account of your phone.
+2. Open the [opt-in page](https://play.google.com/apps/testing/ch.orellbuehler.hauswart), which works
+   for members of the group only, and install the app from there.
+
+You need a hauswart server of your own; the app asks for its address at first start.
+
+Building and releasing the apps is described in [`mobile/RELEASING.md`](mobile/RELEASING.md).
 
 ## Development
 
