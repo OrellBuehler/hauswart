@@ -1,7 +1,7 @@
-import { api } from "$lib/api/browser";
-import type { DocumentProviderKind } from "$lib/api/enums";
-import { endpoints } from "$lib/api/registry";
-import { m } from "$lib/paraglide/messages";
+import { api } from "#lib/api/browser.ts";
+import type { DocumentProviderKind } from "#lib/api/enums.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 /** The lists a document system offers to choose from; each is `GET /integrations/{kind}/<source>`. */
 export const PICKER_SOURCES = [

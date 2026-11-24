@@ -9,41 +9,42 @@
   import PhoneIcon from "@lucide/svelte/icons/phone";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import Attachments from "$lib/components/attachments/attachments.svelte";
-  import Comments from "$lib/components/comments/comments.svelte";
-  import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
-  import DeadlineHint from "$lib/components/insurance/deadline-hint.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { telHref } from "$lib/contacts/labels";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDay, formatRelativeDays } from "$lib/format";
-  import { formatMoney } from "$lib/format-money";
-  import { kindIcons } from "$lib/assets/kinds";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import Attachments from "#lib/components/attachments/attachments.svelte";
+  import Comments from "#lib/components/comments/comments.svelte";
+  import LinkedDocuments from "#lib/components/documents/linked-documents.svelte";
+  import DeadlineHint from "#lib/components/insurance/deadline-hint.svelte";
+  import * as Alert from "#lib/components/ui/alert/index.js";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { telHref } from "#lib/contacts/labels.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDay, formatRelativeDays } from "#lib/format.ts";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { kindIcons } from "#lib/assets/kinds.ts";
   import {
     deadlineInfo,
     deadlineTones,
     termEnded,
-  } from "$lib/insurance/deadline";
+  } from "#lib/insurance/deadline.ts";
+
   import {
     insuranceTypeIcons,
     insuranceTypeLabels,
     premiumPerLabels,
     renewalLabels,
-  } from "$lib/insurance/labels";
-  import { assetHref, contactHref, taskHref } from "$lib/links";
-  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/insurance/labels.ts";
+  import { assetHref, contactHref, taskHref } from "#lib/links.ts";
+  import { gotoFromOverlay } from "#lib/overlays/use-overlay-history.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -73,7 +74,7 @@
           ? m.insurance_restored_toast({ title: policy.title })
           : m.insurance_archived_toast({ title: policy.title }),
       );
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       toast.error(apiErrorMessage(err));
     } finally {
@@ -85,7 +86,7 @@
     const { id, title } = policy;
     await api.call(endpoints.insurancePoliciesDelete, { params: { id } });
     toast.success(m.insurance_deleted_toast({ title }));
-    await gotoFromOverlay(resolve("/insurance"), { invalidateAll: true });
+    await gotoFromOverlay(resolve("insurance"), { refreshAll: true });
   }
 
   const linkClass =
@@ -99,7 +100,7 @@
 <div class="flex flex-col gap-6">
   <div class="max-md:hidden">
     <a
-      href={resolve("/insurance")}
+      href={resolve("insurance")}
       class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -ms-1 inline-flex min-h-10 items-center gap-1.5 rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
@@ -134,7 +135,7 @@
     {#if canWrite}
       <div class="flex shrink-0 items-center gap-2">
         <Button
-          href={resolve(`/insurance/${policy.id}/edit` as "/")}
+          href={resolve(`insurance/${policy.id}/edit`)}
           variant="outline"
           size="lg"
           class="max-sm:hidden"
@@ -157,10 +158,7 @@
           <DropdownMenu.Content align="end">
             <DropdownMenu.Item class="min-h-10 sm:hidden">
               {#snippet child({ props })}
-                <a
-                  href={resolve(`/insurance/${policy.id}/edit` as "/")}
-                  {...props}
-                >
+                <a href={resolve(`insurance/${policy.id}/edit`)} {...props}>
                   <PencilIcon />{m.common_edit()}
                 </a>
               {/snippet}
@@ -181,9 +179,8 @@
               variant="destructive"
               class="min-h-10"
               onSelect={() => (deleteOpen = true)}
+              ><Trash2Icon />{m.common_delete()}</DropdownMenu.Item
             >
-              <Trash2Icon />{m.common_delete()}
-            </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       </div>
@@ -202,7 +199,7 @@
         </p>
         {#if canWrite}
           <Button
-            href={resolve(`/insurance/${policy.id}/edit` as "/")}
+            href={resolve(`insurance/${policy.id}/edit`)}
             variant="outline"
             size="lg"
           >

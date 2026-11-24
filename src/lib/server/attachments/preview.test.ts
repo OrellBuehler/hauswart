@@ -2,21 +2,21 @@ import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { PDFDocument } from "pdf-lib";
 import { describe, expect, it, vi } from "vitest";
-import { ATTACHMENT_PDF_READ_MAX_BYTES } from "$lib/api/schemas/attachments";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { createAsset } from "$lib/server/assets/assets";
+import { ATTACHMENT_PDF_READ_MAX_BYTES } from "#lib/api/schemas/attachments.ts";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
 import {
   damagedPdf,
   encryptedPdf,
   makePdf,
   PAGE_HEIGHT,
   pageWidth,
-} from "$lib/server/files/test-pdfs";
-import { plainJpeg, plainPng } from "$lib/server/files/test-images";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt } from "$lib/testing/domain";
-import { useTestFilesDir } from "$lib/testing/files";
-import { failure, fieldErrors } from "$lib/testing/vehicles";
+} from "#lib/server/files/test-pdfs.ts";
+import { plainJpeg, plainPng } from "#lib/server/files/test-images.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
+import { useTestFilesDir } from "#lib/testing/files.ts";
+import { failure, fieldErrors } from "#lib/testing/vehicles.ts";
 import { createAttachment } from "./attachments";
 import { attachmentPreview } from "./preview";
 

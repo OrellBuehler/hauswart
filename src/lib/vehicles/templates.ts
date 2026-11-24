@@ -1,12 +1,12 @@
 import type { z } from "zod";
-import type { OdometerUnit, UserLocale } from "$lib/api/enums";
+import type { OdometerUnit, UserLocale } from "#lib/api/enums.ts";
 import type {
   createPreparationRequestSchema,
   createTaskRequestSchema,
-} from "$lib/api/schemas/tasks";
-import { addYears, daysInMonth, formatDate, parseDate } from "$lib/dates";
-import { m } from "$lib/paraglide/messages";
-import type { CalendarTrigger } from "$lib/tasks/engine/types";
+} from "#lib/api/schemas/tasks.ts";
+import { addYears, daysInMonth, formatDate, parseDate } from "#lib/dates.ts";
+import { m } from "#lib/paraglide/messages.js";
+import type { CalendarTrigger } from "#lib/tasks/engine/types.ts";
 import { odometerSignalKey } from "./odometer";
 import {
   VEHICLE_TEMPLATE_IDS,

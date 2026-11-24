@@ -1,7 +1,7 @@
-import { api } from "$lib/api/browser";
-import type { OdometerUnit } from "$lib/api/enums";
-import { endpoints } from "$lib/api/registry";
-import { apiErrorMessage } from "$lib/error-message";
+import { api } from "#lib/api/browser.ts";
+import type { OdometerUnit } from "#lib/api/enums.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import { apiErrorMessage } from "#lib/error-message.ts";
 
 export type VehicleReadingState =
   | { phase: "loading" }

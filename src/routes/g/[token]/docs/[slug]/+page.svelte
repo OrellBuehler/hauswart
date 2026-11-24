@@ -1,10 +1,10 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import ChevronLeftIcon from "@lucide/svelte/icons/chevron-left";
-  import GuestHtml from "$lib/components/guest/guest-html.svelte";
-  import GuestShell from "$lib/components/guest/guest-shell.svelte";
-  import PinForm from "$lib/components/guest/pin-form.svelte";
-  import { m } from "$lib/paraglide/messages";
+  import GuestHtml from "#lib/components/guest/guest-html.svelte";
+  import GuestShell from "#lib/components/guest/guest-shell.svelte";
+  import PinForm from "#lib/components/guest/pin-form.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data, form }: PageProps = $props();

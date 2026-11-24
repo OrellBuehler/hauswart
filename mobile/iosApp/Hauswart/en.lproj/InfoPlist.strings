@@ -1,0 +1,3 @@
+"NSLocalNetworkUsageDescription" = "hauswart connects to your own server, which may be on your home network.";
+"NSCameraUsageDescription" = "hauswart uses the camera to take photos that you attach to entries.";
+"NSPhotoLibraryUsageDescription" = "hauswart reads the photos you choose to attach to entries.";

@@ -1,0 +1,18 @@
+{
+  "m_vehicle_none": "Keine",
+  "m_vehicle_link_odometer": "Kilometerstände",
+  "m_vehicle_link_stats": "Kosten und Statistik",
+  "m_vehicle_edit_title": "Fahrzeugangaben",
+  "m_vehicle_edit_action": "Fahrzeugangaben bearbeiten",
+  "m_vehicle_odometer_screen_title": "Kilometerstände",
+  "m_vehicle_stats_title": "Kosten und Statistik",
+  "m_vehicle_distance_by_month": "Gefahrene Strecke pro Monat",
+  "m_vehicle_next_tasks": "Nächste Aufgaben",
+  "m_vehicle_next_tasks_none": "Keine anstehenden Aufgaben.",
+  "m_vehicle_setup_title": "Termine einrichten",
+  "m_vehicle_tire_detail_title": "Reifensatz",
+  "m_tire_event_mounted": "Aufgezogen",
+  "m_tire_event_unmounted": "Abgenommen",
+  "m_tire_event_tread_measured": "Profil gemessen",
+  "m_tire_event_unknown": "Ereignis"
+}

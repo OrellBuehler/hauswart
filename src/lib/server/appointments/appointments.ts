@@ -1,16 +1,16 @@
 import { and, eq, gt, gte, lt, lte, or, type SQL } from "drizzle-orm";
-import type { AppointmentStatus } from "$lib/api/enums";
-import { pinnableOccurrenceKey } from "$lib/appointments/occurrence";
+import type { AppointmentStatus } from "#lib/api/enums.ts";
+import { pinnableOccurrenceKey } from "#lib/appointments/occurrence.ts";
 import {
   defaultEnd,
   endInstant,
   startInstant,
   whenProblem,
   type AppointmentWhen,
-} from "$lib/appointments/when";
-import { removeOwnedAttachments } from "$lib/server/attachments/attachments";
-import { commentCountSql } from "$lib/server/comments/counts";
-import { householdTimeZone } from "$lib/server/config";
+} from "#lib/appointments/when.ts";
+import { removeOwnedAttachments } from "#lib/server/attachments/attachments.ts";
+import { commentCountSql } from "#lib/server/comments/counts.ts";
+import { householdTimeZone } from "#lib/server/config.ts";
 import {
   appointments,
   assets,
@@ -18,13 +18,13 @@ import {
   taskState,
   tasks,
   type DB,
-} from "$lib/server/db";
-import { paginateArray } from "$lib/server/pagination";
+} from "#lib/server/db.ts";
+import { paginateArray } from "#lib/server/pagination.ts";
 import {
   invalidField,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
+} from "#lib/server/service.ts";
 
 type Db = Pick<ServiceContext, "db">;
 

@@ -36,6 +36,7 @@ async function outcome(promise: Promise<unknown>) {
 
 /** Inputs that take marked seconds (quadratic) or overflow its stack, all within the size cap. */
 const PATHOLOGICAL: Record<string, string> = {
+  mixed: "*_a ".repeat(45_000),
   stars: "*a ".repeat(60_000),
   underscores: "_a ".repeat(60_000),
   doubleStars: "**a ".repeat(45_000),
@@ -108,7 +109,7 @@ describe("pathological input", () => {
 
   it("quadratic emphasis input times out with too_complex and the pool recovers", async () => {
     const slow = await outcome(
-      renderMarkdownAsync(PATHOLOGICAL.stars!, { ...guest, ...FAST }),
+      renderMarkdownAsync(PATHOLOGICAL.mixed!, { ...guest, ...FAST }),
     );
     expect(slow.code).toBe("too_complex");
     expect(slow.ms).toBeLessThan(FAST.timeoutMs + 5000);
@@ -118,7 +119,7 @@ describe("pathological input", () => {
 
   it("a slow job does not block another one running at the same time", async () => {
     const slow = outcome(
-      renderMarkdownAsync(PATHOLOGICAL.stars!, { ...guest, timeoutMs: 1500 }),
+      renderMarkdownAsync(PATHOLOGICAL.mixed!, { ...guest, timeoutMs: 1500 }),
     );
     const started = performance.now();
     const quick = await renderMarkdownAsync("kurz", guest);
@@ -130,7 +131,7 @@ describe("pathological input", () => {
   it("rejects with unavailable when too many jobs are waiting", async () => {
     const jobs = Array.from({ length: MAX_QUEUED_JOBS + 8 }, () =>
       outcome(
-        renderMarkdownAsync(PATHOLOGICAL.stars!, { ...guest, timeoutMs: 20 }),
+        renderMarkdownAsync(PATHOLOGICAL.mixed!, { ...guest, timeoutMs: 20 }),
       ),
     );
     const codes = (await Promise.all(jobs)).map((r) => r.code);

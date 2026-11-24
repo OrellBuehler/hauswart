@@ -1,9 +1,9 @@
 import { isHttpError } from "@sveltejs/kit";
-import { ApiError, type ErrorCode } from "$lib/api/errors";
-import { RateLimitedError } from "$lib/server/auth/rate-limit";
-import { AuthError } from "$lib/server/auth/types";
-import { MarkdownError } from "$lib/server/docs/markdown-core";
-import { FileError, type FileErrorCode } from "$lib/server/files/errors";
+import { ApiError, type ErrorCode } from "#lib/api/errors.ts";
+import { RateLimitedError } from "#lib/server/auth/rate-limit.ts";
+import { AuthError } from "#lib/server/auth/types.ts";
+import { MarkdownError } from "#lib/server/docs/markdown-core.ts";
+import { FileError, type FileErrorCode } from "#lib/server/files/errors.ts";
 
 const AUTH_ERROR_CODES: Record<AuthError["code"], ErrorCode> = {
   username_taken: "conflict",

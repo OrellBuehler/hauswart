@@ -3,18 +3,18 @@ import type {
   CreateCostBookRequest,
   ListCostBooksQuery,
   UpdateCostBookRequest,
-} from "$lib/api/schemas/cost-books";
-import { nameKey } from "$lib/costs/names";
-import { costBooks, costRecurrences, type DB } from "$lib/server/db";
-import { paginateArray } from "$lib/server/pagination";
+} from "#lib/api/schemas/cost-books.ts";
+import { nameKey } from "#lib/costs/names.ts";
+import { costBooks, costRecurrences, type DB } from "#lib/server/db.ts";
+import { paginateArray } from "#lib/server/pagination.ts";
 import {
   conflict,
   invalidField,
   isUniqueViolation,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
-import { slugify, uniqueSlug } from "$lib/server/slug";
+} from "#lib/server/service.ts";
+import { slugify, uniqueSlug } from "#lib/server/slug.ts";
 
 type Db = Pick<ServiceContext, "db">;
 

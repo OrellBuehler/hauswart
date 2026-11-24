@@ -2,8 +2,8 @@ import type { Component } from "svelte";
 import LightbulbIcon from "@lucide/svelte/icons/lightbulb";
 import ScrollTextIcon from "@lucide/svelte/icons/scroll-text";
 import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
-import type { HintKind, ServiceLogKind } from "$lib/api/enums";
-import { m } from "$lib/paraglide/messages";
+import type { HintKind, ServiceLogKind } from "#lib/api/enums.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 export const hintKindLabels: Record<HintKind, () => string> = {
   tip: () => m.hint_kind_tip(),

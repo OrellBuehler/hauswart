@@ -1,4 +1,4 @@
-import type { DocumentProviderConfig } from "$lib/api/schemas/documents";
+import type { DocumentProviderConfig } from "#lib/api/schemas/documents.ts";
 
 /** The note left on a linked document; German, like the rest of the household's documents. */
 export const NOTE_PREFIX = "Verknüpft in hauswart:";

@@ -2,8 +2,8 @@ import { and, eq, inArray, isNotNull, isNull, lte } from "drizzle-orm";
 import {
   signalReactionSchema,
   type SignalReaction,
-} from "$lib/api/schemas/hints";
-import type { UserLocale } from "$lib/api/enums";
+} from "#lib/api/schemas/hints.ts";
+import type { UserLocale } from "#lib/api/enums.ts";
 import {
   assetHints,
   assets,
@@ -11,11 +11,11 @@ import {
   signals,
   taskState,
   users,
-} from "$lib/server/db";
-import { createNotification } from "$lib/server/notifications/notifications";
-import { deliverToChannels } from "$lib/server/notifications/deliveries";
-import type { DeliverableNotification } from "$lib/server/notifications/channels";
-import type { ServiceContext } from "$lib/server/service";
+} from "#lib/server/db.ts";
+import { createNotification } from "#lib/server/notifications/notifications.ts";
+import { deliverToChannels } from "#lib/server/notifications/deliveries.ts";
+import type { DeliverableNotification } from "#lib/server/notifications/channels.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import type { SignalChange } from "./service";
 
 const same = (a: string | null, b: string): boolean =>

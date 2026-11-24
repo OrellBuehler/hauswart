@@ -1,17 +1,17 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { and, eq } from "drizzle-orm";
-import { notifications, taskState, type DB } from "$lib/server/db";
-import { updateHousehold } from "$lib/server/household/household";
-import { completeTask, snoozeTask } from "$lib/server/tasks/completions";
-import { runEvaluationCycle } from "$lib/server/tasks/scheduler";
+import { notifications, taskState, type DB } from "#lib/server/db.ts";
+import { updateHousehold } from "#lib/server/household/household.ts";
+import { completeTask, snoozeTask } from "#lib/server/tasks/completions.ts";
+import { runEvaluationCycle } from "#lib/server/tasks/scheduler.ts";
 import {
   completePreparation,
   createPreparation,
-} from "$lib/server/tasks/preparations";
-import { updateTask } from "$lib/server/tasks/tasks";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, everyDays, makeTask } from "$lib/testing/domain";
+} from "#lib/server/tasks/preparations.ts";
+import { updateTask } from "#lib/server/tasks/tasks.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, everyDays, makeTask } from "#lib/testing/domain.ts";
 import {
   registerNotificationChannel,
   type NotificationChannel,

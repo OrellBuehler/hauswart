@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render } from "svelte/server";
-import type { AiTask } from "$lib/api/schemas/ai-tasks";
+import type { AiTask } from "#lib/api/schemas/ai-tasks.ts";
 import ReceiptTask from "./receipt-task.svelte";
 
 function task(over: Partial<AiTask> = {}): AiTask {

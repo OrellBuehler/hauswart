@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { COST_TAG_COLORS } from "$lib/api/enums";
-import { ApiError } from "$lib/api/errors";
-import { MAX_COST_TAGS, MAX_TAGS_PER_COST } from "$lib/api/schemas/cost-tags";
+import { COST_TAG_COLORS } from "#lib/api/enums.ts";
+import { ApiError } from "#lib/api/errors.ts";
+import {
+  MAX_COST_TAGS,
+  MAX_TAGS_PER_COST,
+} from "#lib/api/schemas/cost-tags.ts";
 import {
   TAG_COLOR_STYLES,
   canAddTag,

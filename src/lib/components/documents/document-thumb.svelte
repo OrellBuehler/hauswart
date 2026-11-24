@@ -1,6 +1,6 @@
 <script lang="ts">
   import FileTextIcon from "@lucide/svelte/icons/file-text";
-  import { cn } from "$lib/utils";
+  import { cn } from "#lib/utils.ts";
 
   let {
     url,

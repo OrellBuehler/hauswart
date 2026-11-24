@@ -1,19 +1,19 @@
 <script lang="ts">
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Separator } from "$lib/components/ui/separator/index.js";
-  import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-  import AppNav from "$lib/components/app/app-nav.svelte";
-  import { backTarget } from "$lib/components/app/back-target";
-  import BottomNav from "$lib/components/app/bottom-nav.svelte";
-  import Logo from "$lib/components/app/logo.svelte";
-  import NavProgress from "$lib/components/app/nav-progress.svelte";
-  import SearchTrigger from "$lib/components/search/search-trigger.svelte";
-  import TireMountOffer from "$lib/components/vehicles/tire-mount-offer.svelte";
-  import NotificationBell from "$lib/components/notifications/notification-bell.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Separator } from "#lib/components/ui/separator/index.js";
+  import * as Sidebar from "#lib/components/ui/sidebar/index.js";
+  import AppNav from "#lib/components/app/app-nav.svelte";
+  import { backTarget } from "#lib/components/app/back-target.ts";
+  import BottomNav from "#lib/components/app/bottom-nav.svelte";
+  import Logo from "#lib/components/app/logo.svelte";
+  import NavProgress from "#lib/components/app/nav-progress.svelte";
+  import SearchTrigger from "#lib/components/search/search-trigger.svelte";
+  import TireMountOffer from "#lib/components/vehicles/tire-mount-offer.svelte";
+  import NotificationBell from "#lib/components/notifications/notification-bell.svelte";
   import {
     adminNavItems,
     headerTitleFor,
@@ -21,11 +21,11 @@
     settingsNavItem,
     showsBottomNav,
     visibleNavGroups,
-  } from "$lib/components/app/nav";
-  import UserMenu from "$lib/components/app/user-menu.svelte";
-  import { DocumentSystem } from "$lib/documents/system.svelte";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/components/app/nav.ts";
+  import UserMenu from "#lib/components/app/user-menu.svelte";
+  import { DocumentSystem } from "#lib/documents/system.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import type { LayoutProps } from "./$types";
 
   let { data, children }: LayoutProps = $props();
@@ -60,7 +60,7 @@
     const wasAwayFor = hiddenAt === null ? 0 : Date.now() - hiddenAt;
     hiddenAt = null;
     if (wasAwayFor <= STALE_AFTER_MS || !navigator.onLine) return;
-    invalidateAll().catch((err) =>
+    refreshAll().catch((err) =>
       console.warn("refresh after resume failed", err),
     );
   }
@@ -74,7 +74,7 @@
   <Sidebar.Root collapsible="icon">
     <Sidebar.Header>
       <a
-        href={resolve("/")}
+        href={resolve("")}
         class="ring-sidebar-ring flex h-11 items-center rounded-md outline-hidden transition-opacity hover:opacity-80 focus-visible:ring-2"
         aria-label={m.nav_home_aria()}
       >
@@ -104,7 +104,7 @@
     >
       {#if back}
         <Button
-          href={resolve(back as "/")}
+          href={resolve(back)}
           variant="ghost"
           size="icon-lg"
           class="-ms-2 md:hidden"

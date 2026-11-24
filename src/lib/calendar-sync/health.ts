@@ -1,4 +1,4 @@
-import type { CalendarTarget } from "$lib/api/schemas/calendar-sync";
+import type { CalendarTarget } from "#lib/api/schemas/calendar-sync.ts";
 
 /**
  * How a target is doing, as one state for the badge and the tone of its row.

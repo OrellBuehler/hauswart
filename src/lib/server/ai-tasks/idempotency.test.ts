@@ -1,18 +1,18 @@
 import { readdir } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { createCostBookRequestSchema } from "$lib/api/schemas/cost-books";
-import { createAiTaskRequestSchema } from "$lib/api/schemas/ai-tasks";
-import { createCostRequestSchema } from "$lib/api/schemas/costs";
-import { createAsset } from "$lib/server/assets/assets";
-import { createCostBook, updateCostBook } from "$lib/server/costs/books";
-import { createCost } from "$lib/server/costs/costs";
-import { aiTasks, attachments } from "$lib/server/db";
-import { plainJpeg, plainPng } from "$lib/server/files/test-images";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt } from "$lib/testing/domain";
-import { useTestFilesDir } from "$lib/testing/files";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { createCostBookRequestSchema } from "#lib/api/schemas/cost-books.ts";
+import { createAiTaskRequestSchema } from "#lib/api/schemas/ai-tasks.ts";
+import { createCostRequestSchema } from "#lib/api/schemas/costs.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import { createCostBook, updateCostBook } from "#lib/server/costs/books.ts";
+import { createCost } from "#lib/server/costs/costs.ts";
+import { aiTasks, attachments } from "#lib/server/db.ts";
+import { plainJpeg, plainPng } from "#lib/server/files/test-images.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
+import { useTestFilesDir } from "#lib/testing/files.ts";
 import {
   completeAiTask,
   deleteAiTask,

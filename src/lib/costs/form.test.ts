@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { CostBook } from "$lib/api/schemas/cost-books";
-import type { CostEntry } from "$lib/api/schemas/costs";
+import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+import type { CostEntry } from "#lib/api/schemas/costs.ts";
 import {
   buildCreateBody,
   buildUpdateBody,
@@ -19,7 +19,7 @@ import {
   withBook,
   type CostDraft,
 } from "./form";
-import { amountsFor, sharesFor } from "$lib/server/costs/split";
+import { amountsFor, sharesFor } from "#lib/server/costs/split.ts";
 
 const USERS = ["u1", "u2", "u3"];
 

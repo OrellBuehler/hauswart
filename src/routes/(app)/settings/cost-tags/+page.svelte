@@ -6,19 +6,19 @@
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { CostTag } from "$lib/api/schemas/cost-tags";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import TagChip from "$lib/components/costs/tag-chip.svelte";
-  import TagFormDialog from "$lib/components/costs/tag-form-dialog.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { tagColorLabels, tagDeleteDescription } from "$lib/costs/tags";
-  import { invalidateAfterOverlay } from "$lib/overlays/use-overlay-history.svelte";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { CostTag } from "#lib/api/schemas/cost-tags.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import TagChip from "#lib/components/costs/tag-chip.svelte";
+  import TagFormDialog from "#lib/components/costs/tag-form-dialog.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { tagColorLabels, tagDeleteDescription } from "#lib/costs/tags.ts";
+  import { invalidateAfterOverlay } from "#lib/overlays/use-overlay-history.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -106,7 +106,7 @@
                   <!-- eslint-disable svelte/no-navigation-without-resolve -- the address is resolved here, only the query is appended -->
                   <a
                     href={resolve(
-                      `/costs?book=all&tag=${encodeURIComponent(tag.id)}` as "/",
+                      `costs?book=all&tag=${encodeURIComponent(tag.id)}`,
                     )}
                     class="hover:text-foreground focus-visible:ring-ring/50 rounded underline-offset-4 outline-none hover:underline focus-visible:ring-[3px]"
                     >{m.costtag_entry_count({ count: tag.entryCount })}</a

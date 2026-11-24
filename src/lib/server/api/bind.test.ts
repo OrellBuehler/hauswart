@@ -1,27 +1,27 @@
 import { error, redirect } from "@sveltejs/kit";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { ApiError } from "$lib/api/errors";
-import { defineEndpoint } from "$lib/api/registry";
+import { ApiError } from "#lib/api/errors.ts";
+import { defineEndpoint } from "#lib/api/registry.ts";
 import {
   emptySchema,
   paginationQuerySchema,
   binaryResponseSchema,
-} from "$lib/api/schemas/common";
+} from "#lib/api/schemas/common.ts";
 import {
   AuthError,
   type SessionUser,
   type TokenInfo,
-} from "$lib/server/auth/types";
+} from "#lib/server/auth/types.ts";
 import {
   RateLimitedError,
   TOKEN_REQUESTS_PER_MINUTE,
   PUBLIC_POSTS_PER_MINUTE,
-} from "$lib/server/auth/rate-limit";
-import { useTestDB } from "$lib/testing/db";
-import { createTestEvent, type TestEventOptions } from "$lib/testing/event";
-import { FileError } from "$lib/server/files/errors";
-import { MarkdownError } from "$lib/server/docs/markdown-core";
+} from "#lib/server/auth/rate-limit.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { createTestEvent, type TestEventOptions } from "#lib/testing/event.ts";
+import { FileError } from "#lib/server/files/errors.ts";
+import { MarkdownError } from "#lib/server/docs/markdown-core.ts";
 import { bind, reply } from "./bind";
 
 const member: SessionUser = {

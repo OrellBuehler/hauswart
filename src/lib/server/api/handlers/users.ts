@@ -1,14 +1,14 @@
-import type { endpoints } from "$lib/api/registry";
-import { ApiError } from "$lib/api/errors";
-import { logAuthEvent } from "$lib/server/auth/events";
-import { revokeUserTokens } from "$lib/server/auth/tokens";
+import type { endpoints } from "#lib/api/registry.ts";
+import { ApiError } from "#lib/api/errors.ts";
+import { logAuthEvent } from "#lib/server/auth/events.ts";
+import { revokeUserTokens } from "#lib/server/auth/tokens.ts";
 import {
   createUser,
   findUserById,
   listDirectory,
   listUsers,
   updateUser,
-} from "$lib/server/users/users";
+} from "#lib/server/users/users.ts";
 import type { Handler } from "../bind";
 import { wireAdminUser } from "../wire";
 

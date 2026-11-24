@@ -1,7 +1,7 @@
-import type { ApiClient } from "$lib/api/client";
-import { orFail } from "$lib/api/load";
-import { endpoints } from "$lib/api/registry";
-import { todayIn } from "$lib/dates";
+import type { ApiClient } from "#lib/api/client.ts";
+import { orFail } from "#lib/api/load.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import { todayIn } from "#lib/dates.ts";
 
 const MAX_PAGES = 10;
 

@@ -88,7 +88,7 @@ calendars,devices,areas}` (any member; 404 not connected, 502 `upstream_error` w
   and `fetch` is not closed (no pinning of the connect address); that is why the check repeats per request and a
   connection's responses only ever go to its owner. Tests run with `setLenientHostPolicy(true)` (vitest setup: loopback
   allowed, names not resolved, metadata still blocked); tests of the policy switch it off and stub `setHostResolver`.
-  Members saving in tests need `allowIntegrationHosts(db, host)` (`$lib/testing/integrations`).
+  Members saving in tests need `allowIntegrationHosts(db, host)` (`#lib/testing/integrations.ts`).
   **A second, strict mode** (`assertPublicUrl`, `classifyPublicAddress`) is for an address somebody typed to be fetched once (`POST /attachments/from-url`): public
   addresses only, standard ports, http and https, no credentials, checked on every redirect; the table and the rules are in `task-steps.md`. It shares the
   resolver, the lenient test mode and the DNS rebinding limit with this policy; the integration policy above is unchanged.

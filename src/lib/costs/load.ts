@@ -1,15 +1,15 @@
 import { redirect } from "@sveltejs/kit";
-import type { ApiClient } from "$lib/api/client";
-import { isApiError } from "$lib/api/errors";
-import { fetchAll } from "$lib/api/fetch-all";
-import { orFail } from "$lib/api/load";
-import { endpoints } from "$lib/api/registry";
-import type { CostBook } from "$lib/api/schemas/cost-books";
-import type { CostTag } from "$lib/api/schemas/cost-tags";
-import type { CostBalances } from "$lib/api/schemas/costs";
-import type { Household } from "$lib/api/schemas/household";
-import { todayIn } from "$lib/dates";
-import { loadDirectory, loadPlaces } from "$lib/tasks/load";
+import type { ApiClient } from "#lib/api/client.ts";
+import { isApiError } from "#lib/api/errors.ts";
+import { fetchAll } from "#lib/api/fetch-all.ts";
+import { orFail } from "#lib/api/load.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+import type { CostTag } from "#lib/api/schemas/cost-tags.ts";
+import type { CostBalances } from "#lib/api/schemas/costs.ts";
+import type { Household } from "#lib/api/schemas/household.ts";
+import { todayIn } from "#lib/dates.ts";
+import { loadDirectory, loadPlaces } from "#lib/tasks/load.ts";
 
 /** The household and today's date in its zone. */
 export async function loadHouseholdToday(

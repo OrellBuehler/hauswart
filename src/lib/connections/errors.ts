@@ -1,7 +1,7 @@
-import { isApiError } from "$lib/api/errors";
-import type { IntegrationKind } from "$lib/api/enums";
-import { apiErrorMessage } from "$lib/error-message";
-import { m } from "$lib/paraglide/messages";
+import { isApiError } from "#lib/api/errors.ts";
+import type { IntegrationKind } from "#lib/api/enums.ts";
+import { apiErrorMessage } from "#lib/error-message.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 type Messages = Record<string, () => string>;
 

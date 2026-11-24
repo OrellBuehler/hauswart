@@ -8,23 +8,23 @@
   import ShieldAlertIcon from "@lucide/svelte/icons/shield-alert";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import UserXIcon from "@lucide/svelte/icons/user-x";
-  import type { GuestLink } from "$lib/api/schemas/share";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { localDateOf } from "$lib/dates";
+  import type { GuestLink } from "#lib/api/schemas/share.ts";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { localDateOf } from "#lib/dates.ts";
   import {
     formatDate,
     formatDateTime,
     formatRelativeInstant,
-  } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     guestSectionLabels,
     guestStatusLabels,
     guestStatusTones,
-  } from "$lib/share/labels";
-  import { cn } from "$lib/utils";
+  } from "#lib/share/labels.ts";
+  import { cn } from "#lib/utils.ts";
 
   let {
     link,

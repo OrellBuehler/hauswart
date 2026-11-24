@@ -1,8 +1,14 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { assetNotes, assets, defects, serviceLog, users } from "$lib/server/db";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
+import {
+  assetNotes,
+  assets,
+  defects,
+  serviceLog,
+  users,
+} from "#lib/server/db.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 
 describe("asset notes table", () => {
   const test = useTestDB();

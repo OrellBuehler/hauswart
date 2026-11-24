@@ -3,7 +3,7 @@ import {
   type CostCategory,
   type CostDeductible,
   type CostSplitMode,
-} from "$lib/api/enums";
+} from "#lib/api/enums.ts";
 import {
   MAX_COST_MINOR,
   SHARE_BPS_TOTAL,
@@ -12,11 +12,11 @@ import {
   type CostEntry,
   type CreateCostRequest,
   type UpdateCostRequest,
-} from "$lib/api/schemas/costs";
-import type { CostBook } from "$lib/api/schemas/cost-books";
-import { currencySchema } from "$lib/api/schemas/household";
-import { isValidDate } from "$lib/dates";
-import { formatMoney, readMoney } from "$lib/format-money";
+} from "#lib/api/schemas/costs.ts";
+import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+import { currencySchema } from "#lib/api/schemas/household.ts";
+import { isValidDate } from "#lib/dates.ts";
+import { formatMoney, readMoney } from "#lib/format-money.ts";
 import {
   allocate,
   currencyExponent,
@@ -24,9 +24,9 @@ import {
   parseSharePercent,
   shareToInput,
   toDecimalString,
-} from "$lib/money";
-import { m } from "$lib/paraglide/messages";
-import { issuesToErrors } from "$lib/tasks/field-errors";
+} from "#lib/money.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { issuesToErrors } from "#lib/tasks/field-errors.ts";
 import { defaultBook, openBooks } from "./books";
 import { sameTagIds, tagIdsOf } from "./tags";
 

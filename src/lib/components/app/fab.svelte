@@ -1,13 +1,13 @@
 <script lang="ts">
   import PlusIcon from "@lucide/svelte/icons/plus";
   import type { Component, Snippet } from "svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { cn } from "$lib/utils";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { cn } from "#lib/utils.ts";
 
   /**
    * The main action of a page as a round button above the bottom bar on phones (hidden from `md`
    * up, where the page header offers the same action). `href` is the resolved address
-   * (`resolve("/tasks/new")`); `label` is the accessible name. The icon is a component (a plus by
+   * (`resolve("tasks/new")`); `label` is the accessible name. The icon is a component (a plus by
    * default); a `children` snippet replaces the whole content.
    */
   let {

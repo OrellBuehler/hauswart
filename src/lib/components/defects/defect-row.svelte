@@ -1,8 +1,8 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
-  import type { Defect } from "$lib/api/schemas/defects";
-  import CommentCount from "$lib/components/comments/comment-count.svelte";
-  import { defectPlace } from "$lib/defects/place";
+  import type { Defect } from "#lib/api/schemas/defects.ts";
+  import CommentCount from "#lib/components/comments/comment-count.svelte";
+  import { defectPlace } from "#lib/defects/place.ts";
   import DefectDeadline from "./defect-deadline.svelte";
   import DefectSeverityBadge from "./defect-severity-badge.svelte";
   import DefectStatusBadge from "./defect-status-badge.svelte";
@@ -14,7 +14,7 @@
 
 <li>
   <a
-    href={resolve(`/defects/${defect.id}` as "/")}
+    href={resolve(`defects/${defect.id}`)}
     class="hover:bg-accent/50 focus-visible:ring-ring/50 block px-4 py-3.5 transition-colors outline-none first:rounded-t-xl last:rounded-b-xl focus-visible:ring-[3px]"
   >
     <span class="flex items-start gap-3">

@@ -4,8 +4,8 @@
   import FileUpIcon from "@lucide/svelte/icons/file-up";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import XIcon from "@lucide/svelte/icons/x";
-  import { formatBytes } from "$lib/attachments/files";
-  import { browserConverter } from "$lib/attachments/receipt-convert";
+  import { formatBytes } from "#lib/attachments/files.ts";
+  import { browserConverter } from "#lib/attachments/receipt-convert.ts";
   import {
     RECEIPT_CAMERA_ACCEPT,
     RECEIPT_PICK_ACCEPT,
@@ -13,10 +13,10 @@
     largePdfMessage,
     prepareReceiptFile,
     receiptProblemMessage,
-  } from "$lib/attachments/receipt-file";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/attachments/receipt-file.ts";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   /**
    * Takes a photo of a receipt (the camera on a phone) or a file (photo or PDF) and hands back one file ready to upload. A

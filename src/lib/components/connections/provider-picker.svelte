@@ -4,20 +4,20 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import XIcon from "@lucide/svelte/icons/x";
-  import type { DocumentProviderKind } from "$lib/api/enums";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Command from "$lib/components/ui/command/index.js";
-  import * as Popover from "$lib/components/ui/popover/index.js";
-  import { pickerErrorMessage } from "$lib/connections/errors";
+  import type { DocumentProviderKind } from "#lib/api/enums.ts";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Command from "#lib/components/ui/command/index.js";
+  import * as Popover from "#lib/components/ui/popover/index.js";
+  import { pickerErrorMessage } from "#lib/connections/errors.ts";
   import {
     fetchPickerItems,
     loadAllPickerItems,
     type PickerItem,
     type PickerSource,
-  } from "$lib/connections/provider-lists";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/connections/provider-lists.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     id,

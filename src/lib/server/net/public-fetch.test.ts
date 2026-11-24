@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useFakeWeb } from "$lib/testing/fake-web";
+import { useFakeWeb } from "#lib/testing/fake-web.ts";
 import { setHostResolver, setLenientHostPolicy } from "./host-policy";
 import {
   PublicFetchError,

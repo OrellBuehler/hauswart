@@ -1,9 +1,9 @@
 import type { z } from "zod";
-import { INTEGRATION_LEVELS, type IntegrationKind } from "$lib/api/enums";
-import type { endpoints } from "$lib/api/registry";
-import type { integrationSchema } from "$lib/api/schemas/integrations";
-import { toIso } from "$lib/api/schemas/common";
-import { requireAdmin } from "$lib/server/auth/guards";
+import { INTEGRATION_LEVELS, type IntegrationKind } from "#lib/api/enums.ts";
+import type { endpoints } from "#lib/api/registry.ts";
+import type { integrationSchema } from "#lib/api/schemas/integrations.ts";
+import { toIso } from "#lib/api/schemas/common.ts";
+import { requireAdmin } from "#lib/server/auth/guards.ts";
 import {
   deleteConnection,
   listConnectionViews,
@@ -14,8 +14,8 @@ import {
   toView,
   vetConnectionTarget,
   type ConnectionView,
-} from "$lib/server/connections/connections";
-import { listAreas } from "$lib/server/rooms/areas";
+} from "#lib/server/connections/connections.ts";
+import { listAreas } from "#lib/server/rooms/areas.ts";
 import type { Handler } from "../bind";
 import type { AuthedContext } from "../context";
 

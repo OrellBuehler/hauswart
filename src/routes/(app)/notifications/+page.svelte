@@ -2,21 +2,21 @@
   import BellIcon from "@lucide/svelte/icons/bell";
   import CheckCheckIcon from "@lucide/svelte/icons/check-check";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
-  import { goto, invalidateAll } from "$app/navigation";
+  import { goto, refreshAll } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { Notification } from "$lib/api/schemas/notifications";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import NotificationItem from "$lib/components/notifications/notification-item.svelte";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { refreshUnread, unread } from "$lib/notifications/unread.svelte";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Notification } from "#lib/api/schemas/notifications.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import NotificationItem from "#lib/components/notifications/notification-item.svelte";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { refreshUnread, unread } from "#lib/notifications/unread.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -74,7 +74,7 @@
     markingAll = true;
     try {
       await api.call(endpoints.notificationsReadAll);
-      await invalidateAll();
+      await refreshAll();
       await refreshUnread();
     } catch (err) {
       toast.error(apiErrorMessage(err));
@@ -85,8 +85,8 @@
 
   function setFilter(value: "all" | "unread") {
     void goto(
-      resolve(`/notifications${value === "unread" ? "?unread=1" : ""}` as "/"),
-      { keepFocus: true, noScroll: true },
+      resolve(`notifications${value === "unread" ? "?unread=1" : ""}`),
+      { reset: false },
     );
   }
 </script>

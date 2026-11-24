@@ -1,10 +1,10 @@
 <script lang="ts">
   import FileTextIcon from "@lucide/svelte/icons/file-text";
   import PlusIcon from "@lucide/svelte/icons/plus";
-  import type { DocPageSummary } from "$lib/api/schemas/docs";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
+  import type { DocPageSummary } from "#lib/api/schemas/docs.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
   import DocRow from "./doc-row.svelte";
 
   let {

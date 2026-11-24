@@ -1,16 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
-import { saveConnection } from "$lib/server/connections/connections";
-import { getDB } from "$lib/server/db";
-import { upsertFinanceBillTask } from "$lib/server/finance/bill-tasks";
-import { registerFinanceProvider } from "$lib/server/finance/providers";
-import { recordSuggestion } from "$lib/server/finance/suggestions";
-import { createCaller, errorCode } from "$lib/testing/api";
+import { saveConnection } from "#lib/server/connections/connections.ts";
+import { getDB } from "#lib/server/db.ts";
+import { upsertFinanceBillTask } from "#lib/server/finance/bill-tasks.ts";
+import { registerFinanceProvider } from "#lib/server/finance/providers.ts";
+import { recordSuggestion } from "#lib/server/finance/suggestions.ts";
+import { createCaller, errorCode } from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 
 type Suggestion = {
   id: string;

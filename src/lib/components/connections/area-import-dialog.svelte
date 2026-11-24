@@ -2,20 +2,20 @@
   import HouseIcon from "@lucide/svelte/icons/house";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { Room } from "$lib/api/schemas/rooms";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-  import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import { matchAreaToRoom } from "$lib/connections/areas";
-  import { pickerErrorMessage } from "$lib/connections/errors";
-  import type { ExternalArea } from "$lib/connections/types";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Room } from "#lib/api/schemas/rooms.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Checkbox } from "#lib/components/ui/checkbox/index.js";
+  import * as Dialog from "#lib/components/ui/dialog/index.js";
+  import { matchAreaToRoom } from "#lib/connections/areas.ts";
+  import { pickerErrorMessage } from "#lib/connections/errors.ts";
+  import type { ExternalArea } from "#lib/connections/types.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     open = $bindable(false),

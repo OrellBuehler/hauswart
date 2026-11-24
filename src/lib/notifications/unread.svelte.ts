@@ -1,5 +1,5 @@
-import { api } from "$lib/api/browser";
-import { endpoints } from "$lib/api/registry";
+import { api } from "#lib/api/browser.ts";
+import { endpoints } from "#lib/api/registry.ts";
 
 /** The unread count shown on the bell; shared so the notifications page can update it. */
 export const unread = $state({ count: 0 });

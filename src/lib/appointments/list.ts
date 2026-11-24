@@ -1,6 +1,9 @@
-import { APPOINTMENT_STATUSES, type AppointmentStatus } from "$lib/api/enums";
-import type { Appointment } from "$lib/api/schemas/appointments";
-import { addDays } from "$lib/dates";
+import {
+  APPOINTMENT_STATUSES,
+  type AppointmentStatus,
+} from "#lib/api/enums.ts";
+import type { Appointment } from "#lib/api/schemas/appointments.ts";
+import { addDays } from "#lib/dates.ts";
 import { spanOf, whenOf } from "./format";
 import { endInstant, startInstant } from "./when";
 

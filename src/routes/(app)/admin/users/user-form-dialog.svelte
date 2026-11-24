@@ -6,24 +6,24 @@
     USER_ROLES,
     type UserLocale,
     type UserRole,
-  } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import { api } from "$lib/api/browser";
+  } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import { api } from "#lib/api/browser.ts";
   import {
     DISPLAY_NAME_MAX,
     PASSWORD_MAX,
     PASSWORD_MIN,
-  } from "$lib/api/schemas/auth";
-  import type { AdminUser } from "$lib/api/schemas/users";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import * as Select from "$lib/components/ui/select/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import { getLocale } from "$lib/paraglide/runtime";
+  } from "#lib/api/schemas/auth.ts";
+  import type { AdminUser } from "#lib/api/schemas/users.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Dialog from "#lib/components/ui/dialog/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import * as Select from "#lib/components/ui/select/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
 
   let {
     open = $bindable(false),

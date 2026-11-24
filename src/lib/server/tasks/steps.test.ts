@@ -2,22 +2,22 @@ import { access, utimes } from "node:fs/promises";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import type { PutTaskStepsRequest } from "$lib/api/schemas/task-steps";
-import { putTaskStepsRequestSchema } from "$lib/api/schemas/task-steps";
-import { createAsset } from "$lib/server/assets/assets";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import type { PutTaskStepsRequest } from "#lib/api/schemas/task-steps.ts";
+import { putTaskStepsRequestSchema } from "#lib/api/schemas/task-steps.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
 import {
   createAttachment,
   deleteAttachment,
   settleBackgroundWork,
   type NewAttachment,
-} from "$lib/server/attachments/attachments";
-import { attachments, taskState, taskSteps, tasks } from "$lib/server/db";
-import { plainPng } from "$lib/server/files/test-images";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, makeTask, NOW } from "$lib/testing/domain";
-import { samplePdf, useTestFilesDir } from "$lib/testing/files";
-import { failure, fieldErrors } from "$lib/testing/vehicles";
+} from "#lib/server/attachments/attachments.ts";
+import { attachments, taskState, taskSteps, tasks } from "#lib/server/db.ts";
+import { plainPng } from "#lib/server/files/test-images.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, makeTask, NOW } from "#lib/testing/domain.ts";
+import { samplePdf, useTestFilesDir } from "#lib/testing/files.ts";
+import { failure, fieldErrors } from "#lib/testing/vehicles.ts";
 import { getUpcomingTasks } from "./dashboard";
 import {
   deleteTask,

@@ -1,4 +1,4 @@
-import type { Room } from "$lib/api/schemas/rooms";
+import type { Room } from "#lib/api/schemas/rooms.ts";
 
 const normal = (value: string): string =>
   value

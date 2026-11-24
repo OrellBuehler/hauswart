@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays } from "$lib/dates";
+import { addDays } from "#lib/dates.ts";
 import {
   SPARSE_WINDOWS_DAYS,
   estimateCrossing,

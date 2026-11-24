@@ -78,12 +78,12 @@ import {
   USER_ROLES,
   VEHICLE_FUEL_TYPES,
   WARRANTY_SOURCES,
-} from "$lib/api/enums";
-import type { Scope } from "$lib/api/scopes";
-import type { Minor } from "$lib/money";
+} from "#lib/api/enums.ts";
+import type { Scope } from "#lib/api/scopes.ts";
+import type { Minor } from "#lib/money.ts";
 
 export { TOKEN_KINDS, USER_LOCALES, USER_ROLES };
-export type { TokenKind, UserLocale, UserRole } from "$lib/api/enums";
+export type { TokenKind, UserLocale, UserRole } from "#lib/api/enums.ts";
 
 export const timestamps = {
   createdAt: integer("created_at", { mode: "timestamp_ms" })

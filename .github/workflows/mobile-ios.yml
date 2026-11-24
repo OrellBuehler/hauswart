@@ -1,0 +1,188 @@
+name: Mobile iOS
+
+on:
+  # No workflow-level `paths:` for pull requests: a required check from a
+  # workflow that never starts stays "expected" forever and blocks the PR.
+  # The `changes` job filters instead and the gate job always reports.
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - "mobile/**"
+      - "messages/**"
+      - "docs/openapi.json"
+      - ".github/workflows/mobile-ios.yml"
+      - ".github/actions/ios-setup/**"
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-ios-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  # The filter includes this file's own path and the setup action so a change to
+  # the Xcode selection or the build steps gets validated on the PR that makes it.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      relevant: ${{ github.event_name != 'pull_request' || steps.filter.outputs.relevant == 'true' }}
+    steps:
+      - id: filter
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: |
+            relevant:
+              - 'mobile/**'
+              - 'messages/**'
+              - 'docs/openapi.json'
+              - '.github/workflows/mobile-ios.yml'
+              - '.github/actions/ios-setup/**'
+
+  # Fast compile signal: framework + simulator app build only. It reports as soon as
+  # the app compiles, before the slower Kotlin/Native tests in `ios-tests`, which
+  # only starts once this has passed (a broken compile therefore never spends macOS
+  # minutes on tests).
+  ios-build:
+    needs: changes
+    if: needs.changes.outputs.relevant == 'true'
+    # GitHub's arm64 Xcode 27 image (macOS 27, Xcode 27.0 / Swift 6.4 by
+    # default). It also carries the not-yet-released Xcode 27.1/27.2 previews
+    # alongside the 27.0 GM, which is why the ios-setup action pins and
+    # verifies the Xcode version.
+    runs-on: xcode-27
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up the Xcode runner
+        uses: ./.github/actions/ios-setup
+
+      - name: Build shared iOS framework
+        run: ./gradlew shared:linkDebugFrameworkIosSimulatorArm64
+
+      - name: Stage shared framework for Xcode
+        run: |
+          SDK_NAME=$(xcrun --sdk iphonesimulator --show-sdk-version)
+          DEST="shared/build/xcode-frameworks/Debug/iphonesimulator${SDK_NAME}"
+          mkdir -p "$DEST"
+          cp -R shared/build/bin/iosSimulatorArm64/debugFramework/shared.framework "$DEST/"
+
+      - name: Generate Xcode project
+        working-directory: mobile/iosApp
+        run: xcodegen generate
+
+      # The Swift code cannot be compiled anywhere but here, so this log is the
+      # only compiler feedback. The full xcodebuild output goes to a file (and
+      # the ios-build-log artifact on failure) instead of flooding the step; on
+      # failure the compiler errors are printed on their own, one line each,
+      # followed by the tail of the log, and the first ones become annotations.
+      # `gh run view <id> --log-failed` shows exactly that block.
+      - name: Build iOS app
+        working-directory: mobile/iosApp
+        env:
+          XCODEBUILD_LOG: ${{ runner.temp }}/xcodebuild.log
+        run: |
+          # The staged shared.framework is the arm64 simulator slice and the
+          # runner is arm64, so build arm64-only — otherwise the generic
+          # Simulator destination also builds x86_64 and can't find a slice.
+          set +e
+          xcodebuild build \
+            -project Hauswart.xcodeproj \
+            -scheme Hauswart \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            ARCHS=arm64 > "$XCODEBUILD_LOG" 2>&1
+          status=$?
+          set -e
+
+          if [ "$status" -eq 0 ]; then
+            tail -n 5 "$XCODEBUILD_LOG"
+            exit 0
+          fi
+
+          echo "xcodebuild failed with exit code $status"
+          echo
+          echo "=== Compiler and build errors ==="
+          { grep -E '(error|fatal error):' "$XCODEBUILD_LOG" || true; } | sed "s#$GITHUB_WORKSPACE/##" | awk '!seen[$0]++'
+          echo
+          echo "=== Last 150 lines of the xcodebuild log ==="
+          tail -n 150 "$XCODEBUILD_LOG"
+
+          { grep -E ": error: " "$XCODEBUILD_LOG" || true; } | awk '!seen[$0]++' | head -n 10 \
+            | sed -nE "s#^$GITHUB_WORKSPACE/([^:]+):([0-9]+):([0-9]+): error: (.*)#::error file=\1,line=\2,col=\3::\4#p" || true
+          exit "$status"
+
+      - name: Upload xcodebuild log
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: ios-build-log
+          path: ${{ runner.temp }}/xcodebuild.log
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # Kotlin/Native tests of the shared module. They otherwise only ever run on the JVM
+  # via the Android job; this is the one place the Kotlin/Native binary the app
+  # actually links gets exercised, where Double formatting, the timezone database and
+  # Instant.parse can all behave differently.
+  ios-tests:
+    needs: [changes, ios-build]
+    if: needs.changes.outputs.relevant == 'true'
+    # Same runner as ios-build, see the comment there.
+    runs-on: xcode-27
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up the Xcode runner
+        uses: ./.github/actions/ios-setup
+
+      - name: Run shared Kotlin/Native tests
+        run: ./gradlew shared:iosSimulatorArm64Test
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: ios-shared-test-results
+          path: mobile/shared/build/reports/tests/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # Always-reporting required check. A skipped job (nothing relevant changed)
+  # counts as passing; a failed or cancelled one fails the gate.
+  mobile-ios-gate:
+    if: always()
+    permissions: {}
+    needs: [changes, ios-build, ios-tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require iOS jobs to have passed or been skipped
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: |
+          echo "$RESULTS"
+          if echo "$RESULTS" | grep -qE 'failure|cancelled'; then
+            exit 1
+          fi

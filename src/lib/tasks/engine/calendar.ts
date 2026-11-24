@@ -12,7 +12,7 @@ import {
   parseDate,
   weekday,
   yearStart,
-} from "$lib/dates";
+} from "#lib/dates.ts";
 import { datedResult, noDateResult } from "./common";
 import type { CalendarTrigger, DueResult, EvalContext, Reason } from "./types";
 

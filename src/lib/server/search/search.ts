@@ -3,7 +3,7 @@ import type { z } from "zod";
 import type {
   SEARCH_HIT_TYPES,
   searchHitSchema,
-} from "$lib/api/schemas/search";
+} from "#lib/api/schemas/search.ts";
 import {
   appointments,
   assetHints,
@@ -15,8 +15,8 @@ import {
   parts,
   rooms,
   tasks,
-} from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
+} from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 
 type Db = Pick<ServiceContext, "db">;
 

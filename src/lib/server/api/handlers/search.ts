@@ -1,6 +1,6 @@
-import type { endpoints } from "$lib/api/registry";
-import { searchLinkedDocuments } from "$lib/server/documents/search";
-import { search as runSearch } from "$lib/server/search/search";
+import type { endpoints } from "#lib/api/registry.ts";
+import { searchLinkedDocuments } from "#lib/server/documents/search.ts";
+import { search as runSearch } from "#lib/server/search/search.ts";
 import type { Handler } from "../bind";
 
 export const search: Handler<typeof endpoints.search> = ({ ctx, query }) => {

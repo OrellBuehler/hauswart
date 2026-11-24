@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { linkify } from "$lib/comments/linkify";
-  import { cn } from "$lib/utils";
+  import { linkify } from "#lib/comments/linkify.ts";
+  import { cn } from "#lib/utils.ts";
 
   let { text, class: className }: { text: string; class?: string } = $props();
 

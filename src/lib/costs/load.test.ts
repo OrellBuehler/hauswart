@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError } from "$lib/api/errors";
-import type { ApiClient } from "$lib/api/client";
+import { ApiError } from "#lib/api/errors.ts";
+import type { ApiClient } from "#lib/api/client.ts";
 import { tryLoadFinanceConnected, tryLoadPendingReceipts } from "./load";
 
 function client(answer: () => unknown) {

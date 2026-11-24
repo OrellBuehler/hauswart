@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { SERVICE_LOG_KINDS, type OdometerUnit } from "$lib/api/enums";
-  import ContactSelect from "$lib/components/contacts/contact-select.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { serviceLogKindLabels } from "$lib/hints/labels";
-  import { m } from "$lib/paraglide/messages";
+  import { SERVICE_LOG_KINDS, type OdometerUnit } from "#lib/api/enums.ts";
+  import ContactSelect from "#lib/components/contacts/contact-select.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
+  import { serviceLogKindLabels } from "#lib/hints/labels.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     idPrefix,

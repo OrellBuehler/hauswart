@@ -2,19 +2,19 @@
   import ArrowLeftRightIcon from "@lucide/svelte/icons/arrow-left-right";
   import { untrack } from "svelte";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { CostBook } from "$lib/api/schemas/cost-books";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { CostBook } from "#lib/api/schemas/cost-books.ts";
   import {
     SETTLEMENT_NOTE_MAX,
     type Settlement,
-  } from "$lib/api/schemas/settlements";
-  import type { DirectoryUser } from "$lib/api/schemas/users";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
+  } from "#lib/api/schemas/settlements.ts";
+  import type { DirectoryUser } from "#lib/api/schemas/users.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
   import {
     buildSettlementBody,
     buildSettlementUpdate,
@@ -23,10 +23,10 @@
     swapParties,
     type SettlementDefaults,
     type SettlementDraft,
-  } from "$lib/costs/settlements";
-  import { formatMoney } from "$lib/format-money";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
+  } from "#lib/costs/settlements.ts";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
 
   let {
     open = $bindable(false),

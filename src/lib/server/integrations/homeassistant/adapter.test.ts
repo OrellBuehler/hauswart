@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createAsset } from "$lib/server/assets/assets";
-import { registerIntegration } from "$lib/server/connections/registry";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { createCaller, errorCode } from "$lib/testing/api";
-import { createTestUser, loginTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, NOW } from "$lib/testing/domain";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import { registerIntegration } from "#lib/server/connections/registry.ts";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { createCaller, errorCode } from "#lib/testing/api.ts";
+import { createTestUser, loginTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, NOW } from "#lib/testing/domain.ts";
 import {
   appUrlOf,
   clearEntityCache,

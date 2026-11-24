@@ -1,17 +1,20 @@
 import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
-import { zonedTimeToInstant } from "$lib/dates";
-import { MANUAL_SIGNAL_SOURCE } from "$lib/tasks/engine";
-import { odometerSignalKey } from "$lib/vehicles/odometer";
-import { householdTimeZone } from "$lib/server/config";
+import { zonedTimeToInstant } from "#lib/dates.ts";
+import { MANUAL_SIGNAL_SOURCE } from "#lib/tasks/engine/index.ts";
+import { odometerSignalKey } from "#lib/vehicles/odometer.ts";
+import { householdTimeZone } from "#lib/server/config.ts";
 import {
   odometerReadings,
   signalSamples,
   signals,
   taskState,
-} from "$lib/server/db";
-import { upsertSignals, type SignalChange } from "$lib/server/signals/service";
-import { tasksReading } from "$lib/server/signals/watch";
-import type { ServiceContext } from "$lib/server/service";
+} from "#lib/server/db.ts";
+import {
+  upsertSignals,
+  type SignalChange,
+} from "#lib/server/signals/service.ts";
+import { tasksReading } from "#lib/server/signals/watch.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import { odometerUnitOf, readingOrder } from "./summary";
 
 type Ctx = Pick<ServiceContext, "db" | "now">;

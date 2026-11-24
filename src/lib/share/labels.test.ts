@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GUEST_PIN_PATTERN } from "$lib/api/schemas/share";
+import { GUEST_PIN_PATTERN } from "#lib/api/schemas/share.ts";
 import { generatePin } from "./labels";
 
 describe("generatePin", () => {

@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
-import { ApiError } from "$lib/api/errors";
+import { ApiError } from "#lib/api/errors.ts";
 import {
   taskCompletions,
   taskPreparations,
   taskState,
   tasks,
-} from "$lib/server/db";
-import { createAsset } from "$lib/server/assets/assets";
-import { createRoom } from "$lib/server/rooms/rooms";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
+} from "#lib/server/db.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import { createRoom } from "#lib/server/rooms/rooms.ts";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import {
   at,
   ctxAt,
@@ -20,7 +20,7 @@ import {
   NOW,
   taskInput,
   weekly,
-} from "$lib/testing/domain";
+} from "#lib/testing/domain.ts";
 import { completeTask } from "./completions";
 import { createPreparation } from "./preparations";
 import {

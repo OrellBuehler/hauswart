@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { CostTagRef } from "$lib/api/schemas/cost-tags";
-  import { TAG_COLOR_STYLES } from "$lib/costs/tags";
-  import { cn } from "$lib/utils";
+  import type { CostTagRef } from "#lib/api/schemas/cost-tags.ts";
+  import { TAG_COLOR_STYLES } from "#lib/costs/tags.ts";
+  import { cn } from "#lib/utils.ts";
 
   let {
     tag,

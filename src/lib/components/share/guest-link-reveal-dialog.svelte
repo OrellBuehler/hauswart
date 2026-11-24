@@ -6,14 +6,14 @@
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import { toast } from "svelte-sonner";
   import { page } from "$app/state";
-  import type { CreatedGuestLink } from "$lib/api/schemas/share";
-  import CopyButton from "$lib/components/app/copy-button.svelte";
-  import QrCode from "$lib/components/assets/qr-code.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import { m } from "$lib/paraglide/messages";
-  import { absoluteUrl } from "$lib/share/urls";
+  import type { CreatedGuestLink } from "#lib/api/schemas/share.ts";
+  import CopyButton from "#lib/components/app/copy-button.svelte";
+  import QrCode from "#lib/components/assets/qr-code.svelte";
+  import * as Alert from "#lib/components/ui/alert/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Dialog from "#lib/components/ui/dialog/index.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { absoluteUrl } from "#lib/share/urls.ts";
 
   let {
     open = $bindable(false),

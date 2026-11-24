@@ -3,18 +3,18 @@ import {
   createCaller,
   createInProcessFetch,
   errorCode,
-} from "$lib/testing/api";
+} from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { today } from "$lib/testing/dates";
-import { plainPng } from "$lib/server/files/test-images";
-import { samplePdf, useTestFilesDir } from "$lib/testing/files";
-import { createApiClient } from "$lib/api/client";
-import { endpoints } from "$lib/api/registry";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { today } from "#lib/testing/dates.ts";
+import { plainPng } from "#lib/server/files/test-images.ts";
+import { samplePdf, useTestFilesDir } from "#lib/testing/files.ts";
+import { createApiClient } from "#lib/api/client.ts";
+import { endpoints } from "#lib/api/registry.ts";
 
 type Json = Record<string, unknown>;
 interface StepBody {

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { normalizeHostEntry } from "$lib/hosts";
+import { normalizeHostEntry } from "#lib/hosts.ts";
 import { atLeastOne, dateSchema, isoTimestampSchema } from "./common";
 
 export const DEFAULT_DUE_SOON_DAYS = 7;

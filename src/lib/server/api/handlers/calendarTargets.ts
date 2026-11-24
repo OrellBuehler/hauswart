@@ -1,7 +1,7 @@
 import type { z } from "zod";
-import type { endpoints } from "$lib/api/registry";
-import type { calendarTargetSchema } from "$lib/api/schemas/calendar-sync";
-import { toIso } from "$lib/api/schemas/common";
+import type { endpoints } from "#lib/api/registry.ts";
+import type { calendarTargetSchema } from "#lib/api/schemas/calendar-sync.ts";
+import { toIso } from "#lib/api/schemas/common.ts";
 import {
   createTarget,
   deleteTarget,
@@ -10,7 +10,7 @@ import {
   updateTarget,
   type Caller,
   type TargetView,
-} from "$lib/server/calendar-sync/targets";
+} from "#lib/server/calendar-sync/targets.ts";
 import type { Handler } from "../bind";
 import type { AuthedContext } from "../context";
 

@@ -1,9 +1,9 @@
 import { error } from "@sveltejs/kit";
-import { openAttachmentFile } from "$lib/server/attachments/attachments";
-import { getDB } from "$lib/server/db";
-import { defaultDisposition, fileResponse } from "$lib/server/files/serve";
-import { GUEST_ERRORS, guestGate } from "$lib/server/share/guest-http";
-import { getGuestFile } from "$lib/server/share/guest-view";
+import { openAttachmentFile } from "#lib/server/attachments/attachments.ts";
+import { getDB } from "#lib/server/db.ts";
+import { defaultDisposition, fileResponse } from "#lib/server/files/serve.ts";
+import { GUEST_ERRORS, guestGate } from "#lib/server/share/guest-http.ts";
+import { getGuestFile } from "#lib/server/share/guest-view.ts";
 import type { RequestHandler } from "./$types";
 
 export const GET: RequestHandler = async (event) => {

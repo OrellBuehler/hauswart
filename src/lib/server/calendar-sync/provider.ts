@@ -1,6 +1,6 @@
-import type { CalendarProviderKind } from "$lib/api/enums";
-import type { CalendarTargetCapabilities } from "$lib/api/schemas/calendar-sync";
-import type { ResolvedConnection } from "$lib/server/connections/registry";
+import type { CalendarProviderKind } from "#lib/api/enums.ts";
+import type { CalendarTargetCapabilities } from "#lib/api/schemas/calendar-sync.ts";
+import type { ResolvedConnection } from "#lib/server/connections/registry.ts";
 
 export type CalendarCapabilities = CalendarTargetCapabilities;
 

@@ -1,11 +1,11 @@
-import type { endpoints } from "$lib/api/registry";
+import type { endpoints } from "#lib/api/registry.ts";
 import {
   createGuestLink,
   listGuestLinks,
   revokeGuestLink,
   rotateGuestLink,
   updateGuestLink,
-} from "$lib/server/share/guest-links";
+} from "#lib/server/share/guest-links.ts";
 import type { Handler } from "../bind";
 import { guestLinkUrl, wireGuestLink } from "../wire-share";
 

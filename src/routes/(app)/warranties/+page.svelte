@@ -3,31 +3,32 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
-  import { WARRANTY_STATUSES, type WarrantyStatus } from "$lib/api/enums";
-  import type { Warranty } from "$lib/api/schemas/warranties";
-  import WarrantyBadge from "$lib/components/assets/warranty-badge.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as Table from "$lib/components/ui/table/index.js";
-  import { formatDay, formatRelativeDays } from "$lib/format";
-  import { assetHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import { WARRANTY_STATUSES, type WarrantyStatus } from "#lib/api/enums.ts";
+  import type { Warranty } from "#lib/api/schemas/warranties.ts";
+  import WarrantyBadge from "#lib/components/assets/warranty-badge.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import * as Table from "#lib/components/ui/table/index.js";
+  import { formatDay, formatRelativeDays } from "#lib/format.ts";
+  import { assetHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
-
   const filter = $derived<WarrantyStatus | "">(
     WARRANTY_STATUSES.find((s) => s === page.url.searchParams.get("status")) ??
       "",
   );
+
   const shown = $derived(
     filter
       ? data.warranties.filter((w) => w.status === filter)
       : data.warranties,
   );
+
   const counts = $derived(
     Object.fromEntries(
       WARRANTY_STATUSES.map((s) => [
@@ -62,10 +63,10 @@
   ]);
 
   async function select(value: WarrantyStatus | "") {
-    await goto(
-      resolve(`/warranties${value ? `?status=${value}` : ""}` as "/"),
-      { keepFocus: true, noScroll: true, replaceState: true },
-    );
+    await goto(resolve(`warranties${value ? `?status=${value}` : ""}`), {
+      reset: false,
+      replace: true,
+    });
   }
 
   function info(w: Warranty) {
@@ -109,7 +110,7 @@
       description={m.warranties_empty_body()}
     >
       {#snippet actions()}
-        <Button href={resolve("/inventory")}
+        <Button href={resolve("inventory")}
           >{m.warranties_empty_action()}</Button
         >
       {/snippet}

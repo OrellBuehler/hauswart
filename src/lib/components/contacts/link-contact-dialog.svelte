@@ -2,23 +2,26 @@
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { ASSET_CONTACT_ROLES, type AssetContactRole } from "$lib/api/enums";
-  import { fetchAll } from "$lib/api/fetch-all";
-  import { endpoints } from "$lib/api/registry";
-  import type { Contact } from "$lib/api/schemas/contacts";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import PickerList from "$lib/components/app/picker-list.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
+  import { api } from "#lib/api/browser.ts";
+  import {
+    ASSET_CONTACT_ROLES,
+    type AssetContactRole,
+  } from "#lib/api/enums.ts";
+  import { fetchAll } from "#lib/api/fetch-all.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Contact } from "#lib/api/schemas/contacts.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import PickerList from "#lib/components/app/picker-list.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
   import {
     assetContactRoleLabels,
     contactKindLabels,
-  } from "$lib/contacts/labels";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/contacts/labels.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     open = $bindable(false),

@@ -1,4 +1,4 @@
-import { FROM_URL_ERROR_CODES } from "$lib/api/schemas/attachments";
+import { FROM_URL_ERROR_CODES } from "#lib/api/schemas/attachments.ts";
 import {
   HostPolicyError,
   HostUnresolvedError,

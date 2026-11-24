@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays } from "$lib/dates";
+import { addDays } from "#lib/dates.ts";
 import { detectCounterReset } from "./counter-delta";
 import { at, done, evaluate, skipped, trigger } from "./testing";
 import type { Completion, EngineState, Sample, Signals } from "./types";

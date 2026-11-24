@@ -1,9 +1,9 @@
-import { getDB } from "$lib/server/db";
+import { getDB } from "#lib/server/db.ts";
 import {
   pruneDeliveries,
   retryDeliveries,
-} from "$lib/server/notifications/deliveries";
-import type { ServiceContext } from "$lib/server/service";
+} from "#lib/server/notifications/deliveries.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import { processDueReactions } from "./reactions";
 import { pruneSignals } from "./service";
 import { watchedEntities } from "./watch";

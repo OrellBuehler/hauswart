@@ -1,14 +1,14 @@
 <script lang="ts">
-  import type { InsurancePolicy } from "$lib/api/schemas/insurance";
-  import CommentCount from "$lib/components/comments/comment-count.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { formatMoney } from "$lib/format-money";
+  import type { InsurancePolicy } from "#lib/api/schemas/insurance.ts";
+  import CommentCount from "#lib/components/comments/comment-count.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { formatMoney } from "#lib/format-money.ts";
   import {
     insuranceTypeIcons,
     insuranceTypeLabels,
-  } from "$lib/insurance/labels";
-  import { insuranceHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/insurance/labels.ts";
+  import { insuranceHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import DeadlineHint from "./deadline-hint.svelte";
 
   let { policy, today }: { policy: InsurancePolicy; today: string } = $props();

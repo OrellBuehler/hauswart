@@ -1,6 +1,6 @@
 import { and, isNotNull, lt, or } from "drizzle-orm";
-import { apiTokens, getDB, sessions } from "$lib/server/db";
-import { purgeDeadShareLinks } from "$lib/server/share/purge";
+import { apiTokens, getDB, sessions } from "#lib/server/db.ts";
+import { purgeDeadShareLinks } from "#lib/server/share/purge.ts";
 import { SESSION_MAX_LIFETIME_MS } from "./sessions";
 
 const DAY_MS = 24 * 60 * 60 * 1000;

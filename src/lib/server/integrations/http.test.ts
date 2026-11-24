@@ -19,7 +19,7 @@ import { z } from "zod";
 import {
   setHostResolver,
   setLenientHostPolicy,
-} from "$lib/server/net/host-policy";
+} from "#lib/server/net/host-policy.ts";
 
 class TestError extends Error {
   constructor(

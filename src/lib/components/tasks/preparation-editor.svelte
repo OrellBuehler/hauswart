@@ -1,12 +1,12 @@
 <script lang="ts">
   import PlusIcon from "@lucide/svelte/icons/plus";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
-  import { PREPARATION_KINDS } from "$lib/api/enums";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { m } from "$lib/paraglide/messages";
-  import type { PreparationDraft } from "$lib/tasks/draft";
-  import { preparationKindLabels } from "$lib/tasks/labels";
+  import { PREPARATION_KINDS } from "#lib/api/enums.ts";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { PreparationDraft } from "#lib/tasks/draft.ts";
+  import { preparationKindLabels } from "#lib/tasks/labels.ts";
   import Field from "./field.svelte";
   import NumberField from "./number-field.svelte";
   import OptionSelect from "./option-select.svelte";

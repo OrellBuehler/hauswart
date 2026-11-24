@@ -1,10 +1,5 @@
 <script lang="ts">
-  import {
-    afterNavigate,
-    goto,
-    invalidateAll,
-    replaceState,
-  } from "$app/navigation";
+  import { afterNavigate, goto, refreshAll } from "$app/navigation";
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
   import ArchiveIcon from "@lucide/svelte/icons/archive";
@@ -18,46 +13,46 @@
   import PlusIcon from "@lucide/svelte/icons/plus";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { Attachment } from "$lib/api/schemas/attachments";
-  import { kindLabels } from "$lib/assets/kinds";
-  import { newTaskHref } from "$lib/assets/links";
-  import { warrantyStatus } from "$lib/assets/warranty";
-  import AssetNotesCard from "$lib/components/asset-notes/asset-notes-card.svelte";
-  import AssetPhoto from "$lib/components/assets/asset-photo.svelte";
-  import AssetContactsCard from "$lib/components/assets/asset-contacts-card.svelte";
-  import AssetHintsCard from "$lib/components/assets/asset-hints-card.svelte";
-  import AssetPartsCard from "$lib/components/assets/asset-parts-card.svelte";
-  import AssetServiceLogCard from "$lib/components/assets/asset-service-log-card.svelte";
-  import QrCard from "$lib/components/assets/qr-card.svelte";
-  import FuelLogCard from "$lib/components/vehicles/fuel-log-card.svelte";
-  import OdometerHistoryCard from "$lib/components/vehicles/odometer-history-card.svelte";
-  import PlateBadge from "$lib/components/vehicles/plate-badge.svelte";
-  import TireSetsCard from "$lib/components/vehicles/tire-sets-card.svelte";
-  import VehicleCard from "$lib/components/vehicles/vehicle-card.svelte";
-  import VehicleCostsCard from "$lib/components/vehicles/vehicle-costs-card.svelte";
-  import VehicleSetupDialog from "$lib/components/vehicles/vehicle-setup-dialog.svelte";
-  import TaskRows from "$lib/components/assets/task-rows.svelte";
-  import WarrantyBadge from "$lib/components/assets/warranty-badge.svelte";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import Attachments from "$lib/components/attachments/attachments.svelte";
-  import LinkedDocsCard from "$lib/components/docs/linked-docs-card.svelte";
-  import Comments from "$lib/components/comments/comments.svelte";
-  import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
-  import HintCallout from "$lib/components/hints/hint-callout.svelte";
-  import AppointmentsCard from "$lib/components/appointments/appointments-card.svelte";
-  import AssetInsuranceCard from "$lib/components/insurance/asset-insurance-card.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { docsFilterHref, newDocHref } from "$lib/docs/links";
-  import { formatDay } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { statsYears } from "$lib/vehicles/cost-card";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Attachment } from "#lib/api/schemas/attachments.ts";
+  import { kindLabels } from "#lib/assets/kinds.ts";
+  import { newTaskHref } from "#lib/assets/links.ts";
+  import { warrantyStatus } from "#lib/assets/warranty.ts";
+  import AssetNotesCard from "#lib/components/asset-notes/asset-notes-card.svelte";
+  import AssetPhoto from "#lib/components/assets/asset-photo.svelte";
+  import AssetContactsCard from "#lib/components/assets/asset-contacts-card.svelte";
+  import AssetHintsCard from "#lib/components/assets/asset-hints-card.svelte";
+  import AssetPartsCard from "#lib/components/assets/asset-parts-card.svelte";
+  import AssetServiceLogCard from "#lib/components/assets/asset-service-log-card.svelte";
+  import QrCard from "#lib/components/assets/qr-card.svelte";
+  import FuelLogCard from "#lib/components/vehicles/fuel-log-card.svelte";
+  import OdometerHistoryCard from "#lib/components/vehicles/odometer-history-card.svelte";
+  import PlateBadge from "#lib/components/vehicles/plate-badge.svelte";
+  import TireSetsCard from "#lib/components/vehicles/tire-sets-card.svelte";
+  import VehicleCard from "#lib/components/vehicles/vehicle-card.svelte";
+  import VehicleCostsCard from "#lib/components/vehicles/vehicle-costs-card.svelte";
+  import VehicleSetupDialog from "#lib/components/vehicles/vehicle-setup-dialog.svelte";
+  import TaskRows from "#lib/components/assets/task-rows.svelte";
+  import WarrantyBadge from "#lib/components/assets/warranty-badge.svelte";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import Attachments from "#lib/components/attachments/attachments.svelte";
+  import LinkedDocsCard from "#lib/components/docs/linked-docs-card.svelte";
+  import Comments from "#lib/components/comments/comments.svelte";
+  import LinkedDocuments from "#lib/components/documents/linked-documents.svelte";
+  import HintCallout from "#lib/components/hints/hint-callout.svelte";
+  import AppointmentsCard from "#lib/components/appointments/appointments-card.svelte";
+  import AssetInsuranceCard from "#lib/components/insurance/asset-insurance-card.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { docsFilterHref, newDocHref } from "#lib/docs/links.ts";
+  import { formatDay } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { statsYears } from "#lib/vehicles/cost-card.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -74,17 +69,20 @@
   let setupOpen = $state(false);
 
   /** A new vehicle comes here with `?termine=1`: the dialog for its recurring tasks opens once, the address is cleaned first. */
-  afterNavigate(() => {
+  afterNavigate(({ shallow, type }) => {
+    if (shallow && type === "goto") return;
     if (!isVehicle || !canWrite) return;
     if (page.url.searchParams.get("termine") !== "1") return;
-    replaceState(resolve(`/assets/${asset.id}` as "/"), page.state);
+    goto(resolve(`assets/${asset.id}`), {
+      shallow: true,
+      replace: true,
+      state: page.state,
+    });
     setupOpen = true;
   });
   const pinnedHints = $derived(data.hints.filter((hint) => hint.pinned));
   const warranty = $derived(warrantyStatus(asset, data.today));
-  const backHref = $derived(
-    isPlant ? resolve("/plants") : resolve("/inventory"),
-  );
+  const backHref = $derived(isPlant ? resolve("plants") : resolve("inventory"));
 
   const facts = $derived(
     (
@@ -122,7 +120,7 @@
           ? m.asset_archived_toast({ name: asset.name })
           : m.asset_restored_toast({ name: asset.name }),
       );
-      await invalidateAll();
+      await refreshAll();
     } catch (err) {
       toast.error(apiErrorMessage(err));
     } finally {
@@ -135,7 +133,7 @@
       params: { id: asset.id },
       body: { photoAttachmentId: attachment?.id ?? null },
     });
-    await invalidateAll();
+    await refreshAll();
   }
 
   async function remove() {
@@ -183,7 +181,7 @@
             {#if asset.roomId && asset.roomName}
               <span aria-hidden="true">·</span>
               <a
-                href={resolve(`/rooms/${asset.roomId}`)}
+                href={resolve(`rooms/${asset.roomId}`)}
                 class="hover:text-foreground min-w-0 wrap-anywhere underline-offset-4 hover:underline"
               >
                 {asset.roomName}
@@ -197,7 +195,7 @@
       </div>
       <div class="flex shrink-0 items-center gap-2">
         <Button
-          href={resolve(`/assets/${asset.id}/edit`)}
+          href={resolve(`assets/${asset.id}/edit`)}
           variant="outline"
           class="max-sm:hidden"
         >
@@ -219,10 +217,10 @@
           <DropdownMenu.Content align="end">
             <DropdownMenu.Item
               class="sm:hidden"
-              onclick={() => goto(resolve(`/assets/${asset.id}/edit`))}
+              onclick={() => goto(resolve(`assets/${asset.id}/edit`))}
+              ><PencilIcon />{m.common_edit()}</DropdownMenu.Item
             >
-              <PencilIcon />{m.common_edit()}
-            </DropdownMenu.Item>
+
             <DropdownMenu.Item onclick={toggleArchive}>
               {#if asset.archivedAt}
                 <ArchiveRestoreIcon />{m.asset_restore()}
@@ -234,9 +232,8 @@
             <DropdownMenu.Item
               variant="destructive"
               onclick={() => (deleteOpen = true)}
+              ><Trash2Icon />{m.common_delete()}</DropdownMenu.Item
             >
-              <Trash2Icon />{m.common_delete()}
-            </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       </div>
@@ -389,9 +386,9 @@
                   <PlusIcon />{m.asset_add_task()}
                 </Button>
                 {#if isVehicle && canWrite}
-                  <Button variant="outline" onclick={() => (setupOpen = true)}>
-                    <CalendarCheckIcon />{m.vehicle_setup_open()}
-                  </Button>
+                  <Button variant="outline" onclick={() => (setupOpen = true)}
+                    ><CalendarCheckIcon />{m.vehicle_setup_open()}</Button
+                  >
                 {/if}
               {/snippet}
             </EmptyState>
@@ -403,9 +400,9 @@
             />
             {#if isVehicle && canWrite}
               <div class="mt-3">
-                <Button variant="outline" onclick={() => (setupOpen = true)}>
-                  <CalendarCheckIcon />{m.vehicle_setup_open()}
-                </Button>
+                <Button variant="outline" onclick={() => (setupOpen = true)}
+                  ><CalendarCheckIcon />{m.vehicle_setup_open()}</Button
+                >
               </div>
             {/if}
           {/if}
@@ -454,7 +451,7 @@
         title={m.asset_files_title()}
         primaryId={asset.photoAttachmentId}
         onprimary={setPhoto}
-        onchange={() => invalidateAll()}
+        onchange={() => refreshAll()}
       />
 
       <LinkedDocuments ownerType="asset" ownerId={asset.id} />
@@ -493,7 +490,7 @@
     unit={data.vehicle.details.odometerUnit}
     today={data.today}
     tasks={data.tasks}
-    onfinished={() => invalidateAll()}
+    onfinished={() => refreshAll()}
   />
 {/if}
 

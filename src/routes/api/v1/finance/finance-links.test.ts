@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { saveConnection } from "$lib/server/connections/connections";
-import { getDB } from "$lib/server/db";
-import { recordSuggestion } from "$lib/server/finance/suggestions";
-import { createCaller, errorCode, errorDetailCode } from "$lib/testing/api";
+import { saveConnection } from "#lib/server/connections/connections.ts";
+import { getDB } from "#lib/server/db.ts";
+import { recordSuggestion } from "#lib/server/finance/suggestions.ts";
+import { createCaller, errorCode, errorDetailCode } from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { today } from "$lib/testing/dates";
-import { useTestDB } from "$lib/testing/db";
-import { addDays } from "$lib/dates";
+} from "#lib/testing/auth.ts";
+import { today } from "#lib/testing/dates.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { addDays } from "#lib/dates.ts";
 
 type Suggestion = {
   id: string;

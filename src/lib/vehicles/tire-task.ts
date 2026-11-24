@@ -1,4 +1,4 @@
-import type { TireSeason } from "$lib/api/enums";
+import type { TireSeason } from "#lib/api/enums.ts";
 import { templateOfMark } from "./template-mark";
 
 const SEASONS: readonly [RegExp, TireSeason][] = [

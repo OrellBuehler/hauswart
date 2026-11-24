@@ -12,11 +12,13 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  # Releases tagged `mobile-v*` belong to the mobile apps (mobile-release.yml) and
+  # build no image: both jobs skip them.
   # A release tag can point at a commit whose checks were skipped or red, so the
   # published image is gated on the same checks as a pull request.
   test:
     name: Test gate
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && !startsWith(github.event.release.tag_name, 'mobile-v')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -48,7 +50,7 @@ jobs:
   image:
     name: Build${{ github.event_name == 'release' && ' and publish' || '' }} image
     needs: [test]
-    if: ${{ !cancelled() && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
+    if: ${{ !cancelled() && !startsWith(github.event.release.tag_name, 'mobile-v') && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:

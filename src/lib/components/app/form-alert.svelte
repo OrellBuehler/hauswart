@@ -1,6 +1,6 @@
 <script lang="ts">
   import CircleAlertIcon from "@lucide/svelte/icons/circle-alert";
-  import * as Alert from "$lib/components/ui/alert/index.js";
+  import * as Alert from "#lib/components/ui/alert/index.js";
 
   let { message }: { message: string | undefined } = $props();
 

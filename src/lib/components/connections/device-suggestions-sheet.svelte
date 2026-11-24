@@ -7,18 +7,18 @@
   import RotateCcwIcon from "@lucide/svelte/icons/rotate-ccw";
   import SearchIcon from "@lucide/svelte/icons/search";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { ExternalDevice } from "$lib/connections/types";
-  import type { Room } from "$lib/api/schemas/rooms";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import * as Sheet from "$lib/components/ui/sheet/index.js";
-  import { roomForArea } from "$lib/connections/areas";
-  import { loadDismissed, saveDismissed } from "$lib/connections/dismissed";
-  import { pickerErrorMessage } from "$lib/connections/errors";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { ExternalDevice } from "#lib/connections/types.ts";
+  import type { Room } from "#lib/api/schemas/rooms.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import * as Sheet from "#lib/components/ui/sheet/index.js";
+  import { roomForArea } from "#lib/connections/areas.ts";
+  import { loadDismissed, saveDismissed } from "#lib/connections/dismissed.ts";
+  import { pickerErrorMessage } from "#lib/connections/errors.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     open = $bindable(false),

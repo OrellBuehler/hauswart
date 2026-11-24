@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The mark of static/logo.svg (256 x 256), scaled into the safe zone of an adaptive icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+    <group
+        android:pivotX="128"
+        android:pivotY="128"
+        android:scaleX="0.46"
+        android:scaleY="0.46">
+        <path
+            android:fillColor="#FFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M40 20H88V104L128 64L216 152V236H120V188L168 168L128 128L88 168V236H40ZM133 212a9 9 0 1 0 18 0a9 9 0 1 0 -18 0z" />
+    </group>
+</vector>

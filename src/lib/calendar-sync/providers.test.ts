@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Integration } from "$lib/api/schemas/integrations";
-import { m } from "$lib/paraglide/messages";
+import type { Integration } from "#lib/api/schemas/integrations.ts";
+import { m } from "#lib/paraglide/messages.js";
 import { creatableProviders, providerName, providerUsable } from "./providers";
 
 function integration(over: Partial<Integration> = {}): Integration {

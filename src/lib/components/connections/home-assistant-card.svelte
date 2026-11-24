@@ -8,24 +8,24 @@
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import UnplugIcon from "@lucide/svelte/icons/unplug";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
   import type { z } from "zod";
-  import type { testIntegrationResponseSchema } from "$lib/api/schemas/integrations";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { forgetIntegrations } from "$lib/connections/connection";
-  import { forgetReadings } from "$lib/connections/entities";
-  import { integrationErrorMessage } from "$lib/connections/errors";
-  import { formatDateTime, formatRelativeInstant } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  import type { testIntegrationResponseSchema } from "#lib/api/schemas/integrations.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import * as Alert from "#lib/components/ui/alert/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { forgetIntegrations } from "#lib/connections/connection.ts";
+  import { forgetReadings } from "#lib/connections/entities.ts";
+  import { integrationErrorMessage } from "#lib/connections/errors.ts";
+  import { formatDateTime, formatRelativeInstant } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { IntegrationCardProps } from "./cards";
   import { kindMeta } from "./kinds";
   import StatusBadge from "./status-badge.svelte";
@@ -67,8 +67,7 @@
     if (integration.enabled && integration.status === "error") formOpen = true;
   });
 
-  const calendarSyncHref = `${resolve("/settings/calendar")}#calendar-targets`;
-
+  const calendarSyncHref = `${resolve("settings/calendar")}#calendar-targets`;
   const storedAppUrl = $derived(
     typeof integration.config.appUrl === "string"
       ? integration.config.appUrl
@@ -97,9 +96,11 @@
 
   function validate(): boolean {
     const found: Record<string, string> = {};
+
     if (baseUrl.trim() === "") found.baseUrl = m.field_required();
     else if (!/^https?:\/\//i.test(baseUrl.trim()))
       found.baseUrl = m.integration_ha_url_invalid();
+
     if (showTokenInput && token.trim() === "") {
       found.token = urlChanged
         ? m.integration_ha_token_required_url()
@@ -423,9 +424,8 @@
                   size="sm"
                   class="shrink-0"
                   onclick={() => (replaceToken = true)}
+                  >{m.integration_ha_token_replace()}</Button
                 >
-                  {m.integration_ha_token_replace()}
-                </Button>
               </div>
             </div>
           {/if}
@@ -511,9 +511,8 @@
                 class="text-destructive hover:text-destructive ms-auto"
                 disabled={saving || testing}
                 onclick={() => (disconnectOpen = true)}
+                ><UnplugIcon />{m.integration_disconnect()}</Button
               >
-                <UnplugIcon />{m.integration_disconnect()}
-              </Button>
             {/if}
           </div>
           {#if integration.configured && dirty}
@@ -558,7 +557,7 @@
           <p>
             {m.integration_ha_help_push()}
             <a
-              href={resolve("/settings/notifications")}
+              href={resolve("settings/notifications")}
               class="text-foreground underline underline-offset-2 pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center"
             >
               {m.integration_ha_help_push_link()}

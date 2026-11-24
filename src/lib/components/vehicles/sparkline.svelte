@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { cn } from "$lib/utils";
-  import { sparkline, type TrendPoint } from "$lib/vehicles/trend";
+  import { cn } from "#lib/utils.ts";
+  import { sparkline, type TrendPoint } from "#lib/vehicles/trend.ts";
 
   let {
     points,

@@ -1,20 +1,21 @@
 import { isActionFailure, isRedirect, type RequestEvent } from "@sveltejs/kit";
 import { describe, expect, it } from "vitest";
-import { createGuestLinkRequestSchema } from "$lib/api/schemas/share";
-import { GUEST_COOKIE } from "$lib/server/share/guest-access";
-import { createGuestLink } from "$lib/server/share/guest-links";
-import { plainPng } from "$lib/server/files/test-images";
-import { createCaller } from "$lib/testing/api";
+import { createGuestLinkRequestSchema } from "#lib/api/schemas/share.ts";
+import { GUEST_COOKIE } from "#lib/server/share/guest-access.ts";
+import { createGuestLink } from "#lib/server/share/guest-links.ts";
+import { plainPng } from "#lib/server/files/test-images.ts";
+import { createCaller } from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt } from "$lib/testing/domain";
-import { useTestFilesDir } from "$lib/testing/files";
-import { callRoute } from "$lib/testing/route";
-import config from "../svelte.config.js";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
+import { useTestFilesDir } from "#lib/testing/files.ts";
+import { callRoute } from "#lib/testing/route.ts";
+
+import { kitOptions } from "../kit.config.ts";
 import { POST as upload } from "./routes/api/v1/attachments/+server";
 import { POST as createToken } from "./routes/api/v1/tokens/+server";
 import * as guestHome from "./routes/g/[token]/+page.server";
@@ -27,8 +28,8 @@ describe("SvelteKit's own origin check", () => {
   it("is off: hooks.server.ts refuses cross-site writes instead", () => {
     // It would reject bearer uploads (multipart) that carry no Origin before bind() runs, and it
     // cannot tell them from cookie requests. The deprecated `checkOrigin` is not used.
-    expect(config.kit?.csrf?.trustedOrigins).toEqual(["*"]);
-    expect(config.kit?.csrf).not.toHaveProperty("checkOrigin");
+    expect(kitOptions.csrf.trustedOrigins).toEqual(["*"]);
+    expect(kitOptions.csrf).not.toHaveProperty("checkOrigin");
   });
 });
 

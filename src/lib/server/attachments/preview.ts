@@ -3,17 +3,17 @@ import {
   ATTACHMENT_PREVIEW_MAX_BYTES,
   ATTACHMENT_PREVIEW_MAX_SIDE,
   parsePageRange,
-} from "$lib/api/schemas/attachments";
-import { ApiError } from "$lib/api/errors";
-import { withExtension } from "$lib/server/files/filename";
-import { openPdf, PdfUnreadableError } from "$lib/server/files/pdf-pages";
-import { previewImage } from "$lib/server/files/preview";
-import { defaultFilesRoot } from "$lib/server/files/store";
+} from "#lib/api/schemas/attachments.ts";
+import { ApiError } from "#lib/api/errors.ts";
+import { withExtension } from "#lib/server/files/filename.ts";
+import { openPdf, PdfUnreadableError } from "#lib/server/files/pdf-pages.ts";
+import { previewImage } from "#lib/server/files/preview.ts";
+import { defaultFilesRoot } from "#lib/server/files/store.ts";
 import {
   invalidFieldWith,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
+} from "#lib/server/service.ts";
 import {
   getAttachment,
   openAttachmentFile,

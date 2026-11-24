@@ -5,9 +5,9 @@ import {
   contacts,
   insurancePolicies,
   insurancePolicyAssets,
-} from "$lib/server/db";
-import { minor } from "$lib/money";
-import { useTestDB } from "$lib/testing/db";
+} from "#lib/server/db.ts";
+import { minor } from "#lib/money.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 
 describe("insurance tables", () => {
   const test = useTestDB();

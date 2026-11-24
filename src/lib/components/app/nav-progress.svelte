@@ -1,10 +1,10 @@
 <script lang="ts">
   import { navigating } from "$app/state";
-  import { m } from "$lib/paraglide/messages";
+  import { m } from "#lib/paraglide/messages.js";
 </script>
 
 <!-- Shows after a short delay so that quick navigations do not flash it. -->
-{#if navigating.to}
+{#if navigating.to && !navigating.shallow}
   <div
     role="progressbar"
     aria-label={m.nav_loading()}

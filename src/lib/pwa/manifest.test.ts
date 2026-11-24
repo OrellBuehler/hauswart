@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { THEME_COLORS } from "./colors";
 import { buildManifest, MANIFEST_ICONS } from "./manifest";
-import { isAppNavigation } from "./options";
+import { isAppNavigation } from "./worker";
 
 const html = readFileSync("src/app.html", "utf8");
 const manifest = buildManifest({
@@ -111,8 +111,8 @@ describe("web app manifest", () => {
       // an address with a query is still an app navigation: no cache, no special case
       for (const shortcut of manifest.shortcuts) {
         const url = new URL(shortcut.url, "https://example.org");
-        const navigation = { request: { mode: "navigate" } as Request, url };
-        expect(isAppNavigation(navigation), shortcut.url).toBe(true);
+        const request = { mode: "navigate", method: "GET" } as const;
+        expect(isAppNavigation(request, url), shortcut.url).toBe(true);
       }
     });
 

@@ -10,22 +10,22 @@
   import SirenIcon from "@lucide/svelte/icons/siren";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import UmbrellaIcon from "@lucide/svelte/icons/umbrella";
-  import { endpointUrl } from "$lib/api/client";
-  import { endpoints } from "$lib/api/registry";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import DocProse from "$lib/components/docs/doc-prose.svelte";
-  import HintCallout from "$lib/components/hints/hint-callout.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { telHref } from "$lib/contacts/labels";
-  import { sectionLabels } from "$lib/docs/sections";
-  import { insuranceTypeLabels } from "$lib/insurance/labels";
-  import { assetHref, contactHref, insuranceHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
+  import { endpointUrl } from "#lib/api/client.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import DocProse from "#lib/components/docs/doc-prose.svelte";
+  import HintCallout from "#lib/components/hints/hint-callout.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Checkbox } from "#lib/components/ui/checkbox/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { telHref } from "#lib/contacts/labels.ts";
+  import { sectionLabels } from "#lib/docs/sections.ts";
+  import { insuranceTypeLabels } from "#lib/insurance/labels.ts";
+  import { assetHref, contactHref, insuranceHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -76,12 +76,12 @@
       description={m.emergency_empty_body()}
     >
       {#snippet actions()}
-        <Button href={resolve("/contacts")}>
-          <ContactIcon />{m.emergency_empty_contacts()}
-        </Button>
-        <Button href={resolve("/docs/new")} variant="outline">
-          {m.emergency_empty_page()}
-        </Button>
+        <Button href={resolve("contacts")}
+          ><ContactIcon />{m.emergency_empty_contacts()}</Button
+        >
+        <Button href={resolve("docs/new")} variant="outline"
+          >{m.emergency_empty_page()}</Button
+        >
       {/snippet}
     </EmptyState>
   {/if}
@@ -171,9 +171,9 @@
                 <a
                   href={insuranceHref(policy.id)}
                   class="font-semibold wrap-anywhere underline-offset-4 hover:underline print:no-underline"
+                  >{policy.title}</a
                 >
-                  {policy.title}
-                </a>
+
                 <p class="text-muted-foreground text-sm wrap-anywhere">
                   {[
                     insuranceTypeLabels[policy.type](),
@@ -299,7 +299,7 @@
         <div class="flex items-center gap-2 print:hidden">
           <Badge variant="secondary">{sectionLabels[page.section]()}</Badge>
           <a
-            href={resolve(`/docs/${encodeURIComponent(page.slug)}` as "/")}
+            href={resolve(`docs/${encodeURIComponent(page.slug)}`)}
             class="text-brand text-sm font-medium underline underline-offset-4"
           >
             {m.emergency_open_page()}
@@ -380,9 +380,9 @@
         <Card.Description>{m.emergency_guest_description()}</Card.Description>
       </Card.Header>
       <Card.Content>
-        <Button href={resolve("/settings/guest-links")} size="lg">
-          <LinkIcon />{m.emergency_guest_cta()}
-        </Button>
+        <Button href={resolve("settings/guest-links")} size="lg"
+          ><LinkIcon />{m.emergency_guest_cta()}</Button
+        >
       </Card.Content>
     </Card.Root>
   </section>

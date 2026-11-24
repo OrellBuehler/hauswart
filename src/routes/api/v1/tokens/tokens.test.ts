@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { apiTokens, authEvents } from "$lib/server/db";
-import { verifyToken } from "$lib/server/auth/tokens";
+import { apiTokens, authEvents } from "#lib/server/db.ts";
+import { verifyToken } from "#lib/server/auth/tokens.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { callRoute } from "$lib/testing/route";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { callRoute } from "#lib/testing/route.ts";
 import { GET as me } from "../auth/me/+server";
 import { DELETE } from "./[id]/+server";
 import { GET, POST } from "./+server";

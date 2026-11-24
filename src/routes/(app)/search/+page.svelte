@@ -4,12 +4,12 @@
   import { resolve } from "$app/paths";
   import SearchIcon from "@lucide/svelte/icons/search";
   import SearchXIcon from "@lucide/svelte/icons/search-x";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { searchHref } from "$lib/docs/links";
-  import { m } from "$lib/paraglide/messages";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { searchHref } from "#lib/docs/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     HIT_TYPES,
     groupHits,
@@ -17,8 +17,8 @@
     hitLabels,
     safeHitUrl,
     type SearchHitType,
-  } from "$lib/search/types";
-  import { cn } from "$lib/utils";
+  } from "#lib/search/types.ts";
+  import { cn } from "#lib/utils.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -142,7 +142,7 @@
               <li>
                 {#if href}
                   <a
-                    href={resolve(href as "/")}
+                    href={resolve(href)}
                     class="hover:bg-accent/50 focus-visible:ring-ring/50 flex flex-col gap-0.5 px-4 py-3 outline-none first:rounded-t-lg last:rounded-b-lg focus-visible:ring-[3px]"
                   >
                     <span class="line-clamp-2 text-sm font-medium break-words"

@@ -1,4 +1,4 @@
-import { diffDays, maxDate } from "$lib/dates";
+import { diffDays, maxDate } from "#lib/dates.ts";
 
 export const WARRANTY_EXPIRING_DAYS = 90;
 

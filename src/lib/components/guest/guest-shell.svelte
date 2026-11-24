@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import type { UserLocale } from "$lib/api/enums";
-  import { m } from "$lib/paraglide/messages";
+  import type { UserLocale } from "#lib/api/enums.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     title,

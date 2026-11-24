@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNull, or } from "drizzle-orm";
-import { maxDate } from "$lib/dates";
-import { assets, documentLinks, externalDocuments } from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
+import { maxDate } from "#lib/dates.ts";
+import { assets, documentLinks, externalDocuments } from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 
 type Now = Pick<ServiceContext, "db" | "now">;
 

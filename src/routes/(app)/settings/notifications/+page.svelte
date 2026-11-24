@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import { page } from "$app/state";
   import { resolve } from "$app/paths";
   import BellIcon from "@lucide/svelte/icons/bell";
@@ -9,27 +9,27 @@
   import SmartphoneIcon from "@lucide/svelte/icons/smartphone";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { PUSH_STAGES, type PushStage } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
+  import { api } from "#lib/api/browser.ts";
+  import { PUSH_STAGES, type PushStage } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
   import {
     MAX_NOTIFICATION_TARGETS,
     NOTIFY_TARGET_PATTERN,
-  } from "$lib/api/schemas/notification-settings";
-  import CopyButton from "$lib/components/app/copy-button.svelte";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { haActionPackage } from "$lib/connections/ha-package";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/api/schemas/notification-settings.ts";
+  import CopyButton from "#lib/components/app/copy-button.svelte";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import * as Alert from "#lib/components/ui/alert/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Checkbox } from "#lib/components/ui/checkbox/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { haActionPackage } from "#lib/connections/ha-package.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -107,10 +107,10 @@
       return phoneA - phoneB || a.localeCompare(b);
     });
   });
+
   const enabledTargets = $derived(
     rows.filter((r) => r.enabled).map((r) => r.target),
   );
-
   const baselineKey = $derived(
     JSON.stringify([
       data.settings.pushEnabled,
@@ -135,6 +135,7 @@
     const base = target.startsWith("mobile_app_")
       ? target.slice("mobile_app_".length)
       : target;
+
     return base
       .split("_")
       .filter(Boolean)
@@ -210,7 +211,7 @@
         },
       });
       rows = rowsFrom(saved);
-      await invalidateAll();
+      await refreshAll();
       toast.success(m.notify_saved());
     } catch (err) {
       error = apiErrorMessage(err);
@@ -262,7 +263,7 @@
               <Alert.Description class="text-pretty">
                 {m.notify_not_connected_body()}
                 <a
-                  href={resolve("/settings/integrations")}
+                  href={resolve("settings/integrations")}
                   class="text-foreground mt-1 inline-flex min-h-10 items-center font-medium underline underline-offset-2"
                 >
                   {m.notify_not_connected_link()}
@@ -497,7 +498,7 @@
         <li>
           {m.notify_done_step2()}
           <a
-            href={resolve("/settings/tokens")}
+            href={resolve("settings/tokens")}
             class="text-foreground underline underline-offset-2 pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center"
           >
             {m.notify_done_step2_link()}

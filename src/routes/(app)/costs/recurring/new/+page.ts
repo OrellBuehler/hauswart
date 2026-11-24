@@ -1,5 +1,5 @@
-import { createApiClient } from "$lib/api/client";
-import { loadCostContext } from "$lib/costs/load";
+import { createApiClient } from "#lib/api/client.ts";
+import { loadCostContext } from "#lib/costs/load.ts";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ fetch, url }) => {

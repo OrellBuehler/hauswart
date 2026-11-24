@@ -1,18 +1,18 @@
 <script lang="ts">
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
-  import { USER_LOCALES, type UserLocale } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import { api } from "$lib/api/browser";
-  import AuthCard from "$lib/components/app/auth-card.svelte";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { isApiError } from "$lib/api/errors";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import { getLocale } from "$lib/paraglide/runtime";
+  import { USER_LOCALES, type UserLocale } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import { api } from "#lib/api/browser.ts";
+  import AuthCard from "#lib/components/app/auth-card.svelte";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { isApiError } from "#lib/api/errors.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { getLocale } from "#lib/paraglide/runtime.js";
 
   const localeNames: Record<UserLocale, () => string> = {
     de: () => m.locale_name_de(),

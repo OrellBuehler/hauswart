@@ -1,24 +1,24 @@
 import { readdir } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import { loadImage } from "@napi-rs/canvas";
-import { endpoints } from "$lib/api/registry";
-import type { AiTask } from "$lib/api/schemas/ai-tasks";
-import type { Scope } from "$lib/api/scopes";
+import { endpoints } from "#lib/api/registry.ts";
+import type { AiTask } from "#lib/api/schemas/ai-tasks.ts";
+import type { Scope } from "#lib/api/scopes.ts";
 import {
   createCaller,
   createInProcessFetch,
   errorCode,
-} from "$lib/testing/api";
+} from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
   type TestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { sampleHeic, samplePdf, useTestFilesDir } from "$lib/testing/files";
-import { createApiClient } from "$lib/api/client";
-import { plainPng } from "$lib/server/files/test-images";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { sampleHeic, samplePdf, useTestFilesDir } from "#lib/testing/files.ts";
+import { createApiClient } from "#lib/api/client.ts";
+import { plainPng } from "#lib/server/files/test-images.ts";
 
 interface CostBody {
   id: string;

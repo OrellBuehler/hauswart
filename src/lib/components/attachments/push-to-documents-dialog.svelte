@@ -1,24 +1,24 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
+  import { api } from "#lib/api/browser.ts";
   import {
     DOCUMENT_LINK_ROLES,
     type DocumentLinkOwnerType,
     type DocumentLinkRole,
     type DocumentProviderKind,
-  } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { Attachment } from "$lib/api/schemas/attachments";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { baseName } from "$lib/attachments/files";
-  import { defaultRoleFor, documentRoleLabels } from "$lib/documents/labels";
-  import { trackPush } from "$lib/documents/pushes.svelte";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Attachment } from "#lib/api/schemas/attachments.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { baseName } from "#lib/attachments/files.ts";
+  import { defaultRoleFor, documentRoleLabels } from "#lib/documents/labels.ts";
+  import { trackPush } from "#lib/documents/pushes.svelte.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   const TITLE_MAX = 128;
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ApiError } from "$lib/api/errors";
+import { ApiError } from "#lib/api/errors.ts";
 import {
   requireAdmin,
   requirePrincipal,

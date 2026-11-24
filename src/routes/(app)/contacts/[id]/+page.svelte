@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
-  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
+  import { refreshAll } from "$app/navigation";
+  import { gotoFromOverlay } from "#lib/overlays/use-overlay-history.svelte.ts";
   import { resolve } from "$app/paths";
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
   import BoxesIcon from "@lucide/svelte/icons/boxes";
@@ -10,27 +10,27 @@
   import SirenIcon from "@lucide/svelte/icons/siren";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import Attachments from "$lib/components/attachments/attachments.svelte";
-  import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import AppointmentsCard from "$lib/components/appointments/appointments-card.svelte";
-  import ContactActions from "$lib/components/contacts/contact-actions.svelte";
-  import ContactFormDialog from "$lib/components/contacts/contact-form-dialog.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import Attachments from "#lib/components/attachments/attachments.svelte";
+  import LinkedDocuments from "#lib/components/documents/linked-documents.svelte";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import AppointmentsCard from "#lib/components/appointments/appointments-card.svelte";
+  import ContactActions from "#lib/components/contacts/contact-actions.svelte";
+  import ContactFormDialog from "#lib/components/contacts/contact-form-dialog.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
   import {
     assetContactRoleLabels,
     contactKindIcons,
     contactKindLabels,
     telHref,
-  } from "$lib/contacts/labels";
-  import { assetHref } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/contacts/labels.ts";
+  import { assetHref } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -45,7 +45,7 @@
     const { id, name } = contact;
     await api.call(endpoints.contactsDelete, { params: { id } });
     toast.success(m.contact_deleted_toast({ name }));
-    await gotoFromOverlay(resolve("/contacts"), { invalidateAll: true });
+    await gotoFromOverlay(resolve("contacts"), { refreshAll: true });
   }
 </script>
 
@@ -56,7 +56,7 @@
 <div class="flex flex-col gap-6">
   <div class="flex flex-col gap-4">
     <Button
-      href={resolve("/contacts")}
+      href={resolve("contacts")}
       variant="ghost"
       size="sm"
       class="text-muted-foreground -ms-2 w-fit max-md:hidden"
@@ -101,9 +101,9 @@
           variant="outline"
           class="max-sm:hidden"
           onclick={() => (editOpen = true)}
+          ><PencilIcon />{m.common_edit()}</Button
         >
-          <PencilIcon />{m.common_edit()}
-        </Button>
+
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
             {#snippet child({ props })}
@@ -121,16 +121,15 @@
             <DropdownMenu.Item
               class="min-h-10 sm:hidden"
               onSelect={() => (editOpen = true)}
+              ><PencilIcon />{m.common_edit()}</DropdownMenu.Item
             >
-              <PencilIcon />{m.common_edit()}
-            </DropdownMenu.Item>
+
             <DropdownMenu.Item
               variant="destructive"
               class="min-h-10"
               onSelect={() => (deleteOpen = true)}
+              ><Trash2Icon />{m.common_delete()}</DropdownMenu.Item
             >
-              <Trash2Icon />{m.common_delete()}
-            </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       </div>
@@ -278,7 +277,7 @@
 <ContactFormDialog
   bind:open={editOpen}
   {contact}
-  onsaved={() => invalidateAll()}
+  onsaved={() => refreshAll()}
 />
 
 <ConfirmDialog

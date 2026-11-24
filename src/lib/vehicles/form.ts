@@ -1,12 +1,12 @@
-import type { OdometerUnit, VehicleFuelType } from "$lib/api/enums";
+import type { OdometerUnit, VehicleFuelType } from "#lib/api/enums.ts";
 import {
   putVehicleRequestSchema,
   type PutVehicleRequest,
   type Vehicle,
-} from "$lib/api/schemas/vehicles";
-import { isValidDate } from "$lib/dates";
-import { issuesToErrors } from "$lib/tasks/field-errors";
-import { m } from "$lib/paraglide/messages";
+} from "#lib/api/schemas/vehicles.ts";
+import { isValidDate } from "#lib/dates.ts";
+import { issuesToErrors } from "#lib/tasks/field-errors.ts";
+import { m } from "#lib/paraglide/messages.js";
 
 /** What the vehicle fields of the asset form edit. Text stays text until it is checked on submit. */
 export type VehicleDraft = {

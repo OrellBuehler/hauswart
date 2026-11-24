@@ -11,7 +11,7 @@ paths:
   - "src/routes/{login,setup}/**"
   - "src/routes/api/v1/{auth,me,setup,tokens,users}/**"
   - "src/routes/*/settings/{account,tokens}/**"
-  - "svelte.config.js"
+  - "kit.config.ts"
 ---
 
 # Authentication and the API spine
@@ -30,7 +30,7 @@ paths:
   `setsSession` (login, setup) — needs `Origin` equal to the app origin and `Content-Type:
 application/json` (`multipart/form-data` for multipart endpoints), else 403 `csrf_failed`. Bearer
   requests skip it (so a bearer upload needs no `Origin`). Set `ORIGIN` behind a reverse proxy.
-  **SvelteKit's own form check is off** (`kit.csrf.trustedOrigins: ["*"]` in svelte.config.js, pinned
+  **SvelteKit's own form check is off** (`csrf.trustedOrigins: ["*"]` in kit.config.ts, pinned
   by `src/csrf.test.ts`): it refused bearer multipart uploads before `bind` ran. Outside `/api/v1` the
   hook (`auth/origin.ts`, first thing in `handle`, before any session lookup) takes its place and
   refuses every write (any method but GET/HEAD/OPTIONS, any content type) whose `Origin` is not the app
@@ -50,7 +50,7 @@ application/json` (`multipart/form-data` for multipart endpoints), else 403 `csr
   IPv4). In-memory, so behind a proxy set `ADDRESS_HEADER`/`XFF_DEPTH`. 429 carries `Retry-After`.
 - **Hardening**: every response carries `X-Frame-Options`, `X-Content-Type-Options`,
   `Referrer-Policy` and `Permissions-Policy` (hook); pages get a nonce-based CSP from `kit.csp`
-  (svelte.config.js), so inline scripts need `%sveltekit.nonce%` (the theme script lives in
+  (kit.config.ts), so inline scripts need `%sveltekit.nonce%` (the theme script lives in
   `app.html` for that reason). Unexpected errors on `/api/*` become the 500 envelope. Sessions end
   180 days after login at the latest; a scheduler (`auth/purge.ts`) deletes sessions that expired
   over 7 days ago and tokens that were revoked or expired over 30 days ago. `HAUSWART_SETUP_TOKEN`,

@@ -1,8 +1,8 @@
 <script lang="ts">
   import ClipboardListIcon from "@lucide/svelte/icons/clipboard-list";
   import { resolve } from "$app/paths";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     count,
@@ -18,7 +18,7 @@
   } = $props();
 
   const href = $derived(
-    `${resolve(`/assets/${encodeURIComponent(assetId)}` as "/")}#notes`,
+    `${resolve(`assets/${encodeURIComponent(assetId)}`)}#notes`,
   );
 </script>
 

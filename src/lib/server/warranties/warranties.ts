@@ -1,14 +1,14 @@
 import { and, eq, isNull, or, isNotNull, type SQL } from "drizzle-orm";
-import { diffDays, maxDate } from "$lib/dates";
-import type { WarrantyStatus } from "$lib/api/enums";
+import { diffDays, maxDate } from "#lib/dates.ts";
+import type { WarrantyStatus } from "#lib/api/enums.ts";
 import {
   WARRANTY_EXPIRED_GRACE_DAYS,
   WARRANTY_EXPIRING_DAYS,
-} from "$lib/api/schemas/warranties";
-import { assets, rooms } from "$lib/server/db";
-import { paginateArray } from "$lib/server/pagination";
-import type { ServiceContext } from "$lib/server/service";
-import { clockAt } from "$lib/server/tasks/evaluator";
+} from "#lib/api/schemas/warranties.ts";
+import { assets, rooms } from "#lib/server/db.ts";
+import { paginateArray } from "#lib/server/pagination.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
+import { clockAt } from "#lib/server/tasks/evaluator.ts";
 
 export interface WarrantyRecord {
   assetId: string;

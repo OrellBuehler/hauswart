@@ -1,20 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { and, eq } from "drizzle-orm";
-import { createAsset } from "$lib/server/assets/assets";
-import { createHint } from "$lib/server/hints/hints";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import { createHint } from "#lib/server/hints/hints.ts";
 import {
   notifications,
   pendingReactions,
   taskCompletions,
-} from "$lib/server/db";
-import { completeTask } from "$lib/server/tasks/completions";
-import { evaluateTaskById } from "$lib/server/tasks/evaluator";
-import { getTask, updateTask } from "$lib/server/tasks/tasks";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, everyDays, makeTask, NOW } from "$lib/testing/domain";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { createHintRequestSchema } from "$lib/api/schemas/hints";
+} from "#lib/server/db.ts";
+import { completeTask } from "#lib/server/tasks/completions.ts";
+import { evaluateTaskById } from "#lib/server/tasks/evaluator.ts";
+import { getTask, updateTask } from "#lib/server/tasks/tasks.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, everyDays, makeTask, NOW } from "#lib/testing/domain.ts";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { createHintRequestSchema } from "#lib/api/schemas/hints.ts";
 import { applyAutoComplete } from "./auto-complete";
 import { afterCalendarSync, ingestSignals } from "./ingest";
 import { processDueReactions } from "./reactions";

@@ -1,21 +1,21 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { toast } from "svelte-sonner";
-  import { DISPLAY_NAME_MAX } from "$lib/api/schemas/auth";
-  import { USER_LOCALES, type UserLocale } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import { api } from "$lib/api/browser";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import { applyLocale } from "$lib/locale";
+  import { DISPLAY_NAME_MAX } from "#lib/api/schemas/auth.ts";
+  import { USER_LOCALES, type UserLocale } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import { api } from "#lib/api/browser.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { applyLocale } from "#lib/locale.ts";
   import type { PageProps } from "./$types";
   import PasswordCard from "./password-card.svelte";
 
@@ -59,7 +59,7 @@
         await applyLocale(user.locale);
         return;
       }
-      await invalidateAll();
+      await refreshAll();
       toast.success(m.account_saved());
     } catch (err) {
       error = apiErrorMessage(err);

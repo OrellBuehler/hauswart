@@ -2,16 +2,16 @@
   import CircleAlertIcon from "@lucide/svelte/icons/circle-alert";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import SearchIcon from "@lucide/svelte/icons/search";
-  import { COST_CATEGORIES, type CostCategory } from "$lib/api/enums";
-  import type { CostBook } from "$lib/api/schemas/cost-books";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { Skeleton } from "$lib/components/ui/skeleton/index.js";
+  import { COST_CATEGORIES, type CostCategory } from "#lib/api/enums.ts";
+  import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import * as Alert from "#lib/components/ui/alert/index.js";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Checkbox } from "#lib/components/ui/checkbox/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { Skeleton } from "#lib/components/ui/skeleton/index.js";
   import {
     categoryRows,
     isArchivedBook,
@@ -23,10 +23,10 @@
     withPurchase,
     type KeptCategory,
     type KeptSettings,
-  } from "$lib/connections/kept";
-  import { defaultBook } from "$lib/costs/books";
-  import { categoryLabels } from "$lib/costs/labels";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/connections/kept.ts";
+  import { defaultBook } from "#lib/costs/books.ts";
+  import { categoryLabels } from "#lib/costs/labels.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     settings = $bindable(),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { at } from "$lib/testing/domain";
+import { at } from "#lib/testing/domain.ts";
 import { inQuietHours, localMinutes } from "./quiet-hours";
 
 const TZ = "Europe/Zurich";

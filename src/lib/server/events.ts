@@ -1,4 +1,4 @@
-import type { CompletionKind } from "$lib/api/enums";
+import type { CompletionKind } from "#lib/api/enums.ts";
 import type { ServiceContext } from "./service";
 
 /** The slice of a task completion that other domains may react to. */

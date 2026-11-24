@@ -1,19 +1,23 @@
-import type { DefectSeverity, DefectStatus, UserLocale } from "$lib/api/enums";
-import { m } from "$lib/paraglide/messages";
-import { rooms } from "$lib/server/db";
+import type {
+  DefectSeverity,
+  DefectStatus,
+  UserLocale,
+} from "#lib/api/enums.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { rooms } from "#lib/server/db.ts";
 import { eq } from "drizzle-orm";
-import { householdTimeZone } from "$lib/server/config";
-import { getHousehold } from "$lib/server/household/household";
+import { householdTimeZone } from "#lib/server/config.ts";
+import { getHousehold } from "#lib/server/household/household.ts";
 import {
   headerCell,
   MUTED,
   renderPdf,
   table,
   type PdfContent,
-} from "$lib/server/pdf/render";
-import type { ServiceContext } from "$lib/server/service";
-import { clockAt } from "$lib/server/tasks/evaluator";
-import type { Viewer } from "$lib/server/comments/comments";
+} from "#lib/server/pdf/render.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
+import { clockAt } from "#lib/server/tasks/evaluator.ts";
+import type { Viewer } from "#lib/server/comments/comments.ts";
 import {
   getTimeline,
   selectAllDefects,

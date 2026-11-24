@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { UserLocale } from "$lib/api/enums";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import type { UserLocale } from "#lib/api/enums.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     html,

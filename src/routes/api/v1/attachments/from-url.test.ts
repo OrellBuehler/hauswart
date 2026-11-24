@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { createCaller, errorCode } from "$lib/testing/api";
+import { createCaller, errorCode } from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { useFakeWeb } from "$lib/testing/fake-web";
-import { samplePdf, sampleHtml, useTestFilesDir } from "$lib/testing/files";
-import { plainPng } from "$lib/server/files/test-images";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { useFakeWeb } from "#lib/testing/fake-web.ts";
+import { samplePdf, sampleHtml, useTestFilesDir } from "#lib/testing/files.ts";
+import { plainPng } from "#lib/server/files/test-images.ts";
 
 interface ErrorBody {
   error: {

@@ -5,7 +5,7 @@
  *
  * The stack below is the model of the entries we added. It stays right as long as `sync` is called
  * after every traversal the browser makes (popstate) and `navigated` after every navigation:
- * `page.state` is no help in between, SvelteKit resets it on `invalidateAll()`.
+ * `page.state` is no help in between, `invalidateAll()` resets it (`refreshAll()` keeps it).
  *
  * A navigation that follows from an open overlay pops the entries first (`popAll`) and navigates
  * afterwards. Replacing the overlay's entry with the new page does not work: a shallow entry carries
@@ -105,7 +105,7 @@ export class OverlayHistory {
 
   /**
    * Resolves once no entry waits to be popped and no pop is under way. The router drops an invalidation that is
-   * still loading when a popstate arrives (even for a shallow entry), so `invalidateAll()` after a dialog closed
+   * still loading when a popstate arrives (even for a shallow entry), so `refreshAll()` after a dialog closed
    * must wait for this.
    */
   async settled(): Promise<void> {

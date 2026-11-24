@@ -1,7 +1,7 @@
 <script lang="ts">
   import MessageSquareIcon from "@lucide/svelte/icons/message-square";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let { count, class: className }: { count: number; class?: string } = $props();
 </script>

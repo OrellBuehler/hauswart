@@ -1,6 +1,6 @@
-import { isApiError } from "$lib/api/errors";
-import { m } from "$lib/paraglide/messages";
-import { getLocale } from "$lib/paraglide/runtime";
+import { isApiError } from "#lib/api/errors.ts";
+import { m } from "#lib/paraglide/messages.js";
+import { getLocale } from "#lib/paraglide/runtime.js";
 
 const INTL_LOCALES = { de: "de-CH", en: "en-GB" } as const;
 

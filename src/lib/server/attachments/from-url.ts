@@ -1,16 +1,16 @@
-import type { AttachmentOwnerType } from "$lib/api/enums";
-import { DEFAULT_MAX_BYTES } from "$lib/server/files/store";
+import type { AttachmentOwnerType } from "#lib/api/enums.ts";
+import { DEFAULT_MAX_BYTES } from "#lib/server/files/store.ts";
 import {
   fetchPublicFile,
   PublicFetchError,
   type PublicFetchOptions,
-} from "$lib/server/net/public-fetch";
+} from "#lib/server/net/public-fetch.ts";
 import {
   invalidField,
   invalidFieldWith,
   type ServiceContext,
-} from "$lib/server/service";
-import { APP_VERSION } from "$lib/server/version";
+} from "#lib/server/service.ts";
+import { APP_VERSION } from "#lib/server/version.ts";
 import { createAttachment, type AttachmentRecord } from "./attachments";
 import { isOwnerTypeSupported, ownerExists } from "./owners";
 

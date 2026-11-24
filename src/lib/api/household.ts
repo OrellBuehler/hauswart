@@ -1,4 +1,4 @@
-import { todayIn } from "$lib/dates";
+import { todayIn } from "#lib/dates.ts";
 import type { ApiClient } from "./client";
 import { endpoints } from "./registry";
 

@@ -15,8 +15,8 @@ import type {
   RotationStrategy,
   TaskCategory,
   TaskPriority,
-} from "$lib/api/enums";
-import { m } from "$lib/paraglide/messages";
+} from "#lib/api/enums.ts";
+import { m } from "#lib/paraglide/messages.js";
 import type { DueStatus, Reason } from "./engine/types";
 
 export const categoryLabels: Record<TaskCategory, () => string> = {

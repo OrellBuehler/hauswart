@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import HostChipsInput from "$lib/components/app/host-chips-input.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import HostChipsInput from "#lib/components/app/host-chips-input.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -70,7 +70,7 @@
       dueSoonDays = saved.settings.dueSoonDays;
       digestTime = saved.settings.digestTime;
       hostAllowlist = [...(saved.settings.integrationHostAllowlist ?? [])];
-      await invalidateAll();
+      await refreshAll();
       toast.success(m.household_saved());
     } catch (err) {
       error = apiErrorMessage(err);

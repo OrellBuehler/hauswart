@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildOpenApiDocument } from "$lib/api/openapi";
-import { endpoints } from "$lib/api/registry";
-import { useTestDB } from "$lib/testing/db";
-import { callRoute } from "$lib/testing/route";
+import { buildOpenApiDocument } from "#lib/api/openapi.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { callRoute } from "#lib/testing/route.ts";
 import { GET as health } from "./health/+server";
 import { GET as openapi } from "./openapi.json/+server";
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { cn } from "$lib/utils";
+  import { cn } from "#lib/utils.ts";
 
   type Chip = { value: number; label: string; aria?: string };
 

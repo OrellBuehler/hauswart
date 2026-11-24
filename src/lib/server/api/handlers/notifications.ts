@@ -1,10 +1,10 @@
-import type { endpoints } from "$lib/api/registry";
+import type { endpoints } from "#lib/api/registry.ts";
 import {
   listNotifications,
   markAllRead,
   markRead,
   unreadCount,
-} from "$lib/server/notifications/notifications";
+} from "#lib/server/notifications/notifications.ts";
 import type { Handler } from "../bind";
 import { wireNotification } from "../wire";
 

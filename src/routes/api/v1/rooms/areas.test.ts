@@ -1,19 +1,19 @@
 import { sql } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { IntegrationError } from "$lib/server/connections/errors";
-import { saveConnection } from "$lib/server/connections/connections";
+import { IntegrationError } from "#lib/server/connections/errors.ts";
+import { saveConnection } from "#lib/server/connections/connections.ts";
 import {
   registerIntegration,
   type IntegrationOperation,
-} from "$lib/server/connections/registry";
-import { getDB } from "$lib/server/db";
-import { createCaller, errorCode } from "$lib/testing/api";
+} from "#lib/server/connections/registry.ts";
+import { getDB } from "#lib/server/db.ts";
+import { createCaller, errorCode } from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 
 interface Area {
   id: string;

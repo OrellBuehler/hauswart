@@ -7,23 +7,26 @@
   import { untrack } from "svelte";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { isApiError } from "$lib/api/errors";
-  import { endpoints } from "$lib/api/registry";
-  import { AI_TASK_REASON_MAX, type AiTask } from "$lib/api/schemas/ai-tasks";
-  import type { Attachment } from "$lib/api/schemas/attachments";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import Fab from "$lib/components/app/fab.svelte";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import AttachmentLightbox from "$lib/components/attachments/attachment-lightbox.svelte";
-  import ReceiptTask from "$lib/components/costs/receipt-task.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
+  import { api } from "#lib/api/browser.ts";
+  import { isApiError } from "#lib/api/errors.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import {
+    AI_TASK_REASON_MAX,
+    type AiTask,
+  } from "#lib/api/schemas/ai-tasks.ts";
+  import type { Attachment } from "#lib/api/schemas/attachments.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import Fab from "#lib/components/app/fab.svelte";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import AttachmentLightbox from "#lib/components/attachments/attachment-lightbox.svelte";
+  import ReceiptTask from "#lib/components/costs/receipt-task.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
   import {
     RECEIPTS_PAGE_SIZE,
     RECEIPT_VIEWS,
@@ -33,11 +36,11 @@
     receiptViewQuery,
     receiptViewStatus,
     type ReceiptView,
-  } from "$lib/costs/receipts";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { invalidateAfterOverlay } from "$lib/overlays/use-overlay-history.svelte";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/costs/receipts.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { invalidateAfterOverlay } from "#lib/overlays/use-overlay-history.svelte.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -158,7 +161,7 @@
     await invalidateAfterOverlay();
   }
 
-  const submitHref = resolve("/costs/quick?mode=receipt" as "/");
+  const submitHref = resolve("costs/quick?mode=receipt");
   const chip =
     "inline-flex min-h-10 max-w-full items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 pointer-coarse:min-h-11";
 </script>
@@ -170,7 +173,7 @@
 <div class="flex flex-col gap-6">
   <div class="max-md:hidden">
     <a
-      href={resolve("/costs")}
+      href={resolve("costs")}
       class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -ms-1 inline-flex min-h-10 items-center gap-1.5 rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
     >
       <ArrowLeftIcon class="size-4" aria-hidden="true" />
@@ -202,7 +205,7 @@
         {@const current = view === data.view}
         <li>
           <a
-            href={resolve(`/costs/receipts${receiptViewQuery(view)}` as "/")}
+            href={resolve(`costs/receipts${receiptViewQuery(view)}`)}
             aria-current={current ? "true" : undefined}
             class={cn(
               chip,
@@ -257,9 +260,9 @@
           : m.receipts_empty_filtered_body()}
       >
         {#snippet actions()}
-          <Button href={resolve("/costs/receipts")} variant="outline">
-            {m.receipts_filter_all()}
-          </Button>
+          <Button href={resolve("costs/receipts")} variant="outline"
+            >{m.receipts_filter_all()}</Button
+          >
         {/snippet}
       </EmptyState>
     {/if}

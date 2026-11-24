@@ -1,13 +1,13 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import PlugZapIcon from "@lucide/svelte/icons/plug-zap";
-  import * as Alert from "$lib/components/ui/alert/index.js";
+  import * as Alert from "#lib/components/ui/alert/index.js";
   import {
     homeAssistantOf,
     isUsable,
     loadIntegrations,
-  } from "$lib/connections/connection";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/connections/connection.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   /** `null` until the connection is known, so nothing flashes while it loads. */
   let state = $state<"missing" | "connected" | null>(null);
@@ -37,7 +37,7 @@
     <Alert.Description>
       <p class="text-pretty">{m.trigger_advanced_body()}</p>
       <a
-        href={resolve("/settings/integrations")}
+        href={resolve("settings/integrations")}
         class="text-foreground mt-1 inline-block font-medium underline underline-offset-2"
       >
         {m.trigger_advanced_link()}

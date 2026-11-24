@@ -1,5 +1,5 @@
-import { endpoints } from "$lib/api/registry";
-import { bind } from "$lib/server/api/bind";
-import { claim } from "$lib/server/api/handlers/ai-tasks";
+import { endpoints } from "#lib/api/registry.ts";
+import { bind } from "#lib/server/api/bind.ts";
+import { claim } from "#lib/server/api/handlers/ai-tasks.ts";
 
 export const POST = bind(endpoints.aiTasksClaim, claim);

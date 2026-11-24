@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- UI text comes from the shared message files through tr(...); a literal in a layout or a
+         composable is a string that was never translated. -->
+    <issue id="HardcodedText" severity="error" />
+</lint>

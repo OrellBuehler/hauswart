@@ -3,19 +3,19 @@ import {
   SHARE_MISSES_PER_WINDOW,
   SHARE_REQUESTS_PER_MINUTE,
   SHARE_TOKEN_REQUESTS_PER_MINUTE,
-} from "$lib/server/auth/rate-limit";
-import { createCalendarFeedRequestSchema } from "$lib/api/schemas/share";
+} from "#lib/server/auth/rate-limit.ts";
+import { createCalendarFeedRequestSchema } from "#lib/api/schemas/share.ts";
 import {
   createFeed,
   findFeedByToken,
   revokeFeed,
   rotateFeed,
-} from "$lib/server/calendar/feeds";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, everyDays, makeTask } from "$lib/testing/domain";
-import { parseIcs } from "$lib/testing/ics";
-import { callRoute } from "$lib/testing/route";
+} from "#lib/server/calendar/feeds.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, everyDays, makeTask } from "#lib/testing/domain.ts";
+import { parseIcs } from "#lib/testing/ics.ts";
+import { callRoute } from "#lib/testing/route.ts";
 import { GET } from "./[token].ics/+server";
 
 describe("public calendar feed", () => {

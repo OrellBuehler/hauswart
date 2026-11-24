@@ -1,20 +1,23 @@
 <script lang="ts">
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { TireSet } from "$lib/api/schemas/tire-sets";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatNumber } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
-  import { refusedMessage, refusedReading } from "$lib/vehicles/odometer-error";
-  import type { VehicleReadingState } from "$lib/vehicles/odometer-state.svelte";
-  import { buildTread } from "$lib/vehicles/tire-form";
-  import { setTitle } from "$lib/vehicles/tire-label";
-  import { TREAD_WARNING_MM } from "$lib/vehicles/tires";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { TireSet } from "#lib/api/schemas/tire-sets.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatNumber } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
+  import {
+    refusedMessage,
+    refusedReading,
+  } from "#lib/vehicles/odometer-error.ts";
+  import type { VehicleReadingState } from "#lib/vehicles/odometer-state.svelte.ts";
+  import { buildTread } from "#lib/vehicles/tire-form.ts";
+  import { setTitle } from "#lib/vehicles/tire-label.ts";
+  import { TREAD_WARNING_MM } from "#lib/vehicles/tires.ts";
   import OdometerReadingField from "./odometer-reading-field.svelte";
 
   let {

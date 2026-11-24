@@ -1,11 +1,11 @@
 <script lang="ts">
   import BanIcon from "@lucide/svelte/icons/ban";
   import CheckIcon from "@lucide/svelte/icons/check";
-  import type { DefectStatus } from "$lib/api/enums";
-  import { statusLabels, statusTones } from "$lib/defects/labels";
-  import { formatDateShort } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import type { DefectStatus } from "#lib/api/enums.ts";
+  import { statusLabels, statusTones } from "#lib/defects/labels.ts";
+  import { formatDateShort } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     status,

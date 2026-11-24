@@ -1,16 +1,16 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { createAsset, deleteAsset } from "$lib/server/assets/assets";
-import { odometerReadings, taskCompletions } from "$lib/server/db";
-import { getSignal } from "$lib/server/signals/service";
-import { completeTask, undoCompletion } from "$lib/server/tasks/completions";
-import { getTask } from "$lib/server/tasks/tasks";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, everyDays, makeTask, NOW } from "$lib/testing/domain";
-import { failure, fieldErrors, makeVehicle } from "$lib/testing/vehicles";
-import { odometerSignalKey } from "$lib/vehicles/odometer";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { createAsset, deleteAsset } from "#lib/server/assets/assets.ts";
+import { odometerReadings, taskCompletions } from "#lib/server/db.ts";
+import { getSignal } from "#lib/server/signals/service.ts";
+import { completeTask, undoCompletion } from "#lib/server/tasks/completions.ts";
+import { getTask } from "#lib/server/tasks/tasks.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, everyDays, makeTask, NOW } from "#lib/testing/domain.ts";
+import { failure, fieldErrors, makeVehicle } from "#lib/testing/vehicles.ts";
+import { odometerSignalKey } from "#lib/vehicles/odometer.ts";
 import { listReadings, recordOdometer } from "./odometer";
 
 describe("a completion with an odometer reading", () => {

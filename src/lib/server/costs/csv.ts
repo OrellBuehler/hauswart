@@ -1,6 +1,6 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
-import { currencyExponent, minor, toDecimalString } from "$lib/money";
+import { currencyExponent, minor, toDecimalString } from "#lib/money.ts";
 import {
   assets,
   costBooks,
@@ -8,8 +8,8 @@ import {
   defects,
   rooms,
   users,
-} from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
+} from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import { getCostBookRow } from "./books";
 import { hasTag, yearRange } from "./costs";
 import { getCostTagRow, tagsOfEntries } from "./tags";

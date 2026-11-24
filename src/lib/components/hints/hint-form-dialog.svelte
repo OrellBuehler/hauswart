@@ -1,25 +1,25 @@
 <script lang="ts">
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { HINT_KINDS, type HintKind } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { Hint, SignalReaction } from "$lib/api/schemas/hints";
-  import { MAX_REACTION_DELAY_MINUTES } from "$lib/api/schemas/hints";
-  import EntityPicker from "$lib/components/connections/entity-picker.svelte";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import SwitchField from "$lib/components/app/switch-field.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import NumberField from "$lib/components/tasks/number-field.svelte";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { commonStates } from "$lib/connections/entities";
-  import type { ExternalEntity } from "$lib/connections/types";
-  import { hintKindLabels } from "$lib/hints/labels";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
+  import { api } from "#lib/api/browser.ts";
+  import { HINT_KINDS, type HintKind } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Hint, SignalReaction } from "#lib/api/schemas/hints.ts";
+  import { MAX_REACTION_DELAY_MINUTES } from "#lib/api/schemas/hints.ts";
+  import EntityPicker from "#lib/components/connections/entity-picker.svelte";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import SwitchField from "#lib/components/app/switch-field.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import NumberField from "#lib/components/tasks/number-field.svelte";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { commonStates } from "#lib/connections/entities.ts";
+  import type { ExternalEntity } from "#lib/connections/types.ts";
+  import { hintKindLabels } from "#lib/hints/labels.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
 
   type NotifyChoice = "all" | "assignee" | "custom";
 

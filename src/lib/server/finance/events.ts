@@ -1,4 +1,4 @@
-import { onEvent, type DomainEvents } from "$lib/server/events";
+import { onEvent, type DomainEvents } from "#lib/server/events.ts";
 import { releaseLinks } from "./links";
 
 /** A deleted entry cannot be what a link suggestion pointed at: the transaction comes back as a cost suggestion. */

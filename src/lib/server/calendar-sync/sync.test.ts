@@ -1,17 +1,17 @@
 import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { CalendarItemKind } from "$lib/api/enums";
+import type { CalendarItemKind } from "#lib/api/enums.ts";
 import {
   createAppointment,
   deleteAppointment,
   updateAppointment,
   type CreateAppointmentInput,
-} from "$lib/server/appointments/appointments";
-import { calendarLinks, calendarTargets, connections } from "$lib/server/db";
-import { completeTask } from "$lib/server/tasks/completions";
-import { updateTask } from "$lib/server/tasks/tasks";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, everyDays, makeTask, NOW } from "$lib/testing/domain";
+} from "#lib/server/appointments/appointments.ts";
+import { calendarLinks, calendarTargets, connections } from "#lib/server/db.ts";
+import { completeTask } from "#lib/server/tasks/completions.ts";
+import { updateTask } from "#lib/server/tasks/tasks.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, everyDays, makeTask, NOW } from "#lib/testing/domain.ts";
 import { buildDesiredItems, itemSettingsOf } from "./items";
 import { listLinks } from "./links";
 import type { CalendarCapabilities } from "./provider";

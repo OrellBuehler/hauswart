@@ -1,13 +1,13 @@
 <script lang="ts">
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import { MAX_STOCK, type Part } from "$lib/api/schemas/parts";
-  import FormDialog from "$lib/components/app/form-dialog.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import NumberField from "$lib/components/tasks/number-field.svelte";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import { MAX_STOCK, type Part } from "#lib/api/schemas/parts.ts";
+  import FormDialog from "#lib/components/app/form-dialog.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import NumberField from "#lib/components/tasks/number-field.svelte";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
 
   let {
     open = $bindable(false),

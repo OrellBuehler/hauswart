@@ -1,9 +1,9 @@
-import type { AttachmentOwnerType } from "$lib/api/enums";
-import type { endpoints } from "$lib/api/registry";
-import { PAGE_COUNT_HEADER } from "$lib/api/schemas/attachments";
-import { requireScopes } from "$lib/server/auth/guards";
-import { attachFromUrl } from "$lib/server/attachments/from-url";
-import { attachmentPreview } from "$lib/server/attachments/preview";
+import type { AttachmentOwnerType } from "#lib/api/enums.ts";
+import type { endpoints } from "#lib/api/registry.ts";
+import { PAGE_COUNT_HEADER } from "#lib/api/schemas/attachments.ts";
+import { requireScopes } from "#lib/server/auth/guards.ts";
+import { attachFromUrl } from "#lib/server/attachments/from-url.ts";
+import { attachmentPreview } from "#lib/server/attachments/preview.ts";
 import {
   createAttachment,
   deleteAttachment,
@@ -11,9 +11,9 @@ import {
   listAttachments,
   openAttachmentFile,
   updateAttachment,
-} from "$lib/server/attachments/attachments";
-import { defaultDisposition, fileResponse } from "$lib/server/files/serve";
-import { conflict, invalidField, notFound } from "$lib/server/service";
+} from "#lib/server/attachments/attachments.ts";
+import { defaultDisposition, fileResponse } from "#lib/server/files/serve.ts";
+import { conflict, invalidField, notFound } from "#lib/server/service.ts";
 import type { AuthedContext } from "../context";
 import type { Handler } from "../bind";
 import { wireAttachment } from "../wire";

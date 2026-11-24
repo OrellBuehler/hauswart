@@ -1,25 +1,29 @@
 import { PDFDocument } from "pdf-lib";
 import { describe, expect, it } from "vitest";
-import { createApiClient, endpointUrl } from "$lib/api/client";
-import { endpoints } from "$lib/api/registry";
+import { createApiClient, endpointUrl } from "#lib/api/client.ts";
+import { endpoints } from "#lib/api/registry.ts";
 import {
   ATTACHMENT_PDF_READ_MAX_BYTES,
   PAGE_COUNT_HEADER,
-} from "$lib/api/schemas/attachments";
+} from "#lib/api/schemas/attachments.ts";
 import {
   createCaller,
   createInProcessFetch,
   errorCode,
-} from "$lib/testing/api";
+} from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { useTestFilesDir } from "$lib/testing/files";
-import { plainJpeg, plainPng } from "$lib/server/files/test-images";
-import { encryptedPdf, makePdf, pageWidth } from "$lib/server/files/test-pdfs";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { useTestFilesDir } from "#lib/testing/files.ts";
+import { plainJpeg, plainPng } from "#lib/server/files/test-images.ts";
+import {
+  encryptedPdf,
+  makePdf,
+  pageWidth,
+} from "#lib/server/files/test-pdfs.ts";
 
 interface ErrorBody {
   error: {

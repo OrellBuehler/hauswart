@@ -1,16 +1,16 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { RequestEvent } from "@sveltejs/kit";
-import { SCOPES, scopesForRole, type Scope } from "$lib/api/scopes";
-import { endpointList, type AnyEndpoint } from "$lib/api/registry";
-import { isPublicPath } from "$lib/server/auth/routing";
+import { SCOPES, scopesForRole, type Scope } from "#lib/api/scopes.ts";
+import { endpointList, type AnyEndpoint } from "#lib/api/registry.ts";
+import { isPublicPath } from "#lib/server/auth/routing.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
   type TestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { callRoute, type RouteResult } from "$lib/testing/route";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { callRoute, type RouteResult } from "#lib/testing/route.ts";
 
 /**
  * Authorization inventory and matrix.

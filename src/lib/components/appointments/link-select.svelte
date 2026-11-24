@@ -2,10 +2,10 @@
   import CheckIcon from "@lucide/svelte/icons/check";
   import ChevronsUpDownIcon from "@lucide/svelte/icons/chevrons-up-down";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
-  import * as Command from "$lib/components/ui/command/index.js";
-  import * as Popover from "$lib/components/ui/popover/index.js";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import * as Command from "#lib/components/ui/command/index.js";
+  import * as Popover from "#lib/components/ui/popover/index.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   type Item = { value: string; label: string; detail?: string | null };
 

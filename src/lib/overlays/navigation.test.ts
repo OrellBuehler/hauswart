@@ -8,8 +8,7 @@ vi.mock("$app/navigation", () => ({
   beforeNavigate: vi.fn(),
   goto: (...args: unknown[]) =>
     (goto as (...args: unknown[]) => Promise<void>)(...args),
-  pushState: vi.fn(),
-  replaceState: vi.fn(),
+  refreshAll: vi.fn(),
 }));
 vi.mock("$app/state", () => ({
   navigating: { to: null },
@@ -39,9 +38,9 @@ describe("navigating from an overlay", () => {
   });
 
   it("hands the options to goto as they are: the overlay's entry is popped, not replaced", async () => {
-    await gotoFromOverlay("/parts/1", { invalidateAll: true });
+    await gotoFromOverlay("/parts/1", { refreshAll: true });
     expect(goto).toHaveBeenCalledTimes(1);
-    expect(goto).toHaveBeenCalledWith("/parts/1", { invalidateAll: true });
+    expect(goto).toHaveBeenCalledWith("/parts/1", { refreshAll: true });
   });
 
   it("navigates only after the pop, with no options of its own", async () => {

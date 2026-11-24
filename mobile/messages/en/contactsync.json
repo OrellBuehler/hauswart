@@ -1,0 +1,15 @@
+{
+  "m_contact_sync_title": "Phone contacts",
+  "m_contact_sync_description": "Chosen contacts are written into this phone's contacts and collected there in the list \"hauswart\". The choice applies to this device only. Changes from hauswart arrive when you open the app and now and then in the background. What you change on the phone does not go back, and notes are not transferred.",
+  "m_contact_sync_toggle": "In phone contacts",
+  "m_contact_sync_toggle_hint": "On this device only.",
+  "m_contact_sync_not_possible": "No phone number or email",
+  "m_contact_sync_blocked": "hauswart is not allowed to access the contacts. Allow access in the system settings, otherwise nothing is written.",
+  "m_contact_sync_limited": "hauswart has only limited access to the contacts. The contacts are written, but the list \"hauswart\" needs full access.",
+  "m_contact_sync_list_missing": "The account this phone stores new contacts in has no lists. The contacts were written without a list.",
+  "m_contact_sync_write_failed": "The contacts could not be written to the phone. hauswart tries again the next time you open it.",
+  "m_contact_sync_now": "Sync now",
+  "m_contact_sync_remove_all": "Remove all from phone",
+  "m_contact_sync_remove_all_title": "Remove all from phone?",
+  "m_contact_sync_remove_all_message": "The chosen contacts are deleted from this phone's contacts. They stay in hauswart."
+}

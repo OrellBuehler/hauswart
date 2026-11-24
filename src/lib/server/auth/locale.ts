@@ -1,6 +1,6 @@
 import type { Cookies } from "@sveltejs/kit";
-import type { UserLocale } from "$lib/api/enums";
-import { cookieMaxAge, cookieName } from "$lib/paraglide/runtime";
+import type { UserLocale } from "#lib/api/enums.ts";
+import { cookieMaxAge, cookieName } from "#lib/paraglide/runtime.js";
 import { cookieSecureOverride } from "./sessions";
 
 /** Keeps the Paraglide locale cookie in step with the account's stored language. */

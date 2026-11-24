@@ -1,13 +1,13 @@
 import { count, eq } from "drizzle-orm";
-import { ApiError } from "$lib/api/errors";
+import { ApiError } from "#lib/api/errors.ts";
 import {
   assets,
   odometerReadings,
   tireSets,
   vehicleDetails,
   type DB,
-} from "$lib/server/db";
-import { notFound } from "$lib/server/service";
+} from "#lib/server/db.ts";
+import { notFound } from "#lib/server/service.ts";
 
 type Db = Pick<DB, "select">;
 

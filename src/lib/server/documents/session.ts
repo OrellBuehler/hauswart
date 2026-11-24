@@ -1,17 +1,17 @@
-import type { DocumentProviderKind } from "$lib/api/enums";
-import { ApiError } from "$lib/api/errors";
+import type { DocumentProviderKind } from "#lib/api/enums.ts";
+import { ApiError } from "#lib/api/errors.ts";
 import {
   documentProviderConfigSchema,
   type DocumentProviderConfig,
-} from "$lib/api/schemas/documents";
+} from "#lib/api/schemas/documents.ts";
 import {
   getConnectionRow,
   resolveConnection,
   type ConnectionRow,
-} from "$lib/server/connections/connections";
-import { IntegrationError } from "$lib/server/connections/errors";
-import type { ResolvedConnection } from "$lib/server/connections/registry";
-import { notFound, type ServiceContext } from "$lib/server/service";
+} from "#lib/server/connections/connections.ts";
+import { IntegrationError } from "#lib/server/connections/errors.ts";
+import type { ResolvedConnection } from "#lib/server/connections/registry.ts";
+import { notFound, type ServiceContext } from "#lib/server/service.ts";
 import { getDocumentProvider, type DocumentProvider } from "./provider";
 
 type Db = Pick<ServiceContext, "db">;

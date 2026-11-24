@@ -1,7 +1,7 @@
-import { previewOfImage } from "$lib/server/attachments/preview";
-import { openAttachmentFile } from "$lib/server/attachments/attachments";
-import { defaultFilesRoot } from "$lib/server/files/store";
-import { notFound, type ServiceContext } from "$lib/server/service";
+import { previewOfImage } from "#lib/server/attachments/preview.ts";
+import { openAttachmentFile } from "#lib/server/attachments/attachments.ts";
+import { defaultFilesRoot } from "#lib/server/files/store.ts";
+import { notFound, type ServiceContext } from "#lib/server/service.ts";
 import { getAiTask } from "./ai-tasks";
 
 export interface TaskPreview {

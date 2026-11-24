@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { COST_CATEGORIES, type CostCategory } from "$lib/api/enums";
-import { ApiError } from "$lib/api/errors";
-import type { CostBook } from "$lib/api/schemas/cost-books";
+import { COST_CATEGORIES, type CostCategory } from "#lib/api/enums.ts";
+import { ApiError } from "#lib/api/errors.ts";
+import type { CostBook } from "#lib/api/schemas/cost-books.ts";
 import {
   CATEGORY_ORDERS,
   VISIBLE_CATEGORIES,

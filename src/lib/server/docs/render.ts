@@ -1,6 +1,6 @@
-import { slugify } from "$lib/server/slug";
-import { attachmentsById } from "$lib/server/attachments/attachments";
-import type { ServiceContext } from "$lib/server/service";
+import { slugify } from "#lib/server/slug.ts";
+import { attachmentsById } from "#lib/server/attachments/attachments.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 import {
   extractHeadingsAsync,
   extractPlainTextAsync,

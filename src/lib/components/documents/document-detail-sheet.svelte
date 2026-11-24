@@ -7,27 +7,27 @@
   import UnlinkIcon from "@lucide/svelte/icons/unlink";
   import { untrack } from "svelte";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpointUrl } from "$lib/api/client";
-  import type { DocumentProviderKind } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
+  import { api } from "#lib/api/browser.ts";
+  import { endpointUrl } from "#lib/api/client.ts";
+  import type { DocumentProviderKind } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
   import type {
     DocumentLink,
     ExternalDocument,
     ExternalDocumentDetail,
-  } from "$lib/api/schemas/documents";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Sheet from "$lib/components/ui/sheet/index.js";
-  import { Skeleton } from "$lib/components/ui/skeleton/index.js";
-  import { pickerErrorMessage } from "$lib/connections/errors";
+  } from "#lib/api/schemas/documents.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Sheet from "#lib/components/ui/sheet/index.js";
+  import { Skeleton } from "#lib/components/ui/skeleton/index.js";
+  import { pickerErrorMessage } from "#lib/connections/errors.ts";
   import {
     documentOwnerLabels,
     documentRoleLabels,
-  } from "$lib/documents/labels";
-  import { formatDay } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
+  } from "#lib/documents/labels.ts";
+  import { formatDay } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import DocumentThumb from "./document-thumb.svelte";
 
   let {
@@ -122,7 +122,7 @@
           endpointUrl(endpoints.documentsDownload, {
             params: { provider, externalId: shown.externalId },
             query: { original: 1 },
-          }) as "/",
+          }),
         )
       : undefined,
   );
@@ -166,7 +166,7 @@
               <Button
                 variant="outline"
                 size="sm"
-                href={resolve(shown.previewUrl as "/")}
+                href={resolve(shown.previewUrl)}
                 target="_blank"
                 rel="noopener"
               >
@@ -175,7 +175,7 @@
               <Button
                 variant="outline"
                 size="sm"
-                href={resolve(shown.downloadUrl as "/")}
+                href={resolve(shown.downloadUrl)}
                 download=""
                 data-sveltekit-reload
               >
@@ -258,7 +258,7 @@
                   >
                     {#if link.ownerUrl}
                       <a
-                        href={resolve(link.ownerUrl as "/")}
+                        href={resolve(link.ownerUrl)}
                         class="hover:text-foreground focus-visible:ring-ring/50 min-w-0 rounded-sm text-sm font-medium wrap-anywhere underline-offset-2 outline-none hover:underline focus-visible:ring-[3px]"
                       >
                         {link.ownerTitle ??

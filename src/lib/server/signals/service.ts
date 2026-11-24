@@ -1,7 +1,7 @@
 import { and, desc, eq, lt, max, ne, notInArray } from "drizzle-orm";
-import { MANUAL_SIGNAL_SOURCE } from "$lib/tasks/engine";
-import { externalDates, signalSamples, signals } from "$lib/server/db";
-import type { ServiceContext } from "$lib/server/service";
+import { MANUAL_SIGNAL_SOURCE } from "#lib/tasks/engine/index.ts";
+import { externalDates, signalSamples, signals } from "#lib/server/db.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
 
 /** A numeric sample is written when the value changes and at least this often. */
 export const SAMPLE_INTERVAL_MS = 6 * 60 * 60 * 1000;

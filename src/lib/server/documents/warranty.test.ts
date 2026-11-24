@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
-import { assets, externalDocuments } from "$lib/server/db";
-import { updateAsset } from "$lib/server/assets/assets";
-import { updateAssetRequestSchema } from "$lib/api/schemas/assets";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
+import { assets, externalDocuments } from "#lib/server/db.ts";
+import { updateAsset } from "#lib/server/assets/assets.ts";
+import { updateAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import {
   cacheDocument,
   linkDocument,
   makeAsset,
   makeConnection,
-} from "$lib/testing/documents";
+} from "#lib/testing/documents.ts";
 import { applyDocumentWarranties } from "./warranty";
 
 describe("warranty dates from linked documents", () => {

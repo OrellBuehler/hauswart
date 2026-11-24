@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Room } from "$lib/api/schemas/rooms";
+import type { Room } from "#lib/api/schemas/rooms.ts";
 import { matchAreaToRoom, roomForArea, roomWithAreaId } from "./areas";
 
 const room = (id: string, name: string, haAreaId: string | null = null) => ({

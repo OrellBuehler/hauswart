@@ -1,9 +1,9 @@
 import { asc } from "drizzle-orm";
-import type { CostSplitMode } from "$lib/api/enums";
-import { SHARE_BPS_TOTAL } from "$lib/api/schemas/costs";
-import { allocate, minor } from "$lib/money";
-import { users } from "$lib/server/db";
-import { invalidField, type ServiceContext } from "$lib/server/service";
+import type { CostSplitMode } from "#lib/api/enums.ts";
+import { SHARE_BPS_TOTAL } from "#lib/api/schemas/costs.ts";
+import { allocate, minor } from "#lib/money.ts";
+import { users } from "#lib/server/db.ts";
+import { invalidField, type ServiceContext } from "#lib/server/service.ts";
 
 export interface Share {
   userId: string;

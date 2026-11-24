@@ -1,33 +1,33 @@
 import { readdir } from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError } from "$lib/api/errors";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { createAsset } from "$lib/server/assets/assets";
-import { attachments } from "$lib/server/db";
-import { FileError } from "$lib/server/files/errors";
+import { ApiError } from "#lib/api/errors.ts";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import { attachments } from "#lib/server/db.ts";
+import { FileError } from "#lib/server/files/errors.ts";
 import {
   plainJpeg,
   plainPng,
   withExif,
   SECRET_MAKE,
-} from "$lib/server/files/test-images";
+} from "#lib/server/files/test-images.ts";
 import {
   setHostResolver,
   setLenientHostPolicy,
-} from "$lib/server/net/host-policy";
-import { APP_VERSION } from "$lib/server/version";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt } from "$lib/testing/domain";
-import { useFakeWeb } from "$lib/testing/fake-web";
+} from "#lib/server/net/host-policy.ts";
+import { APP_VERSION } from "#lib/server/version.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt } from "#lib/testing/domain.ts";
+import { useFakeWeb } from "#lib/testing/fake-web.ts";
 import {
   sampleHeic,
   sampleHtml,
   samplePdf,
   sampleSvg,
   useTestFilesDir,
-} from "$lib/testing/files";
-import { fieldErrors } from "$lib/testing/vehicles";
+} from "#lib/testing/files.ts";
+import { fieldErrors } from "#lib/testing/vehicles.ts";
 import { attachFromUrl, type AttachFromUrl } from "./from-url";
 import { unregisterAttachmentOwner } from "./owners";
 

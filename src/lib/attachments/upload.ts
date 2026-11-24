@@ -1,12 +1,12 @@
-import { ApiError } from "$lib/api/errors";
-import { endpointUrl } from "$lib/api/client";
-import { endpoints } from "$lib/api/registry";
-import type { AttachmentOwnerType } from "$lib/api/enums";
+import { ApiError } from "#lib/api/errors.ts";
+import { endpointUrl } from "#lib/api/client.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import type { AttachmentOwnerType } from "#lib/api/enums.ts";
 import {
   attachmentSchema,
   type Attachment,
-} from "$lib/api/schemas/attachments";
-import { errorEnvelopeSchema } from "$lib/api/schemas/common";
+} from "#lib/api/schemas/attachments.ts";
+import { errorEnvelopeSchema } from "#lib/api/schemas/common.ts";
 
 export interface UploadInput {
   file: File;

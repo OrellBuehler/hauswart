@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { invalidateAll } from "$app/navigation";
+  import { refreshAll } from "$app/navigation";
   import EllipsisVerticalIcon from "@lucide/svelte/icons/ellipsis-vertical";
   import FuelIcon from "@lucide/svelte/icons/fuel";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
@@ -7,31 +7,31 @@
   import PlusIcon from "@lucide/svelte/icons/plus";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { FUEL_UNITS, type FuelUnit } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { CostBook } from "$lib/api/schemas/cost-books";
-  import type { FuelLog } from "$lib/api/schemas/fuel-logs";
-  import type { DirectoryUser } from "$lib/api/schemas/users";
-  import type { VehicleStats } from "$lib/api/schemas/vehicle-stats";
-  import type { Vehicle } from "$lib/api/schemas/vehicles";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDay } from "$lib/format";
-  import { formatMoney } from "$lib/format-money";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import { FUEL_UNITS, type FuelUnit } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+  import type { FuelLog } from "#lib/api/schemas/fuel-logs.ts";
+  import type { DirectoryUser } from "#lib/api/schemas/users.ts";
+  import type { VehicleStats } from "#lib/api/schemas/vehicle-stats.ts";
+  import type { Vehicle } from "#lib/api/schemas/vehicles.ts";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDay } from "#lib/format.ts";
+  import { formatMoney } from "#lib/format-money.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import {
     formatConsumption,
     formatFuelQuantity,
     formatRate,
-  } from "$lib/vehicles/fuel-format";
-  import { formatOdometer } from "$lib/vehicles/format";
-  import { priceSeries, type TrendPoint } from "$lib/vehicles/trend";
+  } from "#lib/vehicles/fuel-format.ts";
+  import { formatOdometer } from "#lib/vehicles/format.ts";
+  import { priceSeries, type TrendPoint } from "#lib/vehicles/trend.ts";
   import FuelLogFormDialog from "./fuel-log-form-dialog.svelte";
   import Sparkline from "./sparkline.svelte";
 
@@ -138,7 +138,7 @@
     await api.call(endpoints.fuelLogsDelete, { params: { id: deleting.id } });
     toast.success(m.fuel_deleted_toast());
     more = null;
-    await invalidateAll();
+    await refreshAll();
   }
 
   const priceTitles: Record<FuelUnit, () => string> = {
@@ -422,7 +422,7 @@
   {today}
   {people}
   {currentUserId}
-  onsaved={() => invalidateAll()}
+  onsaved={() => refreshAll()}
 />
 
 <ConfirmDialog

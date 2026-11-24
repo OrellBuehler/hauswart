@@ -1,18 +1,18 @@
 <script lang="ts">
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { toast } from "svelte-sonner";
-  import { endpoints } from "$lib/api/registry";
-  import { api } from "$lib/api/browser";
-  import { PASSWORD_MAX, PASSWORD_MIN } from "$lib/api/schemas/auth";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors } from "$lib/tasks/field-errors";
+  import { endpoints } from "#lib/api/registry.ts";
+  import { api } from "#lib/api/browser.ts";
+  import { PASSWORD_MAX, PASSWORD_MIN } from "#lib/api/schemas/auth.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Checkbox } from "#lib/components/ui/checkbox/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors } from "#lib/tasks/field-errors.ts";
 
   let { username }: { username: string } = $props();
 

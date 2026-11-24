@@ -3,34 +3,34 @@ import { describe, expect, it } from "vitest";
 import {
   createFuelLogRequestSchema,
   updateFuelLogRequestSchema,
-} from "$lib/api/schemas/fuel-logs";
-import { putVehicleRequestSchema } from "$lib/api/schemas/vehicles";
-import { createAssetRequestSchema } from "$lib/api/schemas/assets";
-import { createAsset, deleteAsset } from "$lib/server/assets/assets";
-import { createAttachment } from "$lib/server/attachments/attachments";
-import { defaultCostBook } from "$lib/server/costs/books";
+} from "#lib/api/schemas/fuel-logs.ts";
+import { putVehicleRequestSchema } from "#lib/api/schemas/vehicles.ts";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
+import { createAsset, deleteAsset } from "#lib/server/assets/assets.ts";
+import { createAttachment } from "#lib/server/attachments/attachments.ts";
+import { defaultCostBook } from "#lib/server/costs/books.ts";
 import {
   createCostRequestSchema,
   updateCostRequestSchema,
-} from "$lib/api/schemas/costs";
+} from "#lib/api/schemas/costs.ts";
 import {
   createCost,
   deleteCost,
   getCost,
   updateCost,
-} from "$lib/server/costs/costs";
+} from "#lib/server/costs/costs.ts";
 import {
   attachments,
   costEntries,
   fuelLogs,
   odometerReadings,
-} from "$lib/server/db";
-import { updateHousehold } from "$lib/server/household/household";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { ctxAt, NOW } from "$lib/testing/domain";
-import { samplePdf, useTestFilesDir } from "$lib/testing/files";
-import { failure, fieldErrors, makeVehicle } from "$lib/testing/vehicles";
+} from "#lib/server/db.ts";
+import { updateHousehold } from "#lib/server/household/household.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { ctxAt, NOW } from "#lib/testing/domain.ts";
+import { samplePdf, useTestFilesDir } from "#lib/testing/files.ts";
+import { failure, fieldErrors, makeVehicle } from "#lib/testing/vehicles.ts";
 import {
   createFuelLog,
   deleteFuelLog,

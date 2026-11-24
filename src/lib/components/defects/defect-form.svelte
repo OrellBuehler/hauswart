@@ -4,34 +4,34 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { DEFECT_SEVERITIES, type DefectSeverity } from "$lib/api/enums";
-  import { endpoints } from "$lib/api/registry";
-  import type { Asset } from "$lib/api/schemas/assets";
-  import type { Contact } from "$lib/api/schemas/contacts";
+  import { api } from "#lib/api/browser.ts";
+  import { DEFECT_SEVERITIES, type DefectSeverity } from "#lib/api/enums.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Asset } from "#lib/api/schemas/assets.ts";
+  import type { Contact } from "#lib/api/schemas/contacts.ts";
   import {
     createDefectRequestSchema,
     updateDefectRequestSchema,
     type CreateDefectRequest,
     type Defect,
     type UpdateDefectRequest,
-  } from "$lib/api/schemas/defects";
-  import type { Room } from "$lib/api/schemas/rooms";
-  import FormAlert from "$lib/components/app/form-alert.svelte";
-  import Field from "$lib/components/tasks/field.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import Segmented from "$lib/components/tasks/segmented.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import { addMonths } from "$lib/dates";
-  import { severityLabels } from "$lib/defects/labels";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { formatDay } from "$lib/format";
-  import { m } from "$lib/paraglide/messages";
-  import { apiFieldErrors, issuesToErrors } from "$lib/tasks/field-errors";
-  import { cn } from "$lib/utils";
+  } from "#lib/api/schemas/defects.ts";
+  import type { Room } from "#lib/api/schemas/rooms.ts";
+  import FormAlert from "#lib/components/app/form-alert.svelte";
+  import Field from "#lib/components/tasks/field.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import Segmented from "#lib/components/tasks/segmented.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Textarea } from "#lib/components/ui/textarea/index.js";
+  import { addMonths } from "#lib/dates.ts";
+  import { severityLabels } from "#lib/defects/labels.ts";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { formatDay } from "#lib/format.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { apiFieldErrors, issuesToErrors } from "#lib/tasks/field-errors.ts";
+  import { cn } from "#lib/utils.ts";
 
   type DeadlineMode = "auto" | "manual" | "none";
 
@@ -44,13 +44,14 @@
     handoverDate,
     deadlineMonths,
     defaults = {},
+
+    /** The household's handover date; without one there is no automatic deadline. */
   }: {
     defect?: Defect | undefined;
     rooms: Room[];
     assets: Asset[];
     contacts: Contact[];
     today: string;
-    /** The household's handover date; without one there is no automatic deadline. */
     handoverDate: string | null;
     deadlineMonths: number;
     defaults?: { assetId?: string | undefined; roomId?: string | undefined };
@@ -207,8 +208,8 @@
           ? m.defect_saved_toast({ number: saved.number })
           : m.defect_created_toast({ number: saved.number }),
       );
-      await goto(resolve(`/defects/${saved.id}` as "/"), {
-        invalidateAll: true,
+      await goto(resolve(`defects/${saved.id}`), {
+        refreshAll: true,
       });
     } catch (err) {
       errors = apiFieldErrors(err);
@@ -220,7 +221,7 @@
   }
 
   const cancelHref = $derived(
-    defect ? resolve(`/defects/${defect.id}` as "/") : resolve("/defects"),
+    defect ? resolve(`defects/${defect.id}`) : resolve("defects"),
   );
 </script>
 
@@ -424,7 +425,7 @@
           <p class="text-muted-foreground text-xs text-pretty">
             {m.defect_deadline_no_handover()}
             <a
-              href={resolve("/settings/household")}
+              href={resolve("settings/household")}
               class="text-foreground underline underline-offset-2"
               >{m.defect_deadline_no_handover_link()}</a
             >

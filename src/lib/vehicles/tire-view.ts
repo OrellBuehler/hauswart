@@ -1,4 +1,4 @@
-import type { TireSet } from "$lib/api/schemas/tire-sets";
+import type { TireSet } from "#lib/api/schemas/tire-sets.ts";
 import { TIRE_AGE_WARNING_YEARS, TREAD_WARNING_MM } from "./tires";
 
 export type TireWarning =

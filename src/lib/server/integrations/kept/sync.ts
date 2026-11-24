@@ -5,30 +5,30 @@ import {
   costEntries,
   costLinkRemovals,
   financeSyncState,
-} from "$lib/server/db";
-import { openCostBookId } from "$lib/server/costs/books";
+} from "#lib/server/db.ts";
+import { openCostBookId } from "#lib/server/costs/books.ts";
 import {
   recordConnectionFailure,
   recordConnectionOk,
   resolveConnection,
   type ConnectionRow,
-} from "$lib/server/connections/connections";
+} from "#lib/server/connections/connections.ts";
 import {
   activeBillTasks,
   archiveBillTask,
   archiveSettledBillTasks,
   upsertFinanceBillTask,
   type BillTaskOutcome,
-} from "$lib/server/finance/bill-tasks";
-import type { FinanceSyncResult } from "$lib/server/finance/providers";
+} from "#lib/server/finance/bill-tasks.ts";
+import type { FinanceSyncResult } from "#lib/server/finance/providers.ts";
 import {
   acceptSuggestion,
   discardSuggestion,
   recordSuggestion,
   suggestionsCoveringBill,
-} from "$lib/server/finance/suggestions";
-import type { ServiceContext } from "$lib/server/service";
-import { clockAt } from "$lib/server/tasks/evaluator";
+} from "#lib/server/finance/suggestions.ts";
+import type { ServiceContext } from "#lib/server/service.ts";
+import { clockAt } from "#lib/server/tasks/evaluator.ts";
 import { KeptClient } from "./client";
 import { storedConfig, type KeptConfig } from "./config";
 import { KIND, LINK_SOURCE, appOrigin, clientFor } from "./connection";

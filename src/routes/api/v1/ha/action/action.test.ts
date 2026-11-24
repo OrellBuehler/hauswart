@@ -1,18 +1,22 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
-import { getDB, notificationDeliveries, taskCompletions } from "$lib/server/db";
-import { registerNotificationChannel } from "$lib/server/notifications/channels";
-import { generateNotifications } from "$lib/server/notifications/generate";
-import { createCaller, errorCode } from "$lib/testing/api";
+import {
+  getDB,
+  notificationDeliveries,
+  taskCompletions,
+} from "#lib/server/db.ts";
+import { registerNotificationChannel } from "#lib/server/notifications/channels.ts";
+import { generateNotifications } from "#lib/server/notifications/generate.ts";
+import { createCaller, errorCode } from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { today } from "$lib/testing/dates";
-import { ctxAt, everyDays, makeTask } from "$lib/testing/domain";
-import type { Scope } from "$lib/api/scopes";
+} from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { today } from "#lib/testing/dates.ts";
+import { ctxAt, everyDays, makeTask } from "#lib/testing/domain.ts";
+import type { Scope } from "#lib/api/scopes.ts";
 
 const URL = "/api/v1/ha/action";
 

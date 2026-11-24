@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { endpoints } from "$lib/api/registry";
-import { createCaller, errorCode } from "$lib/testing/api";
-import { createTestUser, loginTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
+import { endpoints } from "#lib/api/registry.ts";
+import { createCaller, errorCode } from "#lib/testing/api.ts";
+import { createTestUser, loginTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 
 type Method = "GET" | "POST" | "PUT";
 

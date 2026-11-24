@@ -3,18 +3,18 @@
   import ContactIcon from "@lucide/svelte/icons/contact";
   import ListChecksIcon from "@lucide/svelte/icons/list-checks";
   import MapPinIcon from "@lucide/svelte/icons/map-pin";
-  import type { Appointment } from "$lib/api/schemas/appointments";
-  import { timeColumn } from "$lib/appointments/format";
-  import { needsClosing } from "$lib/appointments/list";
-  import CommentCount from "$lib/components/comments/comment-count.svelte";
+  import type { Appointment } from "#lib/api/schemas/appointments.ts";
+  import { timeColumn } from "#lib/appointments/format.ts";
+  import { needsClosing } from "#lib/appointments/list.ts";
+  import CommentCount from "#lib/components/comments/comment-count.svelte";
   import {
     appointmentHref,
     assetHref,
     contactHref,
     taskHref,
-  } from "$lib/links";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  } from "#lib/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
   import AppointmentStatusBadge from "./appointment-status-badge.svelte";
 
   let {

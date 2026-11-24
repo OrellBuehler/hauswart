@@ -1,13 +1,13 @@
 import { eq } from "drizzle-orm";
-import type { CalendarRemoteDeletePolicy } from "$lib/api/enums";
+import type { CalendarRemoteDeletePolicy } from "#lib/api/enums.ts";
 import type {
   CalendarSyncCounts,
   CalendarTargetConfig,
-} from "$lib/api/schemas/calendar-sync";
-import { resolveConnection } from "$lib/server/connections/connections";
-import { IntegrationError } from "$lib/server/connections/errors";
-import { connections } from "$lib/server/db";
-import { notFound, type ServiceContext } from "$lib/server/service";
+} from "#lib/api/schemas/calendar-sync.ts";
+import { resolveConnection } from "#lib/server/connections/connections.ts";
+import { IntegrationError } from "#lib/server/connections/errors.ts";
+import { connections } from "#lib/server/db.ts";
+import { notFound, type ServiceContext } from "#lib/server/service.ts";
 import { buildDesiredItems, readRange, type DesiredItem } from "./items";
 import {
   deleteLink,

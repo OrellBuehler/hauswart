@@ -9,7 +9,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
-import type { DB } from "$lib/server/db";
+import type { DB } from "#lib/server/db.ts";
 
 const FILE_PATTERN = /^hauswart-backup-(\d{8}-\d{6})\.db$/;
 const SHARD = /^[0-9a-f]{2}$/;

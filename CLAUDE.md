@@ -34,10 +34,12 @@ bun run test:coverage
 bun run build && bun run start
 bun run db:generate      # after editing src/lib/server/schema.ts
 bun run openapi          # regenerate docs/openapi.json from the registry (a test fails if stale)
+bun run mobile:api       # regenerate the mobile apps' Kotlin client from docs/openapi.json (a test fails if stale)
 bun run i18n             # recompile Paraglide messages (also runs on install and in check)
 bun run leak-guard --all # scan the whole tree for private terms
 bun scripts/seed.ts --file seed/example.de.json --token hw_… [--url http://localhost:3000] [--update]
-bun scripts/generate-pwa-icons.ts  # re-render static/icons from the logo (commit the PNGs)
+bun scripts/generate-pwa-icons.ts  # re-render static/icons from static/logo.svg (commit the PNGs)
+bun mobile/scripts/generate-app-icon.ts  # re-render the iOS app icon from static/logo.svg (commit the PNG)
 bun run mcp              # stdio MCP server from source, for development (HAUSWART_URL, HAUSWART_TOKEN); the app serves MCP at /api/v1/mcp
 bun run security         # semgrep, bun audit, trivy
 ```
@@ -50,8 +52,8 @@ message modules leave the dev client with a stale manifest.
 
 ## Stack
 
-Bun · SvelteKit (`svelte-adapter-bun`) · TypeScript strict · Svelte 5 runes · Tailwind CSS v4 ·
-shadcn-svelte (`$lib/components/ui/`, add with `bunx shadcn-svelte@latest add <name>`) ·
+Bun · SvelteKit 3 (`@sveltejs/adapter-bun`, options in `kit.config.ts`) · TypeScript strict · Svelte 5 runes · Tailwind CSS v4 ·
+shadcn-svelte (`#lib/components/ui/`, add with `bunx shadcn-svelte@latest add <name>`) ·
 `@lucide/svelte` · Drizzle ORM on SQLite via `bun:sqlite` · Zod · Paraglide JS (de base locale,
 en) · Vitest.
 
@@ -165,8 +167,11 @@ file over 40,000 characters is cut off when it loads, so split one that grows pa
 
 Runes only: `$state`, `$derived`, `$effect`, `$props`, `{@render children()}`. No `export let`,
 no `$:`, no `<slot />`, no stores for component state. Tailwind classes with `cn()` from
-`$lib/utils`; no component CSS. Use shadcn-svelte components. Pages must work at 360 px width and
+`#lib/utils.ts`; no component CSS. Use shadcn-svelte components. Pages must work at 360 px width and
 in dark mode. Every list has an empty state, every async action a pending and an error state.
+
+Imports of `src/lib` are written `#lib/<path>` with the file extension (`#lib/money.ts`,
+`#lib/paraglide/messages.js`); `$lib` no longer exists.
 
 The rules for phones (bottom bar and `--bottom-nav`, touch sizes from the `ui/*` primitives, overflow,
 dialogs and the back gesture, `invalidateAfterOverlay` / `gotoFromOverlay`) are in
@@ -176,13 +181,13 @@ dialogs and the back gesture, `invalidateAfterOverlay` / `gotoFromOverlay`) are 
 
 - Unit tests sit next to the code (`foo.ts` → `foo.test.ts`); database tests use `useTestDB()`.
 - Route tests call the real handler through the real hook with `callRoute(GET, { session | bearer,
-json, origin, … })` from `$lib/testing/route`; users and tokens come from `createTestUser`,
+json, origin, … })` from `#lib/testing/route.ts`; users and tokens come from `createTestUser`,
   `loginTestUser` and `createTestToken`. Rate limiters are reset before every test.
 - Engine tests are table-driven with an injected `today`/`now` — never read the clock inside the
   engine.
 - Bug fixes start with a failing test.
 - Fixtures are synthetic and live in `src/lib/testing/fixtures/`.
-- File tests call `useTestFilesDir()` (`$lib/testing/files`: temp `HAUSWART_FILES_DIR`, sample pdf/svg/
+- File tests call `useTestFilesDir()` (`#lib/testing/files.ts`: temp `HAUSWART_FILES_DIR`, sample pdf/svg/
   html/heic bytes); `callRoute` returns file bodies as `Uint8Array`.
 
 ## Subagents (`.claude/agents/`)
@@ -198,6 +203,24 @@ json, origin, … })` from `$lib/testing/route`; users and tokens come from `cre
 Workflow: backend first (with tests and the API contract), then frontend against that contract,
 integration work in parallel where it is independent, then `reviewer`. Skills in
 `.claude/skills/`: `new-endpoint`, `new-table`, `new-trigger`, `verify`.
+
+## Mobile apps (`mobile/`)
+
+Native Android and iOS apps (Kotlin Multiplatform: shared logic, Compose and SwiftUI on top). Their
+rules, layout and commands are in `mobile/CLAUDE.md`; read it before touching `mobile/`. What the rest
+of the repository has to know:
+
+- They are REST clients with a device token (`POST /api/v1/auth/token`, scopes `MOBILE_TOKEN_SCOPES`)
+  against a server whose address the person enters. Session-only endpoints are out of their reach.
+- Their typed client is generated from `docs/openapi.json`: after a contract change run
+  `bun run openapi`, then `bun run mobile:api`, and commit both (`src/lib/api/mobile-client.test.ts`
+  fails otherwise).
+- Released apps keep talking to newer servers, so the API changes additively: new endpoints and new
+  optional fields, never a removed or renamed field, a narrowed type or a new required request field.
+- They render `messages/{de,en}.json` (notifications arrive as a message key plus params). Removing
+  or renaming a key the apps use fails their `MessageKeysUsedTest`.
+- CI: `mobile-android.yml` and `mobile-ios.yml` (the only place Swift is compiled). Releases are
+  separate from the server's: tag `mobile-v<version>`, see `mobile/RELEASING.md`.
 
 ## Releasing
 

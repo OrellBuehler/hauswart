@@ -1,8 +1,8 @@
-import { createApiClient } from "$lib/api/client";
-import { orFail } from "$lib/api/load";
-import { endpoints } from "$lib/api/registry";
-import { parseTaskFilters, tasksQuery } from "$lib/tasks/filters";
-import { loadDirectory, loadHousehold, loadPlaces } from "$lib/tasks/load";
+import { createApiClient } from "#lib/api/client.ts";
+import { orFail } from "#lib/api/load.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import { parseTaskFilters, tasksQuery } from "#lib/tasks/filters.ts";
+import { loadDirectory, loadHousehold, loadPlaces } from "#lib/tasks/load.ts";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ fetch, url }) => {

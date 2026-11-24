@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { MAX_FUEL_QUANTITY, type FuelLog } from "$lib/api/schemas/fuel-logs";
-import type { CostBook } from "$lib/api/schemas/cost-books";
-import { MAX_ODOMETER_VALUE } from "$lib/api/schemas/vehicles";
-import { formatNumber } from "$lib/format";
+import { MAX_FUEL_QUANTITY, type FuelLog } from "#lib/api/schemas/fuel-logs.ts";
+import type { CostBook } from "#lib/api/schemas/cost-books.ts";
+import { MAX_ODOMETER_VALUE } from "#lib/api/schemas/vehicles.ts";
+import { formatNumber } from "#lib/format.ts";
 import {
   buildCreateFuelLog,
   buildUpdateFuelLog,

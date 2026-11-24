@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { goto, invalidateAll } from "$app/navigation";
-  import { gotoFromOverlay } from "$lib/overlays/use-overlay-history.svelte";
+  import { goto, refreshAll } from "$app/navigation";
+  import { gotoFromOverlay } from "#lib/overlays/use-overlay-history.svelte.ts";
   import { resolve } from "$app/paths";
   import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
   import BoxesIcon from "@lucide/svelte/icons/boxes";
@@ -11,23 +11,23 @@
   import QrCodeIcon from "@lucide/svelte/icons/qr-code";
   import Trash2Icon from "@lucide/svelte/icons/trash-2";
   import { toast } from "svelte-sonner";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import { newAssetHref, roomTasksHref } from "$lib/assets/links";
-  import { roomIconFor } from "$lib/assets/room-icons";
-  import { sortTasks } from "$lib/assets/tasks";
-  import AssetRow from "$lib/components/assets/asset-row.svelte";
-  import RoomFormDialog from "$lib/components/assets/room-form-dialog.svelte";
-  import TaskRows from "$lib/components/assets/task-rows.svelte";
-  import LinkedDocsCard from "$lib/components/docs/linked-docs-card.svelte";
-  import LinkedDocuments from "$lib/components/documents/linked-documents.svelte";
-  import ConfirmDialog from "$lib/components/app/confirm-dialog.svelte";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { docsFilterHref, newDocHref } from "$lib/docs/links";
-  import { m } from "$lib/paraglide/messages";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import { newAssetHref, roomTasksHref } from "#lib/assets/links.ts";
+  import { roomIconFor } from "#lib/assets/room-icons.ts";
+  import { sortTasks } from "#lib/assets/tasks.ts";
+  import AssetRow from "#lib/components/assets/asset-row.svelte";
+  import RoomFormDialog from "#lib/components/assets/room-form-dialog.svelte";
+  import TaskRows from "#lib/components/assets/task-rows.svelte";
+  import LinkedDocsCard from "#lib/components/docs/linked-docs-card.svelte";
+  import LinkedDocuments from "#lib/components/documents/linked-documents.svelte";
+  import ConfirmDialog from "#lib/components/app/confirm-dialog.svelte";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { docsFilterHref, newDocHref } from "#lib/docs/links.ts";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -47,7 +47,7 @@
     const { id, name } = data.room;
     await api.call(endpoints.roomsDelete, { params: { id } });
     toast.success(m.rooms_deleted_toast({ name }));
-    await gotoFromOverlay(resolve("/rooms"));
+    await gotoFromOverlay(resolve("rooms"));
   }
 </script>
 
@@ -58,7 +58,7 @@
 <div class="flex flex-col gap-6">
   <div class="flex flex-col gap-4">
     <Button
-      href={resolve("/rooms")}
+      href={resolve("rooms")}
       variant="ghost"
       size="sm"
       class="text-muted-foreground -ms-2 w-fit max-md:hidden"
@@ -84,9 +84,9 @@
           variant="outline"
           class="max-sm:hidden"
           onclick={() => (editOpen = true)}
+          ><PencilIcon />{m.common_edit()}</Button
         >
-          <PencilIcon />{m.common_edit()}
-        </Button>
+
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
             {#snippet child({ props })}
@@ -104,21 +104,20 @@
             <DropdownMenu.Item
               class="sm:hidden"
               onclick={() => (editOpen = true)}
+              ><PencilIcon />{m.common_edit()}</DropdownMenu.Item
             >
-              <PencilIcon />{m.common_edit()}
-            </DropdownMenu.Item>
+
             <DropdownMenu.Item
-              onclick={() => goto(resolve(`/rooms/${data.room.id}/qr`))}
+              onclick={() => goto(resolve(`rooms/${data.room.id}/qr`))}
+              ><QrCodeIcon />{m.rooms_qr_sheet()}</DropdownMenu.Item
             >
-              <QrCodeIcon />{m.rooms_qr_sheet()}
-            </DropdownMenu.Item>
+
             <DropdownMenu.Separator />
             <DropdownMenu.Item
               variant="destructive"
               onclick={() => (deleteOpen = true)}
+              ><Trash2Icon />{m.common_delete()}</DropdownMenu.Item
             >
-              <Trash2Icon />{m.common_delete()}
-            </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       </div>
@@ -206,7 +205,7 @@
   <LinkedDocuments ownerType="room" ownerId={data.room.id} />
 </div>
 
-<RoomFormDialog bind:open={editOpen} room={data.room} onsaved={invalidateAll} />
+<RoomFormDialog bind:open={editOpen} room={data.room} onsaved={refreshAll} />
 
 <ConfirmDialog
   bind:open={deleteOpen}

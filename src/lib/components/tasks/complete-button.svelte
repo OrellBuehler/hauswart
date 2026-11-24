@@ -2,14 +2,14 @@
   import CheckIcon from "@lucide/svelte/icons/check";
   import LoaderCircleIcon from "@lucide/svelte/icons/loader-circle";
   import { toast } from "svelte-sonner";
-  import CompleteOdometerDialog from "$lib/components/vehicles/complete-odometer-dialog.svelte";
-  import { Button, type ButtonProps } from "$lib/components/ui/button/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import { completeTask } from "$lib/tasks/actions";
-  import type { Trigger } from "$lib/tasks/engine/types";
-  import { odometerAssetOf } from "$lib/tasks/odometer-task";
-  import { cn } from "$lib/utils";
+  import CompleteOdometerDialog from "#lib/components/vehicles/complete-odometer-dialog.svelte";
+  import { Button, type ButtonProps } from "#lib/components/ui/button/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import { completeTask } from "#lib/tasks/actions.ts";
+  import type { Trigger } from "#lib/tasks/engine/types.ts";
+  import { odometerAssetOf } from "#lib/tasks/odometer-task.ts";
+  import { cn } from "#lib/utils.ts";
 
   let {
     task,

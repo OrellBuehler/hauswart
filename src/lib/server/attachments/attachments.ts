@@ -1,22 +1,22 @@
 import { readdir, stat, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { and, asc, eq, inArray, like } from "drizzle-orm";
-import type { AttachmentOwnerType } from "$lib/api/enums";
-import type { UpdateAttachmentRequest } from "$lib/api/schemas/attachments";
-import { assets, attachments } from "$lib/server/db";
+import type { AttachmentOwnerType } from "#lib/api/enums.ts";
+import type { UpdateAttachmentRequest } from "#lib/api/schemas/attachments.ts";
+import { assets, attachments } from "#lib/server/db.ts";
 import {
   defaultFilesRoot,
   deleteIfUnreferenced,
   openFile,
   putFile,
   type StoredFile,
-} from "$lib/server/files/store";
-import { paginateArray } from "$lib/server/pagination";
+} from "#lib/server/files/store.ts";
+import { paginateArray } from "#lib/server/pagination.ts";
 import {
   invalidField,
   notFound,
   type ServiceContext,
-} from "$lib/server/service";
+} from "#lib/server/service.ts";
 import { isOwnerTypeSupported, ownerExists } from "./owners";
 
 type Db = Pick<ServiceContext, "db">;

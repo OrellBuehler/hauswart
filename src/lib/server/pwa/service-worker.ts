@@ -1,15 +1,20 @@
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 /**
  * The adapter serves static files before the hook runs and without a Cache-Control header, so the
- * production build moves the generated service worker out of `build/client` into the server
- * directory (`scripts/move-service-worker.ts`) and this module serves it from there. Source
- * checkouts, `bun dev` and the tests have no such file: the route answers 404 (the plugin is off in
- * development, see `vite.config.ts`).
+ * production build copies the service worker SvelteKit built from `src/service-worker` into the
+ * server directory (`scripts/copy-service-worker.ts`) and this module serves it from there. Source
+ * checkouts, `bun dev` and the tests have no such file: the route answers 404 (SvelteKit does not
+ * build the worker in development).
+ *
+ * Where: build/server/sw.js, seen from wherever the bundler put this module (a chunk, or the entry of the
+ * route, which sits in a directory that is itself called sw.js): the nearest such file above it.
  */
-const CANDIDATES = ["../sw.js", "./sw.js"];
+const CANDIDATES = ["./sw.js", "../sw.js", "../../sw.js", "../../../sw.js"];
+
+const isFile = (path: string) => existsSync(path) && statSync(path).isFile();
 
 interface ServiceWorker {
   body: string;
@@ -21,7 +26,7 @@ let loaded: ServiceWorker | null | undefined;
 function readServiceWorker(): ServiceWorker | null {
   const file = CANDIDATES.map((path) =>
     fileURLToPath(new URL(path, import.meta.url)),
-  ).find((path) => existsSync(path));
+  ).find(isFile);
   if (!file) {
     console.error(
       JSON.stringify({

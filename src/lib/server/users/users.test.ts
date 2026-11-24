@@ -1,12 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
-import { apiTokens, sessions, users } from "$lib/server/db";
-import { createTestToken, createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { hashPassword, verifyPassword } from "$lib/server/auth/password";
-import { createSession, validateSessionToken } from "$lib/server/auth/sessions";
-import { verifyToken } from "$lib/server/auth/tokens";
-import { AuthError } from "$lib/server/auth/types";
+import { apiTokens, sessions, users } from "#lib/server/db.ts";
+import { createTestToken, createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { hashPassword, verifyPassword } from "#lib/server/auth/password.ts";
+import {
+  createSession,
+  validateSessionToken,
+} from "#lib/server/auth/sessions.ts";
+import { verifyToken } from "#lib/server/auth/tokens.ts";
+import { AuthError } from "#lib/server/auth/types.ts";
 import {
   countUsers,
   createFirstAdmin,
@@ -16,9 +19,9 @@ import {
   updateUser,
 } from "./users";
 
-vi.mock("$lib/server/auth/password", async (importOriginal) => {
+vi.mock("#lib/server/auth/password.ts", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("$lib/server/auth/password")>();
+    await importOriginal<typeof import("#lib/server/auth/password.ts")>();
   return { ...actual, hashPassword: vi.fn(actual.hashPassword) };
 });
 

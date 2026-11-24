@@ -1,28 +1,28 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { createCostRequestSchema } from "$lib/api/schemas/costs";
-import { updateCostRequestSchema } from "$lib/api/schemas/costs";
-import { createCostRecurrenceRequestSchema } from "$lib/api/schemas/cost-recurrences";
-import { saveConnection } from "$lib/server/connections/connections";
+import { createCostRequestSchema } from "#lib/api/schemas/costs.ts";
+import { updateCostRequestSchema } from "#lib/api/schemas/costs.ts";
+import { createCostRecurrenceRequestSchema } from "#lib/api/schemas/cost-recurrences.ts";
+import { saveConnection } from "#lib/server/connections/connections.ts";
 import {
   createCost,
   deleteCost,
   getCost,
   listCosts,
   updateCost,
-} from "$lib/server/costs/costs";
+} from "#lib/server/costs/costs.ts";
 import {
   bookDueRecurrences,
   createCostRecurrence,
   runCostRecurrenceNow,
-} from "$lib/server/costs/recurrences";
-import { costEntries, financeSuggestions, type DB } from "$lib/server/db";
-import { onEvent } from "$lib/server/events";
+} from "#lib/server/costs/recurrences.ts";
+import { costEntries, financeSuggestions, type DB } from "#lib/server/db.ts";
+import { onEvent } from "#lib/server/events.ts";
 import { tieSuggestion } from "./links";
-import { createTestUser } from "$lib/testing/auth";
-import { at, ctxAt } from "$lib/testing/domain";
-import { useTestDB } from "$lib/testing/db";
-import { createCostTag } from "$lib/server/costs/tags";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { at, ctxAt } from "#lib/testing/domain.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { createCostTag } from "#lib/server/costs/tags.ts";
 import {
   acceptSuggestion,
   dismissSuggestion,

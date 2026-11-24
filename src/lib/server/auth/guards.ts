@@ -1,5 +1,5 @@
-import { ApiError } from "$lib/api/errors";
-import { effectiveScopes, missingScopes, type Scope } from "$lib/api/scopes";
+import { ApiError } from "#lib/api/errors.ts";
+import { effectiveScopes, missingScopes, type Scope } from "#lib/api/scopes.ts";
 import type { AuthLocals, Principal } from "./types";
 
 /** The principal the hook resolved into `locals`, or null for anonymous callers. */

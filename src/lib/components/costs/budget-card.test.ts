@@ -3,7 +3,7 @@ import { render } from "svelte/server";
 import type {
   CostBudget,
   CostBudgetStatusItem,
-} from "$lib/api/schemas/cost-budgets";
+} from "#lib/api/schemas/cost-budgets.ts";
 import BudgetCard from "./budget-card.svelte";
 
 const budget: CostBudget = {

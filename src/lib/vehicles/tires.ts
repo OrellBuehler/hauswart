@@ -1,5 +1,5 @@
-import { addDays, diffDays, isValidDate } from "$lib/dates";
-import type { TireEventKind, TireSeason } from "$lib/api/enums";
+import { addDays, diffDays, isValidDate } from "#lib/dates.ts";
+import type { TireEventKind, TireSeason } from "#lib/api/enums.ts";
 
 /**
  * Tread depth in millimetres below which a tire set should be replaced soon, per season. The legal

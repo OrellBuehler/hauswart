@@ -2,8 +2,8 @@
   import ArrowRightIcon from "@lucide/svelte/icons/arrow-right";
   import InboxIcon from "@lucide/svelte/icons/inbox";
   import { resolve } from "$app/paths";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { m } from "$lib/paraglide/messages";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { m } from "#lib/paraglide/messages.js";
 
   let { count }: { count: number } = $props();
 </script>
@@ -23,7 +23,7 @@
   <Card.Content class="flex flex-col gap-2">
     <p class="text-sm">{m.finance_count({ count })}</p>
     <a
-      href={resolve("/costs/inbox")}
+      href={resolve("costs/inbox")}
       class="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -mx-1 inline-flex min-h-10 items-center gap-1.5 self-start rounded px-1 text-sm outline-none focus-visible:ring-[3px]"
     >
       {m.dashboard_to_finance_inbox()}

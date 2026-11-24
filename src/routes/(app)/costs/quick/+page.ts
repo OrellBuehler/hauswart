@@ -1,11 +1,11 @@
-import { createApiClient } from "$lib/api/client";
+import { createApiClient } from "#lib/api/client.ts";
 import {
   loadCostBooks,
   loadCostTags,
   loadHouseholdToday,
   tryLoadFinanceConnected,
-} from "$lib/costs/load";
-import { loadDirectory, loadPlaces } from "$lib/tasks/load";
+} from "#lib/costs/load.ts";
+import { loadDirectory, loadPlaces } from "#lib/tasks/load.ts";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ fetch, url, untrack }) => {

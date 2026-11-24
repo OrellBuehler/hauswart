@@ -7,23 +7,23 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
-  import { DUE_STATUSES, TASK_CATEGORIES } from "$lib/api/enums";
-  import { api } from "$lib/api/browser";
-  import { endpoints } from "$lib/api/registry";
-  import type { Task } from "$lib/api/schemas/tasks";
-  import EmptyState from "$lib/components/app/empty-state.svelte";
-  import Fab from "$lib/components/app/fab.svelte";
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import OptionSelect from "$lib/components/tasks/option-select.svelte";
-  import TaskRow from "$lib/components/tasks/task-row.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Label } from "$lib/components/ui/label/index.js";
-  import { Switch } from "$lib/components/ui/switch/index.js";
-  import { apiErrorMessage } from "$lib/error-message";
-  import { m } from "$lib/paraglide/messages";
-  import type { DueStatus } from "$lib/tasks/engine/types";
+  import { DUE_STATUSES, TASK_CATEGORIES } from "#lib/api/enums.ts";
+  import { api } from "#lib/api/browser.ts";
+  import { endpoints } from "#lib/api/registry.ts";
+  import type { Task } from "#lib/api/schemas/tasks.ts";
+  import EmptyState from "#lib/components/app/empty-state.svelte";
+  import Fab from "#lib/components/app/fab.svelte";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import OptionSelect from "#lib/components/tasks/option-select.svelte";
+  import TaskRow from "#lib/components/tasks/task-row.svelte";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as Card from "#lib/components/ui/card/index.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { Label } from "#lib/components/ui/label/index.js";
+  import { Switch } from "#lib/components/ui/switch/index.js";
+  import { apiErrorMessage } from "#lib/error-message.ts";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { DueStatus } from "#lib/tasks/engine/types.ts";
   import {
     activeFilterCount,
     DEFAULT_FILTERS,
@@ -33,11 +33,11 @@
     tasksQuery,
     type TaskFilters,
     type TaskView,
-  } from "$lib/tasks/filters";
-  import { categoryLabels, statusLabels } from "$lib/tasks/labels";
-  import { rowFromTask } from "$lib/tasks/row";
-  import { cn } from "$lib/utils";
-  import { statusTones } from "$lib/components/tasks/tones";
+  } from "#lib/tasks/filters.ts";
+  import { categoryLabels, statusLabels } from "#lib/tasks/labels.ts";
+  import { rowFromTask } from "#lib/tasks/row.ts";
+  import { cn } from "#lib/utils.ts";
+  import { statusTones } from "#lib/components/tasks/tones.ts";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -70,10 +70,9 @@
       ...parseTaskFilters(new URLSearchParams(location.search)),
       ...patch,
     };
-    await goto(resolve(`/tasks${taskFilterQuery(next)}` as "/"), {
-      keepFocus: true,
-      noScroll: true,
-      replaceState: replace,
+    await goto(resolve(`tasks${taskFilterQuery(next)}`), {
+      reset: false,
+      replace,
     });
   }
 
@@ -97,8 +96,8 @@
     items: Task[];
     cursor: string | null;
   } | null>(null);
-  let loadingMore = $state(false);
 
+  let loadingMore = $state(false);
   const loaded = $derived(more && more.base === data.tasks ? more : null);
   const all = $derived([...data.tasks, ...(loaded?.items ?? [])]);
   const cursor = $derived(loaded ? loaded.cursor : data.nextCursor);
@@ -133,7 +132,6 @@
   const rows = $derived(
     all.map((task) => rowFromTask(task, people, assetPlaces)),
   );
-
   const STATUS_ORDER: DueStatus[] = [
     "overdue",
     "due",
@@ -142,7 +140,6 @@
     "unknown",
     "snoozed",
   ];
-
   const byDue = (a: (typeof rows)[number], b: (typeof rows)[number]) =>
     (a.date ?? "9999-12-31").localeCompare(b.date ?? "9999-12-31") ||
     a.title.localeCompare(b.title);
@@ -196,10 +193,9 @@
 <div class="flex flex-col gap-6">
   <PageHeader title={m.tasks_title()} description={m.tasks_description()}>
     {#snippet actions()}
-      <Button href={resolve("/tasks/new")} size="lg" class="max-md:hidden">
-        <PlusIcon />
-        {m.task_new()}
-      </Button>
+      <Button href={resolve("tasks/new")} size="lg" class="max-md:hidden"
+        ><PlusIcon /> {m.task_new()}</Button
+      >
     {/snippet}
   </PageHeader>
 
@@ -353,10 +349,9 @@
         description={m.tasks_empty_body()}
       >
         {#snippet actions()}
-          <Button href={resolve("/tasks/new")}>
-            <PlusIcon />
-            {m.task_new()}
-          </Button>
+          <Button href={resolve("tasks/new")}
+            ><PlusIcon /> {m.task_new()}</Button
+          >
         {/snippet}
       </EmptyState>
     {/if}
@@ -409,4 +404,4 @@
   {/if}
 </div>
 
-<Fab href={resolve("/tasks/new")} label={m.task_new()} />
+<Fab href={resolve("tasks/new")} label={m.task_new()} />

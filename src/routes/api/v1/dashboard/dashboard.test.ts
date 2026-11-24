@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-import { getDB } from "$lib/server/db";
-import { createCaller, errorCode } from "$lib/testing/api";
+import { getDB } from "#lib/server/db.ts";
+import { createCaller, errorCode } from "#lib/testing/api.ts";
 import {
   createTestToken,
   createTestUser,
   loginTestUser,
-} from "$lib/testing/auth";
-import { today } from "$lib/testing/dates";
-import { useTestDB } from "$lib/testing/db";
+} from "#lib/testing/auth.ts";
+import { today } from "#lib/testing/dates.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 
 type Json = Record<string, unknown>;
 const interval = (startDate: string) => ({

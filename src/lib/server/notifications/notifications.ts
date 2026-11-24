@@ -1,9 +1,9 @@
 import { and, desc, eq, isNull, or, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
-import type { NotificationKind, NotificationTitleKey } from "$lib/api/enums";
-import { notifications } from "$lib/server/db";
-import { decodeCursor, pageOf } from "$lib/server/pagination";
-import { notFound, type ServiceContext } from "$lib/server/service";
+import type { NotificationKind, NotificationTitleKey } from "#lib/api/enums.ts";
+import { notifications } from "#lib/server/db.ts";
+import { decodeCursor, pageOf } from "#lib/server/pagination.ts";
+import { notFound, type ServiceContext } from "#lib/server/service.ts";
 
 export type NotificationRow = typeof notifications.$inferSelect;
 

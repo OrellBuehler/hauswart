@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Support · hauswart</title>
+    <meta
+      name="description"
+      content="Help for the hauswart apps for iPhone, Android and the web."
+    />
+    <link
+      rel="canonical"
+      href="https://orellbuehler.github.io/hauswart/support.html"
+    />
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+    <link rel="stylesheet" href="assets/pages.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <a class="brand" href="./"
+          ><img src="assets/favicon.svg" alt="" />hauswart</a
+        >
+        <nav aria-label="Main">
+          <a href="./">Home</a><a href="privacy.html">Privacy</a
+          ><a href="support.html" aria-current="page">Support</a>
+        </nav>
+      </header>
+      <main>
+        <h1>Support</h1>
+        <p class="meta"><a href="#de">Deutsch</a></p>
+        <div class="summary">
+          <p>
+            hauswart is an open project run in spare time. Help is given through
+            the project's issue tracker on GitHub.
+          </p>
+        </div>
+
+        <h2>Getting help</h2>
+        <ul>
+          <li>
+            <strong>A problem or a question:</strong> open an issue at
+            <a href="https://github.com/OrellBuehler/hauswart/issues"
+              >github.com/OrellBuehler/hauswart/issues</a
+            >. Say which app (iPhone, Android or web) and which versions of the
+            app and the server you use; both are shown in the app under More,
+            Settings.
+          </li>
+          <li>
+            <strong>A security problem:</strong> please do not open a public
+            issue. Use "Report a vulnerability" on the
+            <a href="https://github.com/OrellBuehler/hauswart/security"
+              >Security page</a
+            >
+            of the repository.
+          </li>
+          <li>
+            <strong>Setting up a server:</strong> the
+            <a href="https://github.com/OrellBuehler/hauswart#readme">README</a>
+            describes how to run hauswart with Docker and how to connect Home
+            Assistant, Paperless-ngx and a finance app.
+          </li>
+        </ul>
+
+        <h2>Before you write</h2>
+        <ul>
+          <li>
+            <strong>The app needs a server.</strong> hauswart is self-hosted:
+            the app is a client for a hauswart server you or someone in your
+            household runs. Without one there is nothing to sign in to.
+          </li>
+          <li>
+            <strong>"The server is not reachable":</strong> open the same
+            address in the phone's browser. If the web app does not load there
+            either, the phone cannot reach the server (not on the home network,
+            VPN off, wrong port). hauswart must be served at the root of its
+            host, not under a path.
+          </li>
+          <li>
+            <strong>"No account has been set up yet":</strong> finish the
+            first-run setup in the browser, then sign in in the app.
+          </li>
+          <li>
+            <strong>Signed out after about three months:</strong> a device stays
+            signed in for 90 days. The app tells you two weeks before; sign in
+            again with your password.
+          </li>
+          <li>
+            <strong>No reminders:</strong> allow notifications for hauswart in
+            the phone's settings and switch reminders on in the app under More,
+            Settings. Reminders are planned on the phone whenever the app can
+            reach your server, so open the app from time to time when you are
+            away from the home network for long.
+          </li>
+          <li>
+            <strong>Something is missing in the app:</strong> changing the
+            password, API tokens, user management, calendar feeds and guest
+            links are done in the web app.
+          </li>
+        </ul>
+
+        <h2>Removing your data</h2>
+        <p>
+          Sign out in the app (More, Settings) to remove the device token and
+          planned reminders from the phone, or delete the app. The token can
+          also be revoked in the web app under Settings, Devices. Your
+          household's data is on your server; the developer has no copy. See the
+          <a href="privacy.html">privacy policy</a>.
+        </p>
+
+        <hr />
+        <section id="de" lang="de">
+          <h1>Hilfe</h1>
+          <div class="summary">
+            <p>
+              hauswart ist ein offenes Projekt, das in der Freizeit entsteht.
+              Hilfe gibt es über die Issues des Projekts auf GitHub.
+            </p>
+          </div>
+
+          <h2>Hilfe bekommen</h2>
+          <ul>
+            <li>
+              <strong>Ein Problem oder eine Frage:</strong> eröffne ein Issue
+              auf
+              <a href="https://github.com/OrellBuehler/hauswart/issues"
+                >github.com/OrellBuehler/hauswart/issues</a
+              >. Gib an, welche App (iPhone, Android oder Web) und welche
+              Versionen von App und Server du nutzt; beide stehen in der App
+              unter Mehr, Einstellungen.
+            </li>
+            <li>
+              <strong>Ein Sicherheitsproblem:</strong> bitte kein öffentliches
+              Issue. Nutze «Report a vulnerability» auf der
+              <a href="https://github.com/OrellBuehler/hauswart/security"
+                >Security-Seite</a
+              >
+              des Repositorys.
+            </li>
+            <li>
+              <strong>Einen Server einrichten:</strong> das
+              <a href="https://github.com/OrellBuehler/hauswart#readme"
+                >README</a
+              >
+              beschreibt, wie hauswart mit Docker läuft und wie Home Assistant,
+              Paperless-ngx und eine Finanz-App angebunden werden.
+            </li>
+          </ul>
+
+          <h2>Bevor du schreibst</h2>
+          <ul>
+            <li>
+              <strong>Die App braucht einen Server.</strong> hauswart wird
+              selbst gehostet: Die App ist ein Client für einen hauswart-Server,
+              den du oder jemand in deinem Haushalt betreibt. Ohne Server gibt
+              es nichts, woran man sich anmelden könnte.
+            </li>
+            <li>
+              <strong>«Der Server ist nicht erreichbar»:</strong> öffne dieselbe
+              Adresse im Browser des Telefons. Lädt die Web-App dort auch nicht,
+              erreicht das Telefon den Server nicht (nicht im Heimnetz, VPN aus,
+              falscher Port). hauswart muss direkt unter dem Hostnamen laufen,
+              nicht unter einem Pfad.
+            </li>
+            <li>
+              <strong
+                >«Auf diesem Server ist noch kein Konto eingerichtet»:</strong
+              >
+              schliesse die Einrichtung im Browser ab und melde dich dann in der
+              App an.
+            </li>
+            <li>
+              <strong>Nach rund drei Monaten abgemeldet:</strong> ein Gerät
+              bleibt 90 Tage angemeldet. Die App weist zwei Wochen vorher darauf
+              hin; melde dich mit deinem Passwort neu an.
+            </li>
+            <li>
+              <strong>Keine Erinnerungen:</strong> erlaube Mitteilungen für
+              hauswart in den Einstellungen des Telefons und schalte
+              Erinnerungen in der App unter Mehr, Einstellungen ein.
+              Erinnerungen werden auf dem Telefon geplant, sobald die App deinen
+              Server erreicht; öffne die App also ab und zu, wenn du länger
+              nicht im Heimnetz bist.
+            </li>
+            <li>
+              <strong>Etwas fehlt in der App:</strong> Passwort ändern,
+              API-Tokens, Benutzerverwaltung, Kalender-Feeds und Gästelinks gibt
+              es in der Web-App.
+            </li>
+          </ul>
+
+          <h2>Deine Daten entfernen</h2>
+          <p>
+            Melde dich in der App ab (Mehr, Einstellungen), um das Geräte-Token
+            und die geplanten Erinnerungen vom Telefon zu entfernen, oder lösche
+            die App. Das Token lässt sich auch in der Web-App unter
+            Einstellungen, Geräte widerrufen. Die Daten eures Haushalts liegen
+            auf eurem Server; der Entwickler hat keine Kopie. Siehe die
+            <a href="privacy.html">Datenschutzerklärung</a>.
+          </p>
+        </section>
+      </main>
+      <footer>
+        <span>© 2026 Orell Bühler</span>
+        <nav aria-label="Footer">
+          <a href="./">Home</a>
+          <a href="privacy.html">Privacy</a>
+          <a href="support.html">Support</a>
+          <a href="https://github.com/OrellBuehler/hauswart">GitHub</a>
+        </nav>
+      </footer>
+    </div>
+  </body>
+</html>

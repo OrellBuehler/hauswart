@@ -1,5 +1,5 @@
-import { endpoints } from "$lib/api/registry";
-import { bind } from "$lib/server/api/bind";
-import { byQr } from "$lib/server/api/handlers/assets";
+import { endpoints } from "#lib/api/registry.ts";
+import { bind } from "#lib/server/api/bind.ts";
+import { byQr } from "#lib/server/api/handlers/assets.ts";
 
 export const GET = bind(endpoints.assetsByQr, byQr);

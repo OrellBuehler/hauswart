@@ -1,5 +1,5 @@
-import { IntegrationError } from "$lib/server/connections/errors";
-import type { ResolvedConnection } from "$lib/server/connections/registry";
+import { IntegrationError } from "#lib/server/connections/errors.ts";
+import type { ResolvedConnection } from "#lib/server/connections/registry.ts";
 import { KeptClient } from "./client";
 import { KeptError, describeError, errorCode } from "./errors";
 

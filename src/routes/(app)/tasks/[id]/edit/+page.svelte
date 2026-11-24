@@ -1,7 +1,7 @@
 <script lang="ts">
-  import PageHeader from "$lib/components/app/page-header.svelte";
-  import TaskForm from "$lib/components/tasks/task-form.svelte";
-  import { m } from "$lib/paraglide/messages";
+  import PageHeader from "#lib/components/app/page-header.svelte";
+  import TaskForm from "#lib/components/tasks/task-form.svelte";
+  import { m } from "#lib/paraglide/messages.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();

@@ -1,13 +1,13 @@
 import type { z } from "zod";
-import { toIso } from "$lib/api/schemas/common";
+import { toIso } from "#lib/api/schemas/common.ts";
 import type {
   calendarFeedSchema,
   emergencySchema,
   guestLinkSchema,
-} from "$lib/api/schemas/share";
-import { feedUrl, type FeedRecord } from "$lib/server/calendar/feeds";
-import type { EmergencyRecord } from "$lib/server/emergency/emergency";
-import type { GuestLinkRecord } from "$lib/server/share/guest-links";
+} from "#lib/api/schemas/share.ts";
+import { feedUrl, type FeedRecord } from "#lib/server/calendar/feeds.ts";
+import type { EmergencyRecord } from "#lib/server/emergency/emergency.ts";
+import type { GuestLinkRecord } from "#lib/server/share/guest-links.ts";
 import { wireContact } from "./wire";
 
 const iso = (value: Date | null): string | null =>

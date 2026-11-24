@@ -9,7 +9,7 @@ import {
   quarterStart,
   yearEnd,
   yearStart,
-} from "$lib/dates";
+} from "#lib/dates.ts";
 import type {
   DueResult,
   EvalContext,

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { apiTokens, sessions } from "$lib/server/db";
-import { createTestToken, createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
+import { apiTokens, sessions } from "#lib/server/db.ts";
+import { createTestToken, createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
 import { createSession, SESSION_MAX_LIFETIME_MS } from "./sessions";
 import {
   EXPIRED_SESSION_RETENTION_MS,

@@ -1,4 +1,4 @@
-import type { TireSeason } from "$lib/api/enums";
+import type { TireSeason } from "#lib/api/enums.ts";
 import { tireChange } from "./tire-task";
 
 export type TireOffer = {

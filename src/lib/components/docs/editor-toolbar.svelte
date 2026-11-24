@@ -30,10 +30,10 @@
   import MessageSquareWarningIcon from "@lucide/svelte/icons/message-square-warning";
   import PaperclipIcon from "@lucide/svelte/icons/paperclip";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-  import { m } from "$lib/paraglide/messages";
-  import { cn } from "$lib/utils";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import * as DropdownMenu from "#lib/components/ui/dropdown-menu/index.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { cn } from "#lib/utils.ts";
 
   let {
     onaction,

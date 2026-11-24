@@ -8,14 +8,14 @@ Self-hosted apartment management for a household: recurring maintenance tasks wi
 tracking, documentation, a device inventory, defects, spare parts, contacts and costs.
 Integrations (Home Assistant, Paperless-ngx, Kept) are optional adapters, never requirements.
 
-**Status: early development (0.3.1).** The core works (tasks, devices, defects, documentation, spare
+**Status: early development (0.4.0).** The core works (tasks, devices, defects, documentation, spare
 parts, costs, iCal feeds, guest links, Home Assistant, Paperless-ngx, Kept, REST API, MCP server), but
 this is not a stable release: expect breaking changes between versions, keep backups of `/data`, and read
 the [changelog](CHANGELOG.md) before every update. The interface is in German (default) and English.
 
 ## Run with Docker
 
-The image is `ghcr.io/orellbuehler/hauswart` (`0.3.1`, `0.3` and `latest`; linux/amd64). Pin a
+The image is `ghcr.io/orellbuehler/hauswart` (`0.4.0`, `0.4` and `latest`; linux/amd64). Pin a
 version tag rather than `latest` while the project is in early development.
 
 ```bash
@@ -24,7 +24,7 @@ docker run -d --name hauswart --restart unless-stopped -p 3000:3000 \
   -e HAUSWART_SECRET_KEY="$(openssl rand -base64 32)" \
   -e ORIGIN=http://localhost:3000 \
   -e HAUSWART_COOKIE_SECURE=false \
-  ghcr.io/orellbuehler/hauswart:0.3.1
+  ghcr.io/orellbuehler/hauswart:0.4.0
 curl http://localhost:3000/api/health   # {"status":"ok"}
 ```
 
@@ -37,7 +37,7 @@ key in a file (below), put a reverse proxy with HTTPS in front, and drop `HAUSWA
 ```yaml
 services:
   hauswart:
-    image: ghcr.io/orellbuehler/hauswart:0.3.1
+    image: ghcr.io/orellbuehler/hauswart:0.4.0
     restart: unless-stopped
     ports:
       - "127.0.0.1:3000:3000"
@@ -271,6 +271,20 @@ claude mcp add --transport http hauswart https://hauswart.example.org/api/v1/mcp
 Claude Desktop and the OAuth-only connectors of claude.ai are covered in [mcp/README.md](mcp/README.md),
 which also has the scopes and the tool list.
 
+## Mobile apps
+
+Native apps for Android and iOS live in [`mobile/`](mobile/) (Kotlin Multiplatform: shared logic,
+Jetpack Compose and SwiftUI on top). At first start the app asks for the address of your hauswart
+server, then signs in with your user name and password and keeps a device token (listed under
+Settings, Devices in the web app, where it can be revoked). The apps cover the same areas as the web
+app and remind you of due tasks and appointments with local notifications; nothing passes through a
+third-party push service.
+
+What stays in the browser, because the server allows it with a browser session only: changing the
+password, API tokens, user management, calendar feeds and guest links.
+
+Building and releasing them is described in [`mobile/RELEASING.md`](mobile/RELEASING.md).
+
 ## Development
 
 Requires [Bun](https://bun.sh) 1.4 or newer.
@@ -283,7 +297,8 @@ bun run build && bun run start  # start runs with NODE_ENV=production: HAUSWART_
 bun run db:generate      # after editing src/lib/server/schema.ts
 bun run openapi          # regenerate docs/openapi.json (the versioned /api/v1 contract)
 bun run leak-guard --all # scan the tree for configured private terms
-bun scripts/generate-pwa-icons.ts  # re-render static/icons from the logo
+bun scripts/generate-pwa-icons.ts  # re-render static/icons from static/logo.svg
+bun mobile/scripts/generate-app-icon.ts  # re-render the iOS app icon from static/logo.svg
 ```
 
 Hooks run through [prek](https://github.com/j178/prek): `prek install` once per clone.

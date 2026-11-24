@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
-import { ApiError } from "$lib/api/errors";
-import { notificationDeliveries, taskCompletions } from "$lib/server/db";
-import { completeTask, undoCompletion } from "$lib/server/tasks/completions";
-import { deleteTask, updateTask } from "$lib/server/tasks/tasks";
-import { createTestUser } from "$lib/testing/auth";
-import { useTestDB } from "$lib/testing/db";
-import { at, ctxAt, everyDays, makeTask } from "$lib/testing/domain";
+import { ApiError } from "#lib/api/errors.ts";
+import { notificationDeliveries, taskCompletions } from "#lib/server/db.ts";
+import { completeTask, undoCompletion } from "#lib/server/tasks/completions.ts";
+import { deleteTask, updateTask } from "#lib/server/tasks/tasks.ts";
+import { createTestUser } from "#lib/testing/auth.ts";
+import { useTestDB } from "#lib/testing/db.ts";
+import { at, ctxAt, everyDays, makeTask } from "#lib/testing/domain.ts";
 import {
   ACTION_DONE_PREFIX,
   ACTION_TOKEN_TTL_MS,

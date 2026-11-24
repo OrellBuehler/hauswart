@@ -1,17 +1,17 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
-import type { PutTaskStepsRequest } from "$lib/api/schemas/task-steps";
+import type { PutTaskStepsRequest } from "#lib/api/schemas/task-steps.ts";
 import {
   deleteOwnedAttachmentRows,
   findAttachment,
   releaseAttachments,
   type AttachmentRecord,
-} from "$lib/server/attachments/attachments";
-import { attachments, taskSteps, tasks, type DB } from "$lib/server/db";
+} from "#lib/server/attachments/attachments.ts";
+import { attachments, taskSteps, tasks, type DB } from "#lib/server/db.ts";
 import {
   notFound,
   invalidField,
   type ServiceContext,
-} from "$lib/server/service";
+} from "#lib/server/service.ts";
 
 type Db = Pick<ServiceContext, "db">;
 type Now = Pick<ServiceContext, "db" | "now">;

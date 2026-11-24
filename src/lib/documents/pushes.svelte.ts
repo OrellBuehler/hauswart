@@ -1,14 +1,14 @@
 import { toast } from "svelte-sonner";
-import { api } from "$lib/api/browser";
+import { api } from "#lib/api/browser.ts";
 import type {
   DocumentLinkOwnerType,
   DocumentProviderKind,
-} from "$lib/api/enums";
-import { isApiError } from "$lib/api/errors";
-import { endpoints } from "$lib/api/registry";
-import type { DocumentUpload } from "$lib/api/schemas/documents";
-import { integrationErrorMessage } from "$lib/connections/errors";
-import { m } from "$lib/paraglide/messages";
+} from "#lib/api/enums.ts";
+import { isApiError } from "#lib/api/errors.ts";
+import { endpoints } from "#lib/api/registry.ts";
+import type { DocumentUpload } from "#lib/api/schemas/documents.ts";
+import { integrationErrorMessage } from "#lib/connections/errors.ts";
+import { m } from "#lib/paraglide/messages.js";
 import { documentLinksChanged } from "./changes.svelte";
 
 /** `unknown`: the browser lost track of the job (the server keeps working on it). */

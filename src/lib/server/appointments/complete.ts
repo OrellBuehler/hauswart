@@ -1,16 +1,16 @@
 import { and, eq } from "drizzle-orm";
-import type { CompletionSource } from "$lib/api/enums";
-import { pinnableOccurrenceKey } from "$lib/appointments/occurrence";
-import { lastDay } from "$lib/appointments/when";
-import { householdTimeZone } from "$lib/server/config";
-import { appointments, taskCompletions } from "$lib/server/db";
-import { conflict, type ServiceContext } from "$lib/server/service";
+import type { CompletionSource } from "#lib/api/enums.ts";
+import { pinnableOccurrenceKey } from "#lib/appointments/occurrence.ts";
+import { lastDay } from "#lib/appointments/when.ts";
+import { householdTimeZone } from "#lib/server/config.ts";
+import { appointments, taskCompletions } from "#lib/server/db.ts";
+import { conflict, type ServiceContext } from "#lib/server/service.ts";
 import {
   completeTask,
   getCompletion,
   type CompletionRecord,
-} from "$lib/server/tasks/completions";
-import { getTask, type TaskRecord } from "$lib/server/tasks/tasks";
+} from "#lib/server/tasks/completions.ts";
+import { getTask, type TaskRecord } from "#lib/server/tasks/tasks.ts";
 import { getAppointment, whenOf, type AppointmentRecord } from "./appointments";
 
 /**
