@@ -123,9 +123,9 @@
                 </Badge>
               {/if}
               {#if reading.note}
-                <span class="text-muted-foreground text-xs wrap-anywhere"
-                  >{reading.note}</span
-                >
+                <span class="text-muted-foreground text-xs wrap-anywhere">
+                  {reading.note}
+                </span>
               {/if}
             </span>
             <span class="text-sm font-medium whitespace-nowrap tabular-nums">

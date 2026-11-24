@@ -237,8 +237,9 @@
                 <DropdownMenu.Item
                   class="min-h-10"
                   onSelect={() => (historyOpen = true)}
-                  ><HistoryIcon />{m.docs_history()}</DropdownMenu.Item
                 >
+                  <HistoryIcon />{m.docs_history()}
+                </DropdownMenu.Item>
 
                 {#if canWrite}
                   <DropdownMenu.Item
@@ -280,8 +281,9 @@
                     variant="destructive"
                     class="min-h-10"
                     onSelect={() => (deleteOpen = true)}
-                    ><Trash2Icon />{m.common_delete()}</DropdownMenu.Item
                   >
+                    <Trash2Icon />{m.common_delete()}
+                  </DropdownMenu.Item>
                 {/if}
               </DropdownMenu.Content>
             </DropdownMenu.Root>

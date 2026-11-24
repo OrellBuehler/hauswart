@@ -28,8 +28,9 @@
 </script>
 
 <DropdownMenu.Group>
-  <DropdownMenu.GroupHeading>{m.user_menu_language()}</DropdownMenu.GroupHeading
-  >
+  <DropdownMenu.GroupHeading>
+    {m.user_menu_language()}
+  </DropdownMenu.GroupHeading>
   <DropdownMenu.RadioGroup value={getLocale()} onValueChange={change}>
     {#each USER_LOCALES as locale (locale)}
       <DropdownMenu.RadioItem value={locale} disabled={pending}>

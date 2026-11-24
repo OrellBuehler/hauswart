@@ -44,7 +44,7 @@
     <span>{formatRelativeDays(info.days)}</span>
   </span>
 {:else}
-  <span class={cn("text-muted-foreground text-xs", className)}
-    >{m.defect_deadline_none()}</span
-  >
+  <span class={cn("text-muted-foreground text-xs", className)}>
+    {m.defect_deadline_none()}
+  </span>
 {/if}

@@ -97,8 +97,9 @@
               <a
                 href={p.href}
                 class="focus-visible:ring-ring/50 relative z-10 -my-1.5 inline-block rounded py-1.5 outline-none hover:underline focus-visible:ring-[3px]"
-                >{p.name}</a
               >
+                {p.name}
+              </a>
             {:else}
               {p.name}
             {/if}

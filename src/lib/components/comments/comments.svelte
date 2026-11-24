@@ -129,8 +129,9 @@
       {#if phase === "ready" && count > 0}
         <span
           class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
-          >{count}{cursor ? "+" : ""}</span
         >
+          {count}{cursor ? "+" : ""}
+        </span>
       {/if}
     </Card.Title>
   </Card.Header>

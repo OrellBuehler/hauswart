@@ -22,8 +22,9 @@
       {m.dashboard_order_now()}
       <span
         class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
-        >{items.length}</span
       >
+        {items.length}
+      </span>
     </Card.Title>
   </Card.Header>
   <Card.Content class="flex flex-col gap-2">
@@ -35,21 +36,21 @@
             class="hover:bg-accent/50 focus-visible:ring-ring/50 -mx-2 flex flex-col gap-1 rounded-md px-2 py-2.5 outline-none focus-visible:ring-[3px]"
           >
             <span class="flex items-baseline justify-between gap-3 text-sm">
-              <span class="min-w-0 font-medium break-words"
-                >{item.partName}</span
-              >
-              <span class="text-muted-foreground shrink-0 tabular-nums"
-                >{m.dashboard_order_quantity({ quantity: item.quantity })}</span
-              >
+              <span class="min-w-0 font-medium break-words">
+                {item.partName}
+              </span>
+              <span class="text-muted-foreground shrink-0 tabular-nums">
+                {m.dashboard_order_quantity({ quantity: item.quantity })}
+              </span>
             </span>
             <span
               class="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs"
             >
-              <span class="tabular-nums"
-                >{m.dashboard_order_needed_by({
+              <span class="tabular-nums">
+                {m.dashboard_order_needed_by({
                   date: formatDateShort(item.neededBy, { today }),
-                })}</span
-              >
+                })}
+              </span>
               <span class="break-words">{item.taskTitle}</span>
               {#if item.late}
                 <span

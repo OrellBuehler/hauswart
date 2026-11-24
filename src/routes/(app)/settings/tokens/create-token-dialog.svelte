@@ -183,9 +183,9 @@
       <div class="flex flex-col gap-2">
         <Label for="token-expiry">
           {m.tokens_expiry()}
-          <span class="text-muted-foreground font-normal"
-            >({m.common_optional()})</span
-          >
+          <span class="text-muted-foreground font-normal">
+            ({m.common_optional()})
+          </span>
         </Label>
         <Input
           id="token-expiry"

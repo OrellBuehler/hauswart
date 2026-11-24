@@ -41,8 +41,10 @@
   >
     <span
       class="bg-brand text-brand-foreground flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
-      aria-hidden="true">{initial}</span
+      aria-hidden="true"
     >
+      {initial}
+    </span>
     <span class="hidden max-w-32 truncate font-medium md:inline">{name}</span>
     <ChevronDownIcon
       class="text-muted-foreground hidden size-4 md:inline"
@@ -52,16 +54,17 @@
   <DropdownMenu.Content align="end" class="min-w-56">
     <DropdownMenu.Label class="flex flex-col gap-0.5 font-normal">
       <span class="truncate text-sm font-medium">{name}</span>
-      <span class="text-muted-foreground truncate text-xs"
-        >@{user.username}</span
-      >
+      <span class="text-muted-foreground truncate text-xs">
+        @{user.username}
+      </span>
     </DropdownMenu.Label>
     <DropdownMenu.Separator />
     <DropdownMenu.Item>
       {#snippet child({ props })}
-        <a href={resolve("settings/account")} {...props}
-          ><SettingsIcon /> {m.nav_settings()}</a
-        >
+        <a href={resolve("settings/account")} {...props}>
+          <SettingsIcon />
+          {m.nav_settings()}
+        </a>
       {/snippet}
     </DropdownMenu.Item>
     <DropdownMenu.Separator />

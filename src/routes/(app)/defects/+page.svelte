@@ -195,8 +195,9 @@
         {#if activeCount > 0}
           <span
             class="bg-brand text-brand-foreground rounded-full px-1.5 text-xs tabular-nums"
-            >{activeCount}</span
           >
+            {activeCount}
+          </span>
         {/if}
       </Button>
     </div>
@@ -289,9 +290,10 @@
         description={m.defects_empty_body()}
       >
         {#snippet actions()}
-          <Button href={resolve("defects/new")}
-            ><PlusIcon /> {m.defect_new()}</Button
-          >
+          <Button href={resolve("defects/new")}>
+            <PlusIcon />
+            {m.defect_new()}
+          </Button>
         {/snippet}
       </EmptyState>
     {:else if data.defects.length > 0 && !filters.q && !filters.severity && !filters.roomId && !filters.assetId && activeCount === 0}
@@ -340,38 +342,40 @@
             <Table.Head>{m.defect_status()}</Table.Head>
             <Table.Head>{m.defect_severity()}</Table.Head>
             <Table.Head>{m.defect_deadline()}</Table.Head>
-            <Table.Head class="w-12"
-              ><span class="sr-only">{m.comments_title()}</span></Table.Head
-            >
+            <Table.Head class="w-12">
+              <span class="sr-only">{m.comments_title()}</span>
+            </Table.Head>
           </Table.Row>
         </Table.Header>
         <Table.Body>
           {#each shown as defect (defect.id)}
             {@const place = defectPlace(defect)}
             <Table.Row class="relative">
-              <Table.Cell class="text-muted-foreground tabular-nums"
-                >#{defect.number}</Table.Cell
-              >
+              <Table.Cell class="text-muted-foreground tabular-nums">
+                #{defect.number}
+              </Table.Cell>
               <Table.Cell class="max-w-sm whitespace-normal">
                 <a
                   href={resolve(`defects/${defect.id}`)}
                   class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 rounded-sm font-medium wrap-anywhere outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
-                  >{defect.title}</a
                 >
+                  {defect.title}
+                </a>
                 {#if place}
                   <span
                     class="text-muted-foreground mt-0.5 block text-xs wrap-anywhere"
-                    >{place}</span
                   >
+                    {place}
+                  </span>
                 {/if}
               </Table.Cell>
 
-              <Table.Cell
-                ><DefectStatusBadge status={defect.status} /></Table.Cell
-              >
-              <Table.Cell
-                ><DefectSeverityBadge severity={defect.severity} /></Table.Cell
-              >
+              <Table.Cell>
+                <DefectStatusBadge status={defect.status} />
+              </Table.Cell>
+              <Table.Cell>
+                <DefectSeverityBadge severity={defect.severity} />
+              </Table.Cell>
 
               <Table.Cell>
                 <DefectDeadline

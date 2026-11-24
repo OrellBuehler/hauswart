@@ -365,13 +365,12 @@
             <span
               class="bg-brand text-brand-foreground rounded-full px-1.5 text-xs tabular-nums"
               aria-hidden="true"
-              >{data.pendingSuggestions}{data.morePendingSuggestions
-                ? "+"
-                : ""}</span
             >
-            <span class="sr-only"
-              >{m.costs_inbox_count({ count: data.pendingSuggestions })}</span
-            >
+              {data.pendingSuggestions}{data.morePendingSuggestions ? "+" : ""}
+            </span>
+            <span class="sr-only">
+              {m.costs_inbox_count({ count: data.pendingSuggestions })}
+            </span>
           {/if}
         </Button>
       {/if}
@@ -382,23 +381,27 @@
         {#if data.pendingReceipts !== null && data.pendingReceipts > 0}
           <span
             class="bg-warning/15 text-warning rounded-full px-1.5 text-xs tabular-nums"
-            aria-hidden="true">{data.pendingReceipts}</span
+            aria-hidden="true"
           >
-          <span class="sr-only"
-            >{m.costs_receipts_pending({
+            {data.pendingReceipts}
+          </span>
+          <span class="sr-only">
+            {m.costs_receipts_pending({
               count: data.pendingReceipts,
-            })}</span
-          >
+            })}
+          </span>
         {/if}
       </Button>
 
-      <Button href={resolve("costs/budgets")} variant="outline" size="lg"
-        ><GaugeIcon /> {m.costs_budgets()}</Button
-      >
+      <Button href={resolve("costs/budgets")} variant="outline" size="lg">
+        <GaugeIcon />
+        {m.costs_budgets()}
+      </Button>
 
-      <Button href={resolve("costs/recurring")} variant="outline" size="lg"
-        ><RepeatIcon /> {m.costs_recurring()}</Button
-      >
+      <Button href={resolve("costs/recurring")} variant="outline" size="lg">
+        <RepeatIcon />
+        {m.costs_recurring()}
+      </Button>
 
       <Button
         href={csvHref}
@@ -485,13 +488,13 @@
     <Tabs.List class="h-10 w-full sm:w-fit">
       <Tabs.Trigger value="list" class="sm:px-4">
         {m.costs_tab_list()}
-        <span class="text-muted-foreground text-xs tabular-nums"
-          >{data.costs.length}</span
-        >
+        <span class="text-muted-foreground text-xs tabular-nums">
+          {data.costs.length}
+        </span>
       </Tabs.Trigger>
-      <Tabs.Trigger value="report" class="sm:px-4"
-        >{m.costs_tab_report()}</Tabs.Trigger
-      >
+      <Tabs.Trigger value="report" class="sm:px-4">
+        {m.costs_tab_report()}
+      </Tabs.Trigger>
     </Tabs.List>
 
     <Tabs.Content value="list" class="flex flex-col gap-4">
@@ -540,8 +543,9 @@
             {#if activeCount > 0}
               <span
                 class="bg-brand text-brand-foreground rounded-full px-1.5 text-xs tabular-nums"
-                >{activeCount}</span
               >
+                {activeCount}
+              </span>
             {/if}
           </Button>
         </div>
@@ -657,8 +661,10 @@
                 variant="outline"
                 size="lg"
                 onclick={() => (selecting = true)}
-                ><ListChecksIcon /> {m.costs_select()}</Button
               >
+                <ListChecksIcon />
+                {m.costs_select()}
+              </Button>
             {/if}
             {#if assetName}
               <Button variant="outline" size="lg" onclick={moveAssetEntries}>
@@ -758,9 +764,9 @@
                 <Table.Head>{m.cost_category()}</Table.Head>
                 <Table.Head>{m.cost_paid_by()}</Table.Head>
                 <Table.Head class="text-end">{m.cost_amount()}</Table.Head>
-                <Table.Head class="w-12"
-                  ><span class="sr-only">{m.comments_title()}</span></Table.Head
-                >
+                <Table.Head class="w-12">
+                  <span class="sr-only">{m.comments_title()}</span>
+                </Table.Head>
               </Table.Row>
             </Table.Header>
             <Table.Body>
@@ -782,44 +788,49 @@
                       />
                     </Table.Cell>
                   {/if}
-                  <Table.Cell class="text-muted-foreground tabular-nums"
-                    >{formatDay(cost.date)}</Table.Cell
-                  >
+                  <Table.Cell class="text-muted-foreground tabular-nums">
+                    {formatDay(cost.date)}
+                  </Table.Cell>
                   <Table.Cell class="max-w-sm whitespace-normal">
                     {#if selecting}
-                      <span class="font-medium wrap-anywhere">{cost.title}</span
-                      >
+                      <span class="font-medium wrap-anywhere">
+                        {cost.title}
+                      </span>
                     {:else}
                       <a
                         href={resolve(`costs/${cost.id}`)}
                         class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 rounded-sm font-medium wrap-anywhere outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
-                        >{cost.title}</a
                       >
+                        {cost.title}
+                      </a>
                     {/if}
                     {#if cost.payee || place || !filters.bookId}
                       <span
                         class="text-muted-foreground mt-0.5 block text-xs wrap-anywhere"
-                        >{[
+                      >
+                        {[
                           cost.payee,
                           place,
                           filters.bookId ? "" : cost.bookName,
                         ]
                           .filter(Boolean)
-                          .join(" · ")}</span
-                      >
+                          .join(" · ")}
+                      </span>
                     {/if}
                     <CostFlags {cost} class="mt-1.5" />
                     <TagChips tags={cost.tags} limit={4} class="mt-1.5" />
                   </Table.Cell>
-                  <Table.Cell class="whitespace-normal"
-                    >{categoryLabels[cost.category]()}</Table.Cell
-                  >
+                  <Table.Cell class="whitespace-normal">
+                    {categoryLabels[cost.category]()}
+                  </Table.Cell>
                   <Table.Cell
                     class={cn(
                       "whitespace-normal",
                       !cost.paidByName && "text-muted-foreground",
-                    )}>{cost.paidByName ?? m.cost_payer_open()}</Table.Cell
+                    )}
                   >
+                    {cost.paidByName ?? m.cost_payer_open()}
+                  </Table.Cell>
                   <Table.Cell class="text-end font-medium">
                     <CostAmount
                       amountMinor={cost.amountMinor}

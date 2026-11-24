@@ -146,8 +146,9 @@
       <a
         href={resolve(`costs${budgetEntriesQuery(item)}`)}
         class="text-foreground focus-visible:ring-ring/50 rounded font-medium underline underline-offset-4 outline-none focus-visible:ring-[3px]"
-        >{m.budgets_show_entries()}</a
       >
+        {m.budgets_show_entries()}
+      </a>
       <!-- eslint-enable svelte/no-navigation-without-resolve -->
     {/if}
   </p>

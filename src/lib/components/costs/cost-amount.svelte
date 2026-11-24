@@ -14,5 +14,7 @@
     "whitespace-nowrap tabular-nums",
     amountMinor < 0 && "text-success",
     className,
-  )}>{formatMoney(amountMinor, currency)}</span
+  )}
 >
+  {formatMoney(amountMinor, currency)}
+</span>

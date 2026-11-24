@@ -258,8 +258,9 @@
           variant="outline"
           class="max-sm:hidden"
           onclick={() => (editOpen = true)}
-          ><PencilIcon />{m.common_edit()}</Button
         >
+          <PencilIcon />{m.common_edit()}
+        </Button>
 
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
@@ -278,8 +279,9 @@
             <DropdownMenu.Item
               class="min-h-10 sm:hidden"
               onSelect={() => (editOpen = true)}
-              ><PencilIcon />{m.common_edit()}</DropdownMenu.Item
             >
+              <PencilIcon />{m.common_edit()}
+            </DropdownMenu.Item>
 
             <DropdownMenu.Item class="min-h-10" onSelect={toggleArchive}>
               {#if archived}
@@ -293,8 +295,9 @@
               variant="destructive"
               class="min-h-10"
               onSelect={() => (deleteOpen = true)}
-              ><Trash2Icon />{m.common_delete()}</DropdownMenu.Item
             >
+              <Trash2Icon />{m.common_delete()}
+            </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       </div>
@@ -405,8 +408,9 @@
                 variant="outline"
                 size="lg"
                 onclick={() => (orderedOpen = true)}
-                ><TruckIcon />{m.part_mark_ordered()}</Button
               >
+                <TruckIcon />{m.part_mark_ordered()}
+              </Button>
             {/if}
           </div>
         </Card.Content>
@@ -521,8 +525,9 @@
               size="sm"
               variant="outline"
               onclick={() => (assetLinkOpen = true)}
-              ><PlusIcon />{m.part_link_add()}</Button
             >
+              <PlusIcon />{m.part_link_add()}
+            </Button>
           </Card.Action>
         </Card.Header>
         <Card.Content>
@@ -567,8 +572,9 @@
               size="sm"
               variant="outline"
               onclick={() => (taskLinkOpen = true)}
-              ><PlusIcon />{m.part_link_add()}</Button
             >
+              <PlusIcon />{m.part_link_add()}
+            </Button>
           </Card.Action>
         </Card.Header>
         <Card.Content>

@@ -101,8 +101,9 @@
           <a
             href={resolve(`costs/recurring/${recurrence.id}`)}
             class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 rounded-sm outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
-            >{recurrence.title}</a
           >
+            {recurrence.title}
+          </a>
         </h3>
         <p
           class="text-muted-foreground mt-0.5 text-xs text-pretty wrap-anywhere"
@@ -264,9 +265,9 @@
           class="text-muted-foreground flex items-baseline gap-2 text-sm font-semibold"
         >
           {sectionTitles[section.state]()}
-          <span class="text-xs font-normal tabular-nums"
-            >{section.items.length}</span
-          >
+          <span class="text-xs font-normal tabular-nums">
+            {section.items.length}
+          </span>
         </h2>
         <Card.Root class="gap-0 py-0">
           <ul class="divide-y">

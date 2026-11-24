@@ -82,15 +82,15 @@
     >
       <span class="bg-success size-1.5 shrink-0 rounded-full" aria-hidden="true"
       ></span>
-      <span class="text-foreground min-w-0 font-medium break-words"
-        >{view.entity.name}</span
-      >
+      <span class="text-foreground min-w-0 font-medium break-words">
+        {view.entity.name}
+      </span>
       <span aria-hidden="true">·</span>
       <span>
         {m.entity_reading_now()}
-        <span class="text-foreground font-medium tabular-nums"
-          >{formatReading(view.entity)}</span
-        >
+        <span class="text-foreground font-medium tabular-nums">
+          {formatReading(view.entity)}
+        </span>
       </span>
       {#if view.entity.area}
         <span aria-hidden="true">·</span>

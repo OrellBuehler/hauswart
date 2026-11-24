@@ -142,17 +142,18 @@
   <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
     <span id={`${id}-label`} class="text-sm leading-none font-medium">
       {m.costtag_picker_label()}
-      <span class="text-muted-foreground font-normal"
-        >({m.common_optional()})</span
-      >
+      <span class="text-muted-foreground font-normal">
+        ({m.common_optional()})
+      </span>
     </span>
 
     {#if value.length > 0}
       <span
         class="text-muted-foreground text-xs tabular-nums"
         aria-live="polite"
-        >{m.costtag_picker_chosen({ count: value.length })}</span
       >
+        {m.costtag_picker_chosen({ count: value.length })}
+      </span>
     {/if}
   </div>
 
@@ -216,8 +217,9 @@
             <a
               href={resolve("settings/cost-tags")}
               class="text-foreground focus-visible:ring-ring/50 rounded font-medium underline underline-offset-4 outline-none focus-visible:ring-[3px]"
-              >{m.costtag_picker_none_settings()}</a
             >
+              {m.costtag_picker_none_settings()}
+            </a>
           {/if}
         </p>
       {:else}

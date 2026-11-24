@@ -238,26 +238,26 @@
         <dd class="min-w-0 font-medium">
           {#if integration.lastOkAt}
             {@const t = when(integration.lastOkAt)}
-            <time datetime={integration.lastOkAt} title={t.absolute}
-              >{t.relative}</time
-            >
+            <time datetime={integration.lastOkAt} title={t.absolute}>
+              {t.relative}
+            </time>
           {:else}
-            <span class="text-muted-foreground font-normal"
-              >{m.integration_never()}</span
-            >
+            <span class="text-muted-foreground font-normal">
+              {m.integration_never()}
+            </span>
           {/if}
         </dd>
         <dt class="text-muted-foreground">{m.integration_last_checked()}</dt>
         <dd class="min-w-0 font-medium">
           {#if integration.lastCheckedAt}
             {@const t = when(integration.lastCheckedAt)}
-            <time datetime={integration.lastCheckedAt} title={t.absolute}
-              >{t.relative}</time
-            >
+            <time datetime={integration.lastCheckedAt} title={t.absolute}>
+              {t.relative}
+            </time>
           {:else}
-            <span class="text-muted-foreground font-normal"
-              >{m.integration_never()}</span
-            >
+            <span class="text-muted-foreground font-normal">
+              {m.integration_never()}
+            </span>
           {/if}
         </dd>
         {#if integration.consecutiveFailures > 0 && integration.status !== "error"}
@@ -377,9 +377,9 @@
             </Field>
           {:else}
             <div class="flex flex-col gap-2">
-              <span class="text-sm leading-none font-medium"
-                >{m.integration_paperless_token()}</span
-              >
+              <span class="text-sm leading-none font-medium">
+                {m.integration_paperless_token()}
+              </span>
               <div
                 class="bg-muted/50 flex items-center justify-between gap-3 rounded-md border px-3 py-2"
               >
@@ -388,12 +388,12 @@
                     class="text-success size-4 shrink-0"
                     aria-hidden="true"
                   />
-                  <span class="font-medium"
-                    >{m.integration_ha_token_stored()}</span
-                  >
-                  <span class="text-muted-foreground hidden text-xs sm:inline"
-                    >{m.integration_ha_token_stored_hint()}</span
-                  >
+                  <span class="font-medium">
+                    {m.integration_ha_token_stored()}
+                  </span>
+                  <span class="text-muted-foreground hidden text-xs sm:inline">
+                    {m.integration_ha_token_stored_hint()}
+                  </span>
                 </span>
                 <Button
                   type="button"

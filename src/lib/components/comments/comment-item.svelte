@@ -110,16 +110,20 @@
         <time
           class="text-muted-foreground text-xs"
           datetime={comment.createdAt}
-          title={absolute}>{formatRelativeInstant(comment.createdAt, now)}</time
+          title={absolute}
         >
+          {formatRelativeInstant(comment.createdAt, now)}
+        </time>
         {#if comment.editedAt && !comment.deleted}
           <span
             class="text-muted-foreground text-xs"
             title={formatDateTime(
               comment.editedAt,
               timeZone ? { timeZone } : {},
-            )}>({m.comments_edited()})</span
+            )}
           >
+            ({m.comments_edited()})
+          </span>
         {/if}
       </p>
       {#if !editing && (comment.canEdit || comment.canDelete)}
@@ -156,9 +160,9 @@
       </p>
     {:else if editing}
       <form class="mt-2 flex flex-col gap-2" onsubmit={save}>
-        <label for={`edit-${comment.id}`} class="sr-only"
-          >{m.comments_edit_label()}</label
-        >
+        <label for={`edit-${comment.id}`} class="sr-only">
+          {m.comments_edit_label()}
+        </label>
         <Textarea
           id={`edit-${comment.id}`}
           rows={3}

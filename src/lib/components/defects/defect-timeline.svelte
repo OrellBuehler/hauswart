@@ -132,9 +132,9 @@
                   title={formatDateTime(item.at, { timeZone })}
                 >
                   {formatRelativeInstant(item.at, now)}
-                  <span class="tabular-nums sm:hidden"
-                    >· {formatDateTime(item.at, { timeZone })}</span
-                  >
+                  <span class="tabular-nums sm:hidden">
+                    · {formatDateTime(item.at, { timeZone })}
+                  </span>
                 </time>
               </p>
               {#if item.type === "status" && item.toStatus}

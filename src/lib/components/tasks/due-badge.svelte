@@ -44,8 +44,8 @@
       class="text-muted-foreground tabular-nums"
       title={estimated ? m.due_estimated_hint() : undefined}
     >
-      {#if estimated}<span aria-hidden="true">~ </span><span class="sr-only"
-          >{m.due_estimated_sr()}
+      {#if estimated}<span aria-hidden="true">~ </span><span class="sr-only">
+          {m.due_estimated_sr()}
         </span>{/if}{wording.relative} · {wording.absolute}
     </span>
   {/if}

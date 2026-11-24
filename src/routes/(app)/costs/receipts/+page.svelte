@@ -223,11 +223,13 @@
                     ? "bg-brand-foreground/20"
                     : "bg-warning/15 text-warning",
                 )}
-                aria-hidden="true">{data.pendingCount}</span
+                aria-hidden="true"
               >
-              <span class="sr-only"
-                >{m.receipts_pending_count({ count: data.pendingCount })}</span
-              >
+                {data.pendingCount}
+              </span>
+              <span class="sr-only">
+                {m.receipts_pending_count({ count: data.pendingCount })}
+              </span>
             {/if}
           </a>
         </li>
@@ -260,9 +262,9 @@
           : m.receipts_empty_filtered_body()}
       >
         {#snippet actions()}
-          <Button href={resolve("costs/receipts")} variant="outline"
-            >{m.receipts_filter_all()}</Button
-          >
+          <Button href={resolve("costs/receipts")} variant="outline">
+            {m.receipts_filter_all()}
+          </Button>
         {/snippet}
       </EmptyState>
     {/if}

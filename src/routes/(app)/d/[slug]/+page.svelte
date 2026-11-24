@@ -53,9 +53,9 @@
     >
       {#snippet actions()}
         <Button href={resolve("inventory")}>{m.nav_inventory()}</Button>
-        <Button href={resolve("")} variant="outline"
-          >{m.common_back_home()}</Button
-        >
+        <Button href={resolve("")} variant="outline">
+          {m.common_back_home()}
+        </Button>
       {/snippet}
     </EmptyState>
   </div>
@@ -220,9 +220,9 @@
     {/if}
 
     <div class="flex flex-col gap-2">
-      <Button href={resolve(`assets/${found.asset.id}`)} variant="outline"
-        >{m.qr_full_page()}</Button
-      >
+      <Button href={resolve(`assets/${found.asset.id}`)} variant="outline">
+        {m.qr_full_page()}
+      </Button>
 
       <Button
         href={newTaskHref(found.asset.id)}

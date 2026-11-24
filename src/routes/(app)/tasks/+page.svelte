@@ -193,9 +193,10 @@
 <div class="flex flex-col gap-6">
   <PageHeader title={m.tasks_title()} description={m.tasks_description()}>
     {#snippet actions()}
-      <Button href={resolve("tasks/new")} size="lg" class="max-md:hidden"
-        ><PlusIcon /> {m.task_new()}</Button
-      >
+      <Button href={resolve("tasks/new")} size="lg" class="max-md:hidden">
+        <PlusIcon />
+        {m.task_new()}
+      </Button>
     {/snippet}
   </PageHeader>
 
@@ -248,8 +249,9 @@
         {#if activeCount > 0}
           <span
             class="bg-brand text-brand-foreground rounded-full px-1.5 text-xs tabular-nums"
-            >{activeCount}</span
           >
+            {activeCount}
+          </span>
         {/if}
       </Button>
     </div>
@@ -337,9 +339,9 @@
         description={m.tasks_empty_filtered_body()}
       >
         {#snippet actions()}
-          <Button variant="outline" onclick={reset}
-            >{m.tasks_filter_reset()}</Button
-          >
+          <Button variant="outline" onclick={reset}>
+            {m.tasks_filter_reset()}
+          </Button>
         {/snippet}
       </EmptyState>
     {:else}
@@ -349,9 +351,10 @@
         description={m.tasks_empty_body()}
       >
         {#snippet actions()}
-          <Button href={resolve("tasks/new")}
-            ><PlusIcon /> {m.task_new()}</Button
-          >
+          <Button href={resolve("tasks/new")}>
+            <PlusIcon />
+            {m.task_new()}
+          </Button>
         {/snippet}
       </EmptyState>
     {/if}
@@ -372,8 +375,9 @@
             {group.title}
             <span
               class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
-              >{group.rows.length}</span
             >
+              {group.rows.length}
+            </span>
           </h2>
         {/if}
         <ul class="divide-y px-4">

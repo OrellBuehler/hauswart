@@ -165,8 +165,9 @@
         {#if open}
           <span
             class="bg-warning/15 text-warning inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap"
-            >{m.appointment_open_badge()}</span
           >
+            {m.appointment_open_badge()}
+          </span>
         {:else}
           <AppointmentStatusBadge status={appointment.status} />
         {/if}
@@ -182,9 +183,9 @@
           timeZone: data.timeZone,
           today: data.today,
         })}
-        <span class="text-muted-foreground text-sm font-normal"
-          >· {relative}</span
-        >
+        <span class="text-muted-foreground text-sm font-normal">
+          · {relative}
+        </span>
       </p>
     </div>
 
@@ -230,8 +231,9 @@
             variant="outline"
             class="max-sm:hidden"
             onclick={() => (editOpen = true)}
-            ><PencilIcon />{m.common_edit()}</Button
           >
+            <PencilIcon />{m.common_edit()}
+          </Button>
 
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
@@ -250,8 +252,9 @@
               <DropdownMenu.Item
                 class="min-h-10 sm:hidden"
                 onSelect={() => (editOpen = true)}
-                ><PencilIcon />{m.common_edit()}</DropdownMenu.Item
               >
+                <PencilIcon />{m.common_edit()}
+              </DropdownMenu.Item>
 
               {#if appointment.status === "planned"}
                 <DropdownMenu.Item
@@ -274,8 +277,9 @@
                 variant="destructive"
                 class="min-h-10"
                 onSelect={() => (deleteOpen = true)}
-                ><Trash2Icon />{m.common_delete()}</DropdownMenu.Item
               >
+                <Trash2Icon />{m.common_delete()}
+              </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu.Root>
         </div>
@@ -376,12 +380,12 @@
                     aria-hidden="true"
                   />
                   <span class="min-w-0">
-                    <span class="text-muted-foreground block text-xs"
-                      >{m.appointment_task_label()}</span
-                    >
-                    <span class="font-medium wrap-anywhere"
-                      >{appointment.taskTitle}</span
-                    >
+                    <span class="text-muted-foreground block text-xs">
+                      {m.appointment_task_label()}
+                    </span>
+                    <span class="font-medium wrap-anywhere">
+                      {appointment.taskTitle}
+                    </span>
                   </span>
                 </a>
               </li>
@@ -394,12 +398,12 @@
                     aria-hidden="true"
                   />
                   <span class="min-w-0">
-                    <span class="text-muted-foreground block text-xs"
-                      >{m.appointment_asset_label()}</span
-                    >
-                    <span class="font-medium wrap-anywhere"
-                      >{appointment.assetName}</span
-                    >
+                    <span class="text-muted-foreground block text-xs">
+                      {m.appointment_asset_label()}
+                    </span>
+                    <span class="font-medium wrap-anywhere">
+                      {appointment.assetName}
+                    </span>
                   </span>
                 </a>
               </li>
@@ -412,12 +416,12 @@
                     aria-hidden="true"
                   />
                   <span class="min-w-0">
-                    <span class="text-muted-foreground block text-xs"
-                      >{m.appointment_contact_label()}</span
-                    >
-                    <span class="font-medium wrap-anywhere"
-                      >{appointment.contactName}</span
-                    >
+                    <span class="text-muted-foreground block text-xs">
+                      {m.appointment_contact_label()}
+                    </span>
+                    <span class="font-medium wrap-anywhere">
+                      {appointment.contactName}
+                    </span>
                   </span>
                 </a>
               </li>

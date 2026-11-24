@@ -165,9 +165,9 @@
   </p>
 
   <div class="flex min-w-0 flex-col gap-2">
-    <span class="text-sm leading-none font-medium"
-      >{m.quick_receipt_file()}</span
-    >
+    <span class="text-sm leading-none font-medium">
+      {m.quick_receipt_file()}
+    </span>
     <ReceiptPicker
       id="queue-receipt"
       bind:file
@@ -199,12 +199,12 @@
 
   {#if open.length > 1}
     <div class="flex min-w-0 flex-col gap-2">
-      <span class="text-sm leading-none font-medium"
-        >{m.cost_book()}
-        <span class="text-muted-foreground font-normal"
-          >({m.common_optional()})</span
-        ></span
-      >
+      <span class="text-sm leading-none font-medium">
+        {m.cost_book()}
+        <span class="text-muted-foreground font-normal">
+          ({m.common_optional()})
+        </span>
+      </span>
       {#if open.length <= BOOK_CHIPS_MAX}
         <ChoiceChips
           options={bookOptions}
@@ -227,12 +227,12 @@
   {/if}
 
   <div class="flex min-w-0 flex-col gap-2">
-    <Label for="queue-asset"
-      >{m.cost_asset()}
-      <span class="text-muted-foreground font-normal"
-        >({m.common_optional()})</span
-      ></Label
-    >
+    <Label for="queue-asset">
+      {m.cost_asset()}
+      <span class="text-muted-foreground font-normal">
+        ({m.common_optional()})
+      </span>
+    </Label>
     <OptionSelect
       id="queue-asset"
       bind:value={draft.assetId}
@@ -252,8 +252,9 @@
       <a
         href={resolve("costs/receipts?status=pending")}
         class="text-foreground focus-visible:ring-ring/50 inline-flex min-h-10 w-fit items-center rounded text-sm font-medium underline underline-offset-4 outline-none focus-visible:ring-[3px]"
-        >{m.quick_receipt_check_list()}</a
       >
+        {m.quick_receipt_check_list()}
+      </a>
     {/if}
     <div class="flex gap-2">
       <Button

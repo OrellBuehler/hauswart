@@ -62,9 +62,9 @@
     <div class="flex flex-col gap-1 border-t pt-3">
       <div class="flex items-baseline justify-between gap-3">
         <span class="font-medium">{m.costs_equity_label()}</span>
-        <span class="whitespace-nowrap tabular-nums"
-          >{money(summary.equityTotalMinor)}</span
-        >
+        <span class="whitespace-nowrap tabular-nums">
+          {money(summary.equityTotalMinor)}
+        </span>
       </div>
       <p class="text-muted-foreground text-xs text-pretty">
         {m.costs_equity_hint()}
@@ -76,12 +76,12 @@
       class="text-muted-foreground flex items-start gap-2 border-t pt-3 text-xs text-pretty"
     >
       <InfoIcon class="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-      <span
-        >{m.costs_other_currency({
+      <span>
+        {m.costs_other_currency({
           count: summary.otherCurrencyCount,
           currency: summary.currency,
-        })}</span
-      >
+        })}
+      </span>
     </p>
   {/if}
 {/snippet}

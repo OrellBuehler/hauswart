@@ -108,9 +108,9 @@
   <PageHeader title={m.nav_rooms()} description={m.rooms_description()}>
     {#snippet actions()}
       {#if data.areasAvailable}
-        <Button variant="outline" onclick={() => (importOpen = true)}
-          ><DownloadIcon />{m.rooms_import_ha()}</Button
-        >
+        <Button variant="outline" onclick={() => (importOpen = true)}>
+          <DownloadIcon />{m.rooms_import_ha()}
+        </Button>
       {/if}
       <Button onclick={openCreate}><PlusIcon />{m.rooms_create()}</Button>
     {/snippet}
@@ -124,9 +124,9 @@
     >
       {#snippet actions()}
         {#if data.areasAvailable}
-          <Button variant="outline" onclick={() => (importOpen = true)}
-            ><DownloadIcon />{m.rooms_import_ha()}</Button
-          >
+          <Button variant="outline" onclick={() => (importOpen = true)}>
+            <DownloadIcon />{m.rooms_import_ha()}
+          </Button>
         {/if}
         <Button onclick={openCreate}><PlusIcon />{m.rooms_create()}</Button>
       {/snippet}

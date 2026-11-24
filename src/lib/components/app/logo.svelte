@@ -22,7 +22,8 @@
   {#if showName}
     <span
       class="text-lg font-semibold tracking-tight group-data-[collapsible=icon]:hidden"
-      >{m.app_name()}</span
     >
+      {m.app_name()}
+    </span>
   {/if}
 </span>

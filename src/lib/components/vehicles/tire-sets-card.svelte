@@ -185,9 +185,9 @@
             </span>
           {/if}
         {:else}
-          <span class="text-muted-foreground font-normal"
-            >{m.tire_fact_tread_none()}</span
-          >
+          <span class="text-muted-foreground font-normal">
+            {m.tire_fact_tread_none()}
+          </span>
         {/if}
       </dd>
     </div>
@@ -210,9 +210,9 @@
             </span>
           {/if}
         {:else}
-          <span class="text-muted-foreground font-normal"
-            >{m.tire_fact_age_none()}</span
-          >
+          <span class="text-muted-foreground font-normal">
+            {m.tire_fact_age_none()}
+          </span>
         {/if}
       </dd>
     </div>

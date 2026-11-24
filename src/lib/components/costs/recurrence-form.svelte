@@ -284,9 +284,9 @@
   <Card.Root>
     <Card.Header>
       <Card.Title>{m.recurrence_form_template()}</Card.Title>
-      <Card.Description
-        >{m.recurrence_form_template_description()}</Card.Description
-      >
+      <Card.Description>
+        {m.recurrence_form_template_description()}
+      </Card.Description>
     </Card.Header>
     <Card.Content class="flex flex-col gap-5">
       {#if selectableBooks.length > 1}
@@ -432,14 +432,15 @@
   <Card.Root>
     <Card.Header>
       <Card.Title>{m.recurrence_form_rule()}</Card.Title>
-      <Card.Description>{m.recurrence_form_rule_description()}</Card.Description
-      >
+      <Card.Description>
+        {m.recurrence_form_rule_description()}
+      </Card.Description>
     </Card.Header>
     <Card.Content class="flex flex-col gap-5">
       <div class="flex flex-col gap-2">
-        <span class="text-sm leading-none font-medium"
-          >{m.recurrence_frequency()}</span
-        >
+        <span class="text-sm leading-none font-medium">
+          {m.recurrence_frequency()}
+        </span>
         <Segmented
           options={frequencyOptions}
           bind:value={draft.frequency}
@@ -455,9 +456,9 @@
         >
           {#snippet children({ describedby, invalid })}
             <div class="flex items-center gap-2">
-              <span class="text-sm" aria-hidden="true"
-                >{m.recurrence_every()}</span
-              >
+              <span class="text-sm" aria-hidden="true">
+                {m.recurrence_every()}
+              </span>
               <Input
                 id="rec-interval"
                 class="h-10 w-20 text-end tabular-nums"
@@ -540,8 +541,10 @@
                   size="icon-lg"
                   aria-label={m.recurrence_end_none()}
                   title={m.recurrence_end_none()}
-                  onclick={() => (draft.endDate = "")}><XIcon /></Button
+                  onclick={() => (draft.endDate = "")}
                 >
+                  <XIcon />
+                </Button>
               {/if}
             </div>
           {/snippet}

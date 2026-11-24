@@ -206,11 +206,11 @@
       class="bg-muted/50 text-muted-foreground flex items-start gap-2 rounded-lg border px-3 py-2 text-sm text-pretty"
     >
       <InfoIcon class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-      <span class="min-w-0 wrap-anywhere"
-        >{crossBook
+      <span class="min-w-0 wrap-anywhere">
+        {crossBook
           ? `${m.balances_scope_book_only({ name: book.name })} ${crossBook}`
-          : m.balances_scope_book({ name: book.name })}</span
-      >
+          : m.balances_scope_book({ name: book.name })}
+      </span>
     </p>
   {/if}
 
@@ -249,9 +249,9 @@
                 class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1"
               >
                 <span class="flex min-w-0 items-center gap-2 font-medium">
-                  <span class="wrap-anywhere"
-                    >{personName(person.userName)}</span
-                  >
+                  <span class="wrap-anywhere">
+                    {personName(person.userName)}
+                  </span>
                   {#if person.userId === data.user.id}
                     <Badge variant="secondary">{m.balances_you_badge()}</Badge>
                   {/if}
@@ -260,8 +260,10 @@
                   class={cn(
                     "text-end font-semibold tabular-nums",
                     tones[wording.tone],
-                  )}>{wording.text}</span
+                  )}
                 >
+                  {wording.text}
+                </span>
               </div>
               <dl
                 class="text-muted-foreground grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-4"
@@ -304,11 +306,11 @@
           class="text-muted-foreground flex items-start gap-2 border-t pt-3 text-xs text-pretty"
         >
           <InfoIcon class="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-          <span
-            >{m.balances_unassigned({
+          <span>
+            {m.balances_unassigned({
               count: balances.unassignedPayerCount,
-            })}</span
-          >
+            })}
+          </span>
         </p>
       {/if}
       {#if balances.otherCurrencyCount > 0}
@@ -316,12 +318,12 @@
           class="text-muted-foreground flex items-start gap-2 text-xs text-pretty"
         >
           <InfoIcon class="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-          <span
-            >{m.balances_other_currency({
+          <span>
+            {m.balances_other_currency({
               count: balances.otherCurrencyCount,
               currency: balances.currency,
-            })}</span
-          >
+            })}
+          </span>
         </p>
       {/if}
     </Card.Content>
@@ -395,8 +397,9 @@
           />
         </div>
         <div class="flex min-w-0 flex-col gap-2">
-          <Label for="settlements-person">{m.settlements_filter_person()}</Label
-          >
+          <Label for="settlements-person">
+            {m.settlements_filter_person()}
+          </Label>
           <OptionSelect
             id="settlements-person"
             value={filters.person}
@@ -464,11 +467,9 @@
               </div>
               <span
                 class="shrink-0 pt-0.5 text-end text-sm font-semibold whitespace-nowrap tabular-nums"
-                >{formatMoney(
-                  settlement.amountMinor,
-                  settlement.currency,
-                )}</span
               >
+                {formatMoney(settlement.amountMinor, settlement.currency)}
+              </span>
               {#if canWrite}
                 <DropdownMenu.Root>
                   <DropdownMenu.Trigger>

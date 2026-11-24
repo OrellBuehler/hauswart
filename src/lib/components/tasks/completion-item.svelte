@@ -70,13 +70,14 @@
         <a
           href={taskHref(completion.taskId)}
           class="focus-visible:ring-ring/50 rounded outline-none hover:underline focus-visible:ring-[3px]"
-          >{completion.taskTitle}</a
         >
+          {completion.taskTitle}
+        </a>
       {/if}
       {#if skipped}
-        <Badge variant="secondary" class="ms-1.5 align-middle"
-          >{m.completion_skipped()}</Badge
-        >
+        <Badge variant="secondary" class="ms-1.5 align-middle">
+          {m.completion_skipped()}
+        </Badge>
       {/if}
     </p>
     <p
@@ -86,8 +87,10 @@
         datetime={completion.completedAt}
         title={formatDateTime(completion.completedAt, {
           ...(timeZone ? { timeZone } : {}),
-        })}>{formatRelativeInstant(completion.completedAt, now)}</time
+        })}
       >
+        {formatRelativeInstant(completion.completedAt, now)}
+      </time>
       <span class="inline-flex items-center gap-1">
         <Icon class="size-3.5" aria-hidden="true" />
         {sourceLabels[completion.source]()}

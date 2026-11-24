@@ -240,25 +240,26 @@
         <time datetime={target.lastOkAt} title={t.absolute}>{t.relative}</time>
         <span
           class="text-muted-foreground block text-xs font-normal pointer-fine:hidden"
-          >{t.absolute}</span
         >
+          {t.absolute}
+        </span>
       {:else}
-        <span class="text-muted-foreground font-normal"
-          >{m.caltargets_never()}</span
-        >
+        <span class="text-muted-foreground font-normal">
+          {m.caltargets_never()}
+        </span>
       {/if}
     </dd>
     <dt class="text-muted-foreground">{m.caltargets_last_checked()}</dt>
     <dd class="min-w-0 font-medium">
       {#if target.lastCheckedAt}
         {@const t = when(target.lastCheckedAt)}
-        <time datetime={target.lastCheckedAt} title={t.absolute}
-          >{t.relative}</time
-        >
+        <time datetime={target.lastCheckedAt} title={t.absolute}>
+          {t.relative}
+        </time>
       {:else}
-        <span class="text-muted-foreground font-normal"
-          >{m.caltargets_never()}</span
-        >
+        <span class="text-muted-foreground font-normal">
+          {m.caltargets_never()}
+        </span>
       {/if}
     </dd>
     {#if target.nextAttemptAt && health !== "paused" && health !== "offline"}
@@ -268,9 +269,9 @@
           {m.caltargets_next_attempt_soon()}
         {:else}
           {@const t = when(target.nextAttemptAt)}
-          <time datetime={target.nextAttemptAt} title={t.absolute}
-            >{t.relative}</time
-          >
+          <time datetime={target.nextAttemptAt} title={t.absolute}>
+            {t.relative}
+          </time>
         {/if}
       </dd>
     {/if}

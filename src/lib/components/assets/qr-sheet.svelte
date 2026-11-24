@@ -63,9 +63,9 @@
       description={m.qr_sheet_empty_body()}
     >
       {#snippet actions()}
-        <Button href={resolve("assets/new")} variant="outline"
-          >{m.inventory_create()}</Button
-        >
+        <Button href={resolve("assets/new")} variant="outline">
+          {m.inventory_create()}
+        </Button>
       {/snippet}
     </EmptyState>
   {:else}

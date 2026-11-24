@@ -465,8 +465,9 @@
     <Card.Root class="lg:col-start-1">
       <Card.Header>
         <Card.Title>{m.task_form_schedule()}</Card.Title>
-        <Card.Description>{m.task_form_schedule_description()}</Card.Description
-        >
+        <Card.Description>
+          {m.task_form_schedule_description()}
+        </Card.Description>
       </Card.Header>
       <Card.Content>
         <TriggerBuilder bind:trigger errors={triggerErrors} {today} {vehicle} />
@@ -556,9 +557,9 @@
         <Card.Description>{m.task_preparations_description()}</Card.Description>
       </Card.Header>
 
-      <Card.Content
-        ><PreparationEditor bind:preparations {errors} /></Card.Content
-      >
+      <Card.Content>
+        <PreparationEditor bind:preparations {errors} />
+      </Card.Content>
     </Card.Root>
   </div>
 
@@ -574,8 +575,9 @@
         class="flex-1 sm:flex-none"
         disabled={pending}
         href={task ? taskHref(task.id) : resolve("tasks")}
-        >{m.common_cancel()}</Button
       >
+        {m.common_cancel()}
+      </Button>
 
       <Button
         type="submit"

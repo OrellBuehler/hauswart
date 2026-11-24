@@ -217,12 +217,12 @@
                 class="text-muted-foreground mt-1 flex justify-between gap-2 text-xs tabular-nums"
               >
                 <span>{formatDay(panel.consumptionSeries[0].date)}</span>
-                <span
-                  >{formatDay(
+                <span>
+                  {formatDay(
                     panel.consumptionSeries[panel.consumptionSeries.length - 1]
                       .date,
-                  )}</span
-                >
+                  )}
+                </span>
               </p>
             {/if}
           {:else}
@@ -256,9 +256,9 @@
                 class="text-muted-foreground mt-1 flex justify-between gap-2 text-xs tabular-nums"
               >
                 <span>{formatDay(panel.prices[0].date)}</span>
-                <span
-                  >{formatDay(panel.prices[panel.prices.length - 1].date)}</span
-                >
+                <span>
+                  {formatDay(panel.prices[panel.prices.length - 1].date)}
+                </span>
               </p>
             {/if}
           {:else}

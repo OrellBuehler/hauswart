@@ -33,9 +33,9 @@
     </span>
     <span class="min-w-0">
       <span class="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span class="text-sm font-medium text-pretty wrap-anywhere"
-          >{policy.title}</span
-        >
+        <span class="text-sm font-medium text-pretty wrap-anywhere">
+          {policy.title}
+        </span>
         {#if policy.archivedAt}
           <Badge variant="secondary">{m.insurance_archived()}</Badge>
         {/if}
@@ -50,12 +50,12 @@
       {/if}
     </span>
     <span class="flex flex-col items-end gap-0.5 text-end">
-      <span class="text-sm font-medium whitespace-nowrap tabular-nums"
-        >{formatMoney(policy.annualPremiumMinor, policy.currency)}</span
-      >
-      <span class="text-muted-foreground text-xs"
-        >{m.insurance_per_annual()}</span
-      >
+      <span class="text-sm font-medium whitespace-nowrap tabular-nums">
+        {formatMoney(policy.annualPremiumMinor, policy.currency)}
+      </span>
+      <span class="text-muted-foreground text-xs">
+        {m.insurance_per_annual()}
+      </span>
     </span>
     <span class="col-span-3 flex items-center justify-between gap-3 ps-12">
       {#if !policy.archivedAt}

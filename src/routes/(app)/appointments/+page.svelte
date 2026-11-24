@@ -226,8 +226,9 @@
           {m.appointments_open_title()}
           <span
             class="bg-warning/15 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
-            >{sections.open.length}</span
           >
+            {sections.open.length}
+          </span>
         </h2>
         <p class="text-muted-foreground -mt-1 text-xs text-pretty">
           {m.appointments_open_hint()}

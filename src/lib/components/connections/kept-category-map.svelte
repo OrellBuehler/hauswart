@@ -175,9 +175,9 @@
               >
                 <div class="flex min-w-0 flex-col gap-0.5">
                   {#if row.parents}
-                    <span class="text-muted-foreground truncate text-xs"
-                      >{row.parents}</span
-                    >
+                    <span class="text-muted-foreground truncate text-xs">
+                      {row.parents}
+                    </span>
                   {/if}
                   <span
                     class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1"

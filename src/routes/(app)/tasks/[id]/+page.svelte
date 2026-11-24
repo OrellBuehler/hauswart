@@ -353,8 +353,10 @@
           <DropdownMenu.Item
             class="text-destructive focus:text-destructive min-h-10"
             onSelect={() => (deleteOpen = true)}
-            ><Trash2Icon /> {m.common_delete()}</DropdownMenu.Item
           >
+            <Trash2Icon />
+            {m.common_delete()}
+          </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     </div>
@@ -419,8 +421,10 @@
                           prep.state === "now"
                             ? "bg-warning/15 text-warning"
                             : "bg-muted",
-                        )}>{preparationStateLabels[prep.state]()}</span
+                        )}
                       >
+                        {preparationStateLabels[prep.state]()}
+                      </span>
                     </p>
                   </div>
                   {#if open}
@@ -667,8 +671,9 @@
                     <a
                       href={roomHref(place.roomId)}
                       class="focus-visible:ring-ring/50 rounded underline-offset-4 outline-none hover:underline focus-visible:ring-[3px]"
-                      >{place.roomName}</a
                     >
+                      {place.roomName}
+                    </a>
                   {/if}
                   {#if place.roomName && task.assetName}
                     <span class="mx-1" aria-hidden="true">·</span>
@@ -677,8 +682,9 @@
                     <a
                       href={assetHref(task.assetId)}
                       class="focus-visible:ring-ring/50 rounded underline-offset-4 outline-none hover:underline focus-visible:ring-[3px]"
-                      >{task.assetName}</a
                     >
+                      {task.assetName}
+                    </a>
                   {/if}
                 </dd>
               </div>

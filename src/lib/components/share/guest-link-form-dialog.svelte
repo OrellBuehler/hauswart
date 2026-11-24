@@ -308,8 +308,9 @@
       </Field>
     </div>
     <div class="flex flex-wrap items-center gap-2">
-      <span class="text-muted-foreground text-xs">{m.glinks_quick_until()}</span
-      >
+      <span class="text-muted-foreground text-xs">
+        {m.glinks_quick_until()}
+      </span>
       {#each DURATIONS as days (days)}
         <Button
           type="button"
@@ -415,8 +416,10 @@
       </span>
       <span
         class="text-muted-foreground text-xs group-open:hidden"
-        aria-hidden="true">{m.glinks_pages_show()}</span
+        aria-hidden="true"
       >
+        {m.glinks_pages_show()}
+      </span>
     </summary>
     <div class="flex flex-col gap-3 border-t px-3 py-3">
       <p class="text-muted-foreground text-xs text-pretty">

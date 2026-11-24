@@ -121,8 +121,8 @@
     <div class="min-w-0 flex-1">
       <p class="text-sm font-medium text-pretty break-words">{facts.title}</p>
       <p class="text-muted-foreground mt-0.5 text-xs break-words">
-        <span class="sr-only"
-          >{suggestionKindLabels[suggestion.kind]()}:
+        <span class="sr-only">
+          {suggestionKindLabels[suggestion.kind]()}:
         </span>{facts.meta}
       </p>
       {#if suggestion.kind === "cost" && suggestion.payload.assetId}
@@ -146,8 +146,9 @@
               <a
                 href={resolve(`costs/${encodeURIComponent(linked.id)}`)}
                 class="focus-visible:ring-ring/50 rounded underline-offset-4 outline-none hover:underline focus-visible:ring-[3px]"
-                >{linked.title}</a
               >
+                {linked.title}
+              </a>
               <!-- eslint-enable svelte/no-navigation-without-resolve -->
             </p>
             <p class="text-muted-foreground text-xs break-words">

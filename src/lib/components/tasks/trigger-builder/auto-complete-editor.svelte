@@ -88,9 +88,9 @@
     <div class="flex min-w-0 flex-col gap-1">
       <h3 id="auto-complete-title" class="text-sm font-medium">
         {m.auto_complete_title()}
-        <span class="text-muted-foreground font-normal"
-          >({m.common_optional()})</span
-        >
+        <span class="text-muted-foreground font-normal">
+          ({m.common_optional()})
+        </span>
       </h3>
       <p class="text-muted-foreground text-xs text-pretty">
         {m.auto_complete_description()}

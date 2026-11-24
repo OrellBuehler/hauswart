@@ -157,9 +157,9 @@
         <div class="flex flex-col gap-2">
           <Label for="status-resolution">
             {m.defect_resolution()}
-            <span class="text-muted-foreground font-normal"
-              >({m.common_optional()})</span
-            >
+            <span class="text-muted-foreground font-normal">
+              ({m.common_optional()})
+            </span>
           </Label>
           <Textarea
             id="status-resolution"
@@ -173,9 +173,9 @@
         <div class="flex flex-col gap-2">
           <Label for="status-note">
             {m.defect_dialog_note()}
-            <span class="text-muted-foreground font-normal"
-              >({m.common_optional()})</span
-            >
+            <span class="text-muted-foreground font-normal">
+              ({m.common_optional()})
+            </span>
           </Label>
           <Textarea
             id="status-note"

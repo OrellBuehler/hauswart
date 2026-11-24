@@ -23,8 +23,9 @@
       {m.dashboard_open_defects()}
       <span
         class="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
-        >{defects.length}</span
       >
+        {defects.length}
+      </span>
     </Card.Title>
   </Card.Header>
   <Card.Content class="flex flex-col gap-2">
@@ -36,16 +37,17 @@
             class="hover:bg-accent/50 focus-visible:ring-ring/50 -mx-2 flex flex-col gap-1.5 rounded-md px-2 py-2.5 outline-none focus-visible:ring-[3px]"
           >
             <span class="flex items-baseline gap-2 text-sm">
-              <span class="text-muted-foreground shrink-0 tabular-nums"
-                >#{defect.number}</span
-              >
-              <span class="min-w-0 font-medium break-words">{defect.title}</span
-              >
+              <span class="text-muted-foreground shrink-0 tabular-nums">
+                #{defect.number}
+              </span>
+              <span class="min-w-0 font-medium break-words">
+                {defect.title}
+              </span>
             </span>
             {#if defectPlace({ ...defect, locationDetail: null })}
-              <span class="text-muted-foreground -mt-0.5 text-xs break-words"
-                >{defectPlace({ ...defect, locationDetail: null })}</span
-              >
+              <span class="text-muted-foreground -mt-0.5 text-xs break-words">
+                {defectPlace({ ...defect, locationDetail: null })}
+              </span>
             {/if}
             <span class="flex flex-wrap items-center gap-x-3 gap-y-1">
               <DefectStatusBadge status={defect.status} />

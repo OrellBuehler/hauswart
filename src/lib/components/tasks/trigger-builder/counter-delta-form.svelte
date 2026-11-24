@@ -60,9 +60,9 @@
 <div class="flex flex-col gap-4">
   {#if vehicle}
     <div class="flex flex-col gap-2">
-      <span class="text-sm leading-none font-medium"
-        >{m.trigger_form_counter_source()}</span
-      >
+      <span class="text-sm leading-none font-medium">
+        {m.trigger_form_counter_source()}
+      </span>
       <Segmented
         label={m.trigger_form_counter_source()}
         options={sourceOptions}

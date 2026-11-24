@@ -172,8 +172,10 @@
           class="text-destructive hover:text-destructive"
           disabled={controls.busy !== null}
           onclick={() => (deleteOpen = true)}
-          ><Trash2Icon /> {m.common_delete()}</Button
         >
+          <Trash2Icon />
+          {m.common_delete()}
+        </Button>
       </div>
       {#if status === "active"}
         <p class="text-muted-foreground -mt-2 text-xs text-pretty">
@@ -240,9 +242,9 @@
               {#if recurrence.nextDate}
                 {formatDay(recurrence.nextDate)}
                 {#if due}
-                  <span class="text-muted-foreground block text-xs"
-                    >{m.recurrence_due_now()}</span
-                  >
+                  <span class="text-muted-foreground block text-xs">
+                    {m.recurrence_due_now()}
+                  </span>
                 {/if}
               {:else}
                 {m.recurrence_over()}
@@ -283,8 +285,10 @@
                 href={resolve(
                   `costs?book=${encodeURIComponent(recurrence.bookId)}`,
                 )}
-                class={linkClass}>{recurrence.bookName}</a
+                class={linkClass}
               >
+                {recurrence.bookName}
+              </a>
               <!-- eslint-enable svelte/no-navigation-without-resolve -->
             </dd>
           </div>
@@ -306,9 +310,9 @@
             <dt class="text-muted-foreground text-xs">{m.cost_asset()}</dt>
             <dd class="mt-0.5 wrap-anywhere">
               {#if recurrence.assetId && recurrence.assetName}
-                <a href={assetHref(recurrence.assetId)} class={linkClass}
-                  >{recurrence.assetName}</a
-                >
+                <a href={assetHref(recurrence.assetId)} class={linkClass}>
+                  {recurrence.assetName}
+                </a>
               {:else}
                 –
               {/if}
@@ -318,9 +322,9 @@
             <dt class="text-muted-foreground text-xs">{m.cost_room()}</dt>
             <dd class="mt-0.5 wrap-anywhere">
               {#if recurrence.roomId && recurrence.roomName}
-                <a href={roomHref(recurrence.roomId)} class={linkClass}
-                  >{recurrence.roomName}</a
-                >
+                <a href={roomHref(recurrence.roomId)} class={linkClass}>
+                  {recurrence.roomName}
+                </a>
               {:else}
                 –
               {/if}

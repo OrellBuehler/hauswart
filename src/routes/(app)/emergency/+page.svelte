@@ -76,12 +76,12 @@
       description={m.emergency_empty_body()}
     >
       {#snippet actions()}
-        <Button href={resolve("contacts")}
-          ><ContactIcon />{m.emergency_empty_contacts()}</Button
-        >
-        <Button href={resolve("docs/new")} variant="outline"
-          >{m.emergency_empty_page()}</Button
-        >
+        <Button href={resolve("contacts")}>
+          <ContactIcon />{m.emergency_empty_contacts()}
+        </Button>
+        <Button href={resolve("docs/new")} variant="outline">
+          {m.emergency_empty_page()}
+        </Button>
       {/snippet}
     </EmptyState>
   {/if}
@@ -171,8 +171,9 @@
                 <a
                   href={insuranceHref(policy.id)}
                   class="font-semibold wrap-anywhere underline-offset-4 hover:underline print:no-underline"
-                  >{policy.title}</a
                 >
+                  {policy.title}
+                </a>
 
                 <p class="text-muted-foreground text-sm wrap-anywhere">
                   {[
@@ -220,9 +221,9 @@
               >
                 <PhoneIcon aria-hidden="true" />
                 <span class="min-w-0 truncate">{policy.insurerPhone}</span>
-                <span class="text-muted-foreground ms-auto text-xs font-normal"
-                  >{m.emergency_insurance_insurer()}</span
-                >
+                <span class="text-muted-foreground ms-auto text-xs font-normal">
+                  {m.emergency_insurance_insurer()}
+                </span>
               </Button>
               <p class="hidden text-sm tabular-nums print:block">
                 {m.emergency_insurance_insurer()}: {policy.insurerPhone}
@@ -380,9 +381,9 @@
         <Card.Description>{m.emergency_guest_description()}</Card.Description>
       </Card.Header>
       <Card.Content>
-        <Button href={resolve("settings/guest-links")} size="lg"
-          ><LinkIcon />{m.emergency_guest_cta()}</Button
-        >
+        <Button href={resolve("settings/guest-links")} size="lg">
+          <LinkIcon />{m.emergency_guest_cta()}
+        </Button>
       </Card.Content>
     </Card.Root>
   </section>

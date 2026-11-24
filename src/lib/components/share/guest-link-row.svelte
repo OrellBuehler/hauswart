@@ -163,8 +163,9 @@
     class="text-muted-foreground flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs"
   >
     <EyeIcon class="size-3.5 shrink-0" aria-hidden="true" />
-    <span class="tabular-nums">{m.glinks_views({ count: link.viewCount })}</span
-    >
+    <span class="tabular-nums">
+      {m.glinks_views({ count: link.viewCount })}
+    </span>
     <span aria-hidden="true">·</span>
     <span
       title={link.lastViewedAt

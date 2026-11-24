@@ -661,14 +661,14 @@
                     class="text-muted-foreground flex flex-wrap items-center gap-x-2 text-xs"
                   >
                     {#if attachment.caption}
-                      <span class="max-w-40 truncate"
-                        >{attachment.filename}</span
-                      >
+                      <span class="max-w-40 truncate">
+                        {attachment.filename}
+                      </span>
                     {/if}
                     <span>{isPdf(attachment) ? "PDF" : attachment.mime}</span>
-                    <span class="tabular-nums"
-                      >{formatBytes(attachment.size)}</span
-                    >
+                    <span class="tabular-nums">
+                      {formatBytes(attachment.size)}
+                    </span>
                     {#if attachment.guestVisible}
                       <span class="inline-flex items-center gap-1">
                         <EyeIcon

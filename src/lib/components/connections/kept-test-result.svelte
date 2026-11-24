@@ -89,13 +89,13 @@
                     {m.integration_kept_scope_missing()}
                   </Badge>
                   <span class="font-medium">{scope.label()}</span>
-                  <code class="text-muted-foreground font-mono text-xs"
-                    >{scope.id}</code
-                  >
+                  <code class="text-muted-foreground font-mono text-xs">
+                    {scope.id}
+                  </code>
                 </span>
-                <span class="text-muted-foreground text-xs text-pretty"
-                  >{scope.hint()}</span
-                >
+                <span class="text-muted-foreground text-xs text-pretty">
+                  {scope.hint()}
+                </span>
               </li>
             {/each}
             {#each unknownMissing as scope (scope)}
@@ -103,12 +103,12 @@
                 <Badge variant="outline" class="border-warning/50 text-warning">
                   {m.integration_kept_scope_missing()}
                 </Badge>
-                <span class="font-medium"
-                  >{m.integration_kept_scope_other()}</span
-                >
-                <code class="text-muted-foreground font-mono text-xs break-all"
-                  >{scope}</code
-                >
+                <span class="font-medium">
+                  {m.integration_kept_scope_other()}
+                </span>
+                <code class="text-muted-foreground font-mono text-xs break-all">
+                  {scope}
+                </code>
               </li>
             {/each}
           </ul>

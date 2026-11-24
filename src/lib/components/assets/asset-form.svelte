@@ -335,9 +335,9 @@
         <div class="flex flex-col gap-2 sm:col-span-2">
           <Label for="asset-category">
             {m.asset_category()}
-            <span class="text-muted-foreground font-normal"
-              >{m.common_optional()}</span
-            >
+            <span class="text-muted-foreground font-normal">
+              {m.common_optional()}
+            </span>
           </Label>
           <Input
             class="h-10"
@@ -813,9 +813,9 @@
         <div class="flex flex-col gap-2">
           <Label for="asset-notes">
             {m.asset_notes()}
-            <span class="text-muted-foreground font-normal"
-              >{m.common_optional()}</span
-            >
+            <span class="text-muted-foreground font-normal">
+              {m.common_optional()}
+            </span>
           </Label>
           <Textarea
             id="asset-notes"

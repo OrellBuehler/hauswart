@@ -177,9 +177,9 @@
     <Alert.Root variant="destructive" class="border-destructive/40">
       <TriangleAlertIcon />
       <Alert.Description class="flex flex-col items-start gap-2 text-pretty">
-        <span
-          >{m.integration_paperless_lists_failed({ reason: listError })}</span
-        >
+        <span>
+          {m.integration_paperless_lists_failed({ reason: listError })}
+        </span>
         <Button type="button" variant="outline" size="sm" onclick={retryLists}>
           {m.common_retry()}
         </Button>

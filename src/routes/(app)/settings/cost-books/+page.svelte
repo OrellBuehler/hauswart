@@ -168,13 +168,14 @@
         <a
           href={resolve(`costs?book=${encodeURIComponent(book.id)}`)}
           class="focus-visible:ring-ring/50 focus-visible:after:ring-ring/50 min-w-0 rounded-sm font-medium wrap-anywhere outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px]"
-          >{book.name}</a
         >
+          {book.name}
+        </a>
         <!-- eslint-enable svelte/no-navigation-without-resolve -->
         {#if book.isDefault}
-          <Badge variant="secondary" title={m.costbook_default_hint()}
-            >{m.costbook_default_badge()}</Badge
-          >
+          <Badge variant="secondary" title={m.costbook_default_hint()}>
+            {m.costbook_default_badge()}
+          </Badge>
         {/if}
         {#if book.archivedAt}
           <Badge variant="outline">{m.costbook_archived_badge()}</Badge>
@@ -267,9 +268,9 @@
   </Card.Header>
   <Card.Content class="flex flex-col gap-6">
     {#if canWrite && data.books.length > 0}
-      <Button class="sm:hidden" onclick={openCreate}
-        ><PlusIcon />{m.costbook_new()}</Button
-      >
+      <Button class="sm:hidden" onclick={openCreate}>
+        <PlusIcon />{m.costbook_new()}
+      </Button>
     {/if}
     {#if data.books.length === 0}
       <EmptyState

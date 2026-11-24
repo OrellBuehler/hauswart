@@ -217,9 +217,9 @@
       description={m.documents_not_connected_body()}
     >
       {#snippet actions()}
-        <Button href={resolve("settings/integrations")}
-          >{m.documents_to_integrations()}</Button
-        >
+        <Button href={resolve("settings/integrations")}>
+          {m.documents_to_integrations()}
+        </Button>
       {/snippet}
     </EmptyState>
   {:else}
@@ -310,8 +310,10 @@
                 : "bg-background hover:bg-accent dark:bg-input/30",
             )}
             aria-pressed={on}
-            onclick={() => (linked = option.value)}>{option.label}</button
+            onclick={() => (linked = option.value)}
           >
+            {option.label}
+          </button>
         {/each}
       </div>
 
@@ -380,9 +382,9 @@
           description={m.documents_empty_body()}
         >
           {#snippet actions()}
-            <Button variant="outline" href={resolve("settings/integrations")}
-              >{m.documents_to_integrations()}</Button
-            >
+            <Button variant="outline" href={resolve("settings/integrations")}>
+              {m.documents_to_integrations()}
+            </Button>
           {/snippet}
         </EmptyState>
       {/if}

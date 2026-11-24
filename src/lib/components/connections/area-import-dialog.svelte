@@ -237,9 +237,9 @@
                   {/if}
                 </span>
                 {#if row.linked}
-                  <Badge variant="secondary"
-                    >{m.rooms_import_done_badge()}</Badge
-                  >
+                  <Badge variant="secondary">
+                    {m.rooms_import_done_badge()}
+                  </Badge>
                 {/if}
               </label>
             </li>
