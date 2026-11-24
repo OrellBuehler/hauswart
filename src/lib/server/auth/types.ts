@@ -20,6 +20,8 @@ export interface TokenInfo {
   kind: TokenKind;
   /** Scopes granted at creation; the effective scopes are capped by the owner's role. */
   scopes: Scope[];
+  /** When the token ends; null for one that never does. */
+  expiresAt: Date | null;
 }
 
 export type AuthLocals = {

@@ -40,7 +40,7 @@ class AuthApi internal constructor(
     /**
      * Exchange a username and password for a device token
      *
-     * Issues a `mobile` bearer token (scopes read, write, docs:write, costs:write; valid for 90 days). The token is shown once. Failed attempts share the login rate limit.
+     * Issues a `mobile` bearer token (scopes read, write, docs:write, costs:write; valid for 90 days, and for 90 days again whenever it is used; `GET /auth/me` says when it ends). The token is shown once. Failed attempts share the login rate limit.
      */
     suspend fun authToken(
         body: AuthTokenRequest,
@@ -72,6 +72,8 @@ data class AuthMeResponse(
     val auth: String,
     /** read | write | docs:write | costs:write | ha:action | admin */
     val scopes: List<String>,
+    /** date-time */
+    val tokenExpiresAt: String? = null,
 ) {
     companion object {
         val AUTH_VALUES: List<String> = listOf("session", "token")

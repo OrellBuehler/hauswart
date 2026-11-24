@@ -101,6 +101,13 @@ export const me: Handler<typeof endpoints.authMe> = ({ ctx }) => ({
   user: wireUser(ctx.user),
   auth: ctx.principal.auth,
   scopes: ctx.principal.scopes,
+  ...(ctx.principal.auth === "token"
+    ? {
+        tokenExpiresAt: ctx.principal.token.expiresAt
+          ? toIso(ctx.principal.token.expiresAt)
+          : null,
+      }
+    : {}),
 });
 
 export const updateMe: Handler<typeof endpoints.authUpdateMe> = ({

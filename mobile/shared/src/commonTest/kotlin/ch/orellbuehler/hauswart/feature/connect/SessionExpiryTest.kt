@@ -73,6 +73,27 @@ class SessionExpiryTest {
         }
 
     @Test
+    fun theEndTheServerReportsReplacesTheStoredOneAndTheNoticeGoes() =
+        runTest {
+            server.household()
+            val renewed = endsInDays(90)
+            server.on(
+                "GET",
+                "/api/v1/auth/me",
+                """{"user":{"id":"u1","username":"anna","displayName":"Anna","role":"member","locale":"de"},
+                    "auth":"token","scopes":["read"],"tokenExpiresAt":"$renewed"}""",
+            )
+            app.session.setServer("https://home.example.org")
+            app.session.signIn("hw_test", user, endsInDays(3))
+            app.household.get()
+            val store = SessionNoticeStore(app)
+            app.session.state.awaitValue { it.tokenExpiresAt == renewed }
+            store.await { it.message == null }
+            assertNull(store.value.message)
+            store.close()
+        }
+
+    @Test
     fun withoutAKnownEndThereIsNoNotice() =
         runTest {
             server.household()

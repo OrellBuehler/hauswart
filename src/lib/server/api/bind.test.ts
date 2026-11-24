@@ -42,6 +42,7 @@ const token = (scopes: TokenInfo["scopes"]): TokenInfo => ({
   id: "t1",
   kind: "mcp",
   scopes,
+  expiresAt: null,
 });
 
 interface Who {

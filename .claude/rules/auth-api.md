@@ -22,6 +22,12 @@ paths:
   back to the cookie. `resolvePrincipal` turns locals into `{auth: 'session'|'token', user, scopes}`.
   Sessions hold every scope their role allows; a token holds its scopes capped by its owner's
   current role (`admin` only for administrators).
+- **Device tokens renew themselves.** A `mobile` token (`POST /auth/token`) ends 90 days after it was last
+  used: `verifyToken` moves `expires_at` to now + `MOBILE_TOKEN_LIFETIME_MS` when it is used, written at most
+  once a day (`MOBILE_TOKEN_RENEW_AFTER_MS`). One that has ended stays ended, and there is no latest end as
+  sessions have (it is revoked under `/settings/tokens` or by an administrator's password reset). Every other
+  kind keeps the end it was given. `GET /auth/me` carries `tokenExpiresAt` for a bearer caller (null when the
+  token never ends, absent for a session); the apps read it at start to know the current end.
 - **Endpoint auth modes**: `session` (cookie only), `bearer` (token only), `both`, `public`.
   `scopes` lists what the caller needs (all of them; `[]` = any authenticated caller). The hook only
   turns anonymous callers away (redirect to `/login?redirectTo=…`, `/setup` while there are no

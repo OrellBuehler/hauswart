@@ -794,6 +794,18 @@
                           "admin"
                         ]
                       }
+                    },
+                    "tokenExpiresAt": {
+                      "description": "For a bearer token: when it ends, null when it never does. A mobile token that is used is renewed by the server, so this moves on. Absent for a session.",
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   },
                   "required": [
@@ -1088,7 +1100,7 @@
       "post": {
         "operationId": "authToken",
         "summary": "Exchange a username and password for a device token",
-        "description": "Issues a `mobile` bearer token (scopes read, write, docs:write, costs:write; valid for 90 days). The token is shown once. Failed attempts share the login rate limit.",
+        "description": "Issues a `mobile` bearer token (scopes read, write, docs:write, costs:write; valid for 90 days, and for 90 days again whenever it is used; `GET /auth/me` says when it ends). The token is shown once. Failed attempts share the login rate limit.",
         "tags": [
           "auth"
         ],

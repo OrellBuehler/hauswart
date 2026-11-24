@@ -254,6 +254,21 @@ describe("GET /api/v1/auth/me", () => {
     });
   });
 
+  it("tells a token caller when the token ends", async () => {
+    const user = await createTestUser();
+    const forever = createTestToken(user, { kind: "mcp", expiresAt: null });
+    const r1 = await callRoute(me, { url: url("me"), bearer: forever.token });
+    expect((r1.body as { tokenExpiresAt: unknown }).tokenExpiresAt).toBeNull();
+
+    const soon = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+    const mobile = createTestToken(user, { kind: "mobile", expiresAt: soon });
+    const r2 = await callRoute(me, { url: url("me"), bearer: mobile.token });
+    const end = Date.parse(
+      (r2.body as { tokenExpiresAt: string }).tokenExpiresAt,
+    );
+    expect(end).toBeGreaterThan(Date.now() + 89 * 24 * 60 * 60 * 1000);
+  });
+
   it("caps an admin-scoped token by the owner's role", async () => {
     const user = await createTestUser();
     const t = createTestToken(user, { scopes: ["read", "admin"] });
