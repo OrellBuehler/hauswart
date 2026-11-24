@@ -3,8 +3,13 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { describe, expect, it } from "vitest";
 import type { TokenKind } from "#lib/api/enums.ts";
 import type { Scope } from "#lib/api/scopes.ts";
+import { PDFDocument } from "pdf-lib";
+import { createAssetRequestSchema } from "#lib/api/schemas/assets.ts";
 import { createAiTask } from "#lib/server/ai-tasks/ai-tasks.ts";
+import { createAsset } from "#lib/server/assets/assets.ts";
+import { createAttachment } from "#lib/server/attachments/attachments.ts";
 import { plainPng } from "#lib/server/files/test-images.ts";
+import { makePdf, pageWidth } from "#lib/server/files/test-pdfs.ts";
 import { APP_VERSION } from "#lib/server/version.ts";
 import { createInProcessFetch, errorCode } from "#lib/testing/api.ts";
 import {
@@ -314,6 +319,41 @@ describe("POST /api/v1/mcp", () => {
       );
       expect(refused.isError).toBe(true);
       expect(refused.text).toMatch(/complete_ai_task.*not found/i);
+    });
+  });
+
+  describe("attached files", () => {
+    it("carries a range of pages of a PDF as an embedded document in the JSON answer, read with the token's own scopes", async () => {
+      const { call } = await setup({ scopes: ["read"] });
+      const asset = createAsset(
+        ctxAt(test.db),
+        createAssetRequestSchema.parse({ name: "Dampfabzug" }),
+      );
+      const manual = await createAttachment(ctxAt(test.db), {
+        bytes: await makePdf(25),
+        filename: "handbuch.pdf",
+        ownerType: "asset",
+        ownerId: asset.id,
+        uploadedBy: null,
+      });
+      const r = await call(
+        callTool(1, "get_attachment", { id: manual.id, pages: "7-9" }),
+      );
+      expect(r.res.status).toBe(200);
+      const blocks = rpcBody(r).result?.content as {
+        type: string;
+        text?: string;
+        resource?: { mimeType: string; blob: string };
+      }[];
+      expect(blocks.map((b) => b.type)).toEqual(["text", "resource"]);
+      expect(blocks[0]?.text).toContain('"pageCount":25');
+      expect(blocks[1]?.resource?.mimeType).toBe("application/pdf");
+      const doc = await PDFDocument.load(
+        Uint8Array.from(Buffer.from(blocks[1]!.resource!.blob, "base64")),
+      );
+      expect(doc.getPages().map((p) => p.getSize().width)).toEqual(
+        [7, 8, 9].map(pageWidth),
+      );
     });
   });
 

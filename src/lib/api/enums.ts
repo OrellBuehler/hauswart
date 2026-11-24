@@ -227,7 +227,7 @@ export type DocSection = (typeof DOC_SECTIONS)[number];
 /**
  * What an attachment can hang on. `asset`, `room`, `page` and `task` exist in the core; the other
  * owners are registered by their domain with `registerAttachmentOwner` (a type nobody registered
- * is refused at upload).
+ * is refused at upload). `task_step` is the picture of one step of a task (`PUT /tasks/{id}/steps`).
  */
 export const ATTACHMENT_OWNER_TYPES = [
   "asset",
@@ -245,6 +245,7 @@ export const ATTACHMENT_OWNER_TYPES = [
   "tire_set",
   "appointment",
   "ai_task",
+  "task_step",
 ] as const;
 export type AttachmentOwnerType = (typeof ATTACHMENT_OWNER_TYPES)[number];
 

@@ -1,11 +1,6 @@
-import {
-  AI_TASK_PREVIEW_MAX_BYTES,
-  AI_TASK_PREVIEW_MAX_SIDE,
-} from "#lib/api/schemas/ai-tasks.ts";
+import { previewOfImage } from "#lib/server/attachments/preview.ts";
 import { openAttachmentFile } from "#lib/server/attachments/attachments.ts";
 import { defaultFilesRoot } from "#lib/server/files/store.ts";
-import { withExtension } from "#lib/server/files/filename.ts";
-import { previewImage } from "#lib/server/files/preview.ts";
 import { notFound, type ServiceContext } from "#lib/server/service.ts";
 import { getAiTask } from "./ai-tasks";
 
@@ -37,11 +32,7 @@ export async function taskPreview(
     throw notFound("File");
   }
   const bytes = new Uint8Array(await stored.arrayBuffer());
-  if (
-    file.mime === "application/pdf" ||
-    file.width === null ||
-    file.height === null
-  ) {
+  if (file.mime === "application/pdf") {
     return {
       bytes,
       mime: file.mime,
@@ -50,17 +41,12 @@ export async function taskPreview(
       scaled: false,
     };
   }
-  const image = await previewImage(
-    { bytes, mime: file.mime, width: file.width, height: file.height },
-    { maxSide: AI_TASK_PREVIEW_MAX_SIDE, maxBytes: AI_TASK_PREVIEW_MAX_BYTES },
-  );
+  const image = await previewOfImage(file, bytes);
   return {
     bytes: image.bytes,
     mime: image.mime,
-    filename: image.scaled
-      ? withExtension(file.filename, "jpg", ["jpeg"])
-      : file.filename,
-    etag: `"${file.sha256}${image.scaled ? "-preview" : ""}"`,
+    filename: image.filename,
+    etag: image.etag,
     scaled: image.scaled,
   };
 }

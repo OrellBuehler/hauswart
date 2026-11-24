@@ -28,6 +28,8 @@ export interface SeedReport {
   vehicles: Counts;
   tasks: Counts;
   preparations: Counts;
+  /** The steps of tasks, counted per task (the file's list of steps is one entry). */
+  steps: Counts;
 }
 
 export interface ImportOptions {
@@ -90,6 +92,7 @@ export async function importSeed(
     vehicles: counts(),
     tasks: counts(),
     preparations: counts(),
+    steps: counts(),
   };
 
   if (seed.household) {
@@ -257,6 +260,7 @@ export async function importSeed(
       report.tasks.unchanged += 1;
     }
     await syncPreparations(api, existing.id, task, report, options);
+    await syncSteps(api, existing, task, report, options);
   }
   return report;
 }
@@ -395,6 +399,59 @@ async function syncPreparations(
       report.preparations.unchanged += 1;
     }
   }
+}
+
+/**
+ * The steps of a task: written when the task has none (a task just made, or one whose run stopped half way), replaced
+ * only with `update`. Replacing goes by place: step n of the file takes over step n of the task, keeping its id and
+ * so its pictures, and steps the task has beyond the end of the file stay (nothing is ever deleted).
+ */
+async function syncSteps(
+  api: ApiClient,
+  task: { id: string; stepCount: number },
+  seed: SeedTask,
+  report: SeedReport,
+  options: ImportOptions,
+): Promise<void> {
+  if (seed.steps === undefined) return;
+  const empty = task.stepCount === 0;
+  if (!empty && !options.update) {
+    report.steps.unchanged += 1;
+    return;
+  }
+  const current = empty
+    ? []
+    : (await api.call(endpoints.tasksGet, { params: { id: task.id } })).steps;
+  const desired = seed.steps.map((step, index) => ({
+    ...(current[index] ? { id: current[index].id } : {}),
+    title: step.title,
+    body: step.body,
+  }));
+  const kept = current.slice(seed.steps.length).map((step) => ({
+    id: step.id,
+    title: step.title,
+    body: step.body,
+  }));
+  const steps = [...desired, ...kept];
+  const same =
+    steps.length === current.length &&
+    steps.every(
+      (step, index) =>
+        step.id === current[index]?.id &&
+        step.title === current[index].title &&
+        step.body === current[index].body,
+    );
+  if (same) {
+    report.steps.unchanged += 1;
+    return;
+  }
+  await api.call(endpoints.tasksStepsPut, {
+    params: { id: task.id },
+    body: { steps },
+  });
+  if (empty) report.steps.created += 1;
+  else report.steps.updated += 1;
+  log(options, `steps of ${seed.key} ${empty ? "written" : "updated"}`);
 }
 
 function log(options: ImportOptions, line: string): void {

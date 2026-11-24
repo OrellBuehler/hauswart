@@ -45,7 +45,7 @@ class DashboardViewTest {
     ) = """{"taskId":"$id","title":"Task $id","category":"cleaning","priority":"normal","assetId":null,"assetName":null,
         "roomId":null,"roomName":${if (room == null) "null" else "\"$room\""},"assigneeUserId":null,"assigneeName":"Anna","status":"$status",
         "dueKind":"exact","date":${if (date == null) "null" else "\"$date\""},"estimated":false,"estimate":null,"progress":null,
-        "openNoteCount":0,"odometerAssetId":${if (odometerAssetId == null) "null" else "\"$odometerAssetId\""},
+        "stepCount":0,"openNoteCount":0,"odometerAssetId":${if (odometerAssetId == null) "null" else "\"$odometerAssetId\""},
         "nextAppointment":$nextAppointment}"""
 
     private fun dashboard(

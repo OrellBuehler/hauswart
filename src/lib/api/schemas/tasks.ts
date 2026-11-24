@@ -19,6 +19,7 @@ import {
   completionServiceLogSchema,
   serviceLogEntrySchema,
 } from "./service-log";
+import { stepsSourceSchema, taskStepSchema } from "./task-steps";
 import {
   atLeastOne,
   dateSchema,
@@ -142,6 +143,8 @@ export const taskSchema = z
     commentCount: z.number().int(),
     /** Open notes on the task's asset ("brakes squeak"), to mention at this appointment; 0 without an asset. See `/assets/{id}/notes`. */
     openNoteCount: z.number().int(),
+    /** How many steps say how to do the task (see `PUT /tasks/{id}/steps`); 0 when it has none. The steps themselves come with `GET /tasks/{id}`. */
+    stepCount: z.number().int(),
     /** The earliest planned appointment of this task (see `/appointments`); null when there is none. */
     nextAppointment: nextAppointmentSchema.nullable(),
     createdAt: isoTimestampSchema,
@@ -199,6 +202,10 @@ export const taskDetailSchema = taskSchema
   .extend({
     preparations: z.array(preparationSchema),
     recentCompletions: z.array(completionSchema),
+    /** The steps in order, each with its pictures (see `PUT /tasks/{id}/steps`). */
+    steps: z.array(taskStepSchema),
+    /** Where the steps come from; null when no source is given (or the file it named is gone and nothing else was said). */
+    stepsSource: stepsSourceSchema.nullable(),
   })
   .meta({ id: "TaskDetail" });
 export type TaskDetail = z.infer<typeof taskDetailSchema>;
@@ -214,6 +221,8 @@ export const listTasksQuerySchema = paginationQuerySchema.extend({
   includeArchived: queryBooleanSchema.optional(),
   externalSource: z.string().min(1).max(64).optional(),
   externalRef: z.string().min(1).max(255).optional(),
+  /** `true`: only tasks with steps; `false`: only tasks without. */
+  hasSteps: queryBooleanSchema.optional(),
 });
 export const listTasksResponseSchema = paginated(taskSchema);
 

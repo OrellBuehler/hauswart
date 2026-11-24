@@ -37,6 +37,22 @@ export function invalidField(
   });
 }
 
+/**
+ * `invalidField` plus structured `details` beside the field error (a `code` a client can read instead of the message,
+ * and what else it needs), for a refusal that the client may act on.
+ */
+export function invalidFieldWith(
+  field: string,
+  message: string,
+  extra: Record<string, unknown>,
+  source: "body" | "query" = "body",
+): ApiError {
+  const base = invalidField(field, message, source);
+  return new ApiError("invalid_request", base.message, {
+    details: { ...(base.details as object), ...extra },
+  });
+}
+
 export function isUniqueViolation(err: unknown): boolean {
   return (
     err instanceof Error &&

@@ -24,7 +24,7 @@ class TasksApi internal constructor(
     /**
      * List tasks with their due state
      *
-     * Ordered overdue first, then by due date. assignee=me or a user id matches the current assignee.
+     * Ordered overdue first, then by due date. assignee=me or a user id matches the current assignee. hasSteps=true lists only the tasks that have steps telling how to do them, hasSteps=false only those without (every row carries `stepCount`).
      *
      * @param status ok | open | due | overdue | snoozed | unknown
      *
@@ -42,8 +42,9 @@ class TasksApi internal constructor(
         includeArchived: Boolean? = null,
         externalSource: String? = null,
         externalRef: String? = null,
+        hasSteps: Boolean? = null,
     ): TasksListResponse =
-        http.json("GET", "/api/v1/tasks", listOf("cursor" to cursor, "limit" to limit, "status" to status, "category" to category, "assetId" to assetId, "roomId" to roomId, "assignee" to assignee, "q" to q, "includeArchived" to includeArchived, "externalSource" to externalSource, "externalRef" to externalRef), TasksListResponse.serializer())
+        http.json("GET", "/api/v1/tasks", listOf("cursor" to cursor, "limit" to limit, "status" to status, "category" to category, "assetId" to assetId, "roomId" to roomId, "assignee" to assignee, "q" to q, "includeArchived" to includeArchived, "externalSource" to externalSource, "externalRef" to externalRef, "hasSteps" to hasSteps), TasksListResponse.serializer())
 
     /**
      * Create a task
@@ -66,7 +67,9 @@ class TasksApi internal constructor(
         http.json("POST", "/api/v1/tasks/preview", emptyList(), TasksPreviewRequest.serializer(), body, DueResult.serializer())
 
     /**
-     * Get a task with preparations and recent completions
+     * Get a task with preparations, steps and recent completions
+     *
+     * Besides the task: its preparations, the most recent completions, the `steps` that say how to do it (in order, each with the pictures attached to it) and `stepsSource`, where those steps come from. `stepsSource` is null when none was given, and when the file it named has been deleted and nothing else was said; otherwise it carries the `label`, the web `url` or the `attachment` (and `page` of it) of hauswart. If only the file is gone, `attachmentId`, `attachment` and `page` read as null.
      */
     suspend fun tasksGet(
         id: String,
@@ -87,12 +90,23 @@ class TasksApi internal constructor(
     /**
      * Delete a task
      *
-     * Removes the task with its completions, preparations and notifications. Archive instead to keep the history.
+     * Removes the task with its completions, preparations, steps (and the pictures attached to them) and notifications. Archive instead to keep the history.
      */
     suspend fun tasksDelete(
         id: String,
     ) =
         http.empty("DELETE", "/api/v1/tasks/${ApiHttp.segment(id)}", emptyList())
+
+    /**
+     * Replace the steps that say how to do a task
+     *
+     * Replaces the whole list in one transaction: `steps` is the new list in order (at most 30; send `[]` to remove them all). A step with the `id` of one of this task's steps keeps its id, its pictures and its creation time and takes the new `title` (one line, at most 200 characters), `body` (plain text, at most 2000, default empty) and place; a step without an `id` is new; a step of the task that the list leaves out is deleted together with its pictures. An `id` that is not a step of this task, or the same `id` twice, is a 400 on `steps`. Pictures are attachments of the owner type `task_step` with the step's id as `ownerId`: upload them with `POST /attachments` (or `POST /attachments/from-url`) after the step exists, and they come back in `images` in upload order. `source` says where the steps come from: left out it is unchanged, `null` removes it, an object replaces it entirely: `label` (at most 200 characters), then either `url` (http or https, at most 2000 characters, no user name or password) or `attachmentId` (a file of hauswart that exists, else a 400 on `source`; typically the manual attached to the device) with an optional `page` (1 to 9999, only together with `attachmentId`); `url` and `attachmentId` exclude each other and an object with nothing in it is a 400 (use `null`). Answers the steps, the resolved source and `stepCount` as `GET /tasks/{id}` carries them. Archived tasks can be edited. The task itself is not touched: it is not re-evaluated and its `updatedAt` stays. 404 for a missing task.
+     */
+    suspend fun tasksStepsPut(
+        id: String,
+        body: TasksStepsPutRequest,
+    ): TaskSteps =
+        http.json("PUT", "/api/v1/tasks/${ApiHttp.segment(id)}/steps", emptyList(), TasksStepsPutRequest.serializer(), body, TaskSteps.serializer())
 
     /**
      * Mark a task done
@@ -284,6 +298,27 @@ data class TasksUpdateRequest(
         val NOTIFY_MODE_VALUES: List<String> = listOf("assignee", "all")
     }
 }
+
+@Serializable
+data class TasksStepsPutRequestStepsItem(
+    val id: String? = null,
+    val title: String,
+    val body: String? = null,
+)
+
+@Serializable
+data class TasksStepsPutRequestSource(
+    val label: Patch<String> = Patch.Keep,
+    val url: Patch<String> = Patch.Keep,
+    val attachmentId: Patch<String> = Patch.Keep,
+    val page: Patch<Long> = Patch.Keep,
+)
+
+@Serializable
+data class TasksStepsPutRequest(
+    val steps: List<TasksStepsPutRequestStepsItem>,
+    val source: Patch<TasksStepsPutRequestSource> = Patch.Keep,
+)
 
 @Serializable
 data class TasksCompleteRequestServiceLog(

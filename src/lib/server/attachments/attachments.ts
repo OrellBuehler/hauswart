@@ -286,21 +286,32 @@ export async function deleteAttachment(
 }
 
 /**
- * Deletes every attachment of an owner. Domains call this from their delete service (synchronous,
- * inside the same request); the stored files are swept in the background.
+ * Deletes the rows of every attachment of the given owners and returns them. Synchronous, so a service can do it inside
+ * its own transaction; once that has committed it calls `releaseAttachments` to tell the listeners and sweep the files.
  */
-export function removeOwnedAttachments(
-  ctx: Now,
+export function deleteOwnedAttachmentRows(
+  ctx: Db,
   type: AttachmentOwnerType,
-  ownerId: string,
-): void {
-  const rows = ctx.db
+  ownerIds: readonly string[],
+): AttachmentRecord[] {
+  if (ownerIds.length === 0) return [];
+  return ctx.db
     .delete(attachments)
     .where(
-      and(eq(attachments.ownerType, type), eq(attachments.ownerId, ownerId)),
+      and(
+        eq(attachments.ownerType, type),
+        inArray(attachments.ownerId, [...ownerIds]),
+      ),
     )
     .returning()
     .all();
+}
+
+/** What follows deleting attachment rows: listeners hear of it and the stored files nothing uses any more are swept in the background. */
+export function releaseAttachments(
+  ctx: Now,
+  rows: readonly AttachmentRecord[],
+): void {
   if (rows.length === 0) return;
   emitChanged(rows.map((row) => row.id));
   const root = defaultFilesRoot();
@@ -308,6 +319,25 @@ export function removeOwnedAttachments(
   trackBackground(
     Promise.all(shas.map((sha) => sweepStoredFile(ctx, sha, root))),
     "attachments.sweep_failed",
+  );
+}
+
+/**
+ * Deletes every attachment of an owner (or of several owners of one type). Domains call this from their delete
+ * service (synchronous, inside the same request); the stored files are swept in the background.
+ */
+export function removeOwnedAttachments(
+  ctx: Now,
+  type: AttachmentOwnerType,
+  ownerId: string | readonly string[],
+): void {
+  releaseAttachments(
+    ctx,
+    deleteOwnedAttachmentRows(
+      ctx,
+      type,
+      typeof ownerId === "string" ? [ownerId] : ownerId,
+    ),
   );
 }
 

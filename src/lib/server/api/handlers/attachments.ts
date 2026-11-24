@@ -1,6 +1,9 @@
 import type { AttachmentOwnerType } from "#lib/api/enums.ts";
 import type { endpoints } from "#lib/api/registry.ts";
+import { PAGE_COUNT_HEADER } from "#lib/api/schemas/attachments.ts";
 import { requireScopes } from "#lib/server/auth/guards.ts";
+import { attachFromUrl } from "#lib/server/attachments/from-url.ts";
+import { attachmentPreview } from "#lib/server/attachments/preview.ts";
 import {
   createAttachment,
   deleteAttachment,
@@ -26,17 +29,22 @@ function requireOwnerScope(ctx: AuthedContext, ownerType: AttachmentOwnerType) {
   }
 }
 
-export const upload: Handler<typeof endpoints.attachmentsUpload> = async ({
-  ctx,
-  body,
-}) => {
-  requireOwnerScope(ctx, body.ownerType);
-  if (body.ownerType === "ai_task") {
+/** A task of the receipt queue gets its file from the queue itself. */
+function refuseReceiptQueue(ownerType: AttachmentOwnerType) {
+  if (ownerType === "ai_task") {
     throw invalidField(
       "ownerType",
       "A task of the receipt queue has its file already; put another receipt in the queue with POST /ai-tasks",
     );
   }
+}
+
+export const upload: Handler<typeof endpoints.attachmentsUpload> = async ({
+  ctx,
+  body,
+}) => {
+  requireOwnerScope(ctx, body.ownerType);
+  refuseReceiptQueue(body.ownerType);
   const row = await createAttachment(ctx, {
     bytes: new Uint8Array(await body.file.arrayBuffer()),
     filename: body.file.name,
@@ -48,6 +56,17 @@ export const upload: Handler<typeof endpoints.attachmentsUpload> = async ({
     uploadedBy: ctx.user.id,
   });
   return wireAttachment(row);
+};
+
+export const fromUrl: Handler<typeof endpoints.attachmentsFromUrl> = async ({
+  ctx,
+  body,
+}) => {
+  requireOwnerScope(ctx, body.ownerType);
+  refuseReceiptQueue(body.ownerType);
+  return wireAttachment(
+    await attachFromUrl(ctx, { ...body, uploadedBy: ctx.user.id }),
+  );
 };
 
 export const list: Handler<typeof endpoints.attachmentsList> = ({
@@ -133,3 +152,24 @@ export const thumb: Handler<typeof endpoints.attachmentsThumb> = ({
   params,
   event,
 }) => serve(ctx, params.id, "thumb", false, event.request);
+
+export const preview: Handler<typeof endpoints.attachmentsPreview> = async ({
+  ctx,
+  params,
+  query,
+  event,
+}) => {
+  const file = await attachmentPreview(ctx, params.id, query);
+  const res = fileResponse(new Blob([file.bytes as BlobPart]), {
+    mime: file.mime,
+    filename: file.filename,
+    disposition: "inline",
+    cache: "no-cache",
+    etag: file.etag,
+    request: event.request,
+  });
+  if (file.pageCount !== null) {
+    res.headers.set(PAGE_COUNT_HEADER, String(file.pageCount));
+  }
+  return res;
+};

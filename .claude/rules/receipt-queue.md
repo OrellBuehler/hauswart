@@ -83,7 +83,7 @@ entries with the tools that exist and closes the task. The web app has the page 
 - **The preview** (`GET /ai-tasks/{id}/preview`, binary, scope `read`; `ai-tasks/preview.ts`, `files/preview.ts`): the file as an assistant
   reads it. An image that fits (longest side at most 1600 px, at most 1.5 MB) is sent as stored; a larger one is drawn on white and re-encoded
   as JPEG at `previewSize` (longest side 1600, except a long, narrow receipt, which keeps a short side of 600 px up to a long side of 3200),
-  with a lower quality and then a smaller size until it fits. A PDF is sent as stored. ETag from the stored file's sha256 (`-preview` added for the scaled copy), `Cache-Control: private, no-cache` (revalidated each
+  with a lower quality and then a smaller size until it fits. A PDF is sent as stored (no size limit and no page ranges here; `GET /attachments/{id}/preview` is the same for any attachment and adds both, see `task-steps.md`; the image rules are `previewOfImage` in `attachments/preview.ts`, which `ai-tasks/preview.ts` calls, and the `AI_TASK_PREVIEW_*` constants alias the `ATTACHMENT_PREVIEW_*` ones). ETag from the stored file's sha256 (`-preview` added for the scaled copy), `Cache-Control: private, no-cache` (revalidated each
   time, answered 304 on a matching `If-None-Match`: the copy can change with the scaling rules while the file does not).
 - **MCP** (`mcp/src/tools/ai-tasks.ts`): `list_ai_tasks` (read, pending by default), `get_ai_task` (scope `read` but mode `update`: it leaves the lease, so it is not annotated read-only), `complete_ai_task`
   (`costs:write`, input `costIds`, `fuelLogIds`, `note`; refuses an empty list before calling the API) and `dismiss_ai_task` (`costs:write`,

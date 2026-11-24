@@ -74,6 +74,10 @@ import {
   updateTaskRequestSchema,
 } from "./schemas/tasks";
 import {
+  putTaskStepsRequestSchema,
+  taskStepsSchema,
+} from "./schemas/task-steps";
+import {
   dashboardSchema,
   statsQuerySchema,
   statsSchema,
@@ -105,8 +109,12 @@ import {
 } from "./schemas/docs";
 import {
   ATTACHMENT_CONTENT_TYPES,
+  ATTACHMENT_PREVIEW_CONTENT_TYPES,
   MAX_UPLOAD_REQUEST_BYTES,
+  PAGE_COUNT_HEADER,
+  attachFromUrlRequestSchema,
   attachmentContentQuerySchema,
+  attachmentPreviewQuerySchema,
   attachmentSchema,
   listAttachmentsQuerySchema,
   listAttachmentsResponseSchema,
@@ -417,6 +425,13 @@ export const MAX_MARKDOWN_REQUEST_BYTES = 512 * 1024;
  */
 export type ResponseType = "json" | "binary";
 
+/** A response header an endpoint documents. */
+export interface ResponseHeaderDef {
+  description: string;
+  /** Default `string`. */
+  type?: "string" | "integer";
+}
+
 export interface EndpointDef<
   A extends AuthMode,
   P extends ParamsSchema | undefined,
@@ -445,6 +460,8 @@ export interface EndpointDef<
   responseType?: T;
   /** Binary endpoints: the content types the response can have. */
   contentTypes?: readonly string[];
+  /** Binary endpoints: response headers beyond the usual ones that clients may read (name -> what it says), documented in OpenAPI. */
+  responseHeaders?: Readonly<Record<string, ResponseHeaderDef>>;
   /** Success status; `204` endpoints use `emptySchema` and return no body. Default 200. */
   status?: SuccessStatus;
   /** Extra error codes the handler can raise (beyond those every endpoint can). */
@@ -477,6 +494,7 @@ export interface Endpoint<
   readonly response: R;
   readonly responseType: T;
   readonly contentTypes: readonly string[];
+  readonly responseHeaders: Readonly<Record<string, ResponseHeaderDef>>;
   readonly status: SuccessStatus;
   readonly errors: readonly ErrorCode[];
   readonly setsSession: boolean;
@@ -535,6 +553,7 @@ export function defineEndpoint<
     response: def.response,
     responseType: (def.responseType ?? "json") as T,
     contentTypes: def.contentTypes ?? [],
+    responseHeaders: def.responseHeaders ?? {},
     status,
     errors: def.errors ?? [],
     setsSession: def.setsSession ?? false,
@@ -988,7 +1007,7 @@ export const endpoints = {
     path: "/api/v1/tasks",
     summary: "List tasks with their due state",
     description:
-      "Ordered overdue first, then by due date. assignee=me or a user id matches the current assignee.",
+      "Ordered overdue first, then by due date. assignee=me or a user id matches the current assignee. hasSteps=true lists only the tasks that have steps telling how to do them, hasSteps=false only those without (every row carries `stepCount`).",
     tags: ["tasks"],
     auth: "both",
     scopes: ["read"],
@@ -1030,7 +1049,9 @@ export const endpoints = {
     id: "tasksGet",
     method: "GET",
     path: "/api/v1/tasks/{id}",
-    summary: "Get a task with preparations and recent completions",
+    summary: "Get a task with preparations, steps and recent completions",
+    description:
+      "Besides the task: its preparations, the most recent completions, the `steps` that say how to do it (in order, each with the pictures attached to it) and `stepsSource`, where those steps come from. `stepsSource` is null when none was given, and when the file it named has been deleted and nothing else was said; otherwise it carries the `label`, the web `url` or the `attachment` (and `page` of it) of hauswart. If only the file is gone, `attachmentId`, `attachment` and `page` read as null.",
     tags: ["tasks"],
     auth: "both",
     scopes: ["read"],
@@ -1061,13 +1082,29 @@ export const endpoints = {
     path: "/api/v1/tasks/{id}",
     summary: "Delete a task",
     description:
-      "Removes the task with its completions, preparations and notifications. Archive instead to keep the history.",
+      "Removes the task with its completions, preparations, steps (and the pictures attached to them) and notifications. Archive instead to keep the history.",
     tags: ["tasks"],
     auth: "both",
     scopes: ["write"],
     params: idParamsSchema,
     response: emptySchema,
     status: 204,
+    errors: ["not_found"],
+  }),
+
+  tasksStepsPut: defineEndpoint({
+    id: "tasksStepsPut",
+    method: "PUT",
+    path: "/api/v1/tasks/{id}/steps",
+    summary: "Replace the steps that say how to do a task",
+    description:
+      "Replaces the whole list in one transaction: `steps` is the new list in order (at most 30; send `[]` to remove them all). A step with the `id` of one of this task's steps keeps its id, its pictures and its creation time and takes the new `title` (one line, at most 200 characters), `body` (plain text, at most 2000, default empty) and place; a step without an `id` is new; a step of the task that the list leaves out is deleted together with its pictures. An `id` that is not a step of this task, or the same `id` twice, is a 400 on `steps`. Pictures are attachments of the owner type `task_step` with the step's id as `ownerId`: upload them with `POST /attachments` (or `POST /attachments/from-url`) after the step exists, and they come back in `images` in upload order. `source` says where the steps come from: left out it is unchanged, `null` removes it, an object replaces it entirely: `label` (at most 200 characters), then either `url` (http or https, at most 2000 characters, no user name or password) or `attachmentId` (a file of hauswart that exists, else a 400 on `source`; typically the manual attached to the device) with an optional `page` (1 to 9999, only together with `attachmentId`); `url` and `attachmentId` exclude each other and an object with nothing in it is a 400 (use `null`). Answers the steps, the resolved source and `stepCount` as `GET /tasks/{id}` carries them. Archived tasks can be edited. The task itself is not touched: it is not re-evaluated and its `updatedAt` stays. 404 for a missing task.",
+    tags: ["tasks"],
+    auth: "both",
+    scopes: ["write"],
+    params: idParamsSchema,
+    body: putTaskStepsRequestSchema,
+    response: taskStepsSchema,
     errors: ["not_found"],
   }),
 
@@ -3427,6 +3464,21 @@ export const endpoints = {
     status: 201,
   }),
 
+  attachmentsFromUrl: defineEndpoint({
+    id: "attachmentsFromUrl",
+    method: "POST",
+    path: "/api/v1/attachments/from-url",
+    summary: "Attach a file found on the web to an owner",
+    description:
+      "JSON `{ownerType, ownerId, url, caption?, guestVisible?}`. The server downloads the file at `url` and stores it exactly like an upload (`POST /attachments`): the same owners and the same scope rules (a page needs `docs:write`, a cost entry `costs:write`; the owner type `ai_task` is refused), the type is detected from the bytes (JPEG, PNG and WebP images are re-encoded and lose their metadata, PDFs are stored as they are; anything else is refused), at most 25 MiB, and the same `invalid_request` errors with `details.code` as an upload (`empty`, `unsupported_type`, `unsupported_heic`, `corrupt_image`, `image_too_large`). The owner is checked before anything is fetched. Because the server connects to an address it was given, only public ones are fetched: `http` or `https`, no user name or password, the standard ports (80 and 443), and a host that is, or resolves to, public internet addresses only (every address a name resolves to is checked; loopback, private networks, carrier-grade NAT, link-local, unique local, multicast, unspecified and reserved ranges, the cloud metadata endpoints and their IPv4-mapped and NAT64 spellings are refused). Redirects are followed by hand, at most 3, and each hop is checked the same way. One timeout of 15 seconds covers the whole download, which is read with a cap and stops at 25 MiB. The request carries `Accept` for images and PDFs and the user agent `hauswart/<version>` and nothing of the household. A download that fails is a 400 field error on `url` whose `details.code` is `blocked_host` (the address, or a redirect, is not a public one on a standard port), `unreachable` (the name does not resolve, the connection or TLS failed, or the time ran out), `upstream_status` (the server answered with an error; `details.status` is its status), `too_large` (more than 25 MiB) or `too_many_redirects`. The check cannot pin the address the connection is made to, so a name that changes its answer between the check and the connection (DNS rebinding) is not caught by it. Answers the attachment, as an upload does.",
+    tags: ["attachments"],
+    auth: "both",
+    scopes: ["write"],
+    body: attachFromUrlRequestSchema,
+    response: attachmentSchema,
+    status: 201,
+  }),
+
   attachmentsList: defineEndpoint({
     id: "attachmentsList",
     method: "GET",
@@ -3500,6 +3552,31 @@ export const endpoints = {
     response: binaryResponseSchema,
     responseType: "binary",
     contentTypes: [...ATTACHMENT_CONTENT_TYPES, "application/octet-stream"],
+    errors: ["not_found"],
+  }),
+
+  attachmentsPreview: defineEndpoint({
+    id: "attachmentsPreview",
+    method: "GET",
+    path: "/api/v1/attachments/{id}/preview",
+    summary: "An attachment sized for an assistant to read",
+    description:
+      "The file as something that reads it takes it in, for any attachment (of a device, a page, a task, a receipt, ...). An image is sent as it is stored when its longest side is at most 1600 px and it is at most 1.5 MB, else scaled down and sent as JPEG (a very long, narrow image may keep up to 3200 px on its long side so that its text stays legible). A PDF without `pages` is sent as stored when it is at most 4 MiB, otherwise the answer is a 400 `invalid_request` with `details.code` `too_large` and `details.pageCount`, the number of its pages, so that a range can be asked for. With `pages` (`3` or `3-8`, counted from 1, at most 20 pages) the answer is a PDF of only those pages: a range that reaches past the end is a 400 on `pages` (`details.code` `out_of_range`, `details.pageCount`), `pages` for an image is a 400 on `pages` (`details.code` `not_a_pdf`). A PDF that cannot be opened (encrypted, damaged) is a 400 `details.code` `unreadable` when pages are asked for and when it is over 4 MiB; a smaller one is still sent whole. The header `X-Page-Count` carries the number of pages of the whole stored PDF (left out for images, and for a PDF that cannot be opened). Sent with `nosniff`, an `ETag` and `Cache-Control: private, no-cache` (a copy is kept but asked about every time: `If-None-Match` answers 304); use `GET /attachments/{id}/content` for the original file.",
+    tags: ["attachments"],
+    auth: "both",
+    scopes: ["read"],
+    params: idParamsSchema,
+    query: attachmentPreviewQuerySchema,
+    response: binaryResponseSchema,
+    responseType: "binary",
+    contentTypes: ATTACHMENT_PREVIEW_CONTENT_TYPES,
+    responseHeaders: {
+      [PAGE_COUNT_HEADER]: {
+        description:
+          "The number of pages of the whole stored PDF (not of the pages sent).",
+        type: "integer",
+      },
+    },
     errors: ["not_found"],
   }),
 

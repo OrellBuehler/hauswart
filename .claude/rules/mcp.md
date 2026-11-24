@@ -65,7 +65,7 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
 - **Insurance and asset notes** (`tools/insurance.ts`, `tools/notes.ts`): `list_insurance_policies` and
   `get_insurance_policy` (read; a policy by id, title or policy number), `add_asset_note`, `list_asset_notes` and
   `resolve_asset_note` (the asset by id or name; resolving is idempotent). `add_service_log` takes `resolvedNoteIds`, task
-  rows carry `openNotes`, and documents can be linked to a policy by its title. 77 tools when the token holds every scope (the appointment tools are `tools/appointments.ts`, see "Appointments"; `list_calendar_targets` in `tools/calendar-targets.ts` is read-only, see "Calendar sync"; the four receipt queue tools are `tools/ai-tasks.ts`, see "Receipt queue").
+  rows carry `openNotes`, and documents can be linked to a policy by its title. 80 tools when the token holds every scope (the appointment tools are `tools/appointments.ts`, see "Appointments"; `list_calendar_targets` in `tools/calendar-targets.ts` is read-only, see "Calendar sync"; the four receipt queue tools are `tools/ai-tasks.ts`, see "Receipt queue"; `set_task_steps` (`tools/task-steps.ts`), `get_attachment` and `attach_from_url` (`tools/attachments.ts`) are described in `task-steps.md`).
 - **New tool**: add the endpoint to the registry first, then a ~15-line `defineTool` in
   `mcp/src/tools/` and an entry in `tools/index.ts` (which lists the planned extension points).
   Triggers go through `parseTrigger` (engine schema, per-type docs in `trigger-docs.ts`, a `Record`
@@ -83,7 +83,7 @@ handler})` returning `{summary, data}`; output is a summary line plus compact JS
   `unlink_document` go through the token user's own document connection like every other caller (no connection or a
   document that account cannot see: `not_found` with a sentence saying which; linking to a page also needs
   `docs:write`). Owners are given as id, or name for asset, room, part and contact and slug for a page; tags and
-  correspondents by name or id. The files are not transferred, sending a file is not offered.
+  correspondents by name or id. The files are not transferred, sending a file is not offered. (Files attached in hauswart are read with `get_attachment` and a file found at a public address is attached with `attach_from_url`; a file of the client is never uploaded.)
 - **Vehicle tools** (`tools/vehicles.ts`): `get_vehicle` (read: details, newest reading, open tasks) and
   `record_odometer` (write: value, date, note, `force`; answers with the tasks that now need attention). A
   vehicle is given by id, name or plate (spaces, dashes and case do not matter; parts of a name or plate

@@ -36,17 +36,17 @@ paths:
   flipping `guestVisible` re-renders the pages that embed it (`onAttachmentsChanged` listener,
   started in `init()` by `startAttachmentRerender`; only the two HTML caches change, guarded by `rev`).
 - **Attachments** (`attachments`): one row per upload, generic owner `ownerType` + `ownerId` without
-  foreign keys (`asset|room|page|task|defect|service_log|part|asset_hint|contact|cost|insurance_policy|asset_note|tire_set|appointment|ai_task`), files stored
+  foreign keys (`asset|room|page|task|defect|service_log|part|asset_hint|contact|cost|insurance_policy|asset_note|tire_set|appointment|ai_task|task_step`), files stored
   once by sha256 in `HAUSWART_FILES_DIR` (`files/store.ts`: images re-encoded, metadata stripped,
   thumbnail; PDFs as uploaded; HEIC/SVG/HTML/GIF refused). Owner existence is checked through the
   registry in `attachments/owners.ts`: asset, room, page and task are built in; defect, service_log,
-  part, asset_hint, contact, cost, insurance_policy, asset_note, tire_set, appointment and ai_task are registered by `registerDomainAttachmentOwners()`
+  part, asset_hint, contact, cost, insurance_policy, asset_note, tire_set, appointment, ai_task and task_step are registered by `registerDomainAttachmentOwners()`
   (`attachments/domain-owners.ts`, called from `registerDomainEventHandlers()`, so from `init()` and
   `useTestDB()`). A new owner type registers with `registerAttachmentOwner(type, existsFn)` **from
   `init()`** (never from a module that is only loaded with its routes) and calls
-  `removeOwnedAttachments(ctx, type, id)` from its delete service (done for all fifteen; deleting an
-  asset also removes the attachments of its service log entries, hints, notes and tire sets, whose rows go by cascade
-  without a foreign key to follow). A type nobody registered is a 400 field error on `ownerType`. Uploading, patching or deleting an attachment of a page needs `docs:write`,
+  `removeOwnedAttachments(ctx, type, id)` from its delete service (done for all sixteen; deleting an
+  asset also removes the attachments of its service log entries, hints, notes and tire sets, and deleting a task those of its steps, whose rows go by cascade
+  without a foreign key to follow; `removeOwnedAttachments` takes one owner id or several, and `deleteOwnedAttachmentRows` + `releaseAttachments` are its two halves for a service that deletes inside its own transaction). A type nobody registered is a 400 field error on `ownerType`. Uploading, patching or deleting an attachment of a page needs `docs:write`,
   others `write`. `deleteIfUnreferenced` keeps files younger than a minute, so a daily orphan sweep
   (`startFileSweeper`) removes what deletions left behind. `assets.photoAttachmentId` must be an
   image attachment owned by that asset (set it with an update; it cannot be set on create); the asset
@@ -60,6 +60,7 @@ paths:
   for `<img src>` and plain download links. Stored files are served with `files/serve.ts` (nosniff,
   CSP, ETag = sha256, `private, immutable`); the PDF export is `application/pdf`, `no-store`. pdfmake
   is external to the bundle (`vite.config.ts`) and read from `node_modules` at runtime.
+- **From an address, and the assistant's preview**: `POST /attachments/from-url` downloads a file from a public web address and stores it like an upload; `GET /attachments/{id}/preview` sends an image scaled for a model or a PDF whole or a range of its pages (`X-Page-Count`). Both are described in `task-steps.md` (the strict host policy, the limits, the error codes).
 - **Multipart bodies** are passed to `api.call` as a plain object (files as `File`, the rest
   strings); the client builds the `FormData`. In route tests use `callRoute(..., { form })`.
 - **Search** (`search_fts`, FTS5, created in custom migration `0006_search_index`): triggers on pages,

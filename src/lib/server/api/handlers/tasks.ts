@@ -24,6 +24,7 @@ import {
   refreshOdometerReaders,
 } from "#lib/server/vehicles/odometer.ts";
 import { listPreparations } from "#lib/server/tasks/preparations.ts";
+import { getTaskSteps, replaceTaskSteps } from "#lib/server/tasks/steps.ts";
 import {
   checkCompletionLog,
   entryOfCompletion,
@@ -36,6 +37,7 @@ import {
   wirePreparation,
   wireServiceLogEntry,
   wireTask,
+  wireTaskSteps,
 } from "../wire";
 
 /**
@@ -94,6 +96,7 @@ export const get: Handler<typeof endpoints.tasksGet> = async ({
   params,
 }) => {
   const task = getTask(ctx, params.id);
+  const { steps, stepsSource } = wireTaskSteps(getTaskSteps(ctx, task.id));
   return {
     ...wireTaskFor(ctx)(task),
     preparations: (await listPreparations(ctx, task.id)).map(wirePreparation),
@@ -102,8 +105,16 @@ export const get: Handler<typeof endpoints.tasksGet> = async ({
       task.id,
       RECENT_COMPLETIONS_IN_DETAIL,
     ).map(wireCompletion),
+    steps,
+    stepsSource,
   };
 };
+
+export const putSteps: Handler<typeof endpoints.tasksStepsPut> = ({
+  ctx,
+  params,
+  body,
+}) => wireTaskSteps(replaceTaskSteps(ctx, params.id, body));
 
 export const update: Handler<typeof endpoints.tasksUpdate> = async ({
   ctx,

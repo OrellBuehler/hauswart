@@ -56,7 +56,7 @@ internal fun taskJson(
         "trigger":{"type":"interval","v":1,"every":7,"unit":"day","anchor":"completion","startDate":"2026-01-01"},
         "assignMode":"none","assigneeUserId":null,"rotationOrder":[],"rotationStrategy":"alternate","notifyMode":"all","graceDays":0,
         "dueSoonDays":null,"snoozedUntil":null,"archivedAt":null,"source":"manual","externalSource":null,"externalRef":null,
-        "externalUrl":null,"createdBy":null,"commentCount":0,"openNoteCount":0,"nextAppointment":null,
+        "externalUrl":null,"createdBy":null,"commentCount":0,"stepCount":0,"openNoteCount":0,"nextAppointment":null,
         "createdAt":"2026-01-01T00:00:00.000Z","updatedAt":"2026-01-01T00:00:00.000Z",
         "state":{"status":"$status","dueDate":${dueDate.json()},"dueKind":"exact","occurrenceKey":"k","windowStart":null,"progress":null,
         "estimate":null,"missedCount":0,"reasons":[],"currentAssigneeUserId":null,"evaluatedAt":"2026-01-01T00:00:00.000Z"}}"""

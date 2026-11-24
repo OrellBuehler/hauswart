@@ -458,6 +458,17 @@ export const tasks = sqliteTable(
     externalSource: text("external_source"),
     externalRef: text("external_ref"),
     externalUrl: text("external_url"),
+    /**
+     * Where the steps of the task (`task_steps`) come from: a page on the web (`url`) or a page of a
+     * file in hauswart (`attachmentId`, `page`), with a `label` for people. The attachment has no
+     * foreign key (it is inside the JSON); a reader checks that it still exists.
+     */
+    stepsSource: text("steps_source", { mode: "json" }).$type<{
+      label: string | null;
+      url: string | null;
+      attachmentId: string | null;
+      page: number | null;
+    }>(),
     createdBy: text("created_by").references(() => users.id, {
       onDelete: "set null",
     }),
@@ -569,6 +580,29 @@ export const taskPreparations = sqliteTable(
     ...timestamps,
   },
   (t) => [index("task_preparations_task_id_idx").on(t.taskId)],
+);
+
+/**
+ * The steps that say how to do a task, in the order they are done. Domain data shared by everybody; the
+ * pictures of a step are attachments of the owner type `task_step` (no foreign key: `removeOwnedAttachments`
+ * when a step or its task goes).
+ */
+export const taskSteps = sqliteTable(
+  "task_steps",
+  {
+    id: id(),
+    taskId: text("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    /** 0-based place in the task's list. Not unique: a reorder rewrites them one row at a time. */
+    position: integer("position").notNull(),
+    /** The instruction in one line. */
+    title: text("title").notNull(),
+    /** Plain text: detail, tips, warnings. */
+    body: text("body").notNull().default(""),
+    ...timestamps,
+  },
+  (t) => [index("task_steps_task_id_idx").on(t.taskId, t.position)],
 );
 
 export const taskPrepCompletions = sqliteTable(

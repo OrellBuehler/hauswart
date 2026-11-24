@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
+import { and, eq, inArray, isNull, not, or, sql, type SQL } from "drizzle-orm";
 import type { DueStatus } from "#lib/tasks/engine/index.ts";
 import {
   evaluateTask,
@@ -19,7 +19,14 @@ import {
 } from "#lib/server/appointments/next.ts";
 import { openNoteCountSql } from "#lib/server/asset-notes/counts.ts";
 import { commentCountSql } from "#lib/server/comments/counts.ts";
-import { assets, rooms, taskState, tasks, users } from "#lib/server/db.ts";
+import {
+  assets,
+  rooms,
+  taskState,
+  taskSteps,
+  tasks,
+  users,
+} from "#lib/server/db.ts";
 import { parseStored } from "#lib/server/json.ts";
 import { getHousehold } from "#lib/server/household/household.ts";
 import { paginateArray } from "#lib/server/pagination.ts";
@@ -33,6 +40,7 @@ import {
 import { removeOwnedAttachments } from "#lib/server/attachments/attachments.ts";
 import { signalNeedsChanged } from "#lib/server/signals/watch.ts";
 import { clockAt, evaluateTaskById } from "./evaluator";
+import { hasStepsSql, stepCountSql } from "./step-counts";
 import { toStateRecord, type StateRow, type TaskStateRecord } from "./state";
 import type { DueResult } from "#lib/tasks/engine/index.ts";
 
@@ -45,6 +53,8 @@ export interface TaskRecord extends Omit<TaskRow, "trigger"> {
   commentCount: number;
   /** Open notes on the task's asset (0 without an asset). */
   openNoteCount: number;
+  /** How many steps say how to do the task (see `steps.ts`). */
+  stepCount: number;
   /** The earliest planned appointment of the task, if any (see `appointments/next.ts`). */
   nextAppointment: NextAppointment | null;
   state: TaskStateRecord | null;
@@ -56,6 +66,7 @@ type Joined = {
   roomName: string | null;
   commentCount: number;
   openNoteCount: number;
+  stepCount: number;
   nextAppointment: string | null;
   state: StateRow | null;
 };
@@ -68,6 +79,7 @@ const selectTasks = (db: ServiceContext["db"]) =>
       roomName: rooms.name,
       commentCount: commentCountSql("task", tasks.id),
       openNoteCount: openNoteCountSql(tasks.assetId),
+      stepCount: stepCountSql(tasks.id),
       nextAppointment: nextAppointmentSql(tasks.id),
       state: taskState,
     })
@@ -82,6 +94,7 @@ function toRecord({
   roomName,
   commentCount,
   openNoteCount,
+  stepCount,
   nextAppointment,
   state,
 }: Joined): TaskRecord {
@@ -92,6 +105,7 @@ function toRecord({
     roomName,
     commentCount: Number(commentCount),
     openNoteCount: Number(openNoteCount),
+    stepCount: Number(stepCount),
     nextAppointment: parseNextAppointment(nextAppointment),
     state: state ? toStateRecord(state) : null,
   };
@@ -108,6 +122,8 @@ export interface TaskFilter {
   includeArchived?: boolean;
   externalSource?: string;
   externalRef?: string;
+  /** `true`: only tasks with steps, `false`: only tasks without. */
+  hasSteps?: boolean;
 }
 
 function escapeLike(value: string): string {
@@ -160,6 +176,11 @@ export function listTasks(
     where.push(eq(tasks.externalSource, filter.externalSource));
   }
   if (filter.externalRef) where.push(eq(tasks.externalRef, filter.externalRef));
+  if (filter.hasSteps !== undefined) {
+    where.push(
+      filter.hasSteps ? hasStepsSql(tasks.id) : not(hasStepsSql(tasks.id)),
+    );
+  }
   if (filter.q) {
     const pattern = `%${escapeLike(filter.q.toLowerCase())}%`;
     where.push(
@@ -381,11 +402,20 @@ export async function updateTask(
   return getTask(ctx, id);
 }
 
-/** Removes the task with its state, completions, preparations, notifications and attachments. Archive to keep the history. */
+/**
+ * Removes the task with its state, completions, preparations, steps, notifications and attachments, including the pictures
+ * of its steps (the step rows go by cascade, the attachments have no foreign key to follow). Archive to keep the history.
+ */
 export function deleteTask(
   ctx: Pick<ServiceContext, "db" | "now">,
   id: string,
 ): void {
+  const stepIds = ctx.db
+    .select({ id: taskSteps.id })
+    .from(taskSteps)
+    .where(eq(taskSteps.taskId, id))
+    .all()
+    .map((row) => row.id);
   const result = ctx.db
     .delete(tasks)
     .where(eq(tasks.id, id))
@@ -393,6 +423,7 @@ export function deleteTask(
     .all();
   if (result.length === 0) throw notFound("Task");
   removeOwnedAttachments(ctx, "task", id);
+  removeOwnedAttachments(ctx, "task_step", stepIds);
 }
 
 export interface PreviewOptions {

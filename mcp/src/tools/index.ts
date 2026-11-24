@@ -3,6 +3,7 @@ import { aiTaskTools } from "./ai-tasks";
 import { appointmentTools } from "./appointments";
 import { assetTools } from "./assets";
 import { assetCareTools } from "./asset-care";
+import { attachmentTools } from "./attachments";
 import { listCalendarTargets } from "./calendar-targets";
 import { commentTools } from "./comments";
 import { contactTools } from "./contacts";
@@ -20,6 +21,7 @@ import { getStats, listNotifications } from "./insights";
 import { insuranceTools } from "./insurance";
 import { noteTools } from "./notes";
 import { partTools } from "./parts";
+import { taskStepTools } from "./task-steps";
 import { taskTools } from "./tasks";
 import { tireTools } from "./tires";
 import { listUpcoming } from "./upcoming";
@@ -40,14 +42,17 @@ import { whoami } from "./whoami";
  * - iCal feed        subscribing to due dates
  *
  * Not offered on purpose: deleting anything (the one exception is unlinking a
- * document, which only removes the link), uploading files (attachments are listed
- * by name only), sending files to the document system and changing contacts or
+ * document, which only removes the link), uploading files from the client (a file
+ * is read with `get_attachment` and attached from a public address with
+ * `attach_from_url`), sending files to the document system and changing contacts or
  * parts beyond stock bookings.
  */
 export const tools: readonly Tool[] = [
   whoami,
   listUpcoming,
   ...taskTools,
+  ...taskStepTools,
+  ...attachmentTools,
   ...assetTools,
   getStats,
   listNotifications,

@@ -173,10 +173,14 @@ describe("openapi document", () => {
       "Settlement",
       "SignalReaction",
       "Stats",
+      "StepsSource",
+      "StepsSourceAttachment",
       "Task",
       "TaskDetail",
       "TaskPart",
       "TaskState",
+      "TaskStep",
+      "TaskSteps",
       "TireSet",
       "TireSetDetail",
       "TireSetEvent",
@@ -222,6 +226,29 @@ describe("openapi document", () => {
     };
     expect(Object.keys(thumb.responses["200"].content ?? {})).toEqual([
       "image/webp",
+    ]);
+  });
+
+  it("documents the extra response headers of a binary endpoint", () => {
+    const preview = doc.paths["/api/v1/attachments/{id}/preview"].get as {
+      responses: Record<
+        string,
+        { headers?: Record<string, { description?: string; schema: unknown }> }
+      >;
+    };
+    expect(preview.responses["200"].headers).toMatchObject({
+      "Cache-Control": { schema: { type: "string" } },
+      "X-Page-Count": {
+        description: expect.stringContaining("pages"),
+        schema: { type: "integer" },
+      },
+    });
+    const content = doc.paths["/api/v1/attachments/{id}/content"].get as {
+      responses: Record<string, { headers?: Record<string, unknown> }>;
+    };
+    expect(Object.keys(content.responses["200"].headers ?? {})).toEqual([
+      "Content-Disposition",
+      "Cache-Control",
     ]);
   });
 

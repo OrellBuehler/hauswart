@@ -245,6 +245,7 @@ data class Task(
     val createdBy: String?,
     val commentCount: Long,
     val openNoteCount: Long,
+    val stepCount: Long,
     val nextAppointment: NextAppointment?,
     /** date-time */
     val createdAt: String,
@@ -584,6 +585,7 @@ data class TaskDetail(
     val createdBy: String?,
     val commentCount: Long,
     val openNoteCount: Long,
+    val stepCount: Long,
     val nextAppointment: NextAppointment?,
     /** date-time */
     val createdAt: String,
@@ -592,6 +594,8 @@ data class TaskDetail(
     val state: TaskState?,
     val preparations: List<Preparation>,
     val recentCompletions: List<Completion>,
+    val steps: List<TaskStep>,
+    val stepsSource: StepsSource?,
 ) {
     companion object {
         val CATEGORY_VALUES: List<String> = listOf("cleaning", "maintenance", "filter", "plant", "waste", "inspection", "payment", "order", "warranty", "defect", "other")
@@ -666,6 +670,65 @@ data class Completion(
         val SOURCE_VALUES: List<String> = listOf("manual", "qr", "api", "mcp", "ha", "notification", "kept", "system")
     }
 }
+
+@Serializable
+data class TaskStep(
+    val id: String,
+    val position: Long,
+    val title: String,
+    val body: String,
+    val images: List<Attachment>,
+)
+
+@Serializable
+data class Attachment(
+    val id: String,
+    /** asset | room | page | task | defect | service_log | part | asset_hint | contact | cost | insurance_policy | asset_note | tire_set | appointment | ai_task | task_step */
+    val ownerType: String,
+    val ownerId: String,
+    val filename: String,
+    val mime: String,
+    val size: Long,
+    val width: Long?,
+    val height: Long?,
+    val caption: String?,
+    val guestVisible: Boolean,
+    val url: String,
+    val thumbUrl: String?,
+    val uploadedBy: String?,
+    /** date-time */
+    val createdAt: String,
+    /** date-time */
+    val updatedAt: String,
+) {
+    companion object {
+        val OWNER_TYPE_VALUES: List<String> = listOf("asset", "room", "page", "task", "defect", "service_log", "part", "asset_hint", "contact", "cost", "insurance_policy", "asset_note", "tire_set", "appointment", "ai_task", "task_step")
+    }
+}
+
+@Serializable
+data class StepsSource(
+    val label: String?,
+    val url: String?,
+    val attachmentId: String?,
+    val page: Long?,
+    val attachment: StepsSourceAttachment?,
+)
+
+@Serializable
+data class StepsSourceAttachment(
+    val id: String,
+    val filename: String,
+    val mime: String,
+    val url: String,
+)
+
+@Serializable
+data class TaskSteps(
+    val steps: List<TaskStep>,
+    val stepsSource: StepsSource?,
+    val stepCount: Long,
+)
 
 @Serializable
 data class ServiceLogEntry(
@@ -779,6 +842,7 @@ data class DashboardTask(
     val estimate: DashboardTaskEstimate?,
     val progress: TaskStateProgress?,
     val openNoteCount: Long,
+    val stepCount: Long,
     val odometerAssetId: String?,
     val nextAppointment: NextAppointment?,
 ) {
@@ -2487,32 +2551,6 @@ data class SearchHit(
 ) {
     companion object {
         val TYPE_VALUES: List<String> = listOf("page", "asset", "room", "task", "defect", "contact", "part", "asset_hint", "insurance_policy", "appointment", "document")
-    }
-}
-
-@Serializable
-data class Attachment(
-    val id: String,
-    /** asset | room | page | task | defect | service_log | part | asset_hint | contact | cost | insurance_policy | asset_note | tire_set | appointment | ai_task */
-    val ownerType: String,
-    val ownerId: String,
-    val filename: String,
-    val mime: String,
-    val size: Long,
-    val width: Long?,
-    val height: Long?,
-    val caption: String?,
-    val guestVisible: Boolean,
-    val url: String,
-    val thumbUrl: String?,
-    val uploadedBy: String?,
-    /** date-time */
-    val createdAt: String,
-    /** date-time */
-    val updatedAt: String,
-) {
-    companion object {
-        val OWNER_TYPE_VALUES: List<String> = listOf("asset", "room", "page", "task", "defect", "service_log", "part", "asset_hint", "contact", "cost", "insurance_policy", "asset_note", "tire_set", "appointment", "ai_task")
     }
 }
 

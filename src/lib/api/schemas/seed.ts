@@ -9,6 +9,7 @@ import {
   notifyModeSchema,
   rotationStrategySchema,
 } from "./tasks";
+import { MAX_TASK_STEPS, taskStepInputSchema } from "./task-steps";
 import { dateSchema, slugSchema } from "./common";
 
 /**
@@ -61,6 +62,12 @@ export const seedPreparationSchema = z.strictObject({
   qty: createPreparationRequestSchema.shape.qty,
 });
 
+/** A step that says how to do a task (pictures are added in the app, not by a file). */
+export const seedStepSchema = z.strictObject({
+  title: taskStepInputSchema.shape.title,
+  body: taskStepInputSchema.shape.body,
+});
+
 /** People are referenced by display name, as the user directory shows them. */
 export const seedAssignSchema = z.discriminatedUnion("mode", [
   z.strictObject({ mode: z.literal("none") }),
@@ -91,6 +98,11 @@ export const seedTaskSchema = z.strictObject({
   graceDays: taskShape.graceDays,
   dueSoonDays: taskShape.dueSoonDays,
   preparations: z.array(seedPreparationSchema).max(20).default([]),
+  /**
+   * The steps that say how to do the task, in order. Written when the task is made, or has no steps yet; replaced (by
+   * place, nothing is deleted) only with `--update`. Left out, the task's steps are not touched.
+   */
+  steps: z.array(seedStepSchema).max(MAX_TASK_STEPS).optional(),
   /** Documentation for people editing the file; ignored by the importer. */
   comment: z.string().optional(),
 });

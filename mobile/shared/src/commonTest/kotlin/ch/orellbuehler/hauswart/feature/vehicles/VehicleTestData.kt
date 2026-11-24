@@ -110,4 +110,4 @@ internal fun statsJson(
         "tireSet":null,
         "nextTasks":[{"taskId":"k1","title":"Service","category":"maintenance","priority":"normal","assetId":"a1","assetName":"Auto","roomId":null,"roomName":null,
           "assigneeUserId":null,"assigneeName":null,"status":"open","dueKind":"exact","date":"2026-12-01","estimated":false,"estimate":null,"progress":null,
-          "openNoteCount":0,"odometerAssetId":"a1","nextAppointment":null}]}"""
+          "stepCount":0,"openNoteCount":0,"odometerAssetId":"a1","nextAppointment":null}]}"""

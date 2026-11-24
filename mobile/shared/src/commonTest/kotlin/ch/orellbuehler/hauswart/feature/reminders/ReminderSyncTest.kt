@@ -54,7 +54,7 @@ class ReminderSyncTest {
     ) = """{"taskId":"$id","title":"Task $id","category":"cleaning","priority":"normal","assetId":null,"assetName":null,
         "roomId":null,"roomName":null,"assigneeUserId":null,"assigneeName":null,"status":"$status","dueKind":"exact",
         "date":${if (date == null) "null" else "\"$date\""},"estimated":$estimated,"estimate":null,"progress":null,
-        "openNoteCount":0,"odometerAssetId":null,"nextAppointment":null}"""
+        "stepCount":0,"openNoteCount":0,"odometerAssetId":null,"nextAppointment":null}"""
 
     private fun dashboard(vararg today: String) =
         """{"today":"2026-11-21","generatedAt":"2026-11-21T05:00:00.000Z",

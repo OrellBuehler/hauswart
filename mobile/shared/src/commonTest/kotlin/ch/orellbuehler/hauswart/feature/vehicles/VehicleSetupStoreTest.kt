@@ -32,7 +32,7 @@ class VehicleSetupStoreTest {
         "roomId":null,"roomName":null,"trigger":$trigger,"assignMode":"none","assigneeUserId":null,"rotationOrder":[],"rotationStrategy":"alternate",
         "notifyMode":"assignee","graceDays":0,"dueSoonDays":null,"snoozedUntil":null,"archivedAt":${if (archived) "\"2026-01-01T00:00:00.000Z\"" else "null"},
         "source":"manual","externalSource":${if (ref != null) "\"vehicle_template\"" else "null"},"externalRef":${if (ref != null) "\"$ref\"" else "null"},
-        "externalUrl":null,"createdBy":null,"commentCount":0,"openNoteCount":0,"nextAppointment":null,
+        "externalUrl":null,"createdBy":null,"commentCount":0,"stepCount":0,"openNoteCount":0,"nextAppointment":null,
         "createdAt":"2026-01-01T00:00:00.000Z","updatedAt":"2026-01-01T00:00:00.000Z","state":null}"""
 
     private suspend fun store(tasks: List<String> = emptyList()): VehicleSetupStore {
