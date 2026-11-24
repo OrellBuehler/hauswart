@@ -34,7 +34,7 @@ internal fun taskJson(
         "trigger":$trigger,"assignMode":"none","assigneeUserId":null,"rotationOrder":[],"rotationStrategy":"alternate",
         "notifyMode":"assignee","graceDays":0,"dueSoonDays":null,"snoozedUntil":${snoozedUntil.json()},
         "archivedAt":${if (archived) "\"2026-01-01T00:00:00.000Z\"" else "null"},"source":"manual","externalSource":${externalSource.json()},
-        "externalRef":null,"externalUrl":null,"createdBy":null,"commentCount":$commentCount,"openNoteCount":$openNotes,"nextAppointment":$nextAppointment,
+        "externalRef":null,"externalUrl":null,"createdBy":null,"commentCount":$commentCount,"stepCount":0,"openNoteCount":$openNotes,"nextAppointment":$nextAppointment,
         "createdAt":"2026-01-01T00:00:00.000Z","updatedAt":"2026-01-01T00:00:00.000Z",
         "state":{"status":"$status","dueDate":${dueDate.json()},"dueKind":"exact","occurrenceKey":"k1","windowStart":null,"progress":null,
         "estimate":null,"missedCount":0,"reasons":["never_completed"],"currentAssigneeUserId":${assignee.json()},"evaluatedAt":"2026-01-01T00:00:00.000Z"}$extra}"""
@@ -42,7 +42,7 @@ internal fun taskJson(
 internal fun detailJson(
     task: String,
     preparations: String = "[]",
-): String = task.dropLast(1) + ""","preparations":$preparations,"recentCompletions":[]}"""
+): String = task.dropLast(1) + ""","preparations":$preparations,"recentCompletions":[],"steps":[],"stepsSource":null}"""
 
 internal fun completionJson(
     id: String,

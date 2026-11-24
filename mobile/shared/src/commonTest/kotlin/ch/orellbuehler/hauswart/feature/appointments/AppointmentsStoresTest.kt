@@ -58,7 +58,7 @@ class AppointmentsStoresTest {
             "roomId":null,"roomName":null,"trigger":{"type":"interval","v":1,"every":2,"unit":"week","anchor":"completion","startDate":"2026-01-05"},
             "assignMode":"none","assigneeUserId":null,"rotationOrder":[],"rotationStrategy":"alternate","notifyMode":"assignee","graceDays":0,"dueSoonDays":null,
             "snoozedUntil":null,"archivedAt":${if (archived) "\"2026-01-01T00:00:00.000Z\"" else "null"},"source":"manual","externalSource":null,
-            "externalRef":null,"externalUrl":null,"createdBy":null,"commentCount":0,"openNoteCount":0,"nextAppointment":null,
+            "externalRef":null,"externalUrl":null,"createdBy":null,"commentCount":0,"stepCount":0,"openNoteCount":0,"nextAppointment":null,
             "createdAt":"2026-01-01T00:00:00.000Z","updatedAt":"2026-01-01T00:00:00.000Z","state":null}"""
 
     private fun completionJson() =
