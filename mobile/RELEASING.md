@@ -43,6 +43,27 @@ when its secrets are not set:
 - without `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` only the Play upload is skipped,
 - without all seven iOS secrets the iOS job is skipped.
 
+## Store screenshots
+
+The workflow `Mobile Store Screenshots` (`mobile-screenshots.yml`, started by hand from the Actions
+tab) takes the screenshots for both stores, in English and German, light and one dark:
+
+1. It builds the server and starts one per language on an empty data directory, which
+   `scripts/demo.ts` fills with an invented household (the example seed plus finished tasks, costs,
+   defects, parts, contacts and an appointment).
+2. It builds the debug apps and starts them once per line of `mobile/scripts/screenshots/screens.txt`.
+   A debug build that is started with `screenshot_*` arguments signs in to that server by itself and
+   opens the screen it is given; nothing is tapped. The run fails when the app does not sign in.
+3. The results are the artifacts `store-screenshots-ios` (iPhone Pro Max, 1320 x 2868, the 6.9 inch
+   slot of App Store Connect) and `store-screenshots-android` (1080 x 2160), each with a folder per
+   language. Upload them to the store listings by hand.
+
+To add a screen, add a line to `screens.txt`; when it shows a single entry, add its address to
+`links` in `scripts/demo.ts`. The workflow also runs on a pull request that changes the capture, the
+demo household or the example seeds. Locally, with a booted simulator or a running emulator that
+has the debug app installed and after `bun run build`: `mobile/scripts/screenshots/ios.sh <udid> <dir>`
+or `mobile/scripts/screenshots/android.sh <dir>`.
+
 ## Secrets
 
 All of them are repository secrets (Settings, Secrets and variables, Actions). The workflows read

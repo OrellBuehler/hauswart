@@ -97,7 +97,8 @@ src/lib/pwa/                     client-safe PWA parts: colors.ts (theme colours
 src/lib/server/pwa/service-worker.ts  serves the built worker (build/server/sw.js) with Cache-Control: no-cache and an ETag
 src/lib/server/public-origin.ts  `ORIGIN` for the production entry (scripts/start.ts -> build/start.js): the adapter has no such setting
 kit.config.ts                    SvelteKit options (csrf, paths, csp, serviceWorker); vite.config.ts spreads them into the plugin
-src/lib/server/seed/import.ts    seed importer (through the REST API); CLI in scripts/seed.ts, data in seed/
+src/lib/server/seed/import.ts    seed importer (through the REST API); CLI in scripts/seed.ts, data in seed/;
+                                 scripts/demo.ts fills an empty server with a whole invented household
 mcp/src/                         MCP server (client-safe imports only): index.ts stdio entry, server.ts (buildHauswartServer =
                                  scope-based registration; createHauswartServer adds the whoami handshake), tool.ts (defineTool),
                                  context.ts (client + name resolvers), tools/ (registry in tools/index.ts, one file per domain);

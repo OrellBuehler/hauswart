@@ -36,17 +36,23 @@ struct RootView: View {
 
 struct MainTabs: View {
     @ObservedObject private var reminders = ReminderInbox.shared
+    // The tab and the pushed screen a launch for the store screenshots asks for; else the first tab.
+    @State private var tab = ScreenshotRun.tab
 
     var body: some View {
-        TabView {
-            RouteStack { DashboardScreen() }
+        TabView(selection: $tab) {
+            RouteStack(initial: ScreenshotRun.routes(tab: 0)) { DashboardScreen() }
                 .tabItem { Label(tr("nav_dashboard"), systemImage: "house") }
-            RouteStack { destination(for: .tasks) }
+                .tag(0)
+            RouteStack(initial: ScreenshotRun.routes(tab: 1)) { destination(for: .tasks) }
                 .tabItem { Label(tr("nav_tasks"), systemImage: "checklist") }
-            RouteStack { destination(for: .costs) }
+                .tag(1)
+            RouteStack(initial: ScreenshotRun.routes(tab: 2)) { destination(for: .costs) }
                 .tabItem { Label(tr("nav_costs"), systemImage: "banknote") }
-            RouteStack { MoreScreen() }
+                .tag(2)
+            RouteStack(initial: ScreenshotRun.routes(tab: 3)) { MoreScreen() }
                 .tabItem { Label(tr("m_nav_more"), systemImage: "ellipsis.circle") }
+                .tag(3)
         }
         .sheet(item: $reminders.pending) { link in
             ReminderLinkSheet(link: link)

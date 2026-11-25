@@ -38,6 +38,7 @@ bun run mobile:api       # regenerate the mobile apps' Kotlin client from docs/o
 bun run i18n             # recompile Paraglide messages (also runs on install and in check)
 bun run leak-guard --all # scan the whole tree for private terms
 bun scripts/seed.ts --file seed/example.de.json --token hw_… [--url http://localhost:3000] [--update]
+bun scripts/demo.ts --url http://localhost:3000 [--locale de|en]  # fill an empty server with an invented household (seed/example.<locale>.json and more)
 bun scripts/generate-pwa-icons.ts  # re-render static/icons from static/logo.svg (commit the PNGs)
 bun mobile/scripts/generate-app-icon.ts  # re-render the iOS app icon from static/logo.svg (commit the PNG)
 bun run mcp              # stdio MCP server from source, for development (HAUSWART_URL, HAUSWART_TOKEN); the app serves MCP at /api/v1/mcp
@@ -218,7 +219,8 @@ of the repository has to know:
   optional fields, never a removed or renamed field, a narrowed type or a new required request field.
 - They render `messages/{de,en}.json` (notifications arrive as a message key plus params). Removing
   or renaming a key the apps use fails their `MessageKeysUsedTest`.
-- CI: `mobile-android.yml` and `mobile-ios.yml` (the only place Swift is compiled). Releases are
+- CI: `mobile-android.yml` and `mobile-ios.yml` (the only place Swift is compiled). `mobile-screenshots.yml`
+  takes the store screenshots from the demo household of `scripts/demo.ts`; a changed seed or demo runs it. Releases are
   separate from the server's: tag `mobile-v<version>`, see `mobile/RELEASING.md`.
 
 ## Releasing

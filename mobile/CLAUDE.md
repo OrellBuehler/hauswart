@@ -17,7 +17,8 @@ source ~/.sdkman/bin/sdkman-init.sh && export ANDROID_HOME=~/android-sdk && cd m
 bun run mobile:api                                                # from the repo root, after docs/openapi.json changed
 ```
 
-CI: `mobile-android.yml`, `mobile-ios.yml`; releases: `mobile-release.yml` and `RELEASING.md`.
+CI: `mobile-android.yml`, `mobile-ios.yml`; releases: `mobile-release.yml` and `RELEASING.md`; store
+screenshots: `mobile-screenshots.yml` and `scripts/screenshots/` (see `RELEASING.md`).
 
 ## Layout
 
@@ -120,6 +121,11 @@ planned on the device from the server's data; there is no push service).
 - Android: `tr()` reads the language as UI state (`LocaleTracker`, hooked into `I18n.onRead`), so a language change
   draws the screens again and `rememberStore` makes their stores again; the navigation stays. On sign-out
   `StoreRegistry.closeAll()` closes every store.
+- Store screenshots: a debug build that is started with `screenshot_*` launch arguments (iOS,
+  `Support/ScreenshotRun.swift`) or intent extras (Android, `MainActivity`) signs in by itself
+  (`startScreenshotSession`) and opens the address of the web app it is given, through `routeForUrl`.
+  A screen the stores should show is a line in `scripts/screenshots/screens.txt` and, when it needs an
+  entry, a link in the repository's `scripts/demo.ts`. Release builds ignore all of it.
 
 ## Android
 
