@@ -177,7 +177,7 @@ function drawPhone(
   const inner = width - bezel * 2;
   const innerHeight = (inner * screen.height) / screen.width;
   const height = innerHeight + bezel * 2;
-  const radius = width * (device === "iphone" ? 0.14 : 0.1);
+  const radius = width * (device === "iphone" ? 0.14 : 0.075);
 
   ctx.save();
   ctx.shadowColor = "rgba(0, 0, 0, 0.28)";

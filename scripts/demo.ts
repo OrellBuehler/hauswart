@@ -44,7 +44,6 @@ const TEXTS = {
       ["Wocheneinkauf", "groceries", 14230, 1],
       ["Strom Oktober", "utilities", 8640, 3],
       ["Aktivkohlefilter", "household", 3490, 5],
-      ["Tanken", "fuel", 7215, 6],
       ["Abendessen zu zweit", "dining", 9600, 8],
       ["Wocheneinkauf", "groceries", 12875, 9],
       ["Internet", "subscriptions", 5900, 12],
@@ -54,6 +53,9 @@ const TEXTS = {
     ],
     appointment: "Winterreifen montieren",
     garage: "Garage Muster",
+    station: "Tankstelle Muster",
+    fuel: "",
+    books: {} as Record<string, string>,
   },
   en: {
     first: "Anna",
@@ -78,7 +80,6 @@ const TEXTS = {
       ["Weekly shop", "groceries", 14230, 1],
       ["Electricity October", "utilities", 8640, 3],
       ["Carbon filter", "household", 3490, 5],
-      ["Fuel", "fuel", 7215, 6],
       ["Dinner for two", "dining", 9600, 8],
       ["Weekly shop", "groceries", 12875, 9],
       ["Internet", "subscriptions", 5900, 12],
@@ -88,6 +89,13 @@ const TEXTS = {
     ],
     appointment: "Fit the winter tyres",
     garage: "Sample Garage",
+    station: "Sample filling station",
+    // The books a new server starts with and the entries it writes for a fill-up have German names.
+    fuel: "Fuel",
+    books: { Wohnung: "Flat", Haushalt: "Household", Auto: "Car" } as Record<
+      string,
+      string
+    >,
   },
 } as const;
 
@@ -113,6 +121,13 @@ const DONE_DAYS_AGO: Record<number, number> = {
   0: 20,
   2: 34,
 };
+
+/** The fill-ups of the car: days ago, odometer, litres, price in minor units. */
+const FILL_UPS = [
+  [30, 41_200, 38.2, 6840],
+  [16, 41_830, 41.5, 7430],
+  [6, 42_410, 39.7, 7215],
+] as const;
 
 function fail(message: string): never {
   console.error(message);
@@ -304,7 +319,42 @@ async function run() {
     body: { name: t.partDescaler, stockCount: 2, minStock: 1 },
   });
 
+  const books = await api.call(endpoints.costBooksList, {
+    query: { limit: 100 },
+  });
+  for (const book of books.items) {
+    const name = t.books[book.name];
+    if (name)
+      await api.call(endpoints.costBooksUpdate, {
+        params: { id: book.id },
+        body: { name },
+      });
+  }
+
   const payers = [first.id, second.id];
+  for (const [daysAgo, odometer, quantity, amountMinor] of FILL_UPS) {
+    await api.call(endpoints.fuelLogsCreate, {
+      params: { id: asset(6).id },
+      body: {
+        date: addDays(today, -daysAgo),
+        odometer,
+        quantity,
+        amountMinor,
+        station: t.station,
+        paidByUserId: first.id,
+      },
+    });
+  }
+  if (t.fuel) {
+    const fuel = await api.call(endpoints.costsList, {
+      query: { category: "fuel", limit: 100 },
+    });
+    for (const entry of fuel.items)
+      await api.call(endpoints.costsUpdate, {
+        params: { id: entry.id },
+        body: { title: `${t.fuel} ${t.station}` },
+      });
+  }
   let firstCost: string | undefined;
   for (const [index, entry] of t.costs.entries()) {
     const [title, category, amountMinor, daysAgo] = entry;
@@ -315,7 +365,6 @@ async function run() {
         amountMinor,
         date: addDays(today, -daysAgo),
         paidByUserId: payers[index % 2],
-        ...(category === "fuel" ? { assetId: asset(6).id } : {}),
       },
     });
     firstCost ??= created.id;
