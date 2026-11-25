@@ -56,13 +56,20 @@ tab) takes the screenshots for both stores, in English and German, light and one
    opens the screen it is given; nothing is tapped. The run fails when the app does not sign in.
 3. The results are the artifacts `store-screenshots-ios` (iPhone Pro Max, 1320 x 2868, the 6.9 inch
    slot of App Store Connect) and `store-screenshots-android` (1080 x 2160), each with a folder per
-   language. Upload them to the store listings by hand.
+   language.
+4. `mobile/store/render.ts` turns them into the images for the listings, the artifact `store-assets`:
+   every slide of `mobile/store/slides.ts` with its headline and the screen in a phone frame
+   (`ios-6.9/<language>/`, 1320 x 2868, and `play-phone/<language>/`, 1080 x 1920) and the feature
+   graphic of Google Play (`play-feature/<language>.png`, 1024 x 500). Upload them to the store
+   listings by hand.
 
 To add a screen, add a line to `screens.txt`; when it shows a single entry, add its address to
-`links` in `scripts/demo.ts`. The workflow also runs on a pull request that changes the capture, the
+`links` in `scripts/demo.ts`. To show it in the stores, add a slide with its headline in both
+languages to `slides.ts`. The workflow also runs on a pull request that changes the capture, the
 demo household or the example seeds. Locally, with a booted simulator or a running emulator that
 has the debug app installed and after `bun run build`: `mobile/scripts/screenshots/ios.sh <udid> <dir>`
-or `mobile/scripts/screenshots/android.sh <dir>`.
+or `mobile/scripts/screenshots/android.sh <dir>`, then
+`bun mobile/store/render.ts --ios <dir> --android <dir> --out <dir>`.
 
 ## Secrets
 

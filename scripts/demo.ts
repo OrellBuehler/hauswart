@@ -91,13 +91,27 @@ const TEXTS = {
   },
 } as const;
 
-/** Which tasks of the seed were done how many days ago, by the position of the task in the file. */
+/**
+ * When the tasks of the seed start, in days from today and by their position in the file, so that
+ * the household looks the same whenever the demo is made: one task overdue, some due today and
+ * this week, the rest later. Tasks that are not listed keep the date of the file.
+ */
+const START_IN_DAYS: Record<number, number> = {
+  0: -25,
+  1: 12,
+  2: -40,
+  3: -2,
+  5: 0,
+  6: 0,
+  7: 0,
+  8: 0,
+  9: 0,
+};
+
+/** Which of them were done how many days ago. */
 const DONE_DAYS_AGO: Record<number, number> = {
   0: 20,
   2: 34,
-  5: 3,
-  6: 4,
-  8: 1,
 };
 
 function fail(message: string): never {
@@ -168,10 +182,14 @@ async function run() {
 
   const seedFile = new URL(`../seed/example.${locale}.json`, import.meta.url);
   const seed = seedSchema.parse(JSON.parse(readFileSync(seedFile, "utf8")));
-  await importSeed(api, seed);
-
   const household = await api.call(endpoints.householdGet);
   const today = todayIn(household.timezone, Date.now());
+  for (const [index, days] of Object.entries(START_IN_DAYS)) {
+    const trigger = seed.tasks[Number(index)]?.trigger;
+    if (trigger && "startDate" in trigger)
+      trigger.startDate = addDays(today, days);
+  }
+  await importSeed(api, seed);
   const rooms = (await api.call(endpoints.roomsList, { query: { limit: 100 } }))
     .items;
   const assets = (
@@ -316,7 +334,6 @@ async function run() {
       startsAt: new Date(startsAt).toISOString(),
       endsAt: new Date(startsAt + 3_600_000).toISOString(),
       assetId: asset(6).id,
-      taskId: task(9).id,
     },
   });
 

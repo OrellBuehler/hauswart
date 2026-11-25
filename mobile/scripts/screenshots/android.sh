@@ -55,8 +55,8 @@ device settings put global sysui_demo_allowed 1
 demo_bar enter
 demo_bar clock -e hhmm 0941
 demo_bar battery -e level 100 -e plugged false
-demo_bar network -e wifi show -e level 4
-demo_bar network -e mobile show -e datatype none -e level 4
+demo_bar network -e wifi show -e level 4 -e fully true
+demo_bar network -e mobile hide
 demo_bar notifications -e visible false
 
 for locale in $LOCALES; do
@@ -67,6 +67,7 @@ for locale in $LOCALES; do
   require_signed_in
   sleep "$SETTLE_SECONDS"
   each_screen "$locale"
+  require_distinct "$OUT_DIR/$locale"
   stop_server
 done
 

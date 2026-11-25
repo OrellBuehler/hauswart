@@ -52,6 +52,7 @@ for locale in $LOCALES; do
   require_signed_in
   sleep "$SETTLE_SECONDS"
   each_screen "$locale"
+  require_distinct "$OUT_DIR/$locale"
   stop_server
 done
 

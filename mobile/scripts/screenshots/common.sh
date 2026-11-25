@@ -99,6 +99,18 @@ big_enough() {
   [ "$(wc -c <"$1" | tr -d ' ')" -ge "$MIN_BYTES" ]
 }
 
+# Two screens that came out as the very same image show an error or the sign-in instead of what
+# they should (an asset and a vehicle are never alike), so the run fails.
+require_distinct() {
+  local dir="$1" same
+  same="$(cd "$dir" && cksum ./*.png | awk '{ if (seen[$1 " " $2]) print seen[$1 " " $2], $3; else seen[$1 " " $2] = $3 }')"
+  if [ -n "$same" ]; then
+    echo "Screens in $dir are identical, so they do not show what they should:" >&2
+    echo "$same" >&2
+    exit 1
+  fi
+}
+
 # Calls `capture <locale> <name> <appearance> <link>` (defined by the caller) for every screen.
 each_screen() {
   local locale="$1" name appearance key link

@@ -2,8 +2,9 @@ name: Mobile Store Screenshots
 
 # Captures the store screenshots of both apps in English and German: builds the server and the
 # debug apps, fills a server with the invented demo household (scripts/demo.ts) and starts the app
-# once per screen (mobile/scripts/screenshots). Run it by hand and download the artifacts
-# `store-screenshots-ios` and `store-screenshots-android`; see mobile/RELEASING.md.
+# once per screen (mobile/scripts/screenshots), then renders the images for the store listings
+# from them (mobile/store). Run it by hand and download the artifact `store-assets`; the raw
+# screenshots are `store-screenshots-ios` and `store-screenshots-android`. See mobile/RELEASING.md.
 on:
   workflow_dispatch:
   # Also when the capture itself changes, so a broken script or demo household shows up on the
@@ -12,6 +13,7 @@ on:
     paths:
       - ".github/workflows/mobile-screenshots.yml"
       - "mobile/scripts/screenshots/**"
+      - "mobile/store/**"
       - "scripts/demo.ts"
       - "seed/example.*.json"
       - "mobile/iosApp/Hauswart/Support/ScreenshotRun.swift"
@@ -82,6 +84,9 @@ jobs:
           fi
           echo "DEVICE_ID=$DEVICE_ID" >> "$GITHUB_ENV"
 
+      # Signed to run locally, unlike the build of mobile-ios.yml: an unsigned app has no keychain
+      # in the simulator, so it could not keep the device token and every screen would say that
+      # the person is signed out.
       - name: Build iOS app
         working-directory: mobile/iosApp
         env:
@@ -94,7 +99,8 @@ jobs:
             -destination "id=$DEVICE_ID" \
             -configuration Debug \
             -derivedDataPath build/DerivedData \
-            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGN_IDENTITY=- \
             ARCHS=arm64 > "$XCODEBUILD_LOG" 2>&1
           status=$?
           set -e
@@ -203,5 +209,45 @@ jobs:
         with:
           name: store-screenshots-android
           path: ${{ runner.temp }}/store-screenshots
+          retention-days: 14
+          if-no-files-found: error
+
+  # The images for the store listings: every slide of mobile/store/slides.ts with its headline and
+  # the screen in a phone frame, and the feature graphic of Google Play.
+  assets:
+    needs: [ios, android]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+
+      - run: bun install --frozen-lockfile
+
+      - name: Download the iOS screenshots
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: store-screenshots-ios
+          path: ${{ runner.temp }}/raw/ios
+
+      - name: Download the Android screenshots
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: store-screenshots-android
+          path: ${{ runner.temp }}/raw/android
+
+      - name: Render the store images
+        run: bun mobile/store/render.ts --ios "$RUNNER_TEMP/raw/ios" --android "$RUNNER_TEMP/raw/android" --out "$RUNNER_TEMP/store-assets"
+
+      - name: Upload the store images
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: store-assets
+          path: ${{ runner.temp }}/store-assets
           retention-days: 14
           if-no-files-found: error
