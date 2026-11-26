@@ -1,0 +1,12 @@
+# The store screenshots: file name, appearance (light or dark) and the entry of "links" in the
+# demo household (scripts/demo.ts) the app starts on.
+dashboard       light  home
+dashboard-dark  dark   home
+tasks           light  tasks
+task            light  task
+costs           light  costs
+inventory       light  inventory
+asset           light  asset
+vehicle         light  vehicle
+defects         light  defects
+parts           light  parts

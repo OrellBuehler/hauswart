@@ -99,6 +99,10 @@ checkout of this repository:
 bun scripts/seed.ts --file seed/example.de.json --token hw_... --url http://localhost:3000
 ```
 
+The same apartment in English is `seed/example.en.json`. On a server that has no user yet,
+`bun scripts/demo.ts --url http://localhost:3000 --locale en` creates a whole invented household
+instead (two people, the example apartment, costs, defects, parts) and prints its sign-in.
+
 ### Updating and restoring
 
 Back up first (stop the container and copy the volume, or take the newest file from `backups/`), then

@@ -157,12 +157,23 @@ func destination(for route: Route) -> AnyView {
     }
 }
 
-/// A navigation stack whose pushed screens are `Route`s.
+/// A navigation stack whose pushed screens are `Route`s. `initial` are screens that are already
+/// pushed when the stack appears.
 struct RouteStack<Root: View>: View {
-    @ViewBuilder let root: () -> Root
+    private let root: () -> Root
+    @State private var path: NavigationPath
+
+    init(initial: [Route] = [], @ViewBuilder root: @escaping () -> Root) {
+        self.root = root
+        var path = NavigationPath()
+        for route in initial {
+            path.append(route)
+        }
+        _path = State(initialValue: path)
+    }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             root()
                 .navigationDestination(for: Route.self) { route in
                     destination(for: route)

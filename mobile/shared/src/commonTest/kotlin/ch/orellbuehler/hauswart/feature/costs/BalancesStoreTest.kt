@@ -113,9 +113,8 @@ class BalancesStoreTest {
             store.setYear("2026")
             store.setPerson("u2")
             store.await { !it.refreshing && it.year == 2026 && it.person == "u2" }
-            val last = server.requestsTo("GET", "/api/v1/settlements").last().query
-            assertTrue("year=2026" in last, last)
-            assertTrue("userId=u2" in last, last)
+            // The state can be there before the mock server has recorded the request that led to it.
+            server.awaitRequest("GET", "/api/v1/settlements") { "year=2026" in it.query && "userId=u2" in it.query }
             store.resetFilters()
             assertEquals(false, store.await { !it.refreshing && !it.settlementsFiltered }.settlementsFiltered)
             assertEquals(

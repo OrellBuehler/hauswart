@@ -1,0 +1,325 @@
+{
+  "version": 1,
+  "household": {
+    "name": "Sample flat",
+    "handoverDate": "2026-01-01"
+  },
+  "rooms": [
+    {
+      "key": "kitchen",
+      "name": "Kitchen",
+      "icon": "cooking-pot",
+      "sortOrder": 0
+    },
+    {
+      "key": "bathroom",
+      "name": "Bathroom",
+      "icon": "bath",
+      "sortOrder": 1
+    },
+    {
+      "key": "living-room",
+      "name": "Living room",
+      "icon": "sofa",
+      "sortOrder": 2
+    },
+    {
+      "key": "basement",
+      "name": "Basement",
+      "icon": "warehouse",
+      "sortOrder": 3
+    },
+    {
+      "key": "bedroom",
+      "name": "Bedroom",
+      "icon": "bed",
+      "sortOrder": 4
+    }
+  ],
+  "assets": [
+    {
+      "key": "washing-machine",
+      "kind": "device",
+      "name": "Washing machine",
+      "room": "bathroom",
+      "category": "Household appliance",
+      "manufacturer": "Musterwerk",
+      "model": "WM-1000",
+      "purchaseDate": "2025-11-20",
+      "warrantyUntil": "2027-11-20",
+      "notes": "Lint filter at the front right behind the flap."
+    },
+    {
+      "key": "fridge",
+      "kind": "device",
+      "name": "Fridge",
+      "room": "kitchen",
+      "category": "Household appliance",
+      "manufacturer": "Musterwerk",
+      "model": "KS-300",
+      "showOnEmergency": false
+    },
+    {
+      "key": "oven",
+      "kind": "device",
+      "name": "Oven",
+      "room": "kitchen",
+      "category": "Household appliance",
+      "manufacturer": "Musterwerk",
+      "model": "BO-50"
+    },
+    {
+      "key": "extractor-hood",
+      "kind": "device",
+      "name": "Extractor hood",
+      "room": "kitchen",
+      "category": "Household appliance",
+      "manufacturer": "Musterwerk",
+      "model": "DA-60",
+      "notes": "Recirculation mode with an activated carbon filter."
+    },
+    {
+      "key": "insect-screen",
+      "kind": "fixture",
+      "name": "Insect screen blind",
+      "room": "bedroom",
+      "category": "Window"
+    },
+    {
+      "key": "monstera",
+      "kind": "plant",
+      "name": "Monstera",
+      "room": "living-room",
+      "species": "Monstera deliciosa",
+      "light": "bright, no direct sun",
+      "waterNotes": "Water weekly in summer and every two weeks in winter; avoid waterlogging."
+    },
+    {
+      "key": "family-car",
+      "kind": "vehicle",
+      "name": "Family car",
+      "category": "Passenger car",
+      "manufacturer": "Musterwerk",
+      "model": "Estate 2.0",
+      "purchaseDate": "2022-03-10",
+      "vehicle": {
+        "plate": "ZH 000000",
+        "vin": "EXAMPLEVIN0000000",
+        "registrationNumber": "000.000.000",
+        "firstRegistration": "2022-03-10",
+        "fuelType": "plugin_hybrid",
+        "tireSizeSummer": "205/55 R16 91V",
+        "tireSizeWinter": "205/55 R16 91H",
+        "location": "Underground car park, space 0",
+        "odometerUnit": "km"
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "key": "washing-machine-clean",
+      "title": "Clean the washing machine",
+      "descriptionMd": "Air the drum, wipe the rubber seal, empty the lint filter.",
+      "category": "maintenance",
+      "effortMinutes": 15,
+      "asset": "washing-machine",
+      "trigger": {
+        "v": 1,
+        "type": "interval",
+        "every": 3,
+        "unit": "month",
+        "anchor": "completion",
+        "startDate": "2026-10-01"
+      },
+      "comment": "Placeholder: once the wash cycle counter is connected this becomes a counter_delta trigger (for example every 60 cycles). Until then a fixed rhythm applies."
+    },
+    {
+      "key": "fridge-clean",
+      "title": "Clean and defrost the fridge",
+      "category": "cleaning",
+      "effortMinutes": 45,
+      "asset": "fridge",
+      "trigger": {
+        "v": 1,
+        "type": "interval",
+        "every": 6,
+        "unit": "month",
+        "anchor": "completion",
+        "startDate": "2026-11-15"
+      }
+    },
+    {
+      "key": "oven-clean",
+      "title": "Clean the oven",
+      "category": "cleaning",
+      "effortMinutes": 40,
+      "asset": "oven",
+      "trigger": {
+        "v": 1,
+        "type": "interval",
+        "every": 3,
+        "unit": "month",
+        "anchor": "completion",
+        "startDate": "2026-10-20"
+      }
+    },
+    {
+      "key": "extractor-hood-filter",
+      "title": "Replace the extractor hood's carbon filter",
+      "descriptionMd": "Take the filter out from below, fit the new one, rinse the old grille.",
+      "category": "filter",
+      "priority": "high",
+      "effortMinutes": 10,
+      "asset": "extractor-hood",
+      "trigger": {
+        "v": 1,
+        "type": "interval",
+        "every": 3,
+        "unit": "month",
+        "anchor": "completion",
+        "startDate": "2026-10-12"
+      },
+      "preparations": [
+        {
+          "title": "Order the carbon filter",
+          "kind": "order_part",
+          "leadDays": 14,
+          "qty": 1
+        }
+      ]
+    },
+    {
+      "key": "insect-screen-check",
+      "title": "Check and dust the insect screen blind",
+      "category": "maintenance",
+      "effortMinutes": 5,
+      "asset": "insect-screen",
+      "trigger": {
+        "v": 1,
+        "type": "min_per_period",
+        "period": "month",
+        "count": 1
+      }
+    },
+    {
+      "key": "monstera-water",
+      "title": "Water the monstera",
+      "category": "plant",
+      "effortMinutes": 5,
+      "asset": "monstera",
+      "trigger": {
+        "v": 1,
+        "type": "interval",
+        "every": 14,
+        "unit": "day",
+        "anchor": "completion",
+        "startDate": "2026-10-06",
+        "seasons": [
+          {
+            "fromMonth": 4,
+            "toMonth": 9,
+            "every": 7,
+            "unit": "day"
+          }
+        ]
+      }
+    },
+    {
+      "key": "clean-bathroom",
+      "title": "Clean the bathroom",
+      "category": "cleaning",
+      "effortMinutes": 30,
+      "room": "bathroom",
+      "trigger": {
+        "v": 1,
+        "type": "calendar",
+        "freq": "weekly",
+        "interval": 1,
+        "byWeekday": [6],
+        "startDate": "2026-10-03"
+      },
+      "assign": {
+        "mode": "rotate",
+        "users": "all",
+        "strategy": "alternate"
+      }
+    },
+    {
+      "key": "clean-kitchen",
+      "title": "Clean the kitchen",
+      "category": "cleaning",
+      "effortMinutes": 30,
+      "room": "kitchen",
+      "trigger": {
+        "v": 1,
+        "type": "calendar",
+        "freq": "weekly",
+        "interval": 1,
+        "byWeekday": [6],
+        "startDate": "2026-10-03"
+      },
+      "assign": {
+        "mode": "rotate",
+        "users": "all",
+        "strategy": "fair"
+      }
+    },
+    {
+      "key": "rubbish",
+      "title": "Put out the rubbish",
+      "category": "waste",
+      "effortMinutes": 5,
+      "trigger": {
+        "v": 1,
+        "type": "calendar",
+        "freq": "weekly",
+        "interval": 1,
+        "byWeekday": [3],
+        "startDate": "2026-10-07"
+      },
+      "preparations": [
+        {
+          "title": "Get the rubbish bag ready",
+          "kind": "generic",
+          "leadDays": 1
+        }
+      ]
+    },
+    {
+      "key": "family-car-winter-tyres",
+      "title": "Fit the winter tyres",
+      "category": "maintenance",
+      "asset": "family-car",
+      "trigger": {
+        "v": 1,
+        "type": "calendar",
+        "freq": "yearly",
+        "interval": 1,
+        "byMonth": [10],
+        "byMonthDay": 15,
+        "startDate": "2026-10-15",
+        "earlyDays": 14
+      },
+      "preparations": [
+        {
+          "title": "Book the garage appointment",
+          "kind": "generic",
+          "leadDays": 28
+        }
+      ]
+    },
+    {
+      "key": "family-car-inspection",
+      "title": "Vehicle inspection",
+      "category": "inspection",
+      "priority": "high",
+      "asset": "family-car",
+      "trigger": {
+        "v": 1,
+        "type": "one_off",
+        "date": "2029-03-10"
+      },
+      "comment": "The mileage task (service every 15,000 km or 12 months) needs the id of the vehicle (odometer:<vehicle id>), so it is created in the app from the template \"Service\"."
+    }
+  ]
+}
